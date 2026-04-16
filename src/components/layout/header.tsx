@@ -15,24 +15,25 @@ type HeaderProps = {
 };
 
 export function Header({ businessName }: HeaderProps) {
-  const displayName = businessName ?? 'Smartfusion';
-
   return (
     <header className="flex h-14 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-3">
         <MobileSidebarToggle />
-        <span className="text-sm font-semibold">{displayName}</span>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" aria-label="User menu">
-            Account
+            {businessName ?? 'Account'}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent align="end" className="w-48">
+          {businessName ? (
+            <>
+              <DropdownMenuLabel className="font-medium">{businessName}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           <DropdownMenuItem asChild>
             <Link href="/settings">Profile</Link>
           </DropdownMenuItem>

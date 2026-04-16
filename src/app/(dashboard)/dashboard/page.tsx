@@ -24,7 +24,7 @@ export default function DashboardPage() {
               <CardTitle className="text-3xl font-semibold">{stat.value}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-xs text-muted-foreground">Coming in Phase 1</p>
+              <p className="text-sm text-muted-foreground">No activity yet.</p>
             </CardContent>
           </Card>
         ))}
