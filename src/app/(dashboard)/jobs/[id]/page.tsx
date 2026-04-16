@@ -1,6 +1,7 @@
 import { ArrowLeft, CalendarClock, Camera, FileText, Pencil, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { GenerateInvoiceButton } from '@/components/features/invoices/generate-invoice-button';
 import { DeleteJobButton } from '@/components/features/jobs/delete-job-button';
 import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
 import { JobStatusSelect } from '@/components/features/jobs/job-status-select';
@@ -138,21 +139,29 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         </section>
       ) : null}
 
-      {job.invoices.length > 0 ? (
-        <section className="rounded-xl border bg-card p-4">
-          <header className="flex items-center gap-2 pb-3">
+      <section className="rounded-xl border bg-card p-4">
+        <header className="flex items-center justify-between pb-3">
+          <div className="flex items-center gap-2">
             <Receipt className="size-4 text-muted-foreground" aria-hidden />
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Invoices
             </h2>
-          </header>
+          </div>
+          {job.status === 'complete' && job.invoices.length === 0 && (
+            <GenerateInvoiceButton jobId={job.id} />
+          )}
+        </header>
+        {job.invoices.length > 0 ? (
           <ul className="divide-y">
             {job.invoices.map((inv) => (
               <li key={inv.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-muted-foreground">
+                  <Link
+                    href={`/invoices/${inv.id}`}
+                    className="font-mono text-xs text-muted-foreground hover:text-primary hover:underline"
+                  >
                     #{shortId(inv.id)}
-                  </span>
+                  </Link>
                   <Badge
                     variant="secondary"
                     className={`font-medium ${INVOICE_STATUS_CLASS[inv.status] ?? 'bg-muted'}`}
@@ -166,8 +175,14 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {job.status === 'complete'
+              ? 'No invoices yet. Generate one above.'
+              : 'Complete this job to generate an invoice.'}
+          </p>
+        )}
+      </section>
 
       {job.notes ? (
         <section className="rounded-xl border bg-card p-5">

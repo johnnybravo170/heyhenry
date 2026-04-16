@@ -1,23 +1,40 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Suspense } from 'react';
+import { StripeConnectCard } from '@/components/features/settings/stripe-connect-card';
+import { getCurrentTenant } from '@/lib/auth/helpers';
+import { createClient } from '@/lib/supabase/server';
+
+async function StripeSection() {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return null;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('tenants')
+    .select('stripe_account_id, stripe_onboarded_at')
+    .eq('id', tenant.id)
+    .single();
+
+  return (
+    <StripeConnectCard
+      stripeAccountId={(data?.stripe_account_id as string) ?? null}
+      stripeOnboardedAt={(data?.stripe_onboarded_at as string) ?? null}
+    />
+  );
+}
 
 export default function SettingsPage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="text-sm text-muted-foreground">
+          Manage your account, payments, and preferences.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Settings</CardTitle>
-          <CardDescription>Coming in Phase 1</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Business info, service catalog, tax rates, and Stripe Connect will live here.
-          </p>
-        </CardContent>
-      </Card>
+      <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
+        <StripeSection />
+      </Suspense>
     </div>
   );
 }
