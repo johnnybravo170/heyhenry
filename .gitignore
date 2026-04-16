@@ -46,3 +46,7 @@ next-env.d.ts
 # supabase
 supabase/.branches
 supabase/.temp
+
+# drizzle-kit scratch output. Supabase migrations are the source of truth;
+# anything drizzle-kit generates here is copied into supabase/migrations/ by hand.
+/drizzle/migrations
