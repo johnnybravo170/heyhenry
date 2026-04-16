@@ -21,6 +21,7 @@
     "db:status": "supabase status",
     "db:push": "supabase db push",
     "db:generate": "drizzle-kit generate",
+    "smoke": "tsx scripts/smoke-foundation.ts",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -67,6 +68,7 @@
     "lint-staged": "^16.4.0",
     "supabase": "^2.91.2",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.4"
   },
