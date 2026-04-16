@@ -3,6 +3,11 @@ import { Header } from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 
+// All dashboard routes require the authenticated user's tenant context. They
+// cannot be statically prerendered (would try to run Supabase client without
+// request cookies). Force dynamic rendering for everything under this layout.
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const tenant = await getCurrentTenant();
   const businessName = tenant?.name;
