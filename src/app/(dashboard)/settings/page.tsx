@@ -1,6 +1,7 @@
 import { ChevronRight, Ruler } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { DataExportCard } from '@/components/features/settings/data-export-card';
 import { StripeConnectCard } from '@/components/features/settings/stripe-connect-card';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getCurrentTenant } from '@/lib/auth/helpers';
@@ -21,6 +22,32 @@ async function StripeSection() {
     <StripeConnectCard
       stripeAccountId={(data?.stripe_account_id as string) ?? null}
       stripeOnboardedAt={(data?.stripe_onboarded_at as string) ?? null}
+    />
+  );
+}
+
+async function ExportSection() {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return null;
+
+  const supabase = await createClient();
+  const { data: lastExport } = await supabase
+    .from('data_exports')
+    .select('download_url, created_at, status, expires_at')
+    .eq('status', 'ready')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Only show the link if it hasn't expired.
+  const isExpired = lastExport?.expires_at
+    ? new Date(lastExport.expires_at as string) < new Date()
+    : true;
+
+  return (
+    <DataExportCard
+      lastExportUrl={!isExpired ? ((lastExport?.download_url as string) ?? null) : null}
+      lastExportDate={lastExport?.created_at ? (lastExport.created_at as string) : null}
     />
   );
 }
@@ -55,6 +82,10 @@ export default function SettingsPage() {
           </CardHeader>
         </Card>
       </Link>
+
+      <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border bg-card" />}>
+        <ExportSection />
+      </Suspense>
     </div>
   );
 }
