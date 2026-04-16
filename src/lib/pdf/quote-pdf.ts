@@ -1,0 +1,186 @@
+/**
+ * Server-side PDF generation for quotes.
+ *
+ * Uses jspdf + jspdf-autotable for reliable server rendering without
+ * React server-component conflicts. The output is a professional-looking
+ * quote document suitable for emailing to customers.
+ */
+
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import type { QuoteCustomerSummary, QuoteWithRelations } from '@/lib/db/queries/quotes';
+import { formatCurrency } from '@/lib/pricing/calculator';
+
+type TenantInfo = {
+  id: string;
+  name: string;
+};
+
+export async function generateQuotePdf(
+  quote: QuoteWithRelations,
+  tenant: TenantInfo,
+  customer: QuoteCustomerSummary,
+): Promise<Buffer> {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  let y = margin;
+
+  // -- Header: business name --
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text(tenant.name, margin, y);
+  y += 12;
+
+  // -- QUOTE title + number --
+  doc.setFontSize(28);
+  doc.setTextColor(59, 130, 246); // Blue accent
+  doc.text('QUOTE', margin, y);
+  doc.setTextColor(0, 0, 0);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  const quoteNumber = `#${quote.id.slice(0, 8).toUpperCase()}`;
+  doc.text(quoteNumber, pageWidth - margin, y, { align: 'right' });
+  y += 4;
+
+  const dateStr = new Intl.DateTimeFormat('en-CA', { dateStyle: 'long' }).format(
+    new Date(quote.created_at),
+  );
+  doc.text(`Date: ${dateStr}`, pageWidth - margin, y, { align: 'right' });
+  y += 12;
+
+  // -- Customer info block --
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Prepared for:', margin, y);
+  y += 6;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(customer.name, margin, y);
+  y += 5;
+
+  if (customer.email) {
+    doc.text(customer.email, margin, y);
+    y += 5;
+  }
+  if (customer.phone) {
+    doc.text(customer.phone, margin, y);
+    y += 5;
+  }
+
+  const addressParts = [
+    customer.address_line1,
+    customer.city,
+    customer.province,
+    customer.postal_code,
+  ].filter(Boolean);
+  if (addressParts.length > 0) {
+    doc.text(addressParts.join(', '), margin, y);
+    y += 5;
+  }
+
+  y += 8;
+
+  // -- Horizontal rule --
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // -- Surface breakdown table --
+  const tableBody = quote.surfaces.map((s) => [
+    s.surface_type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+    `${s.sqft.toFixed(1)} sq ft`,
+    `${formatCurrency(Math.round(s.sqft > 0 ? s.price_cents / s.sqft : 0))}/sq ft`,
+    formatCurrency(s.price_cents),
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Surface', 'Area', 'Unit Price', 'Total']],
+    body: tableBody,
+    margin: { left: margin, right: margin },
+    headStyles: {
+      fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 10,
+    },
+    bodyStyles: {
+      fontSize: 10,
+    },
+    columnStyles: {
+      0: { cellWidth: 60 },
+      1: { halign: 'right', cellWidth: 35 },
+      2: { halign: 'right', cellWidth: 35 },
+      3: { halign: 'right', cellWidth: 35 },
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+  });
+
+  // biome-ignore lint/suspicious/noExplicitAny: jspdf-autotable extends jsPDF at runtime
+  y = (doc as any).lastAutoTable.finalY + 8;
+
+  // -- Totals block (right-aligned) --
+  const totalsX = pageWidth - margin - 70;
+  const valuesX = pageWidth - margin;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Subtotal:', totalsX, y);
+  doc.text(formatCurrency(quote.subtotal_cents), valuesX, y, { align: 'right' });
+  y += 6;
+
+  doc.text('GST (5%):', totalsX, y);
+  doc.text(formatCurrency(quote.tax_cents), valuesX, y, { align: 'right' });
+  y += 2;
+
+  doc.setDrawColor(200, 200, 200);
+  doc.line(totalsX, y, valuesX, y);
+  y += 5;
+
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total:', totalsX, y);
+  doc.text(formatCurrency(quote.total_cents), valuesX, y, { align: 'right' });
+  y += 12;
+
+  // -- Notes --
+  if (quote.notes) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Notes:', margin, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    const lines = doc.splitTextToSize(quote.notes, pageWidth - margin * 2);
+    doc.text(lines, margin, y);
+    y += lines.length * 5 + 8;
+  }
+
+  // -- Terms --
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
+
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text('Valid for 30 days from the date above.', margin, y);
+  y += 4;
+  doc.text('All prices in Canadian dollars (CAD). GST included where applicable.', margin, y);
+  y += 8;
+
+  // -- Footer --
+  doc.setFontSize(7);
+  doc.setTextColor(160, 160, 160);
+  doc.text('Generated by Smartfusion', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, {
+    align: 'center',
+  });
+
+  // Return as Buffer.
+  const arrayBuf = doc.output('arraybuffer');
+  return Buffer.from(arrayBuf);
+}
