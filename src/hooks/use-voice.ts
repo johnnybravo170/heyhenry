@@ -31,9 +31,11 @@ export function useVoice(
   // Track the response we already spoke so we don't repeat it.
   const spokenResponseRef = useRef<string | null>(null);
 
-  const isSupported =
-    typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  // Detect support after hydration to avoid server/client mismatch.
+  const [isSupported, setIsSupported] = useState(false);
+  useEffect(() => {
+    setIsSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  }, []);
 
   // Toggle voice mode on/off.
   const toggleVoice = useCallback(() => {
