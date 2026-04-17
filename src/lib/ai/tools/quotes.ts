@@ -171,7 +171,6 @@ export const quoteTools: AiTool[] = [
           surface_type: string;
           sqft: number;
           price_cents: number;
-          catalog_id: string;
         }[] = [];
 
         for (const s of surfaces) {
