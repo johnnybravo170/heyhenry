@@ -2,6 +2,7 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getCustomer, getCustomerRelated, listCustomers } from '@/lib/db/queries/customers';
 import { createClient } from '@/lib/supabase/server';
 import { formatDate } from '../format';
+import { resolveCustomer } from '../helpers/resolve-customer';
 import type { AiTool } from '../types';
 
 export const customerTools: AiTool[] = [
@@ -153,6 +154,85 @@ export const customerTools: AiTool[] = [
         return `Customer created successfully.\n\nName: ${data.name}\nType: ${data.type}\nID: ${data.id}`;
       } catch (e) {
         return `Failed to create customer: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  },
+  {
+    definition: {
+      name: 'update_customer',
+      description:
+        "Update a customer's information. Specify the customer by name or ID and the fields to change.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          customer_name_or_id: {
+            type: 'string',
+            description: 'Customer name (fuzzy match) or UUID',
+          },
+          name: { type: 'string', description: 'New name' },
+          email: { type: 'string', description: 'New email address' },
+          phone: { type: 'string', description: 'New phone number' },
+          address_line1: { type: 'string', description: 'New street address' },
+          city: { type: 'string', description: 'New city' },
+          province: { type: 'string', description: 'New province' },
+          postal_code: { type: 'string', description: 'New postal code' },
+          notes: { type: 'string', description: 'New notes' },
+          type: {
+            type: 'string',
+            enum: ['residential', 'commercial', 'agent'],
+            description: 'New customer type',
+          },
+        },
+        required: ['customer_name_or_id'],
+      },
+    },
+    handler: async (input) => {
+      try {
+        const tenant = await getCurrentTenant();
+        if (!tenant) return 'Not authenticated.';
+
+        const resolved = await resolveCustomer(input.customer_name_or_id as string);
+        if (typeof resolved === 'string') return resolved;
+
+        // Build update object from provided fields
+        const updatableFields = [
+          'name',
+          'email',
+          'phone',
+          'address_line1',
+          'city',
+          'province',
+          'postal_code',
+          'notes',
+          'type',
+        ] as const;
+        const updates: Record<string, unknown> = {};
+        const changed: string[] = [];
+
+        for (const field of updatableFields) {
+          const value = input[field];
+          if (value !== undefined && value !== null) {
+            updates[field] = value;
+            changed.push(`${field} = "${value}"`);
+          }
+        }
+
+        if (changed.length === 0) {
+          return 'No fields to update. Specify at least one field to change.';
+        }
+
+        updates.updated_at = new Date().toISOString();
+
+        const supabase = await createClient();
+        const { error } = await supabase.from('customers').update(updates).eq('id', resolved.id);
+
+        if (error) {
+          return `Failed to update customer: ${error.message}`;
+        }
+
+        return `Updated ${resolved.name}: ${changed.join(', ')}.`;
+      } catch (e) {
+        return `Failed to update customer: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   },

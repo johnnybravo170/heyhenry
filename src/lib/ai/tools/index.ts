@@ -8,7 +8,7 @@ import { quoteTools } from './quotes';
 import { todoTools } from './todos';
 import { worklogTools } from './worklog';
 
-/** All 17 tools registered for the AI chat. */
+/** All 24 tools registered for the AI chat. */
 export const allTools: AiTool[] = [
   ...dashboardTools,
   ...customerTools,

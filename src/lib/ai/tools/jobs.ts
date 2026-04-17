@@ -8,6 +8,8 @@ import {
   invoiceStatusLabels,
   jobStatusLabels,
 } from '../format';
+import { resolveByShortId } from '../helpers/resolve-by-short-id';
+import { resolveCustomer } from '../helpers/resolve-customer';
 import type { AiTool } from '../types';
 
 export const jobTools: AiTool[] = [
@@ -213,6 +215,162 @@ export const jobTools: AiTool[] = [
         );
       } catch (e) {
         return `Failed to update job status: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  },
+  {
+    definition: {
+      name: 'create_job',
+      description:
+        'Create a new job for a customer. Optionally schedule it for a specific date/time and link to an existing quote.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          customer_name_or_id: {
+            type: 'string',
+            description: 'Customer name (fuzzy match) or UUID',
+          },
+          scheduled_at: {
+            type: 'string',
+            description: 'ISO date/time for when the job is scheduled (e.g. 2026-04-22T09:00)',
+          },
+          quote_id: {
+            type: 'string',
+            description: 'Link to an existing quote UUID or short ID',
+          },
+          notes: { type: 'string', description: 'Job notes' },
+        },
+        required: ['customer_name_or_id'],
+      },
+    },
+    handler: async (input) => {
+      try {
+        const tenant = await getCurrentTenant();
+        if (!tenant) return 'Not authenticated.';
+
+        const resolved = await resolveCustomer(input.customer_name_or_id as string);
+        if (typeof resolved === 'string') return resolved;
+
+        // Resolve quote if provided
+        let quoteId: string | null = null;
+        if (input.quote_id) {
+          const quoteResult = await resolveByShortId<{ id: string }>(
+            'quotes',
+            input.quote_id as string,
+            'id',
+          );
+          if (typeof quoteResult === 'string') return `Quote lookup failed: ${quoteResult}`;
+          quoteId = quoteResult.id;
+        }
+
+        const scheduledAt = input.scheduled_at ? String(input.scheduled_at) : null;
+
+        const supabase = await createClient();
+        const { data: job, error } = await supabase
+          .from('jobs')
+          .insert({
+            tenant_id: tenant.id,
+            customer_id: resolved.id,
+            quote_id: quoteId,
+            status: 'booked',
+            scheduled_at: scheduledAt,
+            notes: (input.notes as string) ?? null,
+          })
+          .select('id')
+          .single();
+
+        if (error || !job) {
+          return `Failed to create job: ${error?.message ?? 'Unknown error'}`;
+        }
+
+        // Add worklog entry
+        await supabase.from('worklog_entries').insert({
+          tenant_id: tenant.id,
+          entry_type: 'system',
+          title: 'Job booked',
+          body: `Job booked for ${resolved.name}${scheduledAt ? ` on ${formatDateTime(scheduledAt)}` : ''}.`,
+          related_type: 'job',
+          related_id: job.id,
+        });
+
+        let response = `Job booked for ${resolved.name}`;
+        if (scheduledAt) response += ` on ${formatDateTime(scheduledAt)}`;
+        response += `. Status: booked. ID: ${job.id.slice(0, 8)}`;
+
+        return response;
+      } catch (e) {
+        return `Failed to create job: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  },
+  {
+    definition: {
+      name: 'schedule_job',
+      description: 'Schedule or reschedule a job for a specific date/time.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'Job UUID or short ID (first 8 chars)',
+          },
+          scheduled_at: {
+            type: 'string',
+            description: 'ISO date/time (e.g. 2026-04-22T09:00)',
+          },
+        },
+        required: ['job_id', 'scheduled_at'],
+      },
+    },
+    handler: async (input) => {
+      try {
+        const tenant = await getCurrentTenant();
+        if (!tenant) return 'Not authenticated.';
+
+        type JobRow = {
+          id: string;
+          status: string;
+          customers: { name: string } | { name: string }[];
+        };
+
+        const result = await resolveByShortId<JobRow>(
+          'jobs',
+          input.job_id as string,
+          'id, status, customers:customer_id (name)',
+        );
+        if (typeof result === 'string') return result;
+
+        const job = result;
+        const scheduledAt = String(input.scheduled_at);
+        const now = new Date().toISOString();
+
+        const supabase = await createClient();
+        const { error } = await supabase
+          .from('jobs')
+          .update({ scheduled_at: scheduledAt, updated_at: now })
+          .eq('id', job.id);
+
+        if (error) {
+          return `Failed to schedule job: ${error.message}`;
+        }
+
+        const customerRaw = job.customers;
+        const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
+        const customerName = customer?.name ?? 'customer';
+
+        // Add worklog entry
+        await supabase.from('worklog_entries').insert({
+          tenant_id: tenant.id,
+          entry_type: 'system',
+          title: 'Job rescheduled',
+          body: `Job for ${customerName} scheduled to ${formatDateTime(scheduledAt)}.`,
+          related_type: 'job',
+          related_id: job.id,
+        });
+
+        return `Job for ${customerName} rescheduled to ${formatDateTime(scheduledAt)}.`;
+      } catch (e) {
+        return `Failed to schedule job: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   },

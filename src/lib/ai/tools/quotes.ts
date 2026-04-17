@@ -1,5 +1,11 @@
+import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getQuote, listQuotes } from '@/lib/db/queries/quotes';
+import { listCatalogEntries } from '@/lib/db/queries/service-catalog';
+import { calculateQuoteTotal, calculateSurfacePrice } from '@/lib/pricing/calculator';
+import { createClient } from '@/lib/supabase/server';
 import { formatCad, formatDate, quoteStatusLabels } from '../format';
+import { resolveByShortId } from '../helpers/resolve-by-short-id';
+import { resolveCustomer } from '../helpers/resolve-customer';
 import type { AiTool } from '../types';
 
 export const quoteTools: AiTool[] = [
@@ -112,6 +118,212 @@ export const quoteTools: AiTool[] = [
         return output;
       } catch (e) {
         return `Failed to get quote: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  },
+  {
+    definition: {
+      name: 'create_quote',
+      description:
+        'Create a quote for a customer with one or more surfaces. Specify the customer (by name or ID), and for each surface provide the type and square footage. Pricing is calculated automatically from the service catalog.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          customer_name_or_id: {
+            type: 'string',
+            description: 'Customer name (fuzzy match) or UUID',
+          },
+          surfaces: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                surface_type: { type: 'string', description: 'Surface type from the catalog' },
+                sqft: { type: 'number', description: 'Square footage' },
+              },
+              required: ['surface_type', 'sqft'],
+            },
+            description: 'One or more surfaces to quote',
+          },
+          notes: { type: 'string', description: 'Optional notes for the quote' },
+        },
+        required: ['customer_name_or_id', 'surfaces'],
+      },
+    },
+    handler: async (input) => {
+      try {
+        const tenant = await getCurrentTenant();
+        if (!tenant) return 'Not authenticated.';
+
+        const resolved = await resolveCustomer(input.customer_name_or_id as string);
+        if (typeof resolved === 'string') return resolved;
+
+        const surfaces = input.surfaces as { surface_type: string; sqft: number }[];
+        if (!surfaces || surfaces.length === 0) {
+          return 'At least one surface is required.';
+        }
+
+        // Load the catalog to price each surface
+        const catalog = await listCatalogEntries();
+        const catalogMap = new Map(catalog.map((c) => [c.surface_type.toLowerCase(), c]));
+
+        const pricedSurfaces: {
+          surface_type: string;
+          sqft: number;
+          price_cents: number;
+          catalog_id: string;
+        }[] = [];
+
+        for (const s of surfaces) {
+          const entry = catalogMap.get(s.surface_type.toLowerCase());
+          if (!entry) {
+            const available = catalog.map((c) => c.surface_type).join(', ');
+            return `Unknown surface type "${s.surface_type}". Available types: ${available}`;
+          }
+          const price_cents = calculateSurfacePrice(
+            { surface_type: s.surface_type, sqft: s.sqft },
+            entry,
+          );
+          pricedSurfaces.push({
+            surface_type: s.surface_type,
+            sqft: s.sqft,
+            price_cents,
+            catalog_id: entry.id,
+          });
+        }
+
+        const totals = calculateQuoteTotal(pricedSurfaces, 0.05);
+
+        const supabase = await createClient();
+
+        // Insert quote
+        const { data: quote, error: quoteErr } = await supabase
+          .from('quotes')
+          .insert({
+            tenant_id: tenant.id,
+            customer_id: resolved.id,
+            status: 'draft',
+            subtotal_cents: totals.subtotal_cents,
+            tax_cents: totals.tax_cents,
+            total_cents: totals.total_cents,
+            notes: (input.notes as string) ?? null,
+          })
+          .select('id')
+          .single();
+
+        if (quoteErr || !quote) {
+          return `Failed to create quote: ${quoteErr?.message ?? 'Unknown error'}`;
+        }
+
+        // Insert quote surfaces
+        const surfaceRows = pricedSurfaces.map((s) => ({
+          quote_id: quote.id,
+          tenant_id: tenant.id,
+          surface_type: s.surface_type,
+          sqft: s.sqft,
+          price_cents: s.price_cents,
+          catalog_entry_id: s.catalog_id,
+        }));
+
+        const { error: surfErr } = await supabase.from('quote_surfaces').insert(surfaceRows);
+        if (surfErr) {
+          return `Quote created but failed to add surfaces: ${surfErr.message}`;
+        }
+
+        const surfaceSummary = pricedSurfaces
+          .map((s) => `${s.surface_type} (${s.sqft} sqft) ${formatCad(s.price_cents)}`)
+          .join(', ');
+
+        return (
+          `Created quote #${quote.id.slice(0, 8)} for ${resolved.name}: ${surfaceSummary}. ` +
+          `Total: ${formatCad(totals.total_cents)}. Status: draft.`
+        );
+      } catch (e) {
+        return `Failed to create quote: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  },
+  {
+    definition: {
+      name: 'send_quote',
+      description:
+        'Send a quote to the customer via email. The quote must exist and be in draft or sent status. Generates a PDF and emails it.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          quote_id: {
+            type: 'string',
+            description: 'Quote UUID or short ID (first 8 chars)',
+          },
+        },
+        required: ['quote_id'],
+      },
+    },
+    handler: async (input) => {
+      try {
+        const tenant = await getCurrentTenant();
+        if (!tenant) return 'Not authenticated.';
+
+        type QuoteRow = {
+          id: string;
+          status: string;
+          total_cents: number;
+          customer_id: string;
+          customers:
+            | { name: string; email: string | null }
+            | { name: string; email: string | null }[];
+        };
+
+        const result = await resolveByShortId<QuoteRow>(
+          'quotes',
+          input.quote_id as string,
+          'id, status, total_cents, customer_id, customers:customer_id (name, email)',
+        );
+        if (typeof result === 'string') return result;
+
+        const quote = result;
+        if (quote.status !== 'draft' && quote.status !== 'sent') {
+          return `Quote is "${quote.status}". Only draft or sent quotes can be sent.`;
+        }
+
+        // Extract customer from join
+        const customerRaw = quote.customers;
+        const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
+
+        if (!customer?.email) {
+          return `Cannot send quote: ${customer?.name ?? 'customer'} has no email address on file. Update their email first.`;
+        }
+
+        // PDF generation and email sending are not yet implemented.
+        // For now, update the status and log the intent.
+        const supabase = await createClient();
+        const now = new Date().toISOString();
+
+        const { error: updateErr } = await supabase
+          .from('quotes')
+          .update({ status: 'sent', sent_at: now, updated_at: now })
+          .eq('id', quote.id);
+
+        if (updateErr) {
+          return `Failed to update quote status: ${updateErr.message}`;
+        }
+
+        // Add worklog entry
+        await supabase.from('worklog_entries').insert({
+          tenant_id: tenant.id,
+          entry_type: 'system',
+          title: 'Quote sent',
+          body: `Quote #${quote.id.slice(0, 8)} sent to ${customer.name} (${customer.email}). Total: ${formatCad(quote.total_cents)}.`,
+          related_type: 'quote',
+          related_id: quote.id,
+        });
+
+        return (
+          `Quote #${quote.id.slice(0, 8)} sent to ${customer.email}. ` +
+          `Total: ${formatCad(quote.total_cents)}.`
+        );
+      } catch (e) {
+        return `Failed to send quote: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   },

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { allTools, executeToolCall, getToolDefinitions } from '@/lib/ai/tools';
 
 describe('AI tool definitions', () => {
-  it('exports exactly 17 tools', () => {
-    expect(allTools).toHaveLength(17);
+  it('exports exactly 24 tools', () => {
+    expect(allTools).toHaveLength(24);
   });
 
   it('each tool has a name, description, and valid input_schema', () => {
@@ -46,13 +46,20 @@ describe('AI tool definitions', () => {
       'list_customers',
       'get_customer',
       'create_customer',
+      'update_customer',
       'list_quotes',
       'get_quote',
+      'create_quote',
+      'send_quote',
       'list_jobs',
       'get_job',
       'update_job_status',
+      'create_job',
+      'schedule_job',
       'list_invoices',
       'get_revenue_summary',
+      'create_invoice',
+      'send_invoice',
       'list_todos',
       'create_todo',
       'complete_todo',
