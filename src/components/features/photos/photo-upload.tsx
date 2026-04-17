@@ -211,8 +211,6 @@ export function PhotoUpload({
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          // `capture="environment"` makes phones default to the rear camera.
-          capture="environment"
           multiple
           onChange={handleFileInputChange}
           className="sr-only"
