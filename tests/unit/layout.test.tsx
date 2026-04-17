@@ -11,8 +11,8 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('NAV_ITEMS', () => {
-  it('contains all seven P1 nav items', () => {
-    expect(NAV_ITEMS).toHaveLength(7);
+  it('contains all eight nav items', () => {
+    expect(NAV_ITEMS).toHaveLength(8);
     const hrefs = NAV_ITEMS.map((item) => item.href);
     expect(hrefs).toEqual([
       '/dashboard',
@@ -21,6 +21,7 @@ describe('NAV_ITEMS', () => {
       '/jobs',
       '/invoices',
       '/inbox',
+      '/referrals',
       '/settings',
     ]);
   });

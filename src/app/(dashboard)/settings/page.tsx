@@ -1,4 +1,4 @@
-import { ChevronRight, Mic, Ruler } from 'lucide-react';
+import { ChevronRight, Mic, Ruler, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { DataExportCard } from '@/components/features/settings/data-export-card';
@@ -102,6 +102,23 @@ export default function SettingsPage() {
       <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
         <PublicQuoteLinkSection />
       </Suspense>
+
+      <Link href="/settings/team" className="block">
+        <Card className="transition-colors hover:bg-muted/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="size-5" />
+                <div>
+                  <CardTitle>Team</CardTitle>
+                  <CardDescription>Invite workers and manage your team.</CardDescription>
+                </div>
+              </div>
+              <ChevronRight className="size-5 text-muted-foreground" />
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
 
       <Link href="/settings/catalog" className="block">
         <Card className="transition-colors hover:bg-muted/50">

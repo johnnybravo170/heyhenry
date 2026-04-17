@@ -1,0 +1,145 @@
+'use server';
+
+/**
+ * Server actions for the referral system (Plan A: owner-to-owner referrals).
+ *
+ * All actions require auth except where noted. The referral link uses
+ * the public domain (heyhenry.io/r/{code}).
+ */
+
+import { getCurrentTenant } from '@/lib/auth/helpers';
+import {
+  createReferral,
+  getOrCreateReferralCode,
+  getReferralStats as getStats,
+  listReferrals,
+} from '@/lib/db/queries/referrals';
+import { sendEmail } from '@/lib/email/send';
+import { referralInviteHtml, referralInviteSubject } from '@/lib/email/templates/referral-invite';
+import { referralEmailSchema, referralSMSSchema } from '@/lib/validators/referral';
+
+const PUBLIC_DOMAIN = 'https://heyhenry.io';
+
+export type ReferralActionResult<T = unknown> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
+/**
+ * Get the current tenant's referral link + code.
+ */
+export async function getReferralLinkAction(): Promise<
+  ReferralActionResult<{ code: string; url: string }>
+> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const refCode = await getOrCreateReferralCode(tenant.id, tenant.name);
+  return {
+    ok: true,
+    data: {
+      code: refCode.code,
+      url: `${PUBLIC_DOMAIN}/r/${refCode.code}`,
+    },
+  };
+}
+
+/**
+ * Get referral stats for the current tenant.
+ */
+export async function getReferralStatsAction(): Promise<
+  ReferralActionResult<{ total: number; signed_up: number; converted: number; rewards: number }>
+> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const stats = await getStats(tenant.id);
+  return {
+    ok: true,
+    data: {
+      ...stats,
+      rewards: 0, // Placeholder until reward system is built.
+    },
+  };
+}
+
+/**
+ * Get referral history for the current tenant.
+ */
+export async function getReferralHistoryAction(): Promise<
+  ReferralActionResult<
+    Array<{
+      id: string;
+      email: string | null;
+      status: string;
+      created_at: string;
+    }>
+  >
+> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const referrals = await listReferrals(tenant.id);
+  return {
+    ok: true,
+    data: referrals.map((r) => ({
+      id: r.id,
+      email: r.referred_email,
+      status: r.status,
+      created_at: r.created_at,
+    })),
+  };
+}
+
+/**
+ * Send a referral invite email and create a pending referral row.
+ */
+export async function sendReferralEmailAction(
+  email: string,
+): Promise<ReferralActionResult<{ sent: true }>> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const parsed = referralEmailSchema.safeParse({ email });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid email.' };
+  }
+
+  const refCode = await getOrCreateReferralCode(tenant.id, tenant.name);
+  const referralUrl = `${PUBLIC_DOMAIN}/r/${refCode.code}`;
+
+  // Create the pending referral row.
+  await createReferral({
+    referral_code_id: refCode.id,
+    referrer_tenant_id: tenant.id,
+    referred_email: parsed.data.email,
+  });
+
+  // Send the email.
+  const result = await sendEmail({
+    to: parsed.data.email,
+    subject: referralInviteSubject(tenant.name),
+    html: referralInviteHtml({
+      referrerName: tenant.name,
+      referralUrl,
+    }),
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error ?? 'Failed to send email.' };
+  }
+
+  return { ok: true, data: { sent: true } };
+}
+
+/**
+ * SMS referral invite stub. Returns an error indicating SMS is not yet available.
+ */
+export async function sendReferralSMSAction(phone: string): Promise<ReferralActionResult<never>> {
+  // Validate to show we accept the input shape.
+  const parsed = referralSMSSchema.safeParse({ phone });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid phone number.' };
+  }
+
+  return { ok: false, error: 'SMS coming soon' };
+}

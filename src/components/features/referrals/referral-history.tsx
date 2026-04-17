@@ -1,0 +1,81 @@
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+type ReferralEntry = {
+  id: string;
+  email: string | null;
+  status: string;
+  created_at: string;
+};
+
+const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  pending: 'outline',
+  signed_up: 'secondary',
+  converted: 'default',
+  churned: 'destructive',
+};
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+export function ReferralHistory({ referrals }: { referrals: ReferralEntry[] }) {
+  if (referrals.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Referral history</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            No referrals yet. Share your link or send an invite to get started.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Referral history</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {referrals.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-mono text-sm">{r.email ?? 'Link signup'}</TableCell>
+                <TableCell>
+                  <Badge variant={statusVariant[r.status] ?? 'outline'}>
+                    {r.status.replace('_', ' ')}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{formatDate(r.created_at)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}

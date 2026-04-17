@@ -14,6 +14,8 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { updateReferralOnSignup } from '@/lib/db/queries/referrals';
+import { generateReferralCode } from '@/lib/referral/code-generator';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { loginSchema, magicLinkSchema, signupSchema } from '@/lib/validators/auth';
@@ -33,6 +35,7 @@ export async function signupAction(input: {
   email: string;
   password: string;
   businessName: string;
+  referralCode?: string;
 }): Promise<ActionError | never> {
   const parsed = signupSchema.safeParse(input);
   if (!parsed.success) {
@@ -60,10 +63,19 @@ export async function signupAction(input: {
   const userId = created.user.id;
 
   // 2 + 3. Create tenant + tenant_member. Roll back the auth user on failure.
+  const { referralCode } = input;
   try {
+    // Build tenant insert payload. If a valid referral code was provided,
+    // set referred_by_code and extend the trial to 14 days.
+    const tenantInsert: Record<string, unknown> = { name: businessName };
+    if (referralCode) {
+      tenantInsert.referred_by_code = referralCode;
+      tenantInsert.trial_ends_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
     const { data: tenant, error: tenantErr } = await admin
       .from('tenants')
-      .insert({ name: businessName })
+      .insert(tenantInsert)
       .select('id')
       .single();
     if (tenantErr || !tenant) {
@@ -79,6 +91,26 @@ export async function signupAction(input: {
       // for this error path a hard delete keeps things tidy.
       await admin.from('tenants').delete().eq('id', tenant.id);
       throw new Error(memberErr.message);
+    }
+
+    // Auto-generate a referral code for the new tenant.
+    const code = generateReferralCode(businessName);
+    const suffix = Math.random().toString(36).slice(2, 6);
+    await admin
+      .from('referral_codes')
+      .insert({ tenant_id: tenant.id, code: `${code}-${suffix}`, type: 'operator' })
+      .select('id')
+      .single()
+      .then(({ error: refErr }) => {
+        // Non-fatal: if referral code creation fails, the user can still sign up.
+        if (refErr) console.warn('Failed to auto-generate referral code:', refErr.message);
+      });
+
+    // If this signup used a referral code, update the referral row.
+    if (referralCode) {
+      await updateReferralOnSignup(referralCode, tenant.id).catch((err) => {
+        console.warn('Failed to update referral on signup:', err);
+      });
     }
   } catch (err) {
     await admin.auth.admin.deleteUser(userId).catch(() => {

@@ -33,6 +33,8 @@ function SignupForm() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  const referralCode = params.get('ref') ?? undefined;
+
   useEffect(() => {
     if (params.get('error') === 'no_tenant') {
       setError('Your account is missing a business. Create a new one here or contact support.');
@@ -48,7 +50,7 @@ function SignupForm() {
     const businessName = String(form.get('businessName') ?? '');
 
     startTransition(async () => {
-      const result = await signupAction({ email, password, businessName });
+      const result = await signupAction({ email, password, businessName, referralCode });
       if (result && 'error' in result) {
         setError(result.error);
         toast.error(result.error);
@@ -66,6 +68,11 @@ function SignupForm() {
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
+          {referralCode ? (
+            <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              You were referred by a fellow contractor. Sign up to get a 14-day extended trial.
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="businessName">Business name</Label>
             <Input

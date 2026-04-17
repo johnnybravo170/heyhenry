@@ -1,6 +1,7 @@
 import {
   ClipboardList,
   FileText,
+  Gift,
   Inbox,
   LayoutDashboard,
   Receipt,
@@ -15,6 +16,7 @@ export const NAV_ITEMS = [
   { href: '/jobs', label: 'Jobs', icon: ClipboardList },
   { href: '/invoices', label: 'Invoices', icon: Receipt },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
+  { href: '/referrals', label: 'Refer & Earn', icon: Gift },
   { href: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 
