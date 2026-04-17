@@ -108,9 +108,27 @@ export function QuoteMap({
   const [pendingSqft, setPendingSqft] = useState(0);
   const [selectedType, setSelectedType] = useState('');
 
-  const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
-    setMap(mapInstance);
-  }, []);
+  const onMapLoad = useCallback(
+    (mapInstance: google.maps.Map) => {
+      setMap(mapInstance);
+
+      // Request user's location to center the map on their area.
+      if (navigator.geolocation && existingPolygons.length === 0) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            setCenter(userLoc);
+            mapInstance.panTo(userLoc);
+          },
+          () => {
+            // Denied or unavailable — keep the default center. No-op.
+          },
+          { timeout: 5000, enableHighAccuracy: false },
+        );
+      }
+    },
+    [existingPolygons.length],
+  );
 
   const onAutocompletePlaceChanged = useCallback(() => {
     const autocomplete = autocompleteRef.current;
