@@ -52,6 +52,7 @@ export function buildSocialPrompt(opts: {
   city?: string | null;
   surfaces?: string[];
   businessName: string;
+  completedAt?: string | null;
 }): { system: string; user: string } {
   const system = `You write social media captions for a local pressure washing business. Your job is to sound like a real person who is proud of their work, not a marketing agency.
 
@@ -85,6 +86,12 @@ For hashtags: 5-8 max. Mix of local (#abbotsford #fraservalley) and trade (#pres
     lines.push(`- Surfaces cleaned: ${opts.surfaces.join(', ')}`);
   }
   lines.push(`- Business name: ${opts.businessName}`);
+  if (opts.completedAt) {
+    const d = new Date(opts.completedAt);
+    const day = d.toLocaleDateString('en-CA', { weekday: 'long' });
+    const time = d.getHours() < 12 ? 'morning' : d.getHours() < 17 ? 'afternoon' : 'evening';
+    lines.push(`- Completed: ${day} ${time}`);
+  }
   lines.push('');
   lines.push(
     'Return valid JSON only, no markdown fences: { "caption": "...", "hashtags": ["...", "..."] }',
@@ -189,6 +196,7 @@ export async function POST(request: Request) {
     city: customerCity,
     surfaces,
     businessName: tenant.name,
+    completedAt: job.completed_at ?? null,
   });
 
   const model = process.env.CHAT_MODEL || 'claude-sonnet-4-6';
