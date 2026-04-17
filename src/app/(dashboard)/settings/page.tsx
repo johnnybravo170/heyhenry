@@ -2,6 +2,7 @@ import { ChevronRight, Ruler } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { DataExportCard } from '@/components/features/settings/data-export-card';
+import { PublicQuoteLinkCard } from '@/components/features/settings/public-quote-link-card';
 import { StripeConnectCard } from '@/components/features/settings/stripe-connect-card';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getCurrentTenant } from '@/lib/auth/helpers';
@@ -24,6 +25,13 @@ async function StripeSection() {
       stripeOnboardedAt={(data?.stripe_onboarded_at as string) ?? null}
     />
   );
+}
+
+async function PublicQuoteLinkSection() {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return null;
+
+  return <PublicQuoteLinkCard currentSlug={tenant.slug} businessName={tenant.name} />;
 }
 
 async function ExportSection() {
@@ -64,6 +72,10 @@ export default function SettingsPage() {
 
       <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
         <StripeSection />
+      </Suspense>
+
+      <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
+        <PublicQuoteLinkSection />
       </Suspense>
 
       <Link href="/settings/catalog" className="block">
