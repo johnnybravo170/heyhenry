@@ -175,12 +175,45 @@ export function PhotoUpload({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Direct buttons — always work on iOS */}
+      <div className="flex gap-2">
+        <label className="flex-1 cursor-pointer">
+          <div className="flex items-center justify-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted">
+            <ImagePlus className="size-4" />
+            Choose photos
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileInputChange}
+            className="hidden"
+            disabled={disabled}
+          />
+        </label>
+        <label className="flex-1 cursor-pointer">
+          <div className="flex items-center justify-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted">
+            📷 Take photo
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileInputChange}
+            className="hidden"
+            disabled={disabled}
+          />
+        </label>
+      </div>
+
+      {/* Desktop drag-drop zone (hidden on mobile) */}
       <section
         data-slot="photo-upload-dropzone"
         data-drag-over={isDraggingOver ? 'true' : undefined}
         aria-label="Photo drop zone"
         className={cn(
-          'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-card px-4 py-8 text-center transition-colors',
+          'hidden md:flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-card px-4 py-6 text-center transition-colors',
           isDraggingOver
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-muted-foreground/50',
@@ -190,32 +223,10 @@ export function PhotoUpload({
         onDragLeave={handleDragLeave}
       >
         <ImagePlus
-          className={cn('size-8', isDraggingOver ? 'text-primary' : 'text-muted-foreground')}
+          className={cn('size-6', isDraggingOver ? 'text-primary' : 'text-muted-foreground')}
           aria-hidden
         />
-        <p className="text-sm font-medium">
-          Drag photos here or{' '}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="text-primary underline-offset-2 hover:underline"
-            disabled={disabled}
-          >
-            browse
-          </button>
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Images are resized in your browser before upload. Camera capture works on mobile.
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleFileInputChange}
-          className="sr-only"
-          aria-label="Choose photos to upload"
-        />
+        <p className="text-sm text-muted-foreground">or drag and drop photos here</p>
       </section>
 
       {staged.length > 0 ? (
