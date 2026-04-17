@@ -43,7 +43,7 @@ export async function createQuoteAction(input: unknown): Promise<QuoteActionResu
   const { data: catalogData, error: catErr } = await supabase
     .from('service_catalog')
     .select('surface_type, price_per_sqft_cents, min_charge_cents')
-    .eq('active', true);
+    .eq('is_active', true);
 
   if (catErr) {
     return { ok: false, error: `Failed to load catalog: ${catErr.message}` };
@@ -123,7 +123,7 @@ export async function updateQuoteAction(input: unknown): Promise<QuoteActionResu
   const { data: catalogData } = await supabase
     .from('service_catalog')
     .select('surface_type, price_per_sqft_cents, min_charge_cents')
-    .eq('active', true);
+    .eq('is_active', true);
 
   const catalog = (catalogData ?? []) as CatalogEntryRow[];
   const catalogMap = new Map(catalog.map((c) => [c.surface_type, c]));
@@ -434,7 +434,7 @@ export async function upsertCatalogEntryAction(input: {
   label: string;
   price_per_sqft_cents: number;
   min_charge_cents: number;
-  active?: boolean;
+  is_active?: boolean;
 }): Promise<QuoteActionResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) {
@@ -456,7 +456,7 @@ export async function upsertCatalogEntryAction(input: {
         label: input.label.trim(),
         price_per_sqft_cents: input.price_per_sqft_cents,
         min_charge_cents: input.min_charge_cents,
-        active: input.active ?? true,
+        is_active: input.is_active ?? true,
         updated_at: new Date().toISOString(),
       })
       .eq('id', input.id);
@@ -479,7 +479,7 @@ export async function upsertCatalogEntryAction(input: {
       label: input.label.trim(),
       price_per_sqft_cents: input.price_per_sqft_cents,
       min_charge_cents: input.min_charge_cents,
-      active: input.active ?? true,
+      is_active: input.is_active ?? true,
     })
     .select('id')
     .single();

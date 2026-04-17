@@ -14,20 +14,20 @@ export type CatalogEntryRow = {
   label: string;
   price_per_sqft_cents: number;
   min_charge_cents: number;
-  active: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 };
 
 const CATALOG_COLUMNS =
-  'id, tenant_id, surface_type, label, price_per_sqft_cents, min_charge_cents, active, created_at, updated_at';
+  'id, tenant_id, surface_type, label, price_per_sqft_cents, min_charge_cents, is_active, created_at, updated_at';
 
-export async function listCatalogEntries(activeOnly = true): Promise<CatalogEntryRow[]> {
+export async function listCatalogEntries(is_activeOnly = true): Promise<CatalogEntryRow[]> {
   const supabase = await createClient();
   let query = supabase.from('service_catalog').select(CATALOG_COLUMNS);
 
-  if (activeOnly) {
-    query = query.eq('active', true);
+  if (is_activeOnly) {
+    query = query.eq('is_active', true);
   }
 
   const { data, error } = await query.order('label', { ascending: true });

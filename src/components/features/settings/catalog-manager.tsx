@@ -91,7 +91,7 @@ export function CatalogManager({ entries }: { entries: CatalogEntryRow[] }) {
         label: editing.label.trim(),
         price_per_sqft_cents: Math.round(priceDollars * 100),
         min_charge_cents: Math.round(minDollars * 100),
-        active: true,
+        is_active: true,
       });
 
       if (result.ok) {
@@ -113,10 +113,10 @@ export function CatalogManager({ entries }: { entries: CatalogEntryRow[] }) {
         label: entry.label,
         price_per_sqft_cents: entry.price_per_sqft_cents,
         min_charge_cents: entry.min_charge_cents,
-        active: !entry.active,
+        is_active: !entry.is_active,
       });
       if (result.ok) {
-        toast.success(entry.active ? 'Deactivated.' : 'Activated.');
+        toast.success(entry.is_active ? 'Deactivated.' : 'Activated.');
         router.refresh();
       } else {
         toast.error(result.error);
@@ -182,12 +182,12 @@ export function CatalogManager({ entries }: { entries: CatalogEntryRow[] }) {
                         onClick={() => handleToggleActive(entry)}
                         disabled={pending}
                         className={`inline-block h-5 w-9 rounded-full transition-colors ${
-                          entry.active ? 'bg-emerald-500' : 'bg-muted'
+                          entry.is_active ? 'bg-emerald-500' : 'bg-muted'
                         }`}
                       >
                         <span
                           className={`block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                            entry.active ? 'translate-x-4' : 'translate-x-0.5'
+                            entry.is_active ? 'translate-x-4' : 'translate-x-0.5'
                           }`}
                         />
                       </button>
