@@ -7,6 +7,7 @@ import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
 import { JobStatusSelect } from '@/components/features/jobs/job-status-select';
 import { PhotoGallery } from '@/components/features/photos/photo-gallery';
 import { PhotoUpload } from '@/components/features/photos/photo-upload';
+import { SocialPostSection } from '@/components/features/social/social-post-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
@@ -200,6 +201,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           <PhotoGallery jobId={job.id} />
         </div>
       </section>
+
+      {job.status === 'complete' && tenant && (
+        <SocialPostSection jobId={job.id} businessName={tenant.name} />
+      )}
 
       <section className="rounded-xl border bg-card p-5">
         <header className="flex items-center justify-between pb-3">

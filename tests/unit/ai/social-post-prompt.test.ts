@@ -1,0 +1,73 @@
+import { describe, expect, it } from 'vitest';
+import { buildSocialPrompt } from '@/app/api/social-post/route';
+
+describe('buildSocialPrompt', () => {
+  it('includes the platform name in the user prompt', () => {
+    const { user } = buildSocialPrompt({
+      platform: 'instagram',
+      businessName: 'Sparkle Wash',
+    });
+    expect(user).toContain('instagram');
+  });
+
+  it('includes the business name in the user prompt', () => {
+    const { user } = buildSocialPrompt({
+      platform: 'facebook',
+      businessName: 'Sparkle Wash',
+    });
+    expect(user).toContain('Sparkle Wash');
+  });
+
+  it('includes the city when provided', () => {
+    const { user } = buildSocialPrompt({
+      platform: 'instagram',
+      city: 'Abbotsford',
+      businessName: 'Sparkle Wash',
+    });
+    expect(user).toContain('Abbotsford');
+  });
+
+  it('omits city line when city is null', () => {
+    const { user } = buildSocialPrompt({
+      platform: 'instagram',
+      city: null,
+      businessName: 'Sparkle Wash',
+    });
+    expect(user).not.toContain('Customer area');
+  });
+
+  it('includes surface types when provided', () => {
+    const { user } = buildSocialPrompt({
+      platform: 'instagram',
+      surfaces: ['Driveway', 'Patio'],
+      businessName: 'Sparkle Wash',
+    });
+    expect(user).toContain('Driveway');
+    expect(user).toContain('Patio');
+  });
+
+  it('omits surfaces line when array is empty', () => {
+    const { user } = buildSocialPrompt({
+      platform: 'instagram',
+      surfaces: [],
+      businessName: 'Sparkle Wash',
+    });
+    expect(user).not.toContain('Surfaces cleaned');
+  });
+
+  it('system prompt mentions pressure washing', () => {
+    const { system } = buildSocialPrompt({
+      platform: 'instagram',
+      businessName: 'Sparkle Wash',
+    });
+    expect(system).toContain('pressure washing');
+  });
+
+  it('requests JSON output', () => {
+    const { user } = buildSocialPrompt({
+      platform: 'facebook',
+      businessName: 'Sparkle Wash',
+    });
+    expect(user).toContain('JSON');
+  });
+});
