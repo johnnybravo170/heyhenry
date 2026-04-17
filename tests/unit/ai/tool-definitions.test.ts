@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import { allTools, executeToolCall, getToolDefinitions } from '@/lib/ai/tools';
+
+describe('AI tool definitions', () => {
+  it('exports exactly 17 tools', () => {
+    expect(allTools).toHaveLength(17);
+  });
+
+  it('each tool has a name, description, and valid input_schema', () => {
+    for (const tool of allTools) {
+      expect(tool.definition.name).toBeTruthy();
+      expect(typeof tool.definition.name).toBe('string');
+      expect(tool.definition.description).toBeTruthy();
+      expect(typeof tool.definition.description).toBe('string');
+      expect(tool.definition.input_schema).toBeDefined();
+      expect(tool.definition.input_schema.type).toBe('object');
+      expect(typeof tool.definition.input_schema.properties).toBe('object');
+    }
+  });
+
+  it('has no duplicate tool names', () => {
+    const names = allTools.map((t) => t.definition.name);
+    const uniqueNames = new Set(names);
+    expect(uniqueNames.size).toBe(names.length);
+  });
+
+  it('getToolDefinitions returns ToolDefinition[] matching allTools', () => {
+    const defs = getToolDefinitions();
+    expect(defs).toHaveLength(allTools.length);
+    for (let i = 0; i < defs.length; i++) {
+      expect(defs[i].name).toBe(allTools[i].definition.name);
+      expect(defs[i].description).toBe(allTools[i].definition.description);
+    }
+  });
+
+  it('executeToolCall returns error string for unknown tool', async () => {
+    const result = await executeToolCall('nonexistent_tool', {});
+    expect(typeof result).toBe('string');
+    expect(result).toContain('Unknown tool');
+    expect(result).toContain('nonexistent_tool');
+  });
+
+  it('all expected tool names are present', () => {
+    const expectedNames = [
+      'get_dashboard',
+      'list_customers',
+      'get_customer',
+      'create_customer',
+      'list_quotes',
+      'get_quote',
+      'list_jobs',
+      'get_job',
+      'update_job_status',
+      'list_invoices',
+      'get_revenue_summary',
+      'list_todos',
+      'create_todo',
+      'complete_todo',
+      'search_worklog',
+      'add_worklog_note',
+      'list_catalog',
+    ];
+    const actualNames = allTools.map((t) => t.definition.name);
+    for (const name of expectedNames) {
+      expect(actualNames).toContain(name);
+    }
+  });
+});
