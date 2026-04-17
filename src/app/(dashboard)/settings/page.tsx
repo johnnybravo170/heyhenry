@@ -1,6 +1,7 @@
 import { ChevronRight, Mic, Ruler, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { CalendarFeedCard } from '@/components/features/settings/calendar-feed-card';
 import { DataExportCard } from '@/components/features/settings/data-export-card';
 import { PublicQuoteLinkCard } from '@/components/features/settings/public-quote-link-card';
 import { StripeConnectCard } from '@/components/features/settings/stripe-connect-card';
@@ -58,6 +59,16 @@ async function ExportSection() {
       lastExportDate={lastExport?.created_at ? (lastExport.created_at as string) : null}
     />
   );
+}
+
+async function CalendarSection() {
+  const tenant = await getCurrentTenant();
+  if (!tenant?.slug) return null;
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.heyhenry.io';
+  const feedUrl = `${baseUrl}/api/calendar/${tenant.slug}.ics`;
+
+  return <CalendarFeedCard feedUrl={feedUrl} />;
 }
 
 function VoiceSection() {
@@ -136,6 +147,10 @@ export default function SettingsPage() {
           </CardHeader>
         </Card>
       </Link>
+
+      <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border bg-card" />}>
+        <CalendarSection />
+      </Suspense>
 
       <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border bg-card" />}>
         <ExportSection />

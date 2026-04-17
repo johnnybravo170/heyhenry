@@ -17,6 +17,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { generateJobIcs } from '@/lib/calendar/ics-generator';
+import { formatDate, formatDateTime } from '@/lib/date/format';
+import { sendEmail } from '@/lib/email/send';
+import { bookingEmailHtml, cancellationEmailHtml } from '@/lib/email/templates/job-booking';
 import { createClient } from '@/lib/supabase/server';
 import {
   emptyToNull,
@@ -87,8 +91,64 @@ export async function createJobAction(input: JobFormInput): Promise<JobActionRes
     return { ok: false, error: error?.message ?? 'Failed to create job.' };
   }
 
+  // Send .ics calendar invite if the customer has an email and the job is scheduled.
+  const scheduledAt = parseScheduledAt(parsed.data.scheduled_at);
+  if (scheduledAt) {
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('id, name, email, address_line1, city, province')
+      .eq('id', parsed.data.customer_id)
+      .maybeSingle();
+
+    if (customer?.email) {
+      const startTime = new Date(scheduledAt);
+      const formattedDate = formatDate(startTime);
+      const formattedTime = formatDateTime(startTime, { timeStyle: 'short' });
+
+      let location: string | undefined;
+      if (customer.address_line1) {
+        const parts = [customer.address_line1, customer.city, customer.province].filter(Boolean);
+        location = parts.join(', ');
+      }
+
+      const icsString = generateJobIcs({
+        jobId: data.id,
+        summary: `${tenant.name} — Appointment`,
+        description: emptyToNull(parsed.data.notes) ?? undefined,
+        location,
+        startTime,
+        organizerName: tenant.name,
+        organizerEmail: 'noreply@heyhenry.io',
+        attendeeEmail: customer.email,
+        attendeeName: customer.name,
+      });
+
+      // Fire and forget. The job is already saved; email failure
+      // should not block the response.
+      void sendEmail({
+        to: customer.email,
+        subject: `Appointment confirmed — ${formattedDate}`,
+        html: bookingEmailHtml({
+          customerName: customer.name,
+          businessName: tenant.name,
+          date: formattedDate,
+          time: formattedTime,
+          address: location,
+        }),
+        attachments: [
+          {
+            filename: 'appointment.ics',
+            content: Buffer.from(icsString),
+            contentType: 'text/calendar; method=REQUEST',
+          },
+        ],
+      });
+    }
+  }
+
   revalidatePath('/jobs');
   revalidatePath('/jobs/list');
+  revalidatePath('/jobs/calendar');
   revalidatePath(`/customers/${parsed.data.customer_id}`);
   return { ok: true, id: data.id };
 }
@@ -232,8 +292,62 @@ export async function changeJobStatusAction(input: {
     };
   }
 
+  // Send cancellation .ics if job was cancelled and has a scheduled_at.
+  if (newStatus === 'cancelled') {
+    const { data: fullJob } = await supabase
+      .from('jobs')
+      .select(
+        'id, scheduled_at, notes, customers:customer_id (id, name, email, address_line1, city, province)',
+      )
+      .eq('id', parsed.data.id)
+      .maybeSingle();
+
+    if (fullJob?.scheduled_at) {
+      const customerData = Array.isArray(fullJob.customers)
+        ? fullJob.customers[0]
+        : fullJob.customers;
+
+      if (customerData?.email) {
+        const startTime = new Date(fullJob.scheduled_at as string);
+        const formattedDate = formatDate(startTime);
+        const formattedTime = formatDateTime(startTime, { timeStyle: 'short' });
+
+        const icsString = generateJobIcs({
+          jobId: fullJob.id as string,
+          summary: `${tenant.name} — Appointment`,
+          description: (fullJob.notes as string) ?? undefined,
+          startTime,
+          organizerName: tenant.name,
+          organizerEmail: 'noreply@heyhenry.io',
+          attendeeEmail: customerData.email,
+          attendeeName: customerData.name,
+          status: 'CANCELLED',
+        });
+
+        void sendEmail({
+          to: customerData.email,
+          subject: `Appointment cancelled — ${formattedDate}`,
+          html: cancellationEmailHtml({
+            customerName: customerData.name,
+            businessName: tenant.name,
+            date: formattedDate,
+            time: formattedTime,
+          }),
+          attachments: [
+            {
+              filename: 'appointment.ics',
+              content: Buffer.from(icsString),
+              contentType: 'text/calendar; method=CANCEL',
+            },
+          ],
+        });
+      }
+    }
+  }
+
   revalidatePath('/jobs');
   revalidatePath('/jobs/list');
+  revalidatePath('/jobs/calendar');
   revalidatePath(`/jobs/${parsed.data.id}`);
   return { ok: true, id: parsed.data.id };
 }

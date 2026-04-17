@@ -6,7 +6,7 @@
  * user can slide between views without losing context.
  */
 
-import { KanbanSquare, Rows3 } from 'lucide-react';
+import { CalendarDays, KanbanSquare, Rows3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,11 @@ export function BoardViewToggle() {
   const queryString = searchParams.toString();
   const listHref = `/jobs/list${queryString ? `?${queryString}` : ''}`;
   const boardHref = `/jobs${queryString ? `?${queryString}` : ''}`;
+  const calendarHref = `/jobs/calendar${queryString ? `?${queryString}` : ''}`;
 
   const listActive = pathname.startsWith('/jobs/list');
-  const boardActive = !listActive;
+  const calendarActive = pathname.startsWith('/jobs/calendar');
+  const boardActive = !listActive && !calendarActive;
 
   return (
     <div className="inline-flex items-center rounded-md border bg-card p-0.5">
@@ -45,6 +47,17 @@ export function BoardViewToggle() {
         <Link href={listHref} aria-pressed={listActive}>
           <Rows3 className="size-3.5" />
           List
+        </Link>
+      </Button>
+      <Button
+        asChild
+        size="xs"
+        variant={calendarActive ? 'secondary' : 'ghost'}
+        className={cn(calendarActive && 'shadow-sm')}
+      >
+        <Link href={calendarHref} aria-pressed={calendarActive}>
+          <CalendarDays className="size-3.5" />
+          Calendar
         </Link>
       </Button>
     </div>
