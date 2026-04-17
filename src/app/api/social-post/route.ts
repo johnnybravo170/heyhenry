@@ -182,7 +182,7 @@ export async function POST(request: Request) {
     }
   }
 
-  // 7. Call Claude
+  // 7. Call Claude with vision (send the actual photos)
   const { system, user } = buildSocialPrompt({
     platform,
     city: customerCity,
@@ -192,13 +192,58 @@ export async function POST(request: Request) {
 
   const model = process.env.CHAT_MODEL || 'claude-sonnet-4-6';
 
+  // Fetch photos as base64 for Claude vision
+  let imageContent: Anthropic.Messages.ImageBlockParam[] = [];
+  try {
+    const [beforeRes, afterRes] = await Promise.all([
+      fetch(pair.before.url!),
+      fetch(pair.after.url!),
+    ]);
+    if (beforeRes.ok && afterRes.ok) {
+      const [beforeBuf, afterBuf] = await Promise.all([
+        beforeRes.arrayBuffer(),
+        afterRes.arrayBuffer(),
+      ]);
+      const beforeB64 = Buffer.from(beforeBuf).toString('base64');
+      const afterB64 = Buffer.from(afterBuf).toString('base64');
+      const beforeType = (beforeRes.headers.get('content-type') || 'image/jpeg') as
+        | 'image/jpeg'
+        | 'image/png'
+        | 'image/gif'
+        | 'image/webp';
+      const afterType = (afterRes.headers.get('content-type') || 'image/jpeg') as
+        | 'image/jpeg'
+        | 'image/png'
+        | 'image/gif'
+        | 'image/webp';
+
+      imageContent = [
+        { type: 'image', source: { type: 'base64', media_type: beforeType, data: beforeB64 } },
+        { type: 'image', source: { type: 'base64', media_type: afterType, data: afterB64 } },
+      ];
+    }
+  } catch {
+    // If photo fetch fails, proceed without vision (text-only prompt)
+  }
+
   try {
     const client = getAnthropicClient();
+    const userContent: Anthropic.Messages.ContentBlockParam[] = [
+      ...imageContent,
+      {
+        type: 'text',
+        text:
+          (imageContent.length > 0
+            ? 'The first image is the BEFORE photo and the second is the AFTER photo. Describe what you actually SEE was cleaned (driveway, deck, siding, fence, etc). Do NOT guess from the surface list if it contradicts what the photos show.\n\n'
+            : '') + user,
+      },
+    ];
+
     const response = await client.messages.create({
       model,
       max_tokens: 1024,
       system,
-      messages: [{ role: 'user', content: user }],
+      messages: [{ role: 'user', content: userContent }],
     });
 
     // Extract text from response

@@ -201,23 +201,26 @@ function RelatedQuotesCard({ quotes, timezone }: { quotes: RelatedQuote[]; timez
   return (
     <SectionCard title="Recent quotes" icon={FileText} count={quotes.length}>
       {quotes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No quotes yet. Quoting opens up once Track B lands.
-        </p>
+        <p className="text-sm text-muted-foreground">No quotes yet.</p>
       ) : (
         <ul className="divide-y">
           {quotes.map((q) => (
-            <li key={q.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-              <div className="flex flex-col">
-                <span className="font-mono text-xs text-muted-foreground">#{shortId(q.id)}</span>
-                <StatusPill status={q.status} map={QUOTE_STATUS_LABELS} />
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="font-medium">{formatCents(q.total_cents)}</span>
-                <span className="text-xs text-muted-foreground">
-                  {formatDateUtil(q.created_at, { timezone })}
-                </span>
-              </div>
+            <li key={q.id}>
+              <Link
+                href={`/quotes/${q.id}`}
+                className="flex items-center justify-between gap-3 py-2 text-sm hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors"
+              >
+                <div className="flex flex-col">
+                  <span className="font-mono text-xs text-muted-foreground">#{shortId(q.id)}</span>
+                  <StatusPill status={q.status} map={QUOTE_STATUS_LABELS} />
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="font-medium">{formatCents(q.total_cents)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDateUtil(q.created_at, { timezone })}
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>
@@ -230,24 +233,27 @@ function RelatedJobsCard({ jobs, timezone }: { jobs: RelatedJob[]; timezone: str
   return (
     <SectionCard title="Recent jobs" icon={Calendar} count={jobs.length}>
       {jobs.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No jobs scheduled. The job board ships with Track C.
-        </p>
+        <p className="text-sm text-muted-foreground">No jobs yet.</p>
       ) : (
         <ul className="divide-y">
           {jobs.map((j) => (
-            <li key={j.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-              <div className="flex flex-col">
-                <span className="font-mono text-xs text-muted-foreground">#{shortId(j.id)}</span>
-                <StatusPill status={j.status} map={JOB_STATUS_LABELS} />
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-xs text-muted-foreground">
-                  {j.scheduled_at
-                    ? `Scheduled ${formatDateUtil(j.scheduled_at, { timezone })}`
-                    : `Added ${formatDateUtil(j.created_at, { timezone })}`}
-                </span>
-              </div>
+            <li key={j.id}>
+              <Link
+                href={`/jobs/${j.id}`}
+                className="flex items-center justify-between gap-3 py-2 text-sm hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors"
+              >
+                <div className="flex flex-col">
+                  <span className="font-mono text-xs text-muted-foreground">#{shortId(j.id)}</span>
+                  <StatusPill status={j.status} map={JOB_STATUS_LABELS} />
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-muted-foreground">
+                    {j.scheduled_at
+                      ? `Scheduled ${formatDateUtil(j.scheduled_at, { timezone })}`
+                      : `Added ${formatDateUtil(j.created_at, { timezone })}`}
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>
@@ -266,25 +272,30 @@ function RelatedInvoicesCard({
   return (
     <SectionCard title="Recent invoices" icon={Receipt} count={invoices.length}>
       {invoices.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No invoices yet. Invoicing comes online with Stripe Connect in Phase 1C.
-        </p>
+        <p className="text-sm text-muted-foreground">No invoices yet.</p>
       ) : (
         <ul className="divide-y">
           {invoices.map((inv) => (
-            <li key={inv.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-              <div className="flex flex-col">
-                <span className="font-mono text-xs text-muted-foreground">#{shortId(inv.id)}</span>
-                <StatusPill status={inv.status} map={INVOICE_STATUS_LABELS} />
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="font-medium">
-                  {formatCents((inv.amount_cents ?? 0) + (inv.tax_cents ?? 0))}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {formatDateUtil(inv.created_at, { timezone })}
-                </span>
-              </div>
+            <li key={inv.id}>
+              <Link
+                href={`/invoices/${inv.id}`}
+                className="flex items-center justify-between gap-3 py-2 text-sm hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors"
+              >
+                <div className="flex flex-col">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    #{shortId(inv.id)}
+                  </span>
+                  <StatusPill status={inv.status} map={INVOICE_STATUS_LABELS} />
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="font-medium">
+                    {formatCents((inv.amount_cents ?? 0) + (inv.tax_cents ?? 0))}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDateUtil(inv.created_at, { timezone })}
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>
