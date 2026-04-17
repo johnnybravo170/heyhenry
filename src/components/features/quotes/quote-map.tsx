@@ -277,18 +277,19 @@ export function QuoteMap({
     <div className="flex flex-col gap-3">
       {/* Address search */}
       <div className="flex items-center gap-2">
-        <MapPin className="size-4 text-muted-foreground" />
+        <MapPin className="size-4 shrink-0 text-muted-foreground" />
         <Autocomplete
           onLoad={(auto) => {
             autocompleteRef.current = auto;
           }}
           onPlaceChanged={onAutocompletePlaceChanged}
           options={{ componentRestrictions: { country: 'ca' } }}
+          className="flex-1"
         >
           <input
             type="text"
             placeholder="Search address..."
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </Autocomplete>
       </div>
