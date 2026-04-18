@@ -31,7 +31,8 @@ export async function POST() {
       return Response.json({ error: 'Server missing GEMINI_API_KEY' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    // authTokens.create is only available on v1alpha. Default (v1beta) returns 404.
+    const ai = new GoogleGenAI({ apiKey, httpOptions: { apiVersion: 'v1alpha' } });
 
     const now = Date.now();
     let tokenValue: string;
