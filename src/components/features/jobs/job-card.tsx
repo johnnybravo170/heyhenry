@@ -36,8 +36,9 @@ export function JobCard({
     <Link
       href={`/jobs/${job.id}`}
       className={cn(
-        'group flex flex-col gap-2 rounded-lg border bg-card p-3 text-sm shadow-sm transition-all',
+        'group flex flex-col gap-2 rounded-lg border p-3 text-sm shadow-sm transition-all',
         'hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md',
+        job.has_invoice ? 'bg-amber-50/60 border-amber-200/60' : 'bg-card',
         draggable && 'cursor-grab active:cursor-grabbing',
         className,
       )}

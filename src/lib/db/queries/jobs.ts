@@ -36,6 +36,7 @@ export type JobRow = {
 
 export type JobWithCustomer = JobRow & {
   customer: JobCustomerSummary | null;
+  has_invoice?: boolean;
 };
 
 export type JobQuoteSummary = {
@@ -214,7 +215,23 @@ export async function countJobsByStatus(): Promise<JobStatusCounts> {
 }
 
 export async function getBoardData(): Promise<JobBoardData> {
+  const supabase = await createClient();
   const jobs = await listJobs({ limit: 500 });
+
+  // Batch query: which jobs have invoices?
+  const jobIds = jobs.map((j) => j.id);
+  const invoicedJobIds = new Set<string>();
+  if (jobIds.length > 0) {
+    const { data: invoiceRows } = await supabase
+      .from('invoices')
+      .select('job_id')
+      .in('job_id', jobIds)
+      .is('deleted_at', null);
+    for (const row of invoiceRows ?? []) {
+      if (row.job_id) invoicedJobIds.add(row.job_id as string);
+    }
+  }
+
   const board: JobBoardData = {
     booked: [],
     in_progress: [],
@@ -222,6 +239,7 @@ export async function getBoardData(): Promise<JobBoardData> {
     cancelled: [],
   };
   for (const job of jobs) {
+    job.has_invoice = invoicedJobIds.has(job.id);
     board[job.status].push(job);
   }
   return board;
