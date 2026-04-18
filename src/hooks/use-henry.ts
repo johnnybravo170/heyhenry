@@ -396,7 +396,12 @@ export function useHenry(): UseHenryReturn {
 
     // 2. Open Gemini Live WebSocket. `token` is the raw API key during private
     // beta — see note in /api/henry/session for the security tradeoff.
-    const ai = new GoogleGenAI({ apiKey: token });
+    // apiVersion=v1alpha is required because gemini-live-2.5-flash-preview is
+    // only registered for BidiGenerateContent on the v1alpha surface.
+    const ai = new GoogleGenAI({
+      apiKey: token,
+      httpOptions: { apiVersion: 'v1alpha' },
+    });
 
     try {
       const session = await ai.live.connect({
