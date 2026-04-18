@@ -2,6 +2,8 @@ import { ArrowLeft, Briefcase, User } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { InvoiceActions } from '@/components/features/invoices/invoice-actions';
+import { InvoiceLineItems } from '@/components/features/invoices/invoice-line-items';
+import { InvoiceNote } from '@/components/features/invoices/invoice-note';
 import { InvoiceStatusBadge } from '@/components/features/invoices/invoice-status-badge';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDateTime } from '@/lib/date/format';
@@ -36,7 +38,10 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     .ilike('title', '%invoice%')
     .order('created_at', { ascending: false });
 
-  const totalCents = invoice.amount_cents + invoice.tax_cents;
+  const lineItems = invoice.line_items ?? [];
+  const lineItemsTotal = lineItems.reduce((sum, li) => sum + li.total_cents, 0);
+  const totalCents = invoice.amount_cents + lineItemsTotal + invoice.tax_cents;
+  const isDraft = invoice.status === 'draft';
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -71,6 +76,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <span className="text-muted-foreground">Subtotal</span>
             <span>{formatCad(invoice.amount_cents)}</span>
           </div>
+          <InvoiceLineItems invoiceId={invoice.id} lineItems={lineItems} isDraft={isDraft} />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">GST (5%)</span>
             <span>{formatCad(invoice.tax_cents)}</span>
@@ -83,6 +89,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
       </section>
+
+      {/* Customer note */}
+      <InvoiceNote invoiceId={invoice.id} note={invoice.customer_note} isDraft={isDraft} />
 
       {/* Customer + Job links */}
       <section className="grid gap-4 md:grid-cols-2">

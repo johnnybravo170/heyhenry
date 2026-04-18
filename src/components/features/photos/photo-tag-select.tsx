@@ -34,7 +34,7 @@ export function PhotoTagSelect({
       </SelectTrigger>
       <SelectContent>
         {photoTags.map((t) => (
-          <SelectItem key={t} value={t}>
+          <SelectItem key={t} value={t} className={t === 'concern' ? 'text-red-600' : undefined}>
             {photoTagLabels[t]}
           </SelectItem>
         ))}

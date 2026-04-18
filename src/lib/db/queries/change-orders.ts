@@ -7,7 +7,8 @@ import type { ChangeOrderStatus } from '@/lib/validators/change-order';
 
 export type ChangeOrderRow = {
   id: string;
-  project_id: string;
+  project_id: string | null;
+  job_id: string | null;
   tenant_id: string;
   title: string;
   description: string;
@@ -27,15 +28,24 @@ export type ChangeOrderRow = {
 };
 
 const CO_COLUMNS =
-  'id, project_id, tenant_id, title, description, reason, cost_impact_cents, timeline_impact_days, affected_buckets, status, approval_code, approved_by_name, approved_at, declined_at, declined_reason, created_by, created_at, updated_at';
+  'id, project_id, job_id, tenant_id, title, description, reason, cost_impact_cents, timeline_impact_days, affected_buckets, status, approval_code, approved_by_name, approved_at, declined_at, declined_reason, created_by, created_at, updated_at';
 
-export async function listChangeOrders(projectId: string): Promise<ChangeOrderRow[]> {
+export async function listChangeOrders(
+  scope: { projectId: string } | { jobId: string },
+): Promise<ChangeOrderRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('change_orders')
     .select(CO_COLUMNS)
-    .eq('project_id', projectId)
     .order('created_at', { ascending: false });
+
+  if ('projectId' in scope) {
+    query = query.eq('project_id', scope.projectId);
+  } else {
+    query = query.eq('job_id', scope.jobId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Failed to list change orders: ${error.message}`);
@@ -74,6 +84,51 @@ export async function getChangeOrderSummaryForProject(projectId: string): Promis
 
   if (error) {
     throw new Error(`Failed to get change order summary: ${error.message}`);
+  }
+
+  let approved_cost_cents = 0;
+  let pending_cost_cents = 0;
+  let approved_timeline_days = 0;
+  let pending_timeline_days = 0;
+  let pending_count = 0;
+
+  for (const row of data ?? []) {
+    const r = row as { status: string; cost_impact_cents: number; timeline_impact_days: number };
+    if (r.status === 'approved') {
+      approved_cost_cents += r.cost_impact_cents;
+      approved_timeline_days += r.timeline_impact_days;
+    } else {
+      pending_cost_cents += r.cost_impact_cents;
+      pending_timeline_days += r.timeline_impact_days;
+      pending_count += 1;
+    }
+  }
+
+  return {
+    approved_cost_cents,
+    pending_cost_cents,
+    approved_timeline_days,
+    pending_timeline_days,
+    pending_count,
+  };
+}
+
+export async function getChangeOrderSummaryForJob(jobId: string): Promise<{
+  approved_cost_cents: number;
+  pending_cost_cents: number;
+  approved_timeline_days: number;
+  pending_timeline_days: number;
+  pending_count: number;
+}> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('change_orders')
+    .select('status, cost_impact_cents, timeline_impact_days')
+    .eq('job_id', jobId)
+    .in('status', ['approved', 'pending_approval']);
+
+  if (error) {
+    throw new Error(`Failed to get change order summary for job: ${error.message}`);
   }
 
   let approved_cost_cents = 0;

@@ -7,7 +7,7 @@
  * is unauthenticated. Authenticated actions use the RLS-aware server client.
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { sendEmail } from '@/lib/email/send';
@@ -27,7 +27,8 @@ function generateApprovalCode(): string {
 }
 
 export async function createChangeOrderAction(input: {
-  project_id: string;
+  project_id?: string;
+  job_id?: string;
   title: string;
   description: string;
   reason?: string;
@@ -56,7 +57,8 @@ export async function createChangeOrderAction(input: {
   const { data, error } = await supabase
     .from('change_orders')
     .insert({
-      project_id: parsed.data.project_id,
+      project_id: parsed.data.project_id ?? null,
+      job_id: parsed.data.job_id ?? null,
       tenant_id: tenant.id,
       title: parsed.data.title,
       description: parsed.data.description,
@@ -75,7 +77,12 @@ export async function createChangeOrderAction(input: {
     return { ok: false, error: error?.message ?? 'Failed to create change order.' };
   }
 
-  revalidatePath(`/projects/${parsed.data.project_id}`);
+  if (parsed.data.project_id) {
+    revalidatePath(`/projects/${parsed.data.project_id}`);
+  }
+  if (parsed.data.job_id) {
+    revalidatePath(`/jobs/${parsed.data.job_id}`);
+  }
   return { ok: true, id: data.id };
 }
 

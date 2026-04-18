@@ -1,10 +1,18 @@
-import { ArrowLeft, CalendarClock, Camera, FileText, Pencil, Receipt } from 'lucide-react';
-import { InlineScheduler } from '@/components/features/jobs/inline-scheduler';
-import { rescheduleJobAction } from '@/server/actions/jobs';
+import {
+  ArrowLeft,
+  CalendarClock,
+  Camera,
+  ClipboardList,
+  FileText,
+  Pencil,
+  Receipt,
+} from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChangeOrderList } from '@/components/features/change-orders/change-order-list';
 import { GenerateInvoiceButton } from '@/components/features/invoices/generate-invoice-button';
 import { DeleteJobButton } from '@/components/features/jobs/delete-job-button';
+import { InlineScheduler } from '@/components/features/jobs/inline-scheduler';
 import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
 import { JobStatusSelect } from '@/components/features/jobs/job-status-select';
 import { PhotoGallery } from '@/components/features/photos/photo-gallery';
@@ -14,7 +22,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDateTime, formatRelativeTime } from '@/lib/date/format';
+import { listChangeOrders } from '@/lib/db/queries/change-orders';
 import { getJob, listWorklogForJob } from '@/lib/db/queries/jobs';
+import { rescheduleJobAction } from '@/server/actions/jobs';
 
 function shortId(id: string) {
   return id.slice(0, 8);
@@ -44,7 +54,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const formatTimestamp = (iso: string | null | undefined): string =>
     iso ? formatDateTime(iso, { timezone: tz }) : '\u2014';
 
-  const worklog = await listWorklogForJob(id);
+  const [worklog, changeOrders] = await Promise.all([
+    listWorklogForJob(id),
+    listChangeOrders({ jobId: id }),
+  ]);
 
   const customerName = job.customer?.name ?? 'Unknown customer';
 
@@ -189,6 +202,21 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           </p>
         </section>
       ) : null}
+
+      <section className="rounded-xl border bg-card p-4">
+        <header className="flex items-center justify-between pb-3">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="size-4 text-muted-foreground" aria-hidden />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Change Orders
+            </h2>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/jobs/${job.id}/change-orders/new`}>New Change Order</Link>
+          </Button>
+        </header>
+        <ChangeOrderList changeOrders={changeOrders} jobId={job.id} />
+      </section>
 
       <section className="rounded-xl border bg-card p-5">
         <header className="flex items-center gap-2 pb-3">

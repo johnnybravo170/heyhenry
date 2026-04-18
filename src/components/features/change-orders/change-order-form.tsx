@@ -7,9 +7,11 @@ import { createChangeOrderAction, sendChangeOrderAction } from '@/server/actions
 
 export function ChangeOrderForm({
   projectId,
+  jobId,
   costBuckets,
 }: {
-  projectId: string;
+  projectId?: string;
+  jobId?: string;
   costBuckets: CostBucketSummary[];
 }) {
   const router = useRouter();
@@ -31,6 +33,7 @@ export function ChangeOrderForm({
 
     const result = await createChangeOrderAction({
       project_id: projectId,
+      job_id: jobId,
       title,
       description,
       reason,
@@ -54,7 +57,8 @@ export function ChangeOrderForm({
       }
     }
 
-    router.push(`/projects/${projectId}?tab=change-orders`);
+    const returnPath = projectId ? `/projects/${projectId}?tab=change-orders` : `/jobs/${jobId}`;
+    router.push(returnPath);
     router.refresh();
   }
 
@@ -143,7 +147,7 @@ export function ChangeOrderForm({
 
       {costBuckets.length > 0 ? (
         <div>
-          <label className="mb-2 block text-sm font-medium">Affected Cost Buckets</label>
+          <span className="mb-2 block text-sm font-medium">Affected Cost Buckets</span>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {costBuckets.map((bucket) => (
               <label

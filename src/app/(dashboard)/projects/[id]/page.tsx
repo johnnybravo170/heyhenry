@@ -57,7 +57,7 @@ export default async function ProjectDetailPage({
 
   // Load change orders + summary for badge
   const [changeOrders, coSummary] = await Promise.all([
-    listChangeOrders(id),
+    listChangeOrders({ projectId: id }),
     getChangeOrderSummaryForProject(id),
   ]);
 

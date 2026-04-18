@@ -12,6 +12,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import type { InvoiceLineItem } from '@/lib/db/queries/invoices';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { getStripe } from '@/lib/stripe/client';
 import { createClient } from '@/lib/supabase/server';
@@ -159,7 +160,7 @@ export async function sendInvoiceAction(input: {
   // Load invoice.
   const { data: invoice, error: invErr } = await supabase
     .from('invoices')
-    .select('id, status, amount_cents, tax_cents, job_id, customer_id')
+    .select('id, status, amount_cents, tax_cents, line_items, customer_note, job_id, customer_id')
     .eq('id', parsed.data.invoice_id)
     .is('deleted_at', null)
     .single();
@@ -191,7 +192,10 @@ export async function sendInvoiceAction(input: {
     .eq('id', invoice.customer_id)
     .single();
 
-  const totalCents = invoice.amount_cents + invoice.tax_cents;
+  const invoiceLineItems = ((invoice.line_items as InvoiceLineItem[] | null) ??
+    []) as InvoiceLineItem[];
+  const lineItemsTotal = invoiceLineItems.reduce((sum, li) => sum + li.total_cents, 0);
+  const totalCents = invoice.amount_cents + lineItemsTotal + invoice.tax_cents;
   const appFeeCents = Math.round(totalCents * 0.005); // 0.5% platform fee
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
@@ -275,6 +279,7 @@ export async function sendInvoiceAction(input: {
           invoiceNumber: invoice.id.slice(0, 8),
           totalFormatted: formatCurrency(totalCents),
           payUrl: paymentUrl,
+          customerNote: (invoice.customer_note as string | null) ?? undefined,
         }),
       });
 
@@ -320,7 +325,9 @@ export async function resendInvoiceAction(input: {
   // Load invoice.
   const { data: invoice, error: invErr } = await supabase
     .from('invoices')
-    .select('id, status, amount_cents, tax_cents, job_id, customer_id, pdf_url')
+    .select(
+      'id, status, amount_cents, tax_cents, line_items, customer_note, job_id, customer_id, pdf_url',
+    )
     .eq('id', input.invoiceId)
     .is('deleted_at', null)
     .single();
@@ -352,7 +359,10 @@ export async function resendInvoiceAction(input: {
     .eq('id', invoice.customer_id)
     .single();
 
-  const totalCents = invoice.amount_cents + invoice.tax_cents;
+  const resendLineItems = ((invoice.line_items as InvoiceLineItem[] | null) ??
+    []) as InvoiceLineItem[];
+  const resendLineItemsTotal = resendLineItems.reduce((sum, li) => sum + li.total_cents, 0);
+  const totalCents = invoice.amount_cents + resendLineItemsTotal + invoice.tax_cents;
 
   // Update sent_at timestamp.
   const now = new Date().toISOString();
@@ -385,6 +395,7 @@ export async function resendInvoiceAction(input: {
           invoiceNumber: invoice.id.slice(0, 8),
           totalFormatted: formatCurrency(totalCents),
           payUrl: paymentUrl,
+          customerNote: (invoice.customer_note as string | null) ?? undefined,
         }),
       });
 
@@ -527,4 +538,145 @@ export async function markInvoicePaidAction(input: {
   revalidatePath(`/invoices/${invoice.id}`);
   revalidatePath(`/jobs/${invoice.job_id}`);
   return { ok: true, id: invoice.id };
+}
+
+/**
+ * Add a line item to an invoice. Recalculates tax on line items (5% GST).
+ */
+export async function addInvoiceLineItemAction(input: {
+  invoiceId: string;
+  description: string;
+  quantity: number;
+  unitPriceCents: number;
+}): Promise<InvoiceActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  if (!input.description.trim()) return { ok: false, error: 'Description is required.' };
+  if (input.quantity < 1) return { ok: false, error: 'Quantity must be at least 1.' };
+  if (input.unitPriceCents <= 0) return { ok: false, error: 'Unit price must be positive.' };
+
+  const supabase = await createClient();
+
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, status, amount_cents, line_items, job_id')
+    .eq('id', input.invoiceId)
+    .is('deleted_at', null)
+    .single();
+
+  if (invErr || !invoice) return { ok: false, error: 'Invoice not found.' };
+  if (invoice.status !== 'draft') {
+    return { ok: false, error: 'Can only add items to draft invoices.' };
+  }
+
+  const existingItems = ((invoice.line_items as InvoiceLineItem[] | null) ??
+    []) as InvoiceLineItem[];
+  const newItem: InvoiceLineItem = {
+    description: input.description.trim(),
+    quantity: input.quantity,
+    unit_price_cents: input.unitPriceCents,
+    total_cents: input.quantity * input.unitPriceCents,
+  };
+
+  const updatedItems = [...existingItems, newItem];
+  const lineItemsTotal = updatedItems.reduce((sum, li) => sum + li.total_cents, 0);
+
+  // Recalculate tax: 5% GST on (base amount + line items)
+  const baseCents = invoice.amount_cents;
+  const newTax = Math.round((baseCents + lineItemsTotal) * 0.05);
+
+  const now = new Date().toISOString();
+  const { error: updateErr } = await supabase
+    .from('invoices')
+    .update({ line_items: updatedItems, tax_cents: newTax, updated_at: now })
+    .eq('id', input.invoiceId);
+
+  if (updateErr) return { ok: false, error: `Failed to add line item: ${updateErr.message}` };
+
+  revalidatePath(`/invoices/${input.invoiceId}`);
+  return { ok: true, id: input.invoiceId };
+}
+
+/**
+ * Remove a line item from an invoice by index. Recalculates tax.
+ */
+export async function removeInvoiceLineItemAction(input: {
+  invoiceId: string;
+  itemIndex: number;
+}): Promise<InvoiceActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  const supabase = await createClient();
+
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, status, amount_cents, line_items')
+    .eq('id', input.invoiceId)
+    .is('deleted_at', null)
+    .single();
+
+  if (invErr || !invoice) return { ok: false, error: 'Invoice not found.' };
+  if (invoice.status !== 'draft') {
+    return { ok: false, error: 'Can only modify draft invoices.' };
+  }
+
+  const existingItems = ((invoice.line_items as InvoiceLineItem[] | null) ??
+    []) as InvoiceLineItem[];
+  if (input.itemIndex < 0 || input.itemIndex >= existingItems.length) {
+    return { ok: false, error: 'Invalid item index.' };
+  }
+
+  const updatedItems = existingItems.filter((_, i) => i !== input.itemIndex);
+  const lineItemsTotal = updatedItems.reduce((sum, li) => sum + li.total_cents, 0);
+  const newTax = Math.round((invoice.amount_cents + lineItemsTotal) * 0.05);
+
+  const now = new Date().toISOString();
+  const { error: updateErr } = await supabase
+    .from('invoices')
+    .update({ line_items: updatedItems, tax_cents: newTax, updated_at: now })
+    .eq('id', input.invoiceId);
+
+  if (updateErr) return { ok: false, error: `Failed to remove line item: ${updateErr.message}` };
+
+  revalidatePath(`/invoices/${input.invoiceId}`);
+  return { ok: true, id: input.invoiceId };
+}
+
+/**
+ * Update the personalized customer note on an invoice.
+ */
+export async function updateInvoiceNoteAction(input: {
+  invoiceId: string;
+  note: string;
+}): Promise<InvoiceActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  const supabase = await createClient();
+
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, status')
+    .eq('id', input.invoiceId)
+    .is('deleted_at', null)
+    .single();
+
+  if (invErr || !invoice) return { ok: false, error: 'Invoice not found.' };
+  if (invoice.status !== 'draft') {
+    return { ok: false, error: 'Can only edit notes on draft invoices.' };
+  }
+
+  const now = new Date().toISOString();
+  const noteValue = input.note.trim() || null;
+  const { error: updateErr } = await supabase
+    .from('invoices')
+    .update({ customer_note: noteValue, updated_at: now })
+    .eq('id', input.invoiceId);
+
+  if (updateErr) return { ok: false, error: `Failed to update note: ${updateErr.message}` };
+
+  revalidatePath(`/invoices/${input.invoiceId}`);
+  return { ok: true, id: input.invoiceId };
 }

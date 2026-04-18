@@ -31,7 +31,7 @@ export const changeOrderTools: AiTool[] = [
     },
     handler: async (input) => {
       try {
-        let rows = await listChangeOrders(input.project_id as string);
+        let rows = await listChangeOrders({ projectId: input.project_id as string });
 
         if (input.status) {
           rows = rows.filter((r) => r.status === input.status);

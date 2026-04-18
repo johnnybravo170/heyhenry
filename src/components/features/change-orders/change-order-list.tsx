@@ -7,16 +7,21 @@ import { ChangeOrderStatusBadge } from './change-order-status-badge';
 export function ChangeOrderList({
   changeOrders,
   projectId,
+  jobId,
 }: {
   changeOrders: ChangeOrderRow[];
-  projectId: string;
+  projectId?: string;
+  jobId?: string;
 }) {
+  const basePath = projectId ? `/projects/${projectId}` : `/jobs/${jobId}`;
+  const newHref = `${basePath}/change-orders/new`;
+
   if (changeOrders.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <p className="text-sm text-muted-foreground">No change orders yet.</p>
         <Link
-          href={`/projects/${projectId}/change-orders/new`}
+          href={newHref}
           className="mt-3 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           Create Change Order
@@ -38,36 +43,38 @@ export function ChangeOrderList({
           </tr>
         </thead>
         <tbody>
-          {changeOrders.map((co) => (
-            <tr key={co.id} className="border-b last:border-0 hover:bg-muted/30">
-              <td className="px-3 py-2">
-                <Link
-                  href={`/projects/${projectId}/change-orders/${co.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {co.title}
-                </Link>
-              </td>
-              <td className="px-3 py-2">
-                <ChangeOrderStatusBadge status={co.status as ChangeOrderStatus} />
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums">
-                {co.cost_impact_cents >= 0 ? '+' : ''}
-                {formatCurrency(co.cost_impact_cents)}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums">
-                {co.timeline_impact_days === 0
-                  ? 'None'
-                  : `${co.timeline_impact_days > 0 ? '+' : ''}${co.timeline_impact_days}d`}
-              </td>
-              <td className="px-3 py-2 text-muted-foreground">
-                {new Date(co.created_at).toLocaleDateString('en-CA', {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </td>
-            </tr>
-          ))}
+          {changeOrders.map((co) => {
+            const detailPath = co.project_id
+              ? `/projects/${co.project_id}/change-orders/${co.id}`
+              : `/jobs/${co.job_id}/change-orders/${co.id}`;
+            return (
+              <tr key={co.id} className="border-b last:border-0 hover:bg-muted/30">
+                <td className="px-3 py-2">
+                  <Link href={detailPath} className="font-medium hover:underline">
+                    {co.title}
+                  </Link>
+                </td>
+                <td className="px-3 py-2">
+                  <ChangeOrderStatusBadge status={co.status as ChangeOrderStatus} />
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {co.cost_impact_cents >= 0 ? '+' : ''}
+                  {formatCurrency(co.cost_impact_cents)}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {co.timeline_impact_days === 0
+                    ? 'None'
+                    : `${co.timeline_impact_days > 0 ? '+' : ''}${co.timeline_impact_days}d`}
+                </td>
+                <td className="px-3 py-2 text-muted-foreground">
+                  {new Date(co.created_at).toLocaleDateString('en-CA', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

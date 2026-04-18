@@ -18,6 +18,13 @@ export type InvoiceCustomerSummary = {
   email: string | null;
 };
 
+export type InvoiceLineItem = {
+  description: string;
+  quantity: number;
+  unit_price_cents: number;
+  total_cents: number;
+};
+
 export type InvoiceRow = {
   id: string;
   tenant_id: string;
@@ -31,6 +38,8 @@ export type InvoiceRow = {
   pdf_url: string | null;
   sent_at: string | null;
   paid_at: string | null;
+  customer_note: string | null;
+  line_items: InvoiceLineItem[];
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -52,7 +61,7 @@ export type InvoiceListFilters = {
 };
 
 const INVOICE_COLUMNS =
-  'id, tenant_id, job_id, customer_id, status, amount_cents, tax_cents, stripe_invoice_id, stripe_payment_intent_id, pdf_url, sent_at, paid_at, created_at, updated_at, deleted_at';
+  'id, tenant_id, job_id, customer_id, status, amount_cents, tax_cents, stripe_invoice_id, stripe_payment_intent_id, pdf_url, sent_at, paid_at, customer_note, line_items, created_at, updated_at, deleted_at';
 
 function extractRelation<T>(raw: unknown): T | null {
   if (!raw) return null;

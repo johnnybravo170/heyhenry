@@ -274,8 +274,13 @@ export function PhotoUpload({
                     </Label>
                     <Input
                       id={`cap-${entry.key}`}
-                      className="h-8 flex-1 text-sm"
-                      placeholder="Caption (optional)"
+                      className={cn(
+                        'h-8 flex-1 text-sm',
+                        entry.tag === 'concern' && 'border-red-300 ring-1 ring-red-200',
+                      )}
+                      placeholder={
+                        entry.tag === 'concern' ? 'Describe the issue...' : 'Caption (optional)'
+                      }
                       maxLength={500}
                       value={entry.caption}
                       onChange={(e) => updateStaged(entry.key, { caption: e.target.value })}

@@ -29,6 +29,7 @@ const TAG_CLASS: Record<PhotoTag, string> = {
   after: 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100',
   progress: 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100',
   other: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100',
+  concern: 'bg-red-100 text-red-800 border-red-300 hover:bg-red-100',
 };
 
 export function PhotoCard({ photo }: { photo: PhotoWithUrl }) {
@@ -40,7 +41,10 @@ export function PhotoCard({ photo }: { photo: PhotoWithUrl }) {
 
   return (
     <figure
-      className="group relative overflow-hidden rounded-xl border bg-card"
+      className={cn(
+        'group relative overflow-hidden rounded-xl border bg-card',
+        photo.tag === 'concern' && 'border-2 border-red-400 ring-1 ring-red-200',
+      )}
       data-slot="photo-card"
       data-photo-id={photo.id}
     >

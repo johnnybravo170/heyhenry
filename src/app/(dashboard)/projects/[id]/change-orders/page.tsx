@@ -18,7 +18,7 @@ export default async function ChangeOrdersPage({ params }: { params: Promise<{ i
   const project = await getProject(id);
   if (!project) notFound();
 
-  const changeOrders = await listChangeOrders(id);
+  const changeOrders = await listChangeOrders({ projectId: id });
 
   return (
     <div className="mx-auto w-full max-w-5xl">
