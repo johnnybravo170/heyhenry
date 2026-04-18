@@ -380,6 +380,53 @@ export async function deleteJobAction(id: string): Promise<JobActionResult | nev
   redirect('/jobs');
 }
 
+/**
+ * Duplicate a job. Creates a new job with status='booked', same customer and
+ * notes. Clears all timestamps.
+ */
+export async function duplicateJobAction(input: { jobId: string }): Promise<JobActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  const supabase = await createClient();
+
+  const { data: job, error: loadErr } = await supabase
+    .from('jobs')
+    .select('customer_id, quote_id, notes')
+    .eq('id', input.jobId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (loadErr || !job) return { ok: false, error: 'Job not found.' };
+
+  const { data, error } = await supabase
+    .from('jobs')
+    .insert({
+      tenant_id: tenant.id,
+      customer_id: job.customer_id,
+      quote_id: job.quote_id,
+      status: 'booked',
+      notes: job.notes,
+    })
+    .select('id')
+    .single();
+
+  if (error || !data) return { ok: false, error: error?.message ?? 'Failed to duplicate job.' };
+
+  await supabase.from('worklog_entries').insert({
+    tenant_id: tenant.id,
+    entry_type: 'system',
+    title: 'Job duplicated',
+    body: `Duplicated from Job #${input.jobId.slice(0, 8)}.`,
+    related_type: 'job',
+    related_id: data.id,
+  });
+
+  revalidatePath('/jobs');
+  revalidatePath('/jobs/list');
+  return { ok: true, id: data.id };
+}
+
 export async function rescheduleJobAction(
   jobId: string,
   scheduledAt: string,

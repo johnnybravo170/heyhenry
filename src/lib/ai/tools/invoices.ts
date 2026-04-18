@@ -132,7 +132,7 @@ export const invoiceTools: AiTool[] = [
         const job = result;
 
         if (job.status !== 'complete') {
-          return `Job must be marked complete before invoicing. Current status: ${jobStatusLabel(job.status)}.`;
+          return `This job is currently "${jobStatusLabel(job.status)}" — it needs to be marked complete before an invoice can be generated. Would you like me to mark it as complete first?`;
         }
 
         // Check no invoice already exists for this job
@@ -262,9 +262,8 @@ export const invoiceTools: AiTool[] = [
           .eq('id', tenant.id)
           .maybeSingle();
 
-        if (!tenantData?.stripe_account_id) {
-          return 'Stripe is not connected. Connect Stripe in Settings before sending invoices.';
-        }
+        const hasStripe = !!tenantData?.stripe_account_id;
+        // Proceed without Stripe — invoice can still be sent via email
 
         // Stripe Checkout session and email sending are not yet implemented.
         // For now, update the status and log the intent.

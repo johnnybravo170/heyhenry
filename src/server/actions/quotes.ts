@@ -483,6 +483,69 @@ export async function convertQuoteToJobAction(input: {
   return { ok: true, id: jobData.id };
 }
 
+/**
+ * Duplicate a quote. Creates a new draft quote with the same customer and
+ * surfaces.
+ */
+export async function duplicateQuoteAction(input: {
+  quoteId: string;
+}): Promise<QuoteActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  const supabase = await createClient();
+
+  // Load original quote.
+  const { data: quote, error: qErr } = await supabase
+    .from('quotes')
+    .select('customer_id, subtotal_cents, tax_cents, total_cents, notes')
+    .eq('id', input.quoteId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (qErr || !quote) return { ok: false, error: 'Quote not found.' };
+
+  // Load surfaces.
+  const { data: surfaces } = await supabase
+    .from('quote_surfaces')
+    .select('surface_type, polygon_geojson, sqft, price_cents, notes')
+    .eq('quote_id', input.quoteId);
+
+  // Insert new quote as draft.
+  const { data: newQuote, error: insertErr } = await supabase
+    .from('quotes')
+    .insert({
+      tenant_id: tenant.id,
+      customer_id: quote.customer_id,
+      status: 'draft',
+      subtotal_cents: quote.subtotal_cents,
+      tax_cents: quote.tax_cents,
+      total_cents: quote.total_cents,
+      notes: quote.notes,
+    })
+    .select('id')
+    .single();
+
+  if (insertErr || !newQuote)
+    return { ok: false, error: insertErr?.message ?? 'Failed to duplicate quote.' };
+
+  // Copy surfaces.
+  if (surfaces && surfaces.length > 0) {
+    const surfaceRows = surfaces.map((s) => ({
+      quote_id: newQuote.id,
+      surface_type: s.surface_type,
+      polygon_geojson: s.polygon_geojson,
+      sqft: s.sqft,
+      price_cents: s.price_cents,
+      notes: s.notes,
+    }));
+    await supabase.from('quote_surfaces').insert(surfaceRows);
+  }
+
+  revalidatePath('/quotes');
+  return { ok: true, id: newQuote.id };
+}
+
 export async function upsertCatalogEntryAction(input: {
   id?: string;
   surface_type: string;

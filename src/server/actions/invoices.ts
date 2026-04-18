@@ -181,9 +181,6 @@ export async function sendInvoiceAction(input: {
     .single();
 
   const stripeAccountId = tenantRow?.stripe_account_id as string | null;
-  if (!stripeAccountId) {
-    return { ok: false, error: 'Connect your Stripe account in Settings before sending invoices.' };
-  }
 
   // Load customer for the checkout line item and email.
   const { data: customer } = await supabase
@@ -196,39 +193,51 @@ export async function sendInvoiceAction(input: {
     []) as InvoiceLineItem[];
   const lineItemsTotal = invoiceLineItems.reduce((sum, li) => sum + li.total_cents, 0);
   const totalCents = invoice.amount_cents + lineItemsTotal + invoice.tax_cents;
-  const appFeeCents = Math.round(totalCents * 0.005); // 0.5% platform fee
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const publicViewUrl = `${appUrl}/view/invoice/${invoice.id}`;
 
-  // Create a Stripe Checkout Session on the connected account.
-  const session = await getStripe().checkout.sessions.create(
-    {
-      line_items: [
-        {
-          price_data: {
-            currency: 'cad',
-            unit_amount: totalCents,
-            product_data: {
-              name: `Invoice from ${tenantRow?.name ?? 'your contractor'}`,
-              description: customer?.name ? `Service for ${customer.name}` : 'Contractor services',
+  let paymentUrl: string | undefined;
+  let stripeSessionId: string | null = null;
+
+  if (stripeAccountId) {
+    // Create a Stripe Checkout Session on the connected account.
+    const appFeeCents = Math.round(totalCents * 0.005); // 0.5% platform fee
+
+    const session = await getStripe().checkout.sessions.create(
+      {
+        line_items: [
+          {
+            price_data: {
+              currency: 'cad',
+              unit_amount: totalCents,
+              product_data: {
+                name: `Invoice from ${tenantRow?.name ?? 'your contractor'}`,
+                description: customer?.name
+                  ? `Service for ${customer.name}`
+                  : 'Contractor services',
+              },
             },
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        mode: 'payment',
+        payment_intent_data: {
+          application_fee_amount: appFeeCents,
         },
-      ],
-      mode: 'payment',
-      payment_intent_data: {
-        application_fee_amount: appFeeCents,
+        success_url: `${appUrl}/invoices/${invoice.id}?payment=success`,
+        cancel_url: `${appUrl}/invoices/${invoice.id}?payment=cancelled`,
+        metadata: {
+          invoice_id: invoice.id,
+          tenant_id: tenant.id,
+        },
       },
-      success_url: `${appUrl}/invoices/${invoice.id}?payment=success`,
-      cancel_url: `${appUrl}/invoices/${invoice.id}?payment=cancelled`,
-      metadata: {
-        invoice_id: invoice.id,
-        tenant_id: tenant.id,
-      },
-    },
-    { stripeAccount: stripeAccountId },
-  );
+      { stripeAccount: stripeAccountId },
+    );
+
+    paymentUrl = session.url ?? undefined;
+    stripeSessionId = session.id;
+  }
 
   // Update invoice row.
   // stripe_invoice_id stores checkout session ID; pdf_url stores the payment link.
@@ -237,8 +246,8 @@ export async function sendInvoiceAction(input: {
     .from('invoices')
     .update({
       status: 'sent',
-      stripe_invoice_id: session.id,
-      pdf_url: session.url,
+      stripe_invoice_id: stripeSessionId,
+      pdf_url: paymentUrl ?? null,
       sent_at: now,
       updated_at: now,
     })
@@ -247,7 +256,7 @@ export async function sendInvoiceAction(input: {
   if (updateErr) {
     return {
       ok: false,
-      error: `Invoice sent on Stripe but DB update failed: ${updateErr.message}`,
+      error: `Invoice update failed: ${updateErr.message}`,
     };
   }
 
@@ -256,16 +265,19 @@ export async function sendInvoiceAction(input: {
     tenant_id: tenant.id,
     entry_type: 'system',
     title: 'Invoice sent',
-    body: `Invoice #${invoice.id.slice(0, 8)} sent. Payment link created.`,
+    body: stripeAccountId
+      ? `Invoice #${invoice.id.slice(0, 8)} sent. Payment link created.`
+      : `Invoice #${invoice.id.slice(0, 8)} sent (no Stripe, email-only).`,
     related_type: 'job',
     related_id: invoice.job_id,
   });
 
-  // Email the payment link to the customer.
-  const paymentUrl = session.url ?? undefined;
+  // Email the invoice to the customer.
   let warning: string | undefined;
+  // Use payment URL if Stripe is connected, otherwise link to public view page.
+  const emailLinkUrl = paymentUrl ?? publicViewUrl;
 
-  if (customer?.email && paymentUrl) {
+  if (customer?.email) {
     try {
       const { sendEmail } = await import('@/lib/email/send');
       const { invoiceEmailHtml } = await import('@/lib/email/templates/invoice-email');
@@ -278,8 +290,9 @@ export async function sendInvoiceAction(input: {
           businessName: tenantRow?.name ?? 'your contractor',
           invoiceNumber: invoice.id.slice(0, 8),
           totalFormatted: formatCurrency(totalCents),
-          payUrl: paymentUrl,
+          payUrl: emailLinkUrl,
           customerNote: (invoice.customer_note as string | null) ?? undefined,
+          hasStripe: !!stripeAccountId,
         }),
       });
 
@@ -298,7 +311,7 @@ export async function sendInvoiceAction(input: {
     } catch (emailErr) {
       console.error('Invoice email error:', emailErr);
     }
-  } else if (!customer?.email) {
+  } else {
     warning = 'Customer has no email on file. Invoice saved but not emailed.';
   }
 
@@ -487,6 +500,7 @@ export async function voidInvoiceAction(input: {
  */
 export async function markInvoicePaidAction(input: {
   invoiceId: string;
+  paymentMethod?: string;
 }): Promise<InvoiceActionResult> {
   const parsed = invoiceMarkPaidSchema.safeParse({ invoice_id: input.invoiceId });
   if (!parsed.success) {
@@ -515,10 +529,11 @@ export async function markInvoicePaidAction(input: {
     return { ok: false, error: `Cannot mark as paid from status "${invoice.status}".` };
   }
 
+  const method = input.paymentMethod ?? 'other';
   const now = new Date().toISOString();
   const { error: updateErr } = await supabase
     .from('invoices')
-    .update({ status: 'paid', paid_at: now, updated_at: now })
+    .update({ status: 'paid', paid_at: now, payment_method: method, updated_at: now })
     .eq('id', invoice.id);
 
   if (updateErr) {
@@ -529,7 +544,7 @@ export async function markInvoicePaidAction(input: {
     tenant_id: tenant.id,
     entry_type: 'system',
     title: 'Invoice paid',
-    body: `Invoice #${invoice.id.slice(0, 8)} marked as paid manually.`,
+    body: `Invoice #${invoice.id.slice(0, 8)} marked as paid via ${method}.`,
     related_type: 'job',
     related_id: invoice.job_id,
   });
@@ -538,6 +553,58 @@ export async function markInvoicePaidAction(input: {
   revalidatePath(`/invoices/${invoice.id}`);
   revalidatePath(`/jobs/${invoice.job_id}`);
   return { ok: true, id: invoice.id };
+}
+
+/**
+ * Duplicate an invoice. Creates a new draft copy with the same customer and
+ * amounts. Clears sent_at, paid_at, and all Stripe fields. Best for recurring
+ * work on paid/void invoices.
+ */
+export async function duplicateInvoiceAction(input: {
+  invoiceId: string;
+}): Promise<InvoiceActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  const supabase = await createClient();
+
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('job_id, customer_id, amount_cents, tax_cents, line_items, customer_note')
+    .eq('id', input.invoiceId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (invErr || !invoice) return { ok: false, error: 'Invoice not found.' };
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .insert({
+      tenant_id: tenant.id,
+      job_id: invoice.job_id,
+      customer_id: invoice.customer_id,
+      status: 'draft',
+      amount_cents: invoice.amount_cents,
+      tax_cents: invoice.tax_cents,
+      line_items: invoice.line_items,
+      customer_note: invoice.customer_note,
+    })
+    .select('id')
+    .single();
+
+  if (error || !data) return { ok: false, error: error?.message ?? 'Failed to duplicate invoice.' };
+
+  await supabase.from('worklog_entries').insert({
+    tenant_id: tenant.id,
+    entry_type: 'system',
+    title: 'Invoice duplicated',
+    body: `Duplicated from Invoice #${input.invoiceId.slice(0, 8)}.`,
+    related_type: 'job',
+    related_id: invoice.job_id,
+  });
+
+  revalidatePath('/invoices');
+  return { ok: true, id: data.id };
 }
 
 /**

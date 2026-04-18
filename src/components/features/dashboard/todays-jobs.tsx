@@ -31,9 +31,10 @@ export function TodaysJobs({ jobs, timezone }: { jobs: TodaysJob[]; timezone: st
       </CardHeader>
       <CardContent className="space-y-3">
         {jobs.map((job) => (
-          <div
+          <Link
             key={job.id}
-            className="flex items-start justify-between gap-4 rounded-lg border p-3"
+            href={`/jobs/${job.id}`}
+            className="flex items-start justify-between gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
           >
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-center gap-2">
@@ -65,7 +66,7 @@ export function TodaysJobs({ jobs, timezone }: { jobs: TodaysJob[]; timezone: st
                 })}
               </p>
             </div>
-          </div>
+          </Link>
         ))}
       </CardContent>
     </Card>

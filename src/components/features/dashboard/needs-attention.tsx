@@ -10,7 +10,9 @@ function AttentionRow({ item }: { item: AttentionItem }) {
     case 'overdue_todo':
       return (
         <li className="text-sm">
-          <span className="font-medium text-destructive">Overdue:</span> {item.title}{' '}
+          <Link href="/inbox" className="hover:underline">
+            <span className="font-medium text-destructive">Overdue:</span> {item.title}
+          </Link>{' '}
           <span className="text-muted-foreground">
             ({item.daysOverdue} {item.daysOverdue === 1 ? 'day' : 'days'} overdue)
           </span>

@@ -8,6 +8,7 @@ import {
   getHourInTimezone,
   getKeyMetrics,
   getRecentActivity,
+  getRevenueYtd,
   getTodaysJobs,
 } from '@/lib/db/queries/dashboard';
 
@@ -23,11 +24,12 @@ export default async function DashboardPage() {
   const hour = getHourInTimezone(tz);
   const greeting = getGreeting(hour);
 
-  const [todaysJobs, metrics, attentionItems, recentActivity] = await Promise.all([
+  const [todaysJobs, metrics, attentionItems, recentActivity, revenueYtdCents] = await Promise.all([
     getTodaysJobs(tz),
     getKeyMetrics(tz),
     getAttentionItems(tz),
     getRecentActivity(),
+    getRevenueYtd(tz),
   ]);
 
   return (
@@ -41,7 +43,7 @@ export default async function DashboardPage() {
 
       <TodaysJobs jobs={todaysJobs} timezone={tz} />
 
-      <KeyMetrics metrics={metrics} />
+      <KeyMetrics metrics={metrics} revenueYtdCents={revenueYtdCents} />
 
       <NeedsAttention items={attentionItems} />
 

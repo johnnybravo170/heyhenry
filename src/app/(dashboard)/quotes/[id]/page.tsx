@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, Pencil } from 'lucide-react';
+import { ArrowLeft, Copy, FileText, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -17,6 +17,7 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDateTime, formatRelativeTime } from '@/lib/date/format';
 import { getQuote, listWorklogForQuote } from '@/lib/db/queries/quotes';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { duplicateQuoteAction } from '@/server/actions/quotes';
 
 function shortId(id: string) {
   return id.slice(0, 8);
@@ -88,6 +89,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 </Link>
               </Button>
               <SendQuoteButton quoteId={quote.id} />
+              <DuplicateQuoteButton quoteId={quote.id} />
               <DeleteQuoteButton quoteId={quote.id} customerName={customerName} />
             </>
           )}
@@ -102,6 +104,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                   Edit
                 </Link>
               </Button>
+              <DuplicateQuoteButton quoteId={quote.id} />
               {quote.pdf_url && <DownloadPdfButton pdfUrl={quote.pdf_url} />}
             </>
           )}
@@ -109,17 +112,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <>
               <ConvertToJobButton quoteId={quote.id} />
               <ResendQuoteButton quoteId={quote.id} customerEmail={quote.customer?.email ?? null} />
+              <DuplicateQuoteButton quoteId={quote.id} />
               {quote.pdf_url && <DownloadPdfButton pdfUrl={quote.pdf_url} />}
             </>
           )}
           {status === 'rejected' && (
             <>
               <ResendQuoteButton quoteId={quote.id} customerEmail={quote.customer?.email ?? null} />
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/quotes/new?customer_id=${quote.customer_id}`}>
-                  Clone as new quote
-                </Link>
-              </Button>
+              <DuplicateQuoteButton quoteId={quote.id} />
             </>
           )}
         </div>

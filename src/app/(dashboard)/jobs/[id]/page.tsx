@@ -3,6 +3,7 @@ import {
   CalendarClock,
   Camera,
   ClipboardList,
+  Copy,
   FileText,
   Pencil,
   Receipt,
@@ -24,7 +25,8 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDateTime, formatRelativeTime } from '@/lib/date/format';
 import { listChangeOrders } from '@/lib/db/queries/change-orders';
 import { getJob, listWorklogForJob } from '@/lib/db/queries/jobs';
-import { rescheduleJobAction } from '@/server/actions/jobs';
+import { countPhotosByJob } from '@/lib/db/queries/photos';
+import { duplicateJobAction, rescheduleJobAction } from '@/server/actions/jobs';
 
 function shortId(id: string) {
   return id.slice(0, 8);
@@ -54,9 +56,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const formatTimestamp = (iso: string | null | undefined): string =>
     iso ? formatDateTime(iso, { timezone: tz }) : '\u2014';
 
-  const [worklog, changeOrders] = await Promise.all([
+  const [worklog, changeOrders, photoCount] = await Promise.all([
     listWorklogForJob(id),
     listChangeOrders({ jobId: id }),
+    countPhotosByJob(id),
   ]);
 
   const customerName = job.customer?.name ?? 'Unknown customer';
@@ -96,7 +99,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           </p>
         </div>
         <div className="flex items-start gap-4">
-          <JobStatusSelect jobId={job.id} currentStatus={job.status} />
+          <JobStatusSelect jobId={job.id} currentStatus={job.status} hasPhotos={photoCount > 0} />
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm">
               <Link href={`/jobs/${job.id}/edit`}>
@@ -104,6 +107,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 Edit
               </Link>
             </Button>
+            <DuplicateJobButton jobId={job.id} />
             <DeleteJobButton jobId={job.id} customerName={customerName} />
           </div>
         </div>
@@ -268,6 +272,25 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         )}
       </section>
     </div>
+  );
+}
+
+function DuplicateJobButton({ jobId }: { jobId: string }) {
+  async function action() {
+    'use server';
+    const result = await duplicateJobAction({ jobId });
+    if (!result.ok) throw new Error(result.error);
+    const { redirect } = await import('next/navigation');
+    redirect(`/jobs/${result.id}`);
+  }
+
+  return (
+    <form action={action}>
+      <Button type="submit" variant="outline" size="sm">
+        <Copy className="size-3.5" />
+        Duplicate
+      </Button>
+    </form>
   );
 }
 

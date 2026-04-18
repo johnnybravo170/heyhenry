@@ -329,6 +329,38 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
   return (data ?? []) as RecentWorklogEntry[];
 }
 
+/** Start of current year in UTC (for YTD queries). */
+function yearStartIso(timezone: string): string {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+  });
+  const year = formatter.format(now); // "2026"
+  const yearStart = new Date(`${year}-01-01T00:00:00`);
+  const offsetMs = getTimezoneOffsetMs(timezone, now);
+  return new Date(yearStart.getTime() - offsetMs).toISOString();
+}
+
+export async function getRevenueYtd(timezone: string): Promise<number> {
+  const supabase = await createClient();
+  const start = yearStartIso(timezone);
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('amount_cents, tax_cents')
+    .eq('status', 'paid')
+    .gte('paid_at', start)
+    .is('deleted_at', null);
+
+  if (error) throw new Error(`Revenue YTD: ${error.message}`);
+
+  return (data ?? []).reduce(
+    (sum, inv) => sum + (inv.amount_cents as number) + (inv.tax_cents as number),
+    0,
+  );
+}
+
 /** Get the hour of day in tenant timezone (0-23). */
 export function getHourInTimezone(timezone: string): number {
   const now = new Date();
