@@ -138,3 +138,48 @@ export async function revokeInviteAction(
     return { ok: false, error: err instanceof Error ? err.message : 'Failed to revoke invite.' };
   }
 }
+
+export async function sendWorkerInviteEmailAction(
+  email: string,
+  joinUrl: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  try {
+    assertOwnerOrAdmin(tenant.member.role);
+  } catch {
+    return { ok: false, error: 'Only owners and admins can send invites.' };
+  }
+
+  try {
+    const { sendEmail } = await import('@/lib/email/send');
+    const result = await sendEmail({
+      to: email,
+      subject: `You're invited to join ${tenant.name} on HeyHenry`,
+      html: `<!DOCTYPE html>
+<html>
+<body style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #0a0a0a;">${tenant.name} has invited you to join their team</h2>
+  <p>You've been invited to join <strong>${tenant.name}</strong> on HeyHenry as a team member.</p>
+  <p>Click the button below to create your account and get started:</p>
+  <p>
+    <a href="${joinUrl}" style="display: inline-block; padding: 12px 24px; background: #0a0a0a; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">
+      Join the team
+    </a>
+  </p>
+  <p style="color: #666; font-size: 14px;">This invite expires in 7 days.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+</body>
+</html>`,
+    });
+
+    if (!result.ok) {
+      return { ok: false, error: result.error ?? 'Failed to send email.' };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Failed to send invite.' };
+  }
+}
