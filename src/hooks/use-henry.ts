@@ -29,9 +29,12 @@ export type UseHenryReturn = {
   isLoading: boolean;
   isPanelOpen: boolean;
   activeTool: string | null;
+  /** Most recent error message surfaced to the user. Cleared on successful connect. */
+  error: string | null;
   sendMessage: (content: string) => void;
   togglePanel: () => void;
   clearHistory: () => void;
+  clearError: () => void;
   voice: {
     voiceEnabled: boolean;
     voiceState: VoiceState;
@@ -102,6 +105,8 @@ export function useHenry(): UseHenryReturn {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>('off');
   const [isSupported, setIsSupported] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const clearError = useCallback(() => setError(null), []);
 
   const sessionRef = useRef<Session | null>(null);
   const inputAudioCtxRef = useRef<AudioContext | null>(null);
@@ -304,13 +309,21 @@ export function useHenry(): UseHenryReturn {
   const startMicCapture = useCallback(async () => {
     if (!sessionRef.current || procNodeRef.current) return;
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        echoCancellation: true,
-        noiseSuppression: true,
-      },
-    });
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[Henry] mic permission failed:', msg);
+      setError(`Mic: ${msg}`);
+      throw e;
+    }
     micStreamRef.current = stream;
 
     // AudioContext forced to 16kHz so no resampling is needed.
@@ -352,23 +365,34 @@ export function useHenry(): UseHenryReturn {
 
   const connect = useCallback(async () => {
     if (sessionRef.current) return;
+    setError(null);
     setVoiceState('idle');
     setIsLoading(true);
 
     // 1. Fetch ephemeral token + config from server.
-    const res = await fetch('/api/henry/session', { method: 'POST' });
-    if (!res.ok) {
-      setIsLoading(false);
-      setVoiceState('off');
-      setVoiceEnabled(false);
-      throw new Error('Failed to mint Henry session');
-    }
-    const { token, model, systemPrompt, tools } = (await res.json()) as {
+    let sessionConfig: {
       token: string;
       model: string;
       systemPrompt: string;
       tools: unknown[];
     };
+    try {
+      const res = await fetch('/api/henry/session', { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Session mint ${res.status}: ${body || res.statusText}`);
+      }
+      sessionConfig = await res.json();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[Henry] session mint failed:', msg);
+      setError(`Session: ${msg}`);
+      setIsLoading(false);
+      setVoiceState('off');
+      setVoiceEnabled(false);
+      throw e;
+    }
+    const { token, model, systemPrompt, tools } = sessionConfig;
 
     // 2. Open Gemini Live WebSocket using the ephemeral token.
     const ai = new GoogleGenAI({
@@ -376,34 +400,58 @@ export function useHenry(): UseHenryReturn {
       httpOptions: { apiVersion: 'v1alpha' },
     });
 
-    const session = await ai.live.connect({
-      model,
-      config: {
-        responseModalities: [Modality.AUDIO],
-        systemInstruction: systemPrompt,
-        inputAudioTranscription: {},
-        outputAudioTranscription: {},
-        tools: tools.length > 0 ? [{ functionDeclarations: tools as never }] : undefined,
-      },
-      callbacks: {
-        onopen: () => {
-          setIsLoading(false);
+    try {
+      const session = await ai.live.connect({
+        model,
+        config: {
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: systemPrompt,
+          inputAudioTranscription: {},
+          outputAudioTranscription: {},
+          tools: tools.length > 0 ? [{ functionDeclarations: tools as never }] : undefined,
         },
-        onmessage: handleServerMessage,
-        onerror: (e) => {
-          console.error('[Henry] Live error:', e);
-          setVoiceState('off');
-          setIsLoading(false);
+        callbacks: {
+          onopen: () => {
+            console.log('[Henry] Live open');
+            setIsLoading(false);
+            setError(null);
+          },
+          onmessage: handleServerMessage,
+          onerror: (e) => {
+            const detail =
+              (e as ErrorEvent)?.message ||
+              // biome-ignore lint/suspicious/noExplicitAny: unknown error shape
+              (e as any)?.error?.message ||
+              JSON.stringify(e, Object.getOwnPropertyNames(e));
+            console.error('[Henry] Live error:', detail, e);
+            setError(`Live error: ${detail}`);
+            setVoiceState('off');
+            setIsLoading(false);
+          },
+          onclose: (e) => {
+            const code = (e as CloseEvent)?.code;
+            const reason = (e as CloseEvent)?.reason;
+            console.warn('[Henry] Live closed:', code, reason);
+            if (code && code !== 1000 && code !== 1005) {
+              setError(`Live closed (${code}): ${reason || 'no reason given'}`);
+            }
+            sessionRef.current = null;
+            setVoiceState('off');
+            setVoiceEnabled(false);
+            setIsLoading(false);
+          },
         },
-        onclose: () => {
-          sessionRef.current = null;
-          setVoiceState('off');
-          setVoiceEnabled(false);
-          setIsLoading(false);
-        },
-      },
-    });
-    sessionRef.current = session;
+      });
+      sessionRef.current = session;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[Henry] live.connect failed:', msg);
+      setError(`Connect: ${msg}`);
+      setIsLoading(false);
+      setVoiceState('off');
+      setVoiceEnabled(false);
+      throw e;
+    }
 
     // 3. Prepare output audio context for playback.
     outputAudioCtxRef.current = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
@@ -496,9 +544,11 @@ export function useHenry(): UseHenryReturn {
     isLoading,
     isPanelOpen,
     activeTool,
+    error,
     sendMessage,
     togglePanel,
     clearHistory,
+    clearError,
     voice: {
       voiceEnabled,
       voiceState,
