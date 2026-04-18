@@ -20,7 +20,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
-const PROTECTED_PREFIXES = ['/dashboard'];
+const PROTECTED_PREFIXES = ['/dashboard', '/admin'];
+const ADMIN_PREFIX = '/admin';
 const AUTH_ROUTES = new Set(['/login', '/signup', '/magic-link']);
 
 export async function proxy(request: NextRequest) {
@@ -92,8 +93,30 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(dest);
   }
 
-  // Authenticated visit to a protected route → verify they have a tenant.
-  if (user && isProtected) {
+  const isAdminRoute = pathname === ADMIN_PREFIX || pathname.startsWith(`${ADMIN_PREFIX}/`);
+
+  // Admin routes: must be a platform_admin. Non-admins get bounced to
+  // /dashboard (tenant check below still applies if they even have one).
+  if (user && isAdminRoute) {
+    const { data: admin } = await supabase
+      .from('platform_admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!admin) {
+      const dest = url.clone();
+      dest.pathname = '/dashboard';
+      dest.search = '';
+      return NextResponse.redirect(dest);
+    }
+    // Admin confirmed; skip the tenant-orphan check (admins don't need
+    // a tenant to reach /admin).
+    return response;
+  }
+
+  // Authenticated visit to a protected (non-admin) route → verify tenant.
+  if (user && isProtected && !isAdminRoute) {
     const { data: member } = await supabase
       .from('tenant_members')
       .select('id')

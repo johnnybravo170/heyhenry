@@ -1,41 +1,29 @@
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { getCurrentUser } from '@/lib/auth/helpers';
+import { AdminHeader } from '@/components/layout/admin-header';
+import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { requirePlatformAdmin } from '@/lib/auth/helpers';
 
 /**
- * Admin layout — gates access to the platform admin dashboard.
+ * Admin layout — gates access to the platform admin surface.
  *
- * Only the email in `ADMIN_EMAIL` can view these routes. Everyone else
- * gets a 404 (not a redirect, to avoid leaking that the route exists).
+ * Uses the `platform_admins` table (service-role read) rather than an
+ * ADMIN_EMAIL env var so new admins can be granted access without a
+ * redeploy. The proxy (src/proxy.ts) does a first-pass gate at the edge;
+ * this layout is the server-side belt-and-braces.
  */
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const user = await getCurrentUser();
-  const adminEmail = process.env.ADMIN_EMAIL;
-
-  if (!user?.email || !adminEmail || user.email !== adminEmail) {
-    notFound();
-  }
+  const user = await requirePlatformAdmin();
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 items-center justify-between border-b bg-background px-4">
-        <div className="flex items-center gap-6">
-          <span className="text-lg font-semibold">HeyHenry Admin</span>
-          <nav className="flex items-center gap-4 text-sm">
-            <Link href="/admin" className="text-muted-foreground hover:text-foreground">
-              Dashboard
-            </Link>
-          </nav>
-        </div>
-        <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-          Back to app
-        </Link>
-      </header>
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+    <div className="flex min-h-screen w-full overflow-x-hidden">
+      <AdminSidebar />
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <AdminHeader email={user.email ?? null} />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">{children}</main>
+      </div>
     </div>
   );
 }

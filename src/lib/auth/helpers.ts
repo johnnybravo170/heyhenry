@@ -8,6 +8,7 @@
  */
 
 import { redirect } from 'next/navigation';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 export async function getCurrentUser() {
@@ -87,4 +88,36 @@ export async function requireTenant() {
   const tenant = await getCurrentTenant();
   if (!tenant) redirect('/signup?error=no_tenant');
   return { user, tenant };
+}
+
+// ---------------------------------------------------------------------------
+// Platform admin helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if the user is a platform admin (Hey Henry staff). Uses the
+ * service-role client so the row check isn't affected by whatever tenant
+ * the user belongs to.
+ */
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
+  if (!userId) return false;
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('platform_admins')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  return !!data;
+}
+
+/**
+ * Redirects non-admins away from admin-only surfaces. Unauthenticated
+ * users go to /login; authenticated non-admins go to /dashboard.
+ */
+export async function requirePlatformAdmin() {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+  const admin = await isPlatformAdmin(user.id);
+  if (!admin) redirect('/dashboard');
+  return user;
 }
