@@ -5,7 +5,8 @@
  * Filters client-side as you type. Scales to hundreds of customers.
  */
 
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus, X } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -90,7 +91,19 @@ export function CustomerPicker({
           <Command>
             <CommandInput placeholder="Search customers..." />
             <CommandList>
-              <CommandEmpty>No customers found.</CommandEmpty>
+              <CommandEmpty>
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <p className="text-sm text-muted-foreground">No customers found.</p>
+                  <Link
+                    href="/customers/new"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    onClick={() => setOpen(false)}
+                  >
+                    <Plus className="size-3.5" />
+                    Add new customer
+                  </Link>
+                </div>
+              </CommandEmpty>
               <CommandGroup>
                 {customers.map((c) => (
                   <CommandItem
@@ -105,6 +118,17 @@ export function CustomerPicker({
                     {c.name}
                   </CommandItem>
                 ))}
+                <CommandItem
+                  value="__add_new_customer__"
+                  onSelect={() => {
+                    setOpen(false);
+                    window.location.href = '/customers/new';
+                  }}
+                  className="text-primary"
+                >
+                  <Plus className="mr-2 size-4" />
+                  Add new customer
+                </CommandItem>
               </CommandGroup>
             </CommandList>
           </Command>

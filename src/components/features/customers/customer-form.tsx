@@ -304,6 +304,7 @@ export function CustomerForm({
                 options={{
                   componentRestrictions: { country: 'ca' },
                   fields: ['address_components', 'formatted_address'],
+                  types: ['address'],
                 }}
                 className="flex-1"
               >
