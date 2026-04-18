@@ -1,0 +1,512 @@
+'use client';
+
+/**
+ * useHenry — Gemini Live session manager.
+ *
+ * Single hook that replaces useChat + useVoice. Opens a WebSocket to Gemini's
+ * Live API using an ephemeral token from /api/henry/session, streams mic
+ * audio in (16kHz PCM16), plays Gemini's audio out (24kHz PCM16), and routes
+ * tool calls through /api/henry/tool so they execute under tenant RLS.
+ *
+ * Return shape is kept compatible with the existing chat-panel so the UI
+ * doesn't need a rewrite.
+ */
+
+import { GoogleGenAI, type LiveServerMessage, Modality, type Session } from '@google/genai';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export type HenryMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  isStreaming?: boolean;
+};
+
+export type VoiceState = 'off' | 'idle' | 'listening' | 'processing' | 'speaking';
+
+export type UseHenryReturn = {
+  messages: HenryMessage[];
+  isLoading: boolean;
+  isPanelOpen: boolean;
+  activeTool: string | null;
+  sendMessage: (content: string) => void;
+  togglePanel: () => void;
+  clearHistory: () => void;
+  voice: {
+    voiceEnabled: boolean;
+    voiceState: VoiceState;
+    isSupported: boolean;
+    toggleVoice: () => void;
+    startPushToTalk: () => void;
+    stopPushToTalk: () => void;
+    stopSpeaking: () => void;
+  };
+};
+
+const PANEL_STORAGE_KEY = 'heyhenry-chat-open';
+const INPUT_SAMPLE_RATE = 16_000; // Gemini Live expects 16kHz PCM16 input
+const OUTPUT_SAMPLE_RATE = 24_000; // Gemini Live emits 24kHz PCM16 output
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function readPanelState(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(PANEL_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Float32 [-1,1] → Int16 PCM → base64. Endianness: little (matches Gemini). */
+function float32ToPcm16Base64(input: Float32Array): string {
+  const buf = new ArrayBuffer(input.length * 2);
+  const view = new DataView(buf);
+  for (let i = 0; i < input.length; i++) {
+    const s = Math.max(-1, Math.min(1, input[i]));
+    view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  // btoa requires a binary string; build it in chunks to avoid call-stack issues.
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/** base64 PCM16 little-endian → Float32 in [-1,1]. Uses a plain ArrayBuffer so it
+ * satisfies Web Audio's copyToChannel type signature. */
+function pcm16Base64ToFloat32(b64: string): Float32Array<ArrayBuffer> {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const view = new DataView(bytes.buffer);
+  const len = bytes.length / 2;
+  const buf = new ArrayBuffer(len * 4);
+  const out = new Float32Array(buf);
+  for (let i = 0; i < len; i++) {
+    out[i] = view.getInt16(i * 2, true) / 0x8000;
+  }
+  return out;
+}
+
+export function useHenry(): UseHenryReturn {
+  const [messages, setMessages] = useState<HenryMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceState, setVoiceState] = useState<VoiceState>('off');
+  const [isSupported, setIsSupported] = useState(false);
+
+  const sessionRef = useRef<Session | null>(null);
+  const inputAudioCtxRef = useRef<AudioContext | null>(null);
+  const outputAudioCtxRef = useRef<AudioContext | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const procNodeRef = useRef<ScriptProcessorNode | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const playbackCursorRef = useRef<number>(0);
+  const currentAssistantIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string | null>(null);
+
+  // Detect support after hydration.
+  useEffect(() => {
+    setIsSupported(
+      typeof window !== 'undefined' &&
+        !!navigator.mediaDevices?.getUserMedia &&
+        typeof AudioContext !== 'undefined',
+    );
+    setIsPanelOpen(readPanelState());
+  }, []);
+
+  const togglePanel = useCallback(() => {
+    setIsPanelOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(PANEL_STORAGE_KEY, String(next));
+      } catch {
+        // localStorage unavailable
+      }
+      return next;
+    });
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setMessages([]);
+    setActiveTool(null);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Audio helpers
+  // ---------------------------------------------------------------------------
+
+  const playAudioChunk = useCallback((b64: string) => {
+    const ctx = outputAudioCtxRef.current;
+    if (!ctx) return;
+    const pcm = pcm16Base64ToFloat32(b64);
+    const buffer = ctx.createBuffer(1, pcm.length, OUTPUT_SAMPLE_RATE);
+    buffer.copyToChannel(pcm, 0);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    const startAt = Math.max(ctx.currentTime, playbackCursorRef.current);
+    src.start(startAt);
+    playbackCursorRef.current = startAt + buffer.duration;
+    setVoiceState('speaking');
+  }, []);
+
+  const stopSpeaking = useCallback(() => {
+    const ctx = outputAudioCtxRef.current;
+    if (!ctx) return;
+    // Simplest interruption: close and recreate the output context.
+    ctx.close().catch(() => {});
+    const fresh = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+    outputAudioCtxRef.current = fresh;
+    playbackCursorRef.current = 0;
+    setVoiceState('idle');
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Tool call dispatch (server-side via /api/henry/tool)
+  // ---------------------------------------------------------------------------
+
+  const handleToolCall = useCallback(
+    async (
+      calls: Array<{ id?: string; name?: string; args?: Record<string, unknown> }>,
+    ): Promise<void> => {
+      const session = sessionRef.current;
+      if (!session) return;
+
+      const responses = await Promise.all(
+        calls.map(async (fc) => {
+          const name = fc.name ?? '';
+          setActiveTool(name);
+          try {
+            const res = await fetch('/api/henry/tool', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, args: fc.args ?? {} }),
+            });
+            const { result } = (await res.json()) as { result?: string };
+            return {
+              id: fc.id,
+              name,
+              response: { output: result ?? 'No output.' },
+            };
+          } catch (e) {
+            return {
+              id: fc.id,
+              name,
+              response: {
+                output: `Tool call failed: ${e instanceof Error ? e.message : String(e)}`,
+              },
+            };
+          } finally {
+            setActiveTool(null);
+          }
+        }),
+      );
+
+      session.sendToolResponse({ functionResponses: responses });
+    },
+    [],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Live server message handler
+  // ---------------------------------------------------------------------------
+
+  const handleServerMessage = useCallback(
+    (msg: LiveServerMessage) => {
+      // Audio out + text out arrive inside serverContent.modelTurn.parts
+      const parts = msg.serverContent?.modelTurn?.parts ?? [];
+      for (const part of parts) {
+        const data = part.inlineData?.data;
+        if (data && part.inlineData?.mimeType?.startsWith('audio/')) {
+          playAudioChunk(data);
+        }
+      }
+
+      // Output transcription (what Henry said)
+      const outT = msg.serverContent?.outputTranscription?.text;
+      if (outT) {
+        setMessages((prev) => {
+          let id = currentAssistantIdRef.current;
+          if (!id) {
+            id = generateId();
+            currentAssistantIdRef.current = id;
+            return [...prev, { id, role: 'assistant', content: outT, isStreaming: true }];
+          }
+          return prev.map((m) => (m.id === id ? { ...m, content: m.content + outT } : m));
+        });
+      }
+
+      // Input transcription (what the user said)
+      const inT = msg.serverContent?.inputTranscription?.text;
+      if (inT) {
+        setMessages((prev) => {
+          let id = currentUserIdRef.current;
+          if (!id) {
+            id = generateId();
+            currentUserIdRef.current = id;
+            return [...prev, { id, role: 'user', content: inT }];
+          }
+          return prev.map((m) => (m.id === id ? { ...m, content: m.content + inT } : m));
+        });
+      }
+
+      // Turn completion
+      if (msg.serverContent?.turnComplete) {
+        if (currentAssistantIdRef.current) {
+          const finishId = currentAssistantIdRef.current;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === finishId ? { ...m, isStreaming: false } : m)),
+          );
+          currentAssistantIdRef.current = null;
+        }
+        currentUserIdRef.current = null;
+        setIsLoading(false);
+        setVoiceState(voiceEnabled ? 'idle' : 'off');
+      }
+
+      // User barge-in → reset playback cursor and clear any queued audio
+      if (msg.serverContent?.interrupted) {
+        stopSpeaking();
+      }
+
+      // Tool calls
+      if (msg.toolCall?.functionCalls) {
+        handleToolCall(msg.toolCall.functionCalls);
+      }
+    },
+    [playAudioChunk, stopSpeaking, handleToolCall, voiceEnabled],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mic capture (defined before session lifecycle so disconnect can reference it)
+  // ---------------------------------------------------------------------------
+
+  const stopMicCapture = useCallback(() => {
+    procNodeRef.current?.disconnect();
+    sourceNodeRef.current?.disconnect();
+    procNodeRef.current = null;
+    sourceNodeRef.current = null;
+    for (const t of micStreamRef.current?.getTracks() ?? []) t.stop();
+    micStreamRef.current = null;
+    inputAudioCtxRef.current?.close().catch(() => {});
+    inputAudioCtxRef.current = null;
+  }, []);
+
+  const startMicCapture = useCallback(async () => {
+    if (!sessionRef.current || procNodeRef.current) return;
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+    });
+    micStreamRef.current = stream;
+
+    // AudioContext forced to 16kHz so no resampling is needed.
+    const ctx = new AudioContext({ sampleRate: INPUT_SAMPLE_RATE });
+    inputAudioCtxRef.current = ctx;
+
+    const source = ctx.createMediaStreamSource(stream);
+    sourceNodeRef.current = source;
+
+    // ScriptProcessorNode is deprecated but universal. 4096 samples @ 16kHz ≈ 256ms.
+    const proc = ctx.createScriptProcessor(4096, 1, 1);
+    procNodeRef.current = proc;
+
+    proc.onaudioprocess = (e) => {
+      if (!sessionRef.current) return;
+      const input = e.inputBuffer.getChannelData(0);
+      // Skip silence-ish chunks to cut bandwidth (very loose threshold).
+      let max = 0;
+      for (let i = 0; i < input.length; i++) {
+        const a = Math.abs(input[i]);
+        if (a > max) max = a;
+      }
+      if (max < 0.005) return;
+
+      const b64 = float32ToPcm16Base64(input);
+      sessionRef.current.sendRealtimeInput({
+        audio: { data: b64, mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}` },
+      });
+      setVoiceState('listening');
+    };
+
+    source.connect(proc);
+    proc.connect(ctx.destination);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Session lifecycle
+  // ---------------------------------------------------------------------------
+
+  const connect = useCallback(async () => {
+    if (sessionRef.current) return;
+    setVoiceState('idle');
+    setIsLoading(true);
+
+    // 1. Fetch ephemeral token + config from server.
+    const res = await fetch('/api/henry/session', { method: 'POST' });
+    if (!res.ok) {
+      setIsLoading(false);
+      setVoiceState('off');
+      setVoiceEnabled(false);
+      throw new Error('Failed to mint Henry session');
+    }
+    const { token, model, systemPrompt, tools } = (await res.json()) as {
+      token: string;
+      model: string;
+      systemPrompt: string;
+      tools: unknown[];
+    };
+
+    // 2. Open Gemini Live WebSocket using the ephemeral token.
+    const ai = new GoogleGenAI({
+      apiKey: token,
+      httpOptions: { apiVersion: 'v1alpha' },
+    });
+
+    const session = await ai.live.connect({
+      model,
+      config: {
+        responseModalities: [Modality.AUDIO],
+        systemInstruction: systemPrompt,
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
+        tools: tools.length > 0 ? [{ functionDeclarations: tools as never }] : undefined,
+      },
+      callbacks: {
+        onopen: () => {
+          setIsLoading(false);
+        },
+        onmessage: handleServerMessage,
+        onerror: (e) => {
+          console.error('[Henry] Live error:', e);
+          setVoiceState('off');
+          setIsLoading(false);
+        },
+        onclose: () => {
+          sessionRef.current = null;
+          setVoiceState('off');
+          setVoiceEnabled(false);
+          setIsLoading(false);
+        },
+      },
+    });
+    sessionRef.current = session;
+
+    // 3. Prepare output audio context for playback.
+    outputAudioCtxRef.current = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+    playbackCursorRef.current = 0;
+  }, [handleServerMessage]);
+
+  const disconnect = useCallback(() => {
+    sessionRef.current?.close();
+    sessionRef.current = null;
+    stopMicCapture();
+    outputAudioCtxRef.current?.close().catch(() => {});
+    outputAudioCtxRef.current = null;
+    playbackCursorRef.current = 0;
+    setVoiceEnabled(false);
+    setVoiceState('off');
+    setIsLoading(false);
+  }, [stopMicCapture]);
+
+  // ---------------------------------------------------------------------------
+  // Public voice controls
+  // ---------------------------------------------------------------------------
+
+  const toggleVoice = useCallback(async () => {
+    if (voiceEnabled) {
+      disconnect();
+    } else {
+      setVoiceEnabled(true);
+      try {
+        await connect();
+        await startMicCapture();
+      } catch (e) {
+        console.error('[Henry] toggleVoice failed:', e);
+        setVoiceEnabled(false);
+      }
+    }
+  }, [voiceEnabled, connect, disconnect, startMicCapture]);
+
+  const startPushToTalk = useCallback(async () => {
+    if (!voiceEnabled) return;
+    setVoiceState('listening');
+    if (!procNodeRef.current) await startMicCapture();
+  }, [voiceEnabled, startMicCapture]);
+
+  const stopPushToTalk = useCallback(() => {
+    stopMicCapture();
+    setVoiceState('processing');
+  }, [stopMicCapture]);
+
+  // ---------------------------------------------------------------------------
+  // Text message path (still useful as a fallback + for keyboard input)
+  // ---------------------------------------------------------------------------
+
+  const sendMessage = useCallback(
+    async (content: string) => {
+      const trimmed = content.trim();
+      if (!trimmed) return;
+
+      // Add user message to UI immediately.
+      setMessages((prev) => [...prev, { id: generateId(), role: 'user', content: trimmed }]);
+      setIsLoading(true);
+
+      // Session may not be open yet; open it now for text-only interactions.
+      if (!sessionRef.current) {
+        try {
+          await connect();
+        } catch {
+          setIsLoading(false);
+          return;
+        }
+      }
+      sessionRef.current?.sendClientContent({
+        turns: [{ role: 'user', parts: [{ text: trimmed }] }],
+        turnComplete: true,
+      });
+    },
+    [connect],
+  );
+
+  // Clean up on unmount.
+  useEffect(() => {
+    return () => {
+      sessionRef.current?.close();
+      stopMicCapture();
+      outputAudioCtxRef.current?.close().catch(() => {});
+    };
+  }, [stopMicCapture]);
+
+  return {
+    messages,
+    isLoading,
+    isPanelOpen,
+    activeTool,
+    sendMessage,
+    togglePanel,
+    clearHistory,
+    voice: {
+      voiceEnabled,
+      voiceState,
+      isSupported,
+      toggleVoice,
+      startPushToTalk,
+      stopPushToTalk,
+      stopSpeaking,
+    },
+  };
+}

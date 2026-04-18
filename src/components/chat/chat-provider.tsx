@@ -1,17 +1,15 @@
 'use client';
 
 import { createContext, type ReactNode, useContext } from 'react';
-import { type UseChatReturn, useChat } from '@/hooks/use-chat';
-import { type UseVoiceReturn, useVoice } from '@/hooks/use-voice';
+import { type UseHenryReturn, useHenry } from '@/hooks/use-henry';
 
-type ChatContextValue = UseChatReturn & { voice: UseVoiceReturn };
+type ChatContextValue = UseHenryReturn;
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const chat = useChat();
-  const voice = useVoice(chat.sendMessage, chat.latestCompleteResponse);
-  return <ChatContext.Provider value={{ ...chat, voice }}>{children}</ChatContext.Provider>;
+  const henry = useHenry();
+  return <ChatContext.Provider value={henry}>{children}</ChatContext.Provider>;
 }
 
 export function useChatContext(): ChatContextValue {
