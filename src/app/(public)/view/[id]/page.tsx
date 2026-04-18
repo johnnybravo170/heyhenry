@@ -3,7 +3,7 @@ import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const metadata: Metadata = {
-  title: 'Your Quote',
+  title: 'Your Estimate',
   robots: { index: false, follow: false },
 };
 
@@ -33,9 +33,9 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Quote not available</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Estimate not available</h1>
           <p className="mt-2 text-gray-500">
-            This quote is no longer available or has not been sent yet.
+            This estimate is no longer available or has not been sent yet.
           </p>
         </div>
       </div>
@@ -101,7 +101,7 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
             <p className="font-medium text-gray-900">{customer?.name ?? 'Customer'}</p>
           </div>
           <div>
-            <span className="text-gray-500">Quote date</span>
+            <span className="text-gray-500">Date</span>
             <p className="font-medium text-gray-900">{quoteDate}</p>
           </div>
           {customer?.address_line1 && (
@@ -180,12 +180,12 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
         {isExpired ? (
           <p className="text-sm text-red-600">
-            This quote expired on {validUntilFormatted}. Please contact {businessName} for an
+            This estimate expired on {validUntilFormatted}. Please contact {businessName} for an
             updated quote.
           </p>
         ) : (
           <p className="text-sm text-gray-500">
-            Valid until <span className="font-medium text-gray-900">{validUntilFormatted}</span>
+            This estimate is valid until <span className="font-medium text-gray-900">{validUntilFormatted}</span>
           </p>
         )}
       </div>

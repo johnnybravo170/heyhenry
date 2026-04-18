@@ -287,7 +287,7 @@ export async function sendQuoteAction(input: { quoteId: string }): Promise<Quote
 
       const emailResult = await sendEmail({
         to: customer.email,
-        subject: `Quote from ${tenantData?.name ?? tenant.name}`,
+        subject: `Estimate from ${tenantData?.name ?? tenant.name}`,
         html: quoteEmailHtml({
           customerName: customer.name,
           businessName: tenantData?.name ?? tenant.name,
