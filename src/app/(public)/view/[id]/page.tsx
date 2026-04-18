@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { QuoteApprovalForm } from './quote-approval-form';
 
 export const metadata: Metadata = {
   title: 'Your Estimate',
@@ -185,14 +186,15 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
           </p>
         ) : (
           <p className="text-sm text-gray-500">
-            This estimate is valid until <span className="font-medium text-gray-900">{validUntilFormatted}</span>
+            This estimate is valid until{' '}
+            <span className="font-medium text-gray-900">{validUntilFormatted}</span>
           </p>
         )}
       </div>
 
       {/* PDF download */}
       {quote.pdf_url && (
-        <div className="text-center">
+        <div className="mb-6 text-center">
           <a
             href={quote.pdf_url}
             target="_blank"
@@ -201,6 +203,48 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
           >
             Download PDF
           </a>
+        </div>
+      )}
+
+      {/* Accept / Decline actions (only when status is 'sent' and not expired) */}
+      {quote.status === 'sent' && !isExpired && (
+        <QuoteApprovalForm quoteId={id} businessName={businessName} />
+      )}
+
+      {/* Already accepted */}
+      {quote.status === 'accepted' && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+            <svg
+              className="h-7 w-7 text-emerald-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              role="img"
+              aria-label="Checkmark"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900">Estimate Accepted</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {businessName} will be in touch to schedule your service.
+          </p>
+        </div>
+      )}
+
+      {/* Already declined */}
+      {quote.status === 'rejected' && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900">Estimate Declined</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {businessName} may follow up with an updated estimate.
+          </p>
         </div>
       )}
     </div>

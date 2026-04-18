@@ -8,6 +8,7 @@
  * because INSERT needs an explicit `tenant_id`.
  */
 
+import crypto from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getCurrentTenant } from '@/lib/auth/helpers';
@@ -17,8 +18,14 @@ import {
   calculateSurfacePrice,
   formatCurrency,
 } from '@/lib/pricing/calculator';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { emptyToNull, quoteCreateSchema, quoteUpdateSchema } from '@/lib/validators/quote';
+
+/** Generate a URL-safe random approval code. */
+function generateApprovalCode(): string {
+  return crypto.randomBytes(12).toString('base64url').slice(0, 16);
+}
 
 export type QuoteActionResult =
   | { ok: true; id: string; warning?: string }
@@ -252,6 +259,9 @@ export async function sendQuoteAction(input: { quoteId: string }): Promise<Quote
   const isResend = ['sent', 'accepted', 'rejected'].includes(currentStatus);
   const newStatus = isResend ? currentStatus : 'sent';
 
+  // Generate approval code on first send (draft → sent).
+  const approvalCode = isResend ? undefined : generateApprovalCode();
+
   const { error } = await supabase
     .from('quotes')
     .update({
@@ -259,6 +269,7 @@ export async function sendQuoteAction(input: { quoteId: string }): Promise<Quote
       sent_at: now,
       pdf_url: pdfUrl,
       updated_at: now,
+      ...(approvalCode ? { approval_code: approvalCode } : {}),
     })
     .eq('id', input.quoteId)
     .is('deleted_at', null);
@@ -487,9 +498,7 @@ export async function convertQuoteToJobAction(input: {
  * Duplicate a quote. Creates a new draft quote with the same customer and
  * surfaces.
  */
-export async function duplicateQuoteAction(input: {
-  quoteId: string;
-}): Promise<QuoteActionResult> {
+export async function duplicateQuoteAction(input: { quoteId: string }): Promise<QuoteActionResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
 
@@ -609,4 +618,239 @@ export async function upsertCatalogEntryAction(input: {
   revalidatePath('/settings/catalog');
   revalidatePath('/settings');
   return { ok: true, id: data.id };
+}
+
+// ---------------------------------------------------------------------------
+// PUBLIC actions — no auth required, use admin client
+// ---------------------------------------------------------------------------
+
+export type QuotePublicActionResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * PUBLIC action: customer accepts a quote from the public view page.
+ * No auth required. Uses admin client.
+ */
+export async function approveQuotePublicAction(
+  quoteId: string,
+  approvedByName: string,
+): Promise<QuotePublicActionResult> {
+  const name = approvedByName?.trim();
+  if (!name) {
+    return { ok: false, error: 'Please type your name to accept.' };
+  }
+
+  const admin = createAdminClient();
+
+  // Load quote with customer and tenant info.
+  const { data: quote, error: qErr } = await admin
+    .from('quotes')
+    .select('id, tenant_id, customer_id, status, total_cents')
+    .eq('id', quoteId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (qErr || !quote) {
+    return { ok: false, error: 'Estimate not found.' };
+  }
+
+  if ((quote.status as string) !== 'sent') {
+    return {
+      ok: false,
+      error: 'This estimate has already been responded to or is no longer available.',
+    };
+  }
+
+  const now = new Date().toISOString();
+  const tenantId = quote.tenant_id as string;
+  const quoteShortId = quoteId.slice(0, 8);
+
+  // Update status.
+  const { error: updateErr } = await admin
+    .from('quotes')
+    .update({
+      status: 'accepted',
+      accepted_at: now,
+      updated_at: now,
+    })
+    .eq('id', quoteId);
+
+  if (updateErr) {
+    return { ok: false, error: `Failed to accept estimate: ${updateErr.message}` };
+  }
+
+  // Load customer name for notifications.
+  const { data: customer } = await admin
+    .from('customers')
+    .select('name')
+    .eq('id', quote.customer_id as string)
+    .single();
+
+  const customerName = (customer?.name as string) ?? 'Customer';
+  const totalFormatted = formatCurrency(quote.total_cents as number);
+
+  // Worklog entry.
+  await admin.from('worklog_entries').insert({
+    tenant_id: tenantId,
+    entry_type: 'system',
+    title: 'Estimate accepted',
+    body: `Estimate #${quoteShortId} accepted by ${name}.`,
+    related_type: 'quote',
+    related_id: quoteId,
+  });
+
+  // Get operator info for notification email and todo.
+  const { data: memberData } = await admin
+    .from('tenant_members')
+    .select('user_id')
+    .eq('tenant_id', tenantId)
+    .eq('role', 'owner')
+    .maybeSingle();
+
+  if (memberData?.user_id) {
+    const userId = memberData.user_id as string;
+
+    // Create a todo for the operator.
+    await admin.from('todos').insert({
+      tenant_id: tenantId,
+      user_id: userId,
+      title: `Schedule job for ${customerName} — estimate accepted (${totalFormatted})`,
+      related_type: 'quote',
+      related_id: quoteId,
+    });
+
+    // Send notification email to operator.
+    const { data: userData } = await admin.auth.admin.getUserById(userId);
+    const operatorEmail = userData?.user?.email;
+
+    if (operatorEmail) {
+      try {
+        const { sendEmail } = await import('@/lib/email/send');
+        const { quoteResponseEmailHtml } = await import('@/lib/email/templates/quote-response');
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.heyhenry.io';
+
+        await sendEmail({
+          to: operatorEmail,
+          subject: `${customerName} accepted your estimate!`,
+          html: quoteResponseEmailHtml({
+            type: 'accepted',
+            customerName,
+            quoteNumber: quoteShortId,
+            totalFormatted,
+            viewUrl: `${appUrl}/quotes/${quoteId}`,
+          }),
+        });
+      } catch (e) {
+        console.error('Failed to send quote acceptance email:', e);
+      }
+    }
+  }
+
+  return { ok: true };
+}
+
+/**
+ * PUBLIC action: customer declines a quote from the public view page.
+ * No auth required. Uses admin client.
+ */
+export async function declineQuotePublicAction(
+  quoteId: string,
+  reason?: string,
+): Promise<QuotePublicActionResult> {
+  const admin = createAdminClient();
+
+  // Load quote.
+  const { data: quote, error: qErr } = await admin
+    .from('quotes')
+    .select('id, tenant_id, customer_id, status, total_cents')
+    .eq('id', quoteId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (qErr || !quote) {
+    return { ok: false, error: 'Estimate not found.' };
+  }
+
+  if ((quote.status as string) !== 'sent') {
+    return {
+      ok: false,
+      error: 'This estimate has already been responded to or is no longer available.',
+    };
+  }
+
+  const now = new Date().toISOString();
+  const tenantId = quote.tenant_id as string;
+  const quoteShortId = quoteId.slice(0, 8);
+  const trimmedReason = reason?.trim() || undefined;
+
+  // Update status.
+  const { error: updateErr } = await admin
+    .from('quotes')
+    .update({
+      status: 'rejected',
+      updated_at: now,
+    })
+    .eq('id', quoteId);
+
+  if (updateErr) {
+    return { ok: false, error: `Failed to decline estimate: ${updateErr.message}` };
+  }
+
+  // Load customer name.
+  const { data: customer } = await admin
+    .from('customers')
+    .select('name')
+    .eq('id', quote.customer_id as string)
+    .single();
+
+  const customerName = (customer?.name as string) ?? 'Customer';
+
+  // Worklog entry.
+  await admin.from('worklog_entries').insert({
+    tenant_id: tenantId,
+    entry_type: 'system',
+    title: 'Estimate declined',
+    body: `Estimate #${quoteShortId} declined by customer.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`,
+    related_type: 'quote',
+    related_id: quoteId,
+  });
+
+  // Notify operator via email.
+  const { data: memberData } = await admin
+    .from('tenant_members')
+    .select('user_id')
+    .eq('tenant_id', tenantId)
+    .eq('role', 'owner')
+    .maybeSingle();
+
+  if (memberData?.user_id) {
+    const { data: userData } = await admin.auth.admin.getUserById(memberData.user_id as string);
+    const operatorEmail = userData?.user?.email;
+
+    if (operatorEmail) {
+      try {
+        const { sendEmail } = await import('@/lib/email/send');
+        const { quoteResponseEmailHtml } = await import('@/lib/email/templates/quote-response');
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.heyhenry.io';
+
+        await sendEmail({
+          to: operatorEmail,
+          subject: `Estimate declined — ${customerName}`,
+          html: quoteResponseEmailHtml({
+            type: 'declined',
+            customerName,
+            quoteNumber: quoteShortId,
+            totalFormatted: formatCurrency(quote.total_cents as number),
+            reason: trimmedReason,
+            viewUrl: `${appUrl}/quotes/${quoteId}`,
+          }),
+        });
+      } catch (e) {
+        console.error('Failed to send quote decline email:', e);
+      }
+    }
+  }
+
+  return { ok: true };
 }

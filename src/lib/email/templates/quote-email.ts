@@ -24,6 +24,7 @@ export function quoteEmailHtml({
       View Estimate
     </a>
   </p>
+  <p style="color: #666; font-size: 14px;">You can accept or decline this estimate from the link above.</p>
   <p style="color: #666; font-size: 14px;">Estimate #${quoteNumber} is valid for ${validityDays} days. Final pricing may vary based on site conditions.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
   <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
