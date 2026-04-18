@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <div className="flex min-h-screen min-w-0 flex-1 flex-col">
             <Header businessName={businessName} vertical={vertical} />
             <TenantProvider timezone={timezone}>
-              <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
+              <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-28 md:p-6 md:pb-24">
                 {children}
               </main>
             </TenantProvider>
