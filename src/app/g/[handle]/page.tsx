@@ -1,16 +1,19 @@
 /**
- * Public photo gallery — the landing page for the share link in every
- * closeout email. No auth required; token is the access control.
+ * Public photo gallery — landing page for every closeout share link.
+ *
+ * URL shape: `/g/{slug}-{token}` (slug optional; token is the access key).
+ * No auth; token is the control. If the visited slug doesn't match the
+ * canonical one stored with the link, we 302 to the right URL.
  *
  * Phase 3 scope: job-full galleries only. Other scope_types (album,
- * pair_set, single) are wired in later phases.
+ * pair_set, single) fall through to 404.
  */
 
 import { ImageOff } from 'lucide-react';
 import { headers } from 'next/headers';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { loadGalleryForJob } from '@/lib/photos/gallery-query';
-import { lookupShareLink, recordShareLinkView } from '@/lib/photos/share-links';
+import { lookupShareLink, parseShareHandle, recordShareLinkView } from '@/lib/photos/share-links';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,20 +28,26 @@ const TAG_LABEL: Record<string, string> = {
 export default async function PublicGalleryPage({
   params,
 }: {
-  params: Promise<{ token: string }>;
+  params: Promise<{ handle: string }>;
 }) {
-  const { token } = await params;
+  const { handle } = await params;
+  const { slug: visitedSlug, token } = parseShareHandle(handle);
+
   const link = await lookupShareLink(token);
   if (!link) notFound();
 
-  // Phase 3: only job_full is supported. Other scopes fall through to 404
-  // rather than quietly misbehave.
+  // Redirect to canonical URL when the visited slug doesn't match. Only do
+  // this if the link has a canonical slug (older links have null slug and
+  // keep working on the bare `/g/{token}` form).
+  if (link.slug && link.slug !== visitedSlug) {
+    redirect(`/g/${link.slug}-${link.token}`);
+  }
+
   if (link.scopeType !== 'job_full') notFound();
 
   const reqHeaders = await headers();
   const clientIp =
     reqHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ?? reqHeaders.get('x-real-ip') ?? null;
-  // Fire and forget — don't block render on view tracking.
   void recordShareLinkView(token, clientIp);
 
   const data = await loadGalleryForJob({ tenantId: link.tenantId, jobId: link.scopeId });

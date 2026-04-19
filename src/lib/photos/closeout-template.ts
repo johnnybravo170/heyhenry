@@ -1,27 +1,21 @@
 /**
- * Closeout email template — draft copy for the closeout loop (Phase 3).
+ * Closeout email template — draft copy for the closeout loop.
  *
  * Rendered by the AR engine when a `job_completed` event fires. Merge tags
  * are resolved from the event payload:
  *
  *   {{first_name}}           customer first name
  *   {{business_name}}        operator's business name
- *   {{operator_first_name}}  operator's first name (signoff)
- *   {{surface_summary}}      short phrase, e.g. "driveway" or "front walk + deck"
+ *   {{surface_summary}}      short phrase, e.g. "driveway" or "front walk and deck"
  *   {{city}}                 customer's city
  *   {{gallery_url}}          live gallery share link (no-login)
  *   {{primary_before_url}}   signed/public URL of the primary before photo
  *   {{primary_after_url}}    signed/public URL of the primary after photo
- *   {{review_url}}           Google Review URL if the operator has one
- *   {{reply_email}}          operator's reply-to address
+ *   {{review_url}}           Review URL the operator points people at
  *
  * Tone: short, warm, tradesperson voice. NOT marketing copy. The photos
  * do the talking. Subject matches the "sounds like a real person" rule
  * from the Social Poster Voice spec.
- *
- * Template is the V1 draft — we'll iterate once real sends run. The AR
- * seed helper below is how we plant it in a tenant's scope when they turn
- * on the closeout loop.
  */
 
 import type { NewArTemplate } from '@/lib/db/schema/ar/templates';
@@ -71,15 +65,15 @@ export const CLOSEOUT_EMAIL_BODY_HTML = `<!doctype html>
       <a href="{{review_url}}" style="color:#2563eb;text-decoration:none;font-weight:500">Leave a review</a>
     </p>
     <p style="margin:0;font-size:14px;line-height:1.5;color:#374151">
-      — {{operator_first_name}}<br />
-      <span style="color:#6b7280">{{business_name}}</span>
+      Thanks,<br />
+      <span style="font-weight:600">{{business_name}}</span>
     </p>
   </div>
 
 </div>
 
 <div style="max-width:560px;margin:0 auto 24px;padding:0 28px;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5">
-  Reply to this email and it lands in {{operator_first_name}}'s inbox.<br />
+  Reply to this email — {{business_name}} will get it directly.<br />
   <a href="{{unsubscribe_url}}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a>
 </div>
 
@@ -97,11 +91,11 @@ Every photo is timestamped and kept on file — it's here whenever you need it.
 If we did right by you, a quick review would mean a lot:
 {{review_url}}
 
-— {{operator_first_name}}
+Thanks,
 {{business_name}}
 
 ---
-Reply to this email and it lands in {{operator_first_name}}'s inbox.
+Reply to this email — {{business_name}} will get it directly.
 Unsubscribe: {{unsubscribe_url}}`;
 
 /**

@@ -16,6 +16,7 @@ export const photoShareLinks = pgTable('photo_share_links', {
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   token: text('token').notNull().unique(),
+  slug: text('slug'), // cosmetic URL sugar; token is still the key
   scopeType: text('scope_type').notNull(), // job_full | job_live | album | pair_set | single
   scopeId: uuid('scope_id').notNull(),
   label: text('label'),

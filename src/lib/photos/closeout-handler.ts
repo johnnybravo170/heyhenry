@@ -18,7 +18,7 @@ import { emitArEvent } from '@/lib/ar/event-bus';
 import { getSignedUrl } from '@/lib/storage/photos';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildCloseoutSequenceDef, buildCloseoutTemplate } from './closeout-template';
-import { buildShareUrl, getOrCreateShareLink } from './share-links';
+import { buildShareUrl, getOrCreateShareLink, slugify } from './share-links';
 
 type JobWithCustomer = {
   id: string;
@@ -75,16 +75,18 @@ export async function handleJobCompleted(jobId: string): Promise<RunResult> {
 
     // 3. Create/reuse share link for the job.
     const { name: customerName } = splitName(customer.name ?? '');
-    const { token } = await getOrCreateShareLink({
+    const customerSlug = slugify(customer.name ?? '') || null;
+    const { token, slug } = await getOrCreateShareLink({
       tenantId,
       scopeType: 'job_full',
       scopeId: jobId,
+      slug: customerSlug,
       label: `Closeout — ${customer.name ?? 'customer'}`,
       recipientEmail: customer.email,
       recipientPhone: customer.phone ?? null,
       recipientName: customer.name ?? null,
     });
-    const galleryUrl = buildShareUrl(token);
+    const galleryUrl = buildShareUrl({ token, slug });
 
     // 4. Sign the pair URLs (7 days — customer will view within that window).
     const [beforeUrl, afterUrl] = await Promise.all([
@@ -102,7 +104,9 @@ export async function handleJobCompleted(jobId: string): Promise<RunResult> {
 
     const surfaceSummary = await resolveSurfaceSummary(job.quote_id ?? null);
 
-    // 6. Emit event.
+    // 6. Emit event. No operator_first_name — the template signs with the
+    // business name only. Reliable operator-first-name needs a dedicated
+    // profile field (future work).
     const { firstName, lastName } = splitName(customerName);
     const result = await emitArEvent({
       tenantId,
@@ -118,13 +122,12 @@ export async function handleJobCompleted(jobId: string): Promise<RunResult> {
         first_name: firstName,
         last_name: lastName,
         business_name: businessName,
-        operator_first_name: splitName(businessName).firstName || 'Henry',
         surface_summary: surfaceSummary,
         city: customer.city ?? null,
         gallery_url: galleryUrl,
         primary_before_url: beforeUrl,
         primary_after_url: afterUrl,
-        review_url: `${process.env.AR_PUBLIC_BASE_URL ?? 'https://app.heyhenry.io'}/g/${token}#review`,
+        review_url: `${galleryUrl}#review`,
       },
     });
 
@@ -150,21 +153,7 @@ async function ensureCloseoutSetup(
 ): Promise<{ sequenceId: string | null; templateId: string | null; error?: string }> {
   const admin = createAdminClient();
 
-  // Reuse an existing Closeout sequence if present.
-  const { data: existingSeq } = await admin
-    .from('ar_sequences')
-    .select('id')
-    .eq('tenant_id', tenantId)
-    .eq('name', 'Closeout')
-    .is('deleted_at', null as never) // ar_sequences has no deleted_at; Postgres tolerates the null comparison here
-    .maybeSingle();
-  if (existingSeq?.id) {
-    // Sequence exists — caller only needs the id.
-    return { sequenceId: existingSeq.id as string, templateId: null };
-  }
-
-  // Fetch a sending address. Fall back to the platform default if the
-  // tenant hasn't configured a custom from-email yet.
+  // Fetch the tenant's sending identity. Fall back to the platform default.
   const { data: tenantRow } = await admin
     .from('tenants')
     .select('name')
@@ -174,26 +163,65 @@ async function ensureCloseoutSetup(
   const fromEmail = process.env.RESEND_FROM_EMAIL
     ? extractEmail(process.env.RESEND_FROM_EMAIL)
     : 'noreply@heyhenry.io';
-
-  // Template first.
   const templateDef = buildCloseoutTemplate({ tenantId, fromName, fromEmail });
-  const { data: tpl, error: tplErr } = await admin
+
+  // Existing Closeout template? Refresh its body from code so template edits
+  // roll out to all tenants on next Complete. Customization will add a
+  // "don't overwrite operator edits" flag later — noted in PHOTOS_PLAN.md.
+  const { data: existingTpl } = await admin
     .from('ar_templates')
-    .insert({
-      tenant_id: templateDef.tenantId,
-      name: templateDef.name,
-      channel: templateDef.channel,
-      subject: templateDef.subject,
-      body_html: templateDef.bodyHtml,
-      body_text: templateDef.bodyText,
-      from_name: templateDef.fromName,
-      from_email: templateDef.fromEmail,
-      reply_to: templateDef.replyTo,
-    })
     .select('id')
-    .single();
-  if (tplErr || !tpl) return { sequenceId: null, templateId: null, error: tplErr?.message };
-  const templateId = tpl.id as string;
+    .eq('tenant_id', tenantId)
+    .eq('name', 'Closeout — job complete')
+    .maybeSingle();
+
+  let templateId: string;
+  if (existingTpl?.id) {
+    templateId = existingTpl.id as string;
+    const { error: updErr } = await admin
+      .from('ar_templates')
+      .update({
+        subject: templateDef.subject,
+        body_html: templateDef.bodyHtml,
+        body_text: templateDef.bodyText,
+        from_name: templateDef.fromName,
+        from_email: templateDef.fromEmail,
+        reply_to: templateDef.replyTo,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', templateId);
+    if (updErr) return { sequenceId: null, templateId, error: updErr.message };
+  } else {
+    const { data: tpl, error: tplErr } = await admin
+      .from('ar_templates')
+      .insert({
+        tenant_id: templateDef.tenantId,
+        name: templateDef.name,
+        channel: templateDef.channel,
+        subject: templateDef.subject,
+        body_html: templateDef.bodyHtml,
+        body_text: templateDef.bodyText,
+        from_name: templateDef.fromName,
+        from_email: templateDef.fromEmail,
+        reply_to: templateDef.replyTo,
+      })
+      .select('id')
+      .single();
+    if (tplErr || !tpl) return { sequenceId: null, templateId: null, error: tplErr?.message };
+    templateId = tpl.id as string;
+  }
+
+  // Reuse an existing Closeout sequence if present. Creating a new sequence
+  // each time would bloat ar_sequences on every Complete.
+  const { data: existingSeq } = await admin
+    .from('ar_sequences')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('name', 'Closeout')
+    .maybeSingle();
+  if (existingSeq?.id) {
+    return { sequenceId: existingSeq.id as string, templateId };
+  }
 
   // Sequence + step.
   const seqDef = buildCloseoutSequenceDef({ tenantId, templateId });
@@ -272,12 +300,18 @@ async function resolveSurfaceSummary(quoteId: string | null): Promise<string> {
     .select('surface_type')
     .eq('quote_id', quoteId);
   const names = (data ?? [])
-    .map((s) => (s.surface_type as string | null)?.toString().trim())
+    .map((s) => humanizeSurface((s.surface_type as string | null) ?? ''))
     .filter((v): v is string => Boolean(v));
   if (names.length === 0) return 'job';
   if (names.length === 1) return names[0];
   if (names.length === 2) return `${names[0]} and ${names[1]}`;
   return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+}
+
+function humanizeSurface(raw: string): string {
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) return '';
+  return trimmed.replace(/_/g, ' ');
 }
 
 function splitName(full: string): { firstName: string; lastName: string; name: string } {

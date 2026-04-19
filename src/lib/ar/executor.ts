@@ -227,11 +227,20 @@ async function runChannelStep(
   if (channel === 'email') {
     const html = template.bodyHtml ? renderTemplate(template.bodyHtml, vars) : undefined;
     const subject = template.subject ? renderTemplate(template.subject, vars) : '';
+    // Build a proper RFC 5322 From header so Resend renders a display name
+    // (e.g. "Jon's Amazing Service <hello@mail.heyhenry.io>") instead of a
+    // bare email. Escape quotes in the display name just in case.
+    const fromHeader = (() => {
+      if (!template.fromEmail) return undefined;
+      if (!template.fromName) return template.fromEmail;
+      const safeName = template.fromName.replace(/"/g, '');
+      return `"${safeName}" <${template.fromEmail}>`;
+    })();
     const result = await sendEmail({
       to: toAddress as string,
       subject,
       html: html ?? '',
-      from: template.fromEmail || undefined,
+      from: fromHeader,
       replyTo: template.replyTo || undefined,
     });
     await db
