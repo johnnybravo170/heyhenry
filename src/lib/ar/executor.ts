@@ -206,8 +206,10 @@ async function runChannelStep(
     return;
   }
 
-  // Render + send.
-  const vars = buildMergeVars(contact);
+  // Render + send. Merge order: enrollment metadata (event payload) first,
+  // then contact fields on top — so event-provided values set the stage but
+  // a contact's name still wins for {{first_name}}, etc.
+  const vars = buildMergeVars(contact, enrollment.metadata);
   const [logRow] = await db
     .insert(arSendLog)
     .values({
@@ -346,10 +348,18 @@ function mergeWindow(channel: Channel, sequence: typeof arSequences.$inferSelect
   };
 }
 
-function buildMergeVars(contact: typeof arContacts.$inferSelect): Record<string, unknown> {
+function buildMergeVars(
+  contact: typeof arContacts.$inferSelect,
+  enrollmentMetadata?: unknown,
+): Record<string, unknown> {
+  const metadata =
+    typeof enrollmentMetadata === 'object' && enrollmentMetadata !== null
+      ? (enrollmentMetadata as Record<string, unknown>)
+      : {};
   return {
-    first_name: contact.firstName ?? '',
-    last_name: contact.lastName ?? '',
+    ...metadata, // event payload becomes the baseline (e.g. gallery_url)
+    first_name: contact.firstName ?? metadata.first_name ?? '',
+    last_name: contact.lastName ?? metadata.last_name ?? '',
     email: contact.email ?? '',
     phone: contact.phone ?? '',
     ...(typeof contact.attributes === 'object' && contact.attributes !== null

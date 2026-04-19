@@ -292,6 +292,18 @@ export async function changeJobStatusAction(input: {
     };
   }
 
+  // Fire the closeout loop when the job goes to 'complete'. Best-effort —
+  // failures log but do not roll back the status change. Resolves + emits
+  // a job_completed AR event with gallery link + hero pair for the email.
+  if (newStatus === 'complete' && oldStatus !== 'complete') {
+    const { handleJobCompleted } = await import('@/lib/photos/closeout-handler');
+    const closeout = await handleJobCompleted(parsed.data.id);
+    if (!closeout.ok) {
+      // Don't block — just log silently. Worklog would be noisy here.
+      console.error('closeout_handler_failed', closeout.error);
+    }
+  }
+
   // Send cancellation .ics if job was cancelled and has a scheduled_at.
   if (newStatus === 'cancelled') {
     const { data: fullJob } = await supabase
