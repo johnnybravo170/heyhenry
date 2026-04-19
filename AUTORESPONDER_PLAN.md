@@ -98,11 +98,24 @@ Resend dashboard → Webhooks → Add Endpoint:
   `email.complained`, `email.delivery_delayed`
 - Copy the signing secret (starts with `whsec_`) into `RESEND_WEBHOOK_SECRET`.
 
-### Vercel Cron
+### Cron dispatch
 
-`vercel.json` declares the `* * * * *` cron. Vercel Cron automatically injects
-`Authorization: Bearer ${CRON_SECRET}` when `CRON_SECRET` is set in the project
-env. Add `CRON_SECRET` to the Vercel dashboard before first deploy.
+**Vercel Hobby plan blocks sub-daily crons**, so Vercel Cron isn't viable until
+the plan is upgraded to Pro. Two working options today:
+
+**Option A (current): external pinger.** Use cron-job.org (free) or similar.
+
+1. Sign up at https://cron-job.org
+2. Create new cronjob:
+   - URL: `https://app.heyhenry.io/api/ar/cron`
+   - Schedule: every minute
+   - Request method: GET
+   - Headers: add `Authorization` = `Bearer <CRON_SECRET value>`
+3. Save + enable.
+
+**Option B (future): Vercel Pro.** When upgraded, re-add `vercel.json` with
+`{ "crons": [{ "path": "/api/ar/cron", "schedule": "* * * * *" }] }` and
+remove the external pinger. Vercel will inject the auth header automatically.
 
 ## Smoke test (local)
 
