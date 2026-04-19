@@ -20,10 +20,10 @@ export async function sendEmail({
   from?: string;
   replyTo?: string;
   attachments?: EmailAttachment[];
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; id?: string }> {
   try {
     const resend = getResend();
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: from || FROM_EMAIL,
       to,
       subject,
@@ -36,7 +36,7 @@ export async function sendEmail({
       })),
     });
     if (error) return { ok: false, error: error.message };
-    return { ok: true };
+    return { ok: true, id: data?.id };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown email error' };
   }
