@@ -6,7 +6,16 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { integer, jsonb, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { customers } from './customers';
 import { jobs } from './jobs';
 import { tenants } from './tenants';
@@ -51,6 +60,12 @@ export const photos = pgTable('photos', {
   aiCaptionConfidence: numeric('ai_caption_confidence', { precision: 4, scale: 3 }),
   captionSource: text('caption_source').default('user').notNull(), // user | ai | hybrid
   qualityFlags: jsonb('quality_flags').default(sql`'{}'::jsonb`).notNull(),
+
+  // Worker tracking — set by the background AI classifier
+  aiProcessedAt: timestamp('ai_processed_at', { withTimezone: true }),
+  aiAttempts: smallint('ai_attempts').default(0).notNull(),
+  aiLastAttemptAt: timestamp('ai_last_attempt_at', { withTimezone: true }),
+  aiLastError: text('ai_last_error'),
 
   // Internal EXIF — never serve in client-facing URLs
   originalExif: jsonb('original_exif').default(sql`'{}'::jsonb`).notNull(),
