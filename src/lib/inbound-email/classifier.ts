@@ -138,14 +138,28 @@ Return ONLY valid JSON matching this schema (no markdown, no prose):
     }
   }
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [{ role: 'user', parts }],
-    config: {
-      responseMimeType: 'application/json',
-      temperature: 0.1,
-    },
-  });
+  // Retry on 503 UNAVAILABLE (Gemini overload). 3 attempts w/ exponential backoff.
+  let response: Awaited<ReturnType<typeof ai.models.generateContent>> | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      response = await ai.models.generateContent({
+        model: MODEL,
+        contents: [{ role: 'user', parts }],
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+        },
+      });
+      break;
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('503') && !msg.includes('UNAVAILABLE') && !msg.includes('overload')) throw err;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 1000 * (attempt + 1) ** 2));
+    }
+  }
+  if (!response) throw lastErr ?? new Error('Classifier failed after retries');
 
   const text = response.text ?? '';
   let parsed: ClassifierResult;
