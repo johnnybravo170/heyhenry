@@ -6,9 +6,14 @@ const KIND_LABELS: Record<string, string> = {
   estimate_approved: 'Estimate approved',
   estimate_declined: 'Estimate declined',
   estimate_reset: 'Estimate reset to draft',
+  estimate_not_opened_nudge: 'Follow-up nudge: estimate not opened',
+  estimate_reopened_after_silence: 'Quote back in play — customer re-opened',
   invoice_created: 'Invoice created',
   invoice_sent: 'Invoice sent',
   invoice_paid: 'Invoice paid',
+  invoice_viewed: 'Customer viewed invoice',
+  change_order_viewed: 'Customer viewed change order',
+  portal_viewed: 'Customer viewed portal',
 };
 
 function describe(ev: ProjectEventRow): string {

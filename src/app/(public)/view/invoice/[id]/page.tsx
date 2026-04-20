@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -82,6 +83,7 @@ export default async function PublicInvoiceViewPage({
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-12">
+      <PublicViewLogger resourceType="invoice" identifier={id} />
       {/* Header */}
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{businessName}</h1>

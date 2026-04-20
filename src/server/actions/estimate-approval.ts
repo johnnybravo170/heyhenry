@@ -3,6 +3,7 @@
 import crypto from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { getEmailBrandingForTenant } from '@/lib/email/branding';
 import { sendEmail } from '@/lib/email/send';
 import { estimateApprovalEmailHtml } from '@/lib/email/templates/estimate-approval';
 import { formatCurrency } from '@/lib/pricing/calculator';
@@ -100,9 +101,11 @@ export async function sendEstimateForApprovalAction(input: {
 
   if (updErr) return { ok: false, error: updErr.message };
 
+  const branding = await getEmailBrandingForTenant(tenant.id);
   const approveUrl = `https://app.heyhenry.io/estimate/${code}`;
   const html = estimateApprovalEmailHtml({
-    businessName: tenant.name,
+    businessName: branding.businessName,
+    logoUrl: branding.logoUrl,
     projectName: p.name as string,
     totalFormatted: formatCurrency(total),
     approveUrl,

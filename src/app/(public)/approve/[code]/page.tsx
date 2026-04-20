@@ -1,3 +1,4 @@
+import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ApprovalForm } from './approval-form';
 
@@ -49,6 +50,8 @@ export default async function ApprovalPage({ params }: { params: Promise<{ code:
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            role="img"
+            aria-label="Approved"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -112,6 +115,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ code:
 
   return (
     <div className="mx-auto max-w-lg px-4 py-12">
+      <PublicViewLogger resourceType="change_order" identifier={code} />
       <div className="mb-8 text-center">
         <p className="text-sm font-medium text-muted-foreground">{businessName}</p>
         <h1 className="mt-1 text-2xl font-semibold">Change Order</h1>

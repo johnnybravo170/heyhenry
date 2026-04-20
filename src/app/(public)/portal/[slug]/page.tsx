@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -122,6 +123,7 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
+      <PublicViewLogger resourceType="portal" identifier={slug} />
       {/* Header */}
       <header className="mb-8 text-center">
         <p className="text-sm font-medium text-muted-foreground">{businessName}</p>

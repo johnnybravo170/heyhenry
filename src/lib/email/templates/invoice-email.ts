@@ -1,6 +1,9 @@
+import { brandingFooterHtml, brandingLogoHtml } from '@/lib/email/branding';
+
 export function invoiceEmailHtml({
   customerName,
   businessName,
+  logoUrl,
   invoiceNumber,
   totalFormatted,
   payUrl,
@@ -9,6 +12,7 @@ export function invoiceEmailHtml({
 }: {
   customerName: string;
   businessName: string;
+  logoUrl?: string | null;
   invoiceNumber: string;
   totalFormatted: string;
   payUrl: string;
@@ -29,6 +33,7 @@ export function invoiceEmailHtml({
   return `<!DOCTYPE html>
 <html>
 <body style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  ${brandingLogoHtml(logoUrl, businessName)}
   <h2 style="color: #0a0a0a;">Invoice from ${businessName}</h2>
   <p>Hi ${customerName.split(' ')[0]},</p>
   <p>${businessName} has sent you an invoice for <strong>${totalFormatted}</strong>.</p>
@@ -40,7 +45,7 @@ export function invoiceEmailHtml({
   </p>
   <p style="color: #666; font-size: 14px;">${footerNote}</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+  ${brandingFooterHtml('invoice')}
 </body>
 </html>`;
 }

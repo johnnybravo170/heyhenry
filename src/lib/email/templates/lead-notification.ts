@@ -1,7 +1,12 @@
 /**
  * Email template sent to the operator when a new lead comes in
  * through the public quoting widget.
+ *
+ * No tenant logo here — this email goes TO the operator, so rendering
+ * their own logo back at them is weird.
  */
+
+import { brandingFooterHtml } from '@/lib/email/branding';
 
 export function leadNotificationHtml({
   businessName,
@@ -54,7 +59,7 @@ export function leadNotificationHtml({
     </a>
   </p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+  ${brandingFooterHtml('lead_notification')}
 </body>
 </html>`;
 }

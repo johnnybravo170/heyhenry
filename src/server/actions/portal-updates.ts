@@ -6,6 +6,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { getEmailBrandingForTenant } from '@/lib/email/branding';
 import { sendEmail } from '@/lib/email/send';
 import { portalInviteEmailHtml } from '@/lib/email/templates/portal-invite';
 import { createClient } from '@/lib/supabase/server';
@@ -174,8 +175,10 @@ export async function sendPortalInviteAction(projectId: string): Promise<PortalA
   }
 
   const portalUrl = `https://app.heyhenry.io/portal/${projectData.portal_slug}`;
+  const branding = await getEmailBrandingForTenant(tenant.id);
   const html = portalInviteEmailHtml({
-    businessName: tenant.name,
+    businessName: branding.businessName,
+    logoUrl: branding.logoUrl,
     projectName: projectData.name as string,
     customerName,
     portalUrl,

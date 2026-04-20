@@ -1,6 +1,9 @@
+import { brandingFooterHtml, brandingLogoHtml } from '@/lib/email/branding';
+
 export function quoteEmailHtml({
   customerName,
   businessName,
+  logoUrl,
   quoteNumber,
   totalFormatted,
   viewUrl,
@@ -8,6 +11,7 @@ export function quoteEmailHtml({
 }: {
   customerName: string;
   businessName: string;
+  logoUrl?: string | null;
   quoteNumber: string;
   totalFormatted: string;
   viewUrl: string;
@@ -16,6 +20,7 @@ export function quoteEmailHtml({
   return `<!DOCTYPE html>
 <html>
 <body style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  ${brandingLogoHtml(logoUrl, businessName)}
   <h2 style="color: #0a0a0a;">Estimate from ${businessName}</h2>
   <p>Hi ${customerName.split(' ')[0]},</p>
   <p>${businessName} has prepared an estimate for <strong>${totalFormatted}</strong>.</p>
@@ -27,7 +32,7 @@ export function quoteEmailHtml({
   <p style="color: #666; font-size: 14px;">You can accept or decline this estimate from the link above.</p>
   <p style="color: #666; font-size: 14px;">Estimate #${quoteNumber} is valid for ${validityDays} days. Final pricing may vary based on site conditions.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+  ${brandingFooterHtml('quote')}
 </body>
 </html>`;
 }

@@ -281,14 +281,17 @@ export async function sendInvoiceAction(input: {
     try {
       const { sendEmail } = await import('@/lib/email/send');
       const { invoiceEmailHtml } = await import('@/lib/email/templates/invoice-email');
+      const { getEmailBrandingForTenant } = await import('@/lib/email/branding');
 
+      const branding = await getEmailBrandingForTenant(tenant.id);
       const emailResult = await sendEmail({
         tenantId: tenant.id,
         to: customer.email,
-        subject: `Invoice from ${tenantRow?.name ?? 'your contractor'} — ${formatCurrency(totalCents)}`,
+        subject: `Invoice from ${branding.businessName} — ${formatCurrency(totalCents)}`,
         html: invoiceEmailHtml({
           customerName: customer.name,
-          businessName: tenantRow?.name ?? 'your contractor',
+          businessName: branding.businessName,
+          logoUrl: branding.logoUrl,
           invoiceNumber: invoice.id.slice(0, 8),
           totalFormatted: formatCurrency(totalCents),
           payUrl: emailLinkUrl,
@@ -399,14 +402,17 @@ export async function resendInvoiceAction(input: {
     try {
       const { sendEmail } = await import('@/lib/email/send');
       const { invoiceEmailHtml } = await import('@/lib/email/templates/invoice-email');
+      const { getEmailBrandingForTenant } = await import('@/lib/email/branding');
 
+      const branding = await getEmailBrandingForTenant(tenant.id);
       const emailResult = await sendEmail({
         tenantId: tenant.id,
         to: customer.email,
-        subject: `Invoice from ${tenantRow?.name ?? 'your contractor'} — ${formatCurrency(totalCents)}`,
+        subject: `Invoice from ${branding.businessName} — ${formatCurrency(totalCents)}`,
         html: invoiceEmailHtml({
           customerName: customer.name,
-          businessName: tenantRow?.name ?? 'your contractor',
+          businessName: branding.businessName,
+          logoUrl: branding.logoUrl,
           invoiceNumber: invoice.id.slice(0, 8),
           totalFormatted: formatCurrency(totalCents),
           payUrl: paymentUrl,

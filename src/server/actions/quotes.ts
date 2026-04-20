@@ -369,16 +369,19 @@ export async function sendQuoteAction(input: { quoteId: string }): Promise<Quote
     try {
       const { sendEmail } = await import('@/lib/email/send');
       const { quoteEmailHtml } = await import('@/lib/email/templates/quote-email');
+      const { getEmailBrandingForTenant } = await import('@/lib/email/branding');
 
       const viewUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.heyhenry.io'}/view/${input.quoteId}`;
 
+      const branding = await getEmailBrandingForTenant(tenant.id);
       const emailResult = await sendEmail({
         tenantId: tenant.id,
         to: customer.email,
-        subject: `Estimate from ${tenantData?.name ?? tenant.name}`,
+        subject: `Estimate from ${branding.businessName}`,
         html: quoteEmailHtml({
           customerName: customer.name,
-          businessName: tenantData?.name ?? tenant.name,
+          businessName: branding.businessName,
+          logoUrl: branding.logoUrl,
           quoteNumber: input.quoteId.slice(0, 8),
           totalFormatted: formatCurrency(quote.total_cents),
           viewUrl,
@@ -591,7 +594,8 @@ export async function convertQuoteToProjectAction(input: {
     .maybeSingle();
 
   if (loadErr || !quote) return { ok: false, error: 'Quote not found.' };
-  if (quote.status !== 'accepted') return { ok: false, error: 'Only accepted quotes can be converted to projects.' };
+  if (quote.status !== 'accepted')
+    return { ok: false, error: 'Only accepted quotes can be converted to projects.' };
 
   const customerRaw = Array.isArray(quote.customers) ? quote.customers[0] : quote.customers;
   const customerName =
@@ -612,7 +616,8 @@ export async function convertQuoteToProjectAction(input: {
     .select('id')
     .single();
 
-  if (projErr || !projectData) return { ok: false, error: projErr?.message ?? 'Failed to create project.' };
+  if (projErr || !projectData)
+    return { ok: false, error: projErr?.message ?? 'Failed to create project.' };
 
   const DEFAULT_BUCKETS = [
     { name: 'Demo', section: 'general' },
@@ -698,7 +703,11 @@ export async function duplicateQuoteAction(input: { quoteId: string }): Promise<
 
   // Copy line items and surfaces.
   if (surfaces && surfaces.length > 0) {
-    const pricedSurfaces = (surfaces as { surface_type: string; sqft: number; price_cents: number }[]);
+    const pricedSurfaces = surfaces as {
+      surface_type: string;
+      sqft: number;
+      price_cents: number;
+    }[];
     const lineItemRows = buildLineItemRows(newQuote.id, pricedSurfaces);
     const { data: lineItemData } = await supabase
       .from('quote_line_items')

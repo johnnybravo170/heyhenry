@@ -171,7 +171,7 @@ export async function sendWorkerInviteEmailAction(
   </p>
   <p style="color: #666; font-size: 14px;">This invite expires in 7 days.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+  <p style="color: #999; font-size: 12px;"><a href="https://heyhenry.io/?utm_source=tenant_email&amp;utm_medium=referral&amp;utm_campaign=sent_via_footer&amp;utm_content=team_invite" style="color:inherit;text-decoration:none">Sent via HeyHenry</a></p>
 </body>
 </html>`,
     });

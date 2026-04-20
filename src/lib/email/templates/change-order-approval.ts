@@ -1,5 +1,8 @@
+import { brandingFooterHtml, brandingLogoHtml } from '@/lib/email/branding';
+
 export function changeOrderApprovalEmailHtml({
   businessName,
+  logoUrl,
   projectName,
   changeOrderTitle,
   description,
@@ -8,6 +11,7 @@ export function changeOrderApprovalEmailHtml({
   approveUrl,
 }: {
   businessName: string;
+  logoUrl?: string | null;
   projectName: string;
   changeOrderTitle: string;
   description: string;
@@ -25,6 +29,7 @@ export function changeOrderApprovalEmailHtml({
   return `<!DOCTYPE html>
 <html>
 <body style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1a1a1a;">
+  ${brandingLogoHtml(logoUrl, businessName)}
   <h2 style="color: #0a0a0a; margin-bottom: 4px;">Change Order for ${projectName}</h2>
   <p style="color: #666; font-size: 14px; margin-top: 0;">From ${businessName}</p>
 
@@ -53,7 +58,7 @@ export function changeOrderApprovalEmailHtml({
   </p>
 
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+  ${brandingFooterHtml('change_order')}
 </body>
 </html>`;
 }

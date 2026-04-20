@@ -1,3 +1,9 @@
+// Goes TO the operator when a customer accepts or declines an estimate, so
+// no tenant logo at the top — we'd just be showing the operator their own
+// logo. Linked footer still applies.
+
+import { brandingFooterHtml } from '@/lib/email/branding';
+
 export function quoteResponseEmailHtml({
   type,
   customerName,
@@ -25,7 +31,7 @@ export function quoteResponseEmailHtml({
     </a>
   </p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+  ${brandingFooterHtml('quote_response')}
 </body>
 </html>`;
   }
@@ -41,7 +47,7 @@ export function quoteResponseEmailHtml({
     </a>
   </p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-  <p style="color: #999; font-size: 12px;">Sent via HeyHenry</p>
+  ${brandingFooterHtml('quote_response')}
 </body>
 </html>`;
 }

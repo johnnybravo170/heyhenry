@@ -10,6 +10,7 @@
 import crypto from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { getEmailBrandingForTenant } from '@/lib/email/branding';
 import { sendEmail } from '@/lib/email/send';
 import { changeOrderApprovalEmailHtml } from '@/lib/email/templates/change-order-approval';
 import { formatCurrency } from '@/lib/pricing/calculator';
@@ -141,8 +142,10 @@ export async function sendChangeOrderAction(
     const costFormatted =
       costCents >= 0 ? `+${formatCurrency(costCents)}` : `-${formatCurrency(Math.abs(costCents))}`;
 
+    const branding = await getEmailBrandingForTenant(tenant.id);
     const html = changeOrderApprovalEmailHtml({
-      businessName: tenant.name,
+      businessName: branding.businessName,
+      logoUrl: branding.logoUrl,
       projectName,
       changeOrderTitle: coData.title as string,
       description: coData.description as string,

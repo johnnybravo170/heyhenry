@@ -19,6 +19,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { generateJobIcs } from '@/lib/calendar/ics-generator';
 import { formatDate, formatDateTime } from '@/lib/date/format';
+import { getEmailBrandingForTenant } from '@/lib/email/branding';
 import { sendEmail } from '@/lib/email/send';
 import { bookingEmailHtml, cancellationEmailHtml } from '@/lib/email/templates/job-booking';
 import { createClient } from '@/lib/supabase/server';
@@ -125,13 +126,15 @@ export async function createJobAction(input: JobFormInput): Promise<JobActionRes
 
       // Fire and forget. The job is already saved; email failure
       // should not block the response.
+      const branding = await getEmailBrandingForTenant(tenant.id);
       void sendEmail({
         tenantId: tenant.id,
         to: customer.email,
         subject: `Appointment confirmed — ${formattedDate}`,
         html: bookingEmailHtml({
           customerName: customer.name,
-          businessName: tenant.name,
+          businessName: branding.businessName,
+          logoUrl: branding.logoUrl,
           date: formattedDate,
           time: formattedTime,
           address: location,
@@ -337,13 +340,15 @@ export async function changeJobStatusAction(input: {
           status: 'CANCELLED',
         });
 
+        const cancelBranding = await getEmailBrandingForTenant(tenant.id);
         void sendEmail({
           tenantId: tenant.id,
           to: customerData.email,
           subject: `Appointment cancelled — ${formattedDate}`,
           html: cancellationEmailHtml({
             customerName: customerData.name,
-            businessName: tenant.name,
+            businessName: cancelBranding.businessName,
+            logoUrl: cancelBranding.logoUrl,
             date: formattedDate,
             time: formattedTime,
           }),
