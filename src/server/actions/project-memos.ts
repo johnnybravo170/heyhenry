@@ -170,22 +170,47 @@ Respond with ONLY valid JSON in this exact format:
   "uncertainty_flags": ["anything unclear or that needs clarification"]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }, { inlineData: { mimeType: mediaType, data: base64Audio } }],
-        },
-      ],
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.1,
-      },
-    });
+    // Gemini's free tier throws 503 "model overloaded" on busy periods.
+    // Retry with backoff, then fall back to the lite model.
+    const models = ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+    const delays = [0, 2000, 5000];
 
-    const text = response.text ?? '';
-    if (!text) throw new Error('Empty response from Gemini.');
+    let text = '';
+    let lastErr: unknown = null;
+    for (let i = 0; i < models.length; i++) {
+      if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
+      try {
+        const response = await ai.models.generateContent({
+          model: models[i],
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: prompt }, { inlineData: { mimeType: mediaType, data: base64Audio } }],
+            },
+          ],
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+          },
+        });
+        text = response.text ?? '';
+        if (text) {
+          lastErr = null;
+          break;
+        }
+        lastErr = new Error('Empty response from Gemini.');
+      } catch (err) {
+        lastErr = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        const retryable = /\b(503|429|overload|unavailable|rate)/i.test(msg);
+        if (!retryable) throw err;
+      }
+    }
+    if (lastErr || !text) {
+      throw new Error(
+        `Gemini overloaded after retries: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`,
+      );
+    }
 
     let extraction: MemoExtraction;
     try {
