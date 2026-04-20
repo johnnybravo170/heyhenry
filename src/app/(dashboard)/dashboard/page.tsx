@@ -11,6 +11,7 @@ import {
   getRevenueYtd,
   getTodaysJobs,
 } from '@/lib/db/queries/dashboard';
+import { getBusinessProfile } from '@/lib/db/queries/profile';
 
 function getGreeting(hour: number): string {
   if (hour < 12) return 'Good morning';
@@ -24,21 +25,33 @@ export default async function DashboardPage() {
   const hour = getHourInTimezone(tz);
   const greeting = getGreeting(hour);
 
-  const [todaysJobs, metrics, attentionItems, recentActivity, revenueYtdCents] = await Promise.all([
-    getTodaysJobs(tz),
-    getKeyMetrics(tz),
-    getAttentionItems(tz),
-    getRecentActivity(),
-    getRevenueYtd(tz),
-  ]);
+  const [todaysJobs, metrics, attentionItems, recentActivity, revenueYtdCents, profile] =
+    await Promise.all([
+      getTodaysJobs(tz),
+      getKeyMetrics(tz),
+      getAttentionItems(tz),
+      getRecentActivity(),
+      getRevenueYtd(tz),
+      getBusinessProfile(tenant.id),
+    ]);
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          {greeting}, {tenant.name}. Here&apos;s your business at a glance.
-        </p>
+      <div className="flex items-start gap-4">
+        {profile?.logoSignedUrl ? (
+          // biome-ignore lint/performance/noImgElement: signed URL
+          <img
+            src={profile.logoSignedUrl}
+            alt={profile.name}
+            className="h-14 w-auto max-w-[160px] shrink-0 rounded-md border bg-white object-contain p-1"
+          />
+        ) : null}
+        <div>
+          <h1 className="text-2xl font-semibold">{profile?.name ?? tenant.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            {greeting}. Here&apos;s your business at a glance.
+          </p>
+        </div>
       </div>
 
       <TodaysJobs jobs={todaysJobs} timezone={tz} />
