@@ -8,11 +8,18 @@
  * mapped to cost buckets.
  */
 
-import { Loader2, Mic, MicOff, Trash2, Upload, X } from 'lucide-react';
+import { ImagePlus, Loader2, Mic, MicOff, Trash2, Upload, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -21,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { resizeImage } from '@/lib/storage/resize-image';
 import {
   addMemoItemToCostLinesAction,
   deleteMemoAction,
@@ -28,6 +36,12 @@ import {
   transcribeMemoAction,
   uploadMemoAction,
 } from '@/server/actions/project-memos';
+
+type MemoPhoto = {
+  id: string;
+  url: string | null;
+  caption: string | null;
+};
 
 type BucketOption = {
   id: string;
@@ -40,6 +54,7 @@ type WorkItem = {
   description: string;
   suggested_bucket: string;
   section: string;
+  referenced_photo_indexes?: number[];
 };
 
 type CostCategory = 'material' | 'labour' | 'sub' | 'equipment' | 'overhead';
@@ -57,6 +72,7 @@ type MemoRow = {
   transcript: string | null;
   ai_extraction: Record<string, unknown> | null;
   created_at: string;
+  photos: MemoPhoto[];
 };
 
 type MemoUploadProps = {
@@ -65,14 +81,18 @@ type MemoUploadProps = {
   buckets: BucketOption[];
 };
 
+type StagedPhoto = { key: string; file: File; previewUrl: string };
+
 export function MemoUpload({ projectId, memos, buckets }: MemoUploadProps) {
   const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [transcribing, setTranscribing] = useState<string | null>(null);
+  const [stagedPhotos, setStagedPhotos] = useState<StagedPhoto[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Poll for status changes while any memo is still being processed server-side.
   // This decouples the UI from the original fetch's lifetime — if the server
@@ -125,17 +145,67 @@ export function MemoUpload({ projectId, memos, buckets }: MemoUploadProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  function handleAddPhotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) {
+      if (photoInputRef.current) photoInputRef.current.value = '';
+      return;
+    }
+    setStagedPhotos((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  }
+
+  function removeStagedPhoto(key: string) {
+    setStagedPhotos((prev) => {
+      const target = prev.find((p) => p.key === key);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((p) => p.key !== key);
+    });
+  }
+
   function uploadBlob(blob: Blob, filename: string) {
+    // Snapshot staged photos before starting the async transition so new
+    // photos added mid-upload aren't dropped.
+    const photosToSend = stagedPhotos;
     startTransition(async () => {
       const formData = new FormData();
       formData.append('project_id', projectId);
       formData.append('audio', blob, filename);
+
+      // Resize and bundle each staged photo into the same upload.
+      for (const staged of photosToSend) {
+        try {
+          const resized = await resizeImage(staged.file);
+          const outName = /\.(jpe?g|png|webp|gif)$/i.test(staged.file.name)
+            ? staged.file.name
+            : `${staged.file.name}.jpg`;
+          const finalFile =
+            resized instanceof File
+              ? resized
+              : new File([resized], outName, { type: 'image/jpeg' });
+          formData.append('photo', finalFile);
+        } catch {
+          // Resize failures fall back to the original.
+          formData.append('photo', staged.file);
+        }
+      }
 
       const result = await uploadMemoAction(formData);
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
+
+      // Clear staged photos; server now owns them.
+      for (const p of photosToSend) URL.revokeObjectURL(p.previewUrl);
+      setStagedPhotos([]);
 
       toast.success('Audio uploaded. Transcribing...');
 
@@ -219,12 +289,54 @@ export function MemoUpload({ projectId, memos, buckets }: MemoUploadProps) {
           onChange={handleFileUpload}
         />
 
+        <Button
+          variant="outline"
+          onClick={() => photoInputRef.current?.click()}
+          disabled={isPending}
+        >
+          <ImagePlus className="mr-2 size-4" /> Add photos
+        </Button>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleAddPhotos}
+        />
+
         {isPending && !transcribing ? (
           <span className="text-sm text-muted-foreground flex items-center gap-1">
             <Loader2 className="size-3 animate-spin" /> Uploading...
           </span>
         ) : null}
       </div>
+
+      {/* Staged photos (not yet uploaded) */}
+      {stagedPhotos.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {stagedPhotos.map((p) => (
+            <div
+              key={p.key}
+              className="relative size-20 overflow-hidden rounded-md border bg-muted"
+            >
+              {/* biome-ignore lint/performance/noImgElement: blob-URL preview */}
+              <img src={p.previewUrl} alt="" className="size-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeStagedPhoto(p.key)}
+                className="absolute right-0.5 top-0.5 rounded-full bg-background/80 p-0.5 hover:bg-background"
+                aria-label="Remove photo"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          ))}
+          <span className="self-center text-xs text-muted-foreground">
+            {stagedPhotos.length} attached — will upload with the next recording
+          </span>
+        </div>
+      ) : null}
 
       {/* Memo list */}
       {memos.length > 0 ? (
@@ -282,6 +394,18 @@ export function MemoUpload({ projectId, memos, buckets }: MemoUploadProps) {
 
               {memo.status === 'ready' && memo.transcript ? (
                 <div className="space-y-3">
+                  {memo.photos.length > 0 ? (
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                        Photos ({memo.photos.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {memo.photos.map((p, i) => (
+                          <PhotoThumbnail key={p.id} photo={p} index={i} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground mb-1">Transcript</h4>
                     <p className="text-sm whitespace-pre-wrap">{memo.transcript}</p>
@@ -305,6 +429,7 @@ export function MemoUpload({ projectId, memos, buckets }: MemoUploadProps) {
                             itemIndex={index}
                             item={item}
                             buckets={buckets}
+                            memoPhotos={memo.photos}
                             onDone={() => router.refresh()}
                           />
                         ))}
@@ -325,15 +450,68 @@ export function MemoUpload({ projectId, memos, buckets }: MemoUploadProps) {
   );
 }
 
+function PhotoThumbnail({
+  photo,
+  index,
+  size = 'lg',
+}: {
+  photo: MemoPhoto;
+  index: number;
+  size?: 'sm' | 'lg';
+}) {
+  const sizeClass = size === 'sm' ? 'size-8' : 'size-20';
+  const badgeClass = size === 'sm' ? 'text-[8px] px-0.5' : 'text-[10px] px-1';
+  if (!photo.url) {
+    return (
+      <div
+        className={`flex items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground ${sizeClass}`}
+      >
+        #{index}
+      </div>
+    );
+  }
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className={`relative overflow-hidden rounded-md border bg-muted transition hover:ring-2 hover:ring-primary ${sizeClass}`}
+          aria-label={`Open photo ${index}`}
+        >
+          {/* biome-ignore lint/performance/noImgElement: signed URL bypasses next/image */}
+          <img src={photo.url} alt="" className="size-full object-cover" loading="lazy" />
+          <span
+            className={`absolute right-0.5 bottom-0.5 rounded bg-background/80 font-medium ${badgeClass}`}
+          >
+            {index}
+          </span>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Photo {index}</DialogTitle>
+        </DialogHeader>
+        {/* biome-ignore lint/performance/noImgElement: signed URL bypasses next/image */}
+        <img
+          src={photo.url}
+          alt={photo.caption ?? ''}
+          className="max-h-[70vh] w-full rounded-md object-contain"
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 type WorkItemRowProps = {
   memoId: string;
   itemIndex: number;
   item: WorkItem;
   buckets: BucketOption[];
+  memoPhotos: MemoPhoto[];
   onDone: () => void;
 };
 
-function WorkItemRow({ memoId, itemIndex, item, buckets, onDone }: WorkItemRowProps) {
+function WorkItemRow({ memoId, itemIndex, item, buckets, memoPhotos, onDone }: WorkItemRowProps) {
   const defaultLabel = item.area ? `${item.area}: ${item.description}` : item.description;
 
   // Try to find a bucket matching suggested_bucket name (case-insensitive)
@@ -393,11 +571,24 @@ function WorkItemRow({ memoId, itemIndex, item, buckets, onDone }: WorkItemRowPr
     });
   }
 
+  const referenced = (item.referenced_photo_indexes ?? [])
+    .map((idx) => ({ idx, photo: memoPhotos[idx] }))
+    .filter((r) => !!r.photo);
+
   return (
     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
-      <div className="text-xs text-muted-foreground">
-        AI suggestion: <span className="font-medium">{item.section}</span> /{' '}
-        <span className="font-medium">{item.suggested_bucket}</span>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span>
+          AI suggestion: <span className="font-medium">{item.section}</span> /{' '}
+          <span className="font-medium">{item.suggested_bucket}</span>
+        </span>
+        {referenced.length > 0 ? (
+          <div className="flex items-center gap-1">
+            {referenced.map(({ idx, photo }) => (
+              <PhotoThumbnail key={photo.id} photo={photo} index={idx} size="sm" />
+            ))}
+          </div>
+        ) : null}
       </div>
       <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Line item" />
       <div className="grid grid-cols-2 gap-2 md:grid-cols-5">

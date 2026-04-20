@@ -7,9 +7,14 @@
  * content block → extract work items + map to cost buckets → update memo row.
  */
 
+import { randomUUID } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import {
+  deleteFromStorage as deletePhotoFromStorage,
+  uploadToStorage as uploadPhotoToStorage,
+} from '@/lib/storage/photos';
 import { createClient } from '@/lib/supabase/server';
 
 export type MemoActionResult = { ok: true; id: string } | { ok: false; error: string };
@@ -22,10 +27,34 @@ export type MemoExtraction = {
     description: string;
     suggested_bucket: string;
     section: string;
+    referenced_photo_indexes?: number[];
   }[];
   customer_preferences: string[];
   uncertainty_flags: string[];
 };
+
+const PHOTO_EXT_MIME_MAP: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  heic: 'image/heic',
+};
+
+function photoExtFromFile(file: File): string {
+  const name = file.name ?? '';
+  const dot = name.lastIndexOf('.');
+  if (dot > -1 && dot < name.length - 1) {
+    const ext = name.slice(dot + 1).toLowerCase();
+    if (/^[a-z0-9]{1,5}$/.test(ext)) return ext;
+  }
+  const mime = (file.type || '').toLowerCase();
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/gif') return 'gif';
+  return 'jpg';
+}
 
 /**
  * Upload audio to Supabase Storage and create a memo row with status=pending.
@@ -79,6 +108,44 @@ export async function uploadMemoAction(formData: FormData): Promise<MemoActionRe
   const { data: urlData } = supabase.storage.from('project-memos').getPublicUrl(storagePath);
 
   await supabase.from('project_memos').update({ audio_url: urlData.publicUrl }).eq('id', memo.id);
+
+  // Attach any photos bundled with the memo. Photos go into the `photos`
+  // table/bucket (not the project-memos bucket) so the project's Gallery
+  // tab sees them too. memo_id links them back to this memo.
+  const photoFiles = formData
+    .getAll('photo')
+    .filter((v): v is File => v instanceof File && v.size > 0);
+  for (const photoFile of photoFiles) {
+    const photoId = randomUUID();
+    const ext = photoExtFromFile(photoFile);
+    const uploadRes = await uploadPhotoToStorage({
+      tenantId: tenant.id,
+      projectId,
+      photoId,
+      file: photoFile,
+      contentType: photoFile.type || PHOTO_EXT_MIME_MAP[ext] || 'image/jpeg',
+      extension: ext,
+    });
+    if ('error' in uploadRes) {
+      // Skip this photo but don't tear down the memo — audio already landed.
+      console.error('Memo photo upload failed:', uploadRes.error);
+      continue;
+    }
+    const { error: photoInsertErr } = await supabase.from('photos').insert({
+      id: photoId,
+      tenant_id: tenant.id,
+      project_id: projectId,
+      memo_id: memo.id,
+      storage_path: uploadRes.path,
+      tag: 'other',
+      mime: photoFile.type || PHOTO_EXT_MIME_MAP[ext] || 'image/jpeg',
+      bytes: photoFile.size,
+    });
+    if (photoInsertErr) {
+      await deletePhotoFromStorage(uploadRes.path).catch(() => {});
+      console.error('Memo photo row insert failed:', photoInsertErr.message);
+    }
+  }
 
   revalidatePath(`/projects/${projectId}`);
   return { ok: true, id: memo.id };
@@ -149,22 +216,50 @@ export async function transcribeMemoAction(memoId: string): Promise<MemoActionRe
     // Update status to extracting
     await supabase.from('project_memos').update({ status: 'extracting' }).eq('id', memoId);
 
+    // Load any photos attached to this memo — the operator typically snaps
+    // a few as they talk through the walkthrough. Send them to Gemini as
+    // additional inline parts so it can cross-reference what it heard with
+    // what it sees.
+    const { data: memoPhotos } = await supabase
+      .from('photos')
+      .select('id, storage_path, mime')
+      .eq('memo_id', memoId)
+      .order('created_at', { ascending: true });
+
+    type PhotoPart = { mimeType: string; data: string };
+    const photoParts: PhotoPart[] = [];
+    for (const p of memoPhotos ?? []) {
+      const path = p.storage_path as string;
+      const { data: photoData } = await supabase.storage.from('photos').download(path);
+      if (!photoData) continue;
+      const photoBuf = await photoData.arrayBuffer();
+      photoParts.push({
+        mimeType: (p.mime as string) || 'image/jpeg',
+        data: Buffer.from(photoBuf).toString('base64'),
+      });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
 
     const ai = new GoogleGenAI({ apiKey });
 
+    const photoInstruction =
+      photoParts.length > 0
+        ? `\n\n${photoParts.length} site-walk ${photoParts.length === 1 ? 'photo is' : 'photos are'} attached (in order, 0-indexed). For each work item, include a "referenced_photo_indexes" array listing the indexes of photos that show the area or condition you're describing. Empty array if none are relevant.`
+        : '';
+
     const prompt = `You are a renovation project assistant. Transcribe this renovation site walk-through audio. Then extract work items and map them to standard renovation cost buckets.
 
 Standard interior buckets: Demo, Disposal, Framing, Plumbing, Plumbing Fixtures, HVAC, Insulation, Drywall, Flooring, Doors & Mouldings, Windows & Doors, Railings, Electrical, Painting, Kitchen, Contingency.
 
-Standard exterior buckets: Demo, Disposal, Framing, Siding, Sheathing, Painting, Gutters, Front Garden, Front Door, Rot Repair, Garage Doors, Contingency.
+Standard exterior buckets: Demo, Disposal, Framing, Siding, Sheathing, Painting, Gutters, Front Garden, Front Door, Rot Repair, Garage Doors, Contingency.${photoInstruction}
 
 Respond with ONLY valid JSON in this exact format:
 {
   "transcript": "full transcription of the audio",
   "work_items": [
-    { "area": "room or location", "description": "what needs to be done", "suggested_bucket": "bucket name", "section": "interior or exterior" }
+    { "area": "room or location", "description": "what needs to be done", "suggested_bucket": "bucket name", "section": "interior or exterior", "referenced_photo_indexes": [] }
   ],
   "customer_preferences": ["any customer preferences mentioned"],
   "uncertainty_flags": ["anything unclear or that needs clarification"]
@@ -185,7 +280,11 @@ Respond with ONLY valid JSON in this exact format:
           contents: [
             {
               role: 'user',
-              parts: [{ text: prompt }, { inlineData: { mimeType: mediaType, data: base64Audio } }],
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType: mediaType, data: base64Audio } },
+                ...photoParts.map((p) => ({ inlineData: p })),
+              ],
             },
           ],
           config: {

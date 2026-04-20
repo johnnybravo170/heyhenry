@@ -20,6 +20,7 @@ import { getChangeOrderSummaryForProject, listChangeOrders } from '@/lib/db/quer
 import { getVarianceReport, listCostLines } from '@/lib/db/queries/cost-lines';
 import { listExpenses } from '@/lib/db/queries/expenses';
 import { listMaterialsCatalog } from '@/lib/db/queries/materials-catalog';
+import { listPhotosByProject } from '@/lib/db/queries/photos';
 import { listProjectBills } from '@/lib/db/queries/project-bills';
 import { getBudgetVsActual } from '@/lib/db/queries/project-buckets';
 import { getProject } from '@/lib/db/queries/projects';
@@ -67,13 +68,29 @@ export default async function ProjectDetailPage({
 
   const budget = await getBudgetVsActual(id);
 
-  // Load memos for the memos tab
+  // Load memos for the memos tab, plus any photos attached to memos on this
+  // project so the memo card can show their thumbnails and work-item rows
+  // can reference them by index.
   const supabase = await createClient();
-  const { data: memos } = await supabase
-    .from('project_memos')
-    .select('id, status, transcript, ai_extraction, created_at')
-    .eq('project_id', id)
-    .order('created_at', { ascending: false });
+  const [{ data: memos }, projectPhotos] = await Promise.all([
+    supabase
+      .from('project_memos')
+      .select('id, status, transcript, ai_extraction, created_at')
+      .eq('project_id', id)
+      .order('created_at', { ascending: false }),
+    listPhotosByProject(id),
+  ]);
+
+  const memoPhotosByMemo = new Map<
+    string,
+    { id: string; url: string | null; caption: string | null }[]
+  >();
+  for (const p of projectPhotos) {
+    if (!p.memo_id) continue;
+    const list = memoPhotosByMemo.get(p.memo_id) ?? [];
+    list.push({ id: p.id, url: p.url, caption: p.caption });
+    memoPhotosByMemo.set(p.memo_id, list);
+  }
 
   // Load time entries and expenses for the time tab
   const [timeEntries, expenses] = await Promise.all([
@@ -300,6 +317,7 @@ export default async function ProjectDetailPage({
             transcript: m.transcript as string | null,
             ai_extraction: m.ai_extraction as Record<string, unknown> | null,
             created_at: m.created_at as string,
+            photos: memoPhotosByMemo.get(m.id as string) ?? [],
           }))}
           buckets={budget.lines.map((b) => ({
             id: b.bucket_id,
