@@ -110,10 +110,13 @@ export async function POST(request: Request) {
   }
 
   if (tenantId) {
-    // Don't await — return 200 fast; classifier failures are recorded on the row.
-    processInboundEmail(inserted.id as string).catch((err) => {
+    // Await inline — Vercel serverless terminates fire-and-forget work the
+    // moment we return. Postmark tolerates up to 30s.
+    try {
+      await processInboundEmail(inserted.id as string);
+    } catch (err) {
       console.error('[inbound-email] processing failed', inserted.id, err);
-    });
+    }
   }
 
   return NextResponse.json({ ok: true, id: inserted.id });
