@@ -150,16 +150,25 @@ export function CostBucketsTable({ lines, projectId, costLines, catalog }: CostB
               {section}
             </h3>
             <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-sm">
+              <table className="w-full table-fixed text-sm">
+                <colgroup>
+                  <col className="w-8" />
+                  <col />
+                  <col className="w-32" />
+                  <col className="w-28" />
+                  <col className="w-32" />
+                  <col className="w-32" />
+                  <col className="w-10" />
+                </colgroup>
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="w-6 px-2 py-2" />
+                    <th className="px-2 py-2" />
                     <th className="px-3 py-2 text-left font-medium">Bucket</th>
                     <th className="px-3 py-2 text-right font-medium">Estimate</th>
                     <th className="px-3 py-2 text-right font-medium">Actual</th>
                     <th className="px-3 py-2 text-right font-medium">Remaining</th>
-                    <th className="w-32 px-3 py-2 text-right font-medium">Progress</th>
-                    <th className="w-8 px-2 py-2" />
+                    <th className="px-3 py-2 text-right font-medium">Progress</th>
+                    <th className="px-2 py-2" />
                   </tr>
                 </thead>
                 <tbody>
