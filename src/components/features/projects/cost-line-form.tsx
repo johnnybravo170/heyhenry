@@ -40,20 +40,62 @@ export function CostLineForm({
   const [unit, setUnit] = useState(initial?.unit ?? 'item');
   const [costRaw, setCostRaw] = useState(initial ? centsToDisplay(initial.unit_cost_cents) : '');
   const [priceRaw, setPriceRaw] = useState(initial ? centsToDisplay(initial.unit_price_cents) : '');
+  const [markupRaw, setMarkupRaw] = useState(
+    initial ? (Number(initial.markup_pct) || 0).toFixed(2) : '',
+  );
   const [notes, setNotes] = useState(initial?.notes ?? '');
+
+  function computeMarkupFromPrice(cost: string, price: string): string {
+    const c = parseFloat(cost || '0');
+    const p = parseFloat(price || '0');
+    if (c <= 0) return '';
+    return (((p - c) / c) * 100).toFixed(2);
+  }
+
+  function computePriceFromMarkup(cost: string, markup: string): string {
+    const c = parseFloat(cost || '0');
+    const m = parseFloat(markup || '0');
+    if (c <= 0) return '';
+    return (c * (1 + m / 100)).toFixed(2);
+  }
 
   function applyFromCatalog(item: MaterialsCatalogRow) {
     setCategory(item.category);
     setLabel(item.label);
     setUnit(item.unit);
-    setCostRaw(centsToDisplay(item.unit_cost_cents));
-    setPriceRaw(centsToDisplay(item.unit_price_cents));
+    const cost = centsToDisplay(item.unit_cost_cents);
+    const price = centsToDisplay(item.unit_price_cents);
+    setCostRaw(cost);
+    setPriceRaw(price);
+    setMarkupRaw(computeMarkupFromPrice(cost, price));
+  }
+
+  function handleCostChange(val: string) {
+    setCostRaw(val);
+    if (markupRaw && parseFloat(val || '0') > 0) {
+      setPriceRaw(computePriceFromMarkup(val, markupRaw));
+    }
   }
 
   function handleCostBlur() {
     const cost = parseFloat(costRaw || '0');
     const price = parseFloat(priceRaw || '0');
-    if (cost > 0 && price === 0) setPriceRaw(costRaw);
+    if (cost > 0 && price === 0 && !markupRaw) {
+      setPriceRaw(costRaw);
+      setMarkupRaw('0.00');
+    }
+  }
+
+  function handlePriceChange(val: string) {
+    setPriceRaw(val);
+    setMarkupRaw(computeMarkupFromPrice(costRaw, val));
+  }
+
+  function handleMarkupChange(val: string) {
+    setMarkupRaw(val);
+    if (parseFloat(costRaw || '0') > 0) {
+      setPriceRaw(computePriceFromMarkup(costRaw, val));
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -175,9 +217,22 @@ export function CostLineForm({
             step="0.01"
             min="0"
             value={costRaw}
-            onChange={(e) => setCostRaw(e.target.value)}
+            onChange={(e) => handleCostChange(e.target.value)}
             onBlur={handleCostBlur}
             placeholder="0.00"
+          />
+        </div>
+        <div>
+          <label htmlFor="cl-markup" className="mb-1 block text-xs font-medium">
+            Markup (%)
+          </label>
+          <Input
+            id="cl-markup"
+            type="number"
+            step="0.01"
+            value={markupRaw}
+            onChange={(e) => handleMarkupChange(e.target.value)}
+            placeholder="0"
           />
         </div>
         <div>
@@ -190,7 +245,7 @@ export function CostLineForm({
             step="0.01"
             min="0"
             value={priceRaw}
-            onChange={(e) => setPriceRaw(e.target.value)}
+            onChange={(e) => handlePriceChange(e.target.value)}
             placeholder="0.00"
           />
         </div>
