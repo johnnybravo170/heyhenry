@@ -7,7 +7,7 @@
  * content block → extract work items + map to cost buckets → update memo row.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
@@ -132,31 +132,29 @@ export async function transcribeMemoAction(memoId: string): Promise<MemoActionRe
     const audioBuffer = await fileData.arrayBuffer();
     const base64Audio = Buffer.from(audioBuffer).toString('base64');
 
-    // Determine media type from the file extension.
-    // Claude API accepts these audio types for document content blocks.
+    // Gemini accepts these audio mime types for inline_data.
     const ext = storagePath.split('.').pop()?.toLowerCase();
-    type AudioMediaType = 'audio/webm' | 'audio/mp3' | 'audio/mp4' | 'audio/wav' | 'audio/ogg';
-    const mediaTypeMap: Record<string, AudioMediaType> = {
+    const mediaTypeMap: Record<string, string> = {
       webm: 'audio/webm',
       mp3: 'audio/mp3',
       mp4: 'audio/mp4',
       m4a: 'audio/mp4',
       wav: 'audio/wav',
       ogg: 'audio/ogg',
+      aac: 'audio/aac',
+      flac: 'audio/flac',
     };
-    const mediaType: AudioMediaType = mediaTypeMap[ext ?? 'webm'] ?? 'audio/webm';
+    const mediaType = mediaTypeMap[ext ?? 'webm'] ?? 'audio/webm';
 
     // Update status to extracting
     await supabase.from('project_memos').update({ status: 'extracting' }).eq('id', memoId);
 
-    // Call Claude with audio content block.
-    // The SDK types may not include audio media types yet, so we cast to
-    // satisfy the compiler while the API does support audio at runtime.
-    const anthropic = new Anthropic();
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      system: `You are a renovation project assistant. Transcribe this renovation site walk-through audio. Then extract work items and map them to standard renovation cost buckets.
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `You are a renovation project assistant. Transcribe this renovation site walk-through audio. Then extract work items and map them to standard renovation cost buckets.
 
 Standard interior buckets: Demo, Disposal, Framing, Plumbing, Plumbing Fixtures, HVAC, Insulation, Drywall, Flooring, Doors & Mouldings, Windows & Doors, Railings, Electrical, Painting, Kitchen, Contingency.
 
@@ -170,41 +168,30 @@ Respond with ONLY valid JSON in this exact format:
   ],
   "customer_preferences": ["any customer preferences mentioned"],
   "uncertainty_flags": ["anything unclear or that needs clarification"]
-}`,
-      messages: [
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'document' as const,
-              source: {
-                type: 'base64' as const,
-                // Audio media types are supported at runtime but not yet in SDK types
-                media_type: mediaType as unknown as 'application/pdf',
-                data: base64Audio,
-              },
-            },
-            {
-              type: 'text',
-              text: 'Transcribe this renovation walk-through and extract work items.',
-            },
-          ],
+          parts: [{ text: prompt }, { inlineData: { mimeType: mediaType, data: base64Audio } }],
         },
       ],
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+      },
     });
 
-    // Parse the response
-    const textBlock = response.content.find((b) => b.type === 'text');
-    if (!textBlock || textBlock.type !== 'text') {
-      throw new Error('No text response from Claude.');
-    }
+    const text = response.text ?? '';
+    if (!text) throw new Error('Empty response from Gemini.');
 
     let extraction: MemoExtraction;
     try {
-      extraction = JSON.parse(textBlock.text);
+      extraction = JSON.parse(text);
     } catch {
-      // Try to extract JSON from markdown code blocks
-      const jsonMatch = textBlock.text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (jsonMatch) {
         extraction = JSON.parse(jsonMatch[1]);
       } else {
