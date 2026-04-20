@@ -123,14 +123,6 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
-        <StripeSection />
-      </Suspense>
-
-      <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
-        <PublicQuoteLinkSection />
-      </Suspense>
-
       <Link href="/settings/profile" className="block">
         <Card className="transition-colors hover:bg-muted/50">
           <CardHeader>
@@ -149,6 +141,14 @@ export default function SettingsPage() {
           </CardHeader>
         </Card>
       </Link>
+
+      <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
+        <StripeSection />
+      </Suspense>
+
+      <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
+        <PublicQuoteLinkSection />
+      </Suspense>
 
       <Link href="/settings/team" className="block">
         <Card className="transition-colors hover:bg-muted/50">
