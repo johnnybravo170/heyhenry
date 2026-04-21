@@ -8,6 +8,7 @@ export type TimeEntryRow = {
   id: string;
   tenant_id: string;
   user_id: string;
+  worker_profile_id: string | null;
   project_id: string | null;
   bucket_id: string | null;
   job_id: string | null;

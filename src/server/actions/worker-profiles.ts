@@ -16,7 +16,6 @@ const selfSchema = z.object({
   business_name: z.string().trim().max(120).optional().default(''),
   gst_number: z.string().trim().max(40).optional().default(''),
   address: z.string().trim().max(240).optional().default(''),
-  default_hourly_rate_dollars: z.string().trim().optional().default(''),
   nudge_email: z.boolean().optional().default(true),
   nudge_sms: z.boolean().optional().default(false),
 });
@@ -34,19 +33,12 @@ export async function updateOwnWorkerProfileAction(
 
   const profile = await getOrCreateWorkerProfile(tenant.id, tenant.member.id);
 
-  const rateDollars = v.default_hourly_rate_dollars.trim();
-  const rateCents = rateDollars === '' ? null : Math.round(Number(rateDollars) * 100);
-  if (rateCents !== null && (!Number.isFinite(rateCents) || rateCents < 0)) {
-    return { ok: false, error: 'Hourly rate must be a positive number.' };
-  }
-
   const patch: WorkerProfileUpdate = {
     display_name: v.display_name || null,
     phone: v.phone || null,
     business_name: v.business_name || null,
     gst_number: v.gst_number || null,
     address: v.address || null,
-    default_hourly_rate_cents: rateCents,
     nudge_email: v.nudge_email,
     nudge_sms: v.nudge_sms,
   };

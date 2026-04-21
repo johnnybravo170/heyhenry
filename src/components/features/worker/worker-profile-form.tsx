@@ -21,11 +21,6 @@ export function WorkerProfileForm({ profile }: Props) {
   const [businessName, setBusinessName] = useState(profile.business_name ?? '');
   const [gstNumber, setGstNumber] = useState(profile.gst_number ?? '');
   const [address, setAddress] = useState(profile.address ?? '');
-  const [rate, setRate] = useState(
-    profile.default_hourly_rate_cents !== null
-      ? (profile.default_hourly_rate_cents / 100).toFixed(2)
-      : '',
-  );
   const [nudgeEmail, setNudgeEmail] = useState(profile.nudge_email);
   const [nudgeSms, setNudgeSms] = useState(profile.nudge_sms);
 
@@ -39,7 +34,6 @@ export function WorkerProfileForm({ profile }: Props) {
         business_name: businessName,
         gst_number: gstNumber,
         address,
-        default_hourly_rate_dollars: rate,
         nudge_email: nudgeEmail,
         nudge_sms: nudgeSms,
       });
@@ -75,18 +69,6 @@ export function WorkerProfileForm({ profile }: Props) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(250) 555-0142"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="rate">Default hourly rate (CAD)</Label>
-            <Input
-              id="rate"
-              type="number"
-              step="0.01"
-              min="0"
-              value={rate}
-              onChange={(e) => setRate(e.target.value)}
-              placeholder="45.00"
             />
           </div>
         </CardContent>

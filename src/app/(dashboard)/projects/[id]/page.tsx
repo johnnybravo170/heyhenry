@@ -327,12 +327,19 @@ export default async function ProjectDetailPage({
         <TimeExpenseTab
           projectId={id}
           buckets={project.cost_buckets}
-          timeEntries={timeEntries.map((e) => ({
-            id: e.id,
-            entry_date: e.entry_date,
-            hours: Number(e.hours),
-            notes: e.notes ?? null,
-          }))}
+          timeEntries={timeEntries.map((e) => {
+            const wp = e.worker_profile_id
+              ? crewWorkers.find((w) => w.id === e.worker_profile_id)
+              : null;
+            return {
+              id: e.id,
+              entry_date: e.entry_date,
+              hours: Number(e.hours),
+              notes: e.notes ?? null,
+              worker_profile_id: e.worker_profile_id ?? null,
+              worker_name: wp?.display_name ?? null,
+            };
+          })}
           expenses={expenses.map((e) => ({
             id: e.id,
             expense_date: e.expense_date,
