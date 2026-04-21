@@ -20,7 +20,7 @@
 
 import { getSystemPrompt } from '@/lib/ai/system-prompt';
 import { allTools } from '@/lib/ai/tools';
-import { getCurrentTenant } from '@/lib/auth/helpers';
+import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { toGeminiFunctionDeclarations } from '@/lib/henry/adapter';
 import { clientFunctionDeclarations } from '@/lib/henry/client-tools';
 
@@ -34,7 +34,11 @@ export async function POST() {
   try {
     const tenant = await getCurrentTenant();
     if (!tenant) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      // Distinguish "not signed in" from "signed in but no tenant" so the
+      // client logs tell us which end of the chain failed.
+      const user = await getCurrentUser();
+      const reason = user ? 'no_tenant_for_user' : 'no_user';
+      return Response.json({ error: 'Unauthorized', reason }, { status: 401 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
