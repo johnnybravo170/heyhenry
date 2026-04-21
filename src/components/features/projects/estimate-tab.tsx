@@ -259,7 +259,7 @@ export function EstimateTab({
       ) : (
         <div className="space-y-4">
           <div className="overflow-x-auto rounded-md border">
-            <table className="w-full min-w-[820px] table-fixed text-sm">
+            <table className="w-full table-fixed text-sm">
               <colgroup>
                 <col />
                 <col className="w-14" />
@@ -298,28 +298,17 @@ export function EstimateTab({
                     {sec.buckets.flatMap(({ lines }) =>
                       lines.map((line) => {
                         const isEditing = editingLine?.id === line.id;
+                        const photos = (line.photo_storage_paths ?? [])
+                          .map((path) => ({
+                            path,
+                            url: costLinePhotoUrls[path] ?? '',
+                          }))
+                          .filter((p) => p.url);
+                        const hasDetail = !!line.notes || photos.length > 0;
                         return (
                           <Fragment key={line.id}>
-                            <tr className="border-b last:border-0">
-                              <td className="px-3 py-2">
-                                <p className="font-medium">{line.label}</p>
-                                {line.notes && (
-                                  <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-                                    {line.notes}
-                                  </p>
-                                )}
-                                <CostLinePhotoStrip
-                                  costLineId={line.id}
-                                  projectId={projectId}
-                                  showAddButton={false}
-                                  photos={(line.photo_storage_paths ?? [])
-                                    .map((path) => ({
-                                      path,
-                                      url: costLinePhotoUrls[path] ?? '',
-                                    }))
-                                    .filter((p) => p.url)}
-                                />
-                              </td>
+                            <tr className={hasDetail || isEditing ? '' : 'border-b last:border-0'}>
+                              <td className="px-3 py-2 font-medium">{line.label}</td>
                               <td className="px-3 py-2 text-right">{Number(line.qty)}</td>
                               <td className="px-3 py-2 text-muted-foreground">{line.unit}</td>
                               <td className="px-3 py-2 text-right text-muted-foreground">
@@ -357,6 +346,23 @@ export function EstimateTab({
                                 </div>
                               </td>
                             </tr>
+                            {hasDetail ? (
+                              <tr className={isEditing ? '' : 'border-b last:border-0'}>
+                                <td colSpan={8} className="px-3 pb-3 pt-0">
+                                  {line.notes ? (
+                                    <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                                      {line.notes}
+                                    </p>
+                                  ) : null}
+                                  <CostLinePhotoStrip
+                                    costLineId={line.id}
+                                    projectId={projectId}
+                                    showAddButton={false}
+                                    photos={photos}
+                                  />
+                                </td>
+                              </tr>
+                            ) : null}
                             {isEditing ? (
                               <tr className="border-b bg-muted/30">
                                 <td colSpan={8} className="p-4">

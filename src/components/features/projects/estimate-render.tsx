@@ -107,7 +107,7 @@ function renderGroups(lines: EstimateRenderLine[]) {
 
   return (
     <div className="overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[640px] table-fixed text-sm">
+      <table className="w-full table-fixed text-sm">
         <colgroup>
           <col />
           <col className="w-14" />
@@ -138,40 +138,51 @@ function renderGroups(lines: EstimateRenderLine[]) {
                 </tr>
               ) : null}
               {sec.buckets.flatMap((g) =>
-                g.lines.map((l) => (
-                  <tr key={l.id} className="align-top border-b last:border-0">
-                    <td className="px-3 py-2">
-                      <p className="font-medium">{l.label}</p>
-                      {l.notes ? (
-                        <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-                          {l.notes}
-                        </p>
+                g.lines.map((l) => {
+                  const hasDetail = !!l.notes || (l.photo_urls && l.photo_urls.length > 0);
+                  return (
+                    <Fragment key={l.id}>
+                      <tr className={hasDetail ? '' : 'border-b last:border-0'}>
+                        <td className="px-3 py-2 font-medium">{l.label}</td>
+                        <td className="px-3 py-2 text-right">{Number(l.qty)}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{l.unit}</td>
+                        <td className="px-3 py-2 text-right">
+                          {formatCurrency(l.unit_price_cents)}
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium">
+                          {formatCurrency(l.line_price_cents)}
+                        </td>
+                      </tr>
+                      {hasDetail ? (
+                        <tr className="border-b last:border-0">
+                          <td colSpan={5} className="px-3 pb-3 pt-0">
+                            {l.notes ? (
+                              <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                                {l.notes}
+                              </p>
+                            ) : null}
+                            {l.photo_urls && l.photo_urls.length > 0 ? (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {l.photo_urls.map((url) => (
+                                  <a
+                                    key={url}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block h-14 w-14 overflow-hidden rounded-md border"
+                                  >
+                                    {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
+                                    <img src={url} alt="" className="h-full w-full object-cover" />
+                                  </a>
+                                ))}
+                              </div>
+                            ) : null}
+                          </td>
+                        </tr>
                       ) : null}
-                      {l.photo_urls && l.photo_urls.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {l.photo_urls.map((url) => (
-                            <a
-                              key={url}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block h-14 w-14 overflow-hidden rounded-md border"
-                            >
-                              {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
-                              <img src={url} alt="" className="h-full w-full object-cover" />
-                            </a>
-                          ))}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-2 text-right">{Number(l.qty)}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{l.unit}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(l.unit_price_cents)}</td>
-                    <td className="px-3 py-2 text-right font-medium">
-                      {formatCurrency(l.line_price_cents)}
-                    </td>
-                  </tr>
-                )),
+                    </Fragment>
+                  );
+                }),
               )}
             </Fragment>
           ))}
