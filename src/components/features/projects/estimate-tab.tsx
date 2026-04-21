@@ -34,6 +34,7 @@ export function EstimateTab({
   approval,
   costLinePhotoUrls,
   feedback,
+  bucketsById,
 }: {
   projectId: string;
   costLines: CostLineRow[];
@@ -42,6 +43,7 @@ export function EstimateTab({
   approval: EstimateApprovalInfo;
   costLinePhotoUrls: Record<string, string>;
   feedback: FeedbackRow[];
+  bucketsById: Record<string, { name: string; section: string | null; order: number }>;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingLine, setEditingLine] = useState<CostLineRow | null>(null);
@@ -91,12 +93,31 @@ export function EstimateTab({
   const mgmtFeeCents = Math.round(totalPrice * managementFeeRate);
   const grandTotal = totalPrice + mgmtFeeCents;
 
-  const grouped = costLines.reduce<Record<string, CostLineRow[]>>((acc, line) => {
-    const bucket = acc[line.category] ?? [];
-    bucket.push(line);
-    acc[line.category] = bucket;
-    return acc;
-  }, {});
+  // Group by bucket, not by category. Each group's header shows the
+  // contractor's chosen division (e.g. "UPSTAIRS WORK · Closets"), which
+  // mirrors what the customer sees on the estimate.
+  type LineGroup = {
+    key: string;
+    bucketName: string;
+    section: string | null;
+    order: number;
+    lines: CostLineRow[];
+  };
+  const groupedMap = new Map<string, LineGroup>();
+  for (const line of costLines) {
+    const key = line.bucket_id ?? '__none__';
+    const info = line.bucket_id ? bucketsById[line.bucket_id] : undefined;
+    const g = groupedMap.get(key) ?? {
+      key,
+      bucketName: info?.name ?? 'Other',
+      section: info?.section ?? null,
+      order: info?.order ?? Number.MAX_SAFE_INTEGER,
+      lines: [],
+    };
+    g.lines.push(line);
+    groupedMap.set(key, g);
+  }
+  const grouped = Array.from(groupedMap.values()).sort((a, b) => a.order - b.order);
 
   const statusChip = (() => {
     switch (approval.status) {
@@ -217,11 +238,16 @@ export function EstimateTab({
         </p>
       ) : (
         <div className="space-y-4">
-          {Object.entries(grouped).map(([cat, lines]) => (
-            <div key={cat}>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground capitalize">
-                {cat}
-              </h4>
+          {grouped.map(({ key, bucketName, section, lines }) => (
+            <div key={key}>
+              <div className="mb-2 flex items-baseline gap-2">
+                {section ? (
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {section}
+                  </span>
+                ) : null}
+                <h4 className="text-sm font-semibold">{bucketName}</h4>
+              </div>
               <div className="overflow-x-auto rounded-md border">
                 <table className="w-full text-sm">
                   <thead>

@@ -33,7 +33,7 @@ import { listMaterialsCatalog } from '@/lib/db/queries/materials-catalog';
 import { listPhotosByProject } from '@/lib/db/queries/photos';
 import { listAssignmentsForProject } from '@/lib/db/queries/project-assignments';
 import { listProjectBills } from '@/lib/db/queries/project-bills';
-import { getBudgetVsActual } from '@/lib/db/queries/project-buckets';
+import { getBudgetVsActual, listBucketsForProject } from '@/lib/db/queries/project-buckets';
 import { getEstimateViewStats, listProjectEvents } from '@/lib/db/queries/project-events';
 import { getProject } from '@/lib/db/queries/projects';
 import { listPurchaseOrders } from '@/lib/db/queries/purchase-orders';
@@ -139,10 +139,16 @@ export default async function ProjectDetailPage({
     getEstimateViewStats(id),
   ]);
 
-  const [crewAssignments, crewWorkers] = await Promise.all([
+  const [crewAssignments, crewWorkers, projectBuckets] = await Promise.all([
     listAssignmentsForProject(project.tenant_id, id),
     listWorkerProfiles(project.tenant_id),
+    listBucketsForProject(id),
   ]);
+  // Lookup map for the estimate tab's grouping (bucket_id → name/section/order).
+  const bucketsById: Record<string, { name: string; section: string | null; order: number }> = {};
+  for (const b of projectBuckets) {
+    bucketsById[b.id] = { name: b.name, section: b.section ?? null, order: b.display_order };
+  }
 
   // Customer feedback on the estimate. Attach line labels so the operator
   // sees which item each comment refers to.
@@ -468,6 +474,7 @@ export default async function ProjectDetailPage({
           costLinePhotoUrls={costLinePhotoUrls}
           managementFeeRate={project.management_fee_rate}
           feedback={feedbackRows}
+          bucketsById={bucketsById}
           approval={{
             status: project.estimate_status,
             approval_code: project.estimate_approval_code,

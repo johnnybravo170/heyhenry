@@ -51,14 +51,27 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
     logoUrl = signed?.signedUrl ?? null;
   }
 
-  const { data: lines } = await supabase
-    .from('project_cost_lines')
-    .select(
-      'id, label, notes, qty, unit, unit_price_cents, line_price_cents, category, photo_storage_paths',
-    )
-    .eq('project_id', id)
-    .order('category', { ascending: true })
-    .order('created_at', { ascending: true });
+  const [{ data: lines }, { data: buckets }] = await Promise.all([
+    supabase
+      .from('project_cost_lines')
+      .select(
+        'id, label, notes, qty, unit, unit_price_cents, line_price_cents, category, bucket_id, photo_storage_paths',
+      )
+      .eq('project_id', id)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('project_cost_buckets')
+      .select('id, name, section, display_order')
+      .eq('project_id', id),
+  ]);
+  const bucketInfo = new Map<string, { name: string; section: string | null; order: number }>();
+  for (const b of buckets ?? []) {
+    bucketInfo.set(b.id as string, {
+      name: (b.name as string) ?? '',
+      section: (b.section as string | null) ?? null,
+      order: (b.display_order as number) ?? 0,
+    });
+  }
 
   // Sign line photos (admin client so storage RLS doesn't silently drop us).
   const allPhotoPaths = Array.from(
@@ -80,10 +93,19 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
   }
 
   const costLines: EstimateRenderLine[] = (lines ?? []).map((l) => {
-    const paths = (l as { photo_storage_paths?: string[] }).photo_storage_paths ?? [];
+    const raw = l as {
+      photo_storage_paths?: string[];
+      bucket_id?: string | null;
+    } & EstimateRenderLine;
+    const info = raw.bucket_id ? bucketInfo.get(raw.bucket_id) : undefined;
     return {
-      ...(l as EstimateRenderLine),
-      photo_urls: paths.map((p) => photoUrlByPath.get(p) ?? '').filter(Boolean),
+      ...(raw as EstimateRenderLine),
+      bucket_name: info?.name ?? null,
+      bucket_section: info?.section ?? null,
+      bucket_order: info?.order,
+      photo_urls: (raw.photo_storage_paths ?? [])
+        .map((p) => photoUrlByPath.get(p) ?? '')
+        .filter(Boolean),
     };
   });
   const subtotal = costLines.reduce((s, l) => s + l.line_price_cents, 0);

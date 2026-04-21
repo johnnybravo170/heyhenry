@@ -15,6 +15,14 @@ export type EstimateRenderLine = {
   unit_price_cents: number;
   line_price_cents: number;
   category: string;
+  /**
+   * Bucket this line belongs to. Used for grouping on the customer-facing
+   * estimate. Lines without a bucket group under "Other".
+   */
+  bucket_id?: string | null;
+  bucket_name?: string | null;
+  bucket_section?: string | null;
+  bucket_order?: number;
   /** Signed URLs to any photos attached to this line. */
   photo_urls?: string[];
 };
@@ -45,6 +53,110 @@ function formatDate(iso: string | null | undefined): string | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+/**
+ * Group lines by bucket (bucket_id) and then by section. Renders the same
+ * columns in each bucket's own table so the customer sees the contractor's
+ * chosen divisions (e.g. UPSTAIRS WORK → Closets, Vanity, Paint) rather
+ * than a single flat list.
+ */
+function renderGroups(lines: EstimateRenderLine[]) {
+  type Group = {
+    key: string;
+    section: string | null;
+    bucketName: string;
+    order: number;
+    lines: EstimateRenderLine[];
+  };
+  const byKey = new Map<string, Group>();
+  for (const l of lines) {
+    const key = l.bucket_id ?? '__none__';
+    const g = byKey.get(key) ?? {
+      key,
+      section: l.bucket_section ?? null,
+      bucketName: l.bucket_name ?? 'Other',
+      order: l.bucket_order ?? Number.MAX_SAFE_INTEGER,
+      lines: [],
+    };
+    g.lines.push(l);
+    byKey.set(key, g);
+  }
+  const groups = Array.from(byKey.values()).sort((a, b) => a.order - b.order);
+
+  return (
+    <div className="space-y-5">
+      {groups.map((g) => {
+        const groupTotal = g.lines.reduce((s, l) => s + l.line_price_cents, 0);
+        return (
+          <div key={g.key}>
+            <div className="mb-2 flex items-baseline justify-between gap-4">
+              <div>
+                {g.section ? (
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {g.section}
+                  </p>
+                ) : null}
+                <h4 className="text-sm font-semibold">{g.bucketName}</h4>
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">
+                {formatCurrency(groupTotal)}
+              </span>
+            </div>
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-3 py-2 text-left font-medium">Item</th>
+                    <th className="px-3 py-2 text-right font-medium">Qty</th>
+                    <th className="px-3 py-2 text-left font-medium">Unit</th>
+                    <th className="px-3 py-2 text-right font-medium">Price</th>
+                    <th className="px-3 py-2 text-right font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.lines.map((l) => (
+                    <tr key={l.id} className="align-top border-b last:border-0">
+                      <td className="px-3 py-2">
+                        <p className="font-medium">{l.label}</p>
+                        {l.notes ? (
+                          <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                            {l.notes}
+                          </p>
+                        ) : null}
+                        {l.photo_urls && l.photo_urls.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {l.photo_urls.map((url) => (
+                              <a
+                                key={url}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block h-14 w-14 overflow-hidden rounded-md border"
+                              >
+                                {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
+                                <img src={url} alt="" className="h-full w-full object-cover" />
+                              </a>
+                            ))}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-2 text-right">{Number(l.qty)}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.unit}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(l.unit_price_cents)}</td>
+                      <td className="px-3 py-2 text-right font-medium">
+                        {formatCurrency(l.line_price_cents)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function EstimateRender({
@@ -140,53 +252,7 @@ export function EstimateRender({
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-3 py-2 text-left font-medium">Item</th>
-              <th className="px-3 py-2 text-right font-medium">Qty</th>
-              <th className="px-3 py-2 text-left font-medium">Unit</th>
-              <th className="px-3 py-2 text-right font-medium">Price</th>
-              <th className="px-3 py-2 text-right font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l) => (
-              <tr key={l.id} className="align-top border-b last:border-0">
-                <td className="px-3 py-2">
-                  <p className="font-medium">{l.label}</p>
-                  {l.notes ? (
-                    <p className="whitespace-pre-wrap text-xs text-muted-foreground">{l.notes}</p>
-                  ) : null}
-                  {l.photo_urls && l.photo_urls.length > 0 ? (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {l.photo_urls.map((url) => (
-                        <a
-                          key={url}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block h-14 w-14 overflow-hidden rounded-md border"
-                        >
-                          {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
-                          <img src={url} alt="" className="h-full w-full object-cover" />
-                        </a>
-                      ))}
-                    </div>
-                  ) : null}
-                </td>
-                <td className="px-3 py-2 text-right">{Number(l.qty)}</td>
-                <td className="px-3 py-2 text-muted-foreground">{l.unit}</td>
-                <td className="px-3 py-2 text-right">{formatCurrency(l.unit_price_cents)}</td>
-                <td className="px-3 py-2 text-right font-medium">
-                  {formatCurrency(l.line_price_cents)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {renderGroups(lines)}
 
       <div className="mt-4 space-y-1 text-sm">
         <div className="flex justify-between">

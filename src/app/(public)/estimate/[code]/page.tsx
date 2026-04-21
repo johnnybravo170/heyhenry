@@ -53,14 +53,27 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
     logoUrl = signed?.signedUrl ?? null;
   }
 
-  const { data: lines } = await admin
-    .from('project_cost_lines')
-    .select(
-      'id, label, notes, qty, unit, unit_price_cents, line_price_cents, category, photo_storage_paths',
-    )
-    .eq('project_id', p.id as string)
-    .order('category', { ascending: true })
-    .order('created_at', { ascending: true });
+  const [{ data: lines }, { data: buckets }] = await Promise.all([
+    admin
+      .from('project_cost_lines')
+      .select(
+        'id, label, notes, qty, unit, unit_price_cents, line_price_cents, category, bucket_id, photo_storage_paths',
+      )
+      .eq('project_id', p.id as string)
+      .order('created_at', { ascending: true }),
+    admin
+      .from('project_cost_buckets')
+      .select('id, name, section, display_order')
+      .eq('project_id', p.id as string),
+  ]);
+  const bucketInfo = new Map<string, { name: string; section: string | null; order: number }>();
+  for (const b of buckets ?? []) {
+    bucketInfo.set(b.id as string, {
+      name: (b.name as string) ?? '',
+      section: (b.section as string | null) ?? null,
+      order: (b.display_order as number) ?? 0,
+    });
+  }
 
   // Sign every cost-line photo in a single batch; map back by path.
   const allPhotoPaths = Array.from(
@@ -81,10 +94,19 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
   }
 
   const renderLines: EstimateRenderLine[] = (lines ?? []).map((l) => {
-    const paths = (l as { photo_storage_paths?: string[] }).photo_storage_paths ?? [];
+    const raw = l as {
+      photo_storage_paths?: string[];
+      bucket_id?: string | null;
+    } & EstimateRenderLine;
+    const info = raw.bucket_id ? bucketInfo.get(raw.bucket_id) : undefined;
     return {
-      ...(l as EstimateRenderLine),
-      photo_urls: paths.map((p) => photoUrlByPath.get(p) ?? '').filter(Boolean),
+      ...(raw as EstimateRenderLine),
+      bucket_name: info?.name ?? null,
+      bucket_section: info?.section ?? null,
+      bucket_order: info?.order,
+      photo_urls: (raw.photo_storage_paths ?? [])
+        .map((p) => photoUrlByPath.get(p) ?? '')
+        .filter(Boolean),
     };
   });
 
