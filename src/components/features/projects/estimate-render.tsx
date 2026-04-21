@@ -132,12 +132,12 @@ function renderGroups(lines: EstimateRenderLine[]) {
                 </tr>
               ) : null}
               {sec.buckets.flatMap((g) =>
-                g.lines.map((l) => (
-                  <tr key={l.id} className="align-top border-b last:border-0">
-                    <td className="px-3 py-2">
-                      <p className="font-medium">{l.label}</p>
+                g.lines.map((l) => {
+                  const hasDetail = !!l.notes || (l.photo_urls && l.photo_urls.length > 0);
+                  const detailContent = hasDetail ? (
+                    <>
                       {l.notes ? (
-                        <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">
+                        <p className="whitespace-pre-wrap text-xs text-muted-foreground">
                           {l.notes}
                         </p>
                       ) : null}
@@ -157,12 +157,33 @@ function renderGroups(lines: EstimateRenderLine[]) {
                           ))}
                         </div>
                       ) : null}
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium">
-                      {formatCurrency(l.line_price_cents)}
-                    </td>
-                  </tr>
-                )),
+                    </>
+                  ) : null;
+                  return (
+                    <Fragment key={l.id}>
+                      <tr className={hasDetail ? 'align-top' : 'align-top border-b last:border-0'}>
+                        <td className="px-3 py-2">
+                          <p className="font-medium">{l.label}</p>
+                          {/* Desktop: inline under the label */}
+                          {hasDetail ? (
+                            <div className="mt-0.5 hidden sm:block">{detailContent}</div>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium">
+                          {formatCurrency(l.line_price_cents)}
+                        </td>
+                      </tr>
+                      {/* Mobile: full-width row below */}
+                      {hasDetail ? (
+                        <tr className="border-b last:border-0 sm:hidden">
+                          <td colSpan={2} className="px-3 pb-3 pt-0">
+                            {detailContent}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                }),
               )}
             </Fragment>
           ))}
