@@ -1,4 +1,5 @@
-# Autoresponder (AR) — Phase 1 Build Notes
+# Autoresponder (AR) — Build Notes
+<!-- STATUS: Phase 1 ✅ DONE | Phase 2 (MCP tools) ✅ DONE | Phase 3 (Admin UI /admin/ar/*) ❌ NOT STARTED -->
 
 Built 2026-04-18. Platform-admin autoresponder for Hey Henry's own marketing
 (leads, onboarding, nurture). Multi-tenant-ready schema; Phase 1 UI surfaces

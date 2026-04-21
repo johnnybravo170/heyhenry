@@ -1,8 +1,9 @@
 # Platform Admin — Phase A + B Plan
+<!-- STATUS: Phase A foundation (migration 0039, /admin route, middleware) ✅ DONE | Phase B (Henry analytics charts) ❌ NOT STARTED | Phase C+ (marketing brain, email engine, affiliates) ❌ NOT STARTED -->
 
 **Date:** 2026-04-18
 **Owner:** Jonathan
-**Status:** Spec, awaiting approval to start
+**Status:** Phase A done; Phase B+ pending
 
 ## Goal
 

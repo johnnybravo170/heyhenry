@@ -1,4 +1,5 @@
 # Phase 1A Foundation Acceptance
+<!-- STATUS: COMPLETE — 2026-04-16. Historical record, do not edit. -->
 
 **Date of acceptance:** 2026-04-16
 **Git commit on `main`:** `b2a0edf5a6fa6d90917d1483b634b60c216eccaf` (`b2a0edf`)

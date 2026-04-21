@@ -109,6 +109,10 @@ When volume or egress cost justifies it.
 - AI voice walkthrough ("walk the job and talk")
 - Map view for multi-location jobs
 - 3D scanning
+- **Receipt scan on iOS**: trigger `VNDocumentCameraViewController` for
+  one-tap Apple document scanning (auto-crop, perspective fix, multi-page
+  PDF). Web workaround exists via Files → Scan Documents but costs 2–3
+  extra taps; native gets it down to one tap.
 
 ## Integration points (not all Phase 1)
 

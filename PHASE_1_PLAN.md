@@ -1,4 +1,5 @@
 # Contractor OS — Phase 1 Implementation Plan
+<!-- STATUS: COMPLETE — Archived 2026-04-19. All phases (1A foundation, 1B feature tracks, 1C integration, 1D hardening) shipped. See ACCEPTANCE.md for gate results. -->
 
 > **Code name:** Smartfusion (placeholder — Jonathan owns smartfusion.ca; final brand TBD)
 > **Target:** Ship a working quoting + job + invoicing app that Will (pressure washing, Abbotsford BC) uses for real customers.

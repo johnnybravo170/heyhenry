@@ -1,8 +1,9 @@
 # Hey Henry Voice App — Build Plan
+<!-- STATUS: Phases 1-4 (Gemini Live web voice, tool migration, memory/persistence, video input) ✅ DONE via use-henry.ts + /api/henry/* — implemented with Gemini Live not the original Claude+browser-STT plan | Phase 4b (support desk/tickets) ❓ CHECK | Phase 5+ (Expo native app, Tap to Pay, CarPlay) ❌ NOT STARTED -->
 
 **Date:** 2026-04-17
 **Owner:** Jonathan
-**Status:** Spec, awaiting approval to start
+**Status:** Web voice done; Expo native app not started
 
 ## Goal
 

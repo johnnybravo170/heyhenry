@@ -161,9 +161,11 @@ export function WorkerExpenseForm({ projects }: Props) {
           id="receipt"
           type="file"
           accept="image/*,application/pdf"
-          capture="environment"
           onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
         />
+        <p className="text-xs text-muted-foreground">
+          On iPhone, tap Choose Files → ⋯ → Scan Documents for auto-cropped receipts.
+        </p>
       </div>
 
       <div className="space-y-1.5">

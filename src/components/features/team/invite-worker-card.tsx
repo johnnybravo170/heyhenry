@@ -59,7 +59,8 @@ export function InviteWorkerCard() {
       <CardHeader>
         <CardTitle>Invite a Worker</CardTitle>
         <CardDescription>
-          Generate a link to invite someone to your team, or send it directly via email. Links expire after 7 days.
+          Generate a link to invite someone to your team, or send it directly via email. Links
+          expire after 7 days.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -84,7 +85,11 @@ export function InviteWorkerCard() {
                 className="h-9"
               />
               <Button size="sm" onClick={handleSendEmail} disabled={sendingEmail || !email.trim()}>
-                {sendingEmail ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                {sendingEmail ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
               </Button>
             </div>
           </>

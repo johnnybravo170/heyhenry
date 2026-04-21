@@ -1,4 +1,5 @@
 # HeyHenry AI Chat — Implementation Plan
+<!-- STATUS: Stage 1 (text chat via Claude API) ✅ DONE | Stage 2 (voice) SUPERSEDED — replaced entirely by Gemini Live (see use-henry.ts). This plan's Stage 2 architecture was never built. -->
 
 ## Overview
 Two-stage AI assistant: text chat first (foundation), voice layer second.
