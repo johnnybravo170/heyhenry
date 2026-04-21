@@ -14,7 +14,7 @@ import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import type { InvoiceLineItem } from '@/lib/db/queries/invoices';
 import { formatCurrency } from '@/lib/pricing/calculator';
-import { getStripe } from '@/lib/stripe/client';
+import { getPaymentProvider } from '@/lib/providers/factory';
 import { createClient } from '@/lib/supabase/server';
 import {
   canTransition,
@@ -201,42 +201,27 @@ export async function sendInvoiceAction(input: {
   let stripeSessionId: string | null = null;
 
   if (stripeAccountId) {
-    // Create a Stripe Checkout Session on the connected account.
+    // Create a Checkout Session on the connected account.
     const appFeeCents = Math.round(totalCents * 0.005); // 0.5% platform fee
+    const payments = await getPaymentProvider(tenant.id);
 
-    const session = await getStripe().checkout.sessions.create(
-      {
-        line_items: [
-          {
-            price_data: {
-              currency: 'cad',
-              unit_amount: totalCents,
-              product_data: {
-                name: `Invoice from ${tenantRow?.name ?? 'your contractor'}`,
-                description: customer?.name
-                  ? `Service for ${customer.name}`
-                  : 'Contractor services',
-              },
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        payment_intent_data: {
-          application_fee_amount: appFeeCents,
-        },
-        success_url: `${appUrl}/invoices/${invoice.id}?payment=success`,
-        cancel_url: `${appUrl}/invoices/${invoice.id}?payment=cancelled`,
-        metadata: {
-          invoice_id: invoice.id,
-          tenant_id: tenant.id,
-        },
+    const session = await payments.createCheckoutSession({
+      tenantMerchantAccountId: stripeAccountId,
+      currency: 'cad',
+      totalCents,
+      applicationFeeCents: appFeeCents,
+      lineLabel: `Invoice from ${tenantRow?.name ?? 'your contractor'}`,
+      lineDescription: customer?.name ? `Service for ${customer.name}` : 'Contractor services',
+      successUrl: `${appUrl}/invoices/${invoice.id}?payment=success`,
+      cancelUrl: `${appUrl}/invoices/${invoice.id}?payment=cancelled`,
+      metadata: {
+        invoice_id: invoice.id,
+        tenant_id: tenant.id,
       },
-      { stripeAccount: stripeAccountId },
-    );
+    });
 
     paymentUrl = session.url ?? undefined;
-    stripeSessionId = session.id;
+    stripeSessionId = session.sessionId;
   }
 
   // Update invoice row.

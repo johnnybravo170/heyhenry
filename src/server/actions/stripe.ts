@@ -12,7 +12,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { getStripe } from '@/lib/stripe/client';
+import { getPaymentProvider } from '@/lib/providers/factory';
 import { createClient } from '@/lib/supabase/server';
 
 export type StripeActionResult = { ok: true; url?: string } | { ok: false; error: string };
@@ -42,13 +42,12 @@ export async function createConnectOnboardingAction(): Promise<StripeActionResul
 
   let accountId = tenantRow?.stripe_account_id as string | null;
 
+  const payments = await getPaymentProvider(tenant.id);
+
   // Create a new Connected account if we don't have one yet.
   if (!accountId) {
-    const account = await getStripe().accounts.create({
-      type: 'standard',
-      metadata: { tenant_id: tenant.id },
-    });
-    accountId = account.id;
+    const account = await payments.createMerchantAccount({ tenant_id: tenant.id });
+    accountId = account.accountId;
 
     // Save the account ID to the tenant row immediately.
     const { error: saveErr } = await supabase
@@ -63,12 +62,11 @@ export async function createConnectOnboardingAction(): Promise<StripeActionResul
 
   // Build the onboarding URL.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const accountLink = await getStripe().accountLinks.create({
-    account: accountId,
-    refresh_url: `${appUrl}/settings?stripe=refresh`,
-    return_url: `${appUrl}/settings?stripe=success`,
-    type: 'account_onboarding',
-  });
+  const accountLink = await payments.createOnboardingLink(
+    accountId,
+    `${appUrl}/settings?stripe=refresh`,
+    `${appUrl}/settings?stripe=success`,
+  );
 
   return { ok: true, url: accountLink.url };
 }
@@ -100,9 +98,10 @@ export async function checkStripeStatusAction(): Promise<StripeActionResult> {
     return { ok: false, error: 'No Stripe account connected.' };
   }
 
-  const account = await getStripe().accounts.retrieve(accountId);
+  const payments = await getPaymentProvider(tenant.id);
+  const account = await payments.getMerchantAccount(accountId);
 
-  if (account.charges_enabled && account.payouts_enabled) {
+  if (account.chargesEnabled && account.payoutsEnabled) {
     const now = new Date().toISOString();
     const { error: updateErr } = await supabase
       .from('tenants')

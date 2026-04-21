@@ -1,18 +1,20 @@
 /**
  * Stripe webhook handler.
  *
+ * Verifies the signature via the PaymentProvider (region-scoped) and
+ * dispatches. The webhook endpoint is platform-level so region is assumed
+ * from tenant.region on lookup (ca-central-1 today).
+ *
  * Handles:
  *   - checkout.session.completed: marks the invoice as paid
  *   - account.updated: updates tenant onboarding status
- *
- * The webhook secret must be configured in STRIPE_WEBHOOK_SECRET.
- * Use `stripe listen --forward-to localhost:3000/api/stripe/webhook`
- * during local development.
  */
 
 import type Stripe from 'stripe';
-import { getStripe } from '@/lib/stripe/client';
+import { getPaymentProviderForRegion } from '@/lib/providers/factory';
 import { createClient } from '@/lib/supabase/server';
+
+const DEFAULT_REGION = 'ca-central-1';
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -22,13 +24,12 @@ export async function POST(request: Request) {
     return new Response('Missing stripe-signature header', { status: 400 });
   }
 
+  const payments = getPaymentProviderForRegion(DEFAULT_REGION);
+
   let event: Stripe.Event;
   try {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      return new Response('STRIPE_WEBHOOK_SECRET not configured', { status: 500 });
-    }
-    event = getStripe().webhooks.constructEvent(body, sig, webhookSecret);
+    const verified = await payments.verifyWebhook(body, sig);
+    event = verified.raw as Stripe.Event;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return new Response(`Webhook signature verification failed: ${message}`, { status: 400 });

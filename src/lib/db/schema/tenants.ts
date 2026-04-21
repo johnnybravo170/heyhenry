@@ -16,6 +16,7 @@ export const tenants = pgTable('tenants', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   slug: text('slug').unique(),
+  region: text('region').default('ca-central-1').notNull(),
   stripeAccountId: text('stripe_account_id'),
   stripeOnboardedAt: timestamp('stripe_onboarded_at', { withTimezone: true }),
   stripeTosAcceptedAt: timestamp('stripe_tos_accepted_at', { withTimezone: true }),
