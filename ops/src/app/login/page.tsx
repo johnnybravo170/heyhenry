@@ -1,14 +1,31 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 export const dynamic = 'force-dynamic';
 
+function safeNext(next: string | null): string {
+  if (!next) return '/dashboard';
+  // Only allow same-site paths to prevent open-redirect.
+  if (next.startsWith('/') && !next.startsWith('//')) return next;
+  return '/dashboard';
+}
+
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const search = useSearchParams();
+  const next = safeNext(search.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -33,9 +50,9 @@ export default function LoginPage() {
       // challenge is verified. Push user to the challenge page.
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aal?.nextLevel === 'aal2' && aal?.currentLevel !== 'aal2') {
-        router.push('/login/mfa');
+        router.push(`/login/mfa?next=${encodeURIComponent(next)}`);
       } else if (data.user) {
-        router.push('/dashboard');
+        router.push(next);
       }
     });
   }

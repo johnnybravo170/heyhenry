@@ -1,8 +1,8 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 export const dynamic = 'force-dynamic';
@@ -14,8 +14,24 @@ function makeClient() {
   );
 }
 
+function safeNext(next: string | null): string {
+  if (!next) return '/dashboard';
+  if (next.startsWith('/') && !next.startsWith('//')) return next;
+  return '/dashboard';
+}
+
 export default function MfaPage() {
+  return (
+    <Suspense>
+      <MfaInner />
+    </Suspense>
+  );
+}
+
+function MfaInner() {
   const router = useRouter();
+  const search = useSearchParams();
+  const next = safeNext(search.get('next'));
 
   const [factorId, setFactorId] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -63,7 +79,7 @@ export default function MfaPage() {
           return;
         }
         toast.success('TOTP enrolled. Save your backup somewhere safe.');
-        router.push('/dashboard');
+        router.push(next);
         return;
       }
       const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
@@ -71,7 +87,7 @@ export default function MfaPage() {
         toast.error(error.message);
         return;
       }
-      router.push('/dashboard');
+      router.push(next);
     });
   }
 

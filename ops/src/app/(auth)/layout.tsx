@@ -5,6 +5,7 @@ import { SignOutButton } from './sign-out-button';
 const NAV = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/worklog', label: 'Worklog' },
+  { href: '/ideas', label: 'Ideas' },
   { href: '/admin/keys', label: 'API Keys' },
   { href: '/admin/audit', label: 'Audit Log' },
 ];

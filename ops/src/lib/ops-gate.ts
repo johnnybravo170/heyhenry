@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { createAdminClient, createServiceClient } from './supabase';
 
@@ -8,22 +9,25 @@ export type Admin = {
 };
 
 /**
- * Resolve the current signed-in admin OR bounce.
+ * Resolve the current signed-in admin OR bounce. Preserves the originally
+ * requested path so deep-links (like an ideas email) land on the right page
+ * after login + MFA complete.
  *
- * - Not signed in → redirect to /login
+ * - Not signed in → /login?next=<current path>
  * - Signed in but not in ops.admins → 404 (don't confirm ops URLs exist)
- * - Signed in + admin but AAL1 (no MFA factor satisfied this session) →
- *   redirect to /login/mfa to complete the TOTP challenge
- *
- * Returns the admin record when all three checks pass.
+ * - Signed in + admin but AAL1 → /login/mfa?next=<current path>
  */
 export async function requireAdmin(): Promise<Admin> {
+  const hdrs = await headers();
+  const pathname = hdrs.get('x-invoke-path') ?? hdrs.get('x-ops-path') ?? '/dashboard';
+  const nextParam = `?next=${encodeURIComponent(pathname)}`;
+
   const supabase = await createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect('/login');
+  if (!user) redirect(`/login${nextParam}`);
 
   const service = createServiceClient();
   const { data: admin } = await service
@@ -35,10 +39,9 @@ export async function requireAdmin(): Promise<Admin> {
 
   if (!admin) notFound();
 
-  // Assurance level: aal2 = MFA verified in this session.
   const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   const aal = (aalData?.currentLevel as 'aal1' | 'aal2' | null) ?? 'aal1';
-  if (aal !== 'aal2') redirect('/login/mfa');
+  if (aal !== 'aal2') redirect(`/login/mfa${nextParam}`);
 
   return { userId: user.id, email: user.email ?? '', aal };
 }
