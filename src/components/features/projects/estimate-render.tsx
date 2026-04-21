@@ -107,7 +107,14 @@ function renderGroups(lines: EstimateRenderLine[]) {
 
   return (
     <div className="overflow-x-auto rounded-md border">
-      <table className="w-full text-sm">
+      <table className="w-full table-fixed text-sm">
+        <colgroup>
+          <col />
+          <col className="w-14" />
+          <col className="w-16" />
+          <col className="w-24" />
+          <col className="w-28" />
+        </colgroup>
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-3 py-2 text-left font-medium">Item</th>
