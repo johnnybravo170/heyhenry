@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { Fragment, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { CostLineRow } from '@/lib/db/queries/cost-lines';
@@ -201,16 +201,10 @@ export function EstimateTab({
         </div>
       </div>
 
-      {showForm || editingLine ? (
-        <CostLineForm
-          projectId={projectId}
-          initial={editingLine ?? undefined}
-          catalog={catalog}
-          onDone={() => {
-            setShowForm(false);
-            setEditingLine(null);
-          }}
-        />
+      {/* Top-anchored form is for Add only. Edit happens inline inside the
+          row below so the operator keeps their scroll position. */}
+      {showForm ? (
+        <CostLineForm projectId={projectId} catalog={catalog} onDone={() => setShowForm(false)} />
       ) : (
         <Button size="sm" onClick={() => setShowForm(true)}>
           + Add line
@@ -243,61 +237,80 @@ export function EstimateTab({
                     </tr>
                   </thead>
                   <tbody>
-                    {lines.map((line) => (
-                      <tr key={line.id} className="border-b last:border-0">
-                        <td className="px-3 py-2">
-                          <p className="font-medium">{line.label}</p>
-                          {line.notes && (
-                            <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-                              {line.notes}
-                            </p>
-                          )}
-                          <CostLinePhotoStrip
-                            costLineId={line.id}
-                            projectId={projectId}
-                            photos={(line.photo_storage_paths ?? [])
-                              .map((path) => ({ path, url: costLinePhotoUrls[path] ?? '' }))
-                              .filter((p) => p.url)}
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-right">{Number(line.qty)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{line.unit}</td>
-                        <td className="px-3 py-2 text-right text-muted-foreground">
-                          {formatCurrency(line.unit_cost_cents)}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {formatCurrency(line.unit_price_cents)}
-                        </td>
-                        <td className="px-3 py-2 text-right font-medium">
-                          {formatCurrency(line.line_price_cents)}
-                        </td>
-                        <td className="px-3 py-2 text-right text-muted-foreground">
-                          {Number(line.markup_pct).toFixed(1)}%
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditingLine(line);
-                                setShowForm(false);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => deleteLine(line.id)}
-                            >
-                              Del
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {lines.map((line) => {
+                      const isEditing = editingLine?.id === line.id;
+                      return (
+                        <Fragment key={line.id}>
+                          <tr className="border-b last:border-0">
+                            <td className="px-3 py-2">
+                              <p className="font-medium">{line.label}</p>
+                              {line.notes && (
+                                <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                                  {line.notes}
+                                </p>
+                              )}
+                              <CostLinePhotoStrip
+                                costLineId={line.id}
+                                projectId={projectId}
+                                showAddButton={false}
+                                photos={(line.photo_storage_paths ?? [])
+                                  .map((path) => ({ path, url: costLinePhotoUrls[path] ?? '' }))
+                                  .filter((p) => p.url)}
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-right">{Number(line.qty)}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{line.unit}</td>
+                            <td className="px-3 py-2 text-right text-muted-foreground">
+                              {formatCurrency(line.unit_cost_cents)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {formatCurrency(line.unit_price_cents)}
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium">
+                              {formatCurrency(line.line_price_cents)}
+                            </td>
+                            <td className="px-3 py-2 text-right text-muted-foreground">
+                              {Number(line.markup_pct).toFixed(1)}%
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingLine(isEditing ? null : line);
+                                    setShowForm(false);
+                                  }}
+                                >
+                                  {isEditing ? 'Close' : 'Edit'}
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => deleteLine(line.id)}
+                                >
+                                  Del
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                          {isEditing ? (
+                            <tr className="border-b bg-muted/30">
+                              <td colSpan={8} className="p-4">
+                                <CostLineForm
+                                  projectId={projectId}
+                                  initial={line}
+                                  catalog={catalog}
+                                  photoUrls={costLinePhotoUrls}
+                                  onDone={() => setEditingLine(null)}
+                                />
+                              </td>
+                            </tr>
+                          ) : null}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

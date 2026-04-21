@@ -8,6 +8,7 @@ import type { CostLineRow } from '@/lib/db/queries/cost-lines';
 import type { MaterialsCatalogRow } from '@/lib/db/queries/materials-catalog';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { upsertCostLineAction } from '@/server/actions/project-cost-control';
+import { CostLinePhotoStrip } from './cost-line-photo-strip';
 
 const CATEGORIES = ['material', 'labour', 'sub', 'equipment', 'overhead'] as const;
 
@@ -24,12 +25,15 @@ export function CostLineForm({
   catalog,
   defaultBucketId,
   onDone,
+  photoUrls,
 }: {
   projectId: string;
   initial?: CostLineRow;
   catalog: MaterialsCatalogRow[];
   defaultBucketId?: string;
   onDone: () => void;
+  /** Path → signed URL map for any existing photos on this line. */
+  photoUrls?: Record<string, string>;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
@@ -262,6 +266,18 @@ export function CostLineForm({
           placeholder="Add details, photos this references, material notes, etc."
         />
       </div>
+      {initial ? (
+        <div>
+          <p className="mb-1 text-xs font-medium">Photos</p>
+          <CostLinePhotoStrip
+            costLineId={initial.id}
+            projectId={projectId}
+            photos={(initial.photo_storage_paths ?? [])
+              .map((path) => ({ path, url: photoUrls?.[path] ?? '' }))
+              .filter((p) => p.url)}
+          />
+        </div>
+      ) : null}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>

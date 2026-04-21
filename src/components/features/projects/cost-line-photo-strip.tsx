@@ -10,10 +10,13 @@ export function CostLinePhotoStrip({
   costLineId,
   projectId,
   photos,
+  showAddButton = true,
 }: {
   costLineId: string;
   projectId: string;
   photos: { path: string; url: string }[];
+  /** When false, just renders thumbs (no upload UI). Used in read-only rows. */
+  showAddButton?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
@@ -42,6 +45,9 @@ export function CostLinePhotoStrip({
     });
   }
 
+  // Read-only with no photos → render nothing so empty rows stay clean.
+  if (!showAddButton && photos.length === 0) return null;
+
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2">
       {photos.map((p) => (
@@ -66,14 +72,16 @@ export function CostLinePhotoStrip({
           </button>
         </a>
       ))}
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={pending}
-        className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-50"
-      >
-        {pending ? '…' : '+ Photo'}
-      </button>
+      {showAddButton ? (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={pending}
+          className="flex h-10 items-center gap-1 rounded-md border border-dashed px-2 text-xs text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-50"
+        >
+          {pending ? '…' : '+ Add photo'}
+        </button>
+      ) : null}
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>

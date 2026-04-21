@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ImageIcon, Link2, Mic, Users } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChangeOrderList } from '@/components/features/change-orders/change-order-list';
@@ -291,6 +291,9 @@ export default async function ProjectDetailPage({
   const coLabel =
     coSummary.pending_count > 0 ? `Change Orders (${coSummary.pending_count})` : 'Change Orders';
 
+  // Core-workflow tabs stay in the main nav. Secondary resource views
+  // (Gallery, Portal, Memos, Crew) move up to icon buttons in the header
+  // so the tab row stays tight.
   const tabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'buckets', label: 'Cost Buckets' },
@@ -302,11 +305,17 @@ export default async function ProjectDetailPage({
     { key: 'variance', label: 'Variance' },
     { key: 'invoices', label: 'Invoices' },
     { key: 'time', label: 'Time & Expenses' },
-    { key: 'crew', label: 'Crew' },
     { key: 'change-orders', label: coLabel },
-    { key: 'memos', label: 'Memos' },
-    { key: 'gallery', label: 'Gallery' },
-    { key: 'portal', label: 'Portal' },
+  ];
+  const secondaryTabs: {
+    key: Tab;
+    label: string;
+    icon: 'gallery' | 'portal' | 'memos' | 'crew';
+  }[] = [
+    { key: 'gallery', label: 'Gallery', icon: 'gallery' },
+    { key: 'portal', label: 'Portal', icon: 'portal' },
+    { key: 'memos', label: 'Memos', icon: 'memos' },
+    { key: 'crew', label: 'Crew', icon: 'crew' },
   ];
 
   return (
@@ -341,13 +350,44 @@ export default async function ProjectDetailPage({
             <PercentCompleteEditor project={project} />
           </div>
         </div>
-        <DeleteProjectButton projectId={project.id} projectName={project.name} />
+        <div className="flex items-center gap-1">
+          {secondaryTabs.map((s) => {
+            const active = tab === s.key;
+            const Icon =
+              s.icon === 'gallery'
+                ? ImageIcon
+                : s.icon === 'portal'
+                  ? Link2
+                  : s.icon === 'memos'
+                    ? Mic
+                    : Users;
+            return (
+              <Link
+                key={s.key}
+                href={`/projects/${id}?tab=${s.key}`}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+                  active
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <Icon className="size-3.5" />
+                {s.label}
+              </Link>
+            );
+          })}
+          <DeleteProjectButton projectId={project.id} projectName={project.name} />
+        </div>
       </header>
 
       {/* Tab navigation: <select> dropdown on narrow screens, full row above
           the lg breakpoint. */}
       <div className="mb-6 lg:hidden">
-        <ProjectTabSelect projectId={id} currentTab={tab} tabs={tabs} />
+        <ProjectTabSelect
+          projectId={id}
+          currentTab={tab}
+          tabs={[...tabs, ...secondaryTabs.map((s) => ({ key: s.key, label: s.label }))]}
+        />
       </div>
       <div className="mb-6 hidden flex-wrap gap-1 border-b lg:flex">
         {tabs.map((t) => (
