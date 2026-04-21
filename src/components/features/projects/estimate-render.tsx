@@ -107,7 +107,7 @@ function renderGroups(lines: EstimateRenderLine[]) {
 
   return (
     <div className="overflow-x-auto rounded-md border">
-      <table className="w-full table-fixed text-sm">
+      <table className="w-full min-w-[640px] table-fixed text-sm">
         <colgroup>
           <col />
           <col className="w-14" />

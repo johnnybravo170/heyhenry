@@ -259,7 +259,7 @@ export function EstimateTab({
       ) : (
         <div className="space-y-4">
           <div className="overflow-x-auto rounded-md border">
-            <table className="w-full table-fixed text-sm">
+            <table className="w-full min-w-[820px] table-fixed text-sm">
               <colgroup>
                 <col />
                 <col className="w-14" />
