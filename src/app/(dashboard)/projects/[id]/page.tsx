@@ -21,6 +21,7 @@ import { InvoicesTab } from '@/components/features/projects/invoices-tab';
 import { PercentCompleteEditor } from '@/components/features/projects/percent-complete-editor';
 import { ProjectNameEditor } from '@/components/features/projects/project-name-editor';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
+import { ProjectTabSelect } from '@/components/features/projects/project-tab-select';
 import { ProjectTimeline } from '@/components/features/projects/project-timeline';
 import { TimeExpenseTab } from '@/components/features/projects/time-expense-tab';
 import { VarianceTab } from '@/components/features/projects/variance-tab';
@@ -343,24 +344,10 @@ export default async function ProjectDetailPage({
         <DeleteProjectButton projectId={project.id} projectName={project.name} />
       </header>
 
-      {/* Tab navigation: native <select> on narrow screens (quick, familiar,
-          no horizontal scroll), full row above the lg breakpoint. */}
+      {/* Tab navigation: <select> dropdown on narrow screens, full row above
+          the lg breakpoint. */}
       <div className="mb-6 lg:hidden">
-        <select
-          value={tab}
-          onChange={(e) => {
-            if (typeof window !== 'undefined') {
-              window.location.href = `/projects/${id}?tab=${e.target.value}`;
-            }
-          }}
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm font-medium"
-        >
-          {tabs.map((t) => (
-            <option key={t.key} value={t.key}>
-              {t.label}
-            </option>
-          ))}
-        </select>
+        <ProjectTabSelect projectId={id} currentTab={tab} tabs={tabs} />
       </div>
       <div className="mb-6 hidden flex-wrap gap-1 border-b lg:flex">
         {tabs.map((t) => (
