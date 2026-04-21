@@ -12,7 +12,13 @@
  * doesn't need a rewrite.
  */
 
-import { GoogleGenAI, type LiveServerMessage, Modality, type Session } from '@google/genai';
+import {
+  GoogleGenAI,
+  type LiveServerMessage,
+  Modality,
+  type Session,
+  ThinkingLevel,
+} from '@google/genai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLIENT_TOOL_NAMES } from '@/lib/henry/client-tools';
 import { useHenryScreen } from '@/lib/henry/screen-context';
@@ -493,6 +499,7 @@ export function useHenry(): UseHenryReturn {
           systemInstruction: systemPrompt,
           inputAudioTranscription: {},
           outputAudioTranscription: {},
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
           tools: tools.length > 0 ? [{ functionDeclarations: tools as never }] : undefined,
         },
         callbacks: {

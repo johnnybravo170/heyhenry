@@ -24,10 +24,11 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { toGeminiFunctionDeclarations } from '@/lib/henry/adapter';
 import { clientFunctionDeclarations } from '@/lib/henry/client-tools';
 
-// Live-capable models for this API key (confirmed via ListModels): only the
-// 2.5 Flash native-audio family supports bidiGenerateContent on v1alpha/v1beta.
-// Using the dated preview (vs "latest") for stability — upgrade deliberately.
-const LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-09-2025';
+// Gemini 3.1 Flash Live preview. Replaced 2.5-flash-native-audio-preview-09-2025
+// (deprecated 2026-03-19) on 2026-04-21. 3.1 reports ~90% function-calling
+// adherence (vs 84% on 2.5) — material for the 17-tool loop. Paired with
+// `thinkingLevel: MINIMAL` on the client for lower TTFT.
+const LIVE_MODEL = 'gemini-3.1-flash-live-preview';
 
 export async function POST() {
   try {
