@@ -312,6 +312,9 @@ export function useHenry(): UseHenryReturn {
   // ─── Server event handler ──────────────────────────────────────────────
   const handleServerEvent = useCallback(
     (evt: ServerEvent) => {
+      // Temporary: log every event so we can diagnose what the server is
+      // actually sending. Remove once voice is verified working.
+      console.log('[Henry] ←', evt.type, evt);
       switch (evt.type) {
         case 'session.created':
         case 'session.updated':
@@ -463,12 +466,17 @@ export function useHenry(): UseHenryReturn {
     const proc = ctx.createScriptProcessor(4096, 1, 1);
     procNodeRef.current = proc;
 
+    let chunkCount = 0;
     proc.onaudioprocess = (e) => {
       const ws = wsRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
       const input = e.inputBuffer.getChannelData(0);
       const b64 = float32ToPcm16Base64(input);
       ws.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: b64 }));
+      chunkCount++;
+      if (chunkCount === 1 || chunkCount % 20 === 0) {
+        console.log('[Henry] → input_audio_buffer.append', { chunk: chunkCount });
+      }
     };
 
     source.connect(proc);
@@ -512,9 +520,10 @@ export function useHenry(): UseHenryReturn {
     ]);
 
     ws.onopen = () => {
-      console.log('[Henry] Realtime WS open');
-      // Session was preconfigured at mint time (instructions, tools, VAD).
-      // Nothing else to send until the user speaks.
+      console.log('[Henry] Realtime WS open, subprotocol=', ws.protocol);
+      // Clear the loading state even before session.created — if the
+      // server never sends it, at least the UI un-freezes.
+      setIsLoading(false);
     };
 
     ws.onmessage = (msg) => {
