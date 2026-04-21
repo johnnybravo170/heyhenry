@@ -226,13 +226,12 @@ export function EstimateRender({
             // biome-ignore lint/performance/noImgElement: signed URLs don't flow through next/image
             <img
               src={logoUrl}
-              alt={`${businessName} logo`}
-              className="h-12 w-auto max-w-[180px] object-contain"
+              alt={businessName}
+              className="h-12 w-auto max-w-[240px] object-contain"
             />
-          ) : null}
-          <div className="min-w-0">
+          ) : (
             <p className="truncate text-base font-semibold">{businessName}</p>
-          </div>
+          )}
         </div>
         <div className="text-right">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
