@@ -160,3 +160,35 @@ Explicitly deferred so we ship fast:
 - No reports, no packets, no closeout loop
 
 Phase 1 = schema only, everything else continues to work unchanged.
+
+---
+
+## Deferred — Public Photo Showcase (Portfolio / Brochure)
+
+**Ask (2026-04-20):** let contractors mark favorite photos across all their
+jobs and publish them as a public brochure site the homeowner-leads can
+browse. Workers are proud of their work — this is the marketing surface.
+
+**Scope:**
+- **Favorites are tenant-wide** (not per-project). A photo can be marked
+  "show off" regardless of which job it came from.
+- **Job type tagging per favorite** — prepopulate from existing AI/memo
+  extraction signals where possible, user can edit. Contractors manage their
+  own job-type list (not a fixed enum) — e.g. "Kitchen", "Bathroom",
+  "Deck", "Exterior wash", etc.
+- **Favorite UI:** a heart-with-character (star-spark, medal, or custom
+  mark — the guys are proud of their work, generic heart feels flat) on the
+  existing project photo gallery item. Tap → toggle + edit job type.
+- **Public brochure:** `/showcase/{tenant-slug}` — logo + business name
+  from `business_profile`, job-type filter chips at top, masonry grid of
+  favorites below, lightbox on click. Pretty, not utilitarian.
+- **Shareable** via that public URL (no auth).
+- **Later:** embeddable snippet for the contractor's own website (iframe or
+  script tag).
+
+**Rough build:** ~3–4h. Migration adds `is_favorite` + `job_type` to
+`photos` + a `tenant_job_types` table, toggle component on gallery, public
+showcase page + data query, tenant-slug settings page.
+
+**Not started — logged here so we don't lose it.** Continuing with the W*
+worker tracks first.
