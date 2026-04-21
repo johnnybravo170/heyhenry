@@ -12,6 +12,7 @@ export type WorkerProfileRow = {
   address: string | null;
   default_hourly_rate_cents: number | null;
   default_charge_rate_cents: number | null;
+  tax_rate: number;
   can_log_expenses: boolean | null;
   can_invoice: boolean | null;
   nudge_email: boolean;
@@ -21,7 +22,7 @@ export type WorkerProfileRow = {
 };
 
 const COLUMNS =
-  'id, tenant_id, tenant_member_id, worker_type, display_name, phone, business_name, gst_number, address, default_hourly_rate_cents, default_charge_rate_cents, can_log_expenses, can_invoice, nudge_email, nudge_sms, created_at, updated_at';
+  'id, tenant_id, tenant_member_id, worker_type, display_name, phone, business_name, gst_number, address, default_hourly_rate_cents, default_charge_rate_cents, tax_rate, can_log_expenses, can_invoice, nudge_email, nudge_sms, created_at, updated_at';
 
 /** Get a worker's profile by tenant_member id. Auto-creates on first read. */
 export async function getOrCreateWorkerProfile(
@@ -65,6 +66,7 @@ export type WorkerProfileUpdate = Partial<{
   address: string | null;
   default_hourly_rate_cents: number | null;
   default_charge_rate_cents: number | null;
+  tax_rate: number;
   worker_type: 'employee' | 'subcontractor';
   can_log_expenses: boolean | null;
   can_invoice: boolean | null;

@@ -23,6 +23,7 @@ import { ProjectStatusBadge } from '@/components/features/projects/project-statu
 import { ProjectTimeline } from '@/components/features/projects/project-timeline';
 import { TimeExpenseTab } from '@/components/features/projects/time-expense-tab';
 import { VarianceTab } from '@/components/features/projects/variance-tab';
+import { WorkerInvoicesSection } from '@/components/features/projects/worker-invoices-section';
 import { getChangeOrderSummaryForProject, listChangeOrders } from '@/lib/db/queries/change-orders';
 import { getVarianceReport, listCostLines } from '@/lib/db/queries/cost-lines';
 import { listExpenses } from '@/lib/db/queries/expenses';
@@ -35,6 +36,7 @@ import { getEstimateViewStats, listProjectEvents } from '@/lib/db/queries/projec
 import { getProject } from '@/lib/db/queries/projects';
 import { listPurchaseOrders } from '@/lib/db/queries/purchase-orders';
 import { listTimeEntries } from '@/lib/db/queries/time-entries';
+import { listInvoicesForProject } from '@/lib/db/queries/worker-invoices';
 import { listWorkerProfiles } from '@/lib/db/queries/worker-profiles';
 import { listUnavailabilityForTenant, REASON_LABELS } from '@/lib/db/queries/worker-unavailability';
 import { createClient } from '@/lib/supabase/server';
@@ -105,9 +107,10 @@ export default async function ProjectDetailPage({
   }
 
   // Load time entries and expenses for the time tab
-  const [timeEntries, expenses] = await Promise.all([
+  const [timeEntries, expenses, workerInvoices] = await Promise.all([
     listTimeEntries({ project_id: id, limit: 100 }),
     listExpenses({ project_id: id, limit: 100 }),
+    listInvoicesForProject(project.tenant_id, id),
   ]);
 
   // Load job cost control data
@@ -409,38 +412,44 @@ export default async function ProjectDetailPage({
       ) : null}
 
       {tab === 'time' ? (
-        <TimeExpenseTab
-          projectId={id}
-          buckets={project.cost_buckets}
-          timeEntries={timeEntries.map((e) => {
-            const wp = e.worker_profile_id
-              ? crewWorkers.find((w) => w.id === e.worker_profile_id)
-              : null;
-            return {
-              id: e.id,
-              entry_date: e.entry_date,
-              hours: Number(e.hours),
-              notes: e.notes ?? null,
-              worker_profile_id: e.worker_profile_id ?? null,
-              worker_name: wp?.display_name ?? null,
-            };
-          })}
-          expenses={expenses.map((e) => {
-            const wp = e.worker_profile_id
-              ? crewWorkers.find((w) => w.id === e.worker_profile_id)
-              : null;
-            return {
-              id: e.id,
-              expense_date: e.expense_date,
-              amount_cents: e.amount_cents,
-              vendor: e.vendor ?? null,
-              description: e.description ?? null,
-              worker_profile_id: e.worker_profile_id ?? null,
-              worker_name: wp?.display_name ?? null,
-              receipt_url: expenseReceiptUrls.get(e.id) ?? null,
-            };
-          })}
-        />
+        <div className="space-y-6">
+          <div>
+            <h3 className="mb-2 text-sm font-semibold">Worker invoices</h3>
+            <WorkerInvoicesSection invoices={workerInvoices} />
+          </div>
+          <TimeExpenseTab
+            projectId={id}
+            buckets={project.cost_buckets}
+            timeEntries={timeEntries.map((e) => {
+              const wp = e.worker_profile_id
+                ? crewWorkers.find((w) => w.id === e.worker_profile_id)
+                : null;
+              return {
+                id: e.id,
+                entry_date: e.entry_date,
+                hours: Number(e.hours),
+                notes: e.notes ?? null,
+                worker_profile_id: e.worker_profile_id ?? null,
+                worker_name: wp?.display_name ?? null,
+              };
+            })}
+            expenses={expenses.map((e) => {
+              const wp = e.worker_profile_id
+                ? crewWorkers.find((w) => w.id === e.worker_profile_id)
+                : null;
+              return {
+                id: e.id,
+                expense_date: e.expense_date,
+                amount_cents: e.amount_cents,
+                vendor: e.vendor ?? null,
+                description: e.description ?? null,
+                worker_profile_id: e.worker_profile_id ?? null,
+                worker_name: wp?.display_name ?? null,
+                receipt_url: expenseReceiptUrls.get(e.id) ?? null,
+              };
+            })}
+          />
+        </div>
       ) : null}
 
       {tab === 'crew' ? (

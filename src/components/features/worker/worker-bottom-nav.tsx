@@ -1,11 +1,11 @@
 'use client';
 
-import { CalendarDays, Clock, FolderKanban, Home, Receipt, User } from 'lucide-react';
+import { CalendarDays, Clock, FileText, FolderKanban, Home, Receipt, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-const ITEMS = [
+const BASE_ITEMS = [
   { href: '/w', label: 'Today', icon: Home, match: (p: string) => p === '/w' },
   {
     href: '/w/calendar',
@@ -31,16 +31,27 @@ const ITEMS = [
     icon: Receipt,
     match: (p: string) => p.startsWith('/w/expenses'),
   },
-  {
-    href: '/w/profile',
-    label: 'Profile',
-    icon: User,
-    match: (p: string) => p.startsWith('/w/profile'),
-  },
 ];
 
-export function WorkerBottomNav() {
+const INVOICES_ITEM = {
+  href: '/w/invoices',
+  label: 'Invoices',
+  icon: FileText,
+  match: (p: string) => p.startsWith('/w/invoices'),
+};
+
+const PROFILE_ITEM = {
+  href: '/w/profile',
+  label: 'Profile',
+  icon: User,
+  match: (p: string) => p.startsWith('/w/profile'),
+};
+
+export function WorkerBottomNav({ canInvoice = false }: { canInvoice?: boolean }) {
   const pathname = usePathname();
+  const ITEMS = canInvoice
+    ? [...BASE_ITEMS, INVOICES_ITEM, PROFILE_ITEM]
+    : [...BASE_ITEMS, PROFILE_ITEM];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background">
