@@ -485,7 +485,7 @@ export function CustomerForm({
                 <FormDescription>
                   {watchedType === 'commercial'
                     ? 'Capture recurring terms and contact expectations.'
-                    : 'Anything Will needs before showing up on-site.'}
+                    : 'Anything your crew needs before showing up on-site.'}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
