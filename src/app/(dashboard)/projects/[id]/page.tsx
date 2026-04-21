@@ -15,6 +15,7 @@ import {
   type ScheduleCell,
 } from '@/components/features/projects/crew-schedule-grid';
 import { CrewTab } from '@/components/features/projects/crew-tab';
+import { DeleteProjectButton } from '@/components/features/projects/delete-project-button';
 import { EstimateTab } from '@/components/features/projects/estimate-tab';
 import { InvoicesTab } from '@/components/features/projects/invoices-tab';
 import { PercentCompleteEditor } from '@/components/features/projects/percent-complete-editor';
@@ -311,6 +312,7 @@ export default async function ProjectDetailPage({
             <PercentCompleteEditor project={project} />
           </div>
         </div>
+        <DeleteProjectButton projectId={project.id} projectName={project.name} />
       </header>
 
       {/* Tab navigation */}
