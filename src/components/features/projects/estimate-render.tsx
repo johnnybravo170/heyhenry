@@ -62,17 +62,22 @@ function formatDate(iso: string | null | undefined): string | null {
  * than a single flat list.
  */
 function renderGroups(lines: EstimateRenderLine[]) {
-  type Group = {
+  type Bucket = {
     key: string;
-    section: string | null;
     bucketName: string;
     order: number;
     lines: EstimateRenderLine[];
   };
-  const byKey = new Map<string, Group>();
+  type Section = {
+    key: string;
+    section: string | null;
+    order: number;
+    buckets: Bucket[];
+  };
+  const byBucket = new Map<string, Bucket & { section: string | null }>();
   for (const l of lines) {
     const key = l.bucket_id ?? '__none__';
-    const g = byKey.get(key) ?? {
+    const g = byBucket.get(key) ?? {
       key,
       section: l.bucket_section ?? null,
       bucketName: l.bucket_name ?? 'Other',
@@ -80,78 +85,112 @@ function renderGroups(lines: EstimateRenderLine[]) {
       lines: [],
     };
     g.lines.push(l);
-    byKey.set(key, g);
+    byBucket.set(key, g);
   }
-  const groups = Array.from(byKey.values()).sort((a, b) => a.order - b.order);
+  const bySection = new Map<string, Section>();
+  for (const b of byBucket.values()) {
+    const sKey = b.section ?? '__none__';
+    const s = bySection.get(sKey) ?? {
+      key: sKey,
+      section: b.section,
+      order: b.order,
+      buckets: [],
+    };
+    s.buckets.push({ key: b.key, bucketName: b.bucketName, order: b.order, lines: b.lines });
+    s.order = Math.min(s.order, b.order);
+    bySection.set(sKey, s);
+  }
+  const sections = Array.from(bySection.values())
+    .map((s) => ({ ...s, buckets: s.buckets.sort((a, b) => a.order - b.order) }))
+    .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="space-y-5">
-      {groups.map((g) => {
-        const groupTotal = g.lines.reduce((s, l) => s + l.line_price_cents, 0);
+    <div className="space-y-7">
+      {sections.map((sec) => {
+        const sectionTotal = sec.buckets.reduce(
+          (s, b) => s + b.lines.reduce((ls, l) => ls + l.line_price_cents, 0),
+          0,
+        );
         return (
-          <div key={g.key}>
-            <div className="mb-2 flex items-baseline justify-between gap-4">
-              <div>
-                {g.section ? (
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {g.section}
-                  </p>
-                ) : null}
-                <h4 className="text-sm font-semibold">{g.bucketName}</h4>
+          <div key={sec.key} className="space-y-4">
+            {sec.section ? (
+              <div className="flex items-baseline justify-between gap-4 border-b pb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {sec.section}
+                </h3>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {formatCurrency(sectionTotal)}
+                </span>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">
-                {formatCurrency(groupTotal)}
-              </span>
-            </div>
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-3 py-2 text-left font-medium">Item</th>
-                    <th className="px-3 py-2 text-right font-medium">Qty</th>
-                    <th className="px-3 py-2 text-left font-medium">Unit</th>
-                    <th className="px-3 py-2 text-right font-medium">Price</th>
-                    <th className="px-3 py-2 text-right font-medium">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {g.lines.map((l) => (
-                    <tr key={l.id} className="align-top border-b last:border-0">
-                      <td className="px-3 py-2">
-                        <p className="font-medium">{l.label}</p>
-                        {l.notes ? (
-                          <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-                            {l.notes}
-                          </p>
-                        ) : null}
-                        {l.photo_urls && l.photo_urls.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {l.photo_urls.map((url) => (
-                              <a
-                                key={url}
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block h-14 w-14 overflow-hidden rounded-md border"
-                              >
-                                {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
-                                <img src={url} alt="" className="h-full w-full object-cover" />
-                              </a>
-                            ))}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-2 text-right">{Number(l.qty)}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{l.unit}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(l.unit_price_cents)}</td>
-                      <td className="px-3 py-2 text-right font-medium">
-                        {formatCurrency(l.line_price_cents)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            ) : null}
+            {sec.buckets.map((g) => {
+              const groupTotal = g.lines.reduce((s, l) => s + l.line_price_cents, 0);
+              return (
+                <div key={g.key}>
+                  <div className="mb-2 flex items-baseline justify-between gap-4">
+                    <h4 className="text-sm font-semibold">{g.bucketName}</h4>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {formatCurrency(groupTotal)}
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-3 py-2 text-left font-medium">Item</th>
+                          <th className="px-3 py-2 text-right font-medium">Qty</th>
+                          <th className="px-3 py-2 text-left font-medium">Unit</th>
+                          <th className="px-3 py-2 text-right font-medium">Price</th>
+                          <th className="px-3 py-2 text-right font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {g.lines.map((l) => (
+                          <tr key={l.id} className="align-top border-b last:border-0">
+                            <td className="px-3 py-2">
+                              <p className="font-medium">{l.label}</p>
+                              {l.notes ? (
+                                <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                                  {l.notes}
+                                </p>
+                              ) : null}
+                              {l.photo_urls && l.photo_urls.length > 0 ? (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {l.photo_urls.map((url) => (
+                                    <a
+                                      key={url}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block h-14 w-14 overflow-hidden rounded-md border"
+                                    >
+                                      {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
+                                      <img
+                                        src={url}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                      />
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="px-3 py-2 text-right">{Number(l.qty)}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{l.unit}</td>
+                            <td className="px-3 py-2 text-right">
+                              {formatCurrency(l.unit_price_cents)}
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium">
+                              {formatCurrency(l.line_price_cents)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
       })}

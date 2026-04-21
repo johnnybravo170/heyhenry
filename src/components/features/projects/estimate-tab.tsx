@@ -93,21 +93,26 @@ export function EstimateTab({
   const mgmtFeeCents = Math.round(totalPrice * managementFeeRate);
   const grandTotal = totalPrice + mgmtFeeCents;
 
-  // Group by bucket, not by category. Each group's header shows the
-  // contractor's chosen division (e.g. "UPSTAIRS WORK · Closets"), which
-  // mirrors what the customer sees on the estimate.
-  type LineGroup = {
+  // Group by bucket, then nest buckets under their section so the section
+  // label is rendered once as a top-level header rather than repeated on
+  // every bucket.
+  type BucketGroup = {
     key: string;
     bucketName: string;
-    section: string | null;
     order: number;
     lines: CostLineRow[];
   };
-  const groupedMap = new Map<string, LineGroup>();
+  type SectionGroup = {
+    key: string;
+    section: string | null;
+    order: number;
+    buckets: BucketGroup[];
+  };
+  const bucketMap = new Map<string, BucketGroup & { section: string | null }>();
   for (const line of costLines) {
     const key = line.bucket_id ?? '__none__';
     const info = line.bucket_id ? bucketsById[line.bucket_id] : undefined;
-    const g = groupedMap.get(key) ?? {
+    const g = bucketMap.get(key) ?? {
       key,
       bucketName: info?.name ?? 'Other',
       section: info?.section ?? null,
@@ -115,9 +120,24 @@ export function EstimateTab({
       lines: [],
     };
     g.lines.push(line);
-    groupedMap.set(key, g);
+    bucketMap.set(key, g);
   }
-  const grouped = Array.from(groupedMap.values()).sort((a, b) => a.order - b.order);
+  const sectionMap = new Map<string, SectionGroup>();
+  for (const b of bucketMap.values()) {
+    const sKey = b.section ?? '__none__';
+    const s = sectionMap.get(sKey) ?? {
+      key: sKey,
+      section: b.section,
+      order: b.order,
+      buckets: [],
+    };
+    s.buckets.push({ key: b.key, bucketName: b.bucketName, order: b.order, lines: b.lines });
+    s.order = Math.min(s.order, b.order);
+    sectionMap.set(sKey, s);
+  }
+  const sections = Array.from(sectionMap.values())
+    .map((s) => ({ ...s, buckets: s.buckets.sort((a, b) => a.order - b.order) }))
+    .sort((a, b) => a.order - b.order);
 
   const statusChip = (() => {
     switch (approval.status) {
@@ -237,109 +257,111 @@ export function EstimateTab({
           No cost lines yet. Add your first item above.
         </p>
       ) : (
-        <div className="space-y-4">
-          {grouped.map(({ key, bucketName, section, lines }) => (
-            <div key={key}>
-              <div className="mb-2 flex items-baseline gap-2">
-                {section ? (
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {section}
-                  </span>
-                ) : null}
-                <h4 className="text-sm font-semibold">{bucketName}</h4>
-              </div>
-              <div className="overflow-x-auto rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-3 py-2 text-left font-medium">Item</th>
-                      <th className="px-3 py-2 text-right font-medium">Qty</th>
-                      <th className="px-3 py-2 text-left font-medium">Unit</th>
-                      <th className="px-3 py-2 text-right font-medium">Cost</th>
-                      <th className="px-3 py-2 text-right font-medium">Price</th>
-                      <th className="px-3 py-2 text-right font-medium">Line Price</th>
-                      <th className="px-3 py-2 text-right font-medium">Markup</th>
-                      <th className="px-3 py-2" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lines.map((line) => {
-                      const isEditing = editingLine?.id === line.id;
-                      return (
-                        <Fragment key={line.id}>
-                          <tr className="border-b last:border-0">
-                            <td className="px-3 py-2">
-                              <p className="font-medium">{line.label}</p>
-                              {line.notes && (
-                                <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-                                  {line.notes}
-                                </p>
-                              )}
-                              <CostLinePhotoStrip
-                                costLineId={line.id}
-                                projectId={projectId}
-                                showAddButton={false}
-                                photos={(line.photo_storage_paths ?? [])
-                                  .map((path) => ({ path, url: costLinePhotoUrls[path] ?? '' }))
-                                  .filter((p) => p.url)}
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-right">{Number(line.qty)}</td>
-                            <td className="px-3 py-2 text-muted-foreground">{line.unit}</td>
-                            <td className="px-3 py-2 text-right text-muted-foreground">
-                              {formatCurrency(line.unit_cost_cents)}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              {formatCurrency(line.unit_price_cents)}
-                            </td>
-                            <td className="px-3 py-2 text-right font-medium">
-                              {formatCurrency(line.line_price_cents)}
-                            </td>
-                            <td className="px-3 py-2 text-right text-muted-foreground">
-                              {Number(line.markup_pct).toFixed(1)}%
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="flex justify-end gap-1">
-                                <Button
-                                  size="xs"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setEditingLine(isEditing ? null : line);
-                                    setShowForm(false);
-                                  }}
-                                >
-                                  {isEditing ? 'Close' : 'Edit'}
-                                </Button>
-                                <Button
-                                  size="xs"
-                                  variant="ghost"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => deleteLine(line.id)}
-                                >
-                                  Del
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                          {isEditing ? (
-                            <tr className="border-b bg-muted/30">
-                              <td colSpan={8} className="p-4">
-                                <CostLineForm
-                                  projectId={projectId}
-                                  initial={line}
-                                  catalog={catalog}
-                                  photoUrls={costLinePhotoUrls}
-                                  onDone={() => setEditingLine(null)}
-                                />
-                              </td>
-                            </tr>
-                          ) : null}
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+        <div className="space-y-6">
+          {sections.map((sec) => (
+            <div key={sec.key} className="space-y-3">
+              {sec.section ? (
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {sec.section}
+                </h3>
+              ) : null}
+              {sec.buckets.map(({ key, bucketName, lines }) => (
+                <div key={key}>
+                  <h4 className="mb-2 text-sm font-semibold">{bucketName}</h4>
+                  <div className="overflow-x-auto rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-3 py-2 text-left font-medium">Item</th>
+                          <th className="px-3 py-2 text-right font-medium">Qty</th>
+                          <th className="px-3 py-2 text-left font-medium">Unit</th>
+                          <th className="px-3 py-2 text-right font-medium">Cost</th>
+                          <th className="px-3 py-2 text-right font-medium">Price</th>
+                          <th className="px-3 py-2 text-right font-medium">Line Price</th>
+                          <th className="px-3 py-2 text-right font-medium">Markup</th>
+                          <th className="px-3 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lines.map((line) => {
+                          const isEditing = editingLine?.id === line.id;
+                          return (
+                            <Fragment key={line.id}>
+                              <tr className="border-b last:border-0">
+                                <td className="px-3 py-2">
+                                  <p className="font-medium">{line.label}</p>
+                                  {line.notes && (
+                                    <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                                      {line.notes}
+                                    </p>
+                                  )}
+                                  <CostLinePhotoStrip
+                                    costLineId={line.id}
+                                    projectId={projectId}
+                                    showAddButton={false}
+                                    photos={(line.photo_storage_paths ?? [])
+                                      .map((path) => ({ path, url: costLinePhotoUrls[path] ?? '' }))
+                                      .filter((p) => p.url)}
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-right">{Number(line.qty)}</td>
+                                <td className="px-3 py-2 text-muted-foreground">{line.unit}</td>
+                                <td className="px-3 py-2 text-right text-muted-foreground">
+                                  {formatCurrency(line.unit_cost_cents)}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  {formatCurrency(line.unit_price_cents)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium">
+                                  {formatCurrency(line.line_price_cents)}
+                                </td>
+                                <td className="px-3 py-2 text-right text-muted-foreground">
+                                  {Number(line.markup_pct).toFixed(1)}%
+                                </td>
+                                <td className="px-3 py-2">
+                                  <div className="flex justify-end gap-1">
+                                    <Button
+                                      size="xs"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingLine(isEditing ? null : line);
+                                        setShowForm(false);
+                                      }}
+                                    >
+                                      {isEditing ? 'Close' : 'Edit'}
+                                    </Button>
+                                    <Button
+                                      size="xs"
+                                      variant="ghost"
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => deleteLine(line.id)}
+                                    >
+                                      Del
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {isEditing ? (
+                                <tr className="border-b bg-muted/30">
+                                  <td colSpan={8} className="p-4">
+                                    <CostLineForm
+                                      projectId={projectId}
+                                      initial={line}
+                                      catalog={catalog}
+                                      photoUrls={costLinePhotoUrls}
+                                      onDone={() => setEditingLine(null)}
+                                    />
+                                  </td>
+                                </tr>
+                              ) : null}
+                            </Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
 
