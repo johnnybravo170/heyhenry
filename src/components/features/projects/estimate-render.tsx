@@ -15,6 +15,8 @@ export type EstimateRenderLine = {
   unit_price_cents: number;
   line_price_cents: number;
   category: string;
+  /** Signed URLs to any photos attached to this line. */
+  photo_urls?: string[];
 };
 
 export type EstimateRenderProps = {
@@ -156,6 +158,22 @@ export function EstimateRender({
                   <p className="font-medium">{l.label}</p>
                   {l.notes ? (
                     <p className="whitespace-pre-wrap text-xs text-muted-foreground">{l.notes}</p>
+                  ) : null}
+                  {l.photo_urls && l.photo_urls.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {l.photo_urls.map((url) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block h-14 w-14 overflow-hidden rounded-md border"
+                        >
+                          {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
                   ) : null}
                 </td>
                 <td className="px-3 py-2 text-right">{Number(l.qty)}</td>

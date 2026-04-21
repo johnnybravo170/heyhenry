@@ -55,10 +55,38 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
 
   const { data: lines } = await admin
     .from('project_cost_lines')
-    .select('id, label, notes, qty, unit, unit_price_cents, line_price_cents, category')
+    .select(
+      'id, label, notes, qty, unit, unit_price_cents, line_price_cents, category, photo_storage_paths',
+    )
     .eq('project_id', p.id as string)
     .order('category', { ascending: true })
     .order('created_at', { ascending: true });
+
+  // Sign every cost-line photo in a single batch; map back by path.
+  const allPhotoPaths = Array.from(
+    new Set(
+      (lines ?? []).flatMap(
+        (l) => (l as { photo_storage_paths?: string[] }).photo_storage_paths ?? [],
+      ),
+    ),
+  );
+  const photoUrlByPath = new Map<string, string>();
+  if (allPhotoPaths.length > 0) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrls(allPhotoPaths, 3600);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) photoUrlByPath.set(row.path, row.signedUrl);
+    }
+  }
+
+  const renderLines: EstimateRenderLine[] = (lines ?? []).map((l) => {
+    const paths = (l as { photo_storage_paths?: string[] }).photo_storage_paths ?? [];
+    return {
+      ...(l as EstimateRenderLine),
+      photo_urls: paths.map((p) => photoUrlByPath.get(p) ?? '').filter(Boolean),
+    };
+  });
 
   const status = p.estimate_status as 'draft' | 'pending_approval' | 'approved' | 'declined';
 
@@ -75,7 +103,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
         managementFeeRate={Number(p.management_fee_rate) || 0}
         gstRate={Number(tenantRaw?.gst_rate) || 0}
         quoteDate={(p.estimate_sent_at as string | null) ?? null}
-        lines={(lines ?? []) as EstimateRenderLine[]}
+        lines={renderLines}
         status={status}
         approvedByName={p.estimate_approved_by_name as string | null}
         approvedAt={p.estimate_approved_at as string | null}

@@ -2,6 +2,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
+import sharp from 'sharp';
 import { z } from 'zod';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { uploadToStorage } from '@/lib/storage/photos';
@@ -315,14 +316,42 @@ export async function attachCostLinePhotoAction(formData: FormData): Promise<Cos
     .single();
   if (loadErr || !row) return { ok: false, error: loadErr?.message ?? 'Line not found.' };
 
-  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  // HEIC (iPhone) → JPEG: browsers outside Safari can't render HEIC, so
+  // convert server-side with sharp (libheif). PNG/WEBP/JPEG pass through.
+  let uploadBody: Blob | Buffer = file;
+  let uploadContentType = file.type || 'image/jpeg';
+  let uploadExt: string;
+  const lowerName = (file.name ?? '').toLowerCase();
+  const isHeic =
+    file.type === 'image/heic' ||
+    file.type === 'image/heif' ||
+    lowerName.endsWith('.heic') ||
+    lowerName.endsWith('.heif');
+
+  if (isHeic) {
+    try {
+      const buf = Buffer.from(await file.arrayBuffer());
+      const jpeg = await sharp(buf).rotate().jpeg({ quality: 85 }).toBuffer();
+      uploadBody = jpeg;
+      uploadContentType = 'image/jpeg';
+      uploadExt = 'jpg';
+    } catch (err) {
+      return {
+        ok: false,
+        error: `Could not convert HEIC photo: ${err instanceof Error ? err.message : String(err)}. Try exporting as JPEG first.`,
+      };
+    }
+  } else {
+    uploadExt = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  }
+
   const uploaded = await uploadToStorage({
     tenantId: tenant.id,
     projectId,
     photoId: randomUUID(),
-    file,
-    contentType: file.type || 'image/jpeg',
-    extension: ext,
+    file: uploadBody,
+    contentType: uploadContentType,
+    extension: uploadExt,
   });
   if ('error' in uploaded) return { ok: false, error: uploaded.error };
 

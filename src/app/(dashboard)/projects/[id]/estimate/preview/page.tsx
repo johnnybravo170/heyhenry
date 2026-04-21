@@ -53,12 +53,39 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
 
   const { data: lines } = await supabase
     .from('project_cost_lines')
-    .select('id, label, notes, qty, unit, unit_price_cents, line_price_cents, category')
+    .select(
+      'id, label, notes, qty, unit, unit_price_cents, line_price_cents, category, photo_storage_paths',
+    )
     .eq('project_id', id)
     .order('category', { ascending: true })
     .order('created_at', { ascending: true });
 
-  const costLines = (lines ?? []) as EstimateRenderLine[];
+  // Sign line photos (admin client so storage RLS doesn't silently drop us).
+  const allPhotoPaths = Array.from(
+    new Set(
+      (lines ?? []).flatMap(
+        (l) => (l as { photo_storage_paths?: string[] }).photo_storage_paths ?? [],
+      ),
+    ),
+  );
+  const photoUrlByPath = new Map<string, string>();
+  if (allPhotoPaths.length > 0) {
+    const admin = createAdminClient();
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrls(allPhotoPaths, 3600);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) photoUrlByPath.set(row.path, row.signedUrl);
+    }
+  }
+
+  const costLines: EstimateRenderLine[] = (lines ?? []).map((l) => {
+    const paths = (l as { photo_storage_paths?: string[] }).photo_storage_paths ?? [];
+    return {
+      ...(l as EstimateRenderLine),
+      photo_urls: paths.map((p) => photoUrlByPath.get(p) ?? '').filter(Boolean),
+    };
+  });
   const subtotal = costLines.reduce((s, l) => s + l.line_price_cents, 0);
   const mgmtFee = Math.round(subtotal * managementFeeRate);
   const beforeTax = subtotal + mgmtFee;
