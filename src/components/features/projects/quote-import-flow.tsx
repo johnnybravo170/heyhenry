@@ -9,9 +9,9 @@
  *   review   → editable form seeded from the extraction; submit commits
  */
 
-import { ArrowLeft, FileText, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, FileText, ImagePlus, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,7 @@ import {
   searchCustomerMatchesAction,
 } from '@/server/actions/commit-quote-import';
 import { parseQuotePdfAction, type QuoteExtraction } from '@/server/actions/parse-quote-pdf';
+import { uploadPhotoAction } from '@/server/actions/photos';
 
 type Stage = 'idle' | 'parsing' | 'review';
 
@@ -54,6 +55,32 @@ let __bucketSeq = 0;
 function newBucketId(): string {
   __bucketSeq += 1;
   return `b${__bucketSeq}`;
+}
+
+type StagedPhoto = {
+  id: string;
+  file: File;
+  /** Object URL for <img src>. HEIC files may not preview; we show the filename instead. */
+  previewUrl: string;
+  canPreview: boolean;
+};
+
+let __photoSeq = 0;
+function newPhotoId(): string {
+  __photoSeq += 1;
+  return `p${__photoSeq}`;
+}
+
+const PREVIEWABLE = /^image\/(jpeg|jpg|png|webp|gif)$/i;
+
+function stagePhoto(file: File): StagedPhoto {
+  const canPreview = PREVIEWABLE.test(file.type);
+  return {
+    id: newPhotoId(),
+    file,
+    previewUrl: canPreview ? URL.createObjectURL(file) : '',
+    canPreview,
+  };
 }
 
 type ReviewState = {
@@ -130,9 +157,54 @@ export function QuoteImportFlow({ manualFormSlot }: QuoteImportFlowProps) {
   const [stage, setStage] = useState<Stage>('idle');
   const [state, setState] = useState<ReviewState | null>(null);
   const [matches, setMatches] = useState<CustomerMatch[]>([]);
+  const [photos, setPhotos] = useState<StagedPhoto[]>([]);
+  const [photoUploadProgress, setPhotoUploadProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isCommitting, startCommit] = useTransition();
+  const reviewPhotoInputRef = useRef<HTMLInputElement>(null);
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
+
+  // Revoke object URLs on unmount so we don't leak blobs. Per-photo revokes
+  // also happen in removePhoto() for the in-session case.
+  useEffect(() => {
+    return () => {
+      for (const p of photosRef.current) {
+        if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+      }
+    };
+  }, []);
+
+  function addPhotos(files: FileList | File[]) {
+    const list = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (list.length === 0) return;
+    setPhotos((prev) => [...prev, ...list.map(stagePhoto)]);
+  }
+
+  function removePhoto(id: string) {
+    setPhotos((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  }
+
+  /** Accepts a drop of mixed PDF + images. First PDF kicks off parse; images get staged. */
+  function handleDrop(files: FileList | File[]) {
+    const list = Array.from(files);
+    const pdf = list.find((f) => f.type === 'application/pdf');
+    const images = list.filter((f) => f.type.startsWith('image/'));
+    if (images.length > 0) addPhotos(images);
+    if (pdf) {
+      void handleFile(pdf);
+    } else if (stage === 'idle' && images.length === 0) {
+      setError('Drop a PDF quote or image files.');
+    }
+  }
 
   async function handleFile(file: File) {
     setError(null);
@@ -216,6 +288,30 @@ export function QuoteImportFlow({ manualFormSlot }: QuoteImportFlowProps) {
         setError(result.error);
         return;
       }
+
+      // Upload staged photos sequentially so one failure doesn't kill the
+      // batch. Tenants would rather get 9/10 than 0/10.
+      if (photos.length > 0) {
+        setPhotoUploadProgress({ done: 0, total: photos.length });
+        let failed = 0;
+        for (let i = 0; i < photos.length; i++) {
+          const p = photos[i];
+          const fd = new FormData();
+          fd.set('file', p.file);
+          fd.set('project_id', result.projectId);
+          fd.set('tag', 'other');
+          const up = await uploadPhotoAction(fd);
+          if (!up.ok) failed += 1;
+          setPhotoUploadProgress({ done: i + 1, total: photos.length });
+        }
+        setPhotoUploadProgress(null);
+        if (failed > 0) {
+          toast.error(
+            `${failed} of ${photos.length} photo${photos.length === 1 ? '' : 's'} failed to upload. You can retry from the project.`,
+          );
+        }
+      }
+
       toast.success('Project created from quote');
       router.push(`/projects/${result.projectId}`);
     });
@@ -245,8 +341,7 @@ export function QuoteImportFlow({ manualFormSlot }: QuoteImportFlowProps) {
             onDrop={(e) => {
               e.preventDefault();
               setIsDragging(false);
-              const f = e.dataTransfer.files?.[0];
-              if (f) void handleFile(f);
+              if (e.dataTransfer.files?.length) handleDrop(e.dataTransfer.files);
             }}
             className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition ${
               isDragging
@@ -258,19 +353,26 @@ export function QuoteImportFlow({ manualFormSlot }: QuoteImportFlowProps) {
             <div className="text-sm font-medium">Drop a quote PDF</div>
             <div className="text-xs text-muted-foreground">
               Henry will pull out the customer, scope, and line items so you can review and commit
-              in one step.
+              in one step. You can also include site photos — they'll be attached to the project.
             </div>
             <input
               id="quote-pdf-input"
               type="file"
-              accept="application/pdf"
+              accept="application/pdf,image/*"
+              multiple
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleFile(f);
+                if (e.target.files?.length) handleDrop(e.target.files);
+                e.target.value = '';
               }}
             />
           </button>
+          {photos.length > 0 ? (
+            <div className="text-xs text-muted-foreground">
+              {photos.length} photo{photos.length === 1 ? '' : 's'} staged — they'll upload after
+              you confirm the project.
+            </div>
+          ) : null}
           {error ? (
             <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
           ) : null}
@@ -495,6 +597,70 @@ export function QuoteImportFlow({ manualFormSlot }: QuoteImportFlowProps) {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">
+            Site photos
+            {photos.length > 0 ? (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {photos.length} staged
+              </span>
+            ) : null}
+          </h2>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => reviewPhotoInputRef.current?.click()}
+          >
+            <ImagePlus className="size-3.5" /> Add photos
+          </Button>
+          <input
+            ref={reviewPhotoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) addPhotos(e.target.files);
+              e.target.value = '';
+            }}
+          />
+        </div>
+        {photos.length === 0 ? (
+          <p className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
+            No photos yet. Drop images above, or click <strong>Add photos</strong>.
+          </p>
+        ) : (
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {photos.map((p) => (
+              <div
+                key={p.id}
+                className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
+              >
+                {p.canPreview ? (
+                  // biome-ignore lint/performance/noImgElement: blob: URLs don't flow through next/image
+                  <img src={p.previewUrl} alt={p.file.name} className="size-full object-cover" />
+                ) : (
+                  <div className="flex size-full flex-col items-center justify-center p-1 text-center text-[10px] text-muted-foreground">
+                    <FileText className="mb-1 size-4" />
+                    <span className="line-clamp-2 break-all">{p.file.name}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removePhoto(p.id)}
+                  className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition hover:bg-black/80 group-hover:opacity-100"
+                  aria-label={`Remove ${p.file.name}`}
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Cost buckets</h2>
           <Button type="button" variant="outline" size="sm" onClick={addBucket}>
             <Plus className="size-3.5" /> Add row
@@ -600,7 +766,9 @@ export function QuoteImportFlow({ manualFormSlot }: QuoteImportFlowProps) {
         </Button>
         <Button onClick={commit} disabled={isCommitting}>
           {isCommitting ? <Loader2 className="size-4 animate-spin" /> : null}
-          Create project
+          {photoUploadProgress
+            ? `Uploading photos ${photoUploadProgress.done}/${photoUploadProgress.total}…`
+            : 'Create project'}
         </Button>
       </div>
     </div>
