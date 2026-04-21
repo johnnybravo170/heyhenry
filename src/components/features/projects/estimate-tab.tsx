@@ -258,7 +258,7 @@ export function EstimateTab({
         </p>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-x-auto rounded-md border">
+          <div className="rounded-md border">
             <table className="w-full table-fixed text-sm">
               <colgroup>
                 <col />

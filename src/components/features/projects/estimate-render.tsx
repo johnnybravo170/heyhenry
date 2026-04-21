@@ -106,7 +106,7 @@ function renderGroups(lines: EstimateRenderLine[]) {
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="overflow-x-auto rounded-md border">
+    <div className="rounded-md border">
       <table className="w-full table-fixed text-sm">
         <colgroup>
           <col />
