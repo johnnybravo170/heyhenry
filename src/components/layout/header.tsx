@@ -25,33 +25,33 @@ export function Header({ businessName, vertical }: HeaderProps) {
 
       <div className="flex items-center gap-2">
         <Button asChild size="sm" className="gap-1">
-          <Link href="/quotes/new">
+          <Link href="/projects/new">
             <Plus className="size-3.5" />
-            <span className="hidden sm:inline">New Quote</span>
+            <span className="hidden sm:inline">New Project</span>
           </Link>
         </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" aria-label="User menu">
-            {businessName ?? 'Account'}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          {businessName ? (
-            <>
-              <DropdownMenuLabel className="font-medium">{businessName}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-            </>
-          ) : null}
-          <DropdownMenuItem asChild>
-            <Link href="/settings">Profile</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/logout">Logout</Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" aria-label="User menu">
+              {businessName ?? 'Account'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {businessName ? (
+              <>
+                <DropdownMenuLabel className="font-medium">{businessName}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
+            <DropdownMenuItem asChild>
+              <Link href="/settings">Profile</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/logout">Logout</Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
