@@ -14,6 +14,14 @@ export type TeamMemberRow = {
   role: string;
   created_at: string;
   email: string;
+  worker_profile?: {
+    id: string;
+    worker_type: 'employee' | 'subcontractor';
+    can_log_expenses: boolean | null;
+    can_invoice: boolean | null;
+    default_hourly_rate_cents: number | null;
+    display_name: string | null;
+  } | null;
 };
 
 /** List all tenant members with their email from auth.users. */
@@ -29,16 +37,52 @@ export async function listTeamMembers(tenantId: string): Promise<TeamMemberRow[]
   if (error) throw new Error(error.message);
   if (!members || members.length === 0) return [];
 
+  // Auto-create worker_profiles for any worker-role member that doesn't
+  // have one yet. This covers workers who joined before the table existed.
+  const workerMemberIds = members.filter((m) => m.role === 'worker').map((m) => m.id);
+  if (workerMemberIds.length > 0) {
+    const { data: existing } = await admin
+      .from('worker_profiles')
+      .select('tenant_member_id')
+      .in('tenant_member_id', workerMemberIds);
+    const existingIds = new Set((existing ?? []).map((p) => p.tenant_member_id as string));
+    const missing = workerMemberIds
+      .filter((id) => !existingIds.has(id))
+      .map((id) => ({ tenant_id: tenantId, tenant_member_id: id }));
+    if (missing.length > 0) {
+      await admin.from('worker_profiles').insert(missing);
+    }
+  }
+
+  const { data: profiles } = await admin
+    .from('worker_profiles')
+    .select(
+      'id, tenant_member_id, worker_type, can_log_expenses, can_invoice, default_hourly_rate_cents, display_name',
+    )
+    .eq('tenant_id', tenantId);
+  const profilesByMember = new Map((profiles ?? []).map((p) => [p.tenant_member_id as string, p]));
+
   // Fetch emails from auth.users via admin API.
   const enriched: TeamMemberRow[] = [];
   for (const m of members) {
     const { data } = await admin.auth.admin.getUserById(m.user_id);
+    const wp = profilesByMember.get(m.id);
     enriched.push({
       id: m.id,
       user_id: m.user_id,
       role: m.role,
       created_at: m.created_at,
       email: data?.user?.email ?? 'unknown',
+      worker_profile: wp
+        ? {
+            id: wp.id as string,
+            worker_type: wp.worker_type as 'employee' | 'subcontractor',
+            can_log_expenses: wp.can_log_expenses as boolean | null,
+            can_invoice: wp.can_invoice as boolean | null,
+            default_hourly_rate_cents: wp.default_hourly_rate_cents as number | null,
+            display_name: wp.display_name as string | null,
+          }
+        : null,
     });
   }
 

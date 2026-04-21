@@ -9,19 +9,29 @@ import Link from 'next/link';
 import { InviteWorkerCard } from '@/components/features/team/invite-worker-card';
 import { InvitesTable } from '@/components/features/team/invites-table';
 import { TeamMembersTable } from '@/components/features/team/team-members-table';
+import { WorkerDefaultsCard } from '@/components/features/team/worker-defaults-card';
 import { requireTenant } from '@/lib/auth/helpers';
 import { requireRole } from '@/lib/auth/role-guard';
 import { listTeamMembers } from '@/lib/db/queries/team';
 import { listInvitesByTenantId } from '@/lib/db/queries/worker-invites';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export default async function TeamPage() {
   const { tenant } = await requireTenant();
   requireRole(tenant, ['owner', 'admin']);
 
-  const [members, invites] = await Promise.all([
+  const admin = createAdminClient();
+  const [membersResult, invites, tenantRow] = await Promise.all([
     listTeamMembers(tenant.id),
     listInvitesByTenantId(tenant.id),
+    admin
+      .from('tenants')
+      .select('workers_can_log_expenses, workers_can_invoice_default')
+      .eq('id', tenant.id)
+      .single(),
   ]);
+  const members = membersResult;
+  const defaults = tenantRow.data;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -38,6 +48,11 @@ export default async function TeamPage() {
       </div>
 
       <InviteWorkerCard />
+
+      <WorkerDefaultsCard
+        workersCanLogExpenses={defaults?.workers_can_log_expenses ?? true}
+        workersCanInvoiceDefault={defaults?.workers_can_invoice_default ?? false}
+      />
 
       <div className="space-y-3">
         <h2 className="text-lg font-medium">Invites</h2>

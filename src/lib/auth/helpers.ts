@@ -90,6 +90,17 @@ export async function requireTenant() {
   return { user, tenant };
 }
 
+/**
+ * Guard for the /w worker surface. Redirects non-workers to /dashboard.
+ * (The proxy already does this, but pages should also guard so a bad
+ * link from a different role doesn't render a broken shell.)
+ */
+export async function requireWorker() {
+  const { user, tenant } = await requireTenant();
+  if (tenant.member.role !== 'worker') redirect('/dashboard');
+  return { user, tenant };
+}
+
 // ---------------------------------------------------------------------------
 // Platform admin helpers
 // ---------------------------------------------------------------------------

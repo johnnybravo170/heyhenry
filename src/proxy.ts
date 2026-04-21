@@ -20,8 +20,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/admin'];
+const PROTECTED_PREFIXES = ['/dashboard', '/admin', '/w'];
 const ADMIN_PREFIX = '/admin';
+const WORKER_PREFIX = '/w';
 const AUTH_ROUTES = new Set(['/login', '/signup', '/magic-link']);
 
 export async function proxy(request: NextRequest) {
@@ -77,10 +78,15 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Authenticated user hitting /login, /signup, or /magic-link → push
-  // them to /dashboard (they're already in).
+  // them to /dashboard (or /w if they're a worker).
   if (user && isAuthRoute) {
+    const { data: member } = await supabase
+      .from('tenant_members')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
     const dest = url.clone();
-    dest.pathname = '/dashboard';
+    dest.pathname = member?.role === 'worker' ? '/w' : '/dashboard';
     dest.search = '';
     return NextResponse.redirect(dest);
   }
@@ -115,11 +121,14 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Authenticated visit to a protected (non-admin) route → verify tenant.
+  const isWorkerRoute = pathname === WORKER_PREFIX || pathname.startsWith(`${WORKER_PREFIX}/`);
+
+  // Authenticated visit to a protected (non-admin) route → verify tenant
+  // and route by role: workers go to /w, everyone else to /dashboard.
   if (user && isProtected && !isAdminRoute) {
     const { data: member } = await supabase
       .from('tenant_members')
-      .select('id')
+      .select('id, role')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -128,6 +137,20 @@ export async function proxy(request: NextRequest) {
       const dest = url.clone();
       dest.pathname = '/signup';
       dest.search = '?error=no_tenant';
+      return NextResponse.redirect(dest);
+    }
+
+    if (member.role === 'worker' && !isWorkerRoute) {
+      const dest = url.clone();
+      dest.pathname = '/w';
+      dest.search = '';
+      return NextResponse.redirect(dest);
+    }
+
+    if (member.role !== 'worker' && isWorkerRoute) {
+      const dest = url.clone();
+      dest.pathname = '/dashboard';
+      dest.search = '';
       return NextResponse.redirect(dest);
     }
   }
