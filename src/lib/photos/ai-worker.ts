@@ -171,6 +171,8 @@ async function processOne(photo: PhotoRow): Promise<'applied' | 'soft_applied' |
     ai_caption: result.caption,
     ai_caption_confidence: result.captionConfidence,
     quality_flags: result.qualityFlags,
+    ai_showcase_score: result.showcaseScore,
+    ai_showcase_reason: result.showcaseReason,
     ai_processed_at: new Date().toISOString(),
     ai_last_error: null,
   };

@@ -7,6 +7,7 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   integer,
   jsonb,
   numeric,
@@ -66,6 +67,12 @@ export const photos = pgTable('photos', {
   aiAttempts: smallint('ai_attempts').default(0).notNull(),
   aiLastAttemptAt: timestamp('ai_last_attempt_at', { withTimezone: true }),
   aiLastError: text('ai_last_error'),
+  aiShowcaseScore: numeric('ai_showcase_score', { precision: 4, scale: 3 }),
+  aiShowcaseReason: text('ai_showcase_reason'),
+
+  // Manual portfolio/showcase flags (migration 0058)
+  isFavorite: boolean('is_favorite').default(false).notNull(),
+  jobType: text('job_type'),
 
   // Internal EXIF — never serve in client-facing URLs
   originalExif: jsonb('original_exif').default(sql`'{}'::jsonb`).notNull(),

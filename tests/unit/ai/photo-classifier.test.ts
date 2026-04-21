@@ -53,6 +53,8 @@ describe('parseClassifierResponse', () => {
     caption: 'Dirty concrete driveway, oil staining near garage door.',
     caption_confidence: 0.88,
     quality: { blurry: false, too_dark: false, low_contrast: false },
+    showcase_score: 0.82,
+    showcase_reason: 'Clean composition, dramatic oil staining, good light.',
   };
 
   it('parses a clean JSON response', () => {
@@ -103,5 +105,24 @@ describe('parseClassifierResponse', () => {
 
   it('throws on non-JSON input', () => {
     expect(() => parseClassifierResponse('nope not json')).toThrow();
+  });
+
+  it('parses showcase score and reason', () => {
+    const result = parseClassifierResponse(JSON.stringify(sample));
+    expect(result.showcaseScore).toBeCloseTo(0.82);
+    expect(result.showcaseReason).toContain('composition');
+  });
+
+  it('normalizes empty showcase reason to null', () => {
+    const result = parseClassifierResponse(
+      JSON.stringify({ ...sample, showcase_score: 0.2, showcase_reason: '' }),
+    );
+    expect(result.showcaseScore).toBeCloseTo(0.2);
+    expect(result.showcaseReason).toBeNull();
+  });
+
+  it('clamps showcase score to [0, 1]', () => {
+    const result = parseClassifierResponse(JSON.stringify({ ...sample, showcase_score: 1.7 }));
+    expect(result.showcaseScore).toBe(1);
   });
 });

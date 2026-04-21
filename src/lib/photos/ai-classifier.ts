@@ -36,6 +36,8 @@ export type ClassifierResult = {
   caption: string;
   captionConfidence: number; // 0..1
   qualityFlags: QualityFlags;
+  showcaseScore: number; // 0..1 — is this a portfolio-worthy shot?
+  showcaseReason: string | null; // one-line justification, null if low score
 };
 
 export type ClassifierJobContext = {
@@ -78,7 +80,9 @@ You must return ONLY valid JSON with exactly these fields:
     "too_dark": true|false,
     "low_contrast": true|false,
     "notes": "optional short note"
-  }
+  },
+  "showcase_score": 0.0 to 1.0,
+  "showcase_reason": "one short sentence, or empty string"
 }
 
 TAG DEFINITIONS:
@@ -108,7 +112,17 @@ QUALITY RULES:
 - blurry: true only if motion blur or focus failure is obvious
 - too_dark: true if underexposed enough that the subject is hard to identify
 - low_contrast: true if the subject blends into the background
-- Do NOT flag quality for normal variation; only flag obvious problems`;
+- Do NOT flag quality for normal variation; only flag obvious problems
+
+SHOWCASE RULES:
+- showcase_score: how portfolio-worthy is this shot, independent of the tag?
+  - 0.85+: striking "after" or dramatic before/after context — the kind of photo a contractor would pin to their website
+  - 0.70–0.85: clean, well-composed, good lighting, clearly shows finished work
+  - 0.40–0.70: decent documentation photo but not marketing material
+  - < 0.40: progress/materials/equipment/serial/concern shots, or anything with quality issues
+- Reward: good lighting, full subject in frame, clean composition, dramatic before/after, visible craftsmanship
+- Penalize: blurry/dark/low-contrast, clutter, people's faces, partial subjects, receipts/boxes/tools as the main subject
+- showcase_reason: one short sentence (under 80 chars) — what makes it great (or empty string if score < 0.70)`;
 
   const lines: string[] = ['Classify this photo.'];
   if (context.vertical) lines.push(`Business vertical: ${context.vertical}`);
@@ -137,6 +151,8 @@ export function parseClassifierResponse(text: string): ClassifierResult {
     caption: string;
     caption_confidence: number;
     quality: Record<string, unknown>;
+    showcase_score: number;
+    showcase_reason: string;
   }>;
 
   const tag = coerceTag(raw.tag);
@@ -144,6 +160,8 @@ export function parseClassifierResponse(text: string): ClassifierResult {
   const caption = (raw.caption ?? '').toString().trim();
   const captionConfidence = coerceConfidence(raw.caption_confidence);
   const quality = raw.quality ?? {};
+  const showcaseScore = coerceConfidence(raw.showcase_score);
+  const reasonText = typeof raw.showcase_reason === 'string' ? raw.showcase_reason.trim() : '';
 
   return {
     tag,
@@ -156,6 +174,8 @@ export function parseClassifierResponse(text: string): ClassifierResult {
       low_contrast: quality.low_contrast === true,
       notes: typeof quality.notes === 'string' ? quality.notes : undefined,
     },
+    showcaseScore,
+    showcaseReason: reasonText.length > 0 ? reasonText : null,
   };
 }
 

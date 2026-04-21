@@ -81,6 +81,12 @@ export function PhotoCard({
   const qualityNote = qualityWarning(photo.quality_flags ?? {});
   const captionByHenry = photo.caption_source === 'ai' && caption.length > 0;
 
+  // Portfolio hint: surfaced only when Henry is confident AND the operator
+  // hasn't already favorited it. Once favorited the sparkle button carries
+  // the weight, so the chip would be noise.
+  const showcaseHintVisible = !photo.is_favorite && (photo.ai_showcase_score ?? 0) >= 0.75;
+  const showcaseReason = photo.ai_showcase_reason?.trim() ?? '';
+
   const acceptSuggestion = () => {
     startTransition(async () => {
       const result = await acceptAiTagAction(photo.id);
@@ -161,6 +167,15 @@ export function PhotoCard({
             Henry: {photoTagLabels[photo.ai_tag as PhotoTag]}
             <span className="opacity-60">{Math.round(confidence * 100)}%</span>
           </button>
+        ) : null}
+        {showcaseHintVisible ? (
+          <span
+            className="flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 shadow-sm dark:border-amber-900/50 dark:bg-amber-950 dark:text-amber-300"
+            title={showcaseReason || 'Henry thinks this is a great shot.'}
+          >
+            <Sparkles className="size-3" aria-hidden />
+            Great shot
+          </span>
         ) : null}
         {qualityNote ? (
           <span

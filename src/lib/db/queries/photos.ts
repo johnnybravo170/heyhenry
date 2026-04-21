@@ -40,6 +40,8 @@ export type PhotoRow = {
   caption_source: 'user' | 'ai' | 'hybrid';
   quality_flags: PhotoQualityFlags;
   ai_processed_at: string | null;
+  ai_showcase_score: number | null;
+  ai_showcase_reason: string | null;
   is_favorite: boolean;
   job_type: string | null;
 };
@@ -52,7 +54,7 @@ export type PhotoListFilters = {
 };
 
 const PHOTO_COLUMNS =
-  'id, tenant_id, job_id, project_id, memo_id, storage_path, tag, caption, taken_at, created_at, updated_at, ai_tag, ai_tag_confidence, ai_caption, ai_caption_confidence, caption_source, quality_flags, ai_processed_at, is_favorite, job_type';
+  'id, tenant_id, job_id, project_id, memo_id, storage_path, tag, caption, taken_at, created_at, updated_at, ai_tag, ai_tag_confidence, ai_caption, ai_caption_confidence, caption_source, quality_flags, ai_processed_at, ai_showcase_score, ai_showcase_reason, is_favorite, job_type';
 
 async function decorateWithUrls(rows: PhotoRow[]): Promise<PhotoWithUrl[]> {
   if (rows.length === 0) return [];
