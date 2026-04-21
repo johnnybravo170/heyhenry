@@ -125,14 +125,19 @@ function renderGroups(lines: EstimateRenderLine[]) {
             ) : null}
             {sec.buckets.map((g) => {
               const groupTotal = g.lines.reduce((s, l) => s + l.line_price_cents, 0);
+              const hideHeader =
+                g.lines.length === 1 &&
+                g.lines[0].label.trim().toLowerCase() === g.bucketName.trim().toLowerCase();
               return (
                 <div key={g.key}>
-                  <div className="mb-2 flex items-baseline justify-between gap-4">
-                    <h4 className="text-sm font-semibold">{g.bucketName}</h4>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {formatCurrency(groupTotal)}
-                    </span>
-                  </div>
+                  {hideHeader ? null : (
+                    <div className="mb-2 flex items-baseline justify-between gap-4">
+                      <h4 className="text-sm font-semibold">{g.bucketName}</h4>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {formatCurrency(groupTotal)}
+                      </span>
+                    </div>
+                  )}
                   <div className="overflow-x-auto rounded-md border">
                     <table className="w-full text-sm">
                       <thead>
