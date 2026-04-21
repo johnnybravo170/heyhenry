@@ -4,8 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Ops - HeyHenry',
-    template: '%s - Ops - HeyHenry',
+    absolute: 'Ops - HeyHenry',
   },
   description: 'Platform operations for HeyHenry.',
   robots: { index: false, follow: false },
