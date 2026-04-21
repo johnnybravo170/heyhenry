@@ -343,21 +343,24 @@ export default async function ProjectDetailPage({
         <DeleteProjectButton projectId={project.id} projectName={project.name} />
       </header>
 
-      {/* Tab navigation */}
-      <div className="mb-6 flex gap-1 border-b">
-        {tabs.map((t) => (
-          <Link
-            key={t.key}
-            href={`/projects/${id}?tab=${t.key}`}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t.key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
-            }`}
-          >
-            {t.label}
-          </Link>
-        ))}
+      {/* Tab navigation — horizontal scroll on narrow screens so 12+ tabs
+          don't overflow and get clipped. */}
+      <div className="mb-6 -mx-4 overflow-x-auto border-b sm:mx-0">
+        <div className="flex min-w-max gap-1 px-4 sm:px-0">
+          {tabs.map((t) => (
+            <Link
+              key={t.key}
+              href={`/projects/${id}?tab=${t.key}`}
+              className={`shrink-0 whitespace-nowrap border-b-2 -mb-px px-4 py-2 text-sm font-medium transition-colors ${
+                tab === t.key
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Tab content */}

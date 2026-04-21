@@ -389,10 +389,14 @@ async function dispatchFeedbackNotifications(args: {
 }) {
   const { admin, tenantId, projectId, projectName, customerName, commentCount } = args;
 
+  // Scope notifications to operator-level roles. Workers (field crew) and
+  // any future role-restricted staff should NEVER see customer-pricing
+  // feedback — that's business-side communication.
   const { data: members } = await admin
     .from('tenant_members')
-    .select('user_id, first_name, notification_phone, notify_prefs')
-    .eq('tenant_id', tenantId);
+    .select('user_id, first_name, notification_phone, notify_prefs, role')
+    .eq('tenant_id', tenantId)
+    .in('role', ['owner', 'admin']);
 
   const userIds = (members ?? []).map((m) => m.user_id as string).filter(Boolean);
   if (userIds.length === 0) return;
