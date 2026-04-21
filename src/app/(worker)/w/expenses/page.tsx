@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { WorkerExpenseList } from '@/components/features/worker/worker-expense-list';
 import { Button } from '@/components/ui/button';
 import { requireWorker } from '@/lib/auth/helpers';
@@ -12,12 +13,21 @@ export const dynamic = 'force-dynamic';
 export default async function WorkerExpensesPage() {
   const { tenant } = await requireWorker();
   const profile = await getOrCreateWorkerProfile(tenant.id, tenant.member.id);
+  const admin = createAdminClient();
+
+  const { data: tenantRow } = await admin
+    .from('tenants')
+    .select('workers_can_log_expenses')
+    .eq('id', tenant.id)
+    .maybeSingle();
+  const canLogExpenses = profile.can_log_expenses ?? tenantRow?.workers_can_log_expenses ?? true;
+  if (!canLogExpenses) redirect('/w');
+
   const expenses = await listWorkerExpenses(tenant.id, profile.id);
 
   const paths = expenses.map((e) => e.receipt_storage_path).filter((p): p is string => !!p);
   const urlMap = new Map<string, string>();
   if (paths.length > 0) {
-    const admin = createAdminClient();
     const { data } = await admin.storage.from('receipts').createSignedUrls(paths, 3600);
     if (data) {
       for (let i = 0; i < data.length; i++) {

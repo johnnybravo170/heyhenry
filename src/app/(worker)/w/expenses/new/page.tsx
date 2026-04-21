@@ -1,15 +1,27 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { WorkerExpenseForm } from '@/components/features/worker/worker-expense-form';
 import { requireWorker } from '@/lib/auth/helpers';
 import { getOrCreateWorkerProfile } from '@/lib/db/queries/worker-profiles';
 import { listWorkerProjectsWithBuckets } from '@/lib/db/queries/worker-time';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
 export default async function WorkerLogExpensePage() {
   const { tenant } = await requireWorker();
   const profile = await getOrCreateWorkerProfile(tenant.id, tenant.member.id);
+
+  const admin = createAdminClient();
+  const { data: tenantRow } = await admin
+    .from('tenants')
+    .select('workers_can_log_expenses')
+    .eq('id', tenant.id)
+    .maybeSingle();
+  const canLogExpenses = profile.can_log_expenses ?? tenantRow?.workers_can_log_expenses ?? true;
+  if (!canLogExpenses) redirect('/w');
+
   const projects = await listWorkerProjectsWithBuckets(tenant.id, profile.id);
 
   return (

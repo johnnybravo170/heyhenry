@@ -12,10 +12,11 @@ export default async function WorkerLayout({ children }: { children: ReactNode }
   const admin = createAdminClient();
   const { data: tenantRow } = await admin
     .from('tenants')
-    .select('workers_can_invoice_default')
+    .select('workers_can_invoice_default, workers_can_log_expenses')
     .eq('id', tenant.id)
     .maybeSingle();
   const canInvoice = profile.can_invoice ?? tenantRow?.workers_can_invoice_default ?? false;
+  const canLogExpenses = profile.can_log_expenses ?? tenantRow?.workers_can_log_expenses ?? true;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -23,7 +24,7 @@ export default async function WorkerLayout({ children }: { children: ReactNode }
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{tenant.name}</p>
       </header>
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-4">{children}</main>
-      <WorkerBottomNav canInvoice={canInvoice} />
+      <WorkerBottomNav canInvoice={canInvoice} canLogExpenses={canLogExpenses} />
     </div>
   );
 }

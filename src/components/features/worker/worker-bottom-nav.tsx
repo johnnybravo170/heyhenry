@@ -25,13 +25,14 @@ const BASE_ITEMS = [
     icon: Clock,
     match: (p: string) => p.startsWith('/w/time'),
   },
-  {
-    href: '/w/expenses',
-    label: 'Expenses',
-    icon: Receipt,
-    match: (p: string) => p.startsWith('/w/expenses'),
-  },
 ];
+
+const EXPENSES_ITEM = {
+  href: '/w/expenses',
+  label: 'Expenses',
+  icon: Receipt,
+  match: (p: string) => p.startsWith('/w/expenses'),
+};
 
 const INVOICES_ITEM = {
   href: '/w/invoices',
@@ -47,11 +48,20 @@ const PROFILE_ITEM = {
   match: (p: string) => p.startsWith('/w/profile'),
 };
 
-export function WorkerBottomNav({ canInvoice = false }: { canInvoice?: boolean }) {
+export function WorkerBottomNav({
+  canInvoice = false,
+  canLogExpenses = true,
+}: {
+  canInvoice?: boolean;
+  canLogExpenses?: boolean;
+}) {
   const pathname = usePathname();
-  const ITEMS = canInvoice
-    ? [...BASE_ITEMS, INVOICES_ITEM, PROFILE_ITEM]
-    : [...BASE_ITEMS, PROFILE_ITEM];
+  const ITEMS = [
+    ...BASE_ITEMS,
+    ...(canLogExpenses ? [EXPENSES_ITEM] : []),
+    ...(canInvoice ? [INVOICES_ITEM] : []),
+    PROFILE_ITEM,
+  ];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background">
