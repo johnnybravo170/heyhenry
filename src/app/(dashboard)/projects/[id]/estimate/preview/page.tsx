@@ -5,11 +5,14 @@ import {
   type EstimateRenderLine,
 } from '@/components/features/projects/estimate-render';
 import { formatCurrency } from '@/lib/pricing/calculator';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata = {
   title: 'Preview estimate — HeyHenry',
 };
+
+const LOGO_SIGN_SECONDS = 60 * 60 * 24 * 30;
 
 export default async function EstimatePreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,11 +21,11 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
   const { data: project } = await supabase
     .from('projects')
     .select(
-      `id, name, description, management_fee_rate,
-       estimate_status, estimate_sent_at, estimate_approved_at, estimate_approved_by_name,
-       estimate_declined_at, estimate_declined_reason,
-       customers:customer_id (name, email),
-       tenants:tenant_id (name)`,
+      `id, name, description, management_fee_rate, estimate_sent_at,
+       estimate_status, estimate_approved_at, estimate_approved_by_name,
+       estimate_declined_reason,
+       customers:customer_id (name, email, address_line1),
+       tenants:tenant_id (name, logo_storage_path, gst_rate)`,
     )
     .eq('id', id)
     .is('deleted_at', null)
@@ -34,6 +37,19 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
   const tenantRaw = p.tenants as Record<string, unknown> | null;
   const customerRaw = p.customers as Record<string, unknown> | null;
   const managementFeeRate = Number(p.management_fee_rate) || 0;
+  const gstRate = Number(tenantRaw?.gst_rate) || 0;
+
+  // Sign the tenant logo (storage RLS would silently fail here under the
+  // authed client, same reason cost-line thumbs use the admin client).
+  let logoUrl: string | null = null;
+  const logoPath = tenantRaw?.logo_storage_path as string | null;
+  if (logoPath) {
+    const admin = createAdminClient();
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrl(logoPath, LOGO_SIGN_SECONDS);
+    logoUrl = signed?.signedUrl ?? null;
+  }
 
   const { data: lines } = await supabase
     .from('project_cost_lines')
@@ -45,7 +61,9 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
   const costLines = (lines ?? []) as EstimateRenderLine[];
   const subtotal = costLines.reduce((s, l) => s + l.line_price_cents, 0);
   const mgmtFee = Math.round(subtotal * managementFeeRate);
-  const total = subtotal + mgmtFee;
+  const beforeTax = subtotal + mgmtFee;
+  const gst = Math.round(beforeTax * gstRate);
+  const total = beforeTax + gst;
 
   const status =
     (p.estimate_status as 'draft' | 'pending_approval' | 'approved' | 'declined') ?? 'draft';
@@ -67,10 +85,14 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
         </p>
         <EstimateRender
           businessName={(tenantRaw?.name as string) ?? 'Your Contractor'}
+          logoUrl={logoUrl}
           customerName={(customerRaw?.name as string) ?? 'Customer'}
+          customerAddress={(customerRaw?.address_line1 as string | null) ?? null}
           projectName={p.name as string}
           description={(p.description as string | null) ?? null}
           managementFeeRate={managementFeeRate}
+          gstRate={gstRate}
+          quoteDate={(p.estimate_sent_at as string | null) ?? null}
           lines={costLines}
           status={status}
           approvedByName={p.estimate_approved_by_name as string | null}

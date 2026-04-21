@@ -10,6 +10,8 @@ export const metadata = {
   title: 'Estimate — HeyHenry',
 };
 
+const LOGO_SIGN_SECONDS = 60 * 60 * 24 * 30;
+
 export default async function EstimatePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const admin = createAdminClient();
@@ -17,11 +19,11 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
   const { data: project } = await admin
     .from('projects')
     .select(
-      `id, name, description, management_fee_rate,
-       estimate_status, estimate_sent_at, estimate_approved_at, estimate_approved_by_name,
-       estimate_declined_at, estimate_declined_reason,
-       customers:customer_id (name),
-       tenants:tenant_id (name)`,
+      `id, name, description, management_fee_rate, estimate_sent_at,
+       estimate_status, estimate_approved_at, estimate_approved_by_name,
+       estimate_declined_reason,
+       customers:customer_id (name, address_line1),
+       tenants:tenant_id (name, logo_storage_path, gst_rate)`,
     )
     .eq('estimate_approval_code', code)
     .maybeSingle();
@@ -41,6 +43,16 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
   const tenantRaw = p.tenants as Record<string, unknown> | null;
   const customerRaw = p.customers as Record<string, unknown> | null;
 
+  // Sign the tenant logo (private `photos` bucket).
+  let logoUrl: string | null = null;
+  const logoPath = tenantRaw?.logo_storage_path as string | null;
+  if (logoPath) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrl(logoPath, LOGO_SIGN_SECONDS);
+    logoUrl = signed?.signedUrl ?? null;
+  }
+
   const { data: lines } = await admin
     .from('project_cost_lines')
     .select('id, label, notes, qty, unit, unit_price_cents, line_price_cents, category')
@@ -55,10 +67,14 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
       <ViewLogger code={code} />
       <EstimateRender
         businessName={(tenantRaw?.name as string) ?? 'Your Contractor'}
+        logoUrl={logoUrl}
         customerName={(customerRaw?.name as string) ?? 'Customer'}
+        customerAddress={(customerRaw?.address_line1 as string | null) ?? null}
         projectName={p.name as string}
         description={(p.description as string | null) ?? null}
         managementFeeRate={Number(p.management_fee_rate) || 0}
+        gstRate={Number(tenantRaw?.gst_rate) || 0}
+        quoteDate={(p.estimate_sent_at as string | null) ?? null}
         lines={(lines ?? []) as EstimateRenderLine[]}
         status={status}
         approvedByName={p.estimate_approved_by_name as string | null}

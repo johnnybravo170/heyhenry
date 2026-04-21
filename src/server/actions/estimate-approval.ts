@@ -49,7 +49,7 @@ export async function sendEstimateForApprovalAction(input: {
   const { data: project, error: projErr } = await supabase
     .from('projects')
     .select(
-      'id, name, estimate_status, estimate_approval_code, management_fee_rate, customers:customer_id (name, email)',
+      'id, name, estimate_status, estimate_approval_code, management_fee_rate, customers:customer_id (name, email), tenants:tenant_id (gst_rate)',
     )
     .eq('id', input.projectId)
     .single();
@@ -58,6 +58,7 @@ export async function sendEstimateForApprovalAction(input: {
 
   const p = project as Record<string, unknown>;
   const customerRaw = p.customers as Record<string, unknown> | null;
+  const tenantRaw = p.tenants as Record<string, unknown> | null;
   const customerEmail = customerRaw?.email as string | null;
   const customerName = (customerRaw?.name as string) ?? 'Customer';
 
@@ -77,8 +78,11 @@ export async function sendEstimateForApprovalAction(input: {
     0,
   );
   const mgmtRate = Number(p.management_fee_rate) || 0;
+  const gstRate = Number(tenantRaw?.gst_rate) || 0;
   const mgmtFee = Math.round(lineSubtotal * mgmtRate);
-  const total = lineSubtotal + mgmtFee;
+  const beforeTax = lineSubtotal + mgmtFee;
+  const gst = Math.round(beforeTax * gstRate);
+  const total = beforeTax + gst;
 
   if (total <= 0) {
     return { ok: false, error: 'Add cost lines before sending the estimate.' };
