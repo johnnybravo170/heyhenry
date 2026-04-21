@@ -1,14 +1,19 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { ProjectForm } from '@/components/features/projects/project-form';
 import { QuoteImportFlow } from '@/components/features/projects/quote-import-flow';
+import { listCustomers } from '@/lib/db/queries/customers';
+import { createProjectAction } from '@/server/actions/projects';
 
 export const metadata = {
   title: 'New project — HeyHenry',
 };
 
-export default function NewProjectPage() {
+export default async function NewProjectPage() {
+  const customers = await listCustomers({ limit: 500 });
+
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-5xl">
       <div className="mb-6">
         <Link
           href="/projects"
@@ -20,7 +25,15 @@ export default function NewProjectPage() {
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">New project</h1>
       </div>
 
-      <QuoteImportFlow manualFallbackHref="/projects/new/manual" />
+      <QuoteImportFlow
+        manualFormSlot={
+          <ProjectForm
+            mode="create"
+            customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+            action={createProjectAction}
+          />
+        }
+      />
     </div>
   );
 }

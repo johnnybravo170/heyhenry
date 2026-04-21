@@ -105,7 +105,16 @@ function extractionToState(e: QuoteExtraction): ReviewState {
   };
 }
 
-export function QuoteImportFlow({ manualFallbackHref }: { manualFallbackHref: string }) {
+type QuoteImportFlowProps = {
+  /**
+   * Rendered alongside the dropzone in the idle state. Typically the manual
+   * ProjectForm so the operator can start from scratch without ever touching
+   * the importer. Hidden when a PDF is being parsed or reviewed.
+   */
+  manualFormSlot: React.ReactNode;
+};
+
+export function QuoteImportFlow({ manualFormSlot }: QuoteImportFlowProps) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>('idle');
   const [state, setState] = useState<ReviewState | null>(null);
@@ -195,54 +204,56 @@ export function QuoteImportFlow({ manualFallbackHref }: { manualFallbackHref: st
 
   if (stage === 'idle') {
     return (
-      <div className="space-y-4">
-        <button
-          type="button"
-          onClick={() => {
-            const el = document.getElementById('quote-pdf-input') as HTMLInputElement | null;
-            el?.click();
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setIsDragging(false);
-            const f = e.dataTransfer.files?.[0];
-            if (f) void handleFile(f);
-          }}
-          className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-center transition ${
-            isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30'
-          }`}
-        >
-          <Upload className="size-8 text-muted-foreground" />
-          <div className="text-sm font-medium">Drop a quote PDF to start</div>
-          <div className="text-xs text-muted-foreground">
-            Henry will extract the customer, scope, and line items for you to review.
+      <div className="grid gap-8 md:grid-cols-[1fr_320px]">
+        <div className="min-w-0">{manualFormSlot}</div>
+        <aside className="space-y-3">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Or start from a quote
           </div>
-          <input
-            id="quote-pdf-input"
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('quote-pdf-input') as HTMLInputElement | null;
+              el?.click();
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              const f = e.dataTransfer.files?.[0];
               if (f) void handleFile(f);
             }}
-          />
-        </button>
-        {error ? (
-          <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
-        ) : null}
-        <div className="text-center">
-          <Button variant="link" onClick={() => router.push(manualFallbackHref)}>
-            Or enter manually
-          </Button>
-        </div>
+            className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition ${
+              isDragging
+                ? 'border-primary bg-primary/5'
+                : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30'
+            }`}
+          >
+            <Upload className="size-6 text-muted-foreground" />
+            <div className="text-sm font-medium">Drop a quote PDF</div>
+            <div className="text-xs text-muted-foreground">
+              Henry will pull out the customer, scope, and line items so you can review and commit
+              in one step.
+            </div>
+            <input
+              id="quote-pdf-input"
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleFile(f);
+              }}
+            />
+          </button>
+          {error ? (
+            <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
+          ) : null}
+        </aside>
       </div>
     );
   }
@@ -368,24 +379,30 @@ export function QuoteImportFlow({ manualFallbackHref }: { manualFallbackHref: st
             />
           </div>
           <div>
-            <Label>Management fee</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              value={(state.project.management_fee_rate * 100).toFixed(2)}
-              onChange={(e) => {
-                const pct = Number.parseFloat(e.target.value);
-                setState({
-                  ...state,
-                  project: {
-                    ...state.project,
-                    management_fee_rate: Number.isFinite(pct) ? pct / 100 : 0,
-                  },
-                });
-              }}
-            />
+            <Label>Management fee (%)</Label>
+            <div className="relative">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                className="pr-8"
+                value={(state.project.management_fee_rate * 100).toFixed(2)}
+                onChange={(e) => {
+                  const pct = Number.parseFloat(e.target.value);
+                  setState({
+                    ...state,
+                    project: {
+                      ...state.project,
+                      management_fee_rate: Number.isFinite(pct) ? pct / 100 : 0,
+                    },
+                  });
+                }}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                %
+              </span>
+            </div>
           </div>
         </div>
       </section>
