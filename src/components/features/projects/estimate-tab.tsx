@@ -262,9 +262,6 @@ export function EstimateTab({
             <table className="w-full table-fixed text-sm">
               <colgroup>
                 <col />
-                <col className="w-14" />
-                <col className="w-16" />
-                <col className="w-24" />
                 <col className="w-24" />
                 <col className="w-28" />
                 <col className="w-20" />
@@ -273,11 +270,8 @@ export function EstimateTab({
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="px-3 py-2 text-left font-medium">Item</th>
-                  <th className="px-3 py-2 text-right font-medium">Qty</th>
-                  <th className="px-3 py-2 text-left font-medium">Unit</th>
                   <th className="px-3 py-2 text-right font-medium">Cost</th>
-                  <th className="px-3 py-2 text-right font-medium">Price</th>
-                  <th className="px-3 py-2 text-right font-medium">Line Price</th>
+                  <th className="px-3 py-2 text-right font-medium">Total</th>
                   <th className="px-3 py-2 text-right font-medium">Markup</th>
                   <th className="px-3 py-2" />
                 </tr>
@@ -288,7 +282,7 @@ export function EstimateTab({
                     {sec.section ? (
                       <tr className="border-b bg-muted/30">
                         <td
-                          colSpan={8}
+                          colSpan={5}
                           className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                         >
                           {sec.section}
@@ -309,13 +303,8 @@ export function EstimateTab({
                           <Fragment key={line.id}>
                             <tr className={hasDetail || isEditing ? '' : 'border-b last:border-0'}>
                               <td className="px-3 py-2 font-medium">{line.label}</td>
-                              <td className="px-3 py-2 text-right">{Number(line.qty)}</td>
-                              <td className="px-3 py-2 text-muted-foreground">{line.unit}</td>
                               <td className="px-3 py-2 text-right text-muted-foreground">
-                                {formatCurrency(line.unit_cost_cents)}
-                              </td>
-                              <td className="px-3 py-2 text-right">
-                                {formatCurrency(line.unit_price_cents)}
+                                {formatCurrency(line.line_cost_cents)}
                               </td>
                               <td className="px-3 py-2 text-right font-medium">
                                 {formatCurrency(line.line_price_cents)}
@@ -348,7 +337,7 @@ export function EstimateTab({
                             </tr>
                             {hasDetail ? (
                               <tr className={isEditing ? '' : 'border-b last:border-0'}>
-                                <td colSpan={8} className="px-3 pb-3 pt-0">
+                                <td colSpan={5} className="px-3 pb-3 pt-0">
                                   {line.notes ? (
                                     <p className="whitespace-pre-wrap text-xs text-muted-foreground">
                                       {line.notes}
@@ -365,7 +354,7 @@ export function EstimateTab({
                             ) : null}
                             {isEditing ? (
                               <tr className="border-b bg-muted/30">
-                                <td colSpan={8} className="p-4">
+                                <td colSpan={5} className="p-4">
                                   <CostLineForm
                                     projectId={projectId}
                                     initial={line}

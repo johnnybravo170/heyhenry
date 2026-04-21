@@ -110,17 +110,11 @@ function renderGroups(lines: EstimateRenderLine[]) {
       <table className="w-full table-fixed text-sm">
         <colgroup>
           <col />
-          <col className="w-14" />
-          <col className="w-16" />
-          <col className="w-24" />
           <col className="w-28" />
         </colgroup>
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-3 py-2 text-left font-medium">Item</th>
-            <th className="px-3 py-2 text-right font-medium">Qty</th>
-            <th className="px-3 py-2 text-left font-medium">Unit</th>
-            <th className="px-3 py-2 text-right font-medium">Price</th>
             <th className="px-3 py-2 text-right font-medium">Total</th>
           </tr>
         </thead>
@@ -130,7 +124,7 @@ function renderGroups(lines: EstimateRenderLine[]) {
               {sec.section ? (
                 <tr className="border-b bg-muted/30">
                   <td
-                    colSpan={5}
+                    colSpan={2}
                     className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     {sec.section}
@@ -144,18 +138,13 @@ function renderGroups(lines: EstimateRenderLine[]) {
                     <Fragment key={l.id}>
                       <tr className={hasDetail ? '' : 'border-b last:border-0'}>
                         <td className="px-3 py-2 font-medium">{l.label}</td>
-                        <td className="px-3 py-2 text-right">{Number(l.qty)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{l.unit}</td>
-                        <td className="px-3 py-2 text-right">
-                          {formatCurrency(l.unit_price_cents)}
-                        </td>
                         <td className="px-3 py-2 text-right font-medium">
                           {formatCurrency(l.line_price_cents)}
                         </td>
                       </tr>
                       {hasDetail ? (
                         <tr className="border-b last:border-0">
-                          <td colSpan={5} className="px-3 pb-3 pt-0">
+                          <td colSpan={2} className="px-3 pb-3 pt-0">
                             {l.notes ? (
                               <p className="whitespace-pre-wrap text-xs text-muted-foreground">
                                 {l.notes}
