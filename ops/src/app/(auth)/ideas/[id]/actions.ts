@@ -69,6 +69,8 @@ export async function addIdeaCommentAction(ideaId: string, body: string): Promis
   return { ok: true };
 }
 
+const LANES = ['product', 'marketing', 'ops', 'sales', 'research'];
+
 export async function queueFollowupAction(
   ideaId: string,
   kind: 'promote_to_roadmap' | 'assign' | 'generic_followup',
@@ -76,26 +78,97 @@ export async function queueFollowupAction(
 ): Promise<ActionResult> {
   const admin = await requireAdmin();
   const service = createServiceClient();
+
+  // promote_to_roadmap is now wired up — create the card immediately and
+  // mark the followup resolved. assign/generic_followup still queue because
+  // their downstream systems don't exist yet.
+  let resolvedAt: string | null = null;
+  let resolvedBySystem: string | null = null;
+  if (kind === 'promote_to_roadmap') {
+    const { data: idea } = await service
+      .schema('ops')
+      .from('ideas')
+      .select('id, title, body, tags, rating')
+      .eq('id', ideaId)
+      .maybeSingle();
+    if (!idea) return { ok: false, error: 'Idea not found.' };
+
+    const lane =
+      typeof payload.lane === 'string' && LANES.includes(payload.lane) ? payload.lane : 'product';
+    const { data: card, error: cardErr } = await service
+      .schema('ops')
+      .from('roadmap_items')
+      .insert({
+        actor_type: 'human',
+        actor_name: admin.email,
+        admin_user_id: admin.userId,
+        lane,
+        title: idea.title as string,
+        body: (idea.body as string | null) ?? null,
+        tags: (idea.tags as string[]) ?? [],
+        priority: (idea.rating as number | null) ?? null,
+        source_idea_id: idea.id as string,
+      })
+      .select('id')
+      .single();
+    if (cardErr || !card) return { ok: false, error: cardErr?.message ?? 'Card create failed.' };
+
+    await service
+      .schema('ops')
+      .from('roadmap_activity')
+      .insert({
+        item_id: card.id,
+        actor_type: 'human',
+        actor_name: admin.email,
+        kind: 'promoted_from_idea',
+        to_value: ideaId,
+        note: typeof payload.note === 'string' ? payload.note : null,
+      });
+
+    // Move the idea itself into in_progress to reflect the promotion.
+    await service
+      .schema('ops')
+      .from('ideas')
+      .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+      .eq('id', ideaId);
+
+    resolvedAt = new Date().toISOString();
+    resolvedBySystem = 'roadmap';
+
+    await service
+      .schema('ops')
+      .from('idea_comments')
+      .insert({
+        idea_id: ideaId,
+        actor_type: 'system',
+        actor_name: 'ops',
+        admin_user_id: admin.userId,
+        body: `Promoted to roadmap (${lane}). Card: /roadmap/${card.id}`,
+      });
+  } else {
+    await service
+      .schema('ops')
+      .from('idea_comments')
+      .insert({
+        idea_id: ideaId,
+        actor_type: 'system',
+        actor_name: 'ops',
+        admin_user_id: admin.userId,
+        body: `Queued followup: ${kind}${payload.note ? ` — ${payload.note}` : ''}`,
+      });
+  }
+
   const { error } = await service.schema('ops').from('idea_followups').insert({
     idea_id: ideaId,
     kind,
     payload,
     requested_by: admin.userId,
+    resolved_at: resolvedAt,
+    resolved_by_system: resolvedBySystem,
   });
   if (error) return { ok: false, error: error.message };
 
-  // Also drop a system comment on the idea so the timeline shows the request.
-  await service
-    .schema('ops')
-    .from('idea_comments')
-    .insert({
-      idea_id: ideaId,
-      actor_type: 'system',
-      actor_name: 'ops',
-      admin_user_id: admin.userId,
-      body: `Queued followup: ${kind}${payload.note ? ` — ${payload.note}` : ''}`,
-    });
-
   revalidatePath(`/ideas/${ideaId}`);
+  revalidatePath('/roadmap');
   return { ok: true };
 }
