@@ -51,7 +51,7 @@ export function DeleteProjectButton({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+        <Button variant="destructive" size="sm">
           <Trash2 className="size-3.5" />
           Delete
         </Button>
