@@ -11,6 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { ReasonTag } from '@/lib/db/queries/worker-unavailability';
 import {
   bulkAssignDatesAction,
@@ -18,6 +25,7 @@ import {
   moveAssignmentsAction,
 } from '@/server/actions/project-assignments';
 import {
+  addUnavailabilityAction,
   moveUnavailabilityRangeAction,
   removeUnavailabilityRangeAction,
 } from '@/server/actions/worker-unavailability';
@@ -590,6 +598,14 @@ function Bar({
   );
 }
 
+const REASON_OPTIONS: { value: ReasonTag; label: string }[] = [
+  { value: 'vacation', label: 'Vacation' },
+  { value: 'sick', label: 'Sick' },
+  { value: 'other_job', label: 'Other job' },
+  { value: 'personal', label: 'Personal' },
+  { value: 'other', label: 'Other' },
+];
+
 function ScheduleWorkerDialog({
   projectId,
   workerProfileId,
@@ -606,8 +622,10 @@ function ScheduleWorkerDialog({
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [type, setType] = useState<'work' | 'time_off'>('work');
+  const [reasonTag, setReasonTag] = useState<ReasonTag>('vacation');
 
-  function handleSubmit() {
+  function getDates(): string[] {
     const dates: string[] = [];
     const d = new Date(`${from}T00:00`);
     const end = new Date(`${to}T00:00`);
@@ -615,17 +633,36 @@ function ScheduleWorkerDialog({
       dates.push(d.toLocaleDateString('en-CA'));
       d.setDate(d.getDate() + 1);
     }
+    return dates;
+  }
+
+  function handleSubmit() {
+    const dates = getDates();
     startTransition(async () => {
-      const res = await bulkAssignDatesAction({
-        project_id: projectId,
-        worker_profile_id: workerProfileId,
-        dates,
-      });
-      if (!res.ok) {
-        toast.error(res.error ?? 'Failed to schedule.');
-        return;
+      if (type === 'work') {
+        const res = await bulkAssignDatesAction({
+          project_id: projectId,
+          worker_profile_id: workerProfileId,
+          dates,
+        });
+        if (!res.ok) {
+          toast.error(res.error ?? 'Failed to schedule.');
+          return;
+        }
+        toast.success('Scheduled.');
+      } else {
+        const res = await addUnavailabilityAction({
+          worker_profile_id: workerProfileId,
+          dates,
+          reason_tag: reasonTag,
+          reason_text: '',
+        });
+        if (!res.ok) {
+          toast.error(res.error ?? 'Failed to mark time off.');
+          return;
+        }
+        toast.success('Time off marked.');
       }
-      toast.success('Scheduled.');
       onClose();
     });
   }
@@ -648,16 +685,41 @@ function ScheduleWorkerDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Schedule {workerName}</DialogTitle>
+          <DialogTitle>{workerName}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">{label}</p>
+        <div className="space-y-3">
+          <Select value={type} onValueChange={(v) => setType(v as 'work' | 'time_off')}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="work">Schedule for this project</SelectItem>
+              <SelectItem value="time_off">Mark time off</SelectItem>
+            </SelectContent>
+          </Select>
+          {type === 'time_off' ? (
+            <Select value={reasonTag} onValueChange={(v) => setReasonTag(v as ReasonTag)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REASON_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={pending}>
             {pending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            Schedule
+            {type === 'work' ? 'Schedule' : 'Mark time off'}
           </Button>
         </DialogFooter>
       </DialogContent>

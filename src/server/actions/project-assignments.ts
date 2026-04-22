@@ -122,6 +122,16 @@ export async function bulkAssignDatesAction(
     .maybeSingle();
   if (!wp) return { ok: false, error: 'Worker not found in this tenant.' };
 
+  // Delete any existing day-assignments for those dates first so the insert
+  // is idempotent — partial unique indexes aren't usable by PostgREST upsert.
+  await admin
+    .from('project_assignments')
+    .delete()
+    .eq('tenant_id', tenant.id)
+    .eq('project_id', v.project_id)
+    .eq('worker_profile_id', v.worker_profile_id)
+    .in('scheduled_date', v.dates);
+
   const rows = v.dates.map((d) => ({
     tenant_id: tenant.id,
     project_id: v.project_id,
@@ -129,10 +139,7 @@ export async function bulkAssignDatesAction(
     scheduled_date: d,
   }));
 
-  const { error } = await admin.from('project_assignments').upsert(rows, {
-    onConflict: 'project_id,worker_profile_id,scheduled_date',
-    ignoreDuplicates: true,
-  });
+  const { error } = await admin.from('project_assignments').insert(rows);
 
   if (error) return { ok: false, error: error.message };
 
