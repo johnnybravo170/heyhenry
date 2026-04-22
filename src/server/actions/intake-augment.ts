@@ -6,6 +6,7 @@
  * operator reviews, then we apply.
  */
 
+import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import {
   AUGMENT_JSON_SCHEMA,
@@ -13,6 +14,7 @@ import {
   type AugmentResult,
 } from '@/lib/ai/intake-augment-prompt';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { uploadToStorage } from '@/lib/storage/photos';
 import { createClient } from '@/lib/supabase/server';
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -182,15 +184,56 @@ export type ApplyAugmentInput = {
     qty: number;
     unit: string;
     unit_price_cents: number | null;
+    /** Indexes into the FormData "images" list — these get uploaded
+     * and attached to this line's photo_storage_paths. */
+    source_image_indexes: number[];
   }>;
   mergeSignals: AugmentResult['signals'] | null;
 };
 
-export async function applyProjectAugmentAction(
-  input: ApplyAugmentInput,
-): Promise<ApplyAugmentResult> {
+/**
+ * Apply the augment plan + (optionally) upload images and attach them
+ * to the cost lines that referenced them.
+ *
+ * formData fields:
+ *  - "plan"   — JSON-serialized ApplyAugmentInput
+ *  - "images" — File[] (the same artifacts the operator parsed),
+ *               indexed in the same order parse received them
+ */
+export async function applyProjectAugmentAction(formData: FormData): Promise<ApplyAugmentResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const planRaw = String(formData.get('plan') ?? '');
+  if (!planRaw) return { ok: false, error: 'Missing plan.' };
+  let input: ApplyAugmentInput;
+  try {
+    input = JSON.parse(planRaw) as ApplyAugmentInput;
+  } catch {
+    return { ok: false, error: 'Invalid plan JSON.' };
+  }
+
+  const files = formData.getAll('images').filter((f): f is File => f instanceof File && f.size > 0);
+
+  // Upload only images. PDFs aren't attached to cost lines in V1 (they
+  // contributed to the parse but cost_lines schema only carries
+  // photo_storage_paths). PDF persistence lands in a future phase.
+  const indexToPath: Record<number, string> = {};
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    if (!f.type.startsWith('image/')) continue;
+    const ext = f.type === 'image/png' ? 'png' : f.type === 'image/webp' ? 'webp' : 'jpg';
+    const uploaded = await uploadToStorage({
+      tenantId: tenant.id,
+      projectId: input.projectId,
+      photoId: randomUUID(),
+      file: f,
+      contentType: f.type || 'image/jpeg',
+      extension: ext,
+    });
+    if ('error' in uploaded) return { ok: false, error: `Upload: ${uploaded.error}` };
+    indexToPath[i] = uploaded.path;
+  }
 
   const supabase = await createClient();
   let applied = 0;
@@ -255,6 +298,9 @@ export async function applyProjectAugmentAction(
       const bucketId = bucketIdByName.get(l.bucket_name.toLowerCase()) ?? null;
       const qty = Number(l.qty) || 1;
       const unitPrice = Number(l.unit_price_cents ?? 0) || 0;
+      const photoPaths = (l.source_image_indexes ?? [])
+        .map((i) => indexToPath[i])
+        .filter((p): p is string => !!p);
       lineRows.push({
         tenant_id: tenant.id,
         project_id: input.projectId,
@@ -269,6 +315,7 @@ export async function applyProjectAugmentAction(
         line_price_cents: Math.round(qty * unitPrice),
         markup_pct: 0,
         sort_order: 0,
+        photo_storage_paths: photoPaths.length ? photoPaths : null,
       });
     }
     const { error } = await supabase.from('project_cost_lines').insert(lineRows);

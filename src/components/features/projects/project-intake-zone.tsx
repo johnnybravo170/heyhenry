@@ -98,13 +98,30 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
   function handleApply() {
     if (!suggestions) return;
     startApplying(async () => {
-      const res = await applyProjectAugmentAction({
+      const plan = {
         projectId,
         description_addendum: includeAddendum ? suggestions.description_addendum : null,
         new_buckets: suggestions.new_buckets.filter((_, i) => includeBuckets[i]),
-        new_lines: suggestions.new_lines.filter((_, i) => includeLines[i]),
+        new_lines: suggestions.new_lines
+          .filter((_, i) => includeLines[i])
+          .map((l) => ({
+            bucket_name: l.bucket_name,
+            label: l.label,
+            notes: l.notes,
+            qty: l.qty,
+            unit: l.unit,
+            unit_price_cents: l.unit_price_cents,
+            source_image_indexes: l.source_image_indexes ?? [],
+          })),
         mergeSignals: includeSignals ? suggestions.signals : null,
-      });
+      };
+      const fd = new FormData();
+      fd.set('plan', JSON.stringify(plan));
+      // Send the same file list, in the same order, so server-side
+      // source_image_indexes resolve correctly.
+      for (const s of staged) fd.append('images', s.file);
+
+      const res = await applyProjectAugmentAction(fd);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -287,6 +304,12 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
                         {l.notes ? (
                           <p className="whitespace-pre-wrap text-xs text-muted-foreground">
                             {l.notes}
+                          </p>
+                        ) : null}
+                        {l.source_image_indexes && l.source_image_indexes.length > 0 ? (
+                          <p className="text-[10px] text-muted-foreground">
+                            📎 Henry will attach {l.source_image_indexes.length} photo
+                            {l.source_image_indexes.length === 1 ? '' : 's'}
                           </p>
                         ) : null}
                       </div>
