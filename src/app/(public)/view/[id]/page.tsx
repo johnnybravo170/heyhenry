@@ -47,7 +47,7 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
   // Load tenant info.
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('name, quote_validity_days')
+    .select('name, quote_validity_days, gst_number, wcb_number')
     .eq('id', quote.tenant_id)
     .single();
 
@@ -68,6 +68,8 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
   const lineItemList = (lineItems ?? []) as LineItem[];
   const businessName = tenant?.name ?? 'Our Company';
   const validityDays = (tenant?.quote_validity_days as number) ?? 30;
+  const gstNumber = (tenant?.gst_number as string | null) ?? null;
+  const wcbNumber = (tenant?.wcb_number as string | null) ?? null;
 
   // Calculate valid-until date from sent_at.
   const sentDate = quote.sent_at ? new Date(quote.sent_at) : new Date(quote.created_at);
@@ -166,6 +168,13 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
             <span>Total</span>
             <span>{formatCurrency(quote.total_cents)}</span>
           </div>
+          {gstNumber || wcbNumber ? (
+            <p className="mt-2 text-xs text-gray-500">
+              {[gstNumber ? `GST: ${gstNumber}` : null, wcbNumber ? `WCB: ${wcbNumber}` : null]
+                .filter(Boolean)
+                .join('  ·  ')}
+            </p>
+          ) : null}
         </div>
       </div>
 
