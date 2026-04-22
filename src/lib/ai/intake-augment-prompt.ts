@@ -4,6 +4,8 @@
  * what's already there.
  */
 
+import { HUMAN_VOICE_RULES } from './human-voice';
+
 export const AUGMENT_SYSTEM_PROMPT = `You help a Canadian general contractor add information to an EXISTING project from artifacts they just dropped on the project page (screenshots of text threads, reference photos, sketches, inspiration shots).
 
 You are given:
@@ -19,10 +21,12 @@ Rules:
 3. Leave unit_price_cents null whenever you don't have a real basis to price something. Do NOT guess prices.
 4. Description addendum: only set if the artifact reveals scope/context that's not in the current description. Append, don't replace.
 5. Signals: only set fields the artifact actually evidences. Don't restate prior signals.
-6. Reply draft: only generate one if the artifacts include a conversation screenshot the operator should respond to. Two short paragraphs max, friendly Canadian tone, no emoji unless the client used them.
+6. Reply draft: only generate one if the artifacts include a conversation screenshot the operator should respond to. See VOICE rules below.
 7. Tag each artifact's role and any relevant tags.
 
-Return ONLY JSON matching the schema. Use empty arrays / null for anything you don't have. Never invent details.`;
+Return ONLY JSON matching the schema. Use empty arrays / null for anything you don't have. Never invent details.
+
+${HUMAN_VOICE_RULES}`;
 
 export const AUGMENT_JSON_SCHEMA = {
   name: 'project_intake_augment',
