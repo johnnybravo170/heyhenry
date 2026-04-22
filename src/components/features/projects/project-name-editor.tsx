@@ -89,19 +89,19 @@ export function ProjectNameEditor({ projectId, name, variant = 'heading' }: Prop
 
   if (variant === 'heading') {
     return (
-      <span className="group inline-flex items-center gap-2">
-        <Link href={`/projects/${projectId}`} className="hover:underline">
-          <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+      <h1 className="group inline-flex items-center gap-2 text-2xl font-semibold tracking-tight">
+        <Link href={`/projects/${projectId}`} className="cursor-pointer hover:underline">
+          {name}
         </Link>
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
+          className="rounded p-1 text-base text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
           aria-label="Rename project"
         >
           <Pencil className="size-3.5" />
         </button>
-      </span>
+      </h1>
     );
   }
 

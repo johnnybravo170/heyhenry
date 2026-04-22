@@ -1,4 +1,4 @@
-import { ArrowLeft, ImageIcon, Link2, Mic, Users } from 'lucide-react';
+import { ImageIcon, Link2, Mic, Users } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChangeOrderList } from '@/components/features/change-orders/change-order-list';
@@ -426,15 +426,6 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      {/* Back link */}
-      <Link
-        href="/projects"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-3.5" />
-        Projects
-      </Link>
-
       {/* Header */}
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
