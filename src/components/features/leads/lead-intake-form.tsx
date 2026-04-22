@@ -16,9 +16,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { ParsedIntake } from '@/lib/ai/intake-prompt';
+import { resizeImage } from '@/lib/storage/resize-image';
 import { acceptInboundLeadAction, parseInboundLeadAction } from '@/server/actions/intake';
 
 type Phase = 'upload' | 'review';
+
+const RESIZE_THRESHOLD_BYTES = 2 * 1024 * 1024;
+
+async function shrinkIfNeeded(file: File): Promise<File> {
+  if (file.type === 'application/pdf') return file;
+  if (!file.type.startsWith('image/')) return file;
+  if (file.size <= RESIZE_THRESHOLD_BYTES) return file;
+  try {
+    const blob = await resizeImage(file, { maxDimension: 2048, quality: 0.85 });
+    const newName = file.name.replace(/\.(heic|heif|png|webp)$/i, '.jpg');
+    return new File([blob], newName || 'image.jpg', { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
 
 export function LeadIntakeForm() {
   const router = useRouter();
@@ -41,7 +57,10 @@ export function LeadIntakeForm() {
       const fd = new FormData();
       fd.set('customerName', customerName);
       fd.set('pastedText', pastedText);
-      for (const f of files) fd.append('images', f);
+      for (const f of files) {
+        const shrunk = await shrinkIfNeeded(f);
+        fd.append('images', shrunk);
+      }
       const res = await parseInboundLeadAction(fd);
       if (!res.ok) {
         toast.error(res.error);

@@ -26,12 +26,29 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { AugmentResult } from '@/lib/ai/intake-augment-prompt';
+import { resizeImage } from '@/lib/storage/resize-image';
 import {
   applyProjectAugmentAction,
   parseProjectAugmentAction,
 } from '@/server/actions/intake-augment';
 
 type StagedFile = { file: File; previewUrl: string; key: string };
+
+const RESIZE_THRESHOLD_BYTES = 2 * 1024 * 1024; // 2MB
+
+/** Resize images larger than 2MB; PDFs and small images pass through. */
+async function shrinkIfNeeded(file: File): Promise<File> {
+  if (file.type === 'application/pdf') return file;
+  if (!file.type.startsWith('image/')) return file;
+  if (file.size <= RESIZE_THRESHOLD_BYTES) return file;
+  try {
+    const blob = await resizeImage(file, { maxDimension: 2048, quality: 0.85 });
+    const newName = file.name.replace(/\.(heic|heif|png|webp)$/i, '.jpg');
+    return new File([blob], newName || 'image.jpg', { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
 
 export function ProjectIntakeZone({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -82,7 +99,10 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
     startParsing(async () => {
       const fd = new FormData();
       fd.set('projectId', projectId);
-      for (const s of staged) fd.append('images', s.file);
+      for (const s of staged) {
+        const shrunk = await shrinkIfNeeded(s.file);
+        fd.append('images', shrunk);
+      }
       const res = await parseProjectAugmentAction(fd);
       if (!res.ok) {
         toast.error(res.error);
@@ -130,8 +150,12 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
       const fd = new FormData();
       fd.set('plan', JSON.stringify(plan));
       // Send the same file list, in the same order, so server-side
-      // source_image_indexes resolve correctly.
-      for (const s of staged) fd.append('images', s.file);
+      // source_image_indexes resolve correctly. Images are resized to
+      // keep multi-file payloads under the server-action body cap.
+      for (const s of staged) {
+        const shrunk = await shrinkIfNeeded(s.file);
+        fd.append('images', shrunk);
+      }
 
       const res = await applyProjectAugmentAction(fd);
       if (!res.ok) {
