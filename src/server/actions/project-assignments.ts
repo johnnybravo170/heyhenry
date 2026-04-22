@@ -87,6 +87,59 @@ export async function assignWorkerAction(
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+const bulkAssignSchema = z.object({
+  project_id: z.string().uuid(),
+  worker_profile_id: z.string().uuid(),
+  dates: z.array(z.string().regex(DATE_RE)).min(1).max(60),
+});
+
+/**
+ * Bulk-assign a worker to a project for a set of specific dates.
+ * Existing assignments for those dates are silently ignored (upsert).
+ */
+export async function bulkAssignDatesAction(
+  input: z.input<typeof bulkAssignSchema>,
+): Promise<{ ok: boolean; error?: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  try {
+    assertOwnerOrAdmin(tenant.member.role);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Forbidden.' };
+  }
+
+  const parsed = bulkAssignSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Invalid input.' };
+  const v = parsed.data;
+
+  const admin = createAdminClient();
+
+  const { data: wp } = await admin
+    .from('worker_profiles')
+    .select('id')
+    .eq('id', v.worker_profile_id)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+  if (!wp) return { ok: false, error: 'Worker not found in this tenant.' };
+
+  const rows = v.dates.map((d) => ({
+    tenant_id: tenant.id,
+    project_id: v.project_id,
+    worker_profile_id: v.worker_profile_id,
+    scheduled_date: d,
+  }));
+
+  const { error } = await admin.from('project_assignments').upsert(rows, {
+    onConflict: 'project_id,worker_profile_id,scheduled_date',
+    ignoreDuplicates: true,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/projects/${v.project_id}`);
+  return { ok: true };
+}
+
 const moveSchema = z.object({
   project_id: z.string().uuid(),
   worker_profile_id: z.string().uuid(),

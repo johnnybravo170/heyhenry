@@ -11,22 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { ReasonTag } from '@/lib/db/queries/worker-unavailability';
 import {
+  bulkAssignDatesAction,
   deleteAssignmentsByDatesAction,
   moveAssignmentsAction,
 } from '@/server/actions/project-assignments';
 import {
-  addUnavailabilityAction,
   moveUnavailabilityRangeAction,
   removeUnavailabilityRangeAction,
 } from '@/server/actions/worker-unavailability';
@@ -481,8 +472,9 @@ export function CrewScheduleGrid({ projectId, startDate, days, workers, cells }:
       })}
 
       {dialog ? (
-        <MarkUnavailableDialog
+        <ScheduleWorkerDialog
           key={`${dialog.workerId}-${dialog.from}-${dialog.to}`}
+          projectId={projectId}
           workerProfileId={dialog.workerId}
           workerName={dialog.workerName}
           from={dialog.from}
@@ -524,8 +516,7 @@ export function CrewScheduleGrid({ projectId, startDate, days, workers, cells }:
       ) : null}
 
       <p className="border-t bg-muted/20 px-3 py-1.5 text-[11px] text-muted-foreground">
-        Drag empty cells to mark time off. Drag a bar to move, its edges to resize, or click to
-        remove.
+        Drag empty cells to schedule. Drag a bar to move, its edges to resize, or click to remove.
       </p>
     </div>
   );
@@ -599,53 +590,54 @@ function Bar({
   );
 }
 
-function MarkUnavailableDialog({
+function ScheduleWorkerDialog({
+  projectId,
   workerProfileId,
   workerName,
-  from: initialFrom,
-  to: initialTo,
+  from,
+  to,
   onClose,
 }: {
+  projectId: string;
   workerProfileId: string;
   workerName: string;
   from: string;
   to: string;
   onClose: () => void;
 }) {
-  const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(initialTo);
-  const [tag, setTag] = useState<ReasonTag>('vacation');
-  const [text, setText] = useState('');
   const [pending, startTransition] = useTransition();
 
   function handleSubmit() {
     const dates: string[] = [];
-    const start = new Date(`${from}T00:00`);
+    const d = new Date(`${from}T00:00`);
     const end = new Date(`${to}T00:00`);
-    if (end < start) {
-      toast.error('End date is before start date.');
-      return;
-    }
-    const d = new Date(start);
     while (d <= end) {
       dates.push(d.toLocaleDateString('en-CA'));
       d.setDate(d.getDate() + 1);
     }
     startTransition(async () => {
-      const res = await addUnavailabilityAction({
+      const res = await bulkAssignDatesAction({
+        project_id: projectId,
         worker_profile_id: workerProfileId,
         dates,
-        reason_tag: tag,
-        reason_text: text,
       });
       if (!res.ok) {
-        toast.error(res.error);
+        toast.error(res.error ?? 'Failed to schedule.');
         return;
       }
-      toast.success('Marked unavailable.');
+      toast.success('Scheduled.');
       onClose();
     });
   }
+
+  const label =
+    from === to
+      ? new Date(`${from}T00:00`).toLocaleDateString('en-CA', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        })
+      : `${from} → ${to}`;
 
   return (
     <Dialog
@@ -656,45 +648,16 @@ function MarkUnavailableDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mark {workerName} unavailable</DialogTitle>
+          <DialogTitle>Schedule {workerName}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label className="text-xs">From</Label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">To</Label>
-            <Input type="date" min={from} value={to} onChange={(e) => setTo(e.target.value)} />
-          </div>
-          <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Reason</Label>
-            <Select value={tag} onValueChange={(v) => setTag(v as ReasonTag)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="vacation">Vacation</SelectItem>
-                <SelectItem value="sick">Sick</SelectItem>
-                <SelectItem value="other_job">Other job</SelectItem>
-                <SelectItem value="personal">Personal</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Note (optional)</Label>
-            <Input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="e.g. Hawaii trip"
-            />
-          </div>
-        </div>
+        <p className="text-sm text-muted-foreground">{label}</p>
         <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={pending}>
+            Cancel
+          </Button>
           <Button onClick={handleSubmit} disabled={pending}>
             {pending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            Save
+            Schedule
           </Button>
         </DialogFooter>
       </DialogContent>

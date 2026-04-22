@@ -49,7 +49,6 @@ type Props = {
 export function CrewTab({ projectId, workers, assignments }: Props) {
   const [pending, startTransition] = useTransition();
   const [workerId, setWorkerId] = useState<string>(workers[0]?.profile_id ?? '');
-  const [date, setDate] = useState<string>('');
   const [payRate, setPayRate] = useState<string>('');
   const [chargeRate, setChargeRate] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -65,7 +64,7 @@ export function CrewTab({ projectId, workers, assignments }: Props) {
       const result = await assignWorkerAction({
         project_id: projectId,
         worker_profile_id: workerId,
-        scheduled_date: date || null,
+        scheduled_date: null,
         pay_rate_dollars: payRate,
         charge_rate_dollars: chargeRate,
         notes,
@@ -75,7 +74,6 @@ export function CrewTab({ projectId, workers, assignments }: Props) {
         return;
       }
       toast.success('Worker assigned.');
-      setDate('');
       setPayRate('');
       setChargeRate('');
       setNotes('');
@@ -111,7 +109,7 @@ export function CrewTab({ projectId, workers, assignments }: Props) {
       ) : (
         <div className="rounded-lg border p-4">
           <h3 className="mb-3 text-sm font-semibold">Assign worker</h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
             <div className="space-y-1">
               <Label className="text-xs">Worker</Label>
               <Select value={workerId} onValueChange={setWorkerId}>
@@ -126,10 +124,6 @@ export function CrewTab({ projectId, workers, assignments }: Props) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Date (optional)</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Pay override ($/hr)</Label>
@@ -165,7 +159,7 @@ export function CrewTab({ projectId, workers, assignments }: Props) {
             </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Leave the date blank for an ongoing assignment. Pick a date to schedule one day.
+            Adds the worker as ongoing crew. Use the schedule grid below to assign specific dates.
           </p>
         </div>
       )}
