@@ -6,7 +6,6 @@
  */
 
 import { Check, ChevronsUpDown, Plus, X } from 'lucide-react';
-import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +25,12 @@ export type CustomerPickerProps = {
   onChange: (id: string) => void;
   placeholder?: string;
   error?: string;
+  /**
+   * If provided, "Add new customer" calls this instead of navigating
+   * to /customers/new. Used to open an inline create panel and keep
+   * the user in their workflow.
+   */
+  onAddNew?: () => void;
 };
 
 export function CustomerPicker({
@@ -34,6 +39,7 @@ export function CustomerPicker({
   onChange,
   placeholder = 'Pick a customer',
   error,
+  onAddNew,
 }: CustomerPickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -94,14 +100,18 @@ export function CustomerPicker({
               <CommandEmpty>
                 <div className="flex flex-col items-center gap-2 py-2">
                   <p className="text-sm text-muted-foreground">No customers found.</p>
-                  <Link
-                    href="/customers/new"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      if (onAddNew) onAddNew();
+                      else window.location.href = '/customers/new';
+                    }}
                     className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                    onClick={() => setOpen(false)}
                   >
                     <Plus className="size-3.5" />
                     Add new customer
-                  </Link>
+                  </button>
                 </div>
               </CommandEmpty>
               <CommandGroup>
@@ -122,7 +132,8 @@ export function CustomerPicker({
                   value="__add_new_customer__"
                   onSelect={() => {
                     setOpen(false);
-                    window.location.href = '/customers/new';
+                    if (onAddNew) onAddNew();
+                    else window.location.href = '/customers/new';
                   }}
                   className="text-primary"
                 >
