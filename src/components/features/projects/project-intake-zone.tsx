@@ -56,9 +56,12 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
   const [staged, setStaged] = useState<StagedFile[]>([]);
   const [suggestions, setSuggestions] = useState<AugmentResult | null>(null);
   // Per-suggestion include flags so operator can trim.
+  const [existingBuckets, setExistingBuckets] = useState<string[]>([]);
   const [includeBuckets, setIncludeBuckets] = useState<boolean[]>([]);
   const [includeLines, setIncludeLines] = useState<boolean[]>([]);
   const [includeExpenses, setIncludeExpenses] = useState<boolean[]>([]);
+  // Per-line bucket selection: null = use AI suggestion, string = operator override
+  const [lineBucketSelections, setLineBucketSelections] = useState<string[]>([]);
   const [includeAddendum, setIncludeAddendum] = useState(true);
   const [includeSignals, setIncludeSignals] = useState(true);
   const [isParsing, startParsing] = useTransition();
@@ -70,6 +73,8 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
     }
     setStaged([]);
     setSuggestions(null);
+    setExistingBuckets([]);
+    setLineBucketSelections([]);
   }, [staged]);
 
   function addFiles(files: FileList | File[]) {
@@ -109,32 +114,50 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
         return;
       }
       setSuggestions(res.suggestions);
+      setExistingBuckets(res.existingBuckets);
       setIncludeBuckets(res.suggestions.new_buckets.map(() => true));
       setIncludeLines(res.suggestions.new_lines.map(() => true));
       setIncludeExpenses((res.suggestions.new_expenses ?? []).map(() => true));
       setIncludeAddendum(!!res.suggestions.description_addendum);
       setIncludeSignals(true);
+      setLineBucketSelections(res.suggestions.new_lines.map((l) => l.bucket_name));
     });
   }
 
   function handleApply() {
     if (!suggestions) return;
     startApplying(async () => {
+      // Resolve which bucket each included line targets.
+      const resolvedLines = suggestions.new_lines
+        .map((l, i) => ({ l, i }))
+        .filter(({ i }) => includeLines[i])
+        .map(({ l, i }) => ({
+          bucket_name: lineBucketSelections[i] ?? l.bucket_name,
+          label: l.label,
+          notes: l.notes,
+          qty: l.qty,
+          unit: l.unit,
+          unit_price_cents: l.unit_price_cents,
+          source_image_indexes: l.source_image_indexes ?? [],
+        }));
+
+      // Only create new buckets that are still referenced by an included line.
+      const aiNewBucketNamesLower = new Set(
+        suggestions.new_buckets.map((b) => b.name.toLowerCase()),
+      );
+      const referencedNewBuckets = new Set(
+        resolvedLines
+          .map((l) => l.bucket_name.toLowerCase())
+          .filter((n) => aiNewBucketNamesLower.has(n)),
+      );
+
       const plan = {
         projectId,
         description_addendum: includeAddendum ? suggestions.description_addendum : null,
-        new_buckets: suggestions.new_buckets.filter((_, i) => includeBuckets[i]),
-        new_lines: suggestions.new_lines
-          .filter((_, i) => includeLines[i])
-          .map((l) => ({
-            bucket_name: l.bucket_name,
-            label: l.label,
-            notes: l.notes,
-            qty: l.qty,
-            unit: l.unit,
-            unit_price_cents: l.unit_price_cents,
-            source_image_indexes: l.source_image_indexes ?? [],
-          })),
+        new_buckets: suggestions.new_buckets.filter(
+          (b, i) => includeBuckets[i] && referencedNewBuckets.has(b.name.toLowerCase()),
+        ),
+        new_lines: resolvedLines,
         new_artifacts: (suggestions.new_artifacts ?? []).map((a) => ({
           kind: a.kind,
           label: a.label,
@@ -329,11 +352,36 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
                         setIncludeLines((arr) => arr.map((v, j) => (j === i ? !v : v)))
                       }
                     >
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                            {l.bucket_name}
-                          </span>
+                      <div className="flex-1 space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={lineBucketSelections[i] ?? l.bucket_name}
+                            onChange={(e) =>
+                              setLineBucketSelections((arr) =>
+                                arr.map((v, j) => (j === i ? e.target.value : v)),
+                              )
+                            }
+                            className="h-7 rounded-md border bg-background px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+                          >
+                            {existingBuckets.length > 0 && (
+                              <optgroup label="Existing">
+                                {existingBuckets.map((name) => (
+                                  <option key={name} value={name}>
+                                    {name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {suggestions.new_buckets.length > 0 && (
+                              <optgroup label="New">
+                                {suggestions.new_buckets.map((b) => (
+                                  <option key={b.name} value={b.name}>
+                                    + {b.name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </select>
                           <Input
                             value={l.label}
                             className="h-7 flex-1 text-sm font-medium"
