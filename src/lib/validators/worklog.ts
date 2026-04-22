@@ -19,7 +19,7 @@ export const worklogEntryTypeLabels: Record<WorklogEntryType, string> = {
   milestone: 'Milestone',
 };
 
-export const worklogRelatedTypes = ['customer', 'quote', 'job', 'invoice'] as const;
+export const worklogRelatedTypes = ['customer', 'quote', 'job', 'invoice', 'project'] as const;
 export type WorklogRelatedType = (typeof worklogRelatedTypes)[number];
 
 export const worklogRelatedTypeLabels: Record<WorklogRelatedType, string> = {
@@ -27,6 +27,7 @@ export const worklogRelatedTypeLabels: Record<WorklogRelatedType, string> = {
   quote: 'Quote',
   job: 'Job',
   invoice: 'Invoice',
+  project: 'Project',
 };
 
 export const worklogNoteCreateSchema = z.object({

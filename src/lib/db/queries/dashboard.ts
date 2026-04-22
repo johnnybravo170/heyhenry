@@ -53,6 +53,9 @@ export type RecentWorklogEntry = {
   entry_type: string;
   title: string | null;
   created_at: string;
+  related_type: string | null;
+  related_id: string | null;
+  related_name: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -320,13 +323,98 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
 
   const { data, error } = await supabase
     .from('worklog_entries')
-    .select('id, entry_type, title, created_at')
+    .select('id, entry_type, title, created_at, related_type, related_id')
     .order('created_at', { ascending: false })
     .limit(10);
 
   if (error) throw new Error(`Failed to load recent activity: ${error.message}`);
 
-  return (data ?? []) as RecentWorklogEntry[];
+  const rows = (data ?? []) as Array<Omit<RecentWorklogEntry, 'related_name'>>;
+
+  // Hydrate related names in one round-trip per entity type so the UI can
+  // render "Project: Graham reno" instead of just "Project created".
+  const idsByType = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (!r.related_type || !r.related_id) continue;
+    if (!idsByType.has(r.related_type)) idsByType.set(r.related_type, new Set());
+    idsByType.get(r.related_type)?.add(r.related_id);
+  }
+
+  const nameById = new Map<string, string>();
+
+  const customerIds = idsByType.get('customer');
+  if (customerIds?.size) {
+    const { data: rows } = await supabase
+      .from('customers')
+      .select('id, name')
+      .in('id', Array.from(customerIds));
+    for (const row of rows ?? []) nameById.set(row.id as string, (row as { name: string }).name);
+  }
+
+  const projectIds = idsByType.get('project');
+  if (projectIds?.size) {
+    const { data: rows } = await supabase
+      .from('projects')
+      .select('id, name')
+      .in('id', Array.from(projectIds));
+    for (const row of rows ?? []) nameById.set(row.id as string, (row as { name: string }).name);
+  }
+
+  const jobIds = idsByType.get('job');
+  if (jobIds?.size) {
+    const { data: rows } = await supabase
+      .from('jobs')
+      .select('id, customers:customer_id (name)')
+      .in('id', Array.from(jobIds));
+    for (const row of rows ?? []) {
+      const customerRaw = (row as { customers?: unknown }).customers;
+      const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
+      const name =
+        customer && typeof customer === 'object' && 'name' in customer
+          ? (customer as { name: string }).name
+          : 'Job';
+      nameById.set((row as { id: string }).id, name);
+    }
+  }
+
+  const quoteIds = idsByType.get('quote');
+  if (quoteIds?.size) {
+    const { data: rows } = await supabase
+      .from('quotes')
+      .select('id, customers:customer_id (name)')
+      .in('id', Array.from(quoteIds));
+    for (const row of rows ?? []) {
+      const customerRaw = (row as { customers?: unknown }).customers;
+      const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
+      const name =
+        customer && typeof customer === 'object' && 'name' in customer
+          ? (customer as { name: string }).name
+          : 'Quote';
+      nameById.set((row as { id: string }).id, name);
+    }
+  }
+
+  const invoiceIds = idsByType.get('invoice');
+  if (invoiceIds?.size) {
+    const { data: rows } = await supabase
+      .from('invoices')
+      .select('id, customers:customer_id (name)')
+      .in('id', Array.from(invoiceIds));
+    for (const row of rows ?? []) {
+      const customerRaw = (row as { customers?: unknown }).customers;
+      const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
+      const name =
+        customer && typeof customer === 'object' && 'name' in customer
+          ? (customer as { name: string }).name
+          : 'Invoice';
+      nameById.set((row as { id: string }).id, name);
+    }
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    related_name: r.related_id ? (nameById.get(r.related_id) ?? null) : null,
+  }));
 }
 
 /** Start of current year in UTC (for YTD queries). */

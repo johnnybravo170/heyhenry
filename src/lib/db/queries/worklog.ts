@@ -52,13 +52,15 @@ const WORKLOG_COLUMNS =
 async function hydrateRelatedNames(rows: WorklogRow[]): Promise<WorklogRowWithRelated[]> {
   const customerIds = new Set<string>();
   const jobIds = new Set<string>();
+  const projectIds = new Set<string>();
   for (const r of rows) {
     if (!r.related_id) continue;
     if (r.related_type === 'customer') customerIds.add(r.related_id);
     if (r.related_type === 'job') jobIds.add(r.related_id);
+    if (r.related_type === 'project') projectIds.add(r.related_id);
   }
 
-  if (customerIds.size === 0 && jobIds.size === 0) {
+  if (customerIds.size === 0 && jobIds.size === 0 && projectIds.size === 0) {
     return rows.map((r) => ({ ...r, related_name: null }));
   }
 
@@ -89,6 +91,16 @@ async function hydrateRelatedNames(rows: WorklogRow[]): Promise<WorklogRowWithRe
           ? (customer as { name: string }).name
           : 'Job';
       nameById.set((row as { id: string }).id, name);
+    }
+  }
+
+  if (projectIds.size > 0) {
+    const { data } = await supabase
+      .from('projects')
+      .select('id, name')
+      .in('id', Array.from(projectIds));
+    for (const row of data ?? []) {
+      nameById.set(row.id as string, (row as { name: string }).name);
     }
   }
 
