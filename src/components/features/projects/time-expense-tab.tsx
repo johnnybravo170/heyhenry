@@ -30,16 +30,19 @@ type Expense = {
 function TimeForm({
   projectId,
   buckets,
+  defaultRateCents,
   onDone,
 }: {
   projectId: string;
   buckets: CostBucketSummary[];
+  defaultRateCents?: number | null;
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [hours, setHours] = useState('');
+  const [rate, setRate] = useState(defaultRateCents ? String(defaultRateCents / 100) : '');
   const [notes, setNotes] = useState('');
   const [bucketId, setBucketId] = useState('');
 
@@ -47,10 +50,12 @@ function TimeForm({
     e.preventDefault();
     setError('');
     startTransition(async () => {
+      const rateCents = rate ? Math.round(parseFloat(rate) * 100) : undefined;
       const res = await logTimeAction({
         project_id: projectId,
         entry_date: date,
         hours: parseFloat(hours),
+        hourly_rate_cents: rateCents,
         bucket_id: bucketId || undefined,
         notes: notes || undefined,
       });
@@ -79,6 +84,19 @@ function TimeForm({
             onChange={(e) => setHours(e.target.value)}
             placeholder="e.g. 4"
             required
+          />
+        </div>
+        <div>
+          <span className="mb-1 block text-xs font-medium">
+            Rate ($/h) <span className="font-normal text-muted-foreground">optional</span>
+          </span>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            placeholder="e.g. 75"
           />
         </div>
         {buckets.length > 0 && (
@@ -241,11 +259,13 @@ export function TimeExpenseTab({
   buckets,
   timeEntries,
   expenses,
+  ownerRateCents,
 }: {
   projectId: string;
   buckets: CostBucketSummary[];
   timeEntries: TimeEntry[];
   expenses: Expense[];
+  ownerRateCents?: number | null;
 }) {
   const [showTimeForm, setShowTimeForm] = useState(false);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -322,6 +342,7 @@ export function TimeExpenseTab({
             <TimeForm
               projectId={projectId}
               buckets={buckets}
+              defaultRateCents={ownerRateCents}
               onDone={() => setShowTimeForm(false)}
             />
           </div>

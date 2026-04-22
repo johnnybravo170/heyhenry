@@ -610,6 +610,7 @@ export default async function ProjectDetailPage({
           <TimeExpenseTab
             projectId={id}
             buckets={project.cost_buckets}
+            ownerRateCents={null}
             timeEntries={timeEntries.map((e) => {
               const wp = e.worker_profile_id
                 ? crewWorkers.find((w) => w.id === e.worker_profile_id)
