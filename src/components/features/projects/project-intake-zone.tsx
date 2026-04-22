@@ -59,6 +59,7 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
   const [existingBuckets, setExistingBuckets] = useState<string[]>([]);
   const [includeBuckets, setIncludeBuckets] = useState<boolean[]>([]);
   const [includeLines, setIncludeLines] = useState<boolean[]>([]);
+  const [includeBills, setIncludeBills] = useState<boolean[]>([]);
   const [includeExpenses, setIncludeExpenses] = useState<boolean[]>([]);
   // Per-line bucket selection: null = use AI suggestion, string = operator override
   const [lineBucketSelections, setLineBucketSelections] = useState<string[]>([]);
@@ -75,6 +76,7 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
     setSuggestions(null);
     setExistingBuckets([]);
     setLineBucketSelections([]);
+    setIncludeBills([]);
   }, [staged]);
 
   function addFiles(files: FileList | File[]) {
@@ -117,6 +119,7 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
       setExistingBuckets(res.existingBuckets);
       setIncludeBuckets(res.suggestions.new_buckets.map(() => true));
       setIncludeLines(res.suggestions.new_lines.map(() => true));
+      setIncludeBills((res.suggestions.new_bills ?? []).map(() => true));
       setIncludeExpenses((res.suggestions.new_expenses ?? []).map(() => true));
       setIncludeAddendum(!!res.suggestions.description_addendum);
       setIncludeSignals(true);
@@ -158,6 +161,17 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
           (b, i) => includeBuckets[i] && referencedNewBuckets.has(b.name.toLowerCase()),
         ),
         new_lines: resolvedLines,
+        new_bills: (suggestions.new_bills ?? [])
+          .filter((_, i) => includeBills[i])
+          .map((b) => ({
+            vendor: b.vendor,
+            bill_date: b.bill_date,
+            description: b.description,
+            amount_cents: b.amount_cents,
+            gst_cents: b.gst_cents,
+            bucket_name: b.bucket_name,
+            source_image_index: b.source_image_index,
+          })),
         new_artifacts: (suggestions.new_artifacts ?? []).map((a) => ({
           kind: a.kind,
           label: a.label,
@@ -434,6 +448,62 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
               </div>
             ) : null}
 
+            {suggestions.new_bills && suggestions.new_bills.length > 0 ? (
+              <div className="rounded-md border">
+                <p className="border-b bg-amber-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-700">
+                  Bills to log ({suggestions.new_bills.length}) — invoices received, not estimates
+                </p>
+                <div className="divide-y">
+                  {suggestions.new_bills.map((b, i) => (
+                    <SuggestionRow
+                      // biome-ignore lint/suspicious/noArrayIndexKey: parallel state arrays bound by index
+                      key={`bill-${i}`}
+                      checked={includeBills[i]}
+                      onToggle={() =>
+                        setIncludeBills((arr) => arr.map((v, j) => (j === i ? !v : v)))
+                      }
+                    >
+                      <div className="flex flex-1 items-start gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-medium">
+                              {b.vendor ?? 'Unknown vendor'}
+                            </span>
+                            <span className="text-sm font-semibold tabular-nums">
+                              ${(b.amount_cents / 100).toFixed(2)}
+                            </span>
+                            {b.gst_cents > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                + ${(b.gst_cents / 100).toFixed(2)} GST
+                              </span>
+                            )}
+                            {b.bill_date && (
+                              <span className="text-xs text-muted-foreground">{b.bill_date}</span>
+                            )}
+                          </div>
+                          {b.description && (
+                            <p className="text-xs text-muted-foreground">{b.description}</p>
+                          )}
+                          <div className="mt-0.5 flex items-center gap-2">
+                            {b.bucket_name && (
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                {b.bucket_name}
+                              </span>
+                            )}
+                            {b.source_image_index != null && (
+                              <span className="text-[10px] text-muted-foreground">
+                                📎 invoice attached
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </SuggestionRow>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {suggestions.new_expenses && suggestions.new_expenses.length > 0 ? (
               <div className="rounded-md border">
                 <p className="border-b bg-muted/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -543,6 +613,7 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
 
             {suggestions.new_buckets.length === 0 &&
             suggestions.new_lines.length === 0 &&
+            (suggestions.new_bills?.length ?? 0) === 0 &&
             (suggestions.new_expenses?.length ?? 0) === 0 &&
             !suggestions.description_addendum &&
             !suggestions.reply_draft ? (

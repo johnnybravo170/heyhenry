@@ -199,6 +199,16 @@ export type ApplyAugmentInput = {
      * and attached to this line's photo_storage_paths. */
     source_image_indexes: number[];
   }>;
+  new_bills: Array<{
+    vendor: string | null;
+    bill_date: string | null;
+    description: string | null;
+    amount_cents: number;
+    gst_cents: number;
+    bucket_name: string | null;
+    /** Index into the FormData "images" list — uploaded as attachment_storage_path. */
+    source_image_index: number | null;
+  }>;
   new_expenses: Array<{
     vendor: string | null;
     amount_cents: number;
@@ -414,6 +424,55 @@ export async function applyProjectAugmentAction(formData: FormData): Promise<App
           await admin.storage.from(RECEIPTS_BUCKET).remove([receiptStoragePath]);
         }
         return { ok: false, error: `Expense: ${insErr.message}` };
+      }
+      applied++;
+    }
+  }
+
+  // 3c. Bills (received invoices — money owed, not yet paid).
+  if (input.new_bills?.length) {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: 'Not signed in.' };
+    const admin = createAdminClient();
+
+    for (const b of input.new_bills) {
+      let attachmentStoragePath: string | null = null;
+      const idx = b.source_image_index;
+      if (idx != null && files[idx]) {
+        const f = files[idx];
+        if (f.size > MAX_BYTES) {
+          return { ok: false, error: `Bill attachment ${f.name} larger than 10MB.` };
+        }
+        const ext = extFromContentType(f.type || 'application/pdf');
+        const path = `${tenant.id}/${user.id}/${randomUUID()}.${ext}`;
+        const { error: upErr } = await admin.storage
+          .from(RECEIPTS_BUCKET)
+          .upload(path, f, { contentType: f.type || 'application/pdf', upsert: false });
+        if (upErr) return { ok: false, error: `Bill attachment upload: ${upErr.message}` };
+        attachmentStoragePath = path;
+      }
+
+      const bucketId = b.bucket_name
+        ? (bucketIdByName.get(b.bucket_name.toLowerCase()) ?? null)
+        : null;
+
+      const { error: insErr } = await supabase.from('project_bills').insert({
+        tenant_id: tenant.id,
+        project_id: input.projectId,
+        vendor: b.vendor?.trim() || 'Unknown',
+        bill_date: b.bill_date || new Date().toISOString().slice(0, 10),
+        description: b.description?.trim() || null,
+        amount_cents: b.amount_cents,
+        gst_cents: b.gst_cents ?? 0,
+        bucket_id: bucketId,
+        attachment_storage_path: attachmentStoragePath,
+        status: 'pending',
+      });
+      if (insErr) {
+        if (attachmentStoragePath) {
+          await admin.storage.from(RECEIPTS_BUCKET).remove([attachmentStoragePath]);
+        }
+        return { ok: false, error: `Bill: ${insErr.message}` };
       }
       applied++;
     }
