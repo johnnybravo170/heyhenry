@@ -19,6 +19,7 @@ import { DeleteProjectButton } from '@/components/features/projects/delete-proje
 import { EstimateTab } from '@/components/features/projects/estimate-tab';
 import { InvoicesTab } from '@/components/features/projects/invoices-tab';
 import { PercentCompleteEditor } from '@/components/features/projects/percent-complete-editor';
+import { ProjectIntakeZone } from '@/components/features/projects/project-intake-zone';
 import { ProjectNameEditor } from '@/components/features/projects/project-name-editor';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
 import { ProjectTabSelect } from '@/components/features/projects/project-tab-select';
@@ -382,6 +383,7 @@ export default async function ProjectDetailPage({
               </Link>
             );
           })}
+          <ProjectIntakeZone projectId={project.id} />
           <DeleteProjectButton projectId={project.id} projectName={project.name} />
         </div>
       </header>

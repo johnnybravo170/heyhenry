@@ -1,0 +1,312 @@
+'use server';
+
+/**
+ * Augment-mode project intake — operator drops artifacts on the
+ * project page, Henry returns a list of suggested additions/updates,
+ * operator reviews, then we apply.
+ */
+
+import { revalidatePath } from 'next/cache';
+import {
+  AUGMENT_JSON_SCHEMA,
+  AUGMENT_SYSTEM_PROMPT,
+  type AugmentResult,
+} from '@/lib/ai/intake-augment-prompt';
+import { getCurrentTenant } from '@/lib/auth/helpers';
+import { createClient } from '@/lib/supabase/server';
+
+const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGES = 12;
+const PARSE_MODEL = 'gpt-4o-mini';
+
+export type ParseAugmentResult =
+  | { ok: true; suggestions: AugmentResult; existingBuckets: string[] }
+  | { ok: false; error: string };
+
+export async function parseProjectAugmentAction(formData: FormData): Promise<ParseAugmentResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return { ok: false, error: 'Server missing OPENAI_API_KEY' };
+
+  const projectId = String(formData.get('projectId') ?? '');
+  if (!projectId) return { ok: false, error: 'Missing projectId.' };
+
+  const supabase = await createClient();
+  const { data: project, error: projErr } = await supabase
+    .from('projects')
+    .select('id, name, description, customers:customer_id (name)')
+    .eq('id', projectId)
+    .maybeSingle();
+  if (projErr || !project) {
+    return { ok: false, error: 'Project not found.' };
+  }
+
+  const { data: bucketRows } = await supabase
+    .from('project_cost_buckets')
+    .select('id, name, section, project_cost_lines (label)')
+    .eq('project_id', projectId)
+    .order('display_order');
+
+  const existingBuckets =
+    bucketRows?.map((b) => ({
+      name: b.name as string,
+      section: (b.section as string | null) ?? null,
+      lines: ((b.project_cost_lines as Array<{ label: string }> | null) ?? []).map((l) => l.label),
+    })) ?? [];
+
+  const files = formData.getAll('images').filter((f): f is File => f instanceof File && f.size > 0);
+  if (files.length === 0) {
+    return { ok: false, error: 'Drop at least one image.' };
+  }
+  if (files.length > MAX_IMAGES) {
+    return { ok: false, error: `Too many images (max ${MAX_IMAGES}).` };
+  }
+  for (const f of files) {
+    if (f.size > MAX_BYTES) {
+      return { ok: false, error: `${f.name} is larger than 10MB.` };
+    }
+    if (!f.type.startsWith('image/')) {
+      return { ok: false, error: `${f.name} is not an image (${f.type}).` };
+    }
+  }
+
+  // Build the intro text: project context + bucket roster.
+  const customerName = Array.isArray(project.customers)
+    ? (project.customers[0] as { name?: string } | undefined)?.name
+    : (project.customers as { name?: string } | null)?.name;
+  const bucketRoster = existingBuckets.length
+    ? existingBuckets
+        .map((b) => {
+          const sec = b.section ? `${b.section} / ` : '';
+          const lines = b.lines.length
+            ? `\n      lines: ${b.lines.map((l) => `"${l}"`).join(', ')}`
+            : '';
+          return `  - ${sec}${b.name}${lines}`;
+        })
+        .join('\n')
+    : '  (none yet)';
+
+  const intro = [
+    `EXISTING PROJECT CONTEXT`,
+    `Tenant: ${tenant.name ?? 'Contractor'}`,
+    `Project name: ${project.name}`,
+    `Customer: ${customerName ?? '(unknown)'}`,
+    `Project description: ${project.description ?? '(none)'}`,
+    `Existing buckets:\n${bucketRoster}`,
+    '',
+    `${files.length} new artifact(s) follow, indexed 0..${files.length - 1}.`,
+  ].join('\n');
+
+  const userContent: Array<Record<string, unknown>> = [{ type: 'text', text: intro }];
+  for (const f of files) {
+    const buf = Buffer.from(await f.arrayBuffer());
+    const b64 = buf.toString('base64');
+    userContent.push({
+      type: 'image_url',
+      image_url: { url: `data:${f.type};base64,${b64}` },
+    });
+  }
+
+  const body = {
+    model: PARSE_MODEL,
+    messages: [
+      { role: 'system', content: AUGMENT_SYSTEM_PROMPT },
+      { role: 'user', content: userContent },
+    ],
+    response_format: { type: 'json_schema', json_schema: AUGMENT_JSON_SCHEMA },
+  };
+
+  let res: Response;
+  try {
+    res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    return { ok: false, error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    return { ok: false, error: `OpenAI ${res.status}: ${txt || res.statusText}` };
+  }
+
+  const payload = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const content = payload.choices?.[0]?.message?.content;
+  if (!content) return { ok: false, error: 'OpenAI returned no content.' };
+
+  let suggestions: AugmentResult;
+  try {
+    suggestions = JSON.parse(content) as AugmentResult;
+  } catch {
+    return { ok: false, error: 'OpenAI returned non-JSON.' };
+  }
+
+  return {
+    ok: true,
+    suggestions,
+    existingBuckets: existingBuckets.map((b) => b.name),
+  };
+}
+
+export type ApplyAugmentResult = { ok: true; appliedCount: number } | { ok: false; error: string };
+
+export type ApplyAugmentInput = {
+  projectId: string;
+  description_addendum: string | null;
+  new_buckets: Array<{ name: string; section: string | null }>;
+  new_lines: Array<{
+    bucket_name: string;
+    label: string;
+    notes: string | null;
+    qty: number;
+    unit: string;
+    unit_price_cents: number | null;
+  }>;
+  mergeSignals: AugmentResult['signals'] | null;
+};
+
+export async function applyProjectAugmentAction(
+  input: ApplyAugmentInput,
+): Promise<ApplyAugmentResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const supabase = await createClient();
+  let applied = 0;
+
+  // 1. Description addendum.
+  if (input.description_addendum?.trim()) {
+    const { data: cur } = await supabase
+      .from('projects')
+      .select('description')
+      .eq('id', input.projectId)
+      .single();
+    const next = [cur?.description ?? '', input.description_addendum.trim()]
+      .filter(Boolean)
+      .join('\n\n');
+    const { error } = await supabase
+      .from('projects')
+      .update({ description: next, updated_at: new Date().toISOString() })
+      .eq('id', input.projectId);
+    if (error) return { ok: false, error: `Description: ${error.message}` };
+    applied++;
+  }
+
+  // 2. New buckets.
+  const bucketIdByName = new Map<string, string>();
+  // Pull current buckets first so we can resolve line targets across both
+  // pre-existing and freshly inserted buckets.
+  {
+    const { data: existing } = await supabase
+      .from('project_cost_buckets')
+      .select('id, name, display_order')
+      .eq('project_id', input.projectId);
+    for (const b of existing ?? []) {
+      bucketIdByName.set((b.name as string).toLowerCase(), b.id as string);
+    }
+    const nextOrder =
+      (existing ?? []).reduce((m, b) => Math.max(m, (b.display_order as number) ?? 0), 0) + 1;
+
+    if (input.new_buckets.length) {
+      const rows = input.new_buckets.map((b, i) => ({
+        project_id: input.projectId,
+        tenant_id: tenant.id,
+        name: b.name,
+        section: b.section || null,
+        display_order: nextOrder + i,
+      }));
+      const { data: inserted, error } = await supabase
+        .from('project_cost_buckets')
+        .insert(rows)
+        .select('id, name');
+      if (error) return { ok: false, error: `Buckets: ${error.message}` };
+      for (const b of inserted ?? []) {
+        bucketIdByName.set((b.name as string).toLowerCase(), b.id as string);
+      }
+      applied += inserted?.length ?? 0;
+    }
+  }
+
+  // 3. New lines.
+  if (input.new_lines.length) {
+    const lineRows: Array<Record<string, unknown>> = [];
+    for (const l of input.new_lines) {
+      const bucketId = bucketIdByName.get(l.bucket_name.toLowerCase()) ?? null;
+      const qty = Number(l.qty) || 1;
+      const unitPrice = Number(l.unit_price_cents ?? 0) || 0;
+      lineRows.push({
+        tenant_id: tenant.id,
+        project_id: input.projectId,
+        bucket_id: bucketId,
+        label: l.label,
+        notes: l.notes?.trim() || null,
+        qty,
+        unit: l.unit || 'lot',
+        unit_cost_cents: 0,
+        unit_price_cents: unitPrice,
+        line_cost_cents: 0,
+        line_price_cents: Math.round(qty * unitPrice),
+        markup_pct: 0,
+        sort_order: 0,
+      });
+    }
+    const { error } = await supabase.from('project_cost_lines').insert(lineRows);
+    if (error) return { ok: false, error: `Cost lines: ${error.message}` };
+    applied += lineRows.length;
+  }
+
+  // 4. Merge signals into existing intake_signals (additive).
+  if (input.mergeSignals) {
+    const { data: cur } = await supabase
+      .from('projects')
+      .select('intake_signals')
+      .eq('id', input.projectId)
+      .single();
+    const prior = (cur?.intake_signals as Record<string, unknown> | null) ?? {};
+    const merged: Record<string, unknown> = { ...prior };
+    const s = input.mergeSignals;
+    if (s.competitive != null) merged.competitive = s.competitive;
+    if (s.competitor_count != null) merged.competitor_count = s.competitor_count;
+    if (s.urgency != null) merged.urgency = s.urgency;
+    if (s.upsells.length) {
+      merged.upsells = [...(((prior.upsells as unknown[]) ?? []) as unknown[]), ...s.upsells];
+    }
+    if (s.design_intent.length) {
+      merged.design_intent = Array.from(
+        new Set([...(((prior.design_intent as string[]) ?? []) as string[]), ...s.design_intent]),
+      );
+    }
+    const { error } = await supabase
+      .from('projects')
+      .update({
+        intake_signals: merged,
+        intake_source: 'text-thread',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', input.projectId);
+    if (error) return { ok: false, error: `Signals: ${error.message}` };
+    applied++;
+  }
+
+  // 5. Worklog
+  await supabase.from('worklog_entries').insert({
+    tenant_id: tenant.id,
+    entry_type: 'system',
+    title: 'Project updated from intake',
+    body: `Augmented project via dropped artifacts (${applied} change${applied === 1 ? '' : 's'}).`,
+    related_type: 'project',
+    related_id: input.projectId,
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { ok: true, appliedCount: applied };
+}
