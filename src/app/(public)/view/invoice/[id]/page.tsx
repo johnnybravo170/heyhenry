@@ -49,7 +49,7 @@ export default async function PublicInvoiceViewPage({
   // Load tenant info.
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('name')
+    .select('name, gst_number, wcb_number')
     .eq('id', invoice.tenant_id)
     .single();
 
@@ -61,6 +61,12 @@ export default async function PublicInvoiceViewPage({
     .single();
 
   const businessName = tenant?.name ?? 'Our Company';
+  const gstNumber = (tenant?.gst_number as string | null) ?? null;
+  const wcbNumber = (tenant?.wcb_number as string | null) ?? null;
+  const regParts = [
+    gstNumber ? `GST: ${gstNumber}` : null,
+    wcbNumber ? `WCB: ${wcbNumber}` : null,
+  ].filter(Boolean);
   const lineItems = ((invoice.line_items as LineItem[] | null) ?? []) as LineItem[];
   const lineItemsTotal = lineItems.reduce((sum, li) => sum + li.total_cents, 0);
   const totalCents = invoice.amount_cents + lineItemsTotal + invoice.tax_cents;
@@ -166,6 +172,9 @@ export default async function PublicInvoiceViewPage({
             <span>Total</span>
             <span>{formatCurrency(totalCents)}</span>
           </div>
+          {regParts.length > 0 ? (
+            <p className="mt-3 text-xs text-gray-400">{regParts.join('  ·  ')}</p>
+          ) : null}
         </div>
       </div>
 

@@ -59,6 +59,8 @@ export async function updateBusinessProfileAction(
       contact_email: emptyToNull(parsed.data.contactEmail),
       website_url: emptyToNull(parsed.data.websiteUrl),
       review_url: emptyToNull(parsed.data.reviewUrl),
+      gst_number: emptyToNull(parsed.data.gstNumber),
+      wcb_number: emptyToNull(parsed.data.wcbNumber),
       updated_at: new Date().toISOString(),
     })
     .eq('id', tenant.id);

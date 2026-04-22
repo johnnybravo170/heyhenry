@@ -251,7 +251,7 @@ export async function sendQuoteAction(input: { quoteId: string }): Promise<Quote
   const { data: tenantData } = await supabase
     .from('tenants')
     .select(
-      'id, name, slug, quote_validity_days, address_line1, address_line2, city, province, postal_code, phone, contact_email, website_url, logo_storage_path',
+      'id, name, slug, quote_validity_days, address_line1, address_line2, city, province, postal_code, phone, contact_email, website_url, logo_storage_path, gst_number, wcb_number',
     )
     .eq('id', tenant.id)
     .single();
@@ -298,6 +298,8 @@ export async function sendQuoteAction(input: { quoteId: string }): Promise<Quote
         phone: (tenantData?.phone as string | null) ?? null,
         contactEmail: (tenantData?.contact_email as string | null) ?? null,
         websiteUrl: (tenantData?.website_url as string | null) ?? null,
+        gstNumber: (tenantData?.gst_number as string | null) ?? null,
+        wcbNumber: (tenantData?.wcb_number as string | null) ?? null,
         logoDataUrl,
       },
       quote.customer ?? {

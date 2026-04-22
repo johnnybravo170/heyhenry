@@ -35,6 +35,8 @@ export const tenants = pgTable('tenants', {
   websiteUrl: text('website_url'),
   reviewUrl: text('review_url'),
   logoStoragePath: text('logo_storage_path'),
+  gstNumber: text('gst_number'),
+  wcbNumber: text('wcb_number'),
   socials: jsonb('socials').default(sql`'{}'::jsonb`).notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).default(sql`now()`).notNull(),

@@ -46,6 +46,8 @@ type TenantInfo = {
   phone?: string | null;
   contactEmail?: string | null;
   websiteUrl?: string | null;
+  gstNumber?: string | null;
+  wcbNumber?: string | null;
   logoDataUrl?: string | null; // pre-fetched as data URL by caller
 };
 
@@ -242,7 +244,17 @@ export async function generateQuotePdf(
   doc.text('Valid for 30 days from the date above.', margin, y);
   y += 4;
   doc.text('All prices in Canadian dollars (CAD). GST included where applicable.', margin, y);
-  y += 8;
+  y += 4;
+
+  const regParts = [
+    tenant.gstNumber ? `GST: ${tenant.gstNumber}` : null,
+    tenant.wcbNumber ? `WCB: ${tenant.wcbNumber}` : null,
+  ].filter(Boolean);
+  if (regParts.length > 0) {
+    doc.text(regParts.join('   ·   '), margin, y);
+    y += 4;
+  }
+  y += 4;
 
   // -- Footer --
   doc.setFontSize(7);

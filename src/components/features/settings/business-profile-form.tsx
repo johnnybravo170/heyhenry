@@ -19,6 +19,8 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
   const [contactEmail, setContactEmail] = useState(profile.contactEmail ?? '');
   const [websiteUrl, setWebsiteUrl] = useState(profile.websiteUrl ?? '');
   const [reviewUrl, setReviewUrl] = useState(profile.reviewUrl ?? '');
+  const [gstNumber, setGstNumber] = useState(profile.gstNumber ?? '');
+  const [wcbNumber, setWcbNumber] = useState(profile.wcbNumber ?? '');
 
   const [pending, startTransition] = useTransition();
 
@@ -36,6 +38,8 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
         contactEmail,
         websiteUrl,
         reviewUrl,
+        gstNumber,
+        wcbNumber,
       });
       if (result.ok) toast.success('Business profile saved.');
       else toast.error(result.error);
@@ -116,6 +120,25 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
           placeholder="https://g.page/your-business/review"
         />
       </Field>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="GST number" id="bp-gst" help="Shown on estimates and invoices.">
+          <Input
+            id="bp-gst"
+            value={gstNumber}
+            onChange={(e) => setGstNumber(e.target.value)}
+            placeholder="123456789 RT0001"
+          />
+        </Field>
+        <Field label="WCB account number" id="bp-wcb" help="Shown on estimates and invoices.">
+          <Input
+            id="bp-wcb"
+            value={wcbNumber}
+            onChange={(e) => setWcbNumber(e.target.value)}
+            placeholder="WCB-XXXXXXX"
+          />
+        </Field>
+      </div>
 
       <div className="pt-2">
         <Button type="submit" disabled={pending}>

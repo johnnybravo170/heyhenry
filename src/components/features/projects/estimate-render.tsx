@@ -48,6 +48,8 @@ export type EstimateRenderProps = {
   approvedByName?: string | null;
   approvedAt?: string | null;
   declinedReason?: string | null;
+  gstNumber?: string | null;
+  wcbNumber?: string | null;
 };
 
 function formatDate(iso: string | null | undefined): string | null {
@@ -196,6 +198,8 @@ export function EstimateRender({
   approvedByName,
   approvedAt,
   declinedReason,
+  gstNumber,
+  wcbNumber,
 }: EstimateRenderProps) {
   const subtotal = lines.reduce((s, l) => s + l.line_price_cents, 0);
   const mgmtFee = Math.round(subtotal * managementFeeRate);
@@ -301,6 +305,14 @@ export function EstimateRender({
           <span>{formatCurrency(total)}</span>
         </div>
       </div>
+
+      {gstNumber || wcbNumber ? (
+        <p className="mt-4 text-xs text-muted-foreground">
+          {[gstNumber ? `GST: ${gstNumber}` : null, wcbNumber ? `WCB: ${wcbNumber}` : null]
+            .filter(Boolean)
+            .join('  ·  ')}
+        </p>
+      ) : null}
     </>
   );
 }

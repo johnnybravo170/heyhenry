@@ -61,7 +61,7 @@ export function WorkerTimeForm({ projects, initial }: Props) {
     startTransition(async () => {
       const res = isEdit
         ? await updateWorkerTimeAction({
-            id: initial!.id,
+            id: initial?.id ?? '',
             project_id: projectId,
             bucket_id: bucketId || undefined,
             hours: h,

@@ -35,10 +35,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const supabase = await createClient();
   const { data: tenantRow } = await supabase
     .from('tenants')
-    .select('stripe_account_id')
+    .select('stripe_account_id, gst_number, wcb_number')
     .eq('id', tenant?.id ?? '')
     .maybeSingle();
   const hasStripe = !!tenantRow?.stripe_account_id;
+  const gstNumber = (tenantRow?.gst_number as string | null) ?? null;
+  const wcbNumber = (tenantRow?.wcb_number as string | null) ?? null;
+  const regParts = [
+    gstNumber ? `GST: ${gstNumber}` : null,
+    wcbNumber ? `WCB: ${wcbNumber}` : null,
+  ].filter(Boolean);
 
   // Load worklog entries for this invoice's job.
   const { data: worklog } = await supabase
@@ -101,6 +107,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <span>{formatCad(totalCents)}</span>
             </div>
           </div>
+          {regParts.length > 0 ? (
+            <p className="mt-1 text-xs text-muted-foreground">{regParts.join('  ·  ')}</p>
+          ) : null}
         </div>
       </section>
 

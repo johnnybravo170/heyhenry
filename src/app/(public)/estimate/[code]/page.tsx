@@ -23,7 +23,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
        estimate_status, estimate_approved_at, estimate_approved_by_name,
        estimate_declined_reason,
        customers:customer_id (name, address_line1),
-       tenants:tenant_id (name, logo_storage_path, gst_rate)`,
+       tenants:tenant_id (name, logo_storage_path, gst_rate, gst_number, wcb_number)`,
     )
     .eq('estimate_approval_code', code)
     .maybeSingle();
@@ -130,6 +130,8 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
         approvedByName={p.estimate_approved_by_name as string | null}
         approvedAt={p.estimate_approved_at as string | null}
         declinedReason={p.estimate_declined_reason as string | null}
+        gstNumber={(tenantRaw?.gst_number as string | null) ?? null}
+        wcbNumber={(tenantRaw?.wcb_number as string | null) ?? null}
       />
 
       {status === 'pending_approval' ? (

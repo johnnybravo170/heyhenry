@@ -39,6 +39,8 @@ type QuotePdfOptions = {
   gstRate?: number;
   projectName?: string;
   date?: string;
+  gstNumber?: string | null;
+  wcbNumber?: string | null;
 };
 
 export async function generateRenovationQuotePdf(options: QuotePdfOptions): Promise<Buffer> {
@@ -50,6 +52,8 @@ export async function generateRenovationQuotePdf(options: QuotePdfOptions): Prom
     gstRate = 0.05,
     projectName,
     date,
+    gstNumber,
+    wcbNumber,
   } = options;
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -201,6 +205,15 @@ export async function generateRenovationQuotePdf(options: QuotePdfOptions): Prom
   doc.text('Valid for 30 days from the date above.', margin, y);
   y += 4;
   doc.text('All prices in Canadian dollars (CAD). GST included where applicable.', margin, y);
+  y += 4;
+
+  const regParts = [
+    gstNumber ? `GST: ${gstNumber}` : null,
+    wcbNumber ? `WCB: ${wcbNumber}` : null,
+  ].filter(Boolean);
+  if (regParts.length > 0) {
+    doc.text(regParts.join('   ·   '), margin, y);
+  }
 
   // -- Footer --
   doc.setFontSize(7);

@@ -21,6 +21,8 @@ export const businessProfileSchema = z.object({
   contactEmail: z.string().trim().email('Not a valid email.').optional().or(z.literal('')),
   websiteUrl: OPTIONAL_STRING,
   reviewUrl: OPTIONAL_STRING,
+  gstNumber: OPTIONAL_STRING,
+  wcbNumber: OPTIONAL_STRING,
 });
 
 export type BusinessProfileInput = z.infer<typeof businessProfileSchema>;

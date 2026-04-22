@@ -31,6 +31,8 @@ export type BusinessProfile = {
   contactEmail: string | null;
   websiteUrl: string | null;
   reviewUrl: string | null;
+  gstNumber: string | null;
+  wcbNumber: string | null;
   logoStoragePath: string | null;
   logoSignedUrl: string | null;
   socials: Socials;
@@ -43,7 +45,7 @@ export async function getBusinessProfile(tenantId: string): Promise<BusinessProf
   const { data, error } = await supabase
     .from('tenants')
     .select(
-      'id, name, address_line1, address_line2, city, province, postal_code, phone, contact_email, website_url, review_url, logo_storage_path, socials',
+      'id, name, address_line1, address_line2, city, province, postal_code, phone, contact_email, website_url, review_url, gst_number, wcb_number, logo_storage_path, socials',
     )
     .eq('id', tenantId)
     .maybeSingle();
@@ -70,6 +72,8 @@ export async function getBusinessProfile(tenantId: string): Promise<BusinessProf
     contactEmail: (data.contact_email as string | null) ?? null,
     websiteUrl: (data.website_url as string | null) ?? null,
     reviewUrl: (data.review_url as string | null) ?? null,
+    gstNumber: (data.gst_number as string | null) ?? null,
+    wcbNumber: (data.wcb_number as string | null) ?? null,
     logoStoragePath: logoPath,
     logoSignedUrl,
     socials: (data.socials as Socials) ?? {},
@@ -134,7 +138,7 @@ export async function getBusinessProfileAdmin(
   const { data, error } = await admin
     .from('tenants')
     .select(
-      'id, name, address_line1, address_line2, city, province, postal_code, phone, contact_email, website_url, review_url, logo_storage_path, socials',
+      'id, name, address_line1, address_line2, city, province, postal_code, phone, contact_email, website_url, review_url, gst_number, wcb_number, logo_storage_path, socials',
     )
     .eq('id', tenantId)
     .maybeSingle();
@@ -161,6 +165,8 @@ export async function getBusinessProfileAdmin(
     contactEmail: (data.contact_email as string | null) ?? null,
     websiteUrl: (data.website_url as string | null) ?? null,
     reviewUrl: (data.review_url as string | null) ?? null,
+    gstNumber: (data.gst_number as string | null) ?? null,
+    wcbNumber: (data.wcb_number as string | null) ?? null,
     logoStoragePath: logoPath,
     logoSignedUrl,
     socials: (data.socials as Socials) ?? {},
