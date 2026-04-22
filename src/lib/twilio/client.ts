@@ -34,6 +34,43 @@ export type SendSmsResult =
   | { ok: false; error: string; code?: string };
 
 // ---------------------------------------------------------------------------
+// Phone normalisation
+// ---------------------------------------------------------------------------
+
+/**
+ * Best-effort E.164 normaliser. Accepts virtually any format a human might
+ * type and returns a clean E.164 string, or null if the input can't be
+ * made sense of.
+ *
+ * Rules (in order):
+ *  1. Strip everything except digits and a leading +.
+ *  2. If it starts with +, trust the country code as-is.
+ *  3. 11 digits starting with 1  → NANP → +1XXXXXXXXXX
+ *  4. 10 digits                   → assume NANP → +1XXXXXXXXXX
+ *  5. Anything else: return null.
+ */
+export function normalizePhone(raw: string): string | null {
+  if (!raw) return null;
+  // Keep leading + if present, strip everything else that isn't a digit.
+  const hasPlus = raw.trimStart().startsWith('+');
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return null;
+
+  if (hasPlus) {
+    // Already has country code — just re-attach the +.
+    return `+${digits}`;
+  }
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+${digits}`;
+  }
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+  // Non-NANP without a + prefix — can't safely guess country code.
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Lazy-init Twilio client (same pattern as Stripe/Resend/Anthropic)
 // ---------------------------------------------------------------------------
 
@@ -162,15 +199,20 @@ export async function sendSms(input: SendSmsInput): Promise<SendSmsResult> {
   if (!to || !body) {
     return { ok: false, error: 'to and body are required' };
   }
-  if (!to.startsWith('+')) {
-    return { ok: false, error: `Phone number must be E.164 (got "${to}")` };
+  const normalizedTo = normalizePhone(to);
+  if (!normalizedTo) {
+    return { ok: false, error: `Could not parse phone number "${to}" into E.164 format` };
   }
 
-  if (await isOptedOut(to)) {
-    return { ok: false, error: `Recipient ${to} has opted out of SMS`, code: 'opted_out' };
+  if (await isOptedOut(normalizedTo)) {
+    return {
+      ok: false,
+      error: `Recipient ${normalizedTo} has opted out of SMS`,
+      code: 'opted_out',
+    };
   }
 
-  const from = pickFromNumber(to);
+  const from = pickFromNumber(normalizedTo);
   if (!from) {
     return { ok: false, error: 'No Twilio from-number configured' };
   }
@@ -185,7 +227,7 @@ export async function sendSms(input: SendSmsInput): Promise<SendSmsResult> {
       direction: 'outbound',
       identity,
       from_number: from,
-      to_number: to,
+      to_number: normalizedTo,
       body,
       related_type: relatedType ?? null,
       related_id: relatedId ?? null,
@@ -203,7 +245,7 @@ export async function sendSms(input: SendSmsInput): Promise<SendSmsResult> {
     const client = getTwilioClient();
     const msg = await client.messages.create({
       from,
-      to,
+      to: normalizedTo,
       body,
       statusCallback: `${appBaseUrl()}/api/twilio/webhook/status`,
     });

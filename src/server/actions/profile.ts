@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
+import { normalizePhone } from '@/lib/twilio/client';
 import {
   type BusinessProfileInput,
   businessProfileSchema,
@@ -124,7 +125,10 @@ export async function updateOperatorProfileAction(
       first_name: emptyToNull(parsed.data.firstName),
       last_name: emptyToNull(parsed.data.lastName),
       title: emptyToNull(parsed.data.title),
-      notification_phone: emptyToNull(parsed.data.notificationPhone),
+      notification_phone: parsed.data.notificationPhone
+        ? (normalizePhone(parsed.data.notificationPhone) ??
+          emptyToNull(parsed.data.notificationPhone))
+        : null,
       notify_prefs: {
         customer_feedback: {
           email: parsed.data.notifyCustomerFeedbackEmail,
