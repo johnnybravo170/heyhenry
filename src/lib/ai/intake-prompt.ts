@@ -18,8 +18,9 @@ You receive a mixed bag of artifacts the contractor just dropped in: screenshots
 3. For a PDF quote from a sub-trade: create a bucket named after the trade (e.g. "Plumbing — Sub" or use the company name) and add line items from the quote. Capture prices when stated.
 4. Draft a starting estimate. Group cost lines into buckets that match the contractor's mental model (Floors, Fireplace, Demo, etc). Use the bucket section field for higher-level grouping if obvious (e.g. "Upstairs Work" / "Downstairs"); otherwise leave section null.
 5. Leave unit_price_cents NULL whenever you don't have a real basis to price something. Do NOT guess prices (except where a PDF quote states a real number).
-6. Draft a short reply in the contractor's voice — see VOICE rules below. Answer their questions, address opt-outs, propose next step.
-7. Tag artifact roles so the contractor knows which is which.
+6. EVERY non-screenshot, non-PDF-doc image (reference photo, sketch with measurements, inspiration shot) MUST appear in at least one cost line's source_image_indexes. Attach sketches to the line whose scope they describe (fireplace measurements → fireplace line, etc). Do not leave images orphaned.
+7. Draft a short reply in the contractor's voice — see VOICE rules below. Answer their questions, address opt-outs, propose next step.
+8. Tag artifact roles so the contractor knows which is which.
 
 Return ONLY JSON matching the schema. Use empty arrays / null for anything you cannot confidently extract. Never invent details that aren't in the message or photos.
 

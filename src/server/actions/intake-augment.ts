@@ -313,14 +313,30 @@ export async function applyProjectAugmentAction(formData: FormData): Promise<App
 
   // 3. New lines.
   if (input.new_lines.length) {
-    const lineRows: Array<Record<string, unknown>> = [];
+    // Track which image indexes are claimed by any line/expense so we
+    // can sweep orphans onto the first line at the end.
+    const claimed = new Set<number>();
     for (const l of input.new_lines) {
+      for (const i of l.source_image_indexes ?? []) claimed.add(i);
+    }
+    for (const e of input.new_expenses ?? []) {
+      if (e.source_image_index != null) claimed.add(e.source_image_index);
+    }
+    const orphanPaths = Object.entries(indexToPath)
+      .filter(([i]) => !claimed.has(Number(i)))
+      .map(([, p]) => p);
+
+    const lineRows: Array<Record<string, unknown>> = [];
+    input.new_lines.forEach((l, lineIdx) => {
       const bucketId = bucketIdByName.get(l.bucket_name.toLowerCase()) ?? null;
       const qty = Number(l.qty) || 1;
       const unitPrice = Number(l.unit_price_cents ?? 0) || 0;
-      const photoPaths = (l.source_image_indexes ?? [])
+      const ownPhotos = (l.source_image_indexes ?? [])
         .map((i) => indexToPath[i])
         .filter((p): p is string => !!p);
+      // Attach any orphan images to the first new line so they're never
+      // uploaded-but-invisible.
+      const photoPaths = lineIdx === 0 ? [...ownPhotos, ...orphanPaths] : ownPhotos;
       lineRows.push({
         project_id: input.projectId,
         bucket_id: bucketId,
@@ -337,7 +353,7 @@ export async function applyProjectAugmentAction(formData: FormData): Promise<App
         sort_order: 0,
         photo_storage_paths: photoPaths.length ? photoPaths : null,
       });
-    }
+    });
     const { error } = await supabase.from('project_cost_lines').insert(lineRows);
     if (error) return { ok: false, error: `Cost lines: ${error.message}` };
     applied += lineRows.length;
