@@ -44,8 +44,7 @@ export function ChangeOrderDetail({
       setLoading(false);
       return;
     }
-    router.refresh();
-    setLoading(false);
+    router.push(`/projects/${projectId}?tab=change-orders`);
   }
 
   const costFormatted =
@@ -84,10 +83,12 @@ export function ChangeOrderDetail({
                 const { deleteChangeOrderAction } = await import('@/server/actions/change-orders');
                 const result = await deleteChangeOrderAction(co.id);
                 setLoading(false);
-                if (!result.ok) { toast.error(result.error ?? 'Failed'); return; }
+                if (!result.ok) {
+                  toast.error(result.error ?? 'Failed');
+                  return;
+                }
                 toast.success('Change order deleted.');
-                router.back();
-                router.refresh();
+                router.push(`/projects/${projectId}?tab=change-orders`);
               }}
               disabled={loading}
               className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
