@@ -75,7 +75,7 @@ type MemoRow = {
   photos: MemoPhoto[];
 };
 
-type MemoUploadProps = {
+export type MemoUploadProps = {
   projectId: string;
   memos: MemoRow[];
   buckets: BucketOption[];

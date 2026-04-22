@@ -2,7 +2,6 @@ import { ArrowLeft, ImageIcon, Link2, Mic, Users } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChangeOrderList } from '@/components/features/change-orders/change-order-list';
-import { MemoUpload } from '@/components/features/memos/memo-upload';
 import { PhotoUpload } from '@/components/features/photos/photo-upload';
 import { ProjectPhotoGallery } from '@/components/features/photos/project-photo-gallery';
 import { PortalToggle } from '@/components/features/portal/portal-toggle';
@@ -21,6 +20,10 @@ import { InvoicesTab } from '@/components/features/projects/invoices-tab';
 import { PercentCompleteEditor } from '@/components/features/projects/percent-complete-editor';
 import { ProjectIntakeZone } from '@/components/features/projects/project-intake-zone';
 import { ProjectNameEditor } from '@/components/features/projects/project-name-editor';
+import {
+  type NoteFeedItem,
+  ProjectNotesTab,
+} from '@/components/features/projects/project-notes-tab';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
 import { ProjectTabSelect } from '@/components/features/projects/project-tab-select';
 import { ProjectTimeline } from '@/components/features/projects/project-timeline';
@@ -70,6 +73,45 @@ type Tab =
   | 'portal'
   | 'crew';
 
+function buildNotesFeed(input: {
+  notes: Array<Record<string, unknown>> | null;
+  memos: Array<Record<string, unknown>> | null;
+  events: Array<Record<string, unknown>> | null;
+}): NoteFeedItem[] {
+  const items: NoteFeedItem[] = [];
+  for (const n of input.notes ?? []) {
+    items.push({
+      kind: 'note',
+      id: n.id as string,
+      created_at: n.created_at as string,
+      body: n.body as string,
+      author_name: null,
+    });
+  }
+  for (const m of input.memos ?? []) {
+    items.push({
+      kind: 'memo',
+      id: m.id as string,
+      created_at: m.created_at as string,
+      transcript: (m.transcript as string | null) ?? null,
+      status: (m.status as string) ?? 'ready',
+    });
+  }
+  for (const e of input.events ?? []) {
+    items.push({
+      kind: 'event',
+      id: e.id as string,
+      created_at: e.created_at as string,
+      title: (e.title as string | null) ?? null,
+      body: (e.body as string | null) ?? null,
+      entry_type: (e.entry_type as string) ?? 'system',
+    });
+  }
+  // Newest first.
+  items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return items;
+}
+
 export default async function ProjectDetailPage({
   params,
   searchParams,
@@ -86,17 +128,28 @@ export default async function ProjectDetailPage({
 
   const budget = await getBudgetVsActual(id);
 
-  // Load memos for the memos tab, plus any photos attached to memos on this
-  // project so the memo card can show their thumbnails and work-item rows
-  // can reference them by index.
+  // Load memos + project photos + project notes + project-scoped worklog
+  // events. The Notes tab merges the last three sources chronologically.
   const supabase = await createClient();
-  const [{ data: memos }, projectPhotos] = await Promise.all([
+  const [{ data: memos }, projectPhotos, { data: notes }, { data: events }] = await Promise.all([
     supabase
       .from('project_memos')
       .select('id, status, transcript, ai_extraction, created_at')
       .eq('project_id', id)
       .order('created_at', { ascending: false }),
     listPhotosByProject(id),
+    supabase
+      .from('project_notes')
+      .select('id, body, created_at, user_id')
+      .eq('project_id', id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('worklog_entries')
+      .select('id, title, body, entry_type, created_at')
+      .eq('related_type', 'project')
+      .eq('related_id', id)
+      .order('created_at', { ascending: false })
+      .limit(100),
   ]);
 
   const memoPhotosByMemo = new Map<
@@ -321,7 +374,7 @@ export default async function ProjectDetailPage({
   }[] = [
     { key: 'gallery', label: 'Gallery', icon: 'gallery' },
     { key: 'portal', label: 'Portal', icon: 'portal' },
-    { key: 'memos', label: 'Memos', icon: 'memos' },
+    { key: 'memos', label: 'Notes', icon: 'memos' },
     { key: 'crew', label: 'Crew', icon: 'crew' },
   ];
 
@@ -597,21 +650,25 @@ export default async function ProjectDetailPage({
       ) : null}
 
       {tab === 'memos' ? (
-        <MemoUpload
+        <ProjectNotesTab
           projectId={id}
-          memos={(memos ?? []).map((m) => ({
-            id: m.id as string,
-            status: m.status as string,
-            transcript: m.transcript as string | null,
-            ai_extraction: m.ai_extraction as Record<string, unknown> | null,
-            created_at: m.created_at as string,
-            photos: memoPhotosByMemo.get(m.id as string) ?? [],
-          }))}
-          buckets={budget.lines.map((b) => ({
-            id: b.bucket_id,
-            name: b.bucket_name,
-            section: b.section,
-          }))}
+          feed={buildNotesFeed({ notes, memos, events })}
+          memoUploadProps={{
+            projectId: id,
+            memos: (memos ?? []).map((m) => ({
+              id: m.id as string,
+              status: m.status as string,
+              transcript: m.transcript as string | null,
+              ai_extraction: m.ai_extraction as Record<string, unknown> | null,
+              created_at: m.created_at as string,
+              photos: memoPhotosByMemo.get(m.id as string) ?? [],
+            })),
+            buckets: budget.lines.map((b) => ({
+              id: b.bucket_id,
+              name: b.bucket_name,
+              section: b.section,
+            })),
+          }}
         />
       ) : null}
 
