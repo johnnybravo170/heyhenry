@@ -19,11 +19,12 @@ Rules:
 1. Reuse existing bucket names whenever the artifact's content fits one. Only propose a NEW bucket when nothing existing fits.
 2. When proposing a new line, name the target bucket EXACTLY as it appears in the existing project, or use a new bucket name you also propose.
 3. For a PDF quote from a sub-trade: create a new bucket named after the trade (e.g. "Plumbing — Sub") or the company name, and add line items from the quote. Capture the prices stated in the quote (unit_price_cents in integer cents).
-4. Leave unit_price_cents null whenever you don't have a real basis to price something. Do NOT guess prices (except where a PDF quote states a real number).
+4. For a RECEIPT (paid invoice / store receipt — image or PDF): emit a new_expenses entry with vendor, amount in integer cents, date (YYYY-MM-DD), and a one-line description. If the receipt clearly fits an existing or proposed bucket, set bucket_name; otherwise leave null. Receipts are NOT cost-line estimates — they're real money already spent.
+5. Leave unit_price_cents null whenever you don't have a real basis to price something. Do NOT guess prices (except where a PDF quote or receipt states a real number).
 4. Description addendum: only set if the artifact reveals scope/context that's not in the current description. Append, don't replace.
-5. Signals: only set fields the artifact actually evidences. Don't restate prior signals.
-6. Reply draft: only generate one if the artifacts include a conversation screenshot the operator should respond to. See VOICE rules below.
-7. Tag each artifact's role and any relevant tags.
+6. Signals: only set fields the artifact actually evidences. Don't restate prior signals.
+7. Reply draft: only generate one if the artifacts include a conversation screenshot the operator should respond to. See VOICE rules below.
+8. Tag each artifact's role and any relevant tags.
 
 Return ONLY JSON matching the schema. Use empty arrays / null for anything you don't have. Never invent details.
 
@@ -77,6 +78,29 @@ export const AUGMENT_JSON_SCHEMA = {
           ],
         },
       },
+      new_expenses: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            vendor: { type: ['string', 'null'] },
+            amount_cents: { type: 'integer' },
+            expense_date: { type: ['string', 'null'] }, // YYYY-MM-DD
+            description: { type: ['string', 'null'] },
+            bucket_name: { type: ['string', 'null'] },
+            source_image_index: { type: ['integer', 'null'] },
+          },
+          required: [
+            'vendor',
+            'amount_cents',
+            'expense_date',
+            'description',
+            'bucket_name',
+            'source_image_index',
+          ],
+        },
+      },
       signals: {
         type: 'object',
         additionalProperties: false,
@@ -117,6 +141,7 @@ export const AUGMENT_JSON_SCHEMA = {
                 'inspiration',
                 'pdf_quote',
                 'pdf_doc',
+                'receipt',
                 'other',
               ],
             },
@@ -130,6 +155,7 @@ export const AUGMENT_JSON_SCHEMA = {
       'description_addendum',
       'new_buckets',
       'new_lines',
+      'new_expenses',
       'signals',
       'reply_draft',
       'image_roles',
@@ -145,6 +171,15 @@ export type AugmentSignals = {
   design_intent: string[];
 };
 
+export type AugmentExpense = {
+  vendor: string | null;
+  amount_cents: number;
+  expense_date: string | null;
+  description: string | null;
+  bucket_name: string | null;
+  source_image_index: number | null;
+};
+
 export type AugmentResult = {
   description_addendum: string | null;
   new_buckets: Array<{ name: string; section: string | null }>;
@@ -157,6 +192,7 @@ export type AugmentResult = {
     unit_price_cents: number | null;
     source_image_indexes: number[];
   }>;
+  new_expenses: AugmentExpense[];
   signals: AugmentSignals;
   reply_draft: string | null;
   image_roles: Array<{
@@ -168,6 +204,7 @@ export type AugmentResult = {
       | 'inspiration'
       | 'pdf_quote'
       | 'pdf_doc'
+      | 'receipt'
       | 'other';
     tags: string[];
   }>;

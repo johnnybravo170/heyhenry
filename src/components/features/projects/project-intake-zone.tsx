@@ -41,6 +41,7 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
   // Per-suggestion include flags so operator can trim.
   const [includeBuckets, setIncludeBuckets] = useState<boolean[]>([]);
   const [includeLines, setIncludeLines] = useState<boolean[]>([]);
+  const [includeExpenses, setIncludeExpenses] = useState<boolean[]>([]);
   const [includeAddendum, setIncludeAddendum] = useState(true);
   const [includeSignals, setIncludeSignals] = useState(true);
   const [isParsing, startParsing] = useTransition();
@@ -90,6 +91,7 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
       setSuggestions(res.suggestions);
       setIncludeBuckets(res.suggestions.new_buckets.map(() => true));
       setIncludeLines(res.suggestions.new_lines.map(() => true));
+      setIncludeExpenses((res.suggestions.new_expenses ?? []).map(() => true));
       setIncludeAddendum(!!res.suggestions.description_addendum);
       setIncludeSignals(true);
     });
@@ -112,6 +114,16 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
             unit: l.unit,
             unit_price_cents: l.unit_price_cents,
             source_image_indexes: l.source_image_indexes ?? [],
+          })),
+        new_expenses: (suggestions.new_expenses ?? [])
+          .filter((_, i) => includeExpenses[i])
+          .map((e) => ({
+            vendor: e.vendor,
+            amount_cents: e.amount_cents,
+            expense_date: e.expense_date,
+            description: e.description,
+            bucket_name: e.bucket_name,
+            source_image_index: e.source_image_index,
           })),
         mergeSignals: includeSignals ? suggestions.signals : null,
       };
@@ -319,6 +331,59 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
               </div>
             ) : null}
 
+            {suggestions.new_expenses && suggestions.new_expenses.length > 0 ? (
+              <div className="rounded-md border">
+                <p className="border-b bg-muted/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Expenses ({suggestions.new_expenses.length})
+                </p>
+                <div className="divide-y">
+                  {suggestions.new_expenses.map((e, i) => (
+                    <SuggestionRow
+                      // biome-ignore lint/suspicious/noArrayIndexKey: parallel state arrays bound by index
+                      key={`e-${i}`}
+                      checked={includeExpenses[i]}
+                      onToggle={() =>
+                        setIncludeExpenses((arr) => arr.map((v, j) => (j === i ? !v : v)))
+                      }
+                    >
+                      <div className="flex flex-1 items-start gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-medium">
+                              {e.vendor ?? 'Unknown vendor'}
+                            </span>
+                            <span className="text-sm font-semibold tabular-nums">
+                              ${(e.amount_cents / 100).toFixed(2)}
+                            </span>
+                            {e.expense_date ? (
+                              <span className="text-xs text-muted-foreground">
+                                {e.expense_date}
+                              </span>
+                            ) : null}
+                          </div>
+                          {e.description ? (
+                            <p className="text-xs text-muted-foreground">{e.description}</p>
+                          ) : null}
+                          <div className="mt-0.5 flex items-center gap-2">
+                            {e.bucket_name ? (
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                {e.bucket_name}
+                              </span>
+                            ) : null}
+                            {e.source_image_index != null ? (
+                              <span className="text-[10px] text-muted-foreground">
+                                📎 receipt attached
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </SuggestionRow>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {suggestions.signals.competitive ||
             suggestions.signals.urgency === 'high' ||
             suggestions.signals.upsells.length > 0 ||
@@ -375,6 +440,7 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
 
             {suggestions.new_buckets.length === 0 &&
             suggestions.new_lines.length === 0 &&
+            (suggestions.new_expenses?.length ?? 0) === 0 &&
             !suggestions.description_addendum &&
             !suggestions.reply_draft ? (
               <p className="rounded-md border bg-muted/30 px-3 py-4 text-center text-sm text-muted-foreground">

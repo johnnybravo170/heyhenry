@@ -13,9 +13,20 @@ import {
   AUGMENT_SYSTEM_PROMPT,
   type AugmentResult,
 } from '@/lib/ai/intake-augment-prompt';
-import { getCurrentTenant } from '@/lib/auth/helpers';
+import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { uploadToStorage } from '@/lib/storage/photos';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+
+const RECEIPTS_BUCKET = 'receipts';
+
+function extFromContentType(contentType: string): string {
+  if (contentType === 'image/png') return 'png';
+  if (contentType === 'image/webp') return 'webp';
+  if (contentType === 'image/heic' || contentType === 'image/heif') return 'heic';
+  if (contentType === 'application/pdf') return 'pdf';
+  return 'jpg';
+}
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_IMAGES = 12;
@@ -188,6 +199,15 @@ export type ApplyAugmentInput = {
      * and attached to this line's photo_storage_paths. */
     source_image_indexes: number[];
   }>;
+  new_expenses: Array<{
+    vendor: string | null;
+    amount_cents: number;
+    expense_date: string | null;
+    description: string | null;
+    bucket_name: string | null;
+    /** Index into the FormData "images" list — uploaded as receipt_url. */
+    source_image_index: number | null;
+  }>;
   mergeSignals: AugmentResult['signals'] | null;
 };
 
@@ -321,6 +341,54 @@ export async function applyProjectAugmentAction(formData: FormData): Promise<App
     const { error } = await supabase.from('project_cost_lines').insert(lineRows);
     if (error) return { ok: false, error: `Cost lines: ${error.message}` };
     applied += lineRows.length;
+  }
+
+  // 3b. Expenses (receipts).
+  if (input.new_expenses?.length) {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: 'Not signed in.' };
+    const admin = createAdminClient();
+
+    for (const e of input.new_expenses) {
+      let receiptStoragePath: string | null = null;
+      const idx = e.source_image_index;
+      if (idx != null && files[idx]) {
+        const f = files[idx];
+        if (f.size > MAX_BYTES) {
+          return { ok: false, error: `Receipt ${f.name} larger than 10MB.` };
+        }
+        const ext = extFromContentType(f.type || 'image/jpeg');
+        const path = `${tenant.id}/${user.id}/${randomUUID()}.${ext}`;
+        const { error: upErr } = await admin.storage
+          .from(RECEIPTS_BUCKET)
+          .upload(path, f, { contentType: f.type || 'image/jpeg', upsert: false });
+        if (upErr) return { ok: false, error: `Receipt upload: ${upErr.message}` };
+        receiptStoragePath = path;
+      }
+
+      const bucketId = e.bucket_name
+        ? (bucketIdByName.get(e.bucket_name.toLowerCase()) ?? null)
+        : null;
+
+      const { error: insErr } = await admin.from('expenses').insert({
+        tenant_id: tenant.id,
+        user_id: user.id,
+        project_id: input.projectId,
+        bucket_id: bucketId,
+        amount_cents: e.amount_cents,
+        vendor: e.vendor?.trim() || null,
+        description: e.description?.trim() || null,
+        receipt_storage_path: receiptStoragePath,
+        expense_date: e.expense_date || new Date().toISOString().slice(0, 10),
+      });
+      if (insErr) {
+        if (receiptStoragePath) {
+          await admin.storage.from(RECEIPTS_BUCKET).remove([receiptStoragePath]);
+        }
+        return { ok: false, error: `Expense: ${insErr.message}` };
+      }
+      applied++;
+    }
   }
 
   // 4. Merge signals into existing intake_signals (additive).
