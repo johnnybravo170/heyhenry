@@ -44,6 +44,7 @@ export const operatorProfileSchema = z.object({
   lastName: OPTIONAL_STRING,
   title: OPTIONAL_STRING,
   notificationPhone: OPTIONAL_STRING,
+  defaultHourlyRateCents: z.coerce.number().int().min(0).nullable().optional(),
   notifyCustomerFeedbackEmail: z.boolean().default(true),
   notifyCustomerFeedbackSms: z.boolean().default(false),
   notifyChangeOrderResponseEmail: z.boolean().default(true),

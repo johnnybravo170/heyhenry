@@ -87,6 +87,7 @@ export type OperatorProfile = {
   role: string;
   email: string | null;
   notificationPhone: string | null;
+  defaultHourlyRateCents: number | null;
   notifyCustomerFeedbackEmail: boolean;
   notifyCustomerFeedbackSms: boolean;
   notifyChangeOrderResponseEmail: boolean;
@@ -100,7 +101,9 @@ export async function getOperatorProfile(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('tenant_members')
-    .select('first_name, last_name, title, role, notification_phone, notify_prefs')
+    .select(
+      'first_name, last_name, title, role, notification_phone, notify_prefs, default_hourly_rate_cents',
+    )
     .eq('tenant_id', tenantId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -122,6 +125,7 @@ export async function getOperatorProfile(
     role: data.role as string,
     email: user?.email ?? null,
     notificationPhone: (data.notification_phone as string | null) ?? null,
+    defaultHourlyRateCents: (data.default_hourly_rate_cents as number | null) ?? null,
     notifyCustomerFeedbackEmail: !!feedback.email,
     notifyCustomerFeedbackSms: !!feedback.sms,
     notifyChangeOrderResponseEmail: !!changeOrder.email,

@@ -30,11 +30,13 @@ import { ProjectTimeline } from '@/components/features/projects/project-timeline
 import { TimeExpenseTab } from '@/components/features/projects/time-expense-tab';
 import { VarianceTab } from '@/components/features/projects/variance-tab';
 import { WorkerInvoicesSection } from '@/components/features/projects/worker-invoices-section';
+import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { getChangeOrderSummaryForProject, listChangeOrders } from '@/lib/db/queries/change-orders';
 import { getVarianceReport, listCostLines } from '@/lib/db/queries/cost-lines';
 import { listExpenses } from '@/lib/db/queries/expenses';
 import { listMaterialsCatalog } from '@/lib/db/queries/materials-catalog';
 import { listPhotosByProject } from '@/lib/db/queries/photos';
+import { getOperatorProfile } from '@/lib/db/queries/profile';
 import { listAssignmentsForProject } from '@/lib/db/queries/project-assignments';
 import { listProjectBills } from '@/lib/db/queries/project-bills';
 import { getBudgetVsActual, listBucketsForProject } from '@/lib/db/queries/project-buckets';
@@ -164,7 +166,14 @@ export default async function ProjectDetailPage({
   const project = await getProject(id);
   if (!project) notFound();
 
-  const budget = await getBudgetVsActual(id);
+  const [budget, tenant, currentUser] = await Promise.all([
+    getBudgetVsActual(id),
+    getCurrentTenant(),
+    getCurrentUser(),
+  ]);
+  const operatorProfile =
+    tenant && currentUser ? await getOperatorProfile(tenant.id, currentUser.id) : null;
+  const ownerRateCents = operatorProfile?.defaultHourlyRateCents ?? null;
 
   // Load memos + project photos + project notes + project-scoped worklog
   // events. The Notes tab merges the last three sources chronologically.
@@ -610,7 +619,7 @@ export default async function ProjectDetailPage({
           <TimeExpenseTab
             projectId={id}
             buckets={project.cost_buckets}
-            ownerRateCents={null}
+            ownerRateCents={ownerRateCents}
             timeEntries={timeEntries.map((e) => {
               const wp = e.worker_profile_id
                 ? crewWorkers.find((w) => w.id === e.worker_profile_id)

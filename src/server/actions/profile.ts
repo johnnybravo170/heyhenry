@@ -129,6 +129,7 @@ export async function updateOperatorProfileAction(
         ? (normalizePhone(parsed.data.notificationPhone) ??
           emptyToNull(parsed.data.notificationPhone))
         : null,
+      default_hourly_rate_cents: parsed.data.defaultHourlyRateCents ?? null,
       notify_prefs: {
         customer_feedback: {
           email: parsed.data.notifyCustomerFeedbackEmail,

@@ -138,3 +138,18 @@ export async function deleteTimeEntryAction(id: string): Promise<TimeEntryAction
 
   return { ok: true, id };
 }
+
+export async function listActiveProjectsAction(): Promise<
+  { ok: true; projects: { id: string; name: string }[] } | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('projects')
+    .select('id, name')
+    .is('deleted_at', null)
+    .in('status', ['active', 'pending'])
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, projects: (data ?? []) as { id: string; name: string }[] };
+}

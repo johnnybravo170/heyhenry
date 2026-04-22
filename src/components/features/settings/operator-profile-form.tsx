@@ -13,6 +13,9 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
   const [lastName, setLastName] = useState(profile.lastName ?? '');
   const [title, setTitle] = useState(profile.title ?? '');
   const [notificationPhone, setNotificationPhone] = useState(profile.notificationPhone ?? '');
+  const [defaultRate, setDefaultRate] = useState(
+    profile.defaultHourlyRateCents ? String(profile.defaultHourlyRateCents / 100) : '',
+  );
   const [notifyEmail, setNotifyEmail] = useState(profile.notifyCustomerFeedbackEmail);
   const [notifySms, setNotifySms] = useState(profile.notifyCustomerFeedbackSms);
   const [notifyCoEmail, setNotifyCoEmail] = useState(profile.notifyChangeOrderResponseEmail);
@@ -27,6 +30,7 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
         lastName,
         title,
         notificationPhone,
+        defaultHourlyRateCents: defaultRate ? Math.round(parseFloat(defaultRate) * 100) : null,
         notifyCustomerFeedbackEmail: notifyEmail,
         notifyCustomerFeedbackSms: notifySms,
         notifyChangeOrderResponseEmail: notifyCoEmail,
@@ -75,6 +79,25 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
           </div>
         </div>
       ) : null}
+
+      <div>
+        <Label htmlFor="op-rate" className="mb-1.5 block text-sm">
+          My default hourly rate ($/h)
+        </Label>
+        <Input
+          id="op-rate"
+          type="number"
+          step="0.01"
+          min="0"
+          value={defaultRate}
+          onChange={(e) => setDefaultRate(e.target.value)}
+          placeholder="e.g. 75"
+          className="max-w-[160px]"
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Pre-fills when you log your own time on a project.
+        </p>
+      </div>
 
       <div className="mt-2 rounded-lg border p-4">
         <div className="mb-3">
