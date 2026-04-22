@@ -37,5 +37,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
     valid: true,
     tenantName: invite.tenant_name,
     logoUrl,
+    invitedName: invite.invited_name ?? null,
+    invitedEmail: invite.invited_email ?? null,
   });
 }

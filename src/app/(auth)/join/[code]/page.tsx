@@ -3,12 +3,10 @@
 /**
  * Worker join page: app.heyhenry.io/join/{code}
  *
- * Shows the invite details and a signup form. Workers join an existing
- * tenant (no business name field). The invite code is validated server-side
- * on form submission.
- *
- * This is a client component because it needs useTransition for the form
- * submission and useParams for the invite code.
+ * Three paths:
+ *  1. Already signed in → one-click "Join as [email]" (no form).
+ *  2. Returning worker → "Sign in to join" tab.
+ *  3. New worker       → "Create account" tab (default).
  */
 
 import { useParams, useRouter } from 'next/navigation';
@@ -25,13 +23,21 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { workerSignupAction } from '@/server/actions/worker-auth';
+import {
+  joinTenantWithSessionAction,
+  workerLoginAndJoinAction,
+  workerSignupAction,
+} from '@/server/actions/worker-auth';
 
 type InviteInfo = {
   valid: boolean;
   tenantName?: string;
   logoUrl?: string | null;
+  invitedName?: string | null;
+  invitedEmail?: string | null;
 };
+
+type Mode = 'new' | 'existing';
 
 export default function JoinPage() {
   const params = useParams<{ code: string }>();
@@ -40,20 +46,37 @@ export default function JoinPage() {
   const [error, setError] = useState<string | null>(null);
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
   const [checking, setChecking] = useState(true);
+  const [mode, setMode] = useState<Mode>('new');
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
   const code = params.code;
 
-  // Validate the invite code on mount via a lightweight server action call.
   useEffect(() => {
-    async function checkInvite() {
+    async function init() {
       try {
-        const res = await fetch(`/api/invite/${code}`);
-        if (res.ok) {
-          const data = await res.json();
+        // Check invite validity and session in parallel.
+        const [inviteRes, { createBrowserClient }] = await Promise.all([
+          fetch(`/api/invite/${code}`),
+          import('@supabase/ssr'),
+        ]);
+
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        );
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user?.email) setSessionEmail(user.email);
+
+        if (inviteRes.ok) {
+          const data = await inviteRes.json();
           setInviteInfo({
             valid: true,
             tenantName: data.tenantName,
             logoUrl: data.logoUrl ?? null,
+            invitedName: data.invitedName ?? null,
+            invitedEmail: data.invitedEmail ?? null,
           });
         } else {
           setInviteInfo({ valid: false });
@@ -64,17 +87,49 @@ export default function JoinPage() {
         setChecking(false);
       }
     }
-    checkInvite();
+    init();
   }, [code]);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  // Path 1: already signed in — one-click join.
+  function handleJoinWithSession() {
+    setError(null);
+    startTransition(async () => {
+      const result = await joinTenantWithSessionAction(code);
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
+      }
+      router.push('/w');
+    });
+  }
+
+  // Path 2: sign in + join.
+  function onSignInSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get('email') ?? '');
+    const password = String(form.get('password') ?? '');
+    startTransition(async () => {
+      const result = await workerLoginAndJoinAction({ email, password, inviteCode: code });
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
+      }
+      router.push('/w');
+    });
+  }
+
+  // Path 3: create new account + join.
+  function onSignUpSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const form = new FormData(e.currentTarget);
     const name = String(form.get('name') ?? '');
     const email = String(form.get('email') ?? '');
     const password = String(form.get('password') ?? '');
-
     startTransition(async () => {
       const result = await workerSignupAction({ name, email, password, inviteCode: code });
       if (!result.ok) {
@@ -82,7 +137,7 @@ export default function JoinPage() {
         toast.error(result.error);
         return;
       }
-      router.push('/dashboard');
+      router.push('/w');
     });
   }
 
@@ -112,73 +167,183 @@ export default function JoinPage() {
     );
   }
 
+  const { tenantName, logoUrl, invitedName, invitedEmail } = inviteInfo;
+
   return (
     <Card>
       <CardHeader>
-        {inviteInfo.logoUrl ? (
+        {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={inviteInfo.logoUrl}
-            alt={`${inviteInfo.tenantName} logo`}
+            src={logoUrl}
+            alt={`${tenantName} logo`}
             className="mb-3 h-16 w-auto object-contain"
           />
         ) : null}
-        <CardTitle className="text-2xl">Join {inviteInfo.tenantName}</CardTitle>
+        <CardTitle className="text-2xl">Join {tenantName}</CardTitle>
         <CardDescription>
-          {inviteInfo.tenantName} has invited you to join their team on HeyHenry.
+          {tenantName} has invited you to join their team on HeyHenry.
         </CardDescription>
       </CardHeader>
-      <form onSubmit={onSubmit}>
+
+      {/* Path 1: already signed in */}
+      {sessionEmail ? (
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              required
-              disabled={pending}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              disabled={pending}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              required
-              disabled={pending}
-            />
-            <p className="text-xs text-muted-foreground">
-              At least 8 characters with one letter and one number.
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            You're signed in as <span className="font-medium text-foreground">{sessionEmail}</span>.
+          </p>
           {error ? (
             <p className="text-sm text-destructive" role="alert">
               {error}
             </p>
           ) : null}
-        </CardContent>
-        <CardFooter className="pt-2">
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? 'Creating account...' : 'Join team'}
+          <Button className="w-full" onClick={handleJoinWithSession} disabled={pending}>
+            {pending ? 'Joining...' : `Join ${tenantName}`}
           </Button>
-        </CardFooter>
-      </form>
+          <p className="text-center text-xs text-muted-foreground">
+            Not you?{' '}
+            <button
+              type="button"
+              className="underline hover:text-foreground"
+              onClick={() => setSessionEmail(null)}
+            >
+              Sign in with a different account
+            </button>
+          </p>
+        </CardContent>
+      ) : (
+        <>
+          {/* Mode toggle */}
+          <CardContent className="pb-0">
+            <div className="mb-4 inline-flex w-full rounded-md border bg-muted/40 p-0.5 text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('new');
+                  setError(null);
+                }}
+                className={`flex-1 rounded py-1.5 text-center transition-colors ${
+                  mode === 'new'
+                    ? 'bg-background shadow-sm font-medium'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                New account
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('existing');
+                  setError(null);
+                }}
+                className={`flex-1 rounded py-1.5 text-center transition-colors ${
+                  mode === 'existing'
+                    ? 'bg-background shadow-sm font-medium'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Already have an account
+              </button>
+            </div>
+          </CardContent>
+
+          {/* Path 3: new account */}
+          {mode === 'new' ? (
+            <form onSubmit={onSignUpSubmit}>
+              <CardContent className="space-y-4 pt-0">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    defaultValue={invitedName ?? ''}
+                    required
+                    disabled={pending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    defaultValue={invitedEmail ?? ''}
+                    required
+                    disabled={pending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                    disabled={pending}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    At least 8 characters with one letter and one number.
+                  </p>
+                </div>
+                {error ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </CardContent>
+              <CardFooter className="pt-2">
+                <Button type="submit" className="w-full" disabled={pending}>
+                  {pending ? 'Creating account...' : 'Join team'}
+                </Button>
+              </CardFooter>
+            </form>
+          ) : (
+            /* Path 2: sign in with existing account */
+            <form onSubmit={onSignInSubmit}>
+              <CardContent className="space-y-4 pt-0">
+                <div className="space-y-2">
+                  <Label htmlFor="si-email">Email</Label>
+                  <Input
+                    id="si-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    defaultValue={invitedEmail ?? ''}
+                    required
+                    disabled={pending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="si-password">Password</Label>
+                  <Input
+                    id="si-password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    disabled={pending}
+                  />
+                </div>
+                {error ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </CardContent>
+              <CardFooter className="pt-2">
+                <Button type="submit" className="w-full" disabled={pending}>
+                  {pending ? 'Signing in...' : 'Sign in & join team'}
+                </Button>
+              </CardFooter>
+            </form>
+          )}
+        </>
+      )}
     </Card>
   );
 }

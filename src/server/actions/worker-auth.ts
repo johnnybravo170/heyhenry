@@ -122,3 +122,155 @@ export async function workerSignupAction(input: {
   // 8. Success.
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// Join with existing account (sign in + add to tenant)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sign in with existing credentials and join the tenant that issued the invite.
+ * Handles the case where a worker already has an account under a different tenant
+ * or simply forgot they already signed up.
+ */
+export async function workerLoginAndJoinAction(input: {
+  email: string;
+  password: string;
+  inviteCode: string;
+}): Promise<WorkerSignupResult> {
+  const invite = await findWorkerInviteByCode(input.inviteCode);
+  if (!invite) {
+    return { ok: false, error: 'This invite link is no longer valid. Contact your employer.' };
+  }
+
+  // Sign in first so we know the credentials are valid and get the user id.
+  const supabase = await createClient();
+  const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+    email: input.email,
+    password: input.password,
+  });
+  if (signInErr || !signInData.user) {
+    return {
+      ok: false,
+      error: signInErr?.message ?? 'Sign-in failed. Check your email and password.',
+    };
+  }
+
+  const userId = signInData.user.id;
+  const admin = createAdminClient();
+
+  // Check if already a member of this tenant — nothing to do.
+  const { data: existing } = await admin
+    .from('tenant_members')
+    .select('id')
+    .eq('tenant_id', invite.tenant_id)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) {
+    // Already on the team — mark invite used and redirect.
+    await markInviteUsed(invite.id, userId).catch(() => {});
+    return { ok: true };
+  }
+
+  // Add to tenant.
+  const { data: member, error: memberErr } = await admin
+    .from('tenant_members')
+    .insert({ tenant_id: invite.tenant_id, user_id: userId, role: invite.role })
+    .select('id')
+    .single();
+
+  if (memberErr || !member) {
+    return { ok: false, error: memberErr?.message ?? 'Failed to join team.' };
+  }
+
+  // Apply invite prefs if set.
+  if (invite.invite_prefs) {
+    const prefs = invite.invite_prefs;
+    function triToBool(v: 'inherit' | 'yes' | 'no' | undefined): boolean | null {
+      if (!v || v === 'inherit') return null;
+      return v === 'yes';
+    }
+    const patch: Record<string, unknown> = {
+      tenant_id: invite.tenant_id,
+      tenant_member_id: member.id,
+    };
+    if (prefs.worker_type) patch.worker_type = prefs.worker_type;
+    if (prefs.can_log_expenses) patch.can_log_expenses = triToBool(prefs.can_log_expenses);
+    if (prefs.can_invoice) patch.can_invoice = triToBool(prefs.can_invoice);
+    if (prefs.default_hourly_rate_cents !== undefined)
+      patch.default_hourly_rate_cents = prefs.default_hourly_rate_cents;
+    if (prefs.default_charge_rate_cents !== undefined)
+      patch.default_charge_rate_cents = prefs.default_charge_rate_cents;
+    await admin.from('worker_profiles').upsert(patch, { onConflict: 'tenant_member_id' });
+  }
+
+  await markInviteUsed(invite.id, userId).catch(() => {});
+  return { ok: true };
+}
+
+/**
+ * Join the tenant that issued the invite using the currently signed-in session.
+ * Used when a worker opens an invite link while already logged in.
+ */
+export async function joinTenantWithSessionAction(inviteCode: string): Promise<WorkerSignupResult> {
+  const invite = await findWorkerInviteByCode(inviteCode);
+  if (!invite) {
+    return { ok: false, error: 'This invite link is no longer valid. Contact your employer.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: 'Not signed in.' };
+  }
+
+  const admin = createAdminClient();
+
+  // Already a member — nothing to do.
+  const { data: existing } = await admin
+    .from('tenant_members')
+    .select('id')
+    .eq('tenant_id', invite.tenant_id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (existing) {
+    await markInviteUsed(invite.id, user.id).catch(() => {});
+    return { ok: true };
+  }
+
+  const { data: member, error: memberErr } = await admin
+    .from('tenant_members')
+    .insert({ tenant_id: invite.tenant_id, user_id: user.id, role: invite.role })
+    .select('id')
+    .single();
+
+  if (memberErr || !member) {
+    return { ok: false, error: memberErr?.message ?? 'Failed to join team.' };
+  }
+
+  if (invite.invite_prefs) {
+    const prefs = invite.invite_prefs;
+    function triToBool(v: 'inherit' | 'yes' | 'no' | undefined): boolean | null {
+      if (!v || v === 'inherit') return null;
+      return v === 'yes';
+    }
+    const patch: Record<string, unknown> = {
+      tenant_id: invite.tenant_id,
+      tenant_member_id: member.id,
+    };
+    if (prefs.worker_type) patch.worker_type = prefs.worker_type;
+    if (prefs.can_log_expenses) patch.can_log_expenses = triToBool(prefs.can_log_expenses);
+    if (prefs.can_invoice) patch.can_invoice = triToBool(prefs.can_invoice);
+    if (prefs.default_hourly_rate_cents !== undefined)
+      patch.default_hourly_rate_cents = prefs.default_hourly_rate_cents;
+    if (prefs.default_charge_rate_cents !== undefined)
+      patch.default_charge_rate_cents = prefs.default_charge_rate_cents;
+    await admin.from('worker_profiles').upsert(patch, { onConflict: 'tenant_member_id' });
+  }
+
+  await markInviteUsed(invite.id, user.id).catch(() => {});
+  return { ok: true };
+}
