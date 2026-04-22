@@ -6,6 +6,7 @@
 
 import { Fragment } from 'react';
 import { formatCurrency } from '@/lib/pricing/calculator';
+import { EstimatePhotoLightbox } from './estimate-photo-lightbox';
 
 export type EstimateRenderLine = {
   id: string;
@@ -142,20 +143,7 @@ function renderGroups(lines: EstimateRenderLine[]) {
                         </p>
                       ) : null}
                       {l.photo_urls && l.photo_urls.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {l.photo_urls.map((url) => (
-                            <a
-                              key={url}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block h-14 w-14 overflow-hidden rounded-md border"
-                            >
-                              {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image */}
-                              <img src={url} alt="" className="h-full w-full object-cover" />
-                            </a>
-                          ))}
-                        </div>
+                        <EstimatePhotoLightbox urls={l.photo_urls} />
                       ) : null}
                     </>
                   ) : null;
