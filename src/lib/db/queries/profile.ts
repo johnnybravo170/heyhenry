@@ -89,6 +89,8 @@ export type OperatorProfile = {
   notificationPhone: string | null;
   notifyCustomerFeedbackEmail: boolean;
   notifyCustomerFeedbackSms: boolean;
+  notifyChangeOrderResponseEmail: boolean;
+  notifyChangeOrderResponseSms: boolean;
 };
 
 export async function getOperatorProfile(
@@ -111,6 +113,7 @@ export async function getOperatorProfile(
   const prefs =
     (data.notify_prefs as Record<string, Record<string, boolean> | undefined> | null) ?? {};
   const feedback = prefs.customer_feedback ?? { email: true, sms: false };
+  const changeOrder = prefs.change_order_response ?? { email: true, sms: false };
 
   return {
     firstName: (data.first_name as string | null) ?? null,
@@ -121,6 +124,8 @@ export async function getOperatorProfile(
     notificationPhone: (data.notification_phone as string | null) ?? null,
     notifyCustomerFeedbackEmail: !!feedback.email,
     notifyCustomerFeedbackSms: !!feedback.sms,
+    notifyChangeOrderResponseEmail: !!changeOrder.email,
+    notifyChangeOrderResponseSms: !!changeOrder.sms,
   };
 }
 

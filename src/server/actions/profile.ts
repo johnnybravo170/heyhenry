@@ -130,6 +130,10 @@ export async function updateOperatorProfileAction(
           email: parsed.data.notifyCustomerFeedbackEmail,
           sms: parsed.data.notifyCustomerFeedbackSms,
         },
+        change_order_response: {
+          email: parsed.data.notifyChangeOrderResponseEmail,
+          sms: parsed.data.notifyChangeOrderResponseSms,
+        },
       },
       updated_at: new Date().toISOString(),
     })

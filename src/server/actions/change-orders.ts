@@ -16,6 +16,7 @@ import { changeOrderApprovalEmailHtml } from '@/lib/email/templates/change-order
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { sendSms } from '@/lib/twilio/client';
 import { changeOrderApprovalSchema, changeOrderCreateSchema } from '@/lib/validators/change-order';
 
 export type ChangeOrderActionResult =
@@ -287,6 +288,16 @@ export async function approveChangeOrderAction(
     related_id: projectId,
   });
 
+  // Notify owner/admin members per their preferences.
+  await dispatchChangeOrderNotifications({
+    admin,
+    tenantId,
+    projectId,
+    title: coData.title as string,
+    response: 'approved',
+    byName: nameParsed.data.approved_by_name,
+  }).catch((err) => console.error('[change-order] notification dispatch failed:', err));
+
   return { ok: true, id: coData.id as string };
 }
 
@@ -352,6 +363,16 @@ export async function declineChangeOrderAction(
     related_id: projectId,
   });
 
+  // Notify owner/admin members per their preferences.
+  await dispatchChangeOrderNotifications({
+    admin,
+    tenantId,
+    projectId,
+    title: coData.title as string,
+    response: 'declined',
+    reason,
+  }).catch((err) => console.error('[change-order] notification dispatch failed:', err));
+
   return { ok: true, id: coData.id as string };
 }
 
@@ -407,6 +428,69 @@ export async function voidChangeOrderAction(
 
   revalidatePath(`/projects/${projectId}`);
   return { ok: true, id: changeOrderId };
+}
+
+async function dispatchChangeOrderNotifications(args: {
+  admin: ReturnType<typeof createAdminClient>;
+  tenantId: string;
+  projectId: string;
+  title: string;
+  response: 'approved' | 'declined';
+  byName?: string;
+  reason?: string;
+}) {
+  const { admin, tenantId, projectId, title, response, byName, reason } = args;
+
+  const { data: members } = await admin
+    .from('tenant_members')
+    .select('user_id, notification_phone, notify_prefs, role')
+    .eq('tenant_id', tenantId)
+    .in('role', ['owner', 'admin']);
+
+  const userIds = (members ?? []).map((m) => m.user_id as string).filter(Boolean);
+  if (userIds.length === 0) return;
+
+  const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  const emailByUserId = new Map<string, string>();
+  for (const u of users?.users ?? []) {
+    if (u.id && u.email) emailByUserId.set(u.id, u.email);
+  }
+
+  const projectUrl = `https://app.heyhenry.io/projects/${projectId}?tab=change-orders`;
+  const verb = response === 'approved' ? 'approved' : 'declined';
+  const preview = byName
+    ? `Change order "${title}" was ${verb} by ${byName}.`
+    : `Change order "${title}" was ${verb}.`;
+  const body = reason ? `${preview} Reason: ${reason}` : preview;
+
+  for (const m of members ?? []) {
+    const prefs = (m.notify_prefs as Record<string, Record<string, boolean> | undefined>) ?? {};
+    const want = prefs.change_order_response ?? { email: true, sms: false };
+
+    if (want.email) {
+      const email = emailByUserId.get(m.user_id as string);
+      if (email) {
+        await sendEmail({
+          tenantId,
+          to: email,
+          subject: `Change order ${verb}: "${title}"`,
+          html: `<p>${body}</p><p><a href="${projectUrl}">Open in HeyHenry</a></p>`,
+        }).catch((err) => console.error('[change-order] email failed:', err));
+      }
+    }
+
+    if (want.sms) {
+      const phone = (m.notification_phone as string | null) ?? '';
+      if (phone) {
+        await sendSms({
+          tenantId,
+          to: phone,
+          body: `${body} ${projectUrl}`,
+          relatedType: 'platform',
+        }).catch((err) => console.error('[change-order] sms failed:', err));
+      }
+    }
+  }
 }
 
 export async function deleteChangeOrderAction(
