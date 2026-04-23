@@ -217,6 +217,15 @@ export async function authenticateOAuthToken(req: Request): Promise<OAuthAuthRes
     return { ok: false, response: oauthChallenge(401, resourceMetadata) };
   }
 
+  // Best-effort last-used bookkeeping. Fire-and-forget so the request path
+  // doesn't pay for an extra round-trip — admin UI can tolerate sub-second
+  // staleness.
+  void service
+    .schema('ops')
+    .from('oauth_tokens')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', row.id as string);
+
   return {
     ok: true,
     token: {

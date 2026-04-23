@@ -17,14 +17,37 @@ export default async function DashboardPage() {
     .select('*', { count: 'exact', head: true })
     .is('revoked_at', null);
 
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const [{ data: mcpRows }, { count: activeTokenCount }] = await Promise.all([
+    service
+      .schema('ops')
+      .from('audit_log')
+      .select('status')
+      .like('path', '/api/mcp/%')
+      .gte('occurred_at', since24h),
+    service
+      .schema('ops')
+      .from('oauth_tokens')
+      .select('*', { count: 'exact', head: true })
+      .is('revoked_at', null)
+      .gt('expires_at', new Date().toISOString()),
+  ]);
+  const mcpTotal = mcpRows?.length ?? 0;
+  const mcpFailed = (mcpRows ?? []).filter((r) => (r.status as number) >= 400).length;
+
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card label="Active API keys" value={keyCount ?? 0} href="/admin/keys" />
         <Card label="Worklog entries" value={recent?.length ?? 0} href="/worklog" />
         <Card label="Audit log" value="view" href="/admin/audit" />
+        <Card
+          label="MCP (last 24h)"
+          value={`${mcpTotal} calls · ${mcpFailed} failed · ${activeTokenCount ?? 0} tokens`}
+          href="/admin/mcp"
+        />
       </section>
 
       <section>

@@ -10,6 +10,7 @@ const NAV = [
   { href: '/decisions', label: 'Decisions' },
   { href: '/knowledge', label: 'Knowledge' },
   { href: '/admin/keys', label: 'API Keys' },
+  { href: '/admin/mcp', label: 'MCP' },
   { href: '/admin/audit', label: 'Audit Log' },
 ];
 

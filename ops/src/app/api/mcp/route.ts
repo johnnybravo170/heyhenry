@@ -16,6 +16,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { authenticateOAuthToken } from '@/lib/api-auth';
+import { enforceRateLimit } from '@/lib/mcp-rate-limit';
 import { registerScopedTools } from '@/server/mcp-tools';
 
 export const runtime = 'nodejs';
@@ -38,13 +39,35 @@ async function handle(req: Request): Promise<Response> {
   const auth = await authenticateOAuthToken(req);
   if (!auth.ok) return withCors(auth.response);
 
+  const limited = await enforceRateLimit(auth.token.id);
+  if (!limited.ok) {
+    return withCors(
+      new Response(
+        JSON.stringify({
+          error: 'rate_limited',
+          error_description: `Rate limit exceeded. Retry in ${limited.retryAfterSec}s.`,
+        }),
+        {
+          status: 429,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': String(limited.retryAfterSec),
+          },
+        },
+      ),
+    );
+  }
+
   const server = new McpServer(
     { name: 'heyhenry-ops', version: '0.1.0' },
     { capabilities: { tools: {} } },
   );
 
   registerScopedTools(server, {
-    keyId: null,
+    // Stamp the OAuth token id into audit_log.key_id so the admin MCP page can
+    // attribute calls back to the issuing token / client. There's no FK on
+    // audit_log.key_id, so cross-table reference to ops.oauth_tokens is fine.
+    keyId: auth.token.id,
     actorName: auth.token.client_id,
     scopes: auth.token.scopes,
   });
