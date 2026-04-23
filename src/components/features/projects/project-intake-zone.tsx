@@ -91,6 +91,11 @@ export function ProjectIntakeZone({
   const [includeExpenses, setIncludeExpenses] = useState<boolean[]>([]);
   // Per-line bucket selection: null = use AI suggestion, string = operator override
   const [lineBucketSelections, setLineBucketSelections] = useState<string[]>([]);
+  // Per-bill / per-expense bucket overrides. Empty string "" = deliberately
+  // unassigned (valid — bill/expense can carry no bucket). string = operator
+  // chose that bucket name. Parallel arrays, one slot per item.
+  const [billBucketSelections, setBillBucketSelections] = useState<string[]>([]);
+  const [expenseBucketSelections, setExpenseBucketSelections] = useState<string[]>([]);
   const [includeAddendum, setIncludeAddendum] = useState(true);
   const [includeSignals, setIncludeSignals] = useState(true);
   const [isParsing, startParsing] = useTransition();
@@ -109,6 +114,8 @@ export function ProjectIntakeZone({
     setSuggestions(null);
     setExistingBuckets([]);
     setLineBucketSelections([]);
+    setBillBucketSelections([]);
+    setExpenseBucketSelections([]);
     setIncludeBills([]);
     setSavedSubQuoteIndexes(new Set());
     setReviewingSubQuoteIndex(null);
@@ -159,6 +166,10 @@ export function ProjectIntakeZone({
       setIncludeAddendum(!!res.suggestions.description_addendum);
       setIncludeSignals(true);
       setLineBucketSelections(res.suggestions.new_lines.map((l) => l.bucket_name));
+      setBillBucketSelections((res.suggestions.new_bills ?? []).map((b) => b.bucket_name ?? ''));
+      setExpenseBucketSelections(
+        (res.suggestions.new_expenses ?? []).map((e) => e.bucket_name ?? ''),
+      );
     });
   }
 
@@ -196,15 +207,18 @@ export function ProjectIntakeZone({
           (b, i) => includeBuckets[i] && referencedNewBuckets.has(b.name.toLowerCase()),
         ),
         new_lines: resolvedLines,
+        // Map-then-filter preserves original index so we can read from the
+        // parallel billBucketSelections / expenseBucketSelections arrays.
         new_bills: (suggestions.new_bills ?? [])
-          .filter((_, i) => includeBills[i])
-          .map((b) => ({
+          .map((b, i) => ({ b, i }))
+          .filter(({ i }) => includeBills[i])
+          .map(({ b, i }) => ({
             vendor: b.vendor,
             bill_date: b.bill_date,
             description: b.description,
             amount_cents: b.amount_cents,
             gst_cents: b.gst_cents,
-            bucket_name: b.bucket_name,
+            bucket_name: (billBucketSelections[i] ?? '') !== '' ? billBucketSelections[i] : null,
             source_image_index: b.source_image_index,
           })),
         new_artifacts: (suggestions.new_artifacts ?? []).map((a) => ({
@@ -214,13 +228,15 @@ export function ProjectIntakeZone({
           source_image_index: a.source_image_index,
         })),
         new_expenses: (suggestions.new_expenses ?? [])
-          .filter((_, i) => includeExpenses[i])
-          .map((e) => ({
+          .map((e, i) => ({ e, i }))
+          .filter(({ i }) => includeExpenses[i])
+          .map(({ e, i }) => ({
             vendor: e.vendor,
             amount_cents: e.amount_cents,
             expense_date: e.expense_date,
             description: e.description,
-            bucket_name: e.bucket_name,
+            bucket_name:
+              (expenseBucketSelections[i] ?? '') !== '' ? expenseBucketSelections[i] : null,
             source_image_index: e.source_image_index,
           })),
         mergeSignals: includeSignals ? suggestions.signals : null,
@@ -594,12 +610,36 @@ export function ProjectIntakeZone({
                           {b.description && (
                             <p className="text-xs text-muted-foreground">{b.description}</p>
                           )}
-                          <div className="mt-0.5 flex items-center gap-2">
-                            {b.bucket_name && (
-                              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                                {b.bucket_name}
-                              </span>
-                            )}
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <select
+                              value={billBucketSelections[i] ?? ''}
+                              onChange={(e) =>
+                                setBillBucketSelections((arr) =>
+                                  arr.map((v, j) => (j === i ? e.target.value : v)),
+                                )
+                              }
+                              className="h-7 rounded-md border bg-background px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+                            >
+                              <option value="">— no bucket —</option>
+                              {existingBuckets.length > 0 && (
+                                <optgroup label="Existing">
+                                  {existingBuckets.map((name) => (
+                                    <option key={name} value={name}>
+                                      {name}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              {suggestions.new_buckets.length > 0 && (
+                                <optgroup label="New">
+                                  {suggestions.new_buckets.map((nb) => (
+                                    <option key={nb.name} value={nb.name}>
+                                      + {nb.name}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                            </select>
                             {b.source_image_index != null && (
                               <span className="text-[10px] text-muted-foreground">
                                 📎 invoice attached
@@ -647,12 +687,36 @@ export function ProjectIntakeZone({
                           {e.description ? (
                             <p className="text-xs text-muted-foreground">{e.description}</p>
                           ) : null}
-                          <div className="mt-0.5 flex items-center gap-2">
-                            {e.bucket_name ? (
-                              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                                {e.bucket_name}
-                              </span>
-                            ) : null}
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <select
+                              value={expenseBucketSelections[i] ?? ''}
+                              onChange={(ev) =>
+                                setExpenseBucketSelections((arr) =>
+                                  arr.map((v, j) => (j === i ? ev.target.value : v)),
+                                )
+                              }
+                              className="h-7 rounded-md border bg-background px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+                            >
+                              <option value="">— no bucket —</option>
+                              {existingBuckets.length > 0 && (
+                                <optgroup label="Existing">
+                                  {existingBuckets.map((name) => (
+                                    <option key={name} value={name}>
+                                      {name}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              {suggestions.new_buckets.length > 0 && (
+                                <optgroup label="New">
+                                  {suggestions.new_buckets.map((nb) => (
+                                    <option key={nb.name} value={nb.name}>
+                                      + {nb.name}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                            </select>
                             {e.source_image_index != null ? (
                               <span className="text-[10px] text-muted-foreground">
                                 📎 receipt attached
