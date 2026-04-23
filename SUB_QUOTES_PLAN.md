@@ -142,13 +142,37 @@ On classify-as-sub-quote:
 
 Operator confirms or edits, same UI as Phase 1. The AI suggestion is never silently committed; the dialog always requires a click.
 
-### Phase 3 — Email ingestion
+### Phase 3 — Email ingestion (revised 2026-04-23)
 
-Per-operator email address: `ops-{tenant_slug}@quotes.heyhenry.io` (or similar). Postmark/Resend inbound webhook receives the forwarded email, parses body + attachments, kicks off the same pipeline as upload.
+**One shared inbox: `henry@heyhenry.io`. Routing keyed off the verified sender email.**
 
-Project disambiguation: if the subject line or body mentions a project name we recognize, route there. Otherwise land in a triage queue the operator can resolve from the dashboard.
+(Earlier draft used per-operator addresses like `ops-{slug}@quotes.heyhenry.io`. That's thrown out — the single-address approach is simpler for operators to remember, simpler to provision, and reinforces the "Henry is a person you email" brand.)
 
-Full spec for this phase is deferred to a Phase 3 sub-plan once we learn from Phase 1–2.
+#### Flow
+
+1. Operator forwards a sub's email (with quote attachment) to `henry@heyhenry.io`.
+2. Postmark/Resend inbound webhook delivers the parsed email to HeyHenry. SPF + DKIM alignment enforced — unaligned mail is rejected (standard anti-spoofing).
+3. Match the from-address against:
+   - `auth.users.email` (primary operator email, already verified at signup)
+   - `tenant_members.additional_forwarding_emails` (future: verified aliases, e.g. personal iPhone mail)
+4. If the operator is on multiple tenants: look at subject line for tenant-name hints, else show a disambiguation card.
+5. Pick the project: AI scans subject + body + attachment for customer/project name hints, matches against this tenant's projects. If multiple candidates or low confidence: land the item in a **"Needs assignment"** triage queue on the dashboard.
+6. Once routed to a project, pipeline is identical to Phase 2 — same parse prompt, same bucket-allocation confirmation UI.
+
+#### Unknown senders
+
+Email from an address we don't recognize gets a polite bounce:
+> "I don't recognize this sender. Forward from your HeyHenry account email, or add this address as a forwarding alias in Settings → Security."
+
+One-time setup friction for operators who want to forward from multiple personal addresses; safe-by-default for the rest.
+
+#### Open questions for Phase 3 build
+
+1. Postmark vs Resend Inbound? (Whichever we're already paying for — likely Resend given the current stack.)
+2. Add a "verified forwarding addresses" section to Settings → Security now, or defer until an operator asks for it?
+3. Triage-queue UX on the dashboard — dismissible card similar to the awaiting-approval list?
+
+Full spec lands when Phase 2 is shipped and we pick up this phase.
 
 ### Phase 4 — Cost Control V1 integration
 
