@@ -36,7 +36,7 @@ export async function getProjectsAwaitingApproval(): Promise<AwaitingApprovalPro
   const { data: projects, error } = await supabase
     .from('projects')
     .select('id, name, estimate_sent_at, customers:customer_id (name)')
-    .eq('estimate_status', 'pending_approval')
+    .eq('lifecycle_stage', 'awaiting_approval')
     .not('estimate_sent_at', 'is', null)
     .is('deleted_at', null)
     .order('estimate_sent_at', { ascending: true });

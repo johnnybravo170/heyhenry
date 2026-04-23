@@ -9,14 +9,22 @@ export const projectTools: AiTool[] = [
     definition: {
       name: 'list_projects',
       description:
-        'List renovation projects. Filter by status (planning/in_progress/complete/cancelled) or customer.',
+        'List renovation projects. Filter by lifecycle stage (planning/awaiting_approval/active/on_hold/declined/complete/cancelled) or customer.',
       input_schema: {
         type: 'object',
         properties: {
-          status: {
+          stage: {
             type: 'string',
-            enum: ['planning', 'in_progress', 'complete', 'cancelled'],
-            description: 'Filter by project status',
+            enum: [
+              'planning',
+              'awaiting_approval',
+              'active',
+              'on_hold',
+              'declined',
+              'complete',
+              'cancelled',
+            ],
+            description: 'Filter by lifecycle stage',
           },
           customer_id: {
             type: 'string',
@@ -32,7 +40,7 @@ export const projectTools: AiTool[] = [
     handler: async (input) => {
       try {
         const rows = await listProjects({
-          status: input.status as 'planning' | 'in_progress' | 'complete' | 'cancelled' | undefined,
+          stage: input.stage as import('@/lib/validators/project').LifecycleStage | undefined,
           customer_id: input.customer_id as string | undefined,
           limit: Math.min((input.limit as number) || 20, 100),
         });
@@ -46,7 +54,7 @@ export const projectTools: AiTool[] = [
           const p = rows[i];
           output += `${i + 1}. ${p.name}`;
           if (p.customer) output += ` (${p.customer.name})`;
-          output += `\n   Status: ${p.status} · ${p.percent_complete}% complete`;
+          output += `\n   Stage: ${p.lifecycle_stage} · ${p.percent_complete}% complete`;
           if (p.start_date) output += ` · Started: ${formatDate(p.start_date)}`;
           output += `\n   ID: ${p.id}\n`;
         }
@@ -75,9 +83,8 @@ export const projectTools: AiTool[] = [
         if (!project) return 'Project not found.';
 
         let output = `Project: ${project.name}\n${'='.repeat(40)}\n\n`;
-        output += `Status: ${project.status}\n`;
+        output += `Stage: ${project.lifecycle_stage}\n`;
         output += `Progress: ${project.percent_complete}%\n`;
-        if (project.phase) output += `Phase: ${project.phase}\n`;
         if (project.customer) output += `Customer: ${project.customer.name}\n`;
         if (project.description) output += `Description: ${project.description}\n`;
         if (project.start_date) output += `Start: ${formatDate(project.start_date)}\n`;
@@ -141,33 +148,42 @@ export const projectTools: AiTool[] = [
   },
   {
     definition: {
-      name: 'update_project_status',
-      description: 'Update a project status (planning → in_progress → complete, or cancelled).',
+      name: 'transition_project_stage',
+      description:
+        'Move a project to a new lifecycle stage. Common transitions: planning → awaiting_approval (happens via send_estimate) → active → complete.',
       input_schema: {
         type: 'object',
         properties: {
           id: { type: 'string', description: 'Project UUID' },
-          status: {
+          stage: {
             type: 'string',
-            enum: ['planning', 'in_progress', 'complete', 'cancelled'],
-            description: 'New status',
+            enum: [
+              'planning',
+              'awaiting_approval',
+              'active',
+              'on_hold',
+              'declined',
+              'complete',
+              'cancelled',
+            ],
+            description: 'New lifecycle stage',
           },
         },
-        required: ['id', 'status'],
+        required: ['id', 'stage'],
       },
     },
     handler: async (input) => {
       try {
-        const { updateProjectStatusAction } = await import('@/server/actions/projects');
-        const result = await updateProjectStatusAction({
+        const { transitionLifecycleStageAction } = await import('@/server/actions/projects');
+        const result = await transitionLifecycleStageAction({
           id: input.id as string,
-          status: input.status as string,
+          stage: input.stage as import('@/lib/validators/project').LifecycleStage,
         });
 
-        if (!result.ok) return `Failed to update status: ${result.error}`;
-        return `Project status updated to ${input.status}.`;
+        if (!result.ok) return `Failed to update stage: ${result.error}`;
+        return `Project moved to ${input.stage}.`;
       } catch (e) {
-        return `Failed to update status: ${e instanceof Error ? e.message : String(e)}`;
+        return `Failed to update stage: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   },
@@ -254,7 +270,7 @@ export const projectTools: AiTool[] = [
           const { data, error } = await supabase
             .from('projects')
             .select('id, name')
-            .in('status', ['planning', 'in_progress'])
+            .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
             .is('deleted_at', null)
             .order('created_at', { ascending: false });
 

@@ -78,7 +78,7 @@ describe('AI tool definitions', () => {
       'list_projects',
       'get_project',
       'create_project',
-      'update_project_status',
+      'transition_project_stage',
       'get_project_budget',
       'log_time',
       'log_expense',

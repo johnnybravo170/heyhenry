@@ -5,8 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   emptyToNull,
+  lifecycleStageChangeSchema,
   projectCreateSchema,
-  projectStatusChangeSchema,
   projectUpdateSchema,
 } from '@/lib/validators/project';
 
@@ -121,22 +121,9 @@ describe('projectUpdateSchema', () => {
       id: VALID_UUID,
       customer_id: OTHER_UUID,
       name: 'Updated Name',
-      status: 'in_progress',
       percent_complete: 50,
     });
     expect(parsed.success).toBe(true);
-  });
-
-  it('accepts all four statuses', () => {
-    for (const status of ['planning', 'in_progress', 'complete', 'cancelled'] as const) {
-      const parsed = projectUpdateSchema.safeParse({
-        id: VALID_UUID,
-        customer_id: VALID_UUID,
-        name: 'Test',
-        status,
-      });
-      expect(parsed.success).toBe(true);
-    }
   });
 
   it('rejects percent_complete outside 0-100', () => {
@@ -158,26 +145,41 @@ describe('projectUpdateSchema', () => {
   });
 });
 
-describe('projectStatusChangeSchema', () => {
-  it('accepts a valid status change', () => {
-    const parsed = projectStatusChangeSchema.safeParse({
+describe('lifecycleStageChangeSchema', () => {
+  it('accepts a valid stage change', () => {
+    const parsed = lifecycleStageChangeSchema.safeParse({
       id: VALID_UUID,
-      status: 'complete',
+      stage: 'complete',
     });
     expect(parsed.success).toBe(true);
   });
 
-  it('rejects an invalid status', () => {
-    const parsed = projectStatusChangeSchema.safeParse({
+  it('accepts all seven lifecycle stages', () => {
+    for (const stage of [
+      'planning',
+      'awaiting_approval',
+      'active',
+      'on_hold',
+      'declined',
+      'complete',
+      'cancelled',
+    ] as const) {
+      const parsed = lifecycleStageChangeSchema.safeParse({ id: VALID_UUID, stage });
+      expect(parsed.success).toBe(true);
+    }
+  });
+
+  it('rejects an invalid stage', () => {
+    const parsed = lifecycleStageChangeSchema.safeParse({
       id: VALID_UUID,
-      status: 'done',
+      stage: 'done',
     });
     expect(parsed.success).toBe(false);
   });
 
   it('rejects a missing id', () => {
-    const parsed = projectStatusChangeSchema.safeParse({
-      status: 'planning',
+    const parsed = lifecycleStageChangeSchema.safeParse({
+      stage: 'planning',
     });
     expect(parsed.success).toBe(false);
   });

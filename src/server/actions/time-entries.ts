@@ -147,7 +147,7 @@ export async function listActiveProjectsAction(): Promise<
     .from('projects')
     .select('id, name')
     .is('deleted_at', null)
-    .in('status', ['planning', 'in_progress'])
+    .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) return { ok: false, error: error.message };

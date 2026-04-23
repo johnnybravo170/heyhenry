@@ -9,8 +9,8 @@ import { ProjectTabs } from '@/components/features/projects/project-tabs';
 import { Button } from '@/components/ui/button';
 import { getProjectsAwaitingApproval } from '@/lib/db/queries/awaiting-approval';
 import { listCustomers } from '@/lib/db/queries/customers';
-import { countProjectsByStatus, listProjects } from '@/lib/db/queries/projects';
-import type { ProjectStatus } from '@/lib/validators/project';
+import { countProjectsByLifecycleStage, listProjects } from '@/lib/db/queries/projects';
+import type { LifecycleStage } from '@/lib/validators/project';
 
 export const metadata = {
   title: 'Projects — HeyHenry',
@@ -35,21 +35,32 @@ export default async function ProjectsPage({
 
   const [projects, counts, awaitingApproval, allCustomers] = await Promise.all([
     listProjects({ limit: 200 }),
-    countProjectsByStatus(),
+    countProjectsByLifecycleStage(),
     // Always fetch — we need the count for the tab label even on other tabs.
     getProjectsAwaitingApproval(),
     listCustomers({ limit: 500 }),
   ]);
   const customerOptions = allCustomers.map((c) => ({ id: c.id, name: c.name }));
-  const total = counts.planning + counts.in_progress + counts.complete + counts.cancelled;
-  const active = counts.planning + counts.in_progress;
+  // "All" excludes on_hold by default so paused jobs don't clutter the list.
+  // Dedicated filter can surface them later if JVD asks.
+  const total =
+    counts.planning +
+    counts.awaiting_approval +
+    counts.active +
+    counts.declined +
+    counts.complete +
+    counts.cancelled;
+  const active = counts.active;
 
+  // Active tab = estimate-approved work actually happening. Planning and
+  // awaiting_approval have their own surfaces; on_hold / declined / cancelled
+  // are excluded.
   const filtered =
     view === 'active'
-      ? projects.filter((p) => p.status === 'planning' || p.status === 'in_progress')
+      ? projects.filter((p) => p.lifecycle_stage === 'active')
       : view === 'complete'
-        ? projects.filter((p) => p.status === 'complete')
-        : projects;
+        ? projects.filter((p) => p.lifecycle_stage === 'complete')
+        : projects.filter((p) => p.lifecycle_stage !== 'on_hold');
 
   const tabCounts = {
     all: total,
@@ -129,7 +140,7 @@ export default async function ProjectsPage({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <ProjectStatusBadge status={p.status as ProjectStatus} />
+                    <ProjectStatusBadge stage={p.lifecycle_stage as LifecycleStage} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {p.start_date

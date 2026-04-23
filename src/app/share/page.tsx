@@ -37,7 +37,12 @@ export default async function SharePage({ searchParams }: { searchParams: Promis
   const errorCode = typeof params.err === 'string' ? params.err : null;
 
   const projects = await listProjects({ limit: 200 });
-  const active = projects.filter((p) => p.status === 'planning' || p.status === 'in_progress');
+  const active = projects.filter(
+    (p) =>
+      p.lifecycle_stage === 'planning' ||
+      p.lifecycle_stage === 'awaiting_approval' ||
+      p.lifecycle_stage === 'active',
+  );
 
   return (
     <div className="mx-auto max-w-lg p-4">

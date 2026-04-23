@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updateProjectAction } from '@/server/actions/projects';
 import type { ProjectWithRelations } from '@/lib/db/queries/projects';
+import { updateProjectAction } from '@/server/actions/projects';
 
 export function PercentCompleteEditor({ project }: { project: ProjectWithRelations }) {
   const [editing, setEditing] = useState(false);
@@ -19,8 +19,6 @@ export function PercentCompleteEditor({ project }: { project: ProjectWithRelatio
         start_date: project.start_date ?? undefined,
         target_end_date: project.target_end_date ?? undefined,
         management_fee_rate: project.management_fee_rate,
-        status: project.status,
-        phase: project.phase ?? undefined,
         percent_complete: value,
       });
       setEditing(false);
@@ -35,7 +33,6 @@ export function PercentCompleteEditor({ project }: { project: ProjectWithRelatio
         className="group flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <span>{project.percent_complete ?? 0}% complete</span>
-        {project.phase ? <span>· {project.phase}</span> : null}
         <span className="opacity-0 group-hover:opacity-100 text-xs ml-1">(edit)</span>
       </button>
     );
@@ -61,7 +58,14 @@ export function PercentCompleteEditor({ project }: { project: ProjectWithRelatio
       >
         {pending ? 'Saving…' : 'Save'}
       </button>
-      <button type="button" onClick={() => { setValue(project.percent_complete ?? 0); setEditing(false); }} className="text-xs text-muted-foreground hover:underline">
+      <button
+        type="button"
+        onClick={() => {
+          setValue(project.percent_complete ?? 0);
+          setEditing(false);
+        }}
+        className="text-xs text-muted-foreground hover:underline"
+      >
         Cancel
       </button>
     </div>

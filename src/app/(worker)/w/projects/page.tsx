@@ -30,7 +30,7 @@ export default async function WorkerProjectsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium">{p.project_name}</p>
                     <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize text-muted-foreground">
-                      {p.status.replace('_', ' ')}
+                      {p.lifecycle_stage.replace('_', ' ')}
                     </span>
                   </div>
                   {p.customer_name ? (

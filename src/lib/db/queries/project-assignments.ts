@@ -34,7 +34,7 @@ export type WorkerAssignedProject = {
   project_id: string;
   project_name: string;
   customer_name: string | null;
-  status: string;
+  lifecycle_stage: string;
   target_end_date: string | null;
   next_scheduled_date: string | null;
 };
@@ -68,18 +68,22 @@ export async function listProjectsForWorker(
     if (!current || d < current) nextByProject.set(r.project_id as string, d);
   }
 
+  // Workers only see projects they can still charge to — hide complete,
+  // cancelled, declined, and on_hold. Historical time entries keep their
+  // project_id FK so the worker's own timesheet still shows the project
+  // name; this filter just scopes the "projects I can log against" list.
   const { data: projects, error: projErr } = await admin
     .from('projects')
-    .select('id, name, status, target_end_date, customers:customer_id (name)')
+    .select('id, name, lifecycle_stage, target_end_date, customers:customer_id (name)')
     .in('id', projectIds)
+    .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
     .is('deleted_at', null);
   if (projErr) throw new Error(projErr.message);
 
-  const statusRank: Record<string, number> = {
-    in_progress: 0,
-    planning: 1,
-    complete: 2,
-    cancelled: 3,
+  const stageRank: Record<string, number> = {
+    active: 0,
+    awaiting_approval: 1,
+    planning: 2,
   };
 
   return ((projects ?? []) as unknown as Array<Record<string, unknown>>)
@@ -90,14 +94,14 @@ export async function listProjectsForWorker(
         project_id: p.id as string,
         project_name: p.name as string,
         customer_name: (customer?.name as string | undefined) ?? null,
-        status: p.status as string,
+        lifecycle_stage: p.lifecycle_stage as string,
         target_end_date: (p.target_end_date as string | null) ?? null,
         next_scheduled_date: nextByProject.get(p.id as string) ?? null,
       };
     })
     .sort(
       (a, b) =>
-        (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99) ||
+        (stageRank[a.lifecycle_stage] ?? 99) - (stageRank[b.lifecycle_stage] ?? 99) ||
         a.project_name.localeCompare(b.project_name),
     );
 }

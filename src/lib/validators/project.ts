@@ -6,12 +6,28 @@
 
 import { z } from 'zod';
 
-export const projectStatuses = ['planning', 'in_progress', 'complete', 'cancelled'] as const;
-export type ProjectStatus = (typeof projectStatuses)[number];
+/**
+ * Lifecycle stages live on projects.lifecycle_stage (TEXT + CHECK).
+ * The UI label everywhere still says "Status" — we only renamed at the
+ * DB layer to kill ambiguity. See PROJECT_LIFECYCLE_PLAN.md.
+ */
+export const lifecycleStages = [
+  'planning',
+  'awaiting_approval',
+  'active',
+  'on_hold',
+  'declined',
+  'complete',
+  'cancelled',
+] as const;
+export type LifecycleStage = (typeof lifecycleStages)[number];
 
-export const projectStatusLabels: Record<ProjectStatus, string> = {
+export const lifecycleStageLabels: Record<LifecycleStage, string> = {
   planning: 'Planning',
-  in_progress: 'In Progress',
+  awaiting_approval: 'Awaiting approval',
+  active: 'Active',
+  on_hold: 'On hold',
+  declined: 'Declined',
   complete: 'Complete',
   cancelled: 'Cancelled',
 };
@@ -40,13 +56,6 @@ export const projectCreateSchema = z.object({
 
 export const projectUpdateSchema = projectCreateSchema.extend({
   id: z.string().uuid({ message: 'Invalid project id.' }),
-  status: z.enum(projectStatuses).optional(),
-  phase: z
-    .string()
-    .trim()
-    .max(200, { message: 'Phase must be at most 200 characters.' })
-    .optional()
-    .or(z.literal('')),
   percent_complete: z.coerce
     .number()
     .int()
@@ -55,14 +64,14 @@ export const projectUpdateSchema = projectCreateSchema.extend({
     .optional(),
 });
 
-export const projectStatusChangeSchema = z.object({
+export const lifecycleStageChangeSchema = z.object({
   id: z.string().uuid({ message: 'Invalid project id.' }),
-  status: z.enum(projectStatuses),
+  stage: z.enum(lifecycleStages),
 });
 
 export type ProjectInput = z.infer<typeof projectCreateSchema>;
 export type ProjectUpdateInput = z.infer<typeof projectUpdateSchema>;
-export type ProjectStatusChangeInput = z.infer<typeof projectStatusChangeSchema>;
+export type LifecycleStageChangeInput = z.infer<typeof lifecycleStageChangeSchema>;
 
 export function emptyToNull(value: string | undefined | null): string | null {
   if (value === undefined || value === null) return null;

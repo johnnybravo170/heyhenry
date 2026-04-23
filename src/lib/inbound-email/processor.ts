@@ -38,7 +38,7 @@ export async function processInboundEmail(emailId: string): Promise<void> {
     .select('id, name, description, customers:customer_id (name)')
     .eq('tenant_id', email.tenant_id)
     .is('deleted_at', null)
-    .in('status', ['planning', 'in_progress']);
+    .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active']);
 
   const projects: ProjectContext[] = (projectsRaw ?? []).map((p) => {
     const customerRaw = Array.isArray(p.customers) ? p.customers[0] : p.customers;

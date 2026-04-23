@@ -152,19 +152,25 @@ export function OwnerCalendar({
   // Sort by status (in_progress > planning > complete > cancelled), then name.
   const visibleProjects = useMemo(() => {
     const withAssignments = new Set(assignments.map((a) => a.project_id));
-    const statusRank: Record<string, number> = {
-      in_progress: 0,
-      planning: 1,
-      complete: 2,
-      cancelled: 3,
+    const stageRank: Record<string, number> = {
+      active: 0,
+      awaiting_approval: 1,
+      planning: 2,
+      on_hold: 3,
+      complete: 4,
+      declined: 5,
+      cancelled: 6,
     };
     return projects
       .filter(
-        (p) => p.status !== 'cancelled' && (p.status !== 'complete' || withAssignments.has(p.id)),
+        (p) =>
+          p.lifecycle_stage !== 'cancelled' &&
+          p.lifecycle_stage !== 'declined' &&
+          (p.lifecycle_stage !== 'complete' || withAssignments.has(p.id)),
       )
       .sort(
         (a, b) =>
-          (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99) ||
+          (stageRank[a.lifecycle_stage] ?? 99) - (stageRank[b.lifecycle_stage] ?? 99) ||
           a.name.localeCompare(b.name),
       );
   }, [projects, assignments]);
@@ -408,7 +414,12 @@ export function OwnerCalendar({
           onOpenChange={(o) => {
             if (!o) setDialog({ open: false });
           }}
-          projects={projects.filter((p) => p.status !== 'cancelled' && p.status !== 'complete')}
+          projects={projects.filter(
+            (p) =>
+              p.lifecycle_stage !== 'cancelled' &&
+              p.lifecycle_stage !== 'complete' &&
+              p.lifecycle_stage !== 'declined',
+          )}
           workers={workers}
           assignments={assignments}
           unavailability={unavailability}

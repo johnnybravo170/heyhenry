@@ -99,6 +99,7 @@ export async function sendEstimateForApprovalAction(input: {
     .from('projects')
     .update({
       estimate_status: 'pending_approval',
+      lifecycle_stage: 'awaiting_approval',
       estimate_approval_code: code,
       estimate_sent_at: now,
       estimate_approved_at: null,
@@ -148,10 +149,15 @@ export async function resetEstimateAction(input: {
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
   const supabase = await createClient();
+  // resetEstimateAction is operator-initiated — clears all estimate fields
+  // and drops lifecycle back to planning. For declined projects this is the
+  // "Revise estimate" path (decline timestamp is preserved in worklog via
+  // the emitProjectEvent below).
   const { error } = await supabase
     .from('projects')
     .update({
       estimate_status: 'draft',
+      lifecycle_stage: 'planning',
       estimate_approval_code: null,
       estimate_sent_at: null,
       estimate_approved_at: null,
@@ -186,7 +192,7 @@ export async function approveEstimateAction(
 
   const { data: project, error: projErr } = await admin
     .from('projects')
-    .select('id, tenant_id, name, estimate_status, status')
+    .select('id, tenant_id, name, estimate_status')
     .eq('estimate_approval_code', approvalCode)
     .single();
 
@@ -198,15 +204,6 @@ export async function approveEstimateAction(
   }
 
   const now = new Date().toISOString();
-  // Auto-advance the lifecycle status on approval. Before today, `status`
-  // stayed at its creation default ('planning') forever unless someone
-  // manually moved it, which made it impossible to tell an estimate-in-
-  // -progress apart from an approved project. Only bump status when it's
-  // still 'planning' — if the operator has explicitly moved it elsewhere
-  // (complete / cancelled), leave that alone.
-  // The broader lifecycle cleanup lives on kanban card 8190d7f2.
-  const statusPatch: Record<string, unknown> =
-    p.status === 'planning' ? { status: 'in_progress' } : {};
 
   const { error: updErr } = await admin
     .from('projects')
@@ -214,7 +211,7 @@ export async function approveEstimateAction(
       estimate_status: 'approved',
       estimate_approved_at: now,
       estimate_approved_by_name: name,
-      ...statusPatch,
+      lifecycle_stage: 'active',
     })
     .eq('id', p.id as string);
 
@@ -255,6 +252,7 @@ export async function declineEstimateAction(
     .from('projects')
     .update({
       estimate_status: 'declined',
+      lifecycle_stage: 'declined',
       estimate_declined_at: now,
       estimate_declined_reason: reason?.trim() || null,
     })

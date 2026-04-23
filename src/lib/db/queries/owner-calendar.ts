@@ -18,7 +18,7 @@ export type CalendarAssignment = {
 export type CalendarProject = {
   id: string;
   name: string;
-  status: string;
+  lifecycle_stage: string;
   customer_name: string | null;
 };
 
@@ -61,7 +61,7 @@ export async function getOwnerCalendarData(
       .eq('tenant_id', tenantId),
     admin
       .from('projects')
-      .select('id, name, status, customers:customer_id (name)')
+      .select('id, name, lifecycle_stage, customers:customer_id (name)')
       .eq('tenant_id', tenantId)
       .is('deleted_at', null),
     admin
@@ -97,7 +97,7 @@ export async function getOwnerCalendarData(
     return {
       id: p.id as string,
       name: p.name as string,
-      status: p.status as string,
+      lifecycle_stage: p.lifecycle_stage as string,
       customer_name: (customer?.name as string | undefined) ?? null,
     };
   });

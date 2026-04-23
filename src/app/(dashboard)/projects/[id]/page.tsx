@@ -23,7 +23,7 @@ import TimeTabServer from '@/components/features/projects/tabs/time-tab-server';
 import VarianceTabServer from '@/components/features/projects/tabs/variance-tab-server';
 import { listBucketsForProject } from '@/lib/db/queries/project-buckets';
 import { getProject } from '@/lib/db/queries/projects';
-import type { ProjectStatus } from '@/lib/validators/project';
+import type { LifecycleStage } from '@/lib/validators/project';
 
 // Audio transcription of voice memos can take up to ~30s — bump the
 // server-action timeout past Vercel's 10s Hobby default.
@@ -109,7 +109,7 @@ export default async function ProjectDetailPage({
         <div>
           <div className="flex items-center gap-3">
             <ProjectNameEditor projectId={project.id} name={project.name} />
-            <ProjectStatusBadge status={project.status as ProjectStatus} />
+            <ProjectStatusBadge stage={project.lifecycle_stage as LifecycleStage} />
           </div>
           {project.customer ? (
             <p className="mt-1 text-sm text-muted-foreground">

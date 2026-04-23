@@ -13,10 +13,10 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import {
   emptyToNull,
-  type ProjectStatus,
+  type LifecycleStage,
+  lifecycleStageChangeSchema,
+  lifecycleStageLabels,
   projectCreateSchema,
-  projectStatusChangeSchema,
-  projectStatusLabels,
   projectUpdateSchema,
 } from '@/lib/validators/project';
 
@@ -173,8 +173,6 @@ export async function updateProjectAction(input: {
   start_date?: string;
   target_end_date?: string;
   management_fee_rate?: number;
-  status?: string;
-  phase?: string;
   percent_complete?: number;
 }): Promise<ProjectActionResult> {
   const parsed = projectUpdateSchema.safeParse(input);
@@ -186,6 +184,9 @@ export async function updateProjectAction(input: {
     };
   }
 
+  // Lifecycle stage is NOT updated here — it only moves via the named
+  // transition actions (transitionLifecycleStageAction, putOnHoldAction,
+  // resumeProjectAction) so we always have a paper trail.
   const supabase = await createClient();
   const { error } = await supabase
     .from('projects')
@@ -196,8 +197,6 @@ export async function updateProjectAction(input: {
       start_date: emptyToNull(parsed.data.start_date),
       target_end_date: emptyToNull(parsed.data.target_end_date),
       management_fee_rate: parsed.data.management_fee_rate,
-      status: parsed.data.status,
-      phase: emptyToNull(parsed.data.phase),
       percent_complete: parsed.data.percent_complete,
       updated_at: new Date().toISOString(),
     })
@@ -235,15 +234,26 @@ export async function renameProjectAction(input: {
   return { ok: true, id: input.id };
 }
 
-export async function updateProjectStatusAction(input: {
+/**
+ * Move a project through its lifecycle. The only sanctioned way to change
+ * `lifecycle_stage` outside of the estimate-approval flow. Writes a
+ * worklog entry so there's a paper trail.
+ *
+ * Note: `awaiting_approval` and `declined` are owned by the estimate flow
+ * (sendEstimate / approveEstimate / declineEstimate). This action can
+ * still move TO / FROM them (e.g. mark a sent estimate as complete without
+ * waiting on the customer, or back out of an accidental transition), but
+ * the common path for those is through the estimate actions.
+ */
+export async function transitionLifecycleStageAction(input: {
   id: string;
-  status: string;
+  stage: LifecycleStage;
 }): Promise<ProjectActionResult> {
-  const parsed = projectStatusChangeSchema.safeParse(input);
+  const parsed = lifecycleStageChangeSchema.safeParse(input);
   if (!parsed.success) {
     return {
       ok: false,
-      error: 'Invalid status change.',
+      error: 'Invalid stage change.',
       fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
   }
@@ -257,7 +267,7 @@ export async function updateProjectStatusAction(input: {
 
   const { data: current, error: loadErr } = await supabase
     .from('projects')
-    .select('id, status, name')
+    .select('id, lifecycle_stage, name')
     .eq('id', parsed.data.id)
     .is('deleted_at', null)
     .maybeSingle();
@@ -269,30 +279,34 @@ export async function updateProjectStatusAction(input: {
     return { ok: false, error: 'Project not found.' };
   }
 
-  const oldStatus = current.status as ProjectStatus;
-  const newStatus = parsed.data.status;
+  const oldStage = current.lifecycle_stage as LifecycleStage;
+  const newStage = parsed.data.stage;
 
-  if (oldStatus === newStatus) {
+  if (oldStage === newStage) {
     return { ok: true, id: parsed.data.id };
   }
 
   const now = new Date().toISOString();
   const { error: updateErr } = await supabase
     .from('projects')
-    .update({ status: newStatus, updated_at: now })
+    .update({
+      lifecycle_stage: newStage,
+      // Clear any on-hold memory if we're not transitioning into on_hold.
+      resumed_from_stage: newStage === 'on_hold' ? oldStage : null,
+      updated_at: now,
+    })
     .eq('id', parsed.data.id)
     .is('deleted_at', null);
 
   if (updateErr) {
-    return { ok: false, error: `Failed to update status: ${updateErr.message}` };
+    return { ok: false, error: `Failed to update stage: ${updateErr.message}` };
   }
 
-  // Worklog entry
   await supabase.from('worklog_entries').insert({
     tenant_id: tenant.id,
     entry_type: 'system',
     title: 'Project status changed',
-    body: `Project "${current.name}" moved from ${projectStatusLabels[oldStatus]} to ${projectStatusLabels[newStatus]}.`,
+    body: `Project "${current.name}" moved from ${lifecycleStageLabels[oldStage]} to ${lifecycleStageLabels[newStage]}.`,
     related_type: 'project',
     related_id: parsed.data.id,
   });
@@ -300,6 +314,34 @@ export async function updateProjectStatusAction(input: {
   revalidatePath('/projects');
   revalidatePath(`/projects/${parsed.data.id}`);
   return { ok: true, id: parsed.data.id };
+}
+
+/**
+ * Resume an on-hold project back to the stage it was in before the hold.
+ * Falls back to `planning` if the pre-hold stage is missing (shouldn't
+ * happen, but defensive).
+ */
+export async function resumeProjectAction(input: { id: string }): Promise<ProjectActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  const supabase = await createClient();
+  const { data: current, error: loadErr } = await supabase
+    .from('projects')
+    .select('id, lifecycle_stage, resumed_from_stage, name')
+    .eq('id', input.id)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (loadErr) return { ok: false, error: loadErr.message };
+  if (!current) return { ok: false, error: 'Project not found.' };
+
+  if (current.lifecycle_stage !== 'on_hold') {
+    return { ok: false, error: 'Project is not on hold.' };
+  }
+
+  const target = (current.resumed_from_stage as LifecycleStage | null) ?? 'planning';
+  return transitionLifecycleStageAction({ id: input.id, stage: target });
 }
 
 export async function cloneProjectAction(input: {

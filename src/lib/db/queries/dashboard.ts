@@ -261,10 +261,13 @@ export async function getPipelineMetrics(): Promise<PipelineMetrics> {
     supabase.from('quotes').select('total_cents').eq('status', 'draft').is('deleted_at', null),
     supabase.from('quotes').select('total_cents').eq('status', 'sent').is('deleted_at', null),
     supabase.from('quotes').select('total_cents').eq('status', 'expired').is('deleted_at', null),
+    // "Active projects" on the pipeline card = projects the operator is
+    // actively working. Explicitly excludes on_hold / declined / cancelled
+    // so weather-paused jobs don't inflate the count.
     supabase
       .from('projects')
       .select('id')
-      .in('status', ['planning', 'in_progress'])
+      .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
       .is('deleted_at', null),
   ]);
 

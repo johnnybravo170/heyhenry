@@ -9,7 +9,7 @@
 
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import type { ProjectStatus } from '@/lib/validators/project';
+import type { LifecycleStage } from '@/lib/validators/project';
 
 export type ProjectCustomerSummary = {
   id: string;
@@ -23,8 +23,8 @@ export type ProjectRow = {
   customer_id: string | null;
   name: string;
   description: string | null;
-  status: ProjectStatus;
-  phase: string | null;
+  lifecycle_stage: LifecycleStage;
+  resumed_from_stage: LifecycleStage | null;
   management_fee_rate: number;
   start_date: string | null;
   target_end_date: string | null;
@@ -60,20 +60,15 @@ export type ProjectWithRelations = ProjectWithCustomer & {
 };
 
 export type ProjectListFilters = {
-  status?: ProjectStatus;
+  stage?: LifecycleStage;
   customer_id?: string;
   limit?: number;
 };
 
-export type ProjectStatusCounts = {
-  planning: number;
-  in_progress: number;
-  complete: number;
-  cancelled: number;
-};
+export type LifecycleStageCounts = Record<LifecycleStage, number>;
 
 const PROJECT_COLUMNS =
-  'id, tenant_id, customer_id, name, description, status, phase, management_fee_rate, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, deleted_at, created_at, updated_at';
+  'id, tenant_id, customer_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, deleted_at, created_at, updated_at';
 
 const PROJECT_WITH_CUSTOMER_SELECT = `${PROJECT_COLUMNS}, customers:customer_id (id, name, type)`;
 
@@ -101,7 +96,7 @@ export async function listProjects(
 
   let query = supabase.from('projects').select(PROJECT_WITH_CUSTOMER_SELECT).is('deleted_at', null);
 
-  if (filters.status) query = query.eq('status', filters.status);
+  if (filters.stage) query = query.eq('lifecycle_stage', filters.stage);
   if (filters.customer_id) query = query.eq('customer_id', filters.customer_id);
 
   const { data, error } = await query.order('created_at', { ascending: false }).limit(limit);
@@ -165,19 +160,30 @@ async function getProjectUncached(id: string): Promise<ProjectWithRelations | nu
  */
 export const getProject = cache(getProjectUncached);
 
-export async function countProjectsByStatus(): Promise<ProjectStatusCounts> {
+export async function countProjectsByLifecycleStage(): Promise<LifecycleStageCounts> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from('projects').select('status').is('deleted_at', null);
+  const { data, error } = await supabase
+    .from('projects')
+    .select('lifecycle_stage')
+    .is('deleted_at', null);
 
   if (error) {
     throw new Error(`Failed to count projects: ${error.message}`);
   }
 
-  const counts: ProjectStatusCounts = { planning: 0, in_progress: 0, complete: 0, cancelled: 0 };
+  const counts: LifecycleStageCounts = {
+    planning: 0,
+    awaiting_approval: 0,
+    active: 0,
+    on_hold: 0,
+    declined: 0,
+    complete: 0,
+    cancelled: 0,
+  };
   for (const row of data ?? []) {
-    const s = (row as { status?: string }).status;
-    if (s === 'planning' || s === 'in_progress' || s === 'complete' || s === 'cancelled') {
-      counts[s] += 1;
+    const s = (row as { lifecycle_stage?: string }).lifecycle_stage;
+    if (s && s in counts) {
+      counts[s as LifecycleStage] += 1;
     }
   }
   return counts;

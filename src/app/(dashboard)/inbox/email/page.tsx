@@ -67,7 +67,7 @@ export default async function InboundEmailInboxPage({
     .select('id, name')
     .eq('tenant_id', tenant.id)
     .is('deleted_at', null)
-    .in('status', ['planning', 'in_progress'])
+    .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
     .order('name');
 
   const projects = (projectsRaw ?? []).map((p) => ({ id: p.id as string, name: p.name as string }));

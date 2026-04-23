@@ -28,7 +28,7 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
   const { data: project } = await admin
     .from('projects')
     .select(
-      `id, name, status, percent_complete, phase, start_date, target_end_date,
+      `id, name, lifecycle_stage, percent_complete, start_date, target_end_date,
        portal_slug, portal_enabled,
        tenants:tenant_id (name),
        customers:customer_id (name)`,
@@ -123,13 +123,17 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
   };
 
   const statusLabel =
-    p.status === 'in_progress'
-      ? 'In Progress'
-      : p.status === 'planning'
-        ? 'Planning'
-        : p.status === 'complete'
-          ? 'Complete'
-          : (p.status as string);
+    p.lifecycle_stage === 'active'
+      ? 'Active'
+      : p.lifecycle_stage === 'awaiting_approval'
+        ? 'Awaiting approval'
+        : p.lifecycle_stage === 'planning'
+          ? 'Planning'
+          : p.lifecycle_stage === 'on_hold'
+            ? 'On hold'
+            : p.lifecycle_stage === 'complete'
+              ? 'Complete'
+              : (p.lifecycle_stage as string);
 
   const hasPendingItems = (pendingCOs ?? []).length > 0;
 
@@ -150,9 +154,6 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
             <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
               {statusLabel}
             </span>
-            {p.phase ? (
-              <span className="ml-2 text-sm text-muted-foreground">{p.phase as string}</span>
-            ) : null}
           </div>
           {hasPendingItems ? (
             <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
