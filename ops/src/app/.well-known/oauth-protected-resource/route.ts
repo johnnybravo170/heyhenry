@@ -1,6 +1,9 @@
 /**
  * RFC 9728 OAuth 2.0 Protected Resource Metadata.
- * Pointed to from the WWW-Authenticate header on 401s from /api/mcp.
+ * Referenced from the WWW-Authenticate header on 401s from /api/mcp.
+ * `resource` is the ORIGIN (matches Notion's working server). The same
+ * document is also served at the path-appended locations
+ * /.well-known/oauth-protected-resource/api/mcp and /mcp per RFC 9728.
  */
 import type { NextRequest } from 'next/server';
 import { SUPPORTED_SCOPES } from '@/lib/oauth';
@@ -11,10 +14,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const body = {
-    resource: `${origin}/api/mcp`,
+    resource: origin,
     authorization_servers: [origin],
     scopes_supported: SUPPORTED_SCOPES,
     bearer_methods_supported: ['header'],
+    resource_name: 'HeyHenry Ops MCP',
   };
   return new Response(JSON.stringify(body), {
     status: 200,

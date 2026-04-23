@@ -40,7 +40,7 @@ export default async function QuotesPage({
           <p className="text-sm text-muted-foreground">
             {counts.all === 0
               ? 'No quotes yet.'
-              : `${counts.draft} draft · ${counts.sent} sent · ${counts.rejected} declined`}
+              : `${counts.draft} draft · ${counts.sent} sent · ${counts.expired} expired · ${counts.rejected} declined`}
           </p>
         </div>
         <Button asChild>

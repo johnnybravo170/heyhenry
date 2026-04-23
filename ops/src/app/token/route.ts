@@ -43,30 +43,117 @@ async function readForm(req: Request): Promise<FormBag> {
   return out;
 }
 
+/**
+ * Resolve client_id + (optional) client_secret from Basic auth header or
+ * form body (client_secret_post). Returns null values for public PKCE clients.
+ */
+function parseClientCredentials(
+  req: Request,
+  form: FormBag,
+): { client_id: string; client_secret: string | null } {
+  const authHeader = req.headers.get('authorization') ?? '';
+  if (authHeader.startsWith('Basic ')) {
+    try {
+      const decoded = Buffer.from(authHeader.slice(6).trim(), 'base64').toString('utf8');
+      const idx = decoded.indexOf(':');
+      if (idx > -1) {
+        const id = decodeURIComponent(decoded.slice(0, idx));
+        const secret = decodeURIComponent(decoded.slice(idx + 1));
+        return { client_id: id, client_secret: secret };
+      }
+    } catch {
+      // fall through to form
+    }
+  }
+  return {
+    client_id: form.client_id ?? '',
+    client_secret: form.client_secret ? form.client_secret : null,
+  };
+}
+
+/**
+ * Verify the client exists and — if it has a stored secret hash — the
+ * presented secret matches. Public (token_endpoint_auth_method=none) clients
+ * are allowed with no secret as long as they exist.
+ */
+async function authenticateClient(
+  service: ReturnType<typeof createServiceClient>,
+  client_id: string,
+  client_secret: string | null,
+): Promise<{ ok: true } | { ok: false; response: Response }> {
+  if (!client_id) return { ok: false, response: err(400, 'invalid_client', 'client_id required') };
+  const { data: row } = await service
+    .schema('ops')
+    .from('oauth_clients')
+    .select('client_id, client_secret_hash, token_endpoint_auth_method')
+    .eq('client_id', client_id)
+    .maybeSingle();
+  if (!row) return { ok: false, response: err(401, 'invalid_client', 'unknown client_id') };
+
+  const storedHash = row.client_secret_hash as string | null;
+  if (storedHash) {
+    if (!client_secret) {
+      return { ok: false, response: err(401, 'invalid_client', 'client_secret required') };
+    }
+    const presentedHash = await sha256Hex(client_secret);
+    if (presentedHash !== storedHash) {
+      return { ok: false, response: err(401, 'invalid_client', 'client_secret mismatch') };
+    }
+  }
+  return { ok: true };
+}
+
 export async function POST(req: Request) {
   const form = await readForm(req);
   const grant_type = form.grant_type ?? '';
 
+  // Revocation compatibility: some clients POST to /token with a `token`
+  // param instead of a grant_type. Handle minimally.
+  if (!grant_type && form.token) {
+    return handleRevoke(req, form);
+  }
+
   if (grant_type === 'authorization_code') {
-    return handleAuthCode(form);
+    return handleAuthCode(req, form);
   }
   if (grant_type === 'refresh_token') {
-    return handleRefresh(form);
+    return handleRefresh(req, form);
   }
   return err(400, 'unsupported_grant_type', `grant_type "${grant_type}" not supported`);
 }
 
-async function handleAuthCode(form: FormBag): Promise<Response> {
+async function handleRevoke(req: Request, form: FormBag): Promise<Response> {
+  const service = createServiceClient();
+  const creds = parseClientCredentials(req, form);
+  // Silently succeed per RFC 7009 whether or not the token exists.
+  if (creds.client_id) {
+    const auth = await authenticateClient(service, creds.client_id, creds.client_secret);
+    if (!auth.ok) return auth.response;
+  }
+  const tokenHash = await sha256Hex(form.token);
+  await service
+    .schema('ops')
+    .from('oauth_tokens')
+    .update({ revoked_at: new Date().toISOString() })
+    .or(`access_token_hash.eq.${tokenHash},refresh_token_hash.eq.${tokenHash}`);
+  return new Response('', { status: 200 });
+}
+
+async function handleAuthCode(req: Request, form: FormBag): Promise<Response> {
   const code = form.code ?? '';
   const verifier = form.code_verifier ?? '';
-  const client_id = form.client_id ?? '';
   const redirect_uri = form.redirect_uri ?? '';
+  const creds = parseClientCredentials(req, form);
+  const client_id = creds.client_id;
 
   if (!code || !verifier || !client_id || !redirect_uri) {
     return err(400, 'invalid_request', 'missing required parameter');
   }
 
   const service = createServiceClient();
+  const clientAuth = await authenticateClient(service, client_id, creds.client_secret);
+  if (!clientAuth.ok) return clientAuth.response;
+
   const { data: row } = await service
     .schema('ops')
     .from('oauth_codes')
@@ -105,12 +192,15 @@ async function handleAuthCode(form: FormBag): Promise<Response> {
   });
 }
 
-async function handleRefresh(form: FormBag): Promise<Response> {
+async function handleRefresh(req: Request, form: FormBag): Promise<Response> {
   const refresh = form.refresh_token ?? '';
-  const client_id = form.client_id ?? '';
+  const creds = parseClientCredentials(req, form);
+  const client_id = creds.client_id;
   if (!refresh || !client_id) return err(400, 'invalid_request', 'missing required parameter');
 
   const service = createServiceClient();
+  const clientAuth = await authenticateClient(service, client_id, creds.client_secret);
+  if (!clientAuth.ok) return clientAuth.response;
   const refreshHash = await sha256Hex(refresh);
   const { data: row } = await service
     .schema('ops')

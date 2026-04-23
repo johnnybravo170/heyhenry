@@ -237,49 +237,70 @@ export type PipelineMetrics = {
   draftQuoteValueCents: number;
   sentQuoteCount: number;
   sentQuoteValueCents: number;
+  expiredQuoteCount: number;
+  expiredQuoteValueCents: number;
   activeProjectCount: number;
+  /** Sum of cost-bucket estimates for projects in planning + in_progress. */
+  activeProjectValueCents: number;
 };
 
 /**
  * Pipeline snapshot for the dashboard: counts + totals for the quote
- * stages the operator is actively working, plus active project count.
+ * stages the operator is actively working, plus active project count
+ * and the aggregate estimate value for those active projects.
  *
- * Values are `total_cents` from quotes (including tax). Active project
- * value is intentionally omitted — it requires a per-bucket aggregate
- * that isn't worth the extra query complexity for V1 of this card.
+ * Quote values come from `quotes.total_cents` (includes tax). Active
+ * project value is a two-step: fetch active project ids, then sum the
+ * child `project_cost_buckets.estimate_cents` rows. Accepts the extra
+ * round-trip because Supabase's PostgREST can't do cross-table SUMs.
  */
 export async function getPipelineMetrics(): Promise<PipelineMetrics> {
   const supabase = await createClient();
 
-  const [draftQuotes, sentQuotes, activeProjects] = await Promise.all([
+  const [draftQuotes, sentQuotes, expiredQuotes, activeProjectIds] = await Promise.all([
     supabase.from('quotes').select('total_cents').eq('status', 'draft').is('deleted_at', null),
     supabase.from('quotes').select('total_cents').eq('status', 'sent').is('deleted_at', null),
+    supabase.from('quotes').select('total_cents').eq('status', 'expired').is('deleted_at', null),
     supabase
       .from('projects')
-      .select('id', { count: 'exact', head: true })
+      .select('id')
       .in('status', ['planning', 'in_progress'])
       .is('deleted_at', null),
   ]);
 
   if (draftQuotes.error) throw new Error(`Pipeline: ${draftQuotes.error.message}`);
   if (sentQuotes.error) throw new Error(`Pipeline: ${sentQuotes.error.message}`);
-  if (activeProjects.error) throw new Error(`Pipeline: ${activeProjects.error.message}`);
+  if (expiredQuotes.error) throw new Error(`Pipeline: ${expiredQuotes.error.message}`);
+  if (activeProjectIds.error) throw new Error(`Pipeline: ${activeProjectIds.error.message}`);
 
-  const draftValueCents = (draftQuotes.data ?? []).reduce(
-    (sum, q) => sum + (q.total_cents as number),
-    0,
-  );
-  const sentValueCents = (sentQuotes.data ?? []).reduce(
-    (sum, q) => sum + (q.total_cents as number),
-    0,
-  );
+  const projectIds = (activeProjectIds.data ?? []).map((p) => p.id as string);
+
+  // Skip the second round-trip when there are no active projects.
+  let activeProjectValueCents = 0;
+  if (projectIds.length > 0) {
+    const { data: buckets, error: bucketsErr } = await supabase
+      .from('project_cost_buckets')
+      .select('estimate_cents')
+      .in('project_id', projectIds);
+    if (bucketsErr) throw new Error(`Pipeline: ${bucketsErr.message}`);
+    activeProjectValueCents = (buckets ?? []).reduce(
+      (sum, b) => sum + ((b.estimate_cents as number) ?? 0),
+      0,
+    );
+  }
+
+  const sumTotals = (rows: { total_cents: number }[] | null | undefined) =>
+    (rows ?? []).reduce((sum, q) => sum + (q.total_cents as number), 0);
 
   return {
     draftQuoteCount: draftQuotes.data?.length ?? 0,
-    draftQuoteValueCents: draftValueCents,
+    draftQuoteValueCents: sumTotals(draftQuotes.data),
     sentQuoteCount: sentQuotes.data?.length ?? 0,
-    sentQuoteValueCents: sentValueCents,
-    activeProjectCount: activeProjects.count ?? 0,
+    sentQuoteValueCents: sumTotals(sentQuotes.data),
+    expiredQuoteCount: expiredQuotes.data?.length ?? 0,
+    expiredQuoteValueCents: sumTotals(expiredQuotes.data),
+    activeProjectCount: projectIds.length,
+    activeProjectValueCents,
   };
 }
 

@@ -1,4 +1,4 @@
-import { FileText, FolderKanban, Send } from 'lucide-react';
+import { Clock, FileText, FolderKanban, Send } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PipelineMetrics } from '@/lib/db/queries/dashboard';
@@ -10,12 +10,20 @@ import { formatCurrency } from '@/lib/pricing/calculator';
  * projects. Counts + values so they see "5 estimates in draft ($12K)".
  */
 export function PipelineSummary({ metrics }: { metrics: PipelineMetrics }) {
-  const cards = [
+  const cards: {
+    label: string;
+    count: number;
+    valueCents: number | null;
+    detail: string;
+    icon: typeof FileText;
+    href: string;
+    accent?: 'warning';
+  }[] = [
     {
       label: 'In draft',
       count: metrics.draftQuoteCount,
       valueCents: metrics.draftQuoteValueCents,
-      detail: 'Estimates you&apos;re working on',
+      detail: "Estimates you're working on",
       icon: FileText,
       href: '/quotes?status=draft',
     },
@@ -28,9 +36,18 @@ export function PipelineSummary({ metrics }: { metrics: PipelineMetrics }) {
       href: '/quotes?status=sent',
     },
     {
+      label: 'Expired',
+      count: metrics.expiredQuoteCount,
+      valueCents: metrics.expiredQuoteValueCents,
+      detail: 'Stalled — follow up or extend',
+      icon: Clock,
+      href: '/quotes?status=expired',
+      accent: metrics.expiredQuoteCount > 0 ? 'warning' : undefined,
+    },
+    {
       label: 'Active projects',
       count: metrics.activeProjectCount,
-      valueCents: null,
+      valueCents: metrics.activeProjectValueCents,
       detail: 'Planning or in progress',
       icon: FolderKanban,
       href: '/projects?view=active',
@@ -45,16 +62,29 @@ export function PipelineSummary({ metrics }: { metrics: PipelineMetrics }) {
           View all →
         </Link>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
+          const warning = card.accent === 'warning';
           return (
             <Link key={card.label} href={card.href}>
-              <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+              <Card
+                className={
+                  warning
+                    ? 'cursor-pointer border-amber-300 bg-amber-50 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/40 dark:hover:bg-amber-950/60'
+                    : 'cursor-pointer transition-colors hover:bg-muted/50'
+                }
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardDescription>{card.label}</CardDescription>
-                    <Icon className="size-4 text-muted-foreground" />
+                    <Icon
+                      className={
+                        warning
+                          ? 'size-4 text-amber-700 dark:text-amber-300'
+                          : 'size-4 text-muted-foreground'
+                      }
+                    />
                   </div>
                   <CardTitle className="text-3xl font-semibold tabular-nums">
                     {card.count}

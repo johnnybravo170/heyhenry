@@ -193,14 +193,14 @@ export type OAuthAuthResult = { ok: true; token: OAuthToken } | { ok: false; res
  */
 export async function authenticateOAuthToken(req: Request): Promise<OAuthAuthResult> {
   const origin = new URL(req.url).origin;
-  const wwwAuth = `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource"`;
+  const resourceMetadata = `${origin}/.well-known/oauth-protected-resource`;
 
   const authHeader = req.headers.get('authorization') ?? '';
   if (!authHeader.startsWith('Bearer ')) {
-    return { ok: false, response: oauthChallenge(401, 'invalid_token', wwwAuth) };
+    return { ok: false, response: oauthChallenge(401, resourceMetadata) };
   }
   const raw = authHeader.slice(7).trim();
-  if (!raw) return { ok: false, response: oauthChallenge(401, 'invalid_token', wwwAuth) };
+  if (!raw) return { ok: false, response: oauthChallenge(401, resourceMetadata) };
 
   const accessHash = await sha256Hex(raw);
   const service = createServiceClient();
@@ -211,10 +211,10 @@ export async function authenticateOAuthToken(req: Request): Promise<OAuthAuthRes
     .eq('access_token_hash', accessHash)
     .maybeSingle();
 
-  if (!row) return { ok: false, response: oauthChallenge(401, 'invalid_token', wwwAuth) };
-  if (row.revoked_at) return { ok: false, response: oauthChallenge(401, 'invalid_token', wwwAuth) };
+  if (!row) return { ok: false, response: oauthChallenge(401, resourceMetadata) };
+  if (row.revoked_at) return { ok: false, response: oauthChallenge(401, resourceMetadata) };
   if (new Date(row.expires_at as string).getTime() < Date.now()) {
-    return { ok: false, response: oauthChallenge(401, 'invalid_token', wwwAuth) };
+    return { ok: false, response: oauthChallenge(401, resourceMetadata) };
   }
 
   return {
@@ -228,14 +228,18 @@ export async function authenticateOAuthToken(req: Request): Promise<OAuthAuthRes
   };
 }
 
-function oauthChallenge(status: number, error: string, wwwAuth: string): Response {
-  return new NextResponse(JSON.stringify({ error }), {
-    status,
-    headers: {
-      'content-type': 'application/json',
-      'www-authenticate': `${wwwAuth}, error="${error}"`,
+function oauthChallenge(status: number, resourceMetadata: string): Response {
+  const errorDesc = 'Missing or invalid access token';
+  return new NextResponse(
+    JSON.stringify({ error: 'invalid_token', error_description: errorDesc }),
+    {
+      status,
+      headers: {
+        'content-type': 'application/json',
+        'www-authenticate': `Bearer realm="OAuth", resource_metadata="${resourceMetadata}", error="invalid_token", error_description="${errorDesc}"`,
+      },
     },
-  });
+  );
 }
 
 /** Call from a route AFTER the handler succeeds so success is logged too. */

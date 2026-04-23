@@ -9,6 +9,7 @@
  * obvious what's happening.
  */
 import { ALLOWED_REDIRECT_PREFIX, SUPPORTED_SCOPES } from '@/lib/oauth';
+import { createServiceClient } from '@/lib/supabase';
 import { approveAuthorizationAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,28 @@ export default async function AuthorizePage({
   if (code_challenge_method !== 'S256') errors.push('code_challenge_method must be "S256"');
   if (!redirect_uri.startsWith(ALLOWED_REDIRECT_PREFIX)) {
     errors.push(`redirect_uri must start with ${ALLOWED_REDIRECT_PREFIX}`);
+  }
+
+  // Look up the client in ops.oauth_clients. It must have been registered
+  // via /register before this authorize step.
+  let clientName: string | null = null;
+  if (client_id && errors.length === 0) {
+    const service = createServiceClient();
+    const { data: clientRow } = await service
+      .schema('ops')
+      .from('oauth_clients')
+      .select('client_id, client_name, redirect_uris')
+      .eq('client_id', client_id)
+      .maybeSingle();
+    if (!clientRow) {
+      errors.push(`invalid_client: ${client_id} not registered`);
+    } else {
+      const registered = (clientRow.redirect_uris as string[]) ?? [];
+      if (!registered.includes(redirect_uri)) {
+        errors.push('redirect_uri does not match a registered redirect_uri for this client');
+      }
+      clientName = (clientRow.client_name as string | null) ?? null;
+    }
   }
 
   if (errors.length > 0) {
@@ -77,7 +100,7 @@ export default async function AuthorizePage({
     <div className="mx-auto max-w-lg space-y-5">
       <h1 className="text-xl font-semibold">Authorize MCP access</h1>
       <p className="text-sm text-[var(--muted-foreground)]">
-        Connect <strong>{client_id}</strong> to your HeyHenry ops MCP server?
+        Connect <strong>{clientName ?? client_id}</strong> to your HeyHenry ops MCP server?
       </p>
 
       <div className="rounded-md border border-[var(--border)] bg-white p-4 text-xs">

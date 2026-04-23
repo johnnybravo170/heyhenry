@@ -21,6 +21,7 @@ const TABS = [
   { key: 'draft', label: 'Draft' },
   { key: 'sent', label: 'Sent' },
   { key: 'rejected', label: 'Declined' },
+  { key: 'expired', label: 'Expired' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
