@@ -8,16 +8,21 @@
  */
 
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
-export async function getCurrentUser() {
+/**
+ * Per-request memoised. Page shell + multiple tab server components often
+ * need the current user in the same render; cache() coalesces them.
+ */
+export const getCurrentUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
+});
 
 export type CurrentTenant = {
   id: string;
@@ -37,8 +42,10 @@ export type CurrentTenant = {
  * Resolves the current user's tenant via `tenant_members`. Returns `null`
  * when the user is unauthenticated or has no tenant. Runs under RLS, so
  * returning a row implies the user is allowed to see it.
+ *
+ * Wrapped in React.cache below so repeated calls within one render dedupe.
  */
-export async function getCurrentTenant(): Promise<CurrentTenant | null> {
+async function getCurrentTenantUncached(): Promise<CurrentTenant | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -73,6 +80,8 @@ export async function getCurrentTenant(): Promise<CurrentTenant | null> {
     },
   };
 }
+
+export const getCurrentTenant = cache(getCurrentTenantUncached);
 
 /**
  * Redirects to `/login` if the user is not authenticated, otherwise returns

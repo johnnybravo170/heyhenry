@@ -6,6 +6,7 @@
  * page and the AI budget tool.
  */
 
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 
 export type BucketRow = {
@@ -42,7 +43,7 @@ export type BudgetSummary = {
   total_remaining_cents: number;
 };
 
-export async function listBucketsForProject(projectId: string): Promise<BucketRow[]> {
+export const listBucketsForProject = cache(async (projectId: string): Promise<BucketRow[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('project_cost_buckets')
@@ -55,7 +56,7 @@ export async function listBucketsForProject(projectId: string): Promise<BucketRo
     throw new Error(`Failed to list buckets: ${error.message}`);
   }
   return (data ?? []) as BucketRow[];
-}
+});
 
 export async function getBudgetVsActual(projectId: string): Promise<BudgetSummary> {
   const supabase = await createClient();

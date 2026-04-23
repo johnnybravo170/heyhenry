@@ -1,0 +1,81 @@
+import { EstimateTab } from '@/components/features/projects/estimate-tab';
+import { listCostLines } from '@/lib/db/queries/cost-lines';
+import { listMaterialsCatalog } from '@/lib/db/queries/materials-catalog';
+import { listBucketsForProject } from '@/lib/db/queries/project-buckets';
+import { getEstimateViewStats } from '@/lib/db/queries/project-events';
+import { getProject } from '@/lib/db/queries/projects';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+
+export default async function EstimateTabServer({ projectId }: { projectId: string }) {
+  const [project, costLines, catalog, projectBuckets, estimateViewStats] = await Promise.all([
+    getProject(projectId),
+    listCostLines(projectId),
+    listMaterialsCatalog(),
+    listBucketsForProject(projectId),
+    getEstimateViewStats(projectId),
+  ]);
+  if (!project) return null;
+
+  const bucketsById: Record<string, { name: string; section: string | null; order: number }> = {};
+  for (const b of projectBuckets) {
+    bucketsById[b.id] = { name: b.name, section: b.section ?? null, order: b.display_order };
+  }
+
+  // Customer feedback + cost-line photo URLs (signed via admin so storage
+  // RLS doesn't silently return empty).
+  const supabase = await createClient();
+  const { data: feedbackRowsRaw } = await supabase
+    .from('project_estimate_comments')
+    .select('id, body, cost_line_id, seen_at, created_at')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  const costLineLabelById = new Map(costLines.map((l) => [l.id, l.label]));
+  const feedbackRows = (feedbackRowsRaw ?? []).map((r) => ({
+    id: r.id as string,
+    body: r.body as string,
+    cost_line_id: (r.cost_line_id as string | null) ?? null,
+    cost_line_label: r.cost_line_id
+      ? (costLineLabelById.get(r.cost_line_id as string) ?? null)
+      : null,
+    seen_at: (r.seen_at as string | null) ?? null,
+    created_at: r.created_at as string,
+  }));
+
+  const costLinePhotoUrls: Record<string, string> = {};
+  const costLinePhotoPaths = Array.from(
+    new Set(costLines.flatMap((l) => l.photo_storage_paths ?? [])),
+  );
+  if (costLinePhotoPaths.length > 0) {
+    const admin = createAdminClient();
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrls(costLinePhotoPaths, 3600);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) costLinePhotoUrls[row.path] = row.signedUrl;
+    }
+  }
+
+  return (
+    <EstimateTab
+      projectId={projectId}
+      costLines={costLines}
+      catalog={catalog}
+      costLinePhotoUrls={costLinePhotoUrls}
+      managementFeeRate={project.management_fee_rate}
+      feedback={feedbackRows}
+      bucketsById={bucketsById}
+      approval={{
+        status: project.estimate_status,
+        approval_code: project.estimate_approval_code,
+        sent_at: project.estimate_sent_at,
+        approved_at: project.estimate_approved_at,
+        approved_by_name: project.estimate_approved_by_name,
+        declined_at: project.estimate_declined_at,
+        declined_reason: project.estimate_declined_reason,
+        view_count: estimateViewStats.total,
+        last_viewed_at: estimateViewStats.last_viewed_at,
+      }}
+    />
+  );
+}

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 
 export type CostLineRow = {
@@ -32,7 +33,7 @@ export type VarianceRow = {
 const COLS =
   'id, project_id, bucket_id, catalog_item_id, category, label, qty, unit, unit_cost_cents, unit_price_cents, markup_pct, line_cost_cents, line_price_cents, sort_order, notes, photo_storage_paths, created_at, updated_at';
 
-export async function listCostLines(projectId: string): Promise<CostLineRow[]> {
+export const listCostLines = cache(async (projectId: string): Promise<CostLineRow[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('project_cost_lines')
@@ -42,7 +43,7 @@ export async function listCostLines(projectId: string): Promise<CostLineRow[]> {
     .order('created_at');
   if (error) throw new Error(`Failed to list cost lines: ${error.message}`);
   return (data ?? []) as CostLineRow[];
-}
+});
 
 export async function getVarianceReport(projectId: string): Promise<{
   estimated_cents: number;

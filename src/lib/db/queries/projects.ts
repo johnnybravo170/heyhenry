@@ -7,6 +7,7 @@
  * Soft-delete: `projects.deleted_at` filters out deleted rows in all listers.
  */
 
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import type { ProjectStatus } from '@/lib/validators/project';
 
@@ -111,7 +112,12 @@ export async function listProjects(
   return (data ?? []).map((row) => normalizeProject(row as Record<string, unknown>));
 }
 
-export async function getProject(id: string): Promise<ProjectWithRelations | null> {
+/**
+ * Non-cached implementation. Exposed as `getProject` via a React.cache
+ * wrapper below so generateMetadata + page + nested server components
+ * in the same render dedupe to a single DB call.
+ */
+async function getProjectUncached(id: string): Promise<ProjectWithRelations | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -151,6 +157,13 @@ export async function getProject(id: string): Promise<ProjectWithRelations | nul
     cost_buckets: (bucketData ?? []) as CostBucketSummary[],
   };
 }
+
+/**
+ * Per-request memoised project fetch. Same signature as the raw function,
+ * but multiple calls within the same render (generateMetadata, page shell,
+ * nested tab server components) coalesce to one DB hit.
+ */
+export const getProject = cache(getProjectUncached);
 
 export async function countProjectsByStatus(): Promise<ProjectStatusCounts> {
   const supabase = await createClient();
