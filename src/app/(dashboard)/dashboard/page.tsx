@@ -28,6 +28,11 @@ export default async function DashboardPage() {
   const hour = getHourInTimezone(tz);
   const greeting = getGreeting(hour);
 
+  // GC/renovation work lives in multi-week projects; the "today's jobs"
+  // appointment view is noise for that vertical. Other verticals (pressure
+  // washing, etc.) keep it — they genuinely have a daily job schedule.
+  const showTodaysJobs = tenant.vertical !== 'renovation';
+
   const [
     todaysJobs,
     metrics,
@@ -38,7 +43,7 @@ export default async function DashboardPage() {
     profile,
     operator,
   ] = await Promise.all([
-    getTodaysJobs(tz),
+    showTodaysJobs ? getTodaysJobs(tz) : Promise.resolve([]),
     getKeyMetrics(tz),
     getPipelineMetrics(),
     getAttentionItems(tz),
@@ -70,7 +75,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <TodaysJobs jobs={todaysJobs} timezone={tz} />
+      {showTodaysJobs ? <TodaysJobs jobs={todaysJobs} timezone={tz} /> : null}
 
       <PipelineSummary metrics={pipelineMetrics} />
 
