@@ -43,6 +43,7 @@ import { listAssignmentsForProject } from '@/lib/db/queries/project-assignments'
 import { listProjectBills } from '@/lib/db/queries/project-bills';
 import { getBudgetVsActual, listBucketsForProject } from '@/lib/db/queries/project-buckets';
 import { getEstimateViewStats, listProjectEvents } from '@/lib/db/queries/project-events';
+import { listProjectSubQuotes } from '@/lib/db/queries/project-sub-quotes';
 import { getProject } from '@/lib/db/queries/projects';
 import { listPurchaseOrders } from '@/lib/db/queries/purchase-orders';
 import { listTimeEntries } from '@/lib/db/queries/time-entries';
@@ -232,6 +233,7 @@ export default async function ProjectDetailPage({
     costLines,
     purchaseOrders,
     bills,
+    subQuotes,
     variance,
     catalog,
     changeOrders,
@@ -242,6 +244,7 @@ export default async function ProjectDetailPage({
     listCostLines(id),
     listPurchaseOrders(id),
     listProjectBills(id),
+    listProjectSubQuotes(id),
     getVarianceReport(id),
     listMaterialsCatalog(),
     listChangeOrders({ projectId: id }),
@@ -604,7 +607,12 @@ export default async function ProjectDetailPage({
           projectId={id}
           purchaseOrders={purchaseOrders}
           bills={bills}
-          buckets={projectBuckets.map((b) => ({ id: b.id, name: b.name }))}
+          subQuotes={subQuotes}
+          buckets={projectBuckets.map((b) => ({
+            id: b.id,
+            name: b.name,
+            section: (b.section as 'interior' | 'exterior' | 'general') ?? 'general',
+          }))}
         />
       ) : null}
 

@@ -1,6 +1,6 @@
 # Sub Quotes — Intake + Multi-bucket Allocation
 
-**Status:** DRAFT — pending Jonathan's sign-off on open questions at bottom.
+**Status:** APPROVED 2026-04-23. Phase 1 building now.
 **Date:** 2026-04-23
 **Author:** Claude + Jonathan
 
@@ -51,7 +51,8 @@ CREATE TABLE public.project_sub_quotes (
   scope_description text,          -- raw scope text, for AI matching + display
   notes text,                      -- operator's private notes
   status text NOT NULL DEFAULT 'pending_review'
-    CHECK (status IN ('pending_review', 'accepted', 'rejected', 'expired')),
+    CHECK (status IN ('pending_review', 'accepted', 'rejected', 'expired', 'superseded')),
+  superseded_by_id uuid REFERENCES public.project_sub_quotes(id) ON DELETE SET NULL,
   quote_date date,                 -- from the document, if parsed
   valid_until date,                -- from the document, if parsed
   received_at timestamptz NOT NULL DEFAULT now(),
@@ -178,13 +179,18 @@ Each phase is independently shippable. Jonathan picks when to roll from one to t
 - **Retention / holdback tracking.** Important for commercial GC, nice-to-have for residential. Later.
 - **Payment scheduling.** Separate concern.
 
-## Open questions (Jonathan, please answer before build)
+## Decisions locked (2026-04-23)
 
-1. **Costs-tab section vs dedicated tab.** I'm leaning toward a section under the existing Costs tab because buckets live there too. Alternative: a new "Sub quotes" tab. Which do you prefer?
-2. **Default allocation when AI has no idea.** Phase 2: when scope→bucket matching is low-confidence across the board, should we (a) leave the editor empty for the operator to fill in, (b) pre-fill 100% into the first/most-common bucket, or (c) ask the operator to pick one bucket before we guess the rest?
-3. **Vendor deduplication.** First-time vendor creates a free-text string. Do we also create a `vendors` table now so repeat vendors dedupe? I'd defer to Phase 2 — Phase 1 just text-matches.
-4. **Inline bucket creation.** Should adding a new bucket from the allocation editor also copy over the section / display_order fields from bucket templates, or create a bare-named bucket that the operator configures later? I'd go bare for speed.
-5. **File size / type limits.** Same as receipts (10MB, PDF/PNG/JPG/HEIC)?
+1. **Costs-tab section** under existing Costs tab. Buckets live there; sub quotes belong beside them.
+2. **Low-confidence AI fallback**: editor stays empty. Never pre-fill a first bucket — wrong 95% of the time. Operator must explicitly allocate.
+3. **Vendor dedup deferred to Phase 2.** Phase 1: free-text vendor name. Multi-quote-from-same-vendor handling:
+   - Each quote = its own row, always.
+   - On `accept`, check for existing accepted quote from the same vendor on the same project.
+   - If exists AND the new quote's allocations overlap buckets with the existing one → prompt "Replace existing quote ($X) with this one ($Y)?"
+   - If exists but allocations are to different buckets (tile guy: kitchen vs bathroom) → prompt "Add as separate quote, or replace existing?" with "separate" pre-selected.
+   - On replace: old one flips to `superseded`, `superseded_by_id` points at the new one. Full history stays visible.
+4. **Inline bucket creation**: dialog asks for name (required) + section (dropdown: `interior` / `exterior` / `general`; defaults to `general`). `section` is an existing NOT NULL enum on `project_cost_buckets`, so we must pick one — no free-text. `description` defaults to null; `display_order = max(existing) + 10`; `is_visible_in_report = true` (default).
+5. **File size/type**: match receipts (10MB, PDF / PNG / JPG / HEIC). Covers 95%+ of real quotes.
 
 ## Next step
 

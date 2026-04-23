@@ -5,6 +5,7 @@ import { useRef, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ProjectBillRow } from '@/lib/db/queries/project-bills';
+import type { SubQuoteRow } from '@/lib/db/queries/project-sub-quotes';
 import type { PurchaseOrderRow, PurchaseOrderStatus } from '@/lib/db/queries/purchase-orders';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import {
@@ -13,6 +14,7 @@ import {
   updatePurchaseOrderStatusAction,
   upsertBillWithAttachmentAction,
 } from '@/server/actions/project-cost-control';
+import { SubQuotesSection } from './sub-quotes-section';
 
 function displayToCents(val: string) {
   return Math.round(parseFloat(val || '0') * 100);
@@ -506,12 +508,14 @@ export function CostsTab({
   projectId,
   purchaseOrders,
   bills,
+  subQuotes,
   buckets,
 }: {
   projectId: string;
   purchaseOrders: PurchaseOrderRow[];
   bills: ProjectBillRow[];
-  buckets: Array<{ id: string; name: string }>;
+  subQuotes: SubQuoteRow[];
+  buckets: Array<{ id: string; name: string; section: 'interior' | 'exterior' | 'general' }>;
 }) {
   const [showPOForm, setShowPOForm] = useState(false);
   const [showBillForm, setShowBillForm] = useState(false);
@@ -541,6 +545,9 @@ export function CostsTab({
 
   return (
     <div className="space-y-8">
+      {/* Sub quotes — incoming quotes from subs/vendors, allocated to buckets */}
+      <SubQuotesSection projectId={projectId} subQuotes={subQuotes} buckets={buckets} />
+
       {/* Purchase Orders */}
       <section>
         <div className="mb-3 flex items-center justify-between">
