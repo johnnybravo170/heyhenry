@@ -186,7 +186,7 @@ export async function approveEstimateAction(
 
   const { data: project, error: projErr } = await admin
     .from('projects')
-    .select('id, tenant_id, name, estimate_status')
+    .select('id, tenant_id, name, estimate_status, status')
     .eq('estimate_approval_code', approvalCode)
     .single();
 
@@ -198,12 +198,23 @@ export async function approveEstimateAction(
   }
 
   const now = new Date().toISOString();
+  // Auto-advance the lifecycle status on approval. Before today, `status`
+  // stayed at its creation default ('planning') forever unless someone
+  // manually moved it, which made it impossible to tell an estimate-in-
+  // -progress apart from an approved project. Only bump status when it's
+  // still 'planning' — if the operator has explicitly moved it elsewhere
+  // (complete / cancelled), leave that alone.
+  // The broader lifecycle cleanup lives on kanban card 8190d7f2.
+  const statusPatch: Record<string, unknown> =
+    p.status === 'planning' ? { status: 'in_progress' } : {};
+
   const { error: updErr } = await admin
     .from('projects')
     .update({
       estimate_status: 'approved',
       estimate_approved_at: now,
       estimate_approved_by_name: name,
+      ...statusPatch,
     })
     .eq('id', p.id as string);
 
