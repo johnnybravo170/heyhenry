@@ -1,6 +1,7 @@
 'use client';
 
 import { Paperclip } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import {
   updatePurchaseOrderStatusAction,
   upsertBillWithAttachmentAction,
 } from '@/server/actions/project-cost-control';
+import { type CostsSubtabKey, CostsSubtabs } from './costs-subtabs';
 import { SubQuotesSection } from './sub-quotes-section';
 
 function displayToCents(val: string) {
@@ -542,201 +544,240 @@ export function CostsTab({
     .reduce((s, po) => s + po.total_cents, 0);
 
   const totalBills = bills.reduce((s, b) => s + b.amount_cents, 0);
+  const committedTotal = subQuotes
+    .filter((q) => q.status === 'accepted')
+    .reduce((s, q) => s + q.total_cents, 0);
+
+  const searchParams = useSearchParams();
+  const sub: CostsSubtabKey = (() => {
+    const raw = searchParams.get('sub');
+    if (raw === 'pos' || raw === 'bills') return raw;
+    return 'quotes';
+  })();
+  const subtabCounts: Record<CostsSubtabKey, number> = {
+    quotes: subQuotes.length,
+    pos: purchaseOrders.length,
+    bills: bills.length,
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Sub quotes — incoming quotes from subs/vendors, allocated to buckets */}
-      <SubQuotesSection projectId={projectId} subQuotes={subQuotes} buckets={buckets} />
-
-      {/* Purchase Orders */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Purchase Orders</h3>
-          {!showPOForm && (
-            <Button size="sm" onClick={() => setShowPOForm(true)}>
-              + New PO
-            </Button>
-          )}
+    <div className="space-y-4">
+      {/* Summary strip — preserves the at-a-glance view vertical stacking
+          used to give, now that only one section is visible at a time. */}
+      <div className="flex flex-wrap gap-4 rounded-lg border bg-muted/20 px-4 py-3 text-sm">
+        <div>
+          <span className="text-muted-foreground">Committed</span>{' '}
+          <span className="font-semibold tabular-nums">{formatCurrency(committedTotal)}</span>
         </div>
+        <div>
+          <span className="text-muted-foreground">PO&apos;d</span>{' '}
+          <span className="font-semibold tabular-nums">{formatCurrency(totalPOs)}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Billed</span>{' '}
+          <span className="font-semibold tabular-nums">{formatCurrency(totalBills)}</span>
+        </div>
+      </div>
 
-        {showPOForm && (
-          <div className="mb-4">
-            <POForm projectId={projectId} onDone={() => setShowPOForm(false)} />
-          </div>
-        )}
+      <CostsSubtabs counts={subtabCounts} />
 
-        {purchaseOrders.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No purchase orders yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {purchaseOrders.map((po) => {
-              const next = STATUS_NEXT[po.status];
-              return (
-                <div key={po.id} className="rounded-md border">
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                    <div>
-                      <p className="font-medium">{po.vendor}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {po.po_number ? `PO #${po.po_number} · ` : ''}
-                        {STATUS_LABELS[po.status]}
-                        {po.expected_date ? ` · Expected ${po.expected_date}` : ''}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className="font-semibold">{formatCurrency(po.total_cents)}</p>
-                      {next && (
-                        <Button size="xs" variant="outline" onClick={() => advancePOStatus(po)}>
-                          Mark {STATUS_LABELS[next]}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  {po.items.length > 0 && (
-                    <div className="border-t px-4 py-2">
-                      <table className="w-full text-xs">
-                        <tbody>
-                          {po.items.map((item) => (
-                            <tr key={item.id} className="border-b last:border-0">
-                              <td className="py-1 pr-4">{item.label}</td>
-                              <td className="py-1 pr-4 text-muted-foreground">
-                                {Number(item.qty)} {item.unit}
-                              </td>
-                              <td className="py-1 text-right">
-                                {formatCurrency(item.line_total_cents)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+      {sub === 'quotes' ? (
+        <SubQuotesSection projectId={projectId} subQuotes={subQuotes} buckets={buckets} />
+      ) : null}
 
-            {totalPOs > 0 && (
-              <p className="text-right text-sm">
-                <span className="text-muted-foreground">Committed (open POs): </span>
-                <span className="font-semibold">{formatCurrency(totalPOs)}</span>
-              </p>
+      {sub === 'pos' ? (
+        /* Purchase Orders */
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Purchase Orders</h3>
+            {!showPOForm && (
+              <Button size="sm" onClick={() => setShowPOForm(true)}>
+                + New PO
+              </Button>
             )}
           </div>
-        )}
-      </section>
 
-      {/* Bills */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Bills & Sub Invoices</h3>
-          {!showBillForm && !editingBill && (
-            <Button size="sm" onClick={() => setShowBillForm(true)}>
-              + Log bill
-            </Button>
+          {showPOForm && (
+            <div className="mb-4">
+              <POForm projectId={projectId} onDone={() => setShowPOForm(false)} />
+            </div>
           )}
-        </div>
 
-        {(showBillForm || editingBill) && (
-          <div className="mb-4">
-            <BillForm
-              projectId={projectId}
-              buckets={buckets}
-              initial={editingBill ?? undefined}
-              onDone={() => {
-                setShowBillForm(false);
-                setEditingBill(null);
-              }}
-            />
-          </div>
-        )}
-
-        {bills.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No bills logged yet.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Vendor</th>
-                  <th className="px-3 py-2 text-left font-medium">Date</th>
-                  <th className="px-3 py-2 text-left font-medium">Bucket</th>
-                  <th className="px-3 py-2 text-left font-medium">Description</th>
-                  <th className="px-3 py-2 text-left font-medium">Status</th>
-                  <th className="px-3 py-2 text-right font-medium">Subtotal</th>
-                  <th className="px-3 py-2 text-right font-medium">GST</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {bills.map((bill) => (
-                  <tr key={bill.id} className="border-b last:border-0">
-                    <td className="px-3 py-2 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        {bill.attachment_storage_path && (
-                          <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+          {purchaseOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No purchase orders yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {purchaseOrders.map((po) => {
+                const next = STATUS_NEXT[po.status];
+                return (
+                  <div key={po.id} className="rounded-md border">
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                      <div>
+                        <p className="font-medium">{po.vendor}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {po.po_number ? `PO #${po.po_number} · ` : ''}
+                          {STATUS_LABELS[po.status]}
+                          {po.expected_date ? ` · Expected ${po.expected_date}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="font-semibold">{formatCurrency(po.total_cents)}</p>
+                        {next && (
+                          <Button size="xs" variant="outline" onClick={() => advancePOStatus(po)}>
+                            Mark {STATUS_LABELS[next]}
+                          </Button>
                         )}
-                        {bill.vendor}
                       </div>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{bill.bill_date}</td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {bill.bucket_name ? (
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
-                          {bill.bucket_name}
-                        </span>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{bill.description || '—'}</td>
-                    <td className="px-3 py-2 capitalize text-muted-foreground">{bill.status}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {formatCurrency(bill.amount_cents)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                      {bill.gst_cents > 0 ? formatCurrency(bill.gst_cents) : '—'}
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium tabular-nums">
-                      {formatCurrency(bill.amount_cents + bill.gst_cents)}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingBill(bill);
-                            setShowBillForm(false);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteBill(bill.id)}
-                        >
-                          Del
-                        </Button>
+                    </div>
+                    {po.items.length > 0 && (
+                      <div className="border-t px-4 py-2">
+                        <table className="w-full text-xs">
+                          <tbody>
+                            {po.items.map((item) => (
+                              <tr key={item.id} className="border-b last:border-0">
+                                <td className="py-1 pr-4">{item.label}</td>
+                                <td className="py-1 pr-4 text-muted-foreground">
+                                  {Number(item.qty)} {item.unit}
+                                </td>
+                                <td className="py-1 text-right">
+                                  {formatCurrency(item.line_total_cents)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="border-t px-3 py-2 text-right text-sm">
-              <span className="text-muted-foreground">Total billed (subtotal): </span>
-              <span className="font-semibold">{formatCurrency(totalBills)}</span>
-              {bills.some((b) => b.gst_cents > 0) && (
-                <span className="ml-3 text-muted-foreground">
-                  + {formatCurrency(bills.reduce((s, b) => s + b.gst_cents, 0))} GST
-                </span>
+                    )}
+                  </div>
+                );
+              })}
+
+              {totalPOs > 0 && (
+                <p className="text-right text-sm">
+                  <span className="text-muted-foreground">Committed (open POs): </span>
+                  <span className="font-semibold">{formatCurrency(totalPOs)}</span>
+                </p>
               )}
             </div>
+          )}
+        </section>
+      ) : null}
+
+      {sub === 'bills' ? (
+        /* Bills */
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Bills & Sub Invoices</h3>
+            {!showBillForm && !editingBill && (
+              <Button size="sm" onClick={() => setShowBillForm(true)}>
+                + Log bill
+              </Button>
+            )}
           </div>
-        )}
-      </section>
+
+          {(showBillForm || editingBill) && (
+            <div className="mb-4">
+              <BillForm
+                projectId={projectId}
+                buckets={buckets}
+                initial={editingBill ?? undefined}
+                onDone={() => {
+                  setShowBillForm(false);
+                  setEditingBill(null);
+                }}
+              />
+            </div>
+          )}
+
+          {bills.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No bills logged yet.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-3 py-2 text-left font-medium">Vendor</th>
+                    <th className="px-3 py-2 text-left font-medium">Date</th>
+                    <th className="px-3 py-2 text-left font-medium">Bucket</th>
+                    <th className="px-3 py-2 text-left font-medium">Description</th>
+                    <th className="px-3 py-2 text-left font-medium">Status</th>
+                    <th className="px-3 py-2 text-right font-medium">Subtotal</th>
+                    <th className="px-3 py-2 text-right font-medium">GST</th>
+                    <th className="px-3 py-2 text-right font-medium">Total</th>
+                    <th className="px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {bills.map((bill) => (
+                    <tr key={bill.id} className="border-b last:border-0">
+                      <td className="px-3 py-2 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          {bill.attachment_storage_path && (
+                            <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+                          )}
+                          {bill.vendor}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{bill.bill_date}</td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {bill.bucket_name ? (
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                            {bill.bucket_name}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{bill.description || '—'}</td>
+                      <td className="px-3 py-2 capitalize text-muted-foreground">{bill.status}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatCurrency(bill.amount_cents)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                        {bill.gst_cents > 0 ? formatCurrency(bill.gst_cents) : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium tabular-nums">
+                        {formatCurrency(bill.amount_cents + bill.gst_cents)}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingBill(bill);
+                              setShowBillForm(false);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteBill(bill.id)}
+                          >
+                            Del
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="border-t px-3 py-2 text-right text-sm">
+                <span className="text-muted-foreground">Total billed (subtotal): </span>
+                <span className="font-semibold">{formatCurrency(totalBills)}</span>
+                {bills.some((b) => b.gst_cents > 0) && (
+                  <span className="ml-3 text-muted-foreground">
+                    + {formatCurrency(bills.reduce((s, b) => s + b.gst_cents, 0))} GST
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

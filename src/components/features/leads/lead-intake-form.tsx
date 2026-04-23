@@ -162,10 +162,10 @@ export function LeadIntakeForm() {
           {isParsing ? (
             <>
               <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-              Parsing…
+              Reading…
             </>
           ) : (
-            'Parse'
+            'Read intake'
           )}
         </Button>
       </div>

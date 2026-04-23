@@ -488,7 +488,14 @@ export default async function ProjectDetailPage({
               </Link>
             );
           })}
-          <ProjectIntakeZone projectId={project.id} />
+          <ProjectIntakeZone
+            projectId={project.id}
+            buckets={projectBuckets.map((b) => ({
+              id: b.id,
+              name: b.name,
+              section: (b.section as 'interior' | 'exterior' | 'general') ?? 'general',
+            }))}
+          />
           <CloneProjectDialog
             projectId={project.id}
             projectName={project.name}

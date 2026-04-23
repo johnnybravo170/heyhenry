@@ -112,7 +112,7 @@ export function SubQuoteUploadButton({
         ) : (
           <Sparkles className="mr-1 size-3.5" />
         )}
-        {pending ? 'Parsing…' : 'Upload & parse'}
+        {pending ? 'Reading…' : 'Upload quote'}
       </Button>
       <input
         ref={fileRef}
@@ -144,11 +144,11 @@ export function SubQuoteUploadButton({
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="size-4" /> Review parsed sub quote
+              <Sparkles className="size-4" /> Review sub quote
             </DialogTitle>
             <DialogDescription>
-              Henry pulled these details out of the document. Adjust anything that looks off, then
-              save.
+              Henry read the document and filled in what he could. Adjust anything that looks off,
+              then save.
             </DialogDescription>
           </DialogHeader>
           {warning ? (

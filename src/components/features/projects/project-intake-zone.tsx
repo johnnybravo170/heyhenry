@@ -31,6 +31,7 @@ import {
   applyProjectAugmentAction,
   parseProjectAugmentAction,
 } from '@/server/actions/intake-augment';
+import { SubQuoteForm } from './sub-quote-form';
 
 type StagedFile = { file: File; previewUrl: string; key: string };
 
@@ -50,7 +51,18 @@ async function shrinkIfNeeded(file: File): Promise<File> {
   }
 }
 
-export function ProjectIntakeZone({ projectId }: { projectId: string }) {
+type Bucket = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+
+export function ProjectIntakeZone({
+  projectId,
+  buckets = [],
+}: {
+  projectId: string;
+  /** Project's existing cost buckets. Used to resolve AI sub-quote
+   * allocation bucket-names back to real IDs before handing off to the
+   * sub-quote review dialog. */
+  buckets?: Bucket[];
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -83,6 +95,11 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
   const [includeSignals, setIncludeSignals] = useState(true);
   const [isParsing, startParsing] = useTransition();
   const [isApplying, startApplying] = useTransition();
+  // Indices of new_sub_quotes that have already been saved via the review
+  // dialog — removed from the list so the operator doesn't double-save.
+  const [savedSubQuoteIndexes, setSavedSubQuoteIndexes] = useState<Set<number>>(new Set());
+  // The sub quote currently being reviewed (index into suggestions.new_sub_quotes).
+  const [reviewingSubQuoteIndex, setReviewingSubQuoteIndex] = useState<number | null>(null);
 
   const reset = useCallback(() => {
     for (const s of staged) {
@@ -93,6 +110,8 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
     setExistingBuckets([]);
     setLineBucketSelections([]);
     setIncludeBills([]);
+    setSavedSubQuoteIndexes(new Set());
+    setReviewingSubQuoteIndex(null);
   }, [staged]);
 
   function addFiles(files: FileList | File[]) {
@@ -302,10 +321,10 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
                 {isParsing ? (
                   <>
                     <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                    Parsing…
+                    Reading…
                   </>
                 ) : (
-                  'Parse'
+                  'Read files'
                 )}
               </Button>
             </div>
@@ -465,6 +484,77 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
                     </li>
                   ))}
                 </ul>
+              </div>
+            ) : null}
+
+            {suggestions.new_sub_quotes && suggestions.new_sub_quotes.length > 0 ? (
+              <div className="rounded-md border">
+                <p className="border-b bg-emerald-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  Sub quotes ({suggestions.new_sub_quotes.length}) — each opens its own review
+                </p>
+                <div className="divide-y">
+                  {suggestions.new_sub_quotes.map((sq, i) => {
+                    const saved = savedSubQuoteIndexes.has(i);
+                    const sourceFile =
+                      sq.source_image_index != null ? staged[sq.source_image_index]?.file : null;
+                    return (
+                      <div
+                        // biome-ignore lint/suspicious/noArrayIndexKey: parallel state arrays bound by index
+                        key={`sq-${i}`}
+                        className="flex flex-wrap items-center gap-3 px-3 py-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-medium">{sq.vendor_name}</span>
+                            <span className="text-sm font-semibold tabular-nums">
+                              ${(sq.total_cents / 100).toFixed(2)}
+                            </span>
+                            {sq.quote_date ? (
+                              <span className="text-xs text-muted-foreground">{sq.quote_date}</span>
+                            ) : null}
+                          </div>
+                          {sq.scope_description ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {sq.scope_description}
+                            </p>
+                          ) : null}
+                          {sq.allocations.length > 0 ? (
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              Suggested:{' '}
+                              {sq.allocations
+                                .map(
+                                  (a) =>
+                                    `${a.bucket_name} $${(a.allocated_cents / 100).toFixed(2)}`,
+                                )
+                                .join(' · ')}
+                            </p>
+                          ) : null}
+                        </div>
+                        {saved ? (
+                          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                            ✓ Saved
+                          </span>
+                        ) : (
+                          <Button
+                            size="xs"
+                            onClick={() => setReviewingSubQuoteIndex(i)}
+                            disabled={buckets.length === 0}
+                            title={
+                              buckets.length === 0
+                                ? 'This project needs cost buckets first.'
+                                : undefined
+                            }
+                          >
+                            Review &amp; allocate
+                          </Button>
+                        )}
+                        {sourceFile ? null : (
+                          <span className="text-[10px] text-muted-foreground">(no attachment)</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : null}
 
@@ -659,6 +749,96 @@ export function ProjectIntakeZone({ projectId }: { projectId: string }) {
             </div>
           </div>
         )}
+      </DialogContent>
+
+      {/* Nested sub quote review dialog. Maps AI-suggested bucket names
+          back to real bucket IDs before handing to SubQuoteForm. */}
+      {reviewingSubQuoteIndex !== null && suggestions?.new_sub_quotes ? (
+        <SubQuoteReviewDialog
+          projectId={projectId}
+          buckets={buckets}
+          sq={suggestions.new_sub_quotes[reviewingSubQuoteIndex]}
+          sourceFile={
+            suggestions.new_sub_quotes[reviewingSubQuoteIndex].source_image_index != null
+              ? (staged[
+                  suggestions.new_sub_quotes[reviewingSubQuoteIndex].source_image_index as number
+                ]?.file ?? null)
+              : null
+          }
+          onClose={() => setReviewingSubQuoteIndex(null)}
+          onSaved={() => {
+            setSavedSubQuoteIndexes((prev) => {
+              const next = new Set(prev);
+              if (reviewingSubQuoteIndex !== null) next.add(reviewingSubQuoteIndex);
+              return next;
+            });
+            setReviewingSubQuoteIndex(null);
+          }}
+        />
+      ) : null}
+    </Dialog>
+  );
+}
+
+function SubQuoteReviewDialog({
+  projectId,
+  buckets,
+  sq,
+  sourceFile,
+  onClose,
+  onSaved,
+}: {
+  projectId: string;
+  buckets: Bucket[];
+  sq: NonNullable<AugmentResult['new_sub_quotes']>[number];
+  sourceFile: File | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  // Resolve AI-suggested bucket names to real bucket IDs. Anything that
+  // doesn't exist is dropped — operator allocates manually in the form.
+  const bucketsByName = new Map(buckets.map((b) => [b.name, b]));
+  const matched = sq.allocations
+    .map((a) => {
+      const hit = bucketsByName.get(a.bucket_name);
+      return hit
+        ? { bucket_id: hit.id, allocated_cents: a.allocated_cents, notes: a.reasoning }
+        : null;
+    })
+    .filter(Boolean) as Array<{ bucket_id: string; allocated_cents: number; notes: string }>;
+
+  const unmatched = sq.allocations.filter((a) => !bucketsByName.has(a.bucket_name));
+  const unmatchedNote = unmatched.length
+    ? `Henry suggested but no matching bucket:\n${unmatched
+        .map((u) => `  • ${u.bucket_name} — $${(u.allocated_cents / 100).toFixed(2)}`)
+        .join('\n')}`
+    : '';
+
+  return (
+    <Dialog open onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="size-4" /> Review sub quote
+          </DialogTitle>
+        </DialogHeader>
+        <SubQuoteForm
+          projectId={projectId}
+          buckets={buckets}
+          initialValues={{
+            vendor_name: sq.vendor_name,
+            vendor_email: sq.vendor_email ?? '',
+            vendor_phone: sq.vendor_phone ?? '',
+            total_cents: sq.total_cents,
+            scope_description: sq.scope_description ?? '',
+            quote_date: sq.quote_date ?? '',
+            valid_until: sq.valid_until ?? '',
+            allocations: matched,
+            attachment: sourceFile ?? undefined,
+            notes: unmatchedNote,
+          }}
+          onDone={onSaved}
+        />
       </DialogContent>
     </Dialog>
   );
