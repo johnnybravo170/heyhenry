@@ -21,4 +21,5 @@ export * from './tenant-members';
 export * from './tenant-prefs';
 export * from './tenants';
 export * from './todos';
+export * from './user-recovery-codes';
 export * from './worklog-entries';

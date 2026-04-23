@@ -1,4 +1,13 @@
-import { Building2, ChevronRight, Mic, Ruler, Users, HardHat, Layers } from 'lucide-react';
+import {
+  Building2,
+  ChevronRight,
+  HardHat,
+  Layers,
+  Mic,
+  Ruler,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { CalendarFeedCard } from '@/components/features/settings/calendar-feed-card';
@@ -142,6 +151,25 @@ export default function SettingsPage() {
         </Card>
       </Link>
 
+      <Link href="/settings/security" className="block">
+        <Card className="transition-colors hover:bg-muted/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-5" />
+                <div>
+                  <CardTitle>Security</CardTitle>
+                  <CardDescription>
+                    Two-factor authentication and account protection.
+                  </CardDescription>
+                </div>
+              </div>
+              <ChevronRight className="size-5 text-muted-foreground" />
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
+
       <Suspense fallback={<div className="h-48 animate-pulse rounded-xl border bg-card" />}>
         <StripeSection />
       </Suspense>
@@ -192,7 +220,9 @@ export default function SettingsPage() {
                 <HardHat className="size-5" />
                 <div>
                   <CardTitle>Cost Catalog</CardTitle>
-                  <CardDescription>Materials, labour rates, and markup rules for GC projects.</CardDescription>
+                  <CardDescription>
+                    Materials, labour rates, and markup rules for GC projects.
+                  </CardDescription>
                 </div>
               </div>
               <ChevronRight className="size-5 text-muted-foreground" />
@@ -209,7 +239,9 @@ export default function SettingsPage() {
                 <Layers className="size-5" />
                 <div>
                   <CardTitle>Bucket Templates</CardTitle>
-                  <CardDescription>Reusable cost bucket sets applied when creating renovation projects.</CardDescription>
+                  <CardDescription>
+                    Reusable cost bucket sets applied when creating renovation projects.
+                  </CardDescription>
                 </div>
               </div>
               <ChevronRight className="size-5 text-muted-foreground" />
