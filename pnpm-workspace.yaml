@@ -2,6 +2,7 @@ packages:
   - '.'
   - 'ops'
   - 'mcp'
+  - 'mcp-ops'
 
 ignoredBuiltDependencies:
   - sharp
