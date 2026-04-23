@@ -1,6 +1,8 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { QuoteForm } from '@/components/features/quotes/quote-form';
+import { requireTenant } from '@/lib/auth/helpers';
 import { listCustomers } from '@/lib/db/queries/customers';
 import { listCatalogEntries } from '@/lib/db/queries/service-catalog';
 import { createQuoteAction } from '@/server/actions/quotes';
@@ -21,6 +23,12 @@ export default async function NewQuotePage({
 }: {
   searchParams: Promise<RawSearchParams>;
 }) {
+  // Renovation/tile use projects for estimates — no polygon quoting.
+  const { tenant } = await requireTenant();
+  if (tenant.vertical === 'renovation' || tenant.vertical === 'tile') {
+    redirect('/projects/new');
+  }
+
   const resolvedParams = await searchParams;
   const prefilledCustomerId = parseCustomerId(resolvedParams.customer_id);
 

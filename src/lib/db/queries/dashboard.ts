@@ -307,6 +307,90 @@ export async function getPipelineMetrics(): Promise<PipelineMetrics> {
   };
 }
 
+export type RenovationPipelineMetrics = {
+  planningCount: number;
+  planningValueCents: number;
+  awaitingApprovalCount: number;
+  awaitingApprovalValueCents: number;
+  activeCount: number;
+  activeValueCents: number;
+  completeThisYearCount: number;
+};
+
+/**
+ * Renovation-vertical pipeline snapshot. All counts/values come from
+ * projects (via cost buckets), not quotes — the polygon quoting tool
+ * is irrelevant for GCs.
+ *
+ * Values are summed from `project_cost_buckets.estimate_cents` for each
+ * stage. Single round-trip to projects, then one to buckets filtered
+ * by the project ids we care about. "Complete this year" is a count
+ * only (no value) because it's a retrospective metric.
+ */
+export async function getRenovationPipelineMetrics(
+  timezone: string,
+): Promise<RenovationPipelineMetrics> {
+  const supabase = await createClient();
+  const yearStart = new Date(
+    new Date().toLocaleString('en-US', { timeZone: timezone }),
+  ).getFullYear();
+  const yearStartIso = `${yearStart}-01-01T00:00:00.000Z`;
+
+  const [stageRows, completeThisYear] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('id, lifecycle_stage')
+      .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
+      .is('deleted_at', null),
+    supabase
+      .from('projects')
+      .select('id', { count: 'exact', head: true })
+      .eq('lifecycle_stage', 'complete')
+      .gte('updated_at', yearStartIso)
+      .is('deleted_at', null),
+  ]);
+
+  if (stageRows.error) throw new Error(`Renovation pipeline: ${stageRows.error.message}`);
+  if (completeThisYear.error)
+    throw new Error(`Renovation pipeline: ${completeThisYear.error.message}`);
+
+  const rows = (stageRows.data ?? []) as Array<{ id: string; lifecycle_stage: string }>;
+  const idsByStage = new Map<string, string[]>();
+  for (const r of rows) {
+    const existing = idsByStage.get(r.lifecycle_stage) ?? [];
+    existing.push(r.id);
+    idsByStage.set(r.lifecycle_stage, existing);
+  }
+
+  const allIds = rows.map((r) => r.id);
+  let valueByProject = new Map<string, number>();
+  if (allIds.length > 0) {
+    const { data: buckets, error: bucketsErr } = await supabase
+      .from('project_cost_buckets')
+      .select('project_id, estimate_cents')
+      .in('project_id', allIds);
+    if (bucketsErr) throw new Error(`Renovation pipeline: ${bucketsErr.message}`);
+    valueByProject = new Map();
+    for (const b of buckets ?? []) {
+      const pid = b.project_id as string;
+      valueByProject.set(pid, (valueByProject.get(pid) ?? 0) + ((b.estimate_cents as number) ?? 0));
+    }
+  }
+
+  const valueForStage = (stage: string): number =>
+    (idsByStage.get(stage) ?? []).reduce((s, id) => s + (valueByProject.get(id) ?? 0), 0);
+
+  return {
+    planningCount: (idsByStage.get('planning') ?? []).length,
+    planningValueCents: valueForStage('planning'),
+    awaitingApprovalCount: (idsByStage.get('awaiting_approval') ?? []).length,
+    awaitingApprovalValueCents: valueForStage('awaiting_approval'),
+    activeCount: (idsByStage.get('active') ?? []).length,
+    activeValueCents: valueForStage('active'),
+    completeThisYearCount: completeThisYear.count ?? 0,
+  };
+}
+
 export async function getAttentionItems(timezone: string): Promise<AttentionItem[]> {
   const supabase = await createClient();
   const now = new Date();

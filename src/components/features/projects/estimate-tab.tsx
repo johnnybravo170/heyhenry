@@ -7,12 +7,17 @@ import { Button } from '@/components/ui/button';
 import type { CostLineRow } from '@/lib/db/queries/cost-lines';
 import type { MaterialsCatalogRow } from '@/lib/db/queries/materials-catalog';
 import { formatCurrency } from '@/lib/pricing/calculator';
+import {
+  type ManualApprovalMethod,
+  manualApprovalMethodLabels,
+} from '@/lib/validators/manual-approval';
 import { resetEstimateAction } from '@/server/actions/estimate-approval';
 import { createInvoiceFromEstimateAction } from '@/server/actions/invoices';
 import { deleteCostLineAction } from '@/server/actions/project-cost-control';
 import { CostLineForm } from './cost-line-form';
 import { CostLinePhotoStrip } from './cost-line-photo-strip';
 import { EstimateFeedbackCard, type FeedbackRow } from './estimate-feedback-card';
+import { ManualApprovalDialog } from './manual-approval-dialog';
 
 export type EstimateApprovalInfo = {
   status: 'draft' | 'pending_approval' | 'approved' | 'declined';
@@ -24,6 +29,11 @@ export type EstimateApprovalInfo = {
   declined_reason: string | null;
   view_count: number;
   last_viewed_at: string | null;
+  /** Manual-override fields; `method` is null for legacy digital approvals. */
+  approval_method: string | null;
+  approval_notes: string | null;
+  approval_proof_paths: string[];
+  approval_proof_signed_urls: Record<string, string>;
 };
 
 export function EstimateTab({
@@ -47,6 +57,10 @@ export function EstimateTab({
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingLine, setEditingLine] = useState<CostLineRow | null>(null);
+  const [manualDialog, setManualDialog] = useState<{
+    open: boolean;
+    mode: 'approve' | 'decline';
+  }>({ open: false, mode: 'approve' });
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -229,6 +243,21 @@ export function EstimateTab({
               >
                 Preview &amp; resend
               </Button>
+              {/* Manual override: customer said yes/no off-platform. */}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setManualDialog({ open: true, mode: 'approve' })}
+              >
+                Mark approved
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setManualDialog({ open: true, mode: 'decline' })}
+              >
+                Mark declined
+              </Button>
               <Button size="sm" variant="ghost" onClick={resetEstimate} disabled={isPending}>
                 Reset
               </Button>
@@ -241,6 +270,52 @@ export function EstimateTab({
           ) : null}
         </div>
       </div>
+
+      {approval.approval_method && approval.approval_method !== 'digital' ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4 dark:border-amber-800 dark:bg-amber-950/20">
+          <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Manual override</p>
+          <p className="mt-1 text-sm">
+            Recorded via{' '}
+            <span className="font-medium">
+              {manualApprovalMethodLabels[approval.approval_method as ManualApprovalMethod] ??
+                approval.approval_method}
+            </span>
+            .
+          </p>
+          {approval.approval_notes ? (
+            <p className="mt-2 whitespace-pre-wrap text-sm">{approval.approval_notes}</p>
+          ) : null}
+          {approval.approval_proof_paths.length > 0 ? (
+            <div className="mt-3">
+              <p className="mb-1 text-xs text-muted-foreground">Proof</p>
+              <ul className="flex flex-wrap gap-2">
+                {approval.approval_proof_paths.map((p) => {
+                  const url = approval.approval_proof_signed_urls[p];
+                  const name = p.split('/').pop() ?? p;
+                  return (
+                    <li key={p}>
+                      {url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs hover:bg-muted"
+                        >
+                          {name}
+                        </a>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground">
+                          {name}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Top-anchored form is for Add only. Edit happens inline inside the
           row below so the operator keeps their scroll position. */}
@@ -416,6 +491,22 @@ export function EstimateTab({
           </div>
         </div>
       )}
+
+      <ManualApprovalDialog
+        open={manualDialog.open}
+        onOpenChange={(o) => setManualDialog((d) => ({ ...d, open: o }))}
+        resourceType="estimate"
+        resourceId={projectId}
+        mode={manualDialog.mode}
+        onSuccess={() => {
+          toast.success(
+            manualDialog.mode === 'approve'
+              ? 'Estimate marked approved'
+              : 'Estimate marked declined',
+          );
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

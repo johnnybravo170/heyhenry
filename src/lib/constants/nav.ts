@@ -45,12 +45,17 @@ const CALENDAR_ITEM: NavItem = {
 
 /**
  * Returns the navigation items for the given vertical.
- * Renovation tenants get "Projects" + "Calendar" between Customers and Quotes.
+ *
+ * Renovation + tile tenants:
+ *   - Get "Projects" + "Calendar" between Customers and Jobs
+ *   - Do NOT get "Quotes" — the polygon-measurement quoting tool is for
+ *     pressure-washing-style verticals. Renovation estimates live on
+ *     projects (projects.estimate_status + lifecycle_stage).
  */
 export function getNavItems(vertical: string): NavItem[] {
   if (vertical === 'renovation' || vertical === 'tile') {
+    const items = CORE_ITEMS.filter((item) => item.href !== '/quotes');
     // Insert Projects + Calendar after Customers (index 1 = Customers).
-    const items = [...CORE_ITEMS];
     items.splice(2, 0, PROJECTS_ITEM, CALENDAR_ITEM);
     return items;
   }

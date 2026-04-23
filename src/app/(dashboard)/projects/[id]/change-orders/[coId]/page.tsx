@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ChangeOrderDetail } from '@/components/features/change-orders/change-order-detail';
 import { getChangeOrder } from '@/lib/db/queries/change-orders';
 import { getProject } from '@/lib/db/queries/projects';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function generateMetadata({
   params,
@@ -27,6 +28,18 @@ export default async function ChangeOrderDetailPage({
 
   if (!project || !changeOrder) notFound();
 
+  // Sign any manual-approval proof attachments so the detail view can
+  // render clickable links without exposing the raw storage paths.
+  const proofSignedUrls: Record<string, string> = {};
+  const proofPaths = changeOrder.approval_proof_paths ?? [];
+  if (proofPaths.length > 0) {
+    const admin = createAdminClient();
+    const { data } = await admin.storage.from('approval-proofs').createSignedUrls(proofPaths, 3600);
+    for (const row of data ?? []) {
+      if (row.path && row.signedUrl) proofSignedUrls[row.path] = row.signedUrl;
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-5xl">
       <Link
@@ -37,7 +50,11 @@ export default async function ChangeOrderDetailPage({
         Change Orders
       </Link>
 
-      <ChangeOrderDetail changeOrder={changeOrder} projectId={id} />
+      <ChangeOrderDetail
+        changeOrder={changeOrder}
+        projectId={id}
+        proofSignedUrls={proofSignedUrls}
+      />
     </div>
   );
 }

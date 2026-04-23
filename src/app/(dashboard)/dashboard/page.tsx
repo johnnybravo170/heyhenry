@@ -3,6 +3,7 @@ import { KeyMetrics } from '@/components/features/dashboard/key-metrics';
 import { NeedsAttention } from '@/components/features/dashboard/needs-attention';
 import { PipelineSummary } from '@/components/features/dashboard/pipeline-summary';
 import { RecentActivity } from '@/components/features/dashboard/recent-activity';
+import { RenovationPipelineSummary } from '@/components/features/dashboard/renovation-pipeline-summary';
 import { TodaysJobs } from '@/components/features/dashboard/todays-jobs';
 import { AwaitingApprovalList } from '@/components/features/projects/awaiting-approval-list';
 import { getCurrentUser, requireTenant } from '@/lib/auth/helpers';
@@ -13,6 +14,7 @@ import {
   getKeyMetrics,
   getPipelineMetrics,
   getRecentActivity,
+  getRenovationPipelineMetrics,
   getRevenueYtd,
   getTodaysJobs,
 } from '@/lib/db/queries/dashboard';
@@ -35,12 +37,14 @@ export default async function DashboardPage() {
   // GC/renovation work lives in multi-week projects; the "today's jobs"
   // appointment view is noise for that vertical. Other verticals (pressure
   // washing, etc.) keep it — they genuinely have a daily job schedule.
-  const showTodaysJobs = tenant.vertical !== 'renovation';
+  const isRenovation = tenant.vertical === 'renovation' || tenant.vertical === 'tile';
+  const showTodaysJobs = !isRenovation;
 
   const [
     todaysJobs,
     metrics,
     pipelineMetrics,
+    renovationPipelineMetrics,
     awaitingApproval,
     celebration,
     attentionItems,
@@ -51,7 +55,8 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     showTodaysJobs ? getTodaysJobs(tz) : Promise.resolve([]),
     getKeyMetrics(tz),
-    getPipelineMetrics(),
+    isRenovation ? Promise.resolve(null) : getPipelineMetrics(),
+    isRenovation ? getRenovationPipelineMetrics(tz) : Promise.resolve(null),
     getProjectsAwaitingApproval(),
     getPendingEstimateCelebration(),
     getAttentionItems(tz),
@@ -89,7 +94,11 @@ export default async function DashboardPage() {
 
       <AwaitingApprovalList projects={awaitingApproval} variant="compact" />
 
-      <PipelineSummary metrics={pipelineMetrics} />
+      {renovationPipelineMetrics ? (
+        <RenovationPipelineSummary metrics={renovationPipelineMetrics} />
+      ) : pipelineMetrics ? (
+        <PipelineSummary metrics={pipelineMetrics} />
+      ) : null}
 
       <KeyMetrics metrics={metrics} revenueYtdCents={revenueYtdCents} />
 

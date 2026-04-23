@@ -22,13 +22,17 @@ export type ChangeOrderRow = {
   approved_at: string | null;
   declined_at: string | null;
   declined_reason: string | null;
+  approval_method: string | null;
+  approved_by_member_id: string | null;
+  approval_proof_paths: string[];
+  approval_notes: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
 };
 
 const CO_COLUMNS =
-  'id, project_id, job_id, tenant_id, title, description, reason, cost_impact_cents, timeline_impact_days, affected_buckets, status, approval_code, approved_by_name, approved_at, declined_at, declined_reason, created_by, created_at, updated_at';
+  'id, project_id, job_id, tenant_id, title, description, reason, cost_impact_cents, timeline_impact_days, affected_buckets, status, approval_code, approved_by_name, approved_at, declined_at, declined_reason, approval_method, approved_by_member_id, approval_proof_paths, approval_notes, created_by, created_at, updated_at';
 
 export async function listChangeOrders(
   scope: { projectId: string } | { jobId: string },

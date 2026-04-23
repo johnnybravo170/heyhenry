@@ -4,23 +4,32 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { ManualApprovalDialog } from '@/components/features/projects/manual-approval-dialog';
 import type { ChangeOrderRow } from '@/lib/db/queries/change-orders';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import type { ChangeOrderStatus } from '@/lib/validators/change-order';
+import type { ManualApprovalMethod } from '@/lib/validators/manual-approval';
+import { manualApprovalMethodLabels } from '@/lib/validators/manual-approval';
 import { sendChangeOrderAction, voidChangeOrderAction } from '@/server/actions/change-orders';
 import { ChangeOrderStatusBadge } from './change-order-status-badge';
 
 export function ChangeOrderDetail({
   changeOrder,
   projectId,
+  proofSignedUrls = {},
 }: {
   changeOrder: ChangeOrderRow;
   projectId: string;
+  proofSignedUrls?: Record<string, string>;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [co, setCo] = useState(changeOrder);
+  const [manualDialog, setManualDialog] = useState<{
+    open: boolean;
+    mode: 'approve' | 'decline';
+  }>({ open: false, mode: 'approve' });
 
   // Live-update when the customer approves or declines remotely.
   useEffect(() => {
@@ -129,14 +138,32 @@ export function ChangeOrderDetail({
             </button>
           ) : null}
           {co.status === 'pending_approval' ? (
-            <button
-              type="button"
-              onClick={handleVoid}
-              disabled={loading}
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-            >
-              Cancel
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setManualDialog({ open: true, mode: 'approve' })}
+                disabled={loading}
+                className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                Mark approved
+              </button>
+              <button
+                type="button"
+                onClick={() => setManualDialog({ open: true, mode: 'decline' })}
+                disabled={loading}
+                className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                Mark declined
+              </button>
+              <button
+                type="button"
+                onClick={handleVoid}
+                disabled={loading}
+                className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </>
           ) : null}
         </div>
       </div>
@@ -231,6 +258,68 @@ export function ChangeOrderDetail({
           ) : null}
         </div>
       </div>
+
+      {co.approval_method && co.approval_method !== 'digital' ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4 dark:border-amber-800 dark:bg-amber-950/20">
+          <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Manual override</p>
+          <p className="mt-1 text-sm">
+            Recorded via{' '}
+            <span className="font-medium">
+              {manualApprovalMethodLabels[co.approval_method as ManualApprovalMethod] ??
+                co.approval_method}
+            </span>
+            .
+          </p>
+          {co.approval_notes ? (
+            <p className="mt-2 text-sm whitespace-pre-wrap">{co.approval_notes}</p>
+          ) : null}
+          {co.approval_proof_paths && co.approval_proof_paths.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-xs text-muted-foreground mb-1">Proof</p>
+              <ul className="flex flex-wrap gap-2">
+                {co.approval_proof_paths.map((p) => {
+                  const url = proofSignedUrls[p];
+                  const name = p.split('/').pop() ?? p;
+                  return (
+                    <li key={p}>
+                      {url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs hover:bg-muted"
+                        >
+                          {name}
+                        </a>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground">
+                          {name}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <ManualApprovalDialog
+        open={manualDialog.open}
+        onOpenChange={(o) => setManualDialog((d) => ({ ...d, open: o }))}
+        resourceType="change_order"
+        resourceId={co.id}
+        mode={manualDialog.mode}
+        onSuccess={() => {
+          toast.success(
+            manualDialog.mode === 'approve'
+              ? 'Change order marked approved'
+              : 'Change order marked declined',
+          );
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

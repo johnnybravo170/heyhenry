@@ -17,6 +17,19 @@ export default async function EstimateTabServer({ projectId }: { projectId: stri
   ]);
   if (!project) return null;
 
+  // Sign any manual-override proof files so the tab can link to them.
+  const proofSignedUrls: Record<string, string> = {};
+  const proofPaths = project.estimate_approval_proof_paths ?? [];
+  if (proofPaths.length > 0) {
+    const adminForProofs = createAdminClient();
+    const { data: signed } = await adminForProofs.storage
+      .from('approval-proofs')
+      .createSignedUrls(proofPaths, 3600);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) proofSignedUrls[row.path] = row.signedUrl;
+    }
+  }
+
   const bucketsById: Record<string, { name: string; section: string | null; order: number }> = {};
   for (const b of projectBuckets) {
     bucketsById[b.id] = { name: b.name, section: b.section ?? null, order: b.display_order };
@@ -75,6 +88,10 @@ export default async function EstimateTabServer({ projectId }: { projectId: stri
         declined_reason: project.estimate_declined_reason,
         view_count: estimateViewStats.total,
         last_viewed_at: estimateViewStats.last_viewed_at,
+        approval_method: project.estimate_approval_method ?? null,
+        approval_notes: project.estimate_approval_notes ?? null,
+        approval_proof_paths: project.estimate_approval_proof_paths ?? [],
+        approval_proof_signed_urls: proofSignedUrls,
       }}
     />
   );

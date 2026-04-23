@@ -1,10 +1,12 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { PipelineTabs } from '@/components/features/quotes/pipeline-tabs';
 import { QuoteEmptyState } from '@/components/features/quotes/quote-empty-state';
 import { QuoteTable } from '@/components/features/quotes/quote-table';
 import { Button } from '@/components/ui/button';
+import { requireTenant } from '@/lib/auth/helpers';
 import { countQuotesByStatus, listQuotes } from '@/lib/db/queries/quotes';
 import { type QuoteStatus, quoteStatuses } from '@/lib/validators/quote';
 
@@ -24,6 +26,13 @@ export default async function QuotesPage({
 }: {
   searchParams: Promise<RawSearchParams>;
 }) {
+  // Renovation/tile tenants don't use the polygon-measurement quoting tool;
+  // their estimates live on projects. Bounce them to /projects.
+  const { tenant } = await requireTenant();
+  if (tenant.vertical === 'renovation' || tenant.vertical === 'tile') {
+    redirect('/projects');
+  }
+
   const resolvedParams = await searchParams;
   const statusFilter = parseStatus(resolvedParams.status);
 
