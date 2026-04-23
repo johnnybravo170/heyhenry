@@ -1,16 +1,67 @@
 import { CostsTab } from '@/components/features/projects/costs-tab';
+import { listExpenses } from '@/lib/db/queries/expenses';
 import { listProjectBills } from '@/lib/db/queries/project-bills';
 import { listBucketsForProject } from '@/lib/db/queries/project-buckets';
 import { listProjectSubQuotes } from '@/lib/db/queries/project-sub-quotes';
+import { getProject } from '@/lib/db/queries/projects';
 import { listPurchaseOrders } from '@/lib/db/queries/purchase-orders';
+import { listWorkerProfiles } from '@/lib/db/queries/worker-profiles';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function CostsTabServer({ projectId }: { projectId: string }) {
-  const [purchaseOrders, bills, subQuotes, projectBuckets] = await Promise.all([
-    listPurchaseOrders(projectId),
-    listProjectBills(projectId),
-    listProjectSubQuotes(projectId),
-    listBucketsForProject(projectId),
-  ]);
+  const project = await getProject(projectId);
+  if (!project) return null;
+
+  const [purchaseOrders, bills, subQuotes, projectBuckets, expenses, crewWorkers] =
+    await Promise.all([
+      listPurchaseOrders(projectId),
+      listProjectBills(projectId),
+      listProjectSubQuotes(projectId),
+      listBucketsForProject(projectId),
+      listExpenses({ project_id: projectId, limit: 200 }),
+      listWorkerProfiles(project.tenant_id),
+    ]);
+
+  // Sign receipt URLs for any expense with a storage-backed receipt.
+  const supabase = await createClient();
+  const expenseReceiptUrls = new Map<string, string>();
+  const receiptPaths = expenses
+    .map((e) => ({ id: e.id, path: e.receipt_storage_path }))
+    .filter((r): r is { id: string; path: string } => !!r.path);
+  if (receiptPaths.length > 0) {
+    const { data } = await supabase.storage.from('receipts').createSignedUrls(
+      receiptPaths.map((r) => r.path),
+      3600,
+    );
+    if (data) {
+      for (let i = 0; i < data.length; i++) {
+        const entry = data[i];
+        if (entry?.signedUrl && !entry.error) {
+          expenseReceiptUrls.set(receiptPaths[i].id, entry.signedUrl);
+        }
+      }
+    }
+  }
+  for (const e of expenses) {
+    if (!e.receipt_storage_path && e.receipt_url) {
+      expenseReceiptUrls.set(e.id, e.receipt_url);
+    }
+  }
+
+  const expenseItems = expenses.map((e) => {
+    const wp = e.worker_profile_id ? crewWorkers.find((w) => w.id === e.worker_profile_id) : null;
+    return {
+      id: e.id,
+      expense_date: e.expense_date,
+      amount_cents: e.amount_cents,
+      vendor: e.vendor ?? null,
+      description: e.description ?? null,
+      bucket_id: (e as { bucket_id: string | null }).bucket_id ?? null,
+      worker_profile_id: e.worker_profile_id ?? null,
+      worker_name: wp?.display_name ?? null,
+      receipt_url: expenseReceiptUrls.get(e.id) ?? null,
+    };
+  });
 
   return (
     <CostsTab
@@ -18,6 +69,7 @@ export default async function CostsTabServer({ projectId }: { projectId: string 
       purchaseOrders={purchaseOrders}
       bills={bills}
       subQuotes={subQuotes}
+      expenses={expenseItems}
       buckets={projectBuckets.map((b) => ({
         id: b.id,
         name: b.name,

@@ -16,6 +16,7 @@ import {
   upsertBillWithAttachmentAction,
 } from '@/server/actions/project-cost-control';
 import { type CostsSubtabKey, CostsSubtabs } from './costs-subtabs';
+import { type ExpenseItem, ExpensesSection } from './expenses-section';
 import { SubQuotesSection } from './sub-quotes-section';
 
 function displayToCents(val: string) {
@@ -511,12 +512,14 @@ export function CostsTab({
   purchaseOrders,
   bills,
   subQuotes,
+  expenses,
   buckets,
 }: {
   projectId: string;
   purchaseOrders: PurchaseOrderRow[];
   bills: ProjectBillRow[];
   subQuotes: SubQuoteRow[];
+  expenses: ExpenseItem[];
   buckets: Array<{ id: string; name: string; section: 'interior' | 'exterior' | 'general' }>;
 }) {
   const [showPOForm, setShowPOForm] = useState(false);
@@ -544,6 +547,7 @@ export function CostsTab({
     .reduce((s, po) => s + po.total_cents, 0);
 
   const totalBills = bills.reduce((s, b) => s + b.amount_cents, 0);
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount_cents, 0);
   const committedTotal = subQuotes
     .filter((q) => q.status === 'accepted')
     .reduce((s, q) => s + q.total_cents, 0);
@@ -551,13 +555,14 @@ export function CostsTab({
   const searchParams = useSearchParams();
   const sub: CostsSubtabKey = (() => {
     const raw = searchParams.get('sub');
-    if (raw === 'pos' || raw === 'bills') return raw;
+    if (raw === 'pos' || raw === 'bills' || raw === 'expenses') return raw;
     return 'quotes';
   })();
   const subtabCounts: Record<CostsSubtabKey, number> = {
     quotes: subQuotes.length,
     pos: purchaseOrders.length,
     bills: bills.length,
+    expenses: expenses.length,
   };
 
   return (
@@ -577,12 +582,24 @@ export function CostsTab({
           <span className="text-muted-foreground">Billed</span>{' '}
           <span className="font-semibold tabular-nums">{formatCurrency(totalBills)}</span>
         </div>
+        <div>
+          <span className="text-muted-foreground">Paid</span>{' '}
+          <span className="font-semibold tabular-nums">{formatCurrency(totalExpenses)}</span>
+        </div>
       </div>
 
       <CostsSubtabs counts={subtabCounts} />
 
       {sub === 'quotes' ? (
         <SubQuotesSection projectId={projectId} subQuotes={subQuotes} buckets={buckets} />
+      ) : null}
+
+      {sub === 'expenses' ? (
+        <ExpensesSection
+          projectId={projectId}
+          buckets={buckets.map((b) => ({ id: b.id, name: b.name }))}
+          expenses={expenses}
+        />
       ) : null}
 
       {sub === 'pos' ? (

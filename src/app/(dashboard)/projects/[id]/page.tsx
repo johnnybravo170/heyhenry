@@ -94,7 +94,7 @@ export default async function ProjectDetailPage({
     { key: 'costs', label: 'Costs' },
     { key: 'variance', label: 'Variance' },
     { key: 'invoices', label: 'Invoices' },
-    { key: 'time', label: 'Time & Expenses' },
+    { key: 'time', label: 'Time' },
     { key: 'change-orders', label: 'Change Orders' },
   ];
   const secondaryTabs: {

@@ -96,6 +96,12 @@ export function ProjectIntakeZone({
   // chose that bucket name. Parallel arrays, one slot per item.
   const [billBucketSelections, setBillBucketSelections] = useState<string[]>([]);
   const [expenseBucketSelections, setExpenseBucketSelections] = useState<string[]>([]);
+  // Bill ↔ expense reclassification. If a bill gets marked as expense, at
+  // apply time it's moved to the new_expenses payload (amount + GST merged
+  // into one amount_cents). If an expense gets marked as bill, it's moved
+  // to new_bills (gst_cents defaults to 0; operator can edit after).
+  const [billReclassifiedAsExpense, setBillReclassifiedAsExpense] = useState<boolean[]>([]);
+  const [expenseReclassifiedAsBill, setExpenseReclassifiedAsBill] = useState<boolean[]>([]);
   const [includeAddendum, setIncludeAddendum] = useState(true);
   const [includeSignals, setIncludeSignals] = useState(true);
   const [isParsing, startParsing] = useTransition();
@@ -116,6 +122,8 @@ export function ProjectIntakeZone({
     setLineBucketSelections([]);
     setBillBucketSelections([]);
     setExpenseBucketSelections([]);
+    setBillReclassifiedAsExpense([]);
+    setExpenseReclassifiedAsBill([]);
     setIncludeBills([]);
     setSavedSubQuoteIndexes(new Set());
     setReviewingSubQuoteIndex(null);
@@ -170,6 +178,8 @@ export function ProjectIntakeZone({
       setExpenseBucketSelections(
         (res.suggestions.new_expenses ?? []).map((e) => e.bucket_name ?? ''),
       );
+      setBillReclassifiedAsExpense((res.suggestions.new_bills ?? []).map(() => false));
+      setExpenseReclassifiedAsBill((res.suggestions.new_expenses ?? []).map(() => false));
     });
   }
 
@@ -209,36 +219,68 @@ export function ProjectIntakeZone({
         new_lines: resolvedLines,
         // Map-then-filter preserves original index so we can read from the
         // parallel billBucketSelections / expenseBucketSelections arrays.
-        new_bills: (suggestions.new_bills ?? [])
-          .map((b, i) => ({ b, i }))
-          .filter(({ i }) => includeBills[i])
-          .map(({ b, i }) => ({
-            vendor: b.vendor,
-            bill_date: b.bill_date,
-            description: b.description,
-            amount_cents: b.amount_cents,
-            gst_cents: b.gst_cents,
-            bucket_name: (billBucketSelections[i] ?? '') !== '' ? billBucketSelections[i] : null,
-            source_image_index: b.source_image_index,
-          })),
+        // A bill reclassified as expense moves to new_expenses below (amount
+        // + GST merged). An expense reclassified as bill moves up here
+        // (gst_cents defaults to 0 — operator can edit after).
+        new_bills: [
+          ...(suggestions.new_bills ?? [])
+            .map((b, i) => ({ b, i }))
+            .filter(({ i }) => includeBills[i] && !billReclassifiedAsExpense[i])
+            .map(({ b, i }) => ({
+              vendor: b.vendor,
+              bill_date: b.bill_date,
+              description: b.description,
+              amount_cents: b.amount_cents,
+              gst_cents: b.gst_cents,
+              bucket_name: (billBucketSelections[i] ?? '') !== '' ? billBucketSelections[i] : null,
+              source_image_index: b.source_image_index,
+            })),
+          ...(suggestions.new_expenses ?? [])
+            .map((e, i) => ({ e, i }))
+            .filter(({ i }) => includeExpenses[i] && expenseReclassifiedAsBill[i])
+            .map(({ e, i }) => ({
+              vendor: e.vendor,
+              bill_date: e.expense_date,
+              description: e.description,
+              amount_cents: e.amount_cents,
+              gst_cents: 0,
+              bucket_name:
+                (expenseBucketSelections[i] ?? '') !== '' ? expenseBucketSelections[i] : null,
+              source_image_index: e.source_image_index,
+            })),
+        ],
         new_artifacts: (suggestions.new_artifacts ?? []).map((a) => ({
           kind: a.kind,
           label: a.label,
           summary: a.summary,
           source_image_index: a.source_image_index,
         })),
-        new_expenses: (suggestions.new_expenses ?? [])
-          .map((e, i) => ({ e, i }))
-          .filter(({ i }) => includeExpenses[i])
-          .map(({ e, i }) => ({
-            vendor: e.vendor,
-            amount_cents: e.amount_cents,
-            expense_date: e.expense_date,
-            description: e.description,
-            bucket_name:
-              (expenseBucketSelections[i] ?? '') !== '' ? expenseBucketSelections[i] : null,
-            source_image_index: e.source_image_index,
-          })),
+        new_expenses: [
+          ...(suggestions.new_expenses ?? [])
+            .map((e, i) => ({ e, i }))
+            .filter(({ i }) => includeExpenses[i] && !expenseReclassifiedAsBill[i])
+            .map(({ e, i }) => ({
+              vendor: e.vendor,
+              amount_cents: e.amount_cents,
+              expense_date: e.expense_date,
+              description: e.description,
+              bucket_name:
+                (expenseBucketSelections[i] ?? '') !== '' ? expenseBucketSelections[i] : null,
+              source_image_index: e.source_image_index,
+            })),
+          ...(suggestions.new_bills ?? [])
+            .map((b, i) => ({ b, i }))
+            .filter(({ i }) => includeBills[i] && billReclassifiedAsExpense[i])
+            .map(({ b, i }) => ({
+              vendor: b.vendor,
+              // Merge amount + GST — an expense is "paid", so total is what matters.
+              amount_cents: b.amount_cents + (b.gst_cents ?? 0),
+              expense_date: b.bill_date,
+              description: b.description,
+              bucket_name: (billBucketSelections[i] ?? '') !== '' ? billBucketSelections[i] : null,
+              source_image_index: b.source_image_index,
+            })),
+        ],
         mergeSignals: includeSignals ? suggestions.signals : null,
         replyDraft: suggestions.reply_draft?.trim() || null,
       };
@@ -645,6 +687,22 @@ export function ProjectIntakeZone({
                                 📎 invoice attached
                               </span>
                             )}
+                            {/* Bill → Expense reclassification. If the AI
+                                called it a bill but it's actually a paid
+                                receipt, the operator flips it here. */}
+                            <label className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                checked={billReclassifiedAsExpense[i] ?? false}
+                                onChange={(ev) =>
+                                  setBillReclassifiedAsExpense((arr) =>
+                                    arr.map((v, j) => (j === i ? ev.target.checked : v)),
+                                  )
+                                }
+                                className="size-3"
+                              />
+                              Already paid (treat as expense)
+                            </label>
                           </div>
                         </div>
                       </div>
@@ -722,6 +780,19 @@ export function ProjectIntakeZone({
                                 📎 receipt attached
                               </span>
                             ) : null}
+                            <label className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                checked={expenseReclassifiedAsBill[i] ?? false}
+                                onChange={(ev) =>
+                                  setExpenseReclassifiedAsBill((arr) =>
+                                    arr.map((v, j) => (j === i ? ev.target.checked : v)),
+                                  )
+                                }
+                                className="size-3"
+                              />
+                              Not yet paid (treat as bill)
+                            </label>
                           </div>
                         </div>
                       </div>

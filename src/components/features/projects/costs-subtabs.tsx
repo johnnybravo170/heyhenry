@@ -18,6 +18,7 @@ const TABS = [
   { key: 'quotes', label: 'Sub quotes' },
   { key: 'pos', label: 'POs' },
   { key: 'bills', label: 'Bills' },
+  { key: 'expenses', label: 'Expenses' },
 ] as const;
 
 export type CostsSubtabKey = (typeof TABS)[number]['key'];

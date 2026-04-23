@@ -409,12 +409,16 @@ export function TimeExpenseTab({
   timeEntries,
   expenses,
   ownerRateCents,
+  showExpenses = true,
 }: {
   projectId: string;
   buckets: CostBucketSummary[];
   timeEntries: TimeEntry[];
   expenses: Expense[];
   ownerRateCents?: number | null;
+  /** When false, hides the Expenses section entirely. Expenses moved to
+   * the Costs tab as of 2026-04-24 — the Time tab now shows time only. */
+  showExpenses?: boolean;
 }) {
   const [showTimeForm, setShowTimeForm] = useState(false);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -536,92 +540,94 @@ export function TimeExpenseTab({
         )}
       </section>
 
-      {/* Expenses */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">
-            Expenses{' '}
-            {totalExpenses > 0 && (
-              <span className="ml-1 text-muted-foreground font-normal">
-                ({formatCurrency(totalExpenses)})
-              </span>
+      {/* Expenses — hidden when Costs tab owns this section instead. */}
+      {showExpenses ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold">
+              Expenses{' '}
+              {totalExpenses > 0 && (
+                <span className="ml-1 text-muted-foreground font-normal">
+                  ({formatCurrency(totalExpenses)})
+                </span>
+              )}
+            </h3>
+            {!showExpenseForm && (
+              <Button size="sm" onClick={() => setShowExpenseForm(true)}>
+                + Log expense
+              </Button>
             )}
-          </h3>
-          {!showExpenseForm && (
-            <Button size="sm" onClick={() => setShowExpenseForm(true)}>
-              + Log expense
-            </Button>
+          </div>
+          {showExpenseForm && (
+            <div className="mb-4">
+              <ExpenseForm
+                projectId={projectId}
+                buckets={buckets}
+                onDone={() => setShowExpenseForm(false)}
+              />
+            </div>
           )}
-        </div>
-        {showExpenseForm && (
-          <div className="mb-4">
-            <ExpenseForm
-              projectId={projectId}
-              buckets={buckets}
-              onDone={() => setShowExpenseForm(false)}
-            />
-          </div>
-        )}
-        {expenses.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No expenses logged yet.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Date</th>
-                  <th className="px-3 py-2 text-left font-medium">Worker</th>
-                  <th className="px-3 py-2 text-right font-medium">Amount</th>
-                  <th className="px-3 py-2 text-left font-medium">Vendor</th>
-                  <th className="px-3 py-2 text-left font-medium">Description</th>
-                  <th className="px-3 py-2 text-left font-medium">Receipt</th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map((exp) => (
-                  <tr key={exp.id} className="border-b last:border-0">
-                    <td className="px-3 py-2">{exp.expense_date}</td>
-                    <td className="px-3 py-2">{exp.worker_name ?? 'Owner/admin'}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(exp.amount_cents)}</td>
-                    <td className="px-3 py-2">{exp.vendor || '—'}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{exp.description || '—'}</td>
-                    <td className="px-3 py-2">
-                      {exp.receipt_url ? (
-                        <a
-                          href={exp.receipt_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary underline"
-                        >
-                          View
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <Button size="xs" variant="ghost" onClick={() => setEditingExpense(exp)}>
-                        Edit
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => deleteExpense(exp.id)}
-                      >
-                        Del
-                      </Button>
-                    </td>
+          {expenses.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No expenses logged yet.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-3 py-2 text-left font-medium">Date</th>
+                    <th className="px-3 py-2 text-left font-medium">Worker</th>
+                    <th className="px-3 py-2 text-right font-medium">Amount</th>
+                    <th className="px-3 py-2 text-left font-medium">Vendor</th>
+                    <th className="px-3 py-2 text-left font-medium">Description</th>
+                    <th className="px-3 py-2 text-left font-medium">Receipt</th>
+                    <th className="px-3 py-2" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {expenses.map((exp) => (
+                    <tr key={exp.id} className="border-b last:border-0">
+                      <td className="px-3 py-2">{exp.expense_date}</td>
+                      <td className="px-3 py-2">{exp.worker_name ?? 'Owner/admin'}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(exp.amount_cents)}</td>
+                      <td className="px-3 py-2">{exp.vendor || '—'}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{exp.description || '—'}</td>
+                      <td className="px-3 py-2">
+                        {exp.receipt_url ? (
+                          <a
+                            href={exp.receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline"
+                          >
+                            View
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <Button size="xs" variant="ghost" onClick={() => setEditingExpense(exp)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => deleteExpense(exp.id)}
+                        >
+                          Del
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : null}
 
-      {editingExpense ? (
+      {showExpenses && editingExpense ? (
         <EditExpenseDialog
           // key forces remount per expense so form state re-seeds correctly.
           key={editingExpense.id}
