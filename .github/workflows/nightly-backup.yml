@@ -1,0 +1,72 @@
+name: Nightly Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: pg_dump → encrypt → R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Postgres 17 client
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Dump, encrypt, upload
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          set -euo pipefail
+          STAMP=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+          DUMP="heyhenry-${STAMP}.dump"
+          ENC="${DUMP}.enc"
+
+          pg_dump \
+            --format=custom \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            --file="${DUMP}" \
+            "${BACKUP_DATABASE_URL}"
+
+          openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt \
+            -in "${DUMP}" \
+            -out "${ENC}" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+
+          SIZE=$(stat -c%s "${ENC}")
+          echo "Encrypted dump: ${ENC} (${SIZE} bytes)"
+
+          aws s3 cp "${ENC}" "s3://${R2_BUCKET}/daily/${ENC}" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          echo "BACKUP_OBJECT=daily/${ENC}" >> "$GITHUB_ENV"
+          echo "BACKUP_SIZE=${SIZE}" >> "$GITHUB_ENV"
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OPS_ALERTS_TO_EMAIL: ${{ secrets.OPS_ALERTS_TO_EMAIL }}
+          OPS_ALERTS_FROM_EMAIL: ${{ secrets.OPS_ALERTS_FROM_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -fsSL -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer ${RESEND_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"from\":\"${OPS_ALERTS_FROM_EMAIL:-ops@mail.heyhenry.io}\",\"to\":[\"${OPS_ALERTS_TO_EMAIL:-riffninjavideos@gmail.com}\"],\"subject\":\"[HeyHenry] Nightly backup FAILED\",\"text\":\"Nightly backup workflow failed. Run: ${RUN_URL}\"}"

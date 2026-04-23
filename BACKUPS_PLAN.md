@@ -1,11 +1,34 @@
 # Backups — Status and Build Plan
 
-<!-- STATUS: ⚠️ UNBUILT — Supabase daily defaults only. Ship before first paying customer. -->
+<!-- STATUS: 🟡 CODE LANDED — waiting on Jonathan to provision R2 bucket + GH secrets + PITR. -->
 
 > **Context.** `PHASE_1_PLAN.md §1D.1` called backup infrastructure
 > "non-negotiable from day 1". It got deferred and never came back. This
 > doc is the catch-up: what's actually protecting customer data today,
 > what's missing, and what to build and when.
+
+## Activation checklist (Jonathan)
+
+Code-level plumbing is in. To go live, complete these in order:
+
+1. **Enable Supabase PITR.** Dashboard → Database → Backups → PITR toggle
+   (billing add-on, ~$100/mo). No code change.
+2. **Create Cloudflare R2 bucket** `heyhenry-backups`. Generate an S3
+   API token with object read/write scoped to that bucket.
+3. **Add R2 lifecycle rules** on the bucket:
+   - prefix `daily/`: expire after 30 days
+   - prefix `weekly/`: expire after 84 days
+   - prefix `monthly/`: expire after 365 days
+   (Phase 1 only writes to `daily/`. Weekly/monthly promotion is Phase 2.)
+4. **Add GitHub Actions secrets** (Repo → Settings → Secrets → Actions):
+   `BACKUP_DATABASE_URL`, `BACKUP_ENCRYPTION_KEY` (generate with
+   `openssl rand -base64 48` — store a copy in 1Password),
+   `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, `RESEND_API_KEY`.
+5. **Trigger `nightly-backup.yml` manually** via Actions → Run workflow
+   to verify the first dump lands in R2.
+6. **Trigger `restore-drill.yml` manually** to confirm the restore path
+   works end to end before trusting the monthly cron.
 
 ## Current state (2026-04-21)
 
@@ -39,22 +62,21 @@ lose everything.
 
 ### Phase 1 — Safety floor (target: same week we land our first paying customer, or sooner)
 
-1. **Enable Supabase PITR.** Dashboard → Database → Backups → PITR
-   toggle + billing confirm. 7-day window. Single biggest win per
-   dollar and zero code change.
-2. **Nightly `pg_dump` workflow** — `.github/workflows/nightly-backup.yml`
-   running at 03:00 UTC daily. Steps:
-   - Install `pg_dump` matching Supabase's Postgres version.
-   - Dump with `--format=custom --no-owner --no-acl --clean --if-exists`.
-   - Encrypt with `openssl enc -aes-256-cbc` using a key from GH Secrets.
-   - Upload to R2/S3 bucket with object-lock for 30 days.
-   - Post success/failure to the ops alert email.
-3. **Retention:** daily for 30 days, weekly for 12 weeks, monthly for
-   12 months. S3/R2 lifecycle rules do this automatically.
-4. **Restore drill script** — `scripts/restore-test.ts` that downloads
-   the latest dump, decrypts, restores to a temporary Supabase branch
-   or a local Postgres, and asserts key row counts / specific records.
-   Runs monthly via GH Actions cron.
+1. **Enable Supabase PITR.** ❌ Pending (dashboard + billing — see
+   activation checklist).
+2. **Nightly `pg_dump` workflow** — ✅ `.github/workflows/nightly-backup.yml`.
+   Runs 03:00 UTC. Installs Postgres 17 client, dumps with
+   `--format=custom --no-owner --no-acl --clean --if-exists`, encrypts
+   with `openssl aes-256-cbc` (pbkdf2, 100k iter), uploads to R2 under
+   `daily/`. Failure alert via Resend → `OPS_ALERTS_TO_EMAIL`.
+3. **Retention.** ❌ Pending — configure R2 lifecycle rules (see
+   activation checklist). Phase 1 ships with `daily/` only; weekly and
+   monthly promotion is Phase 2.
+4. **Restore drill** — ✅ `scripts/restore-test.ts` +
+   `.github/workflows/restore-drill.yml`. Monthly cron (1st of month,
+   05:00 UTC). Spins up a Postgres 17 service container, downloads the
+   newest R2 object, decrypts, `pg_restore`s, and asserts `tenants`,
+   `customers`, `projects`, `jobs` exist (with `tenants` non-empty).
 
 ### Phase 2 — Full DR (target: before 10th paying tenant)
 
