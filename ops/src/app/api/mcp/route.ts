@@ -39,12 +39,12 @@ export async function POST(req: Request) {
     scopes: auth.token.scopes,
   });
 
-  // Stateless transport — no session IDs. enableJsonResponse=true returns
-  // a single JSON response per request instead of an SSE stream, which is
-  // what Routines (one-shot, no streaming UI) expects.
+  // Stateless transport — no session IDs. Default enableJsonResponse=false
+  // lets the SDK negotiate JSON vs SSE based on the client's Accept header,
+  // which some MCP clients (incl. Anthropic Routines connector probe)
+  // require.
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
-    enableJsonResponse: true,
   });
 
   await server.connect(transport);
