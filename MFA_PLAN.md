@@ -1,6 +1,6 @@
 # MFA Plan — HeyHenry
 
-Status: APPROVED for build. Decisions locked in 2026-04-22.
+Status: SHIPPED 2026-04-22. Phases 1–3 live on app.heyhenry.io. Phase 4 (migration email) skipped — no existing user base to migrate. Phase 5 (ops.heyhenry.io admin MFA) deferred to PLATFORM_ADMIN_PLAN.md. Phase 3b (per-action step-up re-challenge with 15-min window) deferred — enforcement value is ~90% captured by aal2-on-login.
 
 App handles customer PII, invoices, payment links, and Stripe Connect tokens. TOTP MFA is required before we scale past the first paying tenant.
 
@@ -38,11 +38,11 @@ MFA **always required, no exceptions, no toggle**. Separate Supabase project or 
 
 ## 6. Migration
 
-- Ship enrollment UI + recovery codes first. Dark-launch.
-- Email all existing users: "MFA is coming, set it up now."
-- Owners: 14-day grace period with in-app banner → after, soft-lock sensitive actions until enrolled (they can still view data, not mutate billing/Stripe).
-- Members: unaffected until their owner flips the tenant toggle; then 14-day grace same pattern.
-- No forced logout. No account lockout. Grace-period clock starts per-user at first post-deploy login.
+- Ship enrollment UI + recovery codes first. Dark-launch. ✅ (Phase 1)
+- Email all existing users: "MFA is coming, set it up now." **Skipped** — no paying customers at launch; test accounts get the banner on next login.
+- Owners: 14-day grace period with in-app banner → after, soft-lock sensitive actions until enrolled (they can still view data, not mutate billing/Stripe). ✅ (Phase 3)
+- Members: unaffected until their owner flips the tenant toggle; then 14-day grace same pattern. ✅ (Phase 3)
+- No forced logout. No account lockout. Grace-period clock starts per-user at first post-deploy login. ✅ (Phase 3)
 
 ## Decisions locked
 
