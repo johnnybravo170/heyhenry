@@ -217,10 +217,10 @@ export async function authenticateOAuthToken(req: Request): Promise<OAuthAuthRes
     return { ok: false, response: oauthChallenge(401, resourceMetadata) };
   }
 
-  // Best-effort last-used bookkeeping. Fire-and-forget so the request path
-  // doesn't pay for an extra round-trip — admin UI can tolerate sub-second
-  // staleness.
-  void service
+  // Await last_used_at update — Vercel serverless terminates the function
+  // immediately after the response is returned, so fire-and-forget UPDATEs
+  // get dropped. One indexed UPDATE is cheap.
+  await service
     .schema('ops')
     .from('oauth_tokens')
     .update({ last_used_at: new Date().toISOString() })
