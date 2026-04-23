@@ -187,12 +187,14 @@ function ExpenseForm({
           <Input
             type="number"
             step="0.01"
-            min="0.01"
             value={amountRaw}
             onChange={(e) => setAmountRaw(e.target.value)}
             placeholder="0.00"
             required
           />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Use a negative number for credits/returns.
+          </p>
         </div>
         <div>
           <span className="mb-1 block text-xs font-medium">Vendor</span>

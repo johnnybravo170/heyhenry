@@ -30,7 +30,12 @@ const expenseSchema = z.object({
   project_id: z.string().uuid().optional().or(z.literal('')),
   job_id: z.string().uuid().optional().or(z.literal('')),
   bucket_id: z.string().uuid().optional().or(z.literal('')),
-  amount_cents: z.coerce.number().int().positive({ message: 'Amount must be greater than 0.' }),
+  // Non-zero instead of strictly positive — credits/returns log as negative
+  // amounts (owner-side only; the worker form still enforces positive).
+  amount_cents: z.coerce
+    .number()
+    .int()
+    .refine((n) => n !== 0, { message: 'Amount must not be zero.' }),
   vendor: z.string().trim().max(200).optional().or(z.literal('')),
   description: z.string().trim().max(2000).optional().or(z.literal('')),
   receipt_url: z.string().url().optional().or(z.literal('')),
