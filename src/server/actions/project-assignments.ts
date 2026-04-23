@@ -231,6 +231,94 @@ export async function moveAssignmentsAction(
   return { ok: true };
 }
 
+const moveOneSchema = z.object({
+  assignment_id: z.string().uuid(),
+  target_project_id: z.string().uuid(),
+  target_date: z.string().regex(DATE_RE),
+});
+
+/**
+ * Move a single assignment to a new (project, date). Supports cross-project
+ * moves. Used by the owner calendar's chip drag-and-drop. Preserves rate
+ * and notes.
+ */
+export async function moveAssignmentToAction(
+  input: z.input<typeof moveOneSchema>,
+): Promise<{ ok: boolean; error?: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  try {
+    assertOwnerOrAdmin(tenant.member.role);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Forbidden.' };
+  }
+
+  const parsed = moveOneSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Invalid input.' };
+  const v = parsed.data;
+
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from('project_assignments')
+    .select(
+      'id, project_id, worker_profile_id, scheduled_date, hourly_rate_cents, charge_rate_cents, notes',
+    )
+    .eq('id', v.assignment_id)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: 'Assignment not found.' };
+
+  // Verify target project belongs to this tenant.
+  const { data: targetProj } = await admin
+    .from('projects')
+    .select('id')
+    .eq('id', v.target_project_id)
+    .eq('tenant_id', tenant.id)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (!targetProj) return { ok: false, error: 'Target project not found.' };
+
+  // No-op if nothing changed.
+  if (existing.project_id === v.target_project_id && existing.scheduled_date === v.target_date) {
+    return { ok: true };
+  }
+
+  // Idempotent target slot — clear any conflicting row first.
+  await admin
+    .from('project_assignments')
+    .delete()
+    .eq('tenant_id', tenant.id)
+    .eq('project_id', v.target_project_id)
+    .eq('worker_profile_id', existing.worker_profile_id)
+    .eq('scheduled_date', v.target_date);
+
+  const { error: delErr } = await admin
+    .from('project_assignments')
+    .delete()
+    .eq('id', v.assignment_id)
+    .eq('tenant_id', tenant.id);
+  if (delErr) return { ok: false, error: delErr.message };
+
+  const { error: insErr } = await admin.from('project_assignments').insert({
+    tenant_id: tenant.id,
+    project_id: v.target_project_id,
+    worker_profile_id: existing.worker_profile_id,
+    scheduled_date: v.target_date,
+    hourly_rate_cents: existing.hourly_rate_cents,
+    charge_rate_cents: existing.charge_rate_cents,
+    notes: existing.notes,
+  });
+  if (insErr) return { ok: false, error: insErr.message };
+
+  revalidatePath(`/projects/${existing.project_id}`);
+  if (v.target_project_id !== existing.project_id) {
+    revalidatePath(`/projects/${v.target_project_id}`);
+  }
+  revalidatePath('/calendar');
+  return { ok: true };
+}
+
 const bulkDeleteSchema = z.object({
   project_id: z.string().uuid(),
   worker_profile_id: z.string().uuid(),

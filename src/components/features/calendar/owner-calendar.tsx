@@ -31,7 +31,7 @@ import type {
 } from '@/lib/db/queries/owner-calendar';
 import { cn } from '@/lib/utils';
 import {
-  moveAssignmentsAction,
+  moveAssignmentToAction,
   removeAssignmentAction,
 } from '@/server/actions/project-assignments';
 import { AssignWorkersDialog } from './assign-workers-dialog';
@@ -190,18 +190,17 @@ export function OwnerCalendar({
 
   function handleMove(input: {
     assignmentId: string;
-    projectId: string;
-    workerProfileId: string;
+    fromProjectId: string;
+    toProjectId: string;
     fromDate: string;
     toDate: string;
   }) {
-    if (input.fromDate === input.toDate) return;
+    if (input.fromProjectId === input.toProjectId && input.fromDate === input.toDate) return;
     startTransition(async () => {
-      const res = await moveAssignmentsAction({
-        project_id: input.projectId,
-        worker_profile_id: input.workerProfileId,
-        from_dates: [input.fromDate],
-        to_dates: [input.toDate],
+      const res = await moveAssignmentToAction({
+        assignment_id: input.assignmentId,
+        target_project_id: input.toProjectId,
+        target_date: input.toDate,
       });
       if (!res.ok) toast.error(res.error ?? 'Failed to move.');
       else toast.success('Moved.');
@@ -438,7 +437,7 @@ type DragState = {
 
 type ChipDrag = {
   assignmentId: string;
-  projectId: string;
+  fromProjectId: string;
   workerProfileId: string;
   fromDate: string;
 };
@@ -459,7 +458,7 @@ function TwoWeekGrid({
   workerById: Map<string, CalendarWorker>;
   onOpenAssign: (projectId: string, startDate: string, endDate: string) => void;
   onRemove: (assignmentId: string) => void;
-  onMove: (input: ChipDrag & { toDate: string }) => void;
+  onMove: (input: ChipDrag & { toProjectId: string; toDate: string }) => void;
   pending: boolean;
 }) {
   const days: string[] = [];
@@ -547,11 +546,7 @@ function TwoWeekGrid({
               onChipDragStart={setChipDrag}
               onChipDragEnd={() => setChipDrag(null)}
               onChipDrop={(toDate) => {
-                if (chipDrag && chipDrag.projectId === p.id) {
-                  onMove({ ...chipDrag, toDate });
-                } else if (chipDrag) {
-                  toast.error('Cross-project moves not supported yet — remove and re-add.');
-                }
+                if (chipDrag) onMove({ ...chipDrag, toProjectId: p.id, toDate });
                 setChipDrag(null);
               }}
               onRemove={onRemove}
@@ -561,7 +556,8 @@ function TwoWeekGrid({
         )}
       </div>
       <p className="border-t bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
-        Click or drag across empty cells to schedule. Drag a worker chip to a new day to move it.
+        Click or drag across empty cells to schedule. Drag a worker chip to any other day or project
+        row to move it.
       </p>
     </div>
   );
@@ -639,8 +635,7 @@ function ProjectRow({
               isToday(iso) && 'ring-1 ring-inset ring-primary/40',
               inDrag && 'bg-primary/15 ring-1 ring-inset ring-primary/60',
               chipDrag &&
-                chipDrag.projectId === project.id &&
-                chipDrag.fromDate !== iso &&
+                !(chipDrag.fromProjectId === project.id && chipDrag.fromDate === iso) &&
                 'bg-primary/5',
             )}
           >
@@ -660,7 +655,7 @@ function ProjectRow({
                       e.dataTransfer.setData('text/plain', a.id);
                       onChipDragStart({
                         assignmentId: a.id,
-                        projectId: a.project_id,
+                        fromProjectId: a.project_id,
                         workerProfileId: a.worker_profile_id,
                         fromDate: a.scheduled_date,
                       });
