@@ -173,6 +173,90 @@ export async function authenticateRequest(
   };
 }
 
+/**
+ * Bearer-only auth for the remote MCP endpoint.
+ *
+ * Same key validation as `authenticateRequest` (lookup, hash compare,
+ * revoked/expired/rate-limit) but skips the HMAC timestamp + signature
+ * checks — Routines / Claude Code custom connectors only send a Bearer
+ * token. Scope enforcement is done per-tool by the MCP route, not here.
+ */
+export async function authenticateBearer(req: Request): Promise<AuthResult> {
+  const url = new URL(req.url);
+  const path = url.pathname + url.search;
+  const method = req.method.toUpperCase();
+  const ip = readClientIp(req);
+  const userAgent = req.headers.get('user-agent') ?? null;
+
+  const authHeader = req.headers.get('authorization') ?? '';
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  const parsed = parseKey(bearer);
+  if (!parsed) {
+    await audit(null, null, method, path, 401, ip, userAgent, null, null);
+    return { ok: false, response: json(401, 'Unauthorized') };
+  }
+
+  const service = createServiceClient();
+  const { data: keyRow } = await service
+    .schema('ops')
+    .from('api_keys')
+    .select('id, name, scopes, secret_hash, expires_at, revoked_at')
+    .eq('id', parsed.keyId)
+    .maybeSingle();
+
+  if (!keyRow) {
+    await audit(parsed.keyId, null, method, path, 401, ip, userAgent, null, null);
+    return { ok: false, response: json(401, 'Invalid key') };
+  }
+  if (keyRow.revoked_at) {
+    await audit(parsed.keyId, null, method, path, 401, ip, userAgent, null, null);
+    return { ok: false, response: json(401, 'Key revoked') };
+  }
+  if (new Date(keyRow.expires_at as string).getTime() < Date.now()) {
+    await audit(parsed.keyId, null, method, path, 401, ip, userAgent, null, null);
+    return { ok: false, response: json(401, 'Key expired') };
+  }
+
+  const expectedHash = await hashSecret(parsed.secret);
+  if (!safeEqual(expectedHash, keyRow.secret_hash as string)) {
+    await audit(parsed.keyId, null, method, path, 401, ip, userAgent, null, null);
+    return { ok: false, response: json(401, 'Invalid key') };
+  }
+
+  const scopes = (keyRow.scopes as string[]) ?? [];
+
+  const allowed = await checkRateLimit(parsed.keyId);
+  if (!allowed) {
+    await audit(parsed.keyId, null, method, path, 429, ip, userAgent, null, null);
+    return {
+      ok: false,
+      response: new NextResponse(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { 'content-type': 'application/json', 'retry-after': '60' },
+      }),
+    };
+  }
+
+  await service
+    .schema('ops')
+    .from('api_keys')
+    .update({ last_used_at: new Date().toISOString(), last_used_ip: ip })
+    .eq('id', parsed.keyId);
+
+  return {
+    ok: true,
+    key: {
+      id: keyRow.id as string,
+      name: keyRow.name as string,
+      scopes,
+      ip,
+      reason: null,
+    },
+    bodySha: '',
+    reason: null,
+  };
+}
+
 /** Call from a route AFTER the handler succeeds so success is logged too. */
 export async function logAuditSuccess(
   keyId: string,
