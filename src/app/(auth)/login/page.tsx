@@ -11,7 +11,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { Suspense, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +27,17 @@ import { Label } from '@/components/ui/label';
 import { loginAction } from '@/server/actions/auth';
 
 export default function LoginPage() {
+  // useSearchParams forces a Suspense boundary at build time (Next 16
+  // bails on prerender otherwise). Wrap the form so the page itself
+  // stays cheap to prerender.
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
