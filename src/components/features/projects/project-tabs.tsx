@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 
 const TABS = [
   { key: 'all', label: 'All' },
+  { key: 'awaiting_approval', label: 'Awaiting approval' },
   { key: 'active', label: 'Active' },
   { key: 'complete', label: 'Complete' },
 ] as const;
@@ -24,6 +25,7 @@ type TabKey = (typeof TABS)[number]['key'];
 
 type Counts = {
   all: number;
+  awaiting_approval: number;
   active: number;
   complete: number;
 };

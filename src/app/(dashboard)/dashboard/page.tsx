@@ -3,7 +3,9 @@ import { NeedsAttention } from '@/components/features/dashboard/needs-attention'
 import { PipelineSummary } from '@/components/features/dashboard/pipeline-summary';
 import { RecentActivity } from '@/components/features/dashboard/recent-activity';
 import { TodaysJobs } from '@/components/features/dashboard/todays-jobs';
+import { AwaitingApprovalList } from '@/components/features/projects/awaiting-approval-list';
 import { getCurrentUser, requireTenant } from '@/lib/auth/helpers';
+import { getProjectsAwaitingApproval } from '@/lib/db/queries/awaiting-approval';
 import {
   getAttentionItems,
   getHourInTimezone,
@@ -37,6 +39,7 @@ export default async function DashboardPage() {
     todaysJobs,
     metrics,
     pipelineMetrics,
+    awaitingApproval,
     attentionItems,
     recentActivity,
     revenueYtdCents,
@@ -46,6 +49,7 @@ export default async function DashboardPage() {
     showTodaysJobs ? getTodaysJobs(tz) : Promise.resolve([]),
     getKeyMetrics(tz),
     getPipelineMetrics(),
+    getProjectsAwaitingApproval(),
     getAttentionItems(tz),
     getRecentActivity(),
     getRevenueYtd(tz),
@@ -76,6 +80,8 @@ export default async function DashboardPage() {
       </div>
 
       {showTodaysJobs ? <TodaysJobs jobs={todaysJobs} timezone={tz} /> : null}
+
+      <AwaitingApprovalList projects={awaitingApproval} variant="compact" />
 
       <PipelineSummary metrics={pipelineMetrics} />
 
