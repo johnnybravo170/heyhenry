@@ -34,26 +34,48 @@ A standalone MCP server that wraps every Phase 0 endpoint as a tool. So an agent
 - Handles HMAC signing + timestamp headers internally
 - Tool descriptions written for agent discoverability ("when you find a new competitor, call this; when a flaky test fires, call that")
 
-## Phase 2 — Routines as the runtime
+## Phase 2 — Runtime: Routines + Managed Agents (mix)
 
-Decided 2026-04-22 (after a Claude Code Routines doc-check): each agent ships as a **Claude Code Routine**, not a local cron or Vercel function.
+Decided 2026-04-22. Each agent ships as either a **Claude Code Routine** (cloud-hosted, Max-plan quota) or a **Managed Agent** call from app code (api.anthropic.com, per-token billing). Pick per-agent based on cadence and trigger model.
 
-**Why Routines over alternatives:**
-- Cloud-hosted on Anthropic infra → survives Mac mini power-out / OS update / network drop
-- Three trigger types built in: schedule, per-routine HTTPS endpoint with bearer token, GitHub webhook
-- Counts against Max-plan daily quota (15 runs/day) instead of API billing
-- Each routine = saved prompt + scoped repos + MCP connectors → `mcp-ops` plugs in directly
+**Connecting layer is the same for both:** the OAuth-protected MCP endpoint at `https://ops.heyhenry.io/api/mcp`. One auth setup, two consumption modes.
 
-**Per-agent routine setup pattern:**
-- Prompt: self-contained instructions ("you are the competitive-research agent…")
-- Connectors: `mcp-ops` (always), plus task-specific (e.g. web search for research agents)
-- Env: that agent's `OPS_API_KEY` (scoped — competitive-research key cannot write to roadmap)
-- Trigger: schedule (most), HTTPS POST (incident triage, CI babysitter), GitHub webhook (doc-writer)
+### Routines — for scheduled / webhook background work
+- Cloud-hosted on Anthropic infra → survives Mac mini power-out / network drop
+- Triggers: schedule, per-routine HTTPS endpoint, GitHub webhook
+- Free under Max plan (15 runs/day cap)
+- Authoring: web UI at claude.ai/code/routines
+- Best for: predictable cadence, set-and-forget
 
-**Quota math (Max = 15 runs/day):**
-- Daily scheduled (1/day each): competitive-research, customer-pulse, security-probe, weekly-digest = ~4–5
-- Event-driven (variable): incident-triage, CI-babysitter, doc-writer
-- Mitigation if cap hit: batch CI-babysitter (every 2h instead of per-push) and doc-writer (daily commit-range instead of per-push)
+### Managed Agents — for app-triggered, sync, or bursty work
+- Called from our code via Anthropic API (api.anthropic.com)
+- No daily cap — billed per token
+- Synchronous: caller gets the result back
+- Best for: in-request-path AI features, incident bursts, anything that might fire 50× in a bad hour
+
+### Per-agent runtime assignment
+
+| Agent | Runtime | Why |
+|---|---|---|
+| doc-writer | Routine (GitHub webhook or daily) | Predictable, daily, free |
+| competitive-research | Routine (daily) | Free, daily |
+| customer-pulse | Routine (weekly) | Free, weekly |
+| security-probe | Routine (daily) | Free, daily |
+| weekly-dispatcher | Routine (Sun 6am) | Classic schedule |
+| social/blog drafter | Routine (daily) | Free, daily |
+| visual-QA | Routine (frequent) or Managed Agent on Playwright failure | Either; Routine if cadence-bounded |
+| **incident-triage → SMS escalate** | **Managed Agent** | Volume unpredictable; SMS path needs sync; pay-per-incident is fine |
+| **CI babysitter (on every push)** | **Managed Agent** | Could fire 10×/day on heavy coding days, blowing Routines cap |
+| **inbound-lead triage (on Resend webhook)** | **Managed Agent** | App-initiated, sync, low-volume-but-bursty |
+
+### Why this mix is right
+- Routines cover ~70% of the workload at zero marginal cost
+- Managed Agents handle the 30% where Routines' cap or sync model would break
+- Worst case: a bad day burns ~$5 of Managed Agent tokens instead of bricking the agent fleet for the day
+
+### MCP connector setup applies to both
+- Routine: add HeyHenry Ops as a custom connector, OAuth flow once
+- Managed Agent: pass MCP server config in the API call (`mcp_servers` param), OAuth tokens managed by your code or pre-provisioned
 
 ## Phase 3 — Admin UI
 
