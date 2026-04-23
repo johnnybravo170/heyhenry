@@ -28,6 +28,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // If the user has a verified TOTP factor, magic-link sign-in only gets
+  // them to aal1. Route them through the challenge before landing on
+  // `next`. We encode `next` as a query so the MFA page can honour it
+  // (though currently /login/mfa always routes to /dashboard).
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
+    return NextResponse.redirect(new URL('/login/mfa', request.url));
+  }
+
   const target = next.startsWith('/') ? next : `/${next}`;
   return NextResponse.redirect(new URL(target, request.url));
 }

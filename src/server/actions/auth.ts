@@ -153,6 +153,13 @@ export async function loginAction(input: {
     return { error: error.message };
   }
 
+  // If the user has a verified MFA factor, the session is aal1 and we need
+  // to complete an MFA challenge before letting them into the app.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
+    redirect('/login/mfa');
+  }
+
   redirect('/dashboard');
 }
 

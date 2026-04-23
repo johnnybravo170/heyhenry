@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { ChatPanel } from '@/components/chat/chat-panel';
 import { ChatProvider } from '@/components/chat/chat-provider';
@@ -8,6 +9,7 @@ import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { TenantProvider } from '@/lib/auth/tenant-context';
 import { getOperatorProfile } from '@/lib/db/queries/profile';
 import { HenryScreenProvider } from '@/lib/henry/screen-context';
+import { createClient } from '@/lib/supabase/server';
 
 // All dashboard routes require the authenticated user's tenant context. They
 // cannot be statically prerendered (would try to run Supabase client without
@@ -15,6 +17,15 @@ import { HenryScreenProvider } from '@/lib/henry/screen-context';
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  // MFA gate: if the user has a verified factor but the session is still
+  // aal1, bounce them to the MFA challenge before rendering anything.
+  // Covers direct navigation to /dashboard with a stale-cookie session.
+  const supabase = await createClient();
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
+    redirect('/login/mfa');
+  }
+
   const [tenant, currentUser] = await Promise.all([getCurrentTenant(), getCurrentUser()]);
   const businessName = tenant?.name;
   const timezone = tenant?.timezone || 'America/Vancouver';
