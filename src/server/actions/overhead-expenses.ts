@@ -37,7 +37,61 @@ function extFromContentType(ct: string): string {
 
 export type OverheadExpenseResult =
   | { ok: true; id: string }
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
+  | {
+      ok: false;
+      duplicate: {
+        existing_id: string;
+        vendor: string;
+        amount_cents: number;
+        expense_date: string;
+      };
+    };
+
+/**
+ * Look for a probable duplicate overhead expense. Matches on tenant +
+ * vendor (case-insensitive, trimmed) + exact amount_cents + expense_date
+ * within ±3 days. Returns the oldest existing match or null.
+ *
+ * Vendor is required for the check — without it, the match would be too
+ * fuzzy (two unrelated $87.42 expenses on the same day are plausible).
+ * Operators who routinely skip the vendor field aren't targeted by this
+ * guard, but that's probably the right tradeoff.
+ */
+async function findProbableDuplicate(
+  admin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  opts: { vendor: string | null; amountCents: number; expenseDate: string; excludeId?: string },
+): Promise<{ id: string; vendor: string; amount_cents: number; expense_date: string } | null> {
+  const vendor = opts.vendor?.trim();
+  if (!vendor) return null;
+
+  const date = new Date(opts.expenseDate);
+  const lo = new Date(date.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const hi = new Date(date.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  let query = admin
+    .from('expenses')
+    .select('id, vendor, amount_cents, expense_date')
+    .eq('tenant_id', tenantId)
+    .is('project_id', null)
+    .eq('amount_cents', opts.amountCents)
+    .gte('expense_date', lo)
+    .lte('expense_date', hi)
+    // Case-insensitive vendor match. ilike exact-match (no wildcards).
+    .ilike('vendor', vendor);
+  if (opts.excludeId) query = query.neq('id', opts.excludeId);
+
+  const { data } = await query.order('created_at', { ascending: true }).limit(1);
+  const row = data?.[0];
+  if (!row) return null;
+  return {
+    id: row.id as string,
+    vendor: (row.vendor as string) ?? vendor,
+    amount_cents: row.amount_cents as number,
+    expense_date: row.expense_date as string,
+  };
+}
 
 const overheadSchema = z.object({
   category_id: z.string().uuid('Pick a category.'),
@@ -97,6 +151,28 @@ export async function logOverheadExpenseAction(formData: FormData): Promise<Over
       return {
         ok: false,
         error: 'This category has sub-accounts. Pick one of the sub-accounts instead.',
+      };
+    }
+  }
+
+  // Probable duplicate check. `force=1` on FormData = user already saw
+  // the warning and said "save anyway".
+  const force = formData.get('force') === '1';
+  if (!force) {
+    const dup = await findProbableDuplicate(admin, tenant.id, {
+      vendor: parsed.data.vendor || null,
+      amountCents: parsed.data.amount_cents,
+      expenseDate: parsed.data.expense_date,
+    });
+    if (dup) {
+      return {
+        ok: false,
+        duplicate: {
+          existing_id: dup.id,
+          vendor: dup.vendor,
+          amount_cents: dup.amount_cents,
+          expense_date: dup.expense_date,
+        },
       };
     }
   }
@@ -448,6 +524,29 @@ export async function updateOverheadExpenseAction(
       return {
         ok: false,
         error: 'This category has sub-accounts. Pick one of the sub-accounts instead.',
+      };
+    }
+  }
+
+  // Probable duplicate check (same rule as create), excluding the row
+  // we're editing. Skip when force=1.
+  const force = formData.get('force') === '1';
+  if (!force) {
+    const dup = await findProbableDuplicate(admin, tenant.id, {
+      vendor: parsed.data.vendor || null,
+      amountCents: parsed.data.amount_cents,
+      expenseDate: parsed.data.expense_date,
+      excludeId: id,
+    });
+    if (dup) {
+      return {
+        ok: false,
+        duplicate: {
+          existing_id: dup.id,
+          vendor: dup.vendor,
+          amount_cents: dup.amount_cents,
+          expense_date: dup.expense_date,
+        },
       };
     }
   }

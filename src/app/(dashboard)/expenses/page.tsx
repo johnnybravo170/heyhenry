@@ -1,7 +1,8 @@
-import { Paperclip, Plus, Tag } from 'lucide-react';
+import { Plus, Receipt, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { DeleteExpenseButton } from '@/components/features/expenses/delete-expense-button';
+import { ReceiptPreviewButton } from '@/components/features/expenses/receipt-preview-button';
 import { Button } from '@/components/ui/button';
 import { requireTenant } from '@/lib/auth/helpers';
 import { listOverheadExpenses } from '@/lib/db/queries/overhead-expenses';
@@ -29,6 +30,12 @@ export default async function OverheadExpensesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/expenses/gst">
+              <Receipt className="size-3.5" />
+              GST/HST
+            </Link>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link href="/settings/categories?from=expenses">
               <Tag className="size-3.5" />
@@ -123,9 +130,11 @@ export default async function OverheadExpensesPage() {
                     {formatCurrency(e.amount_cents)}
                   </td>
                   <td className="px-2 py-3 text-right">
-                    {e.receipt_storage_path ? (
-                      <Paperclip className="size-3.5 text-muted-foreground" />
-                    ) : null}
+                    <ReceiptPreviewButton
+                      url={e.receipt_signed_url}
+                      mimeHint={e.receipt_mime_hint}
+                      vendor={e.vendor}
+                    />
                   </td>
                   <td className="px-2 py-3 text-right">
                     <DeleteExpenseButton

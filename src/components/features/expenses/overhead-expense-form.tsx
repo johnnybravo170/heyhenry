@@ -140,6 +140,12 @@ export function OverheadExpenseForm({
   // When editing: existingReceiptUrl is the signed URL for the already-
   // attached receipt. removeExistingReceipt lets the user clear it.
   const [removeExistingReceipt, setRemoveExistingReceipt] = useState(false);
+  const [duplicate, setDuplicate] = useState<{
+    existing_id: string;
+    vendor: string;
+    amount_cents: number;
+    expense_date: string;
+  } | null>(null);
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? '');
   const [amount, setAmount] = useState(
     initialValues ? centsToDollars(initialValues.amountCents) : '',
@@ -227,6 +233,40 @@ export function OverheadExpenseForm({
     if (f) handleReceipt(f);
   }
 
+  function buildFormData(force: boolean): FormData {
+    const fd = new FormData();
+    if (isEdit && initialValues) fd.append('id', initialValues.id);
+    fd.append('category_id', categoryId);
+    fd.append('amount_cents', String(dollarsToCents(amount)));
+    fd.append('tax_cents', String(dollarsToCents(tax)));
+    fd.append('vendor', vendor);
+    fd.append('description', description);
+    fd.append('expense_date', expenseDate);
+    if (receipt) fd.append('receipt', receipt);
+    if (isEdit && removeExistingReceipt && !receipt) fd.append('remove_receipt', '1');
+    if (force) fd.append('force', '1');
+    return fd;
+  }
+
+  function runSave(force: boolean) {
+    startTransition(async () => {
+      const fd = buildFormData(force);
+      const res = isEdit
+        ? await updateOverheadExpenseAction(fd)
+        : await logOverheadExpenseAction(fd);
+      if (res.ok) {
+        toast.success(isEdit ? 'Expense updated' : 'Expense logged');
+        router.push('/expenses');
+        return;
+      }
+      if ('duplicate' in res) {
+        setDuplicate(res.duplicate);
+        return;
+      }
+      setError(res.error);
+    });
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -234,34 +274,11 @@ export function OverheadExpenseForm({
       setError('Pick a category.');
       return;
     }
-    const amountCents = dollarsToCents(amount);
-    if (amountCents === 0) {
+    if (dollarsToCents(amount) === 0) {
       setError('Amount is required.');
       return;
     }
-
-    const fd = new FormData();
-    if (isEdit && initialValues) fd.append('id', initialValues.id);
-    fd.append('category_id', categoryId);
-    fd.append('amount_cents', String(amountCents));
-    fd.append('tax_cents', String(dollarsToCents(tax)));
-    fd.append('vendor', vendor);
-    fd.append('description', description);
-    fd.append('expense_date', expenseDate);
-    if (receipt) fd.append('receipt', receipt);
-    if (isEdit && removeExistingReceipt && !receipt) fd.append('remove_receipt', '1');
-
-    startTransition(async () => {
-      const res = isEdit
-        ? await updateOverheadExpenseAction(fd)
-        : await logOverheadExpenseAction(fd);
-      if (!res.ok) {
-        setError(res.error);
-        return;
-      }
-      toast.success(isEdit ? 'Expense updated' : 'Expense logged');
-      router.push('/expenses');
-    });
+    runSave(false);
   }
 
   return (
@@ -457,6 +474,64 @@ export function OverheadExpenseForm({
         parentOptions={categories.filter((c) => c.parent_id === null)}
         onCreated={onCategoryCreated}
       />
+
+      <Dialog open={!!duplicate} onOpenChange={(o) => !o && setDuplicate(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Possible duplicate</DialogTitle>
+            <DialogDescription>
+              {duplicate ? (
+                <>
+                  You already logged{' '}
+                  <span className="font-medium text-foreground">
+                    ${(duplicate.amount_cents / 100).toFixed(2)}
+                  </span>{' '}
+                  at <span className="font-medium text-foreground">{duplicate.vendor}</span> on{' '}
+                  <span className="font-medium text-foreground">
+                    {new Date(duplicate.expense_date).toLocaleDateString('en-CA', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                  . Log this one anyway?
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            {duplicate ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  router.push(`/expenses/${duplicate.existing_id}/edit`);
+                }}
+              >
+                View existing
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDuplicate(null)}
+              disabled={pending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setDuplicate(null);
+                runSave(true);
+              }}
+              disabled={pending}
+            >
+              Save anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

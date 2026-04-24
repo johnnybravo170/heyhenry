@@ -3,7 +3,10 @@
  * Same `expenses` table as project expenses; filtered by `project_id IS NULL`.
  */
 
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+
+const RECEIPT_URL_TTL_SECONDS = 60 * 60; // 1h — matches edit-page convention
 
 export type OverheadExpenseRow = {
   id: string;
@@ -13,6 +16,10 @@ export type OverheadExpenseRow = {
   vendor: string | null;
   description: string | null;
   receipt_storage_path: string | null;
+  /** Signed URL for the receipt (1hr TTL), or null if no receipt attached. */
+  receipt_signed_url: string | null;
+  /** Mime type hint for the preview (image/* renders inline, pdf gets an icon). */
+  receipt_mime_hint: 'image' | 'pdf' | null;
   category_id: string | null;
   category_name: string | null;
   parent_category_name: string | null;
@@ -40,6 +47,26 @@ export async function listOverheadExpenses(opts?: {
   const { data, error } = await query;
   if (error) throw new Error(`Failed to list overhead expenses: ${error.message}`);
 
+  // Batch-sign receipt URLs so the list can hover-preview without a
+  // per-row round-trip. Admin client because the `receipts` bucket RLS
+  // checks auth.uid() against a tenant_members lookup and storage RLS
+  // is flaky from the list render path (same reason cost-line thumbs
+  // use admin). One createSignedUrls call for all paths.
+  const receiptPaths = (data ?? [])
+    .map((r) => r.receipt_storage_path as string | null)
+    .filter((p): p is string => !!p);
+
+  const urlByPath = new Map<string, string>();
+  if (receiptPaths.length > 0) {
+    const admin = createAdminClient();
+    const { data: signed } = await admin.storage
+      .from('receipts')
+      .createSignedUrls(receiptPaths, RECEIPT_URL_TTL_SECONDS);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl);
+    }
+  }
+
   return (data ?? []).map((row) => {
     const catRaw = (row as Record<string, unknown>).categories as
       | { name?: string; parent?: { name?: string } | { name?: string }[] | null }
@@ -48,6 +75,8 @@ export async function listOverheadExpenses(opts?: {
     const cat = Array.isArray(catRaw) ? catRaw[0] : catRaw;
     const parentRaw = cat?.parent;
     const parent = Array.isArray(parentRaw) ? parentRaw[0] : parentRaw;
+    const receiptPath = (row.receipt_storage_path as string | null) ?? null;
+    const isPdf = receiptPath?.toLowerCase().endsWith('.pdf') ?? false;
     return {
       id: row.id as string,
       expense_date: row.expense_date as string,
@@ -55,7 +84,9 @@ export async function listOverheadExpenses(opts?: {
       tax_cents: (row.tax_cents as number) ?? 0,
       vendor: (row.vendor as string | null) ?? null,
       description: (row.description as string | null) ?? null,
-      receipt_storage_path: (row.receipt_storage_path as string | null) ?? null,
+      receipt_storage_path: receiptPath,
+      receipt_signed_url: receiptPath ? (urlByPath.get(receiptPath) ?? null) : null,
+      receipt_mime_hint: receiptPath ? (isPdf ? 'pdf' : 'image') : null,
       category_id: (row.category_id as string | null) ?? null,
       category_name: (cat?.name as string | undefined) ?? null,
       parent_category_name: (parent?.name as string | undefined) ?? null,
