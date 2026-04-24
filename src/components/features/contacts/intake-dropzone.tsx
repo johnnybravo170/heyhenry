@@ -50,9 +50,28 @@ export function IntakeDropzone({
     e.preventDefault();
     setIsDraggingOver(false);
     if (disabled) return;
+
     const dropped = e.dataTransfer?.files;
-    if (dropped && dropped.length > 0) {
-      onFilesAdded(Array.from(dropped));
+    const files: File[] = dropped && dropped.length > 0 ? Array.from(dropped) : [];
+
+    // macOS + iOS Contacts, Google Contacts, Outlook etc. drag contact cards
+    // as vCard TEXT on the dataTransfer, not as File objects. Synthesize a
+    // .vcf File from that text so the rest of the pipeline treats the drop
+    // the same as a vCard file from Finder.
+    if (files.length === 0 && e.dataTransfer) {
+      const vcardText =
+        e.dataTransfer.getData('text/vcard') ||
+        e.dataTransfer.getData('text/x-vcard') ||
+        e.dataTransfer.getData('text/directory') ||
+        '';
+      if (vcardText && /BEGIN:VCARD/i.test(vcardText)) {
+        const blob = new Blob([vcardText], { type: 'text/vcard' });
+        files.push(new File([blob], 'dragged-contact.vcf', { type: 'text/vcard' }));
+      }
+    }
+
+    if (files.length > 0) {
+      onFilesAdded(files);
     }
   }
 

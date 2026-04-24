@@ -9,8 +9,51 @@ export const metadata = {
   title: 'New project — HeyHenry',
 };
 
-export default async function NewProjectPage() {
+type RawSearchParams = Record<string, string | string[] | undefined>;
+
+export default async function NewProjectPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
+  const params = await searchParams;
+  const customerParam = typeof params.customer === 'string' ? params.customer : null;
   const customers = await listCustomers({ limit: 500 });
+
+  // Valid ?customer=<id> means the operator already picked someone (usually
+  // by clicking "Start project" from a lead's detail page). Skip the intake
+  // drop zone and open the manual form pre-filled — no point re-identifying
+  // a contact we already have.
+  const preselectedCustomer =
+    customerParam && customers.some((c) => c.id === customerParam) ? customerParam : null;
+
+  if (preselectedCustomer) {
+    return (
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="mb-6">
+          <Link
+            href={`/contacts/${preselectedCustomer}`}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-3.5" />
+            Back to contact
+          </Link>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Start project</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The contact&rsquo;s already selected. Fill in the project details and save — creating
+            this project will promote them to a customer automatically.
+          </p>
+        </div>
+
+        <ProjectForm
+          mode="create"
+          customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+          defaults={{ customer_id: preselectedCustomer }}
+          action={createProjectAction}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl">

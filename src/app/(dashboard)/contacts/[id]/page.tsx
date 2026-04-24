@@ -179,18 +179,28 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <RelatedInvoicesCard invoices={related.invoices} timezone={tz} />
         </div>
       ) : (
-        <KindPlaceholderSection kind={customer.kind} />
+        <KindPlaceholderSection kind={customer.kind} contactId={customer.id} />
       )}
     </div>
   );
 }
 
-function KindPlaceholderSection({ kind }: { kind: CustomerRow['kind'] }) {
-  const copy: Record<CustomerRow['kind'], { title: string; body: string } | null> = {
+function KindPlaceholderSection({
+  kind,
+  contactId,
+}: {
+  kind: CustomerRow['kind'];
+  contactId: string;
+}) {
+  const copy: Record<
+    CustomerRow['kind'],
+    { title: string; body: string; cta?: { href: string; label: string } } | null
+  > = {
     customer: null,
     lead: {
       title: 'Not a customer yet',
-      body: "This contact is a lead — nothing's committed. Start a project to begin drafting an estimate (they'll auto-promote to a customer once you do).",
+      body: "This contact is a lead — nothing's committed. Start a project to begin drafting an estimate. They'll auto-promote to a customer once you do.",
+      cta: { href: `/projects/new?customer=${contactId}`, label: 'Start project' },
     },
     vendor: {
       title: 'Bills from this vendor',
@@ -217,9 +227,16 @@ function KindPlaceholderSection({ kind }: { kind: CustomerRow['kind'] }) {
   const entry = copy[kind];
   if (!entry) return null;
   return (
-    <section className="rounded-xl border border-dashed bg-card/60 p-5">
-      <h2 className="text-sm font-semibold text-muted-foreground">{entry.title}</h2>
-      <p className="mt-2 text-sm text-muted-foreground">{entry.body}</p>
+    <section className="flex flex-col gap-3 rounded-xl border border-dashed bg-card/60 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground">{entry.title}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{entry.body}</p>
+      </div>
+      {entry.cta ? (
+        <Button asChild size="sm" className="self-start sm:self-center">
+          <Link href={entry.cta.href}>{entry.cta.label}</Link>
+        </Button>
+      ) : null}
     </section>
   );
 }
