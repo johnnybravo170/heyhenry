@@ -1,6 +1,7 @@
 import { Paperclip, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { DeleteExpenseButton } from '@/components/features/expenses/delete-expense-button';
 import { Button } from '@/components/ui/button';
 import { requireTenant } from '@/lib/auth/helpers';
 import { listOverheadExpenses } from '@/lib/db/queries/overhead-expenses';
@@ -75,6 +76,7 @@ export default async function OverheadExpensesPage() {
                 <th className="px-4 py-3 text-right font-medium">Tax</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
                 <th className="w-px px-2 py-3" aria-label="Receipt" />
+                <th className="w-px px-2 py-3" aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
@@ -106,6 +108,12 @@ export default async function OverheadExpensesPage() {
                     {e.receipt_storage_path ? (
                       <Paperclip className="size-3.5 text-muted-foreground" />
                     ) : null}
+                  </td>
+                  <td className="px-2 py-3 text-right">
+                    <DeleteExpenseButton
+                      id={e.id}
+                      label={e.vendor ?? e.description ?? 'this expense'}
+                    />
                   </td>
                 </tr>
               ))}
