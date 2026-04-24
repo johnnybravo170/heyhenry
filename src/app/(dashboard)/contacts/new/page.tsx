@@ -9,6 +9,11 @@ export const metadata = {
   title: 'New contact — HeyHenry',
 };
 
+// Voice-memo intake (customer kind routes to LeadIntakeForm) may run
+// Whisper transcription inside the server action; 60 s keeps big audio
+// drops from timing out.
+export const maxDuration = 60;
+
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
 function parseKind(value: string | string[] | undefined): ContactKind | undefined {

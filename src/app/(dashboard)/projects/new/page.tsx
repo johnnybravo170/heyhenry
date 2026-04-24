@@ -9,6 +9,10 @@ export const metadata = {
   title: 'New project — HeyHenry',
 };
 
+// Voice-memo intake may run Whisper transcription inside the server action
+// invoked from this page; 60 s keeps big audio drops from timing out.
+export const maxDuration = 60;
+
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
 export default async function NewProjectPage({
