@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { QuickLogExpenseButton } from './quick-log-expense-button';
 import { QuickLogTimeButton } from './quick-log-time-button';
 import { MobileSidebarToggle } from './sidebar';
 
@@ -27,6 +28,7 @@ export function Header({ businessName, vertical, ownerRateCents }: HeaderProps) 
 
       <div className="flex items-center gap-2">
         <QuickLogTimeButton ownerRateCents={ownerRateCents ?? null} />
+        <QuickLogExpenseButton />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" className="gap-1">

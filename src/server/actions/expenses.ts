@@ -43,6 +43,87 @@ const expenseSchema = z.object({
   expense_date: z.string().min(1, { message: 'Date is required.' }),
 });
 
+/**
+ * List active-ish projects with their cost buckets for the Log Expense
+ * dialog. Tenant-scoped via RLS — returns every project the caller's
+ * session can see, with each project's buckets nested.
+ */
+export async function listProjectsWithBucketsForExpenseAction(): Promise<
+  | {
+      ok: true;
+      projects: Array<{
+        id: string;
+        name: string;
+        buckets: Array<{ id: string; name: string }>;
+      }>;
+    }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const { data: projects, error: projErr } = await supabase
+    .from('projects')
+    .select('id, name')
+    .is('deleted_at', null)
+    .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (projErr) return { ok: false, error: projErr.message };
+  const projectIds = (projects ?? []).map((p) => p.id as string);
+  if (projectIds.length === 0) return { ok: true, projects: [] };
+
+  const { data: buckets, error: bErr } = await supabase
+    .from('project_cost_buckets')
+    .select('id, name, project_id, display_order')
+    .in('project_id', projectIds)
+    .order('display_order', { ascending: true });
+  if (bErr) return { ok: false, error: bErr.message };
+
+  const bucketsByProject = new Map<string, Array<{ id: string; name: string }>>();
+  for (const b of buckets ?? []) {
+    const pid = b.project_id as string;
+    const arr = bucketsByProject.get(pid) ?? [];
+    arr.push({ id: b.id as string, name: b.name as string });
+    bucketsByProject.set(pid, arr);
+  }
+
+  return {
+    ok: true,
+    projects: (projects ?? []).map((p) => ({
+      id: p.id as string,
+      name: p.name as string,
+      buckets: bucketsByProject.get(p.id as string) ?? [],
+    })),
+  };
+}
+
+/**
+ * Flat list of expense category picker options (tree flattened with
+ * "Parent › Child" labels) for the Log Expense overhead mode.
+ */
+export async function listExpenseCategoryOptionsAction(): Promise<
+  | {
+      ok: true;
+      options: Array<{ id: string; label: string; isParentHeader: boolean }>;
+    }
+  | { ok: false; error: string }
+> {
+  const [{ listExpenseCategories, buildCategoryTree, buildPickerOptions }] = await Promise.all([
+    import('@/lib/db/queries/expense-categories'),
+  ]);
+  try {
+    const rows = await listExpenseCategories();
+    const tree = buildCategoryTree(rows);
+    const options = buildPickerOptions(tree).map((o) => ({
+      id: o.id,
+      label: o.label,
+      isParentHeader: o.isParentHeader,
+    }));
+    return { ok: true, options };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Failed to load categories.' };
+  }
+}
+
 export async function logExpenseAction(input: {
   project_id?: string;
   job_id?: string;
