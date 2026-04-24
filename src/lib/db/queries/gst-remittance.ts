@@ -54,6 +54,18 @@ export type FiledRemittance = {
   notes: string | null;
 };
 
+export type MissingBnFlag = {
+  /** "expense" or "bill" — lets the UI link to the right edit surface. */
+  kind: 'expense' | 'bill';
+  id: string;
+  vendor: string | null;
+  amount_cents: number;
+  tax_cents: number;
+  date: string;
+  project_id: string | null;
+  project_name: string | null;
+};
+
 export type GstRemittanceReport = {
   period: RemittancePeriod;
   collected: {
@@ -77,6 +89,12 @@ export type GstRemittanceReport = {
   net_owed_cents: number;
   /** If this exact period has been marked paid, the filed record. Else null. */
   filed: FiledRemittance | null;
+  /**
+   * Expenses + bills over $30 with GST claimed but the vendor's BN not
+   * captured. CRA can disallow the ITC on these — the bookkeeper needs
+   * to chase down the BN before filing.
+   */
+  missing_bn: MissingBnFlag[];
 };
 
 export async function getGstRemittanceReport(
@@ -97,13 +115,15 @@ export async function getGstRemittanceReport(
         .is('deleted_at', null),
       admin
         .from('expenses')
-        .select('amount_cents, tax_cents, category_id, project_id')
+        .select(
+          'id, amount_cents, tax_cents, category_id, project_id, vendor, vendor_gst_number, expense_date',
+        )
         .eq('tenant_id', tenantId)
         .gte('expense_date', period.from)
         .lte('expense_date', period.to),
       admin
         .from('project_bills')
-        .select('amount_cents, gst_cents, project_id')
+        .select('id, amount_cents, gst_cents, project_id, vendor, vendor_gst_number, bill_date')
         .eq('tenant_id', tenantId)
         .gte('bill_date', period.from)
         .lte('bill_date', period.to),
@@ -238,6 +258,49 @@ export async function getGstRemittanceReport(
       }
     : null;
 
+  // Missing BN flags — expenses + bills over $30 with tax claimed but
+  // no vendor_gst_number. CRA's threshold is exact, not "roughly $30";
+  // we use $30 gross including tax to match their rule.
+  const BN_THRESHOLD_CENTS = 3000;
+  const missingBn: MissingBnFlag[] = [];
+  for (const e of expenses) {
+    const gross = (e.amount_cents as number) ?? 0;
+    const tax = (e.tax_cents as number) ?? 0;
+    const bn = (e.vendor_gst_number as string | null)?.trim();
+    if (gross >= BN_THRESHOLD_CENTS && tax > 0 && !bn) {
+      const pid = (e.project_id as string | null) ?? null;
+      missingBn.push({
+        kind: 'expense',
+        id: e.id as string,
+        vendor: (e.vendor as string | null) ?? null,
+        amount_cents: gross,
+        tax_cents: tax,
+        date: e.expense_date as string,
+        project_id: pid,
+        project_name: pid ? (projectName.get(pid) ?? null) : null,
+      });
+    }
+  }
+  for (const b of bills) {
+    const gross = (b.amount_cents as number) ?? 0;
+    const tax = (b.gst_cents as number) ?? 0;
+    const bn = (b.vendor_gst_number as string | null)?.trim();
+    if (gross >= BN_THRESHOLD_CENTS && tax > 0 && !bn) {
+      const pid = (b.project_id as string | null) ?? null;
+      missingBn.push({
+        kind: 'bill',
+        id: b.id as string,
+        vendor: (b.vendor as string | null) ?? null,
+        amount_cents: gross,
+        tax_cents: tax,
+        date: b.bill_date as string,
+        project_id: pid,
+        project_name: pid ? (projectName.get(pid) ?? null) : null,
+      });
+    }
+  }
+  missingBn.sort((a, b) => b.tax_cents - a.tax_cents);
+
   return {
     period,
     collected: {
@@ -260,6 +323,7 @@ export async function getGstRemittanceReport(
     },
     net_owed_cents: collectedTax - overheadTax - projectTotalTax,
     filed,
+    missing_bn: missingBn,
   };
 }
 

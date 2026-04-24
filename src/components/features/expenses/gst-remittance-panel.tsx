@@ -14,7 +14,7 @@
  * "Filed YYYY-MM-DD" instead of the "Net owed" card.
  */
 
-import { CheckCircle2, Download, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Download, Info, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -110,6 +110,26 @@ export function GstRemittancePanel({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* What this report is (and isn't) */}
+      <div className="flex gap-3 rounded-md border bg-muted/20 p-4 text-sm">
+        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <div className="flex flex-col gap-1 text-muted-foreground">
+          <p>
+            <strong className="font-medium text-foreground">
+              This is a bookkeeping aid, not a CRA filing tool.
+            </strong>{' '}
+            HeyHenry doesn&apos;t file returns or send payments to CRA — your bookkeeper still
+            handles that part. The numbers here are meant to give them (or you) everything they need
+            to fill out Form GST34 in a few minutes instead of a few hours.
+          </p>
+          <p>
+            Figures come from what&apos;s logged in HeyHenry. If a receipt is missing or a
+            vendor&apos;s BN isn&apos;t captured, the ITC might not stand up on audit — double-check
+            the warnings below before handing off.
+          </p>
+        </div>
+      </div>
+
       {/* Preset pills + custom range */}
       <div className="flex flex-col gap-4 rounded-md border bg-muted/10 p-4">
         <div className="flex flex-wrap gap-2">
@@ -234,6 +254,71 @@ export function GstRemittancePanel({
           </div>
         )}
       </div>
+
+      {/* Missing-BN warning — CRA can disallow ITCs when the vendor's
+          registration number isn't on the invoice >$30. */}
+      {report.missing_bn.length > 0 ? (
+        <section className="rounded-md border border-amber-300 bg-amber-50/40 dark:border-amber-700 dark:bg-amber-950/20">
+          <div className="flex items-start gap-3 border-b border-amber-200 px-4 py-3 dark:border-amber-800">
+            <AlertTriangle className="mt-0.5 size-4 text-amber-700 dark:text-amber-300" />
+            <div>
+              <h2 className="text-sm font-medium">
+                {report.missing_bn.length} item{report.missing_bn.length === 1 ? '' : 's'} missing
+                vendor GST/HST number
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                CRA requires the vendor&apos;s BN on any invoice over $30 to claim the Input Tax
+                Credit. Without it these ITCs can be disallowed. Open each and add the BN, or chase
+                the vendor for an updated invoice.
+              </p>
+            </div>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-amber-200 bg-amber-100/30 dark:border-amber-800">
+                <th className="px-4 py-2 text-left font-medium">Vendor</th>
+                <th className="px-4 py-2 text-left font-medium">Where</th>
+                <th className="px-4 py-2 text-left font-medium">Date</th>
+                <th className="px-4 py-2 text-right font-medium">Amount</th>
+                <th className="px-4 py-2 text-right font-medium">GST/HST</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.missing_bn.map((row) => {
+                const href =
+                  row.kind === 'expense' && !row.project_id
+                    ? `/expenses/${row.id}/edit`
+                    : row.project_id
+                      ? `/projects/${row.project_id}?tab=costs`
+                      : '#';
+                return (
+                  <tr key={`${row.kind}-${row.id}`} className="border-b last:border-0">
+                    <td className="px-4 py-2">
+                      <Link href={href} className="hover:underline">
+                        {row.vendor ?? '(no vendor)'}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground text-xs">
+                      {row.project_name
+                        ? `${row.kind === 'bill' ? 'Bill' : 'Expense'} · ${row.project_name}`
+                        : row.kind === 'bill'
+                          ? 'Bill (project)'
+                          : 'Overhead expense'}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">{row.date}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
+                      {formatCurrency(row.amount_cents)}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums font-medium">
+                      {formatCurrency(row.tax_cents)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
 
       {/* Overhead breakdown by category */}
       <BreakdownSection

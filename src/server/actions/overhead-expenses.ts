@@ -134,6 +134,7 @@ const overheadSchema = z.object({
     .refine((n) => n !== 0, 'Amount must not be zero.'),
   tax_cents: z.coerce.number().int().min(0).default(0),
   vendor: z.string().trim().max(200).optional().or(z.literal('')),
+  vendor_gst_number: z.string().trim().max(40).optional().or(z.literal('')),
   description: z.string().trim().max(2000).optional().or(z.literal('')),
   expense_date: z.string().min(1, 'Date is required.'),
 });
@@ -153,6 +154,7 @@ export async function logOverheadExpenseAction(formData: FormData): Promise<Over
     amount_cents: formData.get('amount_cents'),
     tax_cents: formData.get('tax_cents') ?? 0,
     vendor: formData.get('vendor') ?? '',
+    vendor_gst_number: formData.get('vendor_gst_number') ?? '',
     description: formData.get('description') ?? '',
     expense_date: formData.get('expense_date'),
   });
@@ -241,6 +243,7 @@ export async function logOverheadExpenseAction(formData: FormData): Promise<Over
       amount_cents: parsed.data.amount_cents,
       tax_cents: parsed.data.tax_cents,
       vendor: parsed.data.vendor?.trim() || null,
+      vendor_gst_number: parsed.data.vendor_gst_number?.trim() || null,
       description: parsed.data.description?.trim() || null,
       receipt_storage_path: receiptStoragePath,
       expense_date: parsed.data.expense_date,
@@ -270,6 +273,8 @@ export type OverheadReceiptExtraction =
         amountCents: number | null;
         taxCents: number | null;
         vendor: string | null;
+        /** Vendor GST/HST business number extracted from the receipt if visible. */
+        vendorGstNumber: string | null;
         expenseDate: string | null;
         description: string | null;
         suggestedCategoryId: string | null;
@@ -402,6 +407,7 @@ Field rules:
 - Sanity check: tax_cents should be roughly 4-15% of amount_cents for a valid Canadian receipt. If the number you compute is way outside that range, return null.
 - vendor: merchant name as printed at the top.
 - description: one-line summary of what was bought ("regular gas", "2x4s and drywall screws", "coffee").
+- vendor_gst_number: the vendor's GST/HST business number (BN) if printed on the receipt. Canadian format is 9 digits + "RT" + 4 digits (e.g. "123456789 RT0001" or "123456789RT0001"). Commonly labeled "GST Reg #", "HST #", "BN", "Business Number", or appears near the vendor's address. If only the 9-digit root is shown, return those 9 digits. Return null if not visible.
 - suggested_category_id: pick a selectable (non-parent) id from the list, or null if nothing fits well.`,
       },
       { role: 'user', content: userContent },
@@ -418,6 +424,7 @@ Field rules:
             amount_cents: { type: ['integer', 'null'] },
             tax_cents: { type: ['integer', 'null'] },
             vendor: { type: ['string', 'null'] },
+            vendor_gst_number: { type: ['string', 'null'] },
             expense_date: { type: ['string', 'null'] },
             description: { type: ['string', 'null'] },
             suggested_category_id: { type: ['string', 'null'] },
@@ -426,6 +433,7 @@ Field rules:
             'amount_cents',
             'tax_cents',
             'vendor',
+            'vendor_gst_number',
             'expense_date',
             'description',
             'suggested_category_id',
@@ -458,6 +466,7 @@ Field rules:
     amount_cents: number | null;
     tax_cents: number | null;
     vendor: string | null;
+    vendor_gst_number: string | null;
     expense_date: string | null;
     description: string | null;
     suggested_category_id: string | null;
@@ -504,6 +513,7 @@ Field rules:
       amountCents: parsed.amount_cents,
       taxCents,
       vendor: parsed.vendor?.trim() || null,
+      vendorGstNumber: parsed.vendor_gst_number?.trim() || null,
       expenseDate: parsed.expense_date,
       description: parsed.description?.trim() || null,
       suggestedCategoryId: picked,
@@ -532,6 +542,7 @@ export async function updateOverheadExpenseAction(
     amount_cents: formData.get('amount_cents'),
     tax_cents: formData.get('tax_cents') ?? 0,
     vendor: formData.get('vendor') ?? '',
+    vendor_gst_number: formData.get('vendor_gst_number') ?? '',
     description: formData.get('description') ?? '',
     expense_date: formData.get('expense_date'),
   });

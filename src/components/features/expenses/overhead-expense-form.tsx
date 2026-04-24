@@ -44,6 +44,7 @@ export type OverheadExpenseInitialValues = {
   amountCents: number;
   taxCents: number;
   vendor: string | null;
+  vendorGstNumber: string | null;
   description: string | null;
   expenseDate: string;
   existingReceiptPath: string | null;
@@ -155,6 +156,7 @@ export function OverheadExpenseForm({
     initialValues && initialValues.taxCents > 0 ? centsToDollars(initialValues.taxCents) : '',
   );
   const [vendor, setVendor] = useState(initialValues?.vendor ?? '');
+  const [vendorGstNumber, setVendorGstNumber] = useState(initialValues?.vendorGstNumber ?? '');
   const [vendorSuggestion, setVendorSuggestion] = useState<{
     category_id: string;
     category_label: string;
@@ -223,6 +225,8 @@ export function OverheadExpenseForm({
     }
     // Only fill fields the user hasn't already touched — don't clobber input.
     if (!vendor && res.fields.vendor) setVendor(res.fields.vendor);
+    if (!vendorGstNumber && res.fields.vendorGstNumber)
+      setVendorGstNumber(res.fields.vendorGstNumber);
     if (!amount && res.fields.amountCents != null)
       setAmount(centsToDollars(res.fields.amountCents));
     if (!tax && res.fields.taxCents != null) setTax(centsToDollars(res.fields.taxCents));
@@ -257,6 +261,7 @@ export function OverheadExpenseForm({
     fd.append('amount_cents', String(dollarsToCents(amount)));
     fd.append('tax_cents', String(dollarsToCents(tax)));
     fd.append('vendor', vendor);
+    fd.append('vendor_gst_number', vendorGstNumber);
     fd.append('description', description);
     fd.append('expense_date', expenseDate);
     if (receipt) fd.append('receipt', receipt);
@@ -483,6 +488,23 @@ export function OverheadExpenseForm({
               </button>
             </p>
           ) : null}
+        </div>
+
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="vendor-bn">
+            Vendor GST/HST number{' '}
+            <span className="font-normal text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            id="vendor-bn"
+            value={vendorGstNumber}
+            onChange={(e) => setVendorGstNumber(e.target.value)}
+            placeholder="e.g. 123456789 RT0001"
+          />
+          <p className="text-xs text-muted-foreground">
+            CRA requires the vendor&apos;s BN on invoices over $30 to claim the Input Tax Credit.
+            Usually auto-filled from the receipt.
+          </p>
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">

@@ -33,7 +33,7 @@ export default async function EditOverheadExpensePage({
   const { data: expense } = await admin
     .from('expenses')
     .select(
-      'id, tenant_id, project_id, category_id, amount_cents, tax_cents, vendor, description, expense_date, receipt_storage_path',
+      'id, tenant_id, project_id, category_id, amount_cents, tax_cents, vendor, vendor_gst_number, description, expense_date, receipt_storage_path',
     )
     .eq('id', id)
     .maybeSingle();
@@ -90,6 +90,7 @@ export default async function EditOverheadExpensePage({
           amountCents: expense.amount_cents as number,
           taxCents: (expense.tax_cents as number) ?? 0,
           vendor: (expense.vendor as string | null) ?? null,
+          vendorGstNumber: (expense.vendor_gst_number as string | null) ?? null,
           description: (expense.description as string | null) ?? null,
           expenseDate: expense.expense_date as string,
           existingReceiptPath: (expense.receipt_storage_path as string | null) ?? null,
