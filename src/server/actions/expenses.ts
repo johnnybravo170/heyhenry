@@ -37,6 +37,7 @@ const expenseSchema = z.object({
     .int()
     .refine((n) => n !== 0, { message: 'Amount must not be zero.' }),
   vendor: z.string().trim().max(200).optional().or(z.literal('')),
+  vendor_gst_number: z.string().trim().max(40).optional().or(z.literal('')),
   description: z.string().trim().max(2000).optional().or(z.literal('')),
   receipt_url: z.string().url().optional().or(z.literal('')),
   expense_date: z.string().min(1, { message: 'Date is required.' }),
@@ -84,6 +85,7 @@ export async function logExpenseAction(input: {
       bucket_id: parsed.data.bucket_id || null,
       amount_cents: parsed.data.amount_cents,
       vendor: parsed.data.vendor?.trim() || null,
+      vendor_gst_number: parsed.data.vendor_gst_number?.trim() || null,
       description: parsed.data.description?.trim() || null,
       receipt_url: parsed.data.receipt_url || null,
       expense_date: parsed.data.expense_date,
@@ -112,6 +114,7 @@ export async function logExpenseWithReceiptAction(
     bucket_id: String(formData.get('bucket_id') ?? ''),
     amount_cents: Number(formData.get('amount_cents') ?? 0),
     vendor: String(formData.get('vendor') ?? ''),
+    vendor_gst_number: String(formData.get('vendor_gst_number') ?? ''),
     description: String(formData.get('description') ?? ''),
     expense_date: String(formData.get('expense_date') ?? ''),
   };
@@ -160,6 +163,7 @@ export async function logExpenseWithReceiptAction(
       bucket_id: parsed.data.bucket_id || null,
       amount_cents: parsed.data.amount_cents,
       vendor: parsed.data.vendor?.trim() || null,
+      vendor_gst_number: parsed.data.vendor_gst_number?.trim() || null,
       description: parsed.data.description?.trim() || null,
       receipt_storage_path: receiptStoragePath,
       expense_date: parsed.data.expense_date,

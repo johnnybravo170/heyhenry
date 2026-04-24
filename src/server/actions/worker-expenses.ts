@@ -15,6 +15,7 @@ const schema = z.object({
   bucket_id: z.string().uuid().optional().or(z.literal('')),
   amount_cents: z.coerce.number().int().positive(),
   vendor: z.string().trim().max(200).optional().or(z.literal('')),
+  vendor_gst_number: z.string().trim().max(40).optional().or(z.literal('')),
   description: z.string().trim().max(2000).optional().or(z.literal('')),
   expense_date: z.string().min(1),
 });
@@ -36,6 +37,7 @@ export async function logWorkerExpenseAction(formData: FormData): Promise<Worker
     bucket_id: String(formData.get('bucket_id') ?? ''),
     amount_cents: Number(formData.get('amount_cents') ?? 0),
     vendor: String(formData.get('vendor') ?? ''),
+    vendor_gst_number: String(formData.get('vendor_gst_number') ?? ''),
     description: String(formData.get('description') ?? ''),
     expense_date: String(formData.get('expense_date') ?? ''),
   };
@@ -87,6 +89,7 @@ export async function logWorkerExpenseAction(formData: FormData): Promise<Worker
       bucket_id: parsed.data.bucket_id || null,
       amount_cents: parsed.data.amount_cents,
       vendor: parsed.data.vendor?.trim() || null,
+      vendor_gst_number: parsed.data.vendor_gst_number?.trim() || null,
       description: parsed.data.description?.trim() || null,
       receipt_storage_path: receiptStoragePath,
       expense_date: parsed.data.expense_date,

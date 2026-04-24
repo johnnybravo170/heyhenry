@@ -95,6 +95,7 @@ export async function processInboundEmail(emailId: string): Promise<void> {
       if (result.classification === 'vendor_bill') {
         const bill = result.extracted as {
           vendor: string;
+          vendor_gst_number?: string;
           bill_date: string;
           description?: string;
           amount_cents: number;
@@ -106,6 +107,7 @@ export async function processInboundEmail(emailId: string): Promise<void> {
             tenant_id: email.tenant_id,
             project_id: matchedProjectId,
             vendor: bill.vendor,
+            vendor_gst_number: bill.vendor_gst_number?.trim() || null,
             bill_date: bill.bill_date,
             description: bill.description ?? null,
             amount_cents: bill.amount_cents,

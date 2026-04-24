@@ -23,6 +23,8 @@ export type ReceiptExtractionResult =
       fields: {
         amountCents: number | null;
         vendor: string | null;
+        /** Vendor GST/HST business number if printed on the receipt. */
+        vendorGstNumber: string | null;
         expenseDate: string | null; // YYYY-MM-DD
         description: string | null;
       };
@@ -88,6 +90,7 @@ export async function extractReceiptFieldsAction(
 - expense_date: YYYY-MM-DD. Transaction date, not print time.
 - amount_cents: INTEGER cents. The receipt grand total (tax included).
 - vendor: merchant name as shown.
+- vendor_gst_number: the vendor's GST/HST business number (BN) if printed on the receipt. Canadian format is 9 digits + "RT" + 4 digits (e.g. "123456789 RT0001" or "123456789RT0001"). Commonly labeled "GST Reg #", "HST #", "BN", "Business Number", or near the vendor's address. If only the 9-digit root is shown, return those 9 digits. Return null if not visible.
 - description: 1-line summary of what was purchased (e.g. "lumber and fasteners", "lunch for crew"). Null if unclear.
 
 Note: Canadian receipts commonly show GST/HST as "GST 5%", "HST 13%", "GST incl.", "GST INCLUDED", or "GST/HST". The amount_cents field is always the receipt total with tax in it.`,
@@ -105,10 +108,11 @@ Note: Canadian receipts commonly show GST/HST as "GST 5%", "HST 13%", "GST incl.
           properties: {
             amount_cents: { type: ['integer', 'null'] },
             vendor: { type: ['string', 'null'] },
+            vendor_gst_number: { type: ['string', 'null'] },
             expense_date: { type: ['string', 'null'] },
             description: { type: ['string', 'null'] },
           },
-          required: ['amount_cents', 'vendor', 'expense_date', 'description'],
+          required: ['amount_cents', 'vendor', 'vendor_gst_number', 'expense_date', 'description'],
         },
       },
     },
@@ -142,6 +146,7 @@ Note: Canadian receipts commonly show GST/HST as "GST 5%", "HST 13%", "GST incl.
   let parsed: {
     amount_cents: number | null;
     vendor: string | null;
+    vendor_gst_number: string | null;
     expense_date: string | null;
     description: string | null;
   };
@@ -156,6 +161,7 @@ Note: Canadian receipts commonly show GST/HST as "GST 5%", "HST 13%", "GST incl.
     fields: {
       amountCents: parsed.amount_cents,
       vendor: parsed.vendor?.trim() || null,
+      vendorGstNumber: parsed.vendor_gst_number?.trim() || null,
       expenseDate: parsed.expense_date,
       description: parsed.description?.trim() || null,
     },

@@ -201,6 +201,7 @@ export type ApplyAugmentInput = {
   }>;
   new_bills: Array<{
     vendor: string | null;
+    vendor_gst_number: string | null;
     bill_date: string | null;
     description: string | null;
     amount_cents: number;
@@ -211,6 +212,7 @@ export type ApplyAugmentInput = {
   }>;
   new_expenses: Array<{
     vendor: string | null;
+    vendor_gst_number: string | null;
     amount_cents: number;
     expense_date: string | null;
     description: string | null;
@@ -415,6 +417,7 @@ export async function applyProjectAugmentAction(formData: FormData): Promise<App
         bucket_id: bucketId,
         amount_cents: e.amount_cents,
         vendor: e.vendor?.trim() || null,
+        vendor_gst_number: e.vendor_gst_number?.trim() || null,
         description: e.description?.trim() || null,
         receipt_storage_path: receiptStoragePath,
         expense_date: e.expense_date || new Date().toISOString().slice(0, 10),
@@ -460,6 +463,7 @@ export async function applyProjectAugmentAction(formData: FormData): Promise<App
         tenant_id: tenant.id,
         project_id: input.projectId,
         vendor: b.vendor?.trim() || 'Unknown',
+        vendor_gst_number: b.vendor_gst_number?.trim() || null,
         bill_date: b.bill_date || new Date().toISOString().slice(0, 10),
         description: b.description?.trim() || null,
         amount_cents: b.amount_cents,

@@ -28,6 +28,7 @@ export type ExtractedSubQuote = {
 
 export type ExtractedVendorBill = {
   vendor: string;
+  vendor_gst_number?: string;
   bill_number?: string;
   bill_date: string;
   description?: string;
@@ -113,6 +114,7 @@ Return ONLY valid JSON matching this schema (no markdown, no prose):
     "notes"?: string
     // OR for vendor_bill:
     "vendor": string,
+    "vendor_gst_number"?: string,  // Canadian GST/HST BN printed on the invoice (e.g. "123456789 RT0001" or 9-digit root). Labels: "GST Reg #", "HST #", "BN", "Business Number". Omit if not shown.
     "bill_number"?: string,
     "bill_date": "YYYY-MM-DD",
     "description"?: string,

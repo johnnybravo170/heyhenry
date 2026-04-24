@@ -14,6 +14,7 @@ export type ProjectBillRow = {
   status: BillStatus;
   receipt_url: string | null;
   cost_code: string | null;
+  vendor_gst_number: string | null;
   bucket_id: string | null;
   bucket_name: string | null;
   attachment_storage_path: string | null;
@@ -26,7 +27,7 @@ export async function listProjectBills(projectId: string): Promise<ProjectBillRo
   const { data, error } = await supabase
     .from('project_bills')
     .select(
-      'id, tenant_id, project_id, vendor, bill_date, description, amount_cents, gst_cents, status, receipt_url, cost_code, bucket_id, attachment_storage_path, created_at, updated_at, project_cost_buckets(name)',
+      'id, tenant_id, project_id, vendor, bill_date, description, amount_cents, gst_cents, status, receipt_url, cost_code, vendor_gst_number, bucket_id, attachment_storage_path, created_at, updated_at, project_cost_buckets(name)',
     )
     .eq('project_id', projectId)
     .order('bill_date', { ascending: false });
@@ -46,6 +47,7 @@ export async function listProjectBills(projectId: string): Promise<ProjectBillRo
       status: r.status as BillStatus,
       receipt_url: (r.receipt_url as string | null) ?? null,
       cost_code: (r.cost_code as string | null) ?? null,
+      vendor_gst_number: (r.vendor_gst_number as string | null) ?? null,
       bucket_id: (r.bucket_id as string | null) ?? null,
       bucket_name: bucketRel?.name ?? null,
       attachment_storage_path: (r.attachment_storage_path as string | null) ?? null,

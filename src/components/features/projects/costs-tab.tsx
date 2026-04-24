@@ -259,6 +259,7 @@ function BillForm({
   );
   const [bucketId, setBucketId] = useState(initial?.bucket_id ?? '');
   const [costCode, setCostCode] = useState(initial?.cost_code ?? '');
+  const [vendorGstNumber, setVendorGstNumber] = useState(initial?.vendor_gst_number ?? '');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
 
   // Auto-compute GST whenever subtotal changes, but only if the user hasn't
@@ -307,6 +308,7 @@ function BillForm({
       fd.set('gst_cents', String(gstCents));
       fd.set('bucket_id', bucketId);
       fd.set('cost_code', costCode);
+      fd.set('vendor_gst_number', vendorGstNumber);
       if (attachmentFile) fd.set('attachment', attachmentFile);
 
       const res = await upsertBillWithAttachmentAction(fd);
@@ -382,6 +384,17 @@ function BillForm({
             value={costCode}
             onChange={(e) => setCostCode(e.target.value)}
             placeholder="Optional"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="bill-vendor-gst" className="mb-1 block text-xs font-medium">
+            Vendor GST # (optional)
+          </label>
+          <Input
+            id="bill-vendor-gst"
+            value={vendorGstNumber}
+            onChange={(e) => setVendorGstNumber(e.target.value)}
+            placeholder="e.g. 123456789 RT0001"
           />
         </div>
       </div>

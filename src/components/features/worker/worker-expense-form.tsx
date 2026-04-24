@@ -33,6 +33,7 @@ export function WorkerExpenseForm({ projects }: Props) {
   const [bucketId, setBucketId] = useState('');
   const [amount, setAmount] = useState('');
   const [vendor, setVendor] = useState('');
+  const [vendorGstNumber, setVendorGstNumber] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(today);
   const [receipt, setReceipt] = useState<File | null>(null);
@@ -60,7 +61,13 @@ export function WorkerExpenseForm({ projects }: Props) {
         return;
       }
       // Only fill fields the user hasn't already typed into.
-      const { amountCents, vendor: v, expenseDate, description: d } = res.fields;
+      const {
+        amountCents,
+        vendor: v,
+        vendorGstNumber: bn,
+        expenseDate,
+        description: d,
+      } = res.fields;
       let filled = 0;
       if (amountCents != null && !amount) {
         setAmount((amountCents / 100).toFixed(2));
@@ -68,6 +75,10 @@ export function WorkerExpenseForm({ projects }: Props) {
       }
       if (v && !vendor) {
         setVendor(v);
+        filled++;
+      }
+      if (bn && !vendorGstNumber) {
+        setVendorGstNumber(bn);
         filled++;
       }
       if (expenseDate && date === today) {
@@ -104,6 +115,7 @@ export function WorkerExpenseForm({ projects }: Props) {
     if (bucketId) fd.append('bucket_id', bucketId);
     fd.append('amount_cents', String(Math.round(amt * 100)));
     fd.append('vendor', vendor);
+    fd.append('vendor_gst_number', vendorGstNumber);
     fd.append('description', description);
     fd.append('expense_date', date);
     if (receipt) fd.append('receipt', receipt);
@@ -216,6 +228,16 @@ export function WorkerExpenseForm({ projects }: Props) {
           value={vendor}
           onChange={(e) => setVendor(e.target.value)}
           placeholder="e.g. Home Depot"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="vendor-bn">Vendor GST # (optional)</Label>
+        <Input
+          id="vendor-bn"
+          value={vendorGstNumber}
+          onChange={(e) => setVendorGstNumber(e.target.value)}
+          placeholder="e.g. 123456789 RT0001"
         />
       </div>
 

@@ -271,6 +271,7 @@ export async function upsertBillWithAttachmentAction(
   const gst_cents = Math.round(parseFloat(String(formData.get('gst_cents') || '0')) || 0);
   const bucket_id = (formData.get('bucket_id') as string | null)?.trim() || null;
   const cost_code = (formData.get('cost_code') as string | null)?.trim() || null;
+  const vendor_gst_number = (formData.get('vendor_gst_number') as string | null)?.trim() || null;
   const attachmentFile = formData.get('attachment');
 
   if (!project_id) return { ok: false, error: 'Missing project_id.' };
@@ -314,6 +315,7 @@ export async function upsertBillWithAttachmentAction(
     gst_cents,
     bucket_id: bucket_id || null,
     cost_code,
+    vendor_gst_number,
     status: 'pending',
     updated_at: new Date().toISOString(),
   };
@@ -344,6 +346,7 @@ export async function upsertBillAction(input: unknown): Promise<CostControlResul
     amount_cents: z.coerce.number().int().min(1, 'Amount must be greater than 0'),
     status: z.enum(['pending', 'approved', 'paid']).optional().default('pending'),
     cost_code: z.string().trim().max(50).optional().or(z.literal('')),
+    vendor_gst_number: z.string().trim().max(40).optional().or(z.literal('')),
   });
   const parsed = billSchema.safeParse(input);
   if (!parsed.success) {
@@ -353,11 +356,12 @@ export async function upsertBillAction(input: unknown): Promise<CostControlResul
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
   const supabase = await createClient();
-  const { id, description, cost_code, ...fields } = parsed.data;
+  const { id, description, cost_code, vendor_gst_number, ...fields } = parsed.data;
   const row = {
     ...fields,
     description: description || null,
     cost_code: cost_code || null,
+    vendor_gst_number: vendor_gst_number?.trim() || null,
     updated_at: new Date().toISOString(),
   };
   if (id) {

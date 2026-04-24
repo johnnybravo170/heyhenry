@@ -267,6 +267,7 @@ export function ProjectIntakeZone({
             .filter(({ i }) => includeBills[i] && !billReclassifiedAsExpense[i])
             .map(({ b, i }) => ({
               vendor: b.vendor,
+              vendor_gst_number: b.vendor_gst_number ?? null,
               bill_date: b.bill_date,
               description: b.description,
               amount_cents: b.amount_cents,
@@ -279,6 +280,7 @@ export function ProjectIntakeZone({
             .filter(({ i }) => includeExpenses[i] && expenseReclassifiedAsBill[i])
             .map(({ e, i }) => ({
               vendor: e.vendor,
+              vendor_gst_number: e.vendor_gst_number ?? null,
               bill_date: e.expense_date,
               description: e.description,
               amount_cents: e.amount_cents,
@@ -300,6 +302,7 @@ export function ProjectIntakeZone({
             .filter(({ i }) => includeExpenses[i] && !expenseReclassifiedAsBill[i])
             .map(({ e, i }) => ({
               vendor: e.vendor,
+              vendor_gst_number: e.vendor_gst_number ?? null,
               amount_cents: e.amount_cents,
               expense_date: e.expense_date,
               description: e.description,
@@ -312,6 +315,7 @@ export function ProjectIntakeZone({
             .filter(({ i }) => includeBills[i] && billReclassifiedAsExpense[i])
             .map(({ b, i }) => ({
               vendor: b.vendor,
+              vendor_gst_number: b.vendor_gst_number ?? null,
               // Merge amount + GST — an expense is "paid", so total is what matters.
               amount_cents: b.amount_cents + (b.gst_cents ?? 0),
               expense_date: b.bill_date,
