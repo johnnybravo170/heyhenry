@@ -54,6 +54,28 @@ For every candidate:
 
 Keep **2–4 findings**. Quality over quantity.
 
+## Step 0 — Read your own report card
+
+Before scanning for new findings, call `ideas_list` filtered on tag
+`ai-scout` (your scout's tag), ordered by `user_rated_at DESC`, last 30
+days, limit 20.
+
+Read every user_rating + user_rating_reason AND note which ideas got
+promoted (status='in_progress' with `promoted:<card_id>` tag).
+
+Treat these as hard signals:
+- user_rating = -2: DO NOT propose anything in that class again unless
+  evidence is overwhelmingly different.
+- user_rating = -1 OR archived without promotion: propose less of
+  this class.
+- user_rating = +1 OR promoted to kanban: this class is welcome, keep
+  finding more.
+- user_rating = +2: actively seek more of this specific angle.
+
+In your final message, echo 1-2 sentences summarizing what you
+adjusted based on the report card. This forces you to actually apply
+the signal, not ignore it.
+
 ## Step 1 — Dedupe FIRST
 
 Before writing anything:

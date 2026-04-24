@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase';
+import { getScoutReportCard } from '@/server/ops-services/ideas';
 import { jsonResult, type McpToolCtx, withAudit } from './context';
 
 export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
@@ -101,6 +102,55 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         id: data.id,
         url: `https://ops.heyhenry.io/ideas/${data.id}`,
       });
+    }),
+  );
+
+  server.tool(
+    'ideas_rate',
+    'Rate an idea with -2/-1/+1/+2 and a reason. Explicit human feedback signal that all scout agents read on their next run. -2 = never propose this class again. -1 = low signal. +1 = good. +2 = more like this. Agents cannot rate their own ideas.',
+    {
+      id: z.string().uuid(),
+      rating: z.union([z.literal(-2), z.literal(-1), z.literal(1), z.literal(2)]),
+      reason: z.string().min(1).max(500),
+    },
+    withAudit(ctx, 'ideas_rate', 'write:ideas', async ({ id, rating, reason }) => {
+      const service = createServiceClient();
+      const { data: existing, error: selErr } = await service
+        .schema('ops')
+        .from('ideas')
+        .select('id, actor_name')
+        .eq('id', id)
+        .maybeSingle();
+      if (selErr) throw new Error(selErr.message);
+      if (!existing) throw new Error('Idea not found');
+      if (existing.actor_name === ctx.actorName) {
+        throw new Error('cannot rate your own idea — self-reinforcement loop');
+      }
+      const { error } = await service
+        .schema('ops')
+        .from('ideas')
+        .update({
+          user_rating: rating,
+          user_rating_reason: reason,
+          user_rated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+      if (error) throw new Error(error.message);
+      return jsonResult({ ok: true, id, rating, url: `https://ops.heyhenry.io/ideas/${id}` });
+    }),
+  );
+
+  server.tool(
+    'ideas_report_card',
+    "Combined feedback view for a scout-style agent. Returns the agent's recently rated ideas (explicit -2/-1/+1/+2), promoted ideas (implicit +2), and archived-without-promotion ideas (implicit -1) in the window. Call this BEFORE producing new findings so you can adjust based on past signal.",
+    {
+      scout_tag: z.string().min(1).max(50),
+      days: z.number().int().min(1).max(365).default(30),
+    },
+    withAudit(ctx, 'ideas_report_card', 'read:ideas', async ({ scout_tag, days }) => {
+      const card = await getScoutReportCard(scout_tag, days);
+      return jsonResult(card);
     }),
   );
 }

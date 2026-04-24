@@ -125,6 +125,39 @@ export async function rateIdeaAction(id: string, rating: number | null): Promise
   return { ok: true };
 }
 
+const FEEDBACK_RATINGS = [-2, -1, 1, 2] as const;
+
+export async function rateIdeaFeedbackAction(
+  id: string,
+  rating: number,
+  reason: string,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!FEEDBACK_RATINGS.includes(rating as (typeof FEEDBACK_RATINGS)[number])) {
+    return { ok: false, error: 'Rating must be -2, -1, +1, or +2.' };
+  }
+  const trimmed = reason.trim();
+  if (!trimmed) return { ok: false, error: 'Reason required.' };
+  if (trimmed.length > 500) return { ok: false, error: 'Reason must be ≤500 chars.' };
+  const service = createServiceClient();
+  const { error } = await service
+    .schema('ops')
+    .from('ideas')
+    .update({
+      user_rating: rating,
+      user_rating_reason: trimmed,
+      user_rated_at: new Date().toISOString(),
+      user_rated_by: admin.userId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/ideas/${id}`);
+  revalidatePath('/ideas');
+  revalidatePath('/dashboard');
+  return { ok: true };
+}
+
 export async function assignIdeaAction(id: string, assignee: string | null): Promise<ActionResult> {
   await requireAdmin();
   const service = createServiceClient();

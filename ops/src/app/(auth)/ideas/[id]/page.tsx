@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { CommentForm } from './comment-form';
 import { IdeaActions } from './idea-actions';
 import { PromoteToKanbanForm } from './promote-to-kanban-form';
+import { RateForm } from './rate-form';
 
 export default async function IdeaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,7 +14,7 @@ export default async function IdeaDetailPage({ params }: { params: Promise<{ id:
     .schema('ops')
     .from('ideas')
     .select(
-      'id, title, body, actor_type, actor_name, status, rating, assignee, tags, created_at, updated_at',
+      'id, title, body, actor_type, actor_name, status, rating, assignee, tags, created_at, updated_at, user_rating, user_rating_reason, user_rated_at',
     )
     .eq('id', id)
     .maybeSingle();
@@ -76,6 +77,16 @@ export default async function IdeaDetailPage({ params }: { params: Promise<{ id:
         rating={(idea.rating as number | null) ?? null}
         assignee={(idea.assignee as string | null) ?? ''}
       />
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold">Feedback rating</h2>
+        <RateForm
+          ideaId={id}
+          currentRating={(idea.user_rating as number | null) ?? null}
+          currentReason={(idea.user_rating_reason as string | null) ?? null}
+          ratedAt={(idea.user_rated_at as string | null) ?? null}
+        />
+      </section>
 
       <section className="space-y-2">
         <h2 className="text-sm font-semibold">Promote to Kanban</h2>

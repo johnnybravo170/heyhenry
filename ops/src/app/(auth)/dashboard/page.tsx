@@ -9,6 +9,7 @@ type CapturedItem = {
   title: string;
   created_at: string;
   href: string;
+  userRating?: number | null;
 };
 
 function agoStamp(iso: string): string {
@@ -59,7 +60,7 @@ export default async function DashboardPage() {
     service
       .schema('ops')
       .from('ideas')
-      .select('id, title, created_at')
+      .select('id, title, created_at, user_rating')
       .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(5),
@@ -92,6 +93,7 @@ export default async function DashboardPage() {
       title: (r.title as string) ?? '(no title)',
       created_at: r.created_at as string,
       href: `/ideas/${r.id as string}`,
+      userRating: (r.user_rating as number | null) ?? null,
     })),
     ...(capDecisions.data ?? []).map((r) => ({
       surface: 'decision' as const,
@@ -198,6 +200,17 @@ export default async function DashboardPage() {
                         {agoStamp(c.created_at)}
                       </span>
                     </span>
+                    {c.userRating != null ? (
+                      <span
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold ${
+                          c.userRating > 0
+                            ? 'bg-emerald-500/10 text-emerald-400'
+                            : 'bg-rose-500/10 text-rose-400'
+                        }`}
+                      >
+                        {c.userRating > 0 ? `👍 +${c.userRating}` : `👎 ${c.userRating}`}
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               );
