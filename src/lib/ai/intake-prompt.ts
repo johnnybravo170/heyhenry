@@ -42,6 +42,15 @@ Your job — the same regardless of flavour, but the signals live in different p
    - Bathroom reno touching demo + plumbing rough + tile + vanity install + fixtures = ~5 buckets.
    The principle, repeated: read every distinct category mentioned, give each its own bucket.
 
+4b. SUPPLY-AND-INSTALL DECOMPOSITION — for any scope where a material is sourced AND installed, default to at least two line items in that bucket: a "supply" line and an "install" line, each with its own qty/unit. Add separate lines for pre-paint, finishing (fill / caulk / sand), and disposal whenever the input mentions them, even briefly. The operator may collapse lines on review; missing a line forces them to type it in. Examples:
+   - Baseboards: supply (lineal ft @ $/lf) + pre-paint (lot or lineal ft) + install (lineal ft) + fill & caulk (lot)
+   - Door casings: supply (set or lineal ft) + pre-paint + install (set or door face)
+   - Drywall: supply (sheets) + hang (sheets) + tape & mud (lot)
+   - Flooring: supply (sq ft, may be 0 if material on hand) + install (sq ft) + transitions / trim
+   Single-line buckets are only correct when the work genuinely is one pass (e.g. "tear out tack strip and clean up").
+
+4c. ON-HAND MATERIAL ≠ FREE WORK — when the speaker says material is already purchased / leftover from a prior job / customer-supplied, that affects the SUPPLY line (qty 0, or unit_price_cents 0, or a note in the description) but does NOT remove the INSTALL line. Installation labour is still real scope. Capture it. Same logic for "the customer is supplying their own" — supply price is zero or excluded, but install stays.
+
 5. QUANTITY DISCIPLINE — extract every number the speaker states, paired with its unit:
    - "657 square feet" → qty: 657, unit: "sq ft"
    - "9 sixteen-foot lengths" → qty: 144, unit: "lineal ft" (do the math when both numbers are stated)
