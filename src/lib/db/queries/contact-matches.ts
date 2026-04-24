@@ -1,14 +1,23 @@
 /**
- * Fuzzy-match helpers used by the intake review screen to flag possible
- * duplicate contacts before we create a new one. Normalization is
- * intentionally loose (digits-only for phone, lowercased-trimmed for
- * name/email) so minor formatting differences don't hide a real match.
+ * Fuzzy-match helpers used by the dedup banner on every contact-create
+ * surface. Returns two tiers:
  *
- * Matches are scored by which field agreed (phone > email > name) and the
- * caller decides how to present them.
+ *   - strong: phone (digits-only last-7 match), email (exact), or an
+ *     exact name match. These are treated as "same person" by the banner —
+ *     the operator must either pick an existing record or explicitly opt
+ *     into creating a new one ("Create anyway").
+ *   - weak: a trigram name similarity above the threshold but not exact.
+ *     Two different people can genuinely share a name ("John Doe" vs
+ *     "John Doe"), so the banner for weak-only matches reads as an FYI
+ *     and "Create new" is a first-class button, not a scary escape.
  */
 
 import { createClient } from '@/lib/supabase/server';
+
+/** Minimum trigram similarity before we'll flag a name as a weak match. */
+const FUZZY_NAME_THRESHOLD = 0.4;
+
+export type ContactMatchStrength = 'strong' | 'weak';
 
 export type ContactMatch = {
   id: string;
@@ -16,7 +25,10 @@ export type ContactMatch = {
   kind: 'customer' | 'vendor' | 'sub' | 'agent' | 'inspector' | 'referral' | 'other';
   email: string | null;
   phone: string | null;
-  matchedOn: 'phone' | 'email' | 'name';
+  matchedOn: 'phone' | 'email' | 'name' | 'similar_name';
+  strength: ContactMatchStrength;
+  /** Trigram similarity (0.0–1.0). Only set for `similar_name` matches. */
+  similarity?: number;
 };
 
 /** Phone → digits only, trimmed. Handles +1/604-/spaces. */
@@ -24,8 +36,6 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/\D/g, '');
   if (digits.length < 7) return null;
-  // Strip a leading '1' for North American numbers so '1-604-555-0100' and
-  // '604-555-0100' match.
   return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
 }
 
@@ -41,12 +51,6 @@ export function normalizeName(raw: string | null | undefined): string | null {
   return trimmed.length >= 2 ? trimmed : null;
 }
 
-/**
- * Find existing contacts that might be the same person as the one the
- * operator is about to create. Matches on phone (strongest), email, or
- * name equality. `excludeId` lets an augment flow skip the contact being
- * edited.
- */
 export async function findContactMatches(input: {
   name?: string | null;
   phone?: string | null;
@@ -56,14 +60,14 @@ export async function findContactMatches(input: {
   const phone = normalizePhone(input.phone);
   const email = normalizeEmail(input.email);
   const name = normalizeName(input.name);
+  const rawName = input.name?.trim() ?? null;
 
   if (!phone && !email && !name) return [];
 
   const supabase = await createClient();
   const results = new Map<string, ContactMatch>();
 
-  // Phone match — strongest signal. Use ilike on the last 7 digits so the
-  // match survives country-code prefix differences.
+  // Strong: phone match.
   if (phone) {
     const last7 = phone.slice(-7);
     const { data } = await supabase
@@ -76,11 +80,16 @@ export async function findContactMatches(input: {
       if (input.excludeId && row.id === input.excludeId) continue;
       const rowPhone = normalizePhone(row.phone);
       if (rowPhone && (rowPhone === phone || rowPhone.endsWith(last7))) {
-        results.set(row.id, { ...(row as ContactMatch), matchedOn: 'phone' });
+        results.set(row.id, {
+          ...(row as Omit<ContactMatch, 'matchedOn' | 'strength'>),
+          matchedOn: 'phone',
+          strength: 'strong',
+        });
       }
     }
   }
 
+  // Strong: email match.
   if (email) {
     const { data } = await supabase
       .from('customers')
@@ -91,11 +100,16 @@ export async function findContactMatches(input: {
     for (const row of data ?? []) {
       if (input.excludeId && row.id === input.excludeId) continue;
       if (!results.has(row.id)) {
-        results.set(row.id, { ...(row as ContactMatch), matchedOn: 'email' });
+        results.set(row.id, {
+          ...(row as Omit<ContactMatch, 'matchedOn' | 'strength'>),
+          matchedOn: 'email',
+          strength: 'strong',
+        });
       }
     }
   }
 
+  // Strong: exact name match (case-insensitive).
   if (name) {
     const { data } = await supabase
       .from('customers')
@@ -106,10 +120,52 @@ export async function findContactMatches(input: {
     for (const row of data ?? []) {
       if (input.excludeId && row.id === input.excludeId) continue;
       if (!results.has(row.id)) {
-        results.set(row.id, { ...(row as ContactMatch), matchedOn: 'name' });
+        results.set(row.id, {
+          ...(row as Omit<ContactMatch, 'matchedOn' | 'strength'>),
+          matchedOn: 'name',
+          strength: 'strong',
+        });
       }
     }
   }
 
+  // Weak: trigram similar name (not already captured above).
+  if (rawName && rawName.length >= 2) {
+    const { data } = await supabase.rpc('find_similar_contacts', {
+      p_name: rawName,
+      p_threshold: FUZZY_NAME_THRESHOLD,
+      p_limit: 5,
+      p_exclude_id: input.excludeId ?? null,
+    });
+    for (const row of (data ?? []) as Array<{
+      id: string;
+      name: string;
+      kind: ContactMatch['kind'];
+      email: string | null;
+      phone: string | null;
+      similarity: number;
+    }>) {
+      if (results.has(row.id)) continue;
+      // Skip exact-ish trigram matches — those would already have shown up
+      // as a strong `name` match above. 0.99+ is effectively equal.
+      if (row.similarity >= 0.99) continue;
+      results.set(row.id, {
+        id: row.id,
+        name: row.name,
+        kind: row.kind,
+        email: row.email,
+        phone: row.phone,
+        matchedOn: 'similar_name',
+        strength: 'weak',
+        similarity: row.similarity,
+      });
+    }
+  }
+
   return [...results.values()];
+}
+
+/** Convenience — true when any match in the list is a strong signal. */
+export function hasStrongMatch(matches: ContactMatch[]): boolean {
+  return matches.some((m) => m.strength === 'strong');
 }
