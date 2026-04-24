@@ -179,6 +179,21 @@ export function registerKanbanTools(server: McpServer, ctx: McpToolCtx) {
       related_type: z.string().max(50).nullable().optional(),
       related_id: z.string().max(500).nullable().optional(),
       recurring_rule: z.string().max(100).nullable().optional(),
+      size_points: z
+        .union([
+          z.literal(1),
+          z.literal(2),
+          z.literal(3),
+          z.literal(5),
+          z.literal(8),
+          z.literal(13),
+          z.literal(21),
+        ])
+        .nullable()
+        .optional()
+        .describe(
+          'Fibonacci size estimate (1=1hr, 2=half-day, 3=day, 5=1-2d, 8=~1wk, 13=~2wk, 21=month+). When in doubt size UP — small estimates poison the ETA.',
+        ),
     },
     withAudit(ctx, 'kanban_card_update', 'write:kanban', async ({ id, ...input }) => {
       const res = await updateCard(actor(ctx), id, input);

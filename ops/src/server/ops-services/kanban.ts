@@ -224,6 +224,7 @@ export type UpdateCardInput = {
   related_type?: string | null;
   related_id?: string | null;
   recurring_rule?: string | null;
+  size_points?: number | null;
 };
 
 export async function updateCard(ctx: ActorCtx, id: string, input: UpdateCardInput) {
