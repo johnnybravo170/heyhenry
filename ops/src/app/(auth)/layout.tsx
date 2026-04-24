@@ -6,7 +6,6 @@ const NAV = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/worklog', label: 'Worklog' },
   { href: '/ideas', label: 'Ideas' },
-  { href: '/roadmap', label: 'Roadmap' },
   { href: '/admin/kanban', label: 'Kanban' },
   { href: '/admin/launch', label: 'Launch' },
   { href: '/admin/stats', label: 'Stats' },
@@ -37,7 +36,7 @@ export default async function AuthedLayout({ children }: { children: React.React
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
-            <span>{admin.email}</span>
+            <span title={admin.email}>{admin.email.split('@')[0]}</span>
             <SignOutButton />
           </div>
         </div>
