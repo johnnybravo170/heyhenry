@@ -30,17 +30,46 @@ const RESIZE_THRESHOLD_BYTES = 2 * 1024 * 1024;
 async function shrinkIfNeeded(file: File): Promise<File> {
   if (file.type === 'application/pdf') return file;
   if (!file.type.startsWith('image/')) return file;
-  if (file.size <= RESIZE_THRESHOLD_BYTES) return file;
+
+  // OpenAI Vision only accepts png, jpeg, gif, webp. HEIC/HEIF from iPhones
+  // and anything else non-standard must get converted to JPEG regardless of
+  // size, or the vision pass returns a 400 unsupported-image error.
+  const OPENAI_FRIENDLY = /^image\/(jpeg|jpg|png|gif|webp)$/i;
+  const needsFormatConversion = !OPENAI_FRIENDLY.test(file.type);
+  const needsShrink = file.size > RESIZE_THRESHOLD_BYTES;
+  if (!needsFormatConversion && !needsShrink) return file;
+
   try {
     const blob = await resizeImage(file, { maxDimension: 2048, quality: 0.85 });
-    const newName = file.name.replace(/\.(heic|heif|png|webp)$/i, '.jpg');
+    const newName = file.name.replace(/\.(heic|heif|png|webp|avif)$/i, '.jpg');
     return new File([blob], newName || 'image.jpg', { type: 'image/jpeg' });
   } catch {
     return file;
   }
 }
 
+/**
+ * Block the browser's default drag-drop behaviour on the whole window while
+ * this form is mounted. Without this, a file dropped anywhere outside the
+ * IntakeDropzone (textarea, empty margin, etc.) makes the browser navigate
+ * to file://… and shows the "This page couldn't load" chrome error.
+ */
+function usePreventDefaultWindowDrop() {
+  useEffect(() => {
+    function prevent(e: DragEvent) {
+      e.preventDefault();
+    }
+    window.addEventListener('dragover', prevent);
+    window.addEventListener('drop', prevent);
+    return () => {
+      window.removeEventListener('dragover', prevent);
+      window.removeEventListener('drop', prevent);
+    };
+  }, []);
+}
+
 export function LeadIntakeForm() {
+  usePreventDefaultWindowDrop();
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('upload');
   const [customerName, setCustomerName] = useState('');
@@ -79,38 +108,36 @@ export function LeadIntakeForm() {
       fd.set('customerName', useName);
       fd.set('pastedText', useText);
 
-      // Audio files route around Vercel's 4.5 MB body cap by uploading
-      // directly to Supabase Storage from the browser; the server action
-      // downloads them, runs Whisper, and deletes. Images + PDFs still go
-      // inline because they're small after client-side resize.
-      const audioFiles = useFiles.filter((f) => f.type.startsWith('audio/'));
-      const otherFiles = useFiles.filter((f) => !f.type.startsWith('audio/'));
-      if (audioFiles.length > 0) {
+      // EVERY file rides via Supabase Storage — not through the server
+      // action body. Vercel caps server-action bodies around 4.5 MB,
+      // which two phone photos or one voice memo blow right past. The
+      // client uploads into the `intake-audio` bucket (yes, name now
+      // covers images + PDFs too) under its own <tenant>/<uid>/ prefix;
+      // the server downloads, processes, and deletes.
+      if (useFiles.length > 0) {
         const supabase = createBrowserSupabase();
         const { data: auth } = await supabase.auth.getUser();
         const userId = auth.user?.id;
         if (!userId) {
-          toast.error('Please sign in again before dropping audio.');
+          toast.error('Please sign in again before dropping files.');
           return;
         }
-        for (const audio of audioFiles) {
-          const ext = audio.name.split('.').pop()?.toLowerCase() || 'm4a';
-          // The upload RLS policy requires the SECOND path segment to
-          // equal auth.uid(). Match that layout here: <tenant>/<user>/<id>
+        for (const raw of useFiles) {
+          const prepared = await shrinkIfNeeded(raw);
+          const ext = prepared.name.split('.').pop()?.toLowerCase() || 'bin';
+          // Path layout matches the bucket RLS: foldername[2] = auth.uid().
           const path = `tenant/${userId}/${crypto.randomUUID()}.${ext}`;
           const { error: upErr } = await supabase.storage
             .from('intake-audio')
-            .upload(path, audio, { contentType: audio.type || 'audio/mp4' });
+            .upload(path, prepared, {
+              contentType: prepared.type || 'application/octet-stream',
+            });
           if (upErr) {
-            toast.error(`Audio upload failed: ${upErr.message}`);
+            toast.error(`Upload failed: ${upErr.message}`);
             return;
           }
-          fd.append('audioStoragePaths', path);
+          fd.append('storagePaths', path);
         }
-      }
-      for (const f of otherFiles) {
-        const shrunk = await shrinkIfNeeded(f);
-        fd.append('images', shrunk);
       }
       const res = await parseInboundLeadAction(fd);
       if (!res.ok) {

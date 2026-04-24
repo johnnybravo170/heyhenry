@@ -40,59 +40,49 @@ export async function parseInboundLeadAction(formData: FormData): Promise<ParseI
 
   const customerName = String(formData.get('customerName') ?? '').trim();
   let pastedText = String(formData.get('pastedText') ?? '').trim();
-  if (!customerName && !pastedText && !formData.getAll('images').length) {
+
+  // Every file rides via Supabase Storage now — the client uploads to
+  // the `intake-audio` bucket (the name is historical; it stages
+  // images + PDFs too) and we get only the paths here. Vercel caps
+  // server-action bodies around 4.5 MB, so two photos or one voice
+  // memo in the body killed the request before the action even ran.
+  const storagePaths = formData
+    .getAll('storagePaths')
+    .filter((p): p is string => typeof p === 'string' && p.length > 0);
+
+  if (!customerName && !pastedText && storagePaths.length === 0) {
     return { ok: false, error: 'Need at least an image, pasted text, or a customer name.' };
   }
-
-  const allFiles = formData
-    .getAll('images')
-    .filter((f): f is File => f instanceof File && f.size > 0);
-  if (allFiles.length > MAX_IMAGES) {
+  if (storagePaths.length > MAX_IMAGES) {
     return { ok: false, error: `Too many files (max ${MAX_IMAGES}).` };
   }
-  for (const f of allFiles) {
-    if (f.size > MAX_BYTES) {
-      return { ok: false, error: `${f.name} is larger than 25MB.` };
-    }
-    const isImage = f.type.startsWith('image/');
-    const isPdf = f.type === 'application/pdf';
-    const isAudio = f.type.startsWith('audio/');
-    if (!isImage && !isPdf && !isAudio) {
-      return { ok: false, error: `${f.name} is not an image, PDF, or audio file (${f.type}).` };
-    }
-  }
 
-  // Audio drops get transcribed via Whisper and folded into pastedText.
-  // Small audio files inlined in FormData go first; large ones (voice
-  // memos often exceed Vercel's ~4.5 MB server-action body cap) are
-  // routed via Supabase Storage — the client uploads to the
-  // `intake-audio` bucket and passes storage paths in FormData instead
-  // of the files themselves.
-  const audioFiles = allFiles.filter((f) => f.type.startsWith('audio/'));
-  const files = allFiles.filter((f) => !f.type.startsWith('audio/'));
-  for (const audio of audioFiles) {
-    const transcript = await transcribeAudio(apiKey, audio);
-    if (transcript) {
-      pastedText = pastedText ? `${pastedText}\n\n${transcript}` : transcript;
-    }
-  }
-  const audioStoragePaths = formData
-    .getAll('audioStoragePaths')
-    .filter((p): p is string => typeof p === 'string' && p.length > 0);
-  if (audioStoragePaths.length > 0) {
+  // Download each staged file via the service-role client (bypasses RLS
+  // — the bucket is auth-scoped but the admin client skips that). Audio
+  // goes to Whisper and its transcript is folded into pastedText.
+  // Images + PDFs collect into `files` for the downstream vision pass.
+  // Best-effort cleanup of each staging file after.
+  const files: File[] = [];
+  if (storagePaths.length > 0) {
     const admin = createAdminClient();
-    for (const path of audioStoragePaths) {
+    for (const path of storagePaths) {
       const { data: blob, error: dlErr } = await admin.storage.from('intake-audio').download(path);
       if (dlErr || !blob) continue;
-      const audioFile = new File([blob], path.split('/').pop() ?? 'voice-memo.m4a', {
-        type: blob.type || 'audio/mp4',
-      });
-      const transcript = await transcribeAudio(apiKey, audioFile);
-      if (transcript) {
-        pastedText = pastedText ? `${pastedText}\n\n${transcript}` : transcript;
+      if (blob.size > MAX_BYTES) {
+        await admin.storage.from('intake-audio').remove([path]);
+        return { ok: false, error: `A staged file is larger than 25MB.` };
       }
-      // Best-effort cleanup of the staging file. Don't block the whole
-      // intake on a delete failure.
+      const name = path.split('/').pop() ?? 'file';
+      const type = blob.type || 'application/octet-stream';
+      const f = new File([blob], name, { type });
+      if (type.startsWith('audio/')) {
+        const transcript = await transcribeAudio(apiKey, f);
+        if (transcript) {
+          pastedText = pastedText ? `${pastedText}\n\n${transcript}` : transcript;
+        }
+      } else if (type.startsWith('image/') || type === 'application/pdf') {
+        files.push(f);
+      }
       await admin.storage.from('intake-audio').remove([path]);
     }
   }
