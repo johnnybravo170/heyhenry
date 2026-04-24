@@ -179,12 +179,49 @@ export const PROVINCE_RATES: Record<ProvinceCode, ProvincialTaxRates> = {
   },
 };
 
+/**
+ * Reverse lookup: full province name → 2-letter code. Accepts common
+ * spellings we've seen in the wild from manual entry.
+ */
+const NAME_TO_CODE: Record<string, ProvinceCode> = Object.fromEntries(
+  Object.values(PROVINCE_RATES).flatMap((r) => {
+    const pairs: [string, ProvinceCode][] = [[r.name.toUpperCase(), r.code]];
+    // Newfoundland and Labrador → also accept "NEWFOUNDLAND" alone.
+    const firstSegment = r.name.toUpperCase().split(' AND ')[0]?.trim();
+    if (firstSegment && firstSegment !== r.name.toUpperCase()) {
+      pairs.push([firstSegment, r.code]);
+    }
+    return pairs;
+  }),
+) as Record<string, ProvinceCode>;
+
+/**
+ * Resolve rates for a province identifier. Tolerant of:
+ *   - 2-letter code ("BC", "bc")
+ *   - full name ("British Columbia", "BRITISH COLUMBIA")
+ *   - short form where applicable ("Newfoundland")
+ * Returns null if nothing matches — callers fall back to the legacy
+ * per-tenant gst_rate/pst_rate columns.
+ */
 export function getRatesForProvince(
   province: string | null | undefined,
 ): ProvincialTaxRates | null {
   if (!province) return null;
-  const code = province.toUpperCase() as ProvinceCode;
-  return PROVINCE_RATES[code] ?? null;
+  const up = province.trim().toUpperCase();
+  const direct = (PROVINCE_RATES as Record<string, ProvincialTaxRates>)[up];
+  if (direct) return direct;
+  const code = NAME_TO_CODE[up];
+  return code ? PROVINCE_RATES[code] : null;
+}
+
+/**
+ * Normalize any accepted province identifier to the canonical 2-letter
+ * code. Use when writing province to the DB so old free-text values
+ * ("British Columbia") get migrated to codes ("BC") on save.
+ */
+export function normalizeProvinceCode(province: string | null | undefined): ProvinceCode | null {
+  const rates = getRatesForProvince(province);
+  return rates?.code ?? null;
 }
 
 /** Every province code with its display name, for settings dropdowns. */

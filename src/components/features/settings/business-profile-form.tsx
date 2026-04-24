@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { BusinessProfile } from '@/lib/db/queries/profile';
-import { PROVINCE_OPTIONS } from '@/lib/tax/provinces';
+import { normalizeProvinceCode, PROVINCE_OPTIONS } from '@/lib/tax/provinces';
 import { updateBusinessProfileAction } from '@/server/actions/profile';
 
 export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
@@ -14,7 +14,10 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
   const [addressLine1, setAddressLine1] = useState(profile.addressLine1 ?? '');
   const [addressLine2, setAddressLine2] = useState(profile.addressLine2 ?? '');
   const [city, setCity] = useState(profile.city ?? '');
-  const [province, setProvince] = useState(profile.province ?? '');
+  // Normalize any legacy free-text value ("British Columbia") to the
+  // 2-letter code so the picker shows a proper selection instead of
+  // falling through to the "— Pick —" option.
+  const [province, setProvince] = useState(normalizeProvinceCode(profile.province) ?? '');
   const [postalCode, setPostalCode] = useState(profile.postalCode ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
   const [contactEmail, setContactEmail] = useState(profile.contactEmail ?? '');

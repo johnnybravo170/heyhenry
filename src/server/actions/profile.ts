@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
+import { normalizeProvinceCode } from '@/lib/tax/provinces';
 import { normalizePhone } from '@/lib/twilio/client';
 import {
   type BusinessProfileInput,
@@ -54,7 +55,10 @@ export async function updateBusinessProfileAction(
       address_line1: emptyToNull(parsed.data.addressLine1),
       address_line2: emptyToNull(parsed.data.addressLine2),
       city: emptyToNull(parsed.data.city),
-      province: emptyToNull(parsed.data.province),
+      // Normalize any stray free-text province ("British Columbia") to
+      // its 2-letter code ("BC"). The province picker in the UI only
+      // emits codes, but this guards against legacy values or API clients.
+      province: normalizeProvinceCode(parsed.data.province) ?? null,
       postal_code: emptyToNull(parsed.data.postalCode),
       phone: emptyToNull(parsed.data.phone),
       contact_email: emptyToNull(parsed.data.contactEmail),
