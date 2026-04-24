@@ -15,14 +15,25 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { CategoryPickerOption } from '@/lib/db/queries/expense-categories';
+import { createExpenseCategoryAction } from '@/server/actions/expense-categories';
 import {
   extractOverheadReceiptAction,
   logOverheadExpenseAction,
 } from '@/server/actions/overhead-expenses';
+
+const ADD_NEW_SENTINEL = '__add_new__';
 
 type Props = {
   categories: CategoryPickerOption[];
@@ -93,10 +104,15 @@ function TaxHint({
   );
 }
 
-export function OverheadExpenseForm({ categories, gstRate, gstLabel }: Props) {
+export function OverheadExpenseForm({ categories: initialCategories, gstRate, gstLabel }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [parsing, setParsing] = useState(false);
+
+  // Local copy so inline "Add new category" can optimistically extend
+  // the list without a server round-trip to re-render the picker.
+  const [categories, setCategories] = useState(initialCategories);
+  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
 
   const [receipt, setReceipt] = useState<File | null>(null);
   const [categoryId, setCategoryId] = useState('');
@@ -108,6 +124,49 @@ export function OverheadExpenseForm({ categories, gstRate, gstLabel }: Props) {
 
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleCategoryChange(value: string) {
+    if (value === ADD_NEW_SENTINEL) {
+      setAddCategoryOpen(true);
+      return;
+    }
+    setCategoryId(value);
+  }
+
+  function onCategoryCreated(created: { id: string; label: string; parent_id: string | null }) {
+    // Splice the new category into the picker list at a plausible spot:
+    // parents go at the end of the top level; children go right after
+    // their parent. Keeps the UI coherent without a full refetch.
+    setCategories((prev) => {
+      const next = [...prev];
+      if (created.parent_id) {
+        const parentIdx = next.findIndex((c) => c.id === created.parent_id);
+        const insertAt =
+          parentIdx >= 0
+            ? next.findIndex((c, i) => i > parentIdx && c.parent_id !== created.parent_id)
+            : -1;
+        const idx = insertAt === -1 ? next.length : insertAt;
+        next.splice(idx, 0, {
+          id: created.id,
+          label: created.label,
+          isParentHeader: false,
+          parent_id: created.parent_id,
+        });
+      } else {
+        next.push({
+          id: created.id,
+          label: created.label,
+          isParentHeader: false,
+          parent_id: null,
+        });
+      }
+      return next;
+    });
+    setCategoryId(created.id);
+    setAddCategoryOpen(false);
+    // Background refresh so the server-side list + settings page sync.
+    router.refresh();
+  }
 
   async function handleReceipt(file: File) {
     setReceipt(file);
@@ -227,7 +286,7 @@ export function OverheadExpenseForm({ categories, gstRate, gstLabel }: Props) {
           <select
             id="category"
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
             required
           >
@@ -238,6 +297,8 @@ export function OverheadExpenseForm({ categories, gstRate, gstLabel }: Props) {
                 {c.isParentHeader ? ' (sub-accounts below)' : ''}
               </option>
             ))}
+            <option disabled>──────────</option>
+            <option value={ADD_NEW_SENTINEL}>+ Add new category…</option>
           </select>
         </div>
 
@@ -312,6 +373,123 @@ export function OverheadExpenseForm({ categories, gstRate, gstLabel }: Props) {
           Cancel
         </Button>
       </div>
+
+      <AddCategoryDialog
+        open={addCategoryOpen}
+        onOpenChange={setAddCategoryOpen}
+        parentOptions={categories.filter((c) => c.parent_id === null)}
+        onCreated={onCategoryCreated}
+      />
     </form>
+  );
+}
+
+function AddCategoryDialog({
+  open,
+  onOpenChange,
+  parentOptions,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  parentOptions: CategoryPickerOption[];
+  onCreated: (created: { id: string; label: string; parent_id: string | null }) => void;
+}) {
+  const [name, setName] = useState('');
+  const [parentId, setParentId] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function reset() {
+    setName('');
+    setParentId('');
+    setError(null);
+  }
+
+  function submit() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError('Name is required.');
+      return;
+    }
+    startTransition(async () => {
+      const res = await createExpenseCategoryAction({
+        name: trimmed,
+        parent_id: parentId || null,
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const parent = parentId ? parentOptions.find((p) => p.id === parentId) : null;
+      onCreated({
+        id: res.id,
+        label: parent ? `${parent.label} › ${trimmed}` : trimmed,
+        parent_id: parentId || null,
+      });
+      reset();
+    });
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) reset();
+        onOpenChange(v);
+      }}
+    >
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Add category</DialogTitle>
+          <DialogDescription>
+            Create a new expense category. You can also nest it under an existing one (e.g.
+            &ldquo;Vehicles &rsaquo; Truck 2&rdquo;).
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-cat-name">Name</Label>
+            <Input
+              id="new-cat-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Parking"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submit();
+              }}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-cat-parent">Parent (optional)</Label>
+            <select
+              id="new-cat-parent"
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">— None (top-level) —</option>
+              {parentOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={submit} disabled={pending || !name.trim()}>
+            {pending ? 'Adding…' : 'Add'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

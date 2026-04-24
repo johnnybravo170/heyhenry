@@ -33,11 +33,19 @@ export default async function NewOverheadExpensePage() {
         <ArrowLeft className="size-3.5" />
         Expenses
       </Link>
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Log overhead expense</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          For purchases that aren&apos;t tied to a project — fuel, tools, office, software, etc.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Log overhead expense</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            For purchases that aren&apos;t tied to a project — fuel, tools, office, software, etc.
+          </p>
+        </div>
+        <Link
+          href="/settings/categories"
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          Manage categories →
+        </Link>
       </header>
 
       <OverheadExpenseForm

@@ -1,4 +1,4 @@
-import { Paperclip, Plus } from 'lucide-react';
+import { Paperclip, Plus, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { DeleteExpenseButton } from '@/components/features/expenses/delete-expense-button';
@@ -28,12 +28,20 @@ export default async function OverheadExpensesPage() {
             Operating costs not tied to a project — fuel, tools, office, etc.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/expenses/new">
-            <Plus className="size-3.5" />
-            Log expense
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/settings/categories">
+              <Tag className="size-3.5" />
+              Categories
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/expenses/new">
+              <Plus className="size-3.5" />
+              Log expense
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {expenses.length > 0 ? (
