@@ -31,9 +31,23 @@ import { createExpenseCategoryAction } from '@/server/actions/expense-categories
 import {
   extractOverheadReceiptAction,
   logOverheadExpenseAction,
+  updateOverheadExpenseAction,
 } from '@/server/actions/overhead-expenses';
 
 const ADD_NEW_SENTINEL = '__add_new__';
+
+/** Initial values for editing an existing expense. */
+export type OverheadExpenseInitialValues = {
+  id: string;
+  categoryId: string | null;
+  amountCents: number;
+  taxCents: number;
+  vendor: string | null;
+  description: string | null;
+  expenseDate: string;
+  existingReceiptPath: string | null;
+  existingReceiptUrl: string | null;
+};
 
 type Props = {
   categories: CategoryPickerOption[];
@@ -41,6 +55,8 @@ type Props = {
   gstRate: number;
   /** Display label for the rate ("GST 5%", "HST 13%"). */
   gstLabel: string;
+  /** When set, the form is in edit mode and pre-fills these values. */
+  initialValues?: OverheadExpenseInitialValues;
 };
 
 function todayIso(): string {
@@ -104,8 +120,14 @@ function TaxHint({
   );
 }
 
-export function OverheadExpenseForm({ categories: initialCategories, gstRate, gstLabel }: Props) {
+export function OverheadExpenseForm({
+  categories: initialCategories,
+  gstRate,
+  gstLabel,
+  initialValues,
+}: Props) {
   const router = useRouter();
+  const isEdit = !!initialValues;
   const [pending, startTransition] = useTransition();
   const [parsing, setParsing] = useState(false);
 
@@ -115,12 +137,19 @@ export function OverheadExpenseForm({ categories: initialCategories, gstRate, gs
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
 
   const [receipt, setReceipt] = useState<File | null>(null);
-  const [categoryId, setCategoryId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [tax, setTax] = useState('');
-  const [vendor, setVendor] = useState('');
-  const [description, setDescription] = useState('');
-  const [expenseDate, setExpenseDate] = useState(todayIso());
+  // When editing: existingReceiptUrl is the signed URL for the already-
+  // attached receipt. removeExistingReceipt lets the user clear it.
+  const [removeExistingReceipt, setRemoveExistingReceipt] = useState(false);
+  const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? '');
+  const [amount, setAmount] = useState(
+    initialValues ? centsToDollars(initialValues.amountCents) : '',
+  );
+  const [tax, setTax] = useState(
+    initialValues && initialValues.taxCents > 0 ? centsToDollars(initialValues.taxCents) : '',
+  );
+  const [vendor, setVendor] = useState(initialValues?.vendor ?? '');
+  const [description, setDescription] = useState(initialValues?.description ?? '');
+  const [expenseDate, setExpenseDate] = useState(initialValues?.expenseDate ?? todayIso());
 
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -212,6 +241,7 @@ export function OverheadExpenseForm({ categories: initialCategories, gstRate, gs
     }
 
     const fd = new FormData();
+    if (isEdit && initialValues) fd.append('id', initialValues.id);
     fd.append('category_id', categoryId);
     fd.append('amount_cents', String(amountCents));
     fd.append('tax_cents', String(dollarsToCents(tax)));
@@ -219,23 +249,55 @@ export function OverheadExpenseForm({ categories: initialCategories, gstRate, gs
     fd.append('description', description);
     fd.append('expense_date', expenseDate);
     if (receipt) fd.append('receipt', receipt);
+    if (isEdit && removeExistingReceipt && !receipt) fd.append('remove_receipt', '1');
 
     startTransition(async () => {
-      const res = await logOverheadExpenseAction(fd);
+      const res = isEdit
+        ? await updateOverheadExpenseAction(fd)
+        : await logOverheadExpenseAction(fd);
       if (!res.ok) {
         setError(res.error);
         return;
       }
-      toast.success('Expense logged');
+      toast.success(isEdit ? 'Expense updated' : 'Expense logged');
       router.push('/expenses');
     });
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
-      {/* OCR drop zone */}
-      <div className="rounded-lg border border-dashed bg-muted/20 p-4">
-        <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+      {/* Existing receipt (edit mode) — show a link + keep/replace/remove controls. */}
+      {isEdit && initialValues?.existingReceiptPath && !receipt && !removeExistingReceipt ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/20 px-4 py-3 text-sm">
+          <Paperclip className="size-4 text-muted-foreground" />
+          <span className="flex-1 truncate">
+            {initialValues.existingReceiptUrl ? (
+              <a
+                href={initialValues.existingReceiptUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium hover:underline"
+              >
+                View current receipt
+              </a>
+            ) : (
+              <span className="text-muted-foreground">Receipt attached</span>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            Replace
+          </button>
+          <button
+            type="button"
+            onClick={() => setRemoveExistingReceipt(true)}
+            className="text-xs text-muted-foreground hover:text-red-600"
+          >
+            Remove
+          </button>
           <input
             ref={inputRef}
             type="file"
@@ -243,42 +305,57 @@ export function OverheadExpenseForm({ categories: initialCategories, gstRate, gs
             className="hidden"
             onChange={onPick}
           />
-          {receipt ? (
-            <div className="flex w-full items-center justify-between gap-3 rounded-md border bg-background px-3 py-2 text-sm">
-              <span className="flex items-center gap-2 truncate">
-                <Paperclip className="size-4 shrink-0" />
-                <span className="truncate">{receipt.name}</span>
-              </span>
-              {parsing ? (
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <Loader2 className="size-3.5 animate-spin" />
-                  Reading…
+        </div>
+      ) : null}
+
+      {/* OCR drop zone — shown when no existing receipt, or in edit mode when the user cleared it. */}
+      {!(isEdit && initialValues?.existingReceiptPath && !receipt && !removeExistingReceipt) ? (
+        <div className="rounded-lg border border-dashed bg-muted/20 p-4">
+          <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={onPick}
+            />
+            {receipt ? (
+              <div className="flex w-full items-center justify-between gap-3 rounded-md border bg-background px-3 py-2 text-sm">
+                <span className="flex items-center gap-2 truncate">
+                  <Paperclip className="size-4 shrink-0" />
+                  <span className="truncate">{receipt.name}</span>
                 </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setReceipt(null);
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                  aria-label="Remove receipt"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <>
-              <Paperclip className="size-5 text-muted-foreground" />
-              <span className="text-sm font-medium">Drop a receipt to auto-fill</span>
-              <span className="text-xs text-muted-foreground">
-                Photo or PDF. We&apos;ll fill in the fields below — you review before saving.
-              </span>
-            </>
-          )}
-        </label>
-      </div>
+                {parsing ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Reading…
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setReceipt(null);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Remove receipt"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <Paperclip className="size-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Drop a receipt to auto-fill</span>
+                <span className="text-xs text-muted-foreground">
+                  Photo or PDF. We&apos;ll fill in the fields below — you review before saving.
+                </span>
+              </>
+            )}
+          </label>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -367,7 +444,7 @@ export function OverheadExpenseForm({ categories: initialCategories, gstRate, gs
 
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={pending || parsing}>
-          {pending ? 'Saving…' : 'Log expense'}
+          {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Log expense'}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push('/expenses')}>
           Cancel

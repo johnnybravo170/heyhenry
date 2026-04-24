@@ -91,20 +91,30 @@ export default async function OverheadExpensesPage() {
               {expenses.map((e) => (
                 <tr key={e.id} className="border-b last:border-0 hover:bg-muted/30">
                   <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                    {new Date(e.expense_date).toLocaleDateString('en-CA', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    <Link href={`/expenses/${e.id}/edit`} className="hover:underline">
+                      {new Date(e.expense_date).toLocaleDateString('en-CA', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
-                    {e.parent_category_name
-                      ? `${e.parent_category_name} › ${e.category_name}`
-                      : (e.category_name ?? '—')}
+                    <Link href={`/expenses/${e.id}/edit`} className="hover:underline">
+                      {e.parent_category_name
+                        ? `${e.parent_category_name} › ${e.category_name}`
+                        : (e.category_name ?? '—')}
+                    </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{e.vendor ?? '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    <Link href={`/expenses/${e.id}/edit`} className="hover:underline">
+                      {e.vendor ?? '—'}
+                    </Link>
+                  </td>
                   <td className="max-w-md truncate px-4 py-3 text-muted-foreground">
-                    {e.description ?? '—'}
+                    <Link href={`/expenses/${e.id}/edit`} className="hover:underline">
+                      {e.description ?? '—'}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                     {e.tax_cents > 0 ? formatCurrency(e.tax_cents) : '—'}

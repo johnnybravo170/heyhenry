@@ -382,6 +382,133 @@ Field rules:
   };
 }
 
+/**
+ * Edit an existing overhead expense. Same FormData shape as the log
+ * action, plus an `id`. The receipt is optional — if the user attached
+ * a new file we replace the existing one; otherwise the existing path
+ * stays. If the user explicitly cleared the attachment (sends
+ * `remove_receipt=1`) we delete the storage object too.
+ */
+export async function updateOverheadExpenseAction(
+  formData: FormData,
+): Promise<OverheadExpenseResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+
+  const id = formData.get('id');
+  if (typeof id !== 'string' || !id) return { ok: false, error: 'Missing expense id.' };
+
+  const parsed = overheadSchema.safeParse({
+    category_id: formData.get('category_id'),
+    amount_cents: formData.get('amount_cents'),
+    tax_cents: formData.get('tax_cents') ?? 0,
+    vendor: formData.get('vendor') ?? '',
+    description: formData.get('description') ?? '',
+    expense_date: formData.get('expense_date'),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: 'Please fix the errors below.',
+      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const admin = createAdminClient();
+
+  // Confirm the expense belongs to this tenant and is an overhead row
+  // (we don't want to let someone edit a project expense through this
+  // action — that has its own update path and preserves project context).
+  const { data: existing, error: existingErr } = await admin
+    .from('expenses')
+    .select('id, tenant_id, project_id, receipt_storage_path')
+    .eq('id', id)
+    .single();
+  if (existingErr || !existing) return { ok: false, error: 'Expense not found.' };
+  if (existing.tenant_id !== tenant.id) return { ok: false, error: 'Not found.' };
+  if (existing.project_id !== null) {
+    return { ok: false, error: 'This is a project expense — edit it from the project page.' };
+  }
+
+  // Guard: block logging to a parent with children (same rule as create).
+  const { data: cat } = await admin
+    .from('expense_categories')
+    .select('id, parent_id')
+    .eq('id', parsed.data.category_id)
+    .eq('tenant_id', tenant.id)
+    .single();
+  if (!cat) return { ok: false, error: 'Category not found.' };
+  if (cat.parent_id === null) {
+    const { count } = await admin
+      .from('expense_categories')
+      .select('id', { count: 'exact', head: true })
+      .eq('parent_id', cat.id)
+      .is('archived_at', null);
+    if ((count ?? 0) > 0) {
+      return {
+        ok: false,
+        error: 'This category has sub-accounts. Pick one of the sub-accounts instead.',
+      };
+    }
+  }
+
+  // Receipt handling: three cases.
+  //   1. New file uploaded → replace (upload new, delete old).
+  //   2. remove_receipt=1 → delete existing, store null.
+  //   3. Otherwise → leave existing path alone.
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: 'Not authenticated.' };
+
+  let receiptStoragePath: string | null | undefined; // undefined = don't touch
+  const newReceipt = formData.get('receipt');
+  const removeReceipt = formData.get('remove_receipt') === '1';
+
+  if (newReceipt instanceof File && newReceipt.size > 0) {
+    if (newReceipt.size > MAX_BYTES) return { ok: false, error: 'Receipt is larger than 10MB.' };
+    const ext = extFromContentType(newReceipt.type);
+    const path = `${tenant.id}/${user.id}/${randomUUID()}.${ext}`;
+    const { error } = await admin.storage.from(RECEIPTS_BUCKET).upload(path, newReceipt, {
+      contentType: newReceipt.type || 'image/jpeg',
+      upsert: false,
+    });
+    if (error) return { ok: false, error: `Receipt upload failed: ${error.message}` };
+    receiptStoragePath = path;
+  } else if (removeReceipt) {
+    receiptStoragePath = null;
+  }
+
+  const patch: Record<string, unknown> = {
+    category_id: parsed.data.category_id,
+    amount_cents: parsed.data.amount_cents,
+    tax_cents: parsed.data.tax_cents,
+    vendor: parsed.data.vendor?.trim() || null,
+    description: parsed.data.description?.trim() || null,
+    expense_date: parsed.data.expense_date,
+    updated_at: new Date().toISOString(),
+  };
+  if (receiptStoragePath !== undefined) {
+    patch.receipt_storage_path = receiptStoragePath;
+  }
+
+  const { error: updErr } = await admin.from('expenses').update(patch).eq('id', id);
+  if (updErr) return { ok: false, error: updErr.message };
+
+  // Clean up the old receipt file if we replaced or removed it. Best-
+  // effort — if the delete fails we still return success; orphaned files
+  // can be swept later.
+  if (receiptStoragePath !== undefined && existing.receipt_storage_path) {
+    if (receiptStoragePath !== existing.receipt_storage_path) {
+      await admin.storage
+        .from(RECEIPTS_BUCKET)
+        .remove([existing.receipt_storage_path as string])
+        .catch(() => {});
+    }
+  }
+
+  revalidatePath('/expenses');
+  return { ok: true, id };
+}
+
 export async function deleteOverheadExpenseAction(
   id: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
