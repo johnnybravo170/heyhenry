@@ -346,10 +346,25 @@ export async function extractOverheadReceiptAction(
     ? `Tenant province: ${taxCtx.provinceCode ?? 'unset'}. Expected tax: ${taxCtx.summaryLabel} (combined ${(taxCtx.totalRate * 100).toFixed(3)}%).`
     : 'Tax rates unknown.';
 
+  // Vendor intelligence: feed the model the top N vendor → category
+  // mappings we've seen for this tenant. Ambiguous receipts land in
+  // the right category instead of the AI's default guess.
+  const { getTopVendorHints } = await import('@/lib/db/queries/vendor-intelligence');
+  const vendorHints = await getTopVendorHints(tenant.id, 12).catch(() => []);
+  const vendorHintBlock =
+    vendorHints.length > 0
+      ? `\n\nVendor history (use as a tiebreaker when the receipt matches one of these vendors):\n${vendorHints
+          .map(
+            (h) =>
+              `- ${h.vendor} → ${h.category_id} (${h.category_label}) — ${h.hits} past entries`,
+          )
+          .join('\n')}`
+      : '';
+
   const userContent: Array<Record<string, unknown>> = [
     {
       type: 'text',
-      text: `Extract the fields from this Canadian contractor receipt.\n\n${rateHint}\n\nAvailable categories (pick the most appropriate id, or null if nothing fits):\n${catLines}`,
+      text: `Extract the fields from this Canadian contractor receipt.\n\n${rateHint}\n\nAvailable categories (pick the most appropriate id, or null if nothing fits):\n${catLines}${vendorHintBlock}`,
     },
   ];
   if (isPdf) {

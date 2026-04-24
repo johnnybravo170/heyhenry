@@ -33,6 +33,7 @@ import {
   logOverheadExpenseAction,
   updateOverheadExpenseAction,
 } from '@/server/actions/overhead-expenses';
+import { getVendorSuggestionAction } from '@/server/actions/vendor-intelligence';
 
 const ADD_NEW_SENTINEL = '__add_new__';
 
@@ -154,6 +155,12 @@ export function OverheadExpenseForm({
     initialValues && initialValues.taxCents > 0 ? centsToDollars(initialValues.taxCents) : '',
   );
   const [vendor, setVendor] = useState(initialValues?.vendor ?? '');
+  const [vendorSuggestion, setVendorSuggestion] = useState<{
+    category_id: string;
+    category_label: string;
+    confidence: number;
+    sample_size: number;
+  } | null>(null);
   const [description, setDescription] = useState(initialValues?.description ?? '');
   const [expenseDate, setExpenseDate] = useState(initialValues?.expenseDate ?? todayIso());
 
@@ -224,6 +231,16 @@ export function OverheadExpenseForm({
     if (!description && res.fields.description) setDescription(res.fields.description);
     if (!categoryId && res.fields.suggestedCategoryId)
       setCategoryId(res.fields.suggestedCategoryId);
+
+    // Kick off a vendor-history lookup once we have a name. The OCR
+    // model already sees vendor hints in its prompt; this second lookup
+    // just surfaces the hint inline so the operator sees WHY a category
+    // was auto-filled (and can override if wrong).
+    const vendorToCheck = res.fields.vendor ?? vendor;
+    if (vendorToCheck?.trim()) {
+      const v = await getVendorSuggestionAction({ vendor: vendorToCheck });
+      if (v.ok) setVendorSuggestion(v.suggestion);
+    }
     toast.success('Receipt scanned — double-check the fields.');
   }
 
@@ -441,8 +458,31 @@ export function OverheadExpenseForm({
             id="vendor"
             value={vendor}
             onChange={(e) => setVendor(e.target.value)}
+            onBlur={async () => {
+              const v = vendor.trim();
+              if (!v) {
+                setVendorSuggestion(null);
+                return;
+              }
+              const res = await getVendorSuggestionAction({ vendor: v });
+              if (res.ok) setVendorSuggestion(res.suggestion);
+            }}
             placeholder="e.g. Home Depot"
           />
+          {vendorSuggestion && vendorSuggestion.category_id !== categoryId ? (
+            <p className="text-xs text-muted-foreground">
+              Past {vendorSuggestion.sample_size} entries from &ldquo;{vendor.trim()}&rdquo; used{' '}
+              <span className="font-medium text-foreground">{vendorSuggestion.category_label}</span>
+              .{' '}
+              <button
+                type="button"
+                onClick={() => setCategoryId(vendorSuggestion.category_id)}
+                className="font-medium text-foreground underline-offset-2 hover:underline"
+              >
+                Use this
+              </button>
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
