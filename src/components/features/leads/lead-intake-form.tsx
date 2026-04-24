@@ -136,7 +136,14 @@ export function LeadIntakeForm() {
             toast.error(`Upload failed: ${upErr.message}`);
             return;
           }
-          fd.append('storagePaths', path);
+          // Keep the original filename paired with the storage path so the
+          // server can include it in the AI prompt — filenames often carry
+          // customer names + addresses ("Tony flooding job. 2452 mountain
+          // drive.m4a") that the parser can then pull into structured fields.
+          fd.append(
+            'storageEntries',
+            JSON.stringify({ path, name: prepared.name || raw.name || 'file' }),
+          );
         }
       }
       const res = await parseInboundLeadAction(fd);

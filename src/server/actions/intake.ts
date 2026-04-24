@@ -43,17 +43,32 @@ export async function parseInboundLeadAction(formData: FormData): Promise<ParseI
 
   // Every file rides via Supabase Storage now — the client uploads to
   // the `intake-audio` bucket (the name is historical; it stages
-  // images + PDFs too) and we get only the paths here. Vercel caps
-  // server-action bodies around 4.5 MB, so two photos or one voice
+  // images + PDFs too) and we get only the storage entries here. Vercel
+  // caps server-action bodies around 4.5 MB, so two photos or one voice
   // memo in the body killed the request before the action even ran.
-  const storagePaths = formData
-    .getAll('storagePaths')
-    .filter((p): p is string => typeof p === 'string' && p.length > 0);
+  // Each entry carries the storage path + the original filename so the
+  // prompt can use names like "Tony flooding job. 2452 mountain
+  // drive.m4a" to extract customer / address context.
+  const storageEntries: Array<{ path: string; name: string }> = [];
+  for (const entry of formData.getAll('storageEntries')) {
+    if (typeof entry !== 'string') continue;
+    try {
+      const parsed = JSON.parse(entry) as { path?: unknown; name?: unknown };
+      if (typeof parsed.path === 'string' && parsed.path.length > 0) {
+        storageEntries.push({
+          path: parsed.path,
+          name: typeof parsed.name === 'string' && parsed.name.length > 0 ? parsed.name : 'file',
+        });
+      }
+    } catch {
+      // Ignore malformed entry — better to drop one artifact than fail the whole intake.
+    }
+  }
 
-  if (!customerName && !pastedText && storagePaths.length === 0) {
+  if (!customerName && !pastedText && storageEntries.length === 0) {
     return { ok: false, error: 'Need at least an image, pasted text, or a customer name.' };
   }
-  if (storagePaths.length > MAX_IMAGES) {
+  if (storageEntries.length > MAX_IMAGES) {
     return { ok: false, error: `Too many files (max ${MAX_IMAGES}).` };
   }
 
@@ -63,22 +78,27 @@ export async function parseInboundLeadAction(formData: FormData): Promise<ParseI
   // Images + PDFs collect into `files` for the downstream vision pass.
   // Best-effort cleanup of each staging file after.
   const files: File[] = [];
-  if (storagePaths.length > 0) {
+  if (storageEntries.length > 0) {
     const admin = createAdminClient();
-    for (const path of storagePaths) {
+    for (const { path, name: originalName } of storageEntries) {
       const { data: blob, error: dlErr } = await admin.storage.from('intake-audio').download(path);
       if (dlErr || !blob) continue;
       if (blob.size > MAX_BYTES) {
         await admin.storage.from('intake-audio').remove([path]);
         return { ok: false, error: `A staged file is larger than 25MB.` };
       }
-      const name = path.split('/').pop() ?? 'file';
       const type = blob.type || 'application/octet-stream';
-      const f = new File([blob], name, { type });
+      const f = new File([blob], originalName, { type });
       if (type.startsWith('audio/')) {
         const transcript = await transcribeAudio(apiKey, f);
         if (transcript) {
-          pastedText = pastedText ? `${pastedText}\n\n${transcript}` : transcript;
+          // Label the transcript with the original filename. The filename
+          // frequently carries the customer's name and address ("Tony
+          // flooding job. 2452 mountain drive.m4a") which the downstream
+          // prompt can then extract into structured fields.
+          const label = `Voice memo transcript (file: "${originalName}"):`;
+          const block = `${label}\n${transcript}`;
+          pastedText = pastedText ? `${pastedText}\n\n${block}` : block;
         }
       } else if (type.startsWith('image/') || type === 'application/pdf') {
         files.push(f);
