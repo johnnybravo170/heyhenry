@@ -77,23 +77,82 @@ export async function getLaunchRollup(): Promise<LaunchRollup> {
   };
 }
 
+export type VelocitySource = 'kanban' | 'git-seed' | 'blended';
 export type Velocity = {
   windowDays: number;
   completedPoints: number;
   weeklyRate: number;
+  source: VelocitySource;
 };
+
+// One commit ~= 1.5 points. Rough proxy while kanban is thin.
+const POINTS_PER_COMMIT = 1.5;
+// Need at least this many done cards in-window before we trust kanban alone.
+const KANBAN_MIN_DONE_CARDS = 3;
+// When both signals exist, down-weight git so kanban still drives ETA.
+const GIT_BLEND_WEIGHT = 0.7;
+
+export type GitVelocity = {
+  windowDays: number;
+  commits: number;
+  weeklyCommits: number;
+  weeklyRate: number; // points/week
+} | null;
+
+export async function getGitVelocity(days = 28): Promise<GitVelocity> {
+  const service = createServiceClient();
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const { data, error } = await service
+    .schema('ops')
+    .from('git_daily_stats')
+    .select('commit_count')
+    .gte('day', cutoff);
+  if (error || !data || data.length === 0) return null;
+  const commits = data.reduce((s, r) => s + ((r.commit_count as number) ?? 0), 0);
+  const weeklyCommits = commits / (days / 7);
+  const weeklyRate = weeklyCommits * POINTS_PER_COMMIT;
+  return { windowDays: days, commits, weeklyCommits, weeklyRate };
+}
 
 export async function getVelocity(days = 28): Promise<Velocity> {
   const cards = await fetchActiveCards();
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   let completedPoints = 0;
+  let doneCardCount = 0;
   for (const c of cards) {
     if (!c.done_at) continue;
     const t = new Date(c.done_at).getTime();
-    if (t >= cutoff) completedPoints += pointsOf(c);
+    if (t >= cutoff) {
+      completedPoints += pointsOf(c);
+      doneCardCount += 1;
+    }
   }
-  const weeklyRate = completedPoints / (days / 7);
-  return { windowDays: days, completedPoints, weeklyRate };
+  const kanbanRate = completedPoints / (days / 7);
+  const git = await getGitVelocity(days);
+
+  if (doneCardCount >= KANBAN_MIN_DONE_CARDS) {
+    if (git) {
+      const blended = Math.max(kanbanRate, git.weeklyRate * GIT_BLEND_WEIGHT);
+      return {
+        windowDays: days,
+        completedPoints,
+        weeklyRate: blended,
+        source: 'blended',
+      };
+    }
+    return { windowDays: days, completedPoints, weeklyRate: kanbanRate, source: 'kanban' };
+  }
+
+  if (git) {
+    return {
+      windowDays: days,
+      completedPoints,
+      weeklyRate: git.weeklyRate,
+      source: 'git-seed',
+    };
+  }
+
+  return { windowDays: days, completedPoints, weeklyRate: kanbanRate, source: 'kanban' };
 }
 
 export type Eta = { weeks: number; date: string } | null;

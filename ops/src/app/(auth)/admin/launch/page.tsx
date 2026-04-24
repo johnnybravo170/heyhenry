@@ -39,6 +39,11 @@ export default async function LaunchPage() {
           {eta ? (
             <>
               ETA: ~{eta.weeks} weeks · ships around {eta.date}
+              {velocity.source === 'git-seed' ? (
+                <span className="ml-1 text-xs">(estimated from recent code activity)</span>
+              ) : velocity.source === 'blended' ? (
+                <span className="ml-1 text-xs">(kanban + code activity)</span>
+              ) : null}
             </>
           ) : velocity.completedPoints === 0 ? (
             <>Velocity: no completed cards in last 28 days</>

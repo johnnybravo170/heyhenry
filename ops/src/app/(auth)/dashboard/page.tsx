@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
+import { getVanitySummary } from '@/server/ops-services/git-stats';
 import { getEta, getLaunchRollup, getVelocity } from '@/server/ops-services/launch';
 
 export default async function DashboardPage() {
   const service = createServiceClient();
-  const [launchRollup, launchVelocity] = await Promise.all([getLaunchRollup(), getVelocity(28)]);
+  const [launchRollup, launchVelocity, gitSummary] = await Promise.all([
+    getLaunchRollup(),
+    getVelocity(28),
+    getVanitySummary(),
+  ]);
   const launchRemaining = Math.max(0, launchRollup.totalPoints - launchRollup.donePoints);
   const launchEta = getEta(launchRemaining, launchVelocity.weeklyRate);
   const { data: recent } = await service
@@ -93,6 +98,34 @@ export default async function DashboardPage() {
         </div>
       </Link>
 
+      <Link
+        href="/admin/stats"
+        className="block rounded-md border border-[var(--border)] p-4 hover:border-[var(--foreground)]"
+      >
+        <div className="flex items-baseline justify-between">
+          <div className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+            Git activity
+          </div>
+          <div className="text-xs text-[var(--muted-foreground)]">stats →</div>
+        </div>
+        {gitSummary.hasData ? (
+          <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <Stat label="today" value={gitSummary.commitsToday} />
+            <Stat label="this week" value={gitSummary.commitsThisWeek} />
+            <Stat label="all time" value={gitSummary.commitsAllTime} />
+            <Stat
+              label="LOC net 7d"
+              value={`${gitSummary.locNetThisWeek >= 0 ? '+' : ''}${gitSummary.locNetThisWeek}`}
+            />
+            <Stat label="active days / 30d" value={gitSummary.activeDaysThisMonth} />
+          </div>
+        ) : (
+          <div className="mt-2 text-sm text-[var(--muted-foreground)]">
+            No git stats yet. Seed with <code>scripts/git-stats-seed.mjs</code>.
+          </div>
+        )}
+      </Link>
+
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card label="Active API keys" value={keyCount ?? 0} href="/admin/keys" />
         <Card label="Worklog entries" value={recent?.length ?? 0} href="/worklog" />
@@ -135,6 +168,17 @@ export default async function DashboardPage() {
           </p>
         )}
       </section>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div>
+      <div className="text-xl font-semibold tabular-nums">{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
+        {label}
+      </div>
     </div>
   );
 }
