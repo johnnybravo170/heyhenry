@@ -10,6 +10,42 @@
 
 import { z } from 'zod';
 
+/**
+ * Contact kinds (per the `customers.kind` column introduced in migration
+ * 0111). Governs which detail-page sections apply and which subtype /
+ * detail extraction the AI intake uses.
+ */
+export const contactKinds = [
+  'customer',
+  'vendor',
+  'sub',
+  'agent',
+  'inspector',
+  'referral',
+  'other',
+] as const;
+export type ContactKind = (typeof contactKinds)[number];
+
+export const contactKindLabels: Record<ContactKind, string> = {
+  customer: 'Customer',
+  vendor: 'Vendor',
+  sub: 'Sub-trade',
+  agent: 'Agent',
+  inspector: 'Inspector',
+  referral: 'Referral partner',
+  other: 'Other',
+};
+
+/**
+ * Form-level customer type option (what the legacy new-customer form shows).
+ * Physically persists as either `customers.type` (for residential / commercial)
+ * or `customers.kind='agent'` (for agent) — the server action translates via
+ * `resolveKindAndSubtypeFromLegacyType` below. This lets the existing form
+ * keep working unchanged while Slice C introduces the kind-first UX.
+ *
+ * Valid `customers.type` values in the DB are now only `residential | commercial | NULL`
+ * — see `customers_type_check` in migration 0111.
+ */
 export const customerTypes = ['residential', 'commercial', 'agent'] as const;
 export type CustomerType = (typeof customerTypes)[number];
 
@@ -18,6 +54,19 @@ export const customerTypeLabels: Record<CustomerType, string> = {
   commercial: 'Commercial',
   agent: 'Agent',
 };
+
+/**
+ * Map the legacy three-way form value onto the new kind/subtype pair.
+ * Residential and commercial remain customer subtypes; agent becomes its own
+ * contact kind.
+ */
+export function resolveKindAndSubtypeFromLegacyType(formType: CustomerType): {
+  kind: ContactKind;
+  subtype: 'residential' | 'commercial' | null;
+} {
+  if (formType === 'agent') return { kind: 'agent', subtype: null };
+  return { kind: 'customer', subtype: formType };
+}
 
 /**
  * `z.email()` refuses empty strings, so every optional-email-or-empty field

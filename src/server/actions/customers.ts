@@ -15,7 +15,12 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
-import { customerCreateSchema, customerUpdateSchema, emptyToNull } from '@/lib/validators/customer';
+import {
+  customerCreateSchema,
+  customerUpdateSchema,
+  emptyToNull,
+  resolveKindAndSubtypeFromLegacyType,
+} from '@/lib/validators/customer';
 
 export type CustomerActionResult =
   | { ok: true; id: string }
@@ -51,11 +56,13 @@ export async function createCustomerAction(
   }
 
   const supabase = await createClient();
+  const { kind, subtype } = resolveKindAndSubtypeFromLegacyType(parsed.data.type);
   const { data, error } = await supabase
     .from('customers')
     .insert({
       tenant_id: tenant.id,
-      type: parsed.data.type,
+      kind,
+      type: subtype,
       name: parsed.data.name,
       email: emptyToNull(parsed.data.email),
       phone: emptyToNull(parsed.data.phone),
@@ -89,10 +96,12 @@ export async function updateCustomerAction(
   }
 
   const supabase = await createClient();
+  const { kind, subtype } = resolveKindAndSubtypeFromLegacyType(parsed.data.type);
   const { error } = await supabase
     .from('customers')
     .update({
-      type: parsed.data.type,
+      kind,
+      type: subtype,
       name: parsed.data.name,
       email: emptyToNull(parsed.data.email),
       phone: emptyToNull(parsed.data.phone),

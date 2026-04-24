@@ -61,7 +61,26 @@ export type CustomerListFilters = {
 };
 
 const CUSTOMER_COLUMNS =
-  'id, tenant_id, type, name, email, phone, address_line1, city, province, postal_code, notes, created_at, updated_at, deleted_at';
+  'id, tenant_id, kind, type, name, email, phone, address_line1, city, province, postal_code, notes, created_at, updated_at, deleted_at';
+
+/**
+ * For the duration of the contacts-unification rollout (Slice A), readers
+ * still expect a flat `type` field with legacy values (residential |
+ * commercial | agent). Map the persisted `kind` + `type` pair onto that
+ * surface: agent rows now carry `kind='agent', type=NULL` in the DB, so we
+ * synthesize 'agent' here. Non-customer/agent kinds (vendor, sub, etc.)
+ * are not produced by the existing UI yet, but we return their `kind`
+ * string so nothing dies if one shows up.
+ */
+function synthesizeLegacyType(row: {
+  kind?: string | null;
+  type?: string | null;
+}): 'residential' | 'commercial' | 'agent' {
+  if (row.kind === 'agent') return 'agent';
+  if (row.type === 'residential' || row.type === 'commercial') return row.type;
+  // Fallback — callers treat it as a customer subtype. Safe default for rollout.
+  return 'residential';
+}
 
 /**
  * Escape a search term for use in `ilike` / `or` filters. Supabase expects
@@ -85,7 +104,15 @@ function applyListFilters<
   },
 >(query: T, filters: CustomerListFilters): T {
   let q = query.is('deleted_at', null);
-  if (filters.type) q = q.eq('type', filters.type);
+  if (filters.type === 'agent') {
+    // Agent rows now live under `kind='agent'` (type is NULL).
+    q = q.eq('kind', 'agent');
+  } else if (filters.type) {
+    // Residential / commercial filter on the subtype column as before,
+    // but also constrain to kind='customer' so vendor/sub/etc. don't leak
+    // in once Slice C starts creating non-customer rows.
+    q = q.eq('kind', 'customer').eq('type', filters.type);
+  }
 
   const search = filters.search?.trim();
   if (search) {
@@ -112,7 +139,10 @@ export async function listCustomers(filters: CustomerListFilters = {}): Promise<
   if (error) {
     throw new Error(`Failed to list customers: ${error.message}`);
   }
-  return (data ?? []) as CustomerRow[];
+  return (data ?? []).map((row) => ({
+    ...(row as unknown as CustomerRow),
+    type: synthesizeLegacyType(row as { kind?: string | null; type?: string | null }),
+  })) as CustomerRow[];
 }
 
 export async function countCustomers(filters: CustomerListFilters = {}): Promise<number> {
@@ -142,7 +172,11 @@ export async function getCustomer(id: string): Promise<CustomerRow | null> {
     if (error.code === 'PGRST116') return null;
     throw new Error(`Failed to load customer: ${error.message}`);
   }
-  return (data as CustomerRow | null) ?? null;
+  if (!data) return null;
+  return {
+    ...(data as unknown as CustomerRow),
+    type: synthesizeLegacyType(data as { kind?: string | null; type?: string | null }),
+  } as CustomerRow;
 }
 
 export type CustomerRelated = {
