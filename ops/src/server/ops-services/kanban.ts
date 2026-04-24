@@ -159,6 +159,7 @@ export type CreateCardInput = {
   related_id?: string | null;
   recurring_rule?: string | null;
   recurring_parent_id?: string | null;
+  size_points?: number | null;
 };
 
 export async function createCard(ctx: ActorCtx, input: CreateCardInput) {
@@ -196,6 +197,7 @@ export async function createCard(ctx: ActorCtx, input: CreateCardInput) {
       related_id: input.related_id ?? null,
       recurring_rule: input.recurring_rule ?? null,
       recurring_parent_id: input.recurring_parent_id ?? null,
+      size_points: input.size_points ?? null,
       actor_type: ctx.actorType,
       actor_name: ctx.actorName,
       key_id: ctx.keyId,

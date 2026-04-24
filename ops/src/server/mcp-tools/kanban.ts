@@ -89,13 +89,42 @@ export function registerKanbanTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'kanban_card_create',
-    'Create a new kanban card. Default column is `backlog`. Set `suggested_agent` as a hint for which agent should pick it up. Use `recurring_rule` (e.g. "weekly:mon") to auto-spawn a successor when this card moves to done.',
+    [
+      'Create a new kanban card. Default column is `backlog`. Set `suggested_agent` as a hint for which agent should pick it up. Use `recurring_rule` (e.g. "weekly:mon") to auto-spawn a successor when this card moves to done.',
+      '',
+      'ALWAYS set `size_points` at create time so launch-progress math stays accurate. Use this Fibonacci scale (HeyHenry convention):',
+      '  1  = ~1 hour, single-line tweak or trivial tag/copy fix',
+      '  2  = half a day, one file or one component',
+      '  3  = a full day, single feature on one surface (typo flow, small CRUD addition)',
+      '  5  = 1–2 days, a contained feature touching a few files (one new page + action)',
+      '  8  = ~1 week, a real feature spanning UI + server + a small schema change',
+      '  13 = ~2 weeks, a multi-piece module (new role, new flow, schema + UI + integration)',
+      '  21 = a month or more, a foundational system (full integration like QBO, a whole new vertical)',
+      'When in doubt size UP, not down — small estimates poison the ETA.',
+      '',
+      'Use `tags=["launch-blocker"]` only if this card MUST ship before public V1 launch. Use `epic:<slug>` to group cards by area (e.g. `epic:payments`, `epic:sacred-path`).',
+    ].join('\n'),
     {
       board_slug: z.string().min(1),
       title: z.string().min(1).max(500),
       column: COLUMN_ENUM.optional(),
       body: z.string().max(20000).optional().nullable(),
       tags: z.array(z.string().min(1).max(50)).max(20).optional(),
+      size_points: z
+        .union([
+          z.literal(1),
+          z.literal(2),
+          z.literal(3),
+          z.literal(5),
+          z.literal(8),
+          z.literal(13),
+          z.literal(21),
+        ])
+        .optional()
+        .nullable()
+        .describe(
+          'Fibonacci size estimate. See tool description for the scale. Required for accurate launch ETA — do NOT omit.',
+        ),
       due_date: z
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -115,6 +144,7 @@ export function registerKanbanTools(server: McpServer, ctx: McpToolCtx) {
         column: input.column,
         body: input.body,
         tags: input.tags,
+        size_points: input.size_points,
         due_date: input.due_date,
         priority: input.priority,
         assignee: input.assignee,
@@ -234,7 +264,12 @@ export function registerKanbanTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'kanban_card_size',
-    'Set a card\u2019s size_points estimate. Must be a Fibonacci value: 1, 2, 3, 5, 8, 13, or 21. Pass null to clear. Sizing unsized cards directly improves launch-progress forecasting.',
+    [
+      'Set a card\u2019s size_points estimate. Must be a Fibonacci value: 1, 2, 3, 5, 8, 13, or 21. Pass null to clear.',
+      'HeyHenry sizing convention:',
+      '  1=1hr, 2=half-day, 3=day, 5=1-2d, 8=~1wk, 13=~2wk, 21=month+',
+      'Sizing unsized cards directly improves launch-progress forecasting and ETA accuracy. When in doubt size UP, not down.',
+    ].join('\n'),
     {
       id: z.string().uuid(),
       size_points: z.union([
