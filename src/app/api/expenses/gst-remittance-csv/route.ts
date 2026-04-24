@@ -56,29 +56,49 @@ export async function GET(req: Request) {
   push([]);
 
   push(['Summary']);
-  push(['Category', 'Pre-tax subtotal', 'GST/HST']);
+  push(['Line', 'Pre-tax subtotal', 'GST/HST']);
   push([
     'Collected on paid invoices',
     formatCents(report.collected.amount_cents),
     formatCents(report.collected.tax_cents),
   ]);
   push([
-    'Paid on expenses',
-    formatCents(report.paid_on_expenses.amount_cents),
-    formatCents(report.paid_on_expenses.tax_cents),
+    'Paid on overhead expenses',
+    formatCents(report.paid_overhead.amount_cents),
+    formatCents(report.paid_overhead.tax_cents),
   ]);
   push([
-    'Paid on bills',
-    formatCents(report.paid_on_bills.amount_cents),
-    formatCents(report.paid_on_bills.tax_cents),
+    'Paid on project work (expenses + bills)',
+    formatCents(report.paid_project_work.amount_cents),
+    formatCents(report.paid_project_work.tax_cents),
   ]);
   push(['Net owed to CRA', '', formatCents(report.net_owed_cents)]);
+  if (report.filed) {
+    push([
+      `Filed ${report.filed.paid_at}${report.filed.reference ? ` (${report.filed.reference})` : ''}`,
+      '',
+      formatCents(report.filed.amount_cents),
+    ]);
+  }
   push([]);
 
-  push(['ITC breakdown by expense category']);
+  push(['Overhead ITC by category']);
   push(['Category', 'Pre-tax subtotal', 'GST/HST (ITC)']);
-  for (const line of report.paid_on_expenses.by_category) {
+  for (const line of report.paid_overhead.by_category) {
     push([line.category_label, formatCents(line.amount_cents), formatCents(line.tax_cents)]);
+  }
+  push([]);
+
+  push(['Project work ITC by project']);
+  push(['Project', 'Expenses', 'Bills', 'Pre-tax subtotal', 'GST/HST (ITC)']);
+  for (const line of report.paid_project_work.by_project) {
+    push([
+      line.project_name,
+      line.expense_count,
+      line.bill_count,
+      formatCents(line.amount_cents),
+      formatCents(line.tax_cents),
+    ]);
   }
 
   const csv = rows.join('\n');

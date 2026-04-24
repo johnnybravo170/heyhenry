@@ -61,11 +61,12 @@ export default async function BookkeeperHomePage() {
           <CardHeader>
             <CardDescription>Input Tax Credits</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
-              {formatCurrency(report.paid_on_expenses.tax_cents + report.paid_on_bills.tax_cents)}
+              {formatCurrency(report.paid_overhead.tax_cents + report.paid_project_work.tax_cents)}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">
-            {report.paid_on_expenses.count} expenses · {report.paid_on_bills.count} bills
+            {report.paid_overhead.count} overhead · {report.paid_project_work.expense_count} project
+            expenses · {report.paid_project_work.bill_count} bills
           </CardContent>
         </Card>
 
