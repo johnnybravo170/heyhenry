@@ -12,40 +12,28 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChangeOrderList } from '@/components/features/change-orders/change-order-list';
 import { GenerateInvoiceButton } from '@/components/features/invoices/generate-invoice-button';
+import { InvoiceStatusBadge } from '@/components/features/invoices/invoice-status-badge';
 import { DeleteJobButton } from '@/components/features/jobs/delete-job-button';
 import { InlineScheduler } from '@/components/features/jobs/inline-scheduler';
 import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
 import { JobStatusSelect } from '@/components/features/jobs/job-status-select';
 import { PhotoGallery } from '@/components/features/photos/photo-gallery';
 import { PhotoUpload } from '@/components/features/photos/photo-upload';
+import { QuoteStatusBadge } from '@/components/features/quotes/quote-status-badge';
 import { SocialPostSection } from '@/components/features/social/social-post-section';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDateTime, formatRelativeTime } from '@/lib/date/format';
 import { listChangeOrders } from '@/lib/db/queries/change-orders';
 import { getJob, listWorklogForJob } from '@/lib/db/queries/jobs';
 import { countPhotosByJob } from '@/lib/db/queries/photos';
+import type { InvoiceStatus } from '@/lib/validators/invoice';
+import type { QuoteStatus } from '@/lib/validators/quote';
 import { duplicateJobAction, rescheduleJobAction } from '@/server/actions/jobs';
 
 function shortId(id: string) {
   return id.slice(0, 8);
 }
-
-const QUOTE_STATUS_CLASS: Record<string, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-blue-100 text-blue-800',
-  accepted: 'bg-emerald-100 text-emerald-800',
-  rejected: 'bg-destructive/10 text-destructive',
-  expired: 'bg-muted text-muted-foreground',
-};
-
-const INVOICE_STATUS_CLASS: Record<string, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-blue-100 text-blue-800',
-  paid: 'bg-emerald-100 text-emerald-800',
-  void: 'bg-destructive/10 text-destructive',
-};
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -141,12 +129,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 <span className="font-mono text-sm">#{shortId(job.quote.id)}</span>
               </div>
             </div>
-            <Badge
-              variant="secondary"
-              className={`font-medium ${QUOTE_STATUS_CLASS[job.quote.status] ?? 'bg-muted'}`}
-            >
-              {job.quote.status}
-            </Badge>
+            <QuoteStatusBadge status={job.quote.status as QuoteStatus} />
           </section>
         </Link>
       ) : null}
@@ -174,12 +157,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                   >
                     #{shortId(inv.id)}
                   </Link>
-                  <Badge
-                    variant="secondary"
-                    className={`font-medium ${INVOICE_STATUS_CLASS[inv.status] ?? 'bg-muted'}`}
-                  >
-                    {inv.status}
-                  </Badge>
+                  <InvoiceStatusBadge status={inv.status as InvoiceStatus} />
                 </div>
                 <span className="text-xs text-muted-foreground">
                   {formatTimestamp(inv.created_at)}

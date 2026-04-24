@@ -4,7 +4,9 @@ import { notFound } from 'next/navigation';
 import { ContactNotesFeed } from '@/components/features/contacts/contact-notes-feed';
 import { CustomerTypeBadge } from '@/components/features/customers/customer-type-badge';
 import { DeleteCustomerButton } from '@/components/features/customers/delete-customer-button';
-import { Badge } from '@/components/ui/badge';
+import { InvoiceStatusBadge } from '@/components/features/invoices/invoice-status-badge';
+import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
+import { QuoteStatusBadge } from '@/components/features/quotes/quote-status-badge';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDate as formatDateUtil } from '@/lib/date/format';
@@ -18,6 +20,9 @@ import {
   type RelatedQuote,
 } from '@/lib/db/queries/customers';
 import type { CustomerType } from '@/lib/validators/customer';
+import type { InvoiceStatus } from '@/lib/validators/invoice';
+import type { JobStatus } from '@/lib/validators/job';
+import type { QuoteStatus } from '@/lib/validators/quote';
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', {
   style: 'currency',
@@ -31,43 +36,6 @@ function formatCents(cents: number | null | undefined) {
 
 function shortId(id: string) {
   return id.slice(0, 8);
-}
-
-const QUOTE_STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
-  sent: { label: 'Sent', className: 'bg-blue-100 text-blue-800' },
-  accepted: { label: 'Accepted', className: 'bg-emerald-100 text-emerald-800' },
-  rejected: { label: 'Rejected', className: 'bg-destructive/10 text-destructive' },
-  expired: { label: 'Expired', className: 'bg-muted text-muted-foreground' },
-};
-
-const JOB_STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  booked: { label: 'Booked', className: 'bg-blue-100 text-blue-800' },
-  in_progress: { label: 'In progress', className: 'bg-amber-100 text-amber-900' },
-  complete: { label: 'Complete', className: 'bg-emerald-100 text-emerald-800' },
-  cancelled: { label: 'Cancelled', className: 'bg-muted text-muted-foreground' },
-};
-
-const INVOICE_STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
-  sent: { label: 'Sent', className: 'bg-blue-100 text-blue-800' },
-  paid: { label: 'Paid', className: 'bg-emerald-100 text-emerald-800' },
-  void: { label: 'Void', className: 'bg-destructive/10 text-destructive' },
-};
-
-function StatusPill({
-  status,
-  map,
-}: {
-  status: string;
-  map: Record<string, { label: string; className: string }>;
-}) {
-  const entry = map[status] ?? { label: status, className: 'bg-muted text-muted-foreground' };
-  return (
-    <Badge variant="secondary" className={`font-medium ${entry.className}`}>
-      {entry.label}
-    </Badge>
-  );
 }
 
 function ContactRow({
@@ -304,7 +272,7 @@ function RelatedQuotesCard({
               >
                 <div className="flex flex-col">
                   <span className="font-mono text-xs text-muted-foreground">#{shortId(q.id)}</span>
-                  <StatusPill status={q.status} map={QUOTE_STATUS_LABELS} />
+                  <QuoteStatusBadge status={q.status as QuoteStatus} />
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="font-medium">{formatCents(q.total_cents)}</span>
@@ -350,7 +318,7 @@ function RelatedJobsCard({
               >
                 <div className="flex flex-col">
                   <span className="font-mono text-xs text-muted-foreground">#{shortId(j.id)}</span>
-                  <StatusPill status={j.status} map={JOB_STATUS_LABELS} />
+                  <JobStatusBadge status={j.status as JobStatus} />
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="text-xs text-muted-foreground">
@@ -391,7 +359,7 @@ function RelatedInvoicesCard({
                   <span className="font-mono text-xs text-muted-foreground">
                     #{shortId(inv.id)}
                   </span>
-                  <StatusPill status={inv.status} map={INVOICE_STATUS_LABELS} />
+                  <InvoiceStatusBadge status={inv.status as InvoiceStatus} />
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="font-medium">

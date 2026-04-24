@@ -72,14 +72,17 @@ Standard shape: icon + headline + 1-line description + primary CTA. Some have a 
 
 ## 7. Status badges
 
-Colored pill, one component per status enum. When you add a new status value to an enum, the badge needs the matching color.
+Colored pill, one component per status enum. **All color classes are centralized in `src/lib/ui/status-tokens.ts`.** That file maps each status value to a `StatusTone` (`neutral | info | warning | success | danger | hold`), and each tone to a full Tailwind class string. Badge components import the maps and tone-class table — they do NOT declare colors inline.
 
+When you add a new status value to an enum, update the matching `*StatusTone` map in `status-tokens.ts`, **not** the badge component. When you render a status anywhere other than through a badge component (dashboard tile, detail page, etc.), import the tone and class from `status-tokens.ts` — do not hand-roll a color for the same meaning.
+
+- `src/lib/ui/status-tokens.ts` — **source of truth for every status color**
 - `src/components/features/projects/project-status-badge.tsx`
 - `src/components/features/invoices/invoice-status-badge.tsx`
 - `src/components/features/jobs/job-status-badge.tsx`
 - `src/components/features/quotes/quote-status-badge.tsx`
 - `src/components/features/change-orders/change-order-status-badge.tsx`
-- `src/components/features/customers/customer-type-badge.tsx`
+- `src/components/features/customers/customer-type-badge.tsx` — kind colors (customer/lead/vendor/sub/etc.) — separate palette from status tones by design
 - `src/components/features/inbox/worklog-entry-type-badge.tsx`
 - `src/components/features/worker/worker-invoice-status-badge.tsx`
 
