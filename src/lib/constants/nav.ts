@@ -22,7 +22,7 @@ export type NavItem = {
 
 const CORE_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/customers', label: 'Customers', icon: Users },
+  { href: '/contacts', label: 'Contacts', icon: Users },
   { href: '/quotes', label: 'Quotes', icon: FileText },
   { href: '/jobs', label: 'Jobs', icon: ClipboardList },
   { href: '/invoices', label: 'Invoices', icon: Receipt },
@@ -54,7 +54,7 @@ const EXPENSES_ITEM: NavItem = {
  * Returns the navigation items for the given vertical.
  *
  * Renovation + tile tenants:
- *   - Get "Projects" + "Calendar" between Customers and Jobs
+ *   - Get "Projects" + "Calendar" between Contacts and Jobs
  *   - Do NOT get "Quotes" — the polygon-measurement quoting tool is for
  *     pressure-washing-style verticals. Renovation estimates live on
  *     projects (projects.estimate_status + lifecycle_stage).
@@ -62,7 +62,7 @@ const EXPENSES_ITEM: NavItem = {
 export function getNavItems(vertical: string): NavItem[] {
   if (vertical === 'renovation' || vertical === 'tile') {
     const items = CORE_ITEMS.filter((item) => item.href !== '/quotes');
-    // Insert Projects + Calendar after Customers (index 1 = Customers).
+    // Insert Projects + Calendar after Contacts (index 1 = Contacts).
     items.splice(2, 0, PROJECTS_ITEM, CALENDAR_ITEM);
     // Expenses sits after Invoices (money-related surfaces live together).
     const invoicesIdx = items.findIndex((i) => i.href === '/invoices');

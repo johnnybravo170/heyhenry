@@ -16,7 +16,7 @@ describe('NAV_ITEMS', () => {
     const hrefs = NAV_ITEMS.map((item) => item.href);
     expect(hrefs).toEqual([
       '/dashboard',
-      '/customers',
+      '/contacts',
       '/quotes',
       '/jobs',
       '/invoices',
