@@ -33,7 +33,13 @@ export function registerKnowledgeTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'knowledge_write',
-    'Save a new knowledge doc. Body is markdown. Embedding is computed server-side and stored alongside so future `knowledge_search` calls can find it. Tags are free-form.',
+    [
+      'See ops_memory_guide for the full taxonomy.',
+      '',
+      'Evergreen facts Henry (the AI chat) and other agents should query forever. Semantic-searchable via pgvector. Use for: ICP definitions, product constraints, external API quirks, customer personas, pricing structures, naming conventions. Rule: the content must still be true in 6 months. DO NOT use for date-stamped events (\u2192 worklog_add) or choices-with-reasoning (\u2192 decisions_add).',
+      '',
+      'Save a new knowledge doc. Body is markdown. Embedding is computed server-side and stored alongside so future `knowledge_search` calls can find it. Tags are free-form.',
+    ].join('\n'),
     {
       title: z.string().min(1).max(500),
       body: z.string().min(1).max(100000),

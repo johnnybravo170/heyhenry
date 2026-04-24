@@ -31,7 +31,13 @@ export function registerDecisionTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'decisions_add',
-    'Record a decision: title, hypothesis (the bet), and optional action (what we will do about it).',
+    [
+      'See ops_memory_guide for the full taxonomy.',
+      '',
+      'Record a CHOICE we made, with reasoning. Use when: Jonathan picks option A over B, an architectural call is made, a strategic direction is committed. Always include the rationale (put it in `hypothesis`). Decisions can later have outcomes recorded on them. DO NOT use for ideas-still-being-explored (\u2192 ideas_add) or facts that aren\u2019t choices (\u2192 knowledge_write).',
+      '',
+      'Record a decision: title, hypothesis (the bet), and optional action (what we will do about it).',
+    ].join('\n'),
     {
       title: z.string().min(1).max(500),
       hypothesis: z.string().min(1).max(20000),

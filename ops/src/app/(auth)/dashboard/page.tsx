@@ -3,6 +3,33 @@ import { createServiceClient } from '@/lib/supabase';
 import { getVanitySummary } from '@/server/ops-services/git-stats';
 import { getEta, getLaunchRollup, getVelocity } from '@/server/ops-services/launch';
 
+type CapturedItem = {
+  surface: 'worklog' | 'idea' | 'decision' | 'knowledge';
+  id: string;
+  title: string;
+  created_at: string;
+  href: string;
+};
+
+function agoStamp(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+const SURFACE_STYLES: Record<CapturedItem['surface'], { label: string; cls: string }> = {
+  worklog: { label: 'Worklog', cls: 'bg-blue-500/10 text-blue-400' },
+  idea: { label: 'Idea', cls: 'bg-amber-500/10 text-amber-400' },
+  decision: { label: 'Decision', cls: 'bg-purple-500/10 text-purple-400' },
+  knowledge: { label: 'Knowledge', cls: 'bg-emerald-500/10 text-emerald-400' },
+};
+
 export default async function DashboardPage() {
   const service = createServiceClient();
   const [launchRollup, launchVelocity, gitSummary] = await Promise.all([
@@ -19,6 +46,70 @@ export default async function DashboardPage() {
     .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(10);
+
+  // Recently captured: mixed feed across worklog + ideas + decisions + knowledge.
+  const [capWorklog, capIdeas, capDecisions, capKnowledge] = await Promise.all([
+    service
+      .schema('ops')
+      .from('worklog_entries')
+      .select('id, title, created_at')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    service
+      .schema('ops')
+      .from('ideas')
+      .select('id, title, created_at')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    service
+      .schema('ops')
+      .from('decisions')
+      .select('id, title, created_at')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    service
+      .schema('ops')
+      .from('knowledge_docs')
+      .select('id, title, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5),
+  ]);
+
+  const captured: CapturedItem[] = [
+    ...(capWorklog.data ?? []).map((r) => ({
+      surface: 'worklog' as const,
+      id: r.id as string,
+      title: (r.title as string) ?? '(no title)',
+      created_at: r.created_at as string,
+      href: '/worklog',
+    })),
+    ...(capIdeas.data ?? []).map((r) => ({
+      surface: 'idea' as const,
+      id: r.id as string,
+      title: (r.title as string) ?? '(no title)',
+      created_at: r.created_at as string,
+      href: `/ideas/${r.id as string}`,
+    })),
+    ...(capDecisions.data ?? []).map((r) => ({
+      surface: 'decision' as const,
+      id: r.id as string,
+      title: (r.title as string) ?? '(no title)',
+      created_at: r.created_at as string,
+      href: `/decisions/${r.id as string}`,
+    })),
+    ...(capKnowledge.data ?? []).map((r) => ({
+      surface: 'knowledge' as const,
+      id: r.id as string,
+      title: (r.title as string) ?? '(no title)',
+      created_at: r.created_at as string,
+      href: '/knowledge',
+    })),
+  ]
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+    .slice(0, 5);
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const [{ count: kanbanOpen }, { count: kanbanOverdue }, { count: kanbanJonathan }] =
@@ -73,6 +164,47 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+
+      {captured.length > 0 ? (
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+              Recently captured
+            </span>
+            <Link
+              href="/admin/memory-guide"
+              className="text-xs text-[var(--muted-foreground)] hover:underline"
+            >
+              memory guide →
+            </Link>
+          </div>
+          <ul className="flex gap-2 overflow-x-auto pb-1">
+            {captured.map((c) => {
+              const s = SURFACE_STYLES[c.surface];
+              return (
+                <li key={`${c.surface}:${c.id}`} className="shrink-0">
+                  <Link
+                    href={c.href}
+                    className="flex h-[60px] w-64 items-center gap-2 rounded-md border border-[var(--border)] px-3 hover:border-[var(--foreground)]"
+                  >
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${s.cls}`}
+                    >
+                      {s.label}
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-sm font-medium">{c.title}</span>
+                      <span className="text-[10px] text-[var(--muted-foreground)]">
+                        {agoStamp(c.created_at)}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <Link
         href="/admin/launch"

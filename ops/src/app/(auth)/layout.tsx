@@ -14,6 +14,7 @@ const NAV = [
   { href: '/admin/keys', label: 'API Keys' },
   { href: '/admin/mcp', label: 'MCP' },
   { href: '/admin/audit', label: 'Audit Log' },
+  { href: '/admin/memory-guide', label: 'Memory guide' },
 ];
 
 export default async function AuthedLayout({ children }: { children: React.ReactNode }) {

@@ -90,6 +90,10 @@ export function registerKanbanTools(server: McpServer, ctx: McpToolCtx) {
   server.tool(
     'kanban_card_create',
     [
+      'See ops_memory_guide for the full taxonomy.',
+      '',
+      'Use this ONLY for actionable closable work with a clear done-condition. If it\u2019s something that happened, use worklog_add. If it\u2019s a half-formed thought, use ideas_add. If it\u2019s an evergreen fact, use knowledge_write. If it\u2019s a choice with reasoning, use decisions_add.',
+      '',
       'Create a new kanban card. Default column is `backlog`. Set `suggested_agent` as a hint for which agent should pick it up. Use `recurring_rule` (e.g. "weekly:mon") to auto-spawn a successor when this card moves to done.',
       '',
       'ALWAYS set `size_points` at create time so launch-progress math stays accurate. Use this Fibonacci scale (HeyHenry convention):',

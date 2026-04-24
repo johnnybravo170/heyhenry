@@ -16,6 +16,7 @@ import { registerIdeaTools } from './ideas';
 import { registerIncidentTools } from './incidents';
 import { registerKanbanTools } from './kanban';
 import { registerKnowledgeTools } from './knowledge';
+import { registerMetaTools } from './meta';
 import { registerReviewQueueTools } from './review_queue';
 import { registerRoadmapTools } from './roadmap';
 import { registerSocialDraftTools } from './social_drafts';
@@ -62,4 +63,11 @@ export function registerScopedTools(server: McpServer, ctx: McpToolCtx) {
   if (any(ctx.scopes, 'read:kanban', 'write:kanban')) {
     registerKanbanTools(server, ctx);
   }
+
+  // Meta tools (memory guide + cross-surface lookup + activity digest).
+  // Registered for any caller with at least one read scope so that
+  // `ops_memory_guide` is always callable and the cross-surface aggregators
+  // can see whatever the token has access to. Individual surface access is
+  // still gated inside the handlers.
+  registerMetaTools(server, ctx);
 }

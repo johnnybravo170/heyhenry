@@ -68,7 +68,13 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'ideas_add',
-    'File a new idea for Jonathan. Use for: feature suggestions, observations worth saving, things you noticed but did not act on. Returns a deep link.',
+    [
+      'See ops_memory_guide for the full taxonomy.',
+      '',
+      'Capture a half-formed thought BEFORE it\u2019s a plan. Pre-commitment. Use when: surfacing an option to consider, a question Jonathan asked out loud, a pattern noticed but not yet acted on. Ideas graduate to kanban cards or decisions later. DO NOT use for actionable work (\u2192 kanban_card_create), established truth (\u2192 knowledge_write), or things that already happened (\u2192 worklog_add).',
+      '',
+      'File a new idea for Jonathan. Use for: feature suggestions, observations worth saving, things you noticed but did not act on. Returns a deep link.',
+    ].join('\n'),
     {
       title: z.string().min(1).max(500),
       body: z.string().max(20000).optional().nullable(),

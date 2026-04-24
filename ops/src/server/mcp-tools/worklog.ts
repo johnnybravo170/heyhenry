@@ -31,7 +31,13 @@ export function registerWorklogTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'worklog_add',
-    'Append a worklog entry. Use to record what you did this run — keeps a human-readable audit trail beyond the raw audit_log.',
+    [
+      'See ops_memory_guide for the full taxonomy.',
+      '',
+      'Record something that HAPPENED. Append-only feed. Use for: agent run summaries, what Jonathan did today, customer interactions, event-driven notes. DO NOT use for: actionable work (\u2192 kanban_card_create), evergreen truth (\u2192 knowledge_write), choices (\u2192 decisions_add), half-formed ideas (\u2192 ideas_add). Worklog entries should have dates that matter \u2014 the rule of thumb is "will this still be meaningful to read chronologically in 6 months?"',
+      '',
+      'Append a worklog entry. Use to record what you did this run \u2014 keeps a human-readable audit trail beyond the raw audit_log.',
+    ].join('\n'),
     {
       title: z.string().min(1).max(500),
       body: z.string().max(20000).optional().nullable(),
