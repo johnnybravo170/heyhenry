@@ -11,9 +11,21 @@ type NavLinkProps = {
   children: ReactNode;
   onNavigate?: () => void;
   className?: string;
+  /** When true, the label is hidden and tooltip-only — used by the collapsed sidebar. */
+  collapsed?: boolean;
+  /** Plain-text version of the label, used as the title attribute when collapsed. */
+  label?: string;
 };
 
-export function NavLink({ href, icon: Icon, children, onNavigate, className }: NavLinkProps) {
+export function NavLink({
+  href,
+  icon: Icon,
+  children,
+  onNavigate,
+  className,
+  collapsed = false,
+  label,
+}: NavLinkProps) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
@@ -23,14 +35,16 @@ export function NavLink({ href, icon: Icon, children, onNavigate, className }: N
       onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
       data-active={isActive ? 'true' : undefined}
+      title={collapsed ? (label ?? undefined) : undefined}
       className={cn(
-        'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+        'flex items-center rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+        collapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
         isActive && 'bg-muted text-foreground',
         className,
       )}
     >
       {Icon ? <Icon className="size-4" /> : null}
-      <span>{children}</span>
+      {collapsed ? null : <span>{children}</span>}
     </Link>
   );
 }
