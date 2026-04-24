@@ -63,7 +63,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <h1 className="text-2xl font-semibold tracking-tight">
               {quote.customer ? (
                 <Link
-                  href={`/customers/${quote.customer.id}`}
+                  href={`/contacts/${quote.customer.id}`}
                   className="hover:text-primary hover:underline"
                 >
                   {customerName}

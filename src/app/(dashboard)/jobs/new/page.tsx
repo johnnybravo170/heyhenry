@@ -52,7 +52,7 @@ export default async function NewJobPage({
           <p className="font-medium">You need a customer first.</p>
           <p className="mt-1 text-muted-foreground">
             Jobs are always tied to a customer.{' '}
-            <Link href="/customers/new" className="text-foreground underline">
+            <Link href="/contacts/new" className="text-foreground underline">
               Add one
             </Link>{' '}
             and come back.

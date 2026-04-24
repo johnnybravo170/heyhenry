@@ -143,7 +143,7 @@ export async function createQuoteAction(input: unknown): Promise<QuoteActionResu
   }
 
   revalidatePath('/quotes');
-  revalidatePath(`/customers/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.customer_id}`);
   return { ok: true, id: quoteId };
 }
 
@@ -228,7 +228,7 @@ export async function updateQuoteAction(input: unknown): Promise<QuoteActionResu
 
   revalidatePath('/quotes');
   revalidatePath(`/quotes/${parsed.data.id}`);
-  revalidatePath(`/customers/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.customer_id}`);
   return { ok: true, id: parsed.data.id };
 }
 

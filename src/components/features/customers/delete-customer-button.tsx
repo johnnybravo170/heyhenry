@@ -3,7 +3,7 @@
 /**
  * Delete-customer confirmation. Soft-deletes the row via the server action
  * so quote/job/invoice history isn't orphaned (see PHASE_1_PLAN §13.9).
- * The action redirects to `/customers` on success; an uncaught rejection
+ * The action redirects to `/contacts` on success; an uncaught rejection
  * means something went wrong — we show a toast in that case.
  */
 

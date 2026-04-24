@@ -17,7 +17,7 @@ export function CustomerEmptyState({ variant }: { variant: 'fresh' | 'filtered' 
           Try a different name, or clear the filter to see everyone.
         </p>
         <Button asChild variant="outline" size="sm">
-          <Link href="/customers">Clear filters</Link>
+          <Link href="/contacts">Clear filters</Link>
         </Button>
       </div>
     );
@@ -35,7 +35,7 @@ export function CustomerEmptyState({ variant }: { variant: 'fresh' | 'filtered' 
         </p>
       </div>
       <Button asChild>
-        <Link href="/customers/new">Add your first customer</Link>
+        <Link href="/contacts/new">Add your first customer</Link>
       </Button>
     </div>
   );

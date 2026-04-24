@@ -27,7 +27,7 @@ export type CustomerPickerProps = {
   error?: string;
   /**
    * If provided, "Add new customer" calls this instead of navigating
-   * to /customers/new. Used to open an inline create panel and keep
+   * to /contacts/new. Used to open an inline create panel and keep
    * the user in their workflow.
    */
   onAddNew?: () => void;
@@ -105,7 +105,7 @@ export function CustomerPicker({
                     onClick={() => {
                       setOpen(false);
                       if (onAddNew) onAddNew();
-                      else window.location.href = '/customers/new';
+                      else window.location.href = '/contacts/new';
                     }}
                     className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                   >
@@ -133,7 +133,7 @@ export function CustomerPicker({
                   onSelect={() => {
                     setOpen(false);
                     if (onAddNew) onAddNew();
-                    else window.location.href = '/customers/new';
+                    else window.location.href = '/contacts/new';
                   }}
                   className="text-primary"
                 >

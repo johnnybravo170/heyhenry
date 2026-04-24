@@ -9,7 +9,7 @@ function relatedHref(relatedType: string | null, relatedId: string | null): stri
   if (!relatedType || !relatedId) return null;
   switch (relatedType) {
     case 'customer':
-      return `/customers/${relatedId}`;
+      return `/contacts/${relatedId}`;
     case 'project':
       return `/projects/${relatedId}`;
     case 'quote':

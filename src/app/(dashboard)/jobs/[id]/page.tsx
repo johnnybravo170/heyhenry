@@ -82,7 +82,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <h1 className="text-2xl font-semibold tracking-tight">
               {job.customer ? (
                 <Link
-                  href={`/customers/${job.customer.id}`}
+                  href={`/contacts/${job.customer.id}`}
                   className="hover:text-primary hover:underline"
                 >
                   {customerName}

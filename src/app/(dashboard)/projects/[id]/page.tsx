@@ -113,7 +113,7 @@ export default async function ProjectDetailPage({
           </div>
           {project.customer ? (
             <p className="mt-1 text-sm text-muted-foreground">
-              <Link href={`/customers/${project.customer.id}`} className="hover:underline">
+              <Link href={`/contacts/${project.customer.id}`} className="hover:underline">
                 {project.customer.name}
               </Link>
             </p>

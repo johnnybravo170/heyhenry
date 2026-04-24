@@ -144,7 +144,7 @@ export function ProjectsTable({
               </td>
               <td className="px-4 py-3 text-muted-foreground">
                 {p.customer ? (
-                  <Link href={`/customers/${p.customer.id}`} className="hover:underline">
+                  <Link href={`/contacts/${p.customer.id}`} className="hover:underline">
                     {p.customer.name}
                   </Link>
                 ) : (

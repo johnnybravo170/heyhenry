@@ -153,7 +153,7 @@ export async function createJobAction(input: JobFormInput): Promise<JobActionRes
   revalidatePath('/jobs');
   revalidatePath('/jobs/list');
   revalidatePath('/jobs/calendar');
-  revalidatePath(`/customers/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.customer_id}`);
   return { ok: true, id: data.id };
 }
 
@@ -190,7 +190,7 @@ export async function updateJobAction(
   revalidatePath('/jobs');
   revalidatePath('/jobs/list');
   revalidatePath(`/jobs/${parsed.data.id}`);
-  revalidatePath(`/customers/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.customer_id}`);
   return { ok: true, id: parsed.data.id };
 }
 

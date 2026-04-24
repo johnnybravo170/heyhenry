@@ -3,8 +3,8 @@
 /**
  * Customer create/edit form.
  *
- * React Hook Form + Zod resolver. The same component powers `/customers/new`
- * and `/customers/[id]/edit`; the caller chooses which server action to
+ * React Hook Form + Zod resolver. The same component powers `/contacts/new`
+ * and `/contacts/[id]/edit`; the caller chooses which server action to
  * invoke and passes default values for the edit case.
  *
  * Layout is intentionally type-aware: the order of the blocks shifts so
@@ -131,8 +131,8 @@ export function CustomerForm({
   // Watch every field we want Henry to see + be able to populate.
   const watched = form.watch();
 
-  // Register this form with Henry so voice dictation on /customers/new (or
-  // /customers/[id]/edit) fills fields instead of invoking create_customer.
+  // Register this form with Henry so voice dictation on /contacts/new (or
+  // /contacts/[id]/edit) fills fields instead of invoking create_customer.
   useHenryForm({
     formId: mode === 'create' ? 'customer-create' : `customer-edit-${defaults?.id ?? ''}`,
     title: mode === 'create' ? 'Creating a new customer' : 'Editing customer details',
@@ -235,7 +235,7 @@ export function CustomerForm({
           router.push(`/contacts/${result.id}`);
           return;
         }
-        router.push(`/customers/${result.id}`);
+        router.push(`/contacts/${result.id}`);
         router.refresh();
         return;
       }

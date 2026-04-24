@@ -40,7 +40,7 @@ export function TodaysJobs({ jobs, timezone }: { jobs: TodaysJob[]; timezone: st
               <div className="flex items-center gap-2">
                 {job.customer ? (
                   <Link
-                    href={`/customers/${job.customer.id}`}
+                    href={`/contacts/${job.customer.id}`}
                     className="font-medium text-sm hover:underline truncate"
                   >
                     {job.customer.name}

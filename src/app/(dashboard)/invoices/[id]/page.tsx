@@ -127,7 +127,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               </span>
               <p className="text-sm font-medium">
                 <Link
-                  href={`/customers/${invoice.customer.id}`}
+                  href={`/contacts/${invoice.customer.id}`}
                   className="hover:text-primary hover:underline"
                 >
                   {invoice.customer.name}

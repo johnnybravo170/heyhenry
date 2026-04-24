@@ -103,7 +103,7 @@ export async function createCustomerAction(
     return { ok: false, error: error?.message ?? 'Failed to create customer.' };
   }
 
-  revalidatePath('/customers');
+  revalidatePath('/contacts');
   return { ok: true, id: data.id };
 }
 
@@ -143,8 +143,8 @@ export async function updateCustomerAction(
     return { ok: false, error: error.message };
   }
 
-  revalidatePath('/customers');
-  revalidatePath(`/customers/${parsed.data.id}`);
+  revalidatePath('/contacts');
+  revalidatePath(`/contacts/${parsed.data.id}`);
   return { ok: true, id: parsed.data.id };
 }
 
@@ -170,7 +170,7 @@ export async function patchCustomerEmailAction(
 
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath(`/customers/${customerId}`);
+  revalidatePath(`/contacts/${customerId}`);
   return { ok: true };
 }
 
@@ -199,6 +199,6 @@ export async function deleteCustomerAction(id: string): Promise<CustomerActionRe
     return { ok: false, error: error.message };
   }
 
-  revalidatePath('/customers');
-  redirect('/customers');
+  revalidatePath('/contacts');
+  redirect('/contacts');
 }
