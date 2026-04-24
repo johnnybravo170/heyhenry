@@ -85,8 +85,8 @@ export type Velocity = {
   source: VelocitySource;
 };
 
-// One commit ~= 1.5 points. Rough proxy while kanban is thin.
-const POINTS_PER_COMMIT = 1.5;
+// One commit = 1 point. Simple.
+const POINTS_PER_COMMIT = 1.0;
 // Need at least this many done cards in-window before we trust kanban alone.
 const KANBAN_MIN_DONE_CARDS = 3;
 // When both signals exist, down-weight git so kanban still drives ETA.
