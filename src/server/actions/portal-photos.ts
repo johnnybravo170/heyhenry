@@ -78,3 +78,54 @@ export async function setPhotoPhaseAction(
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
+
+/**
+ * Bulk operations for the gallery's "Select multiple" mode. All three
+ * accept an array of photo IDs and apply the same change in one round
+ * trip. RLS on the photos table covers tenant isolation.
+ */
+export async function setPhotosPortalTagsBulkAction(
+  photoIds: string[],
+  tags: string[],
+  projectId: string,
+): Promise<PortalPhotoActionResult> {
+  if (photoIds.length === 0) return { ok: true };
+  const sanitized = sanitizePortalPhotoTags(tags);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('photos')
+    .update({ portal_tags: sanitized })
+    .in('id', photoIds);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
+
+export async function setPhotosPhaseBulkAction(
+  photoIds: string[],
+  phaseId: string | null,
+  projectId: string,
+): Promise<PortalPhotoActionResult> {
+  if (photoIds.length === 0) return { ok: true };
+  const supabase = await createClient();
+  const { error } = await supabase.from('photos').update({ phase_id: phaseId }).in('id', photoIds);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
+
+export async function setPhotosClientVisibleBulkAction(
+  photoIds: string[],
+  visible: boolean,
+  projectId: string,
+): Promise<PortalPhotoActionResult> {
+  if (photoIds.length === 0) return { ok: true };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('photos')
+    .update({ client_visible: visible })
+    .in('id', photoIds);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}

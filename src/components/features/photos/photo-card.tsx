@@ -16,7 +16,7 @@
  *   "by Henry" indicator.
  */
 
-import { AlertTriangle, ImageOff, Sparkles } from 'lucide-react';
+import { AlertTriangle, Check, ImageOff, Sparkles } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -61,11 +61,18 @@ export function PhotoCard({
   photo,
   tenantJobTypes = [],
   phases = [],
+  selectMode = false,
+  selected = false,
+  onToggleSelect,
 }: {
   photo: PhotoWithUrl;
   tenantJobTypes?: string[];
   /** Optional phase list for the "Pin to phase" picker on the portal popover. */
   phases?: Array<{ id: string; name: string }>;
+  /** When true, clicks toggle selection instead of opening the lightbox. */
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (photoId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [broken, setBroken] = useState(false);
@@ -102,11 +109,23 @@ export function PhotoCard({
     });
   };
 
+  // In selectMode, the thumbnail click toggles selection instead of
+  // opening the lightbox. The portal/favorite/delete overlay buttons
+  // stay reachable so the operator can still tweak a single photo
+  // without leaving select mode.
+  function onThumbClick(e: React.MouseEvent) {
+    if (!selectMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleSelect?.(photo.id);
+  }
+
   return (
     <figure
       className={cn(
         'group relative overflow-hidden rounded-xl border bg-card',
         photo.tag === 'concern' && 'border-2 border-red-400 ring-1 ring-red-200',
+        selected && 'ring-2 ring-primary',
       )}
       data-slot="photo-card"
       data-photo-id={photo.id}
@@ -116,7 +135,16 @@ export function PhotoCard({
           <button
             type="button"
             className="block aspect-square w-full overflow-hidden bg-muted/30 text-left"
-            aria-label={caption ? `Open photo: ${caption}` : 'Open photo'}
+            aria-label={
+              selectMode
+                ? selected
+                  ? 'Deselect photo'
+                  : 'Select photo'
+                : caption
+                  ? `Open photo: ${caption}`
+                  : 'Open photo'
+            }
+            onClick={onThumbClick}
           >
             {hasUrl ? (
               // biome-ignore lint/performance/noImgElement: signed URLs bypass next/image optimizer
@@ -154,6 +182,20 @@ export function PhotoCard({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Selection check overlay — only in selectMode */}
+      {selectMode ? (
+        <div
+          className={cn(
+            'absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-full border-2 bg-background/95 shadow-sm transition-colors',
+            selected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-muted-foreground/40',
+          )}
+        >
+          {selected ? <Check className="size-4" /> : null}
+        </div>
+      ) : null}
 
       <div className="absolute left-2 top-2 flex flex-col gap-1">
         <Badge variant="outline" className={cn('font-medium border', TAG_CLASS[photo.tag])}>

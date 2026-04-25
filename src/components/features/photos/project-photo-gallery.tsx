@@ -1,14 +1,15 @@
 /**
  * Project-scoped photo gallery — server component.
  *
- * Mirrors PhotoGallery but queries by project_id. Reuses PhotoCard for the
- * tile layout so any future improvements to the card flow through to both.
+ * Mirrors PhotoGallery but queries by project_id. Renders the
+ * ProjectPhotoBulkBar client wrapper which owns the selection state
+ * and the bulk-action toolbar; PhotoCard remains the per-photo render.
  */
 
 import { ImagePlus } from 'lucide-react';
 import { listPhotosByProject, listTenantJobTypes } from '@/lib/db/queries/photos';
 import { listPhasesForProject } from '@/lib/db/queries/project-phases';
-import { PhotoCard } from './photo-card';
+import { ProjectPhotoBulkBar } from './project-photo-bulk-bar';
 
 export async function ProjectPhotoGallery({
   projectId,
@@ -38,14 +39,11 @@ export async function ProjectPhotoGallery({
   }
 
   return (
-    <div
-      className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
-      data-slot="project-photo-gallery"
-      data-count={photos.length}
-    >
-      {photos.map((photo) => (
-        <PhotoCard key={photo.id} photo={photo} tenantJobTypes={tenantJobTypes} phases={phases} />
-      ))}
-    </div>
+    <ProjectPhotoBulkBar
+      photos={photos}
+      tenantJobTypes={tenantJobTypes}
+      phases={phases}
+      projectId={projectId}
+    />
   );
 }
