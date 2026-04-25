@@ -9,6 +9,7 @@
 
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
+import type { Plan, SubscriptionStatus } from '@/lib/billing/features';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -30,6 +31,8 @@ export type CurrentTenant = {
   slug: string | null;
   timezone: string;
   vertical: string;
+  plan: Plan;
+  subscriptionStatus: SubscriptionStatus;
   member: {
     id: string;
     role: string;
@@ -54,7 +57,9 @@ async function getCurrentTenantUncached(): Promise<CurrentTenant | null> {
 
   const { data: member } = await supabase
     .from('tenant_members')
-    .select('id, role, phone, phone_verified_at, tenants(id, name, slug, timezone, vertical)')
+    .select(
+      'id, role, phone, phone_verified_at, tenants(id, name, slug, timezone, vertical, plan, subscription_status)',
+    )
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -72,6 +77,8 @@ async function getCurrentTenantUncached(): Promise<CurrentTenant | null> {
     slug: tenant.slug,
     timezone: tenant.timezone ?? 'America/Vancouver',
     vertical: tenant.vertical ?? 'pressure_washing',
+    plan: (tenant.plan ?? 'starter') as Plan,
+    subscriptionStatus: (tenant.subscription_status ?? 'trialing') as SubscriptionStatus,
     member: {
       id: member.id,
       role: member.role,
