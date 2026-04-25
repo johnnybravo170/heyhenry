@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDateTime } from '@/lib/tz';
 
 /**
  * Mirrors the `urlFor` logic in `ops_graph_lookup` (mcp-tools/meta.ts).
@@ -66,7 +67,7 @@ export default async function WorklogDetailPage({ params }: { params: Promise<{ 
           ) : null}
           {entry.category ? <span>· {entry.category as string}</span> : null}
           {entry.site ? <span>· {entry.site as string}</span> : null}
-          <span>· {new Date(entry.created_at as string).toLocaleString()}</span>
+          <span>· {fmtDateTime(entry.created_at as string)}</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">
           {(entry.title as string) ?? '(no title)'}

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { fmtDateTime } from '@/lib/tz';
 import { getCard } from '@/server/ops-services/kanban';
 import { CardEditor } from './card-editor';
 import { CommentForm } from './comment-form';
@@ -60,7 +61,7 @@ export default async function KanbanCardPage({
                   {e.actor_type as string}
                 </span>
                 <span className="font-mono">{e.event_type as string}</span>
-                <span className="ml-auto">{new Date(e.created_at as string).toLocaleString()}</span>
+                <span className="ml-auto">{fmtDateTime(e.created_at as string)}</span>
               </div>
               {e.body ? (
                 <p className="mt-1 whitespace-pre-wrap text-[var(--foreground)]">

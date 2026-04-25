@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDateTime } from '@/lib/tz';
 import { CommentForm } from './comment-form';
 import { IdeaActions } from './idea-actions';
 import { PromoteToKanbanForm } from './promote-to-kanban-form';
@@ -52,7 +53,7 @@ export default async function IdeaDetailPage({ params }: { params: Promise<{ id:
             </span>
           ) : null}
           <span>· by {idea.actor_name}</span>
-          <span>· {new Date(idea.created_at).toLocaleString()}</span>
+          <span>· {fmtDateTime(idea.created_at)}</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">{idea.title}</h1>
         {idea.body ? (
@@ -109,7 +110,7 @@ export default async function IdeaDetailPage({ params }: { params: Promise<{ id:
                     )}
                   </span>
                   <span className="text-[var(--muted-foreground)]">
-                    {new Date(f.created_at).toLocaleString()}
+                    {fmtDateTime(f.created_at)}
                   </span>
                 </div>
                 {f.payload && Object.keys(f.payload as object).length > 0 ? (
@@ -142,7 +143,7 @@ export default async function IdeaDetailPage({ params }: { params: Promise<{ id:
                       {c.actor_type}
                     </span>
                   ) : null}
-                  <span>· {new Date(c.created_at).toLocaleString()}</span>
+                  <span>· {fmtDateTime(c.created_at)}</span>
                 </div>
                 <p className="whitespace-pre-wrap">{c.body}</p>
               </li>

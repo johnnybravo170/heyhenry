@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import { fmtDateTime } from '@/lib/tz';
 import { rateIdeaFeedbackAction } from './actions';
 
 const RATINGS = [
@@ -61,7 +62,7 @@ export function RateForm({
         <span className="font-mono font-semibold">{ratingLabel(currentRating)}</span>
         <span className="flex-1 truncate text-[var(--muted-foreground)]">
           {currentReason ?? ''}
-          {ratedAt ? ` · ${new Date(ratedAt).toLocaleString()}` : ''}
+          {ratedAt ? ` · ${fmtDateTime(ratedAt)}` : ''}
         </span>
         <button
           type="button"

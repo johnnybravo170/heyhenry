@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDate } from '@/lib/tz';
 import { NewDocForm } from './new-doc-form';
 import { SearchForm } from './search-form';
 
@@ -51,7 +52,7 @@ export default async function KnowledgePage() {
                     ) : null}
                   </div>
                   <div className="text-right text-xs text-[var(--muted-foreground)]">
-                    <div>{new Date(d.updated_at as string).toLocaleDateString()}</div>
+                    <div>{fmtDate(d.updated_at as string)}</div>
                     <div>{d.actor_name}</div>
                   </div>
                 </div>

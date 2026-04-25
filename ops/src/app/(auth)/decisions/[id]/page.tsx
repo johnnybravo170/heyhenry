@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDateTime } from '@/lib/tz';
 import { CommentForm } from './comment-form';
 import { DecisionActions } from './decision-actions';
 import { OutcomeForm } from './outcome-form';
@@ -57,7 +58,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
             </span>
           ) : null}
           <span>· by {d.actor_name}</span>
-          <span>· {new Date(d.created_at as string).toLocaleString()}</span>
+          <span>· {fmtDateTime(d.created_at as string)}</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">{d.title}</h1>
       </header>
@@ -90,7 +91,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
                       {o.actor_type}
                     </span>
                   ) : null}
-                  <span>· {new Date(o.created_at as string).toLocaleString()}</span>
+                  <span>· {fmtDateTime(o.created_at as string)}</span>
                   {o.concluded_at ? <span>· concluded</span> : null}
                 </div>
                 <p className="whitespace-pre-wrap">{o.body}</p>
@@ -121,7 +122,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
                       {c.actor_type}
                     </span>
                   ) : null}
-                  <span>· {new Date(c.created_at as string).toLocaleString()}</span>
+                  <span>· {fmtDateTime(c.created_at as string)}</span>
                 </div>
                 <p className="whitespace-pre-wrap">{c.body}</p>
               </li>

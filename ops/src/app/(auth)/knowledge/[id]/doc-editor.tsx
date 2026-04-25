@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import { fmtDateTime } from '@/lib/tz';
 import { archiveKnowledgeDocAction, updateKnowledgeDocAction } from '../actions';
 
 export function DocEditor({
@@ -65,11 +66,11 @@ export function DocEditor({
         <header className="space-y-2">
           <div className="flex items-center justify-between gap-4">
             <div className="text-xs text-[var(--muted-foreground)]">
-              by {meta.actorName} · updated {new Date(meta.updatedAt).toLocaleString()}
+              by {meta.actorName} · updated {fmtDateTime(meta.updatedAt)}
               {meta.embeddingUpdatedAt ? (
                 <>
                   {' · embedded '}
-                  {new Date(meta.embeddingUpdatedAt).toLocaleString()}
+                  {fmtDateTime(meta.embeddingUpdatedAt)}
                 </>
               ) : (
                 ' · not yet embedded'

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDate, fmtDateTime } from '@/lib/tz';
 import { RevokeButton } from './revoke-button';
 
 export default async function KeysPage() {
@@ -51,12 +52,10 @@ export default async function KeysPage() {
                     <td className="px-3 py-2 text-xs">
                       {(k.scopes as string[]).join(', ') || '—'}
                     </td>
-                    <td className="px-3 py-2 text-xs">
-                      {new Date(k.expires_at as string).toLocaleDateString()}
-                    </td>
+                    <td className="px-3 py-2 text-xs">{fmtDate(k.expires_at as string)}</td>
                     <td className="px-3 py-2 text-xs">
                       {k.last_used_at
-                        ? `${new Date(k.last_used_at as string).toLocaleString()} · ${k.last_used_ip ?? ''}`
+                        ? `${fmtDateTime(k.last_used_at as string)} · ${k.last_used_ip ?? ''}`
                         : '—'}
                     </td>
                     <td className="px-3 py-2 text-xs">

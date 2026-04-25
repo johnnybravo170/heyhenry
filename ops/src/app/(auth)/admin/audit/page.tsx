@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDateTime } from '@/lib/tz';
 
 export default async function AuditPage() {
   const service = createServiceClient();
@@ -35,9 +36,7 @@ export default async function AuditPage() {
             <tbody className="divide-y divide-[var(--border)] font-mono">
               {rows.map((r) => (
                 <tr key={r.id} className={r.status >= 400 ? 'bg-red-50' : ''}>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {new Date(r.occurred_at).toLocaleString()}
-                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">{fmtDateTime(r.occurred_at)}</td>
                   <td className="px-3 py-2">
                     {r.admin_user_id
                       ? 'admin'

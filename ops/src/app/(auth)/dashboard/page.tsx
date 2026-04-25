@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtAgo, fmtDateTime } from '@/lib/tz';
 import { getVanitySummary } from '@/server/ops-services/git-stats';
 import { getEta, getLaunchRollup, getVelocity } from '@/server/ops-services/launch';
 
@@ -11,18 +12,6 @@ type CapturedItem = {
   href: string;
   userRating?: number | null;
 };
-
-function agoStamp(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
 
 const SURFACE_STYLES: Record<CapturedItem['surface'], { label: string; cls: string }> = {
   worklog: { label: 'Worklog', cls: 'bg-blue-500/10 text-blue-400' },
@@ -197,7 +186,7 @@ export default async function DashboardPage() {
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-sm font-medium">{c.title}</span>
                       <span className="text-[10px] text-[var(--muted-foreground)]">
-                        {agoStamp(c.created_at)}
+                        {fmtAgo(c.created_at)}
                       </span>
                     </span>
                     {c.userRating != null ? (
@@ -304,7 +293,7 @@ export default async function DashboardPage() {
                 <div className="flex justify-between gap-4">
                   <span className="font-medium">{e.title ?? '(no title)'}</span>
                   <span className="text-xs text-[var(--muted-foreground)]">
-                    {e.actor_name} · {new Date(e.created_at).toLocaleString()}
+                    {e.actor_name} · {fmtDateTime(e.created_at)}
                   </span>
                 </div>
               </li>

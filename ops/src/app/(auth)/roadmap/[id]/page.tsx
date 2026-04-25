@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDateTime } from '@/lib/tz';
 import { CommentForm } from './comment-form';
 import { ItemActions } from './item-actions';
 
@@ -58,7 +59,7 @@ export default async function RoadmapItemPage({ params }: { params: Promise<{ id
             <span className="text-amber-500">{'★'.repeat(item.priority as number)}</span>
           ) : null}
           <span>· by {item.actor_name}</span>
-          <span>· {new Date(item.created_at as string).toLocaleString()}</span>
+          <span>· {fmtDateTime(item.created_at as string)}</span>
           {item.source_idea_id ? (
             <Link
               href={`/ideas/${item.source_idea_id}`}
@@ -108,7 +109,7 @@ export default async function RoadmapItemPage({ params }: { params: Promise<{ id
                 </span>
               ) : null}
               {a.note ? <span> — {a.note}</span> : null}
-              <span className="ml-2">{new Date(a.created_at as string).toLocaleString()}</span>
+              <span className="ml-2">{fmtDateTime(a.created_at as string)}</span>
             </li>
           ))}
         </ul>
@@ -129,7 +130,7 @@ export default async function RoadmapItemPage({ params }: { params: Promise<{ id
                       {c.actor_type}
                     </span>
                   ) : null}
-                  <span>· {new Date(c.created_at as string).toLocaleString()}</span>
+                  <span>· {fmtDateTime(c.created_at as string)}</span>
                 </div>
                 <p className="whitespace-pre-wrap">{c.body}</p>
               </li>

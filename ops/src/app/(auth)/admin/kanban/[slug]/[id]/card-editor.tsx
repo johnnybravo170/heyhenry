@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import { fmtDateTime } from '@/lib/tz';
 import {
   archiveCardAction,
   assignCardAction,
@@ -316,7 +317,7 @@ export function CardEditor({ slug, card }: { slug: string; card: CardProps }) {
 
         {card.archived_at ? (
           <p className="text-xs text-[var(--muted-foreground)]">
-            Archived {new Date(card.archived_at).toLocaleString()}.
+            Archived {fmtDateTime(card.archived_at)}.
           </p>
         ) : (
           <div className="flex justify-end border-t border-[var(--border)] pt-3">

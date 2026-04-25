@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDateTime } from '@/lib/tz';
 import { ArchiveButton } from './archive-button';
 import { WorklogForm } from './worklog-form';
 
@@ -39,7 +40,7 @@ export default async function WorklogPage() {
                   {e.site ? <span className="ml-2">· {e.site}</span> : null}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span>{new Date(e.created_at).toLocaleString()}</span>
+                  <span>{fmtDateTime(e.created_at)}</span>
                   <ArchiveButton id={e.id} />
                 </div>
               </div>

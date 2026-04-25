@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDate, fmtDateTime } from '@/lib/tz';
 import { RevokeAllButton } from './revoke-all-button';
 import { RevokeTokenButton } from './revoke-token-button';
 
@@ -176,15 +177,11 @@ export default async function McpAdminPage() {
                       <td className="px-3 py-2 text-xs" title={scopes.join('\n')}>
                         {scopes.length}
                       </td>
+                      <td className="px-3 py-2 text-xs">{fmtDate(t.created_at)}</td>
                       <td className="px-3 py-2 text-xs">
-                        {new Date(t.created_at).toLocaleDateString()}
+                        {t.last_used_at ? fmtDateTime(t.last_used_at) : '—'}
                       </td>
-                      <td className="px-3 py-2 text-xs">
-                        {t.last_used_at ? new Date(t.last_used_at).toLocaleString() : '—'}
-                      </td>
-                      <td className="px-3 py-2 text-xs">
-                        {new Date(t.expires_at).toLocaleDateString()}
-                      </td>
+                      <td className="px-3 py-2 text-xs">{fmtDate(t.expires_at)}</td>
                       <td className="px-3 py-2 text-xs">
                         <span
                           className={

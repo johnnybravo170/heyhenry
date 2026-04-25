@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDate } from '@/lib/tz';
 
 const STATUS_LABEL: Record<string, string> = {
   new: 'New',
@@ -68,7 +69,7 @@ export default async function IdeasPage() {
                     ) : null}
                   </div>
                   <div className="flex flex-col items-end gap-1 text-xs text-[var(--muted-foreground)]">
-                    <span>{new Date(i.created_at).toLocaleDateString()}</span>
+                    <span>{fmtDate(i.created_at)}</span>
                     <span>{i.actor_name}</span>
                     {i.rating ? (
                       <span className="text-amber-500">{'★'.repeat(i.rating)}</span>

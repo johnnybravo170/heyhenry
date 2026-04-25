@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDate } from '@/lib/tz';
 import { NewDecisionForm } from './new-decision-form';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -69,7 +70,7 @@ export default async function DecisionsPage() {
                     </p>
                   </div>
                   <div className="text-right text-xs text-[var(--muted-foreground)]">
-                    <div>{new Date(d.created_at).toLocaleDateString()}</div>
+                    <div>{fmtDate(d.created_at)}</div>
                     <div>{d.actor_name}</div>
                   </div>
                 </div>
