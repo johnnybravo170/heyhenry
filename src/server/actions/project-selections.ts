@@ -107,3 +107,30 @@ export async function deleteSelectionAction(
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
+
+/**
+ * Update only the photo_refs jsonb on a selection. Separate from the
+ * full update so the picker UI doesn't have to round-trip every other
+ * field.
+ */
+export async function setSelectionPhotoRefsAction(
+  selectionId: string,
+  projectId: string,
+  refs: Array<{ photo_id: string; storage_path: string; caption?: string | null }>,
+): Promise<SelectionActionResult> {
+  const supabase = await createClient();
+  const sanitized = refs
+    .filter((r) => r && typeof r.photo_id === 'string' && typeof r.storage_path === 'string')
+    .map((r) => ({
+      photo_id: r.photo_id,
+      storage_path: r.storage_path,
+      caption: r.caption ?? null,
+    }));
+  const { error } = await supabase
+    .from('project_selections')
+    .update({ photo_refs: sanitized })
+    .eq('id', selectionId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}

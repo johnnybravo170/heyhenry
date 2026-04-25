@@ -17,13 +17,16 @@ import {
 } from '@/lib/validators/project-selection';
 import { deleteSelectionAction } from '@/server/actions/project-selections';
 import { SelectionFormDialog } from './selection-form-dialog';
+import { type GalleryPickerPhoto, SelectionPhotoPicker } from './selection-photo-picker';
 
 export function SelectionList({
   groups,
   projectId,
+  galleryPhotos = [],
 }: {
   groups: Array<{ room: string; items: ProjectSelection[] }>;
   projectId: string;
+  galleryPhotos?: GalleryPickerPhoto[];
 }) {
   if (groups.length === 0) {
     return (
@@ -55,7 +58,12 @@ export function SelectionList({
           </div>
           <ul className="divide-y">
             {group.items.map((sel) => (
-              <SelectionRow key={sel.id} selection={sel} projectId={projectId} />
+              <SelectionRow
+                key={sel.id}
+                selection={sel}
+                projectId={projectId}
+                galleryPhotos={galleryPhotos}
+              />
             ))}
           </ul>
         </div>
@@ -67,9 +75,11 @@ export function SelectionList({
 function SelectionRow({
   selection,
   projectId,
+  galleryPhotos = [],
 }: {
   selection: ProjectSelection;
   projectId: string;
+  galleryPhotos?: GalleryPickerPhoto[];
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -105,6 +115,15 @@ function SelectionRow({
         ) : null}
       </div>
       <div className="flex items-center gap-1">
+        {galleryPhotos.length > 0 ? (
+          <SelectionPhotoPicker
+            selectionId={selection.id}
+            projectId={projectId}
+            photos={galleryPhotos}
+            initialIds={selection.photo_refs.map((r) => r.photo_id)}
+            count={selection.photo_refs.length}
+          />
+        ) : null}
         <SelectionFormDialog
           projectId={projectId}
           selection={selection}

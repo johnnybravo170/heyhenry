@@ -274,6 +274,21 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
   }));
   const selectionGroups = groupSelectionsByRoom(selections);
 
+  // Sign storage paths referenced by selection photo_refs.
+  const selectionPhotoPaths = new Set<string>();
+  for (const sel of selections) {
+    for (const r of sel.photo_refs) if (r.storage_path) selectionPhotoPaths.add(r.storage_path);
+  }
+  const selectionPhotoUrls = new Map<string, string>();
+  if (selectionPhotoPaths.size > 0) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrls(Array.from(selectionPhotoPaths), 3600);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) selectionPhotoUrls.set(row.path, row.signedUrl);
+    }
+  }
+
   // Slice 2 — homeowner photo gallery from operator-tagged photos. Pulls
   // from the photos table where the operator has set portal_tags AND
   // left client_visible=true. Separate from `project_portal_updates`
@@ -482,7 +497,7 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
           Record handoff package by showing the data live. */}
       {selectionGroups.length > 0 ? (
         <div className="mb-8">
-          <PortalSelections groups={selectionGroups} />
+          <PortalSelections groups={selectionGroups} signedUrls={selectionPhotoUrls} />
         </div>
       ) : null}
 

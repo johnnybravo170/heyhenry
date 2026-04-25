@@ -14,8 +14,11 @@ import {
 
 export function PortalSelections({
   groups,
+  signedUrls = new Map(),
 }: {
   groups: Array<{ room: string; items: ProjectSelection[] }>;
+  /** Map of storage_path → signed URL so photo_refs can render. */
+  signedUrls?: Map<string, string>;
 }) {
   if (groups.length === 0) return null;
   return (
@@ -62,6 +65,24 @@ export function PortalSelections({
                   </div>
                   {sel.notes ? (
                     <p className="mt-1 text-xs text-muted-foreground">{sel.notes}</p>
+                  ) : null}
+                  {sel.photo_refs.length > 0 ? (
+                    <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
+                      {sel.photo_refs.map((ref) => {
+                        const url = signedUrls.get(ref.storage_path);
+                        if (!url) return null;
+                        return (
+                          // biome-ignore lint/performance/noImgElement: signed URLs
+                          <img
+                            key={ref.photo_id}
+                            src={url}
+                            alt={ref.caption ?? ''}
+                            loading="lazy"
+                            className="aspect-square rounded-md border object-cover"
+                          />
+                        );
+                      })}
+                    </div>
                   ) : null}
                 </li>
               );
