@@ -1,11 +1,13 @@
+import { PhaseRail } from '@/components/features/portal/phase-rail';
 import { PortalToggle } from '@/components/features/portal/portal-toggle';
 import { PortalUpdateForm } from '@/components/features/portal/portal-update-form';
+import { listPhasesForProject } from '@/lib/db/queries/project-phases';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function PortalTabServer({ projectId }: { projectId: string }) {
   const supabase = await createClient();
 
-  const [{ data: portalUpdates }, { data: portalData }] = await Promise.all([
+  const [{ data: portalUpdates }, { data: portalData }, phases] = await Promise.all([
     supabase
       .from('project_portal_updates')
       .select('id, type, title, body, photo_url, created_at')
@@ -13,6 +15,7 @@ export default async function PortalTabServer({ projectId }: { projectId: string
       .order('created_at', { ascending: false })
       .limit(50),
     supabase.from('projects').select('portal_slug, portal_enabled').eq('id', projectId).single(),
+    listPhasesForProject(projectId),
   ]);
 
   const portalEnabled = (portalData?.portal_enabled as boolean) ?? false;
@@ -21,6 +24,8 @@ export default async function PortalTabServer({ projectId }: { projectId: string
   return (
     <div className="space-y-6">
       <PortalToggle projectId={projectId} portalEnabled={portalEnabled} portalSlug={portalSlug} />
+
+      {phases.length > 0 ? <PhaseRail phases={phases} projectId={projectId} /> : null}
 
       {portalEnabled ? (
         <>

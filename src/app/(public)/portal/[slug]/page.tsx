@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
+import { PhaseRail } from '@/components/features/portal/phase-rail';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
+import type { ProjectPhase } from '@/lib/db/queries/project-phases';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -47,6 +49,16 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
   const customerName = (customer?.name as string) ?? '';
   const projectId = p.id as string;
   const percentComplete = (p.percent_complete as number) ?? 0;
+
+  // Load homeowner-facing phase rail (Slice 1 of Customer Portal build).
+  // Admin client bypasses RLS — phases inherit visibility from the
+  // already-authorized portal slug check above.
+  const { data: phaseRows } = await admin
+    .from('project_phases')
+    .select('id, project_id, name, display_order, status, started_at, completed_at')
+    .eq('project_id', projectId)
+    .order('display_order', { ascending: true });
+  const phases = (phaseRows ?? []) as ProjectPhase[];
 
   // Load portal updates
   const { data: updates } = await admin
@@ -146,6 +158,14 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{p.name as string}</h1>
         {customerName ? <p className="mt-1 text-sm text-muted-foreground">{customerName}</p> : null}
       </header>
+
+      {/* Phase rail — homeowner-facing milestone tracker. Read-only here;
+          operator advances/regresses from the project detail Portal tab. */}
+      {phases.length > 0 ? (
+        <div className="mb-8">
+          <PhaseRail phases={phases} />
+        </div>
+      ) : null}
 
       {/* Status bar */}
       <div className="mb-8 rounded-lg border p-4 space-y-3">
