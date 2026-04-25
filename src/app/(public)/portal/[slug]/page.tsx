@@ -5,8 +5,10 @@ import {
   type PortalGalleryPhoto,
   PortalPhotoGallery,
 } from '@/components/features/portal/portal-photo-gallery';
+import { PortalSelections } from '@/components/features/portal/portal-selections';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import type { ProjectPhase } from '@/lib/db/queries/project-phases';
+import { groupSelectionsByRoom, type ProjectSelection } from '@/lib/db/queries/project-selections';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isPortalPhotoTag, type PortalPhotoTag } from '@/lib/validators/portal-photo';
 
@@ -149,6 +151,23 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
         photo_urls: photoUrls,
       };
     });
+
+  // Slice 4 — per-room material selections. Read-only on the portal.
+  const { data: selectionRows } = await admin
+    .from('project_selections')
+    .select(
+      'id, project_id, room, category, brand, name, code, finish, supplier, sku, warranty_url, notes, photo_refs, display_order',
+    )
+    .eq('project_id', projectId)
+    .order('room', { ascending: true })
+    .order('display_order', { ascending: true });
+  const selections: ProjectSelection[] = (
+    (selectionRows ?? []) as unknown as ProjectSelection[]
+  ).map((row) => ({
+    ...row,
+    photo_refs: Array.isArray(row.photo_refs) ? row.photo_refs : [],
+  }));
+  const selectionGroups = groupSelectionsByRoom(selections);
 
   // Slice 2 — homeowner photo gallery from operator-tagged photos. Pulls
   // from the photos table where the operator has set portal_tags AND
@@ -351,6 +370,14 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
       {galleryPhotos.length > 0 ? (
         <div className="mb-8">
           <PortalPhotoGallery photos={galleryPhotos} />
+        </div>
+      ) : null}
+
+      {/* Selections — per-room material record. Foreshadows the Home
+          Record handoff package by showing the data live. */}
+      {selectionGroups.length > 0 ? (
+        <div className="mb-8">
+          <PortalSelections groups={selectionGroups} />
         </div>
       ) : null}
 

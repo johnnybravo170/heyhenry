@@ -1,4 +1,4 @@
-import { ImageIcon, Link2, Mic, Users } from 'lucide-react';
+import { ImageIcon, Link2, Mic, Palette, Users } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -18,6 +18,7 @@ import InvoicesTabServer from '@/components/features/projects/tabs/invoices-tab-
 import MemosTabServer from '@/components/features/projects/tabs/memos-tab-server';
 import OverviewTabServer from '@/components/features/projects/tabs/overview-tab-server';
 import PortalTabServer from '@/components/features/projects/tabs/portal-tab-server';
+import SelectionsTabServer from '@/components/features/projects/tabs/selections-tab-server';
 import { TabSkeleton } from '@/components/features/projects/tabs/tab-skeleton';
 import TimeTabServer from '@/components/features/projects/tabs/time-tab-server';
 import VarianceTabServer from '@/components/features/projects/tabs/variance-tab-server';
@@ -47,6 +48,7 @@ type Tab =
   | 'gallery'
   | 'change-orders'
   | 'portal'
+  | 'selections'
   | 'crew';
 
 /**
@@ -94,10 +96,11 @@ export default async function ProjectDetailPage({
   const secondaryTabs: {
     key: Tab;
     label: string;
-    icon: 'gallery' | 'portal' | 'memos' | 'crew';
+    icon: 'gallery' | 'portal' | 'memos' | 'crew' | 'selections';
   }[] = [
     { key: 'gallery', label: 'Gallery', icon: 'gallery' },
     { key: 'portal', label: 'Portal', icon: 'portal' },
+    { key: 'selections', label: 'Selections', icon: 'selections' },
     { key: 'memos', label: 'Notes', icon: 'memos' },
     { key: 'crew', label: 'Crew', icon: 'crew' },
   ];
@@ -133,9 +136,11 @@ export default async function ProjectDetailPage({
                 ? ImageIcon
                 : s.icon === 'portal'
                   ? Link2
-                  : s.icon === 'memos'
-                    ? Mic
-                    : Users;
+                  : s.icon === 'selections'
+                    ? Palette
+                    : s.icon === 'memos'
+                      ? Mic
+                      : Users;
             return (
               <Link
                 key={s.key}
@@ -201,6 +206,7 @@ export default async function ProjectDetailPage({
         {tab === 'gallery' ? <GalleryTabServer projectId={id} /> : null}
         {tab === 'change-orders' ? <ChangeOrdersTabServer projectId={id} /> : null}
         {tab === 'portal' ? <PortalTabServer projectId={id} /> : null}
+        {tab === 'selections' ? <SelectionsTabServer projectId={id} /> : null}
         {tab === 'crew' ? <CrewTabServer projectId={id} /> : null}
       </Suspense>
     </div>

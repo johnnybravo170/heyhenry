@@ -1,0 +1,74 @@
+/**
+ * Read-only homeowner-facing selections panel grouped by room.
+ *
+ * No client interactivity needed — this is a static reference list. Kept
+ * as a server component (no 'use client') so it streams faster and
+ * doesn't ship a JS bundle for the homeowner.
+ */
+
+import type { ProjectSelection } from '@/lib/db/queries/project-selections';
+import {
+  type SelectionCategory,
+  selectionCategoryLabels,
+} from '@/lib/validators/project-selection';
+
+export function PortalSelections({
+  groups,
+}: {
+  groups: Array<{ room: string; items: ProjectSelection[] }>;
+}) {
+  if (groups.length === 0) return null;
+  return (
+    <section className="space-y-4" aria-labelledby="selections-heading">
+      <div>
+        <h2 id="selections-heading" className="text-base font-semibold">
+          Selections
+        </h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          What we used in your home — paint codes, tile, fixtures. You&rsquo;ll get this in your
+          final Home Record at the end of the job.
+        </p>
+      </div>
+
+      {groups.map((group) => (
+        <div key={group.room} className="rounded-lg border bg-card">
+          <h3 className="border-b px-4 py-2 text-sm font-semibold">{group.room}</h3>
+          <ul className="divide-y">
+            {group.items.map((sel) => {
+              const headline = [sel.brand, sel.name].filter(Boolean).join(' ');
+              const detail = [sel.code, sel.finish].filter(Boolean).join(' • ');
+              return (
+                <li key={sel.id} className="px-4 py-3">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
+                      {selectionCategoryLabels[sel.category as SelectionCategory] ?? sel.category}
+                    </span>
+                    {headline ? <span className="text-sm font-medium">{headline}</span> : null}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                    {detail ? <span>{detail}</span> : null}
+                    {sel.supplier ? <span>{sel.supplier}</span> : null}
+                    {sel.sku ? <span>SKU {sel.sku}</span> : null}
+                    {sel.warranty_url ? (
+                      <a
+                        href={sel.warranty_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Warranty info
+                      </a>
+                    ) : null}
+                  </div>
+                  {sel.notes ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{sel.notes}</p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </section>
+  );
+}
