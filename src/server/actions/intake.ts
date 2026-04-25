@@ -37,7 +37,14 @@ const MAX_IMAGES = 12;
 // across context-heavy inputs. Cost difference per intake call is
 // pennies; the win in completeness is much larger.
 const PARSE_MODEL = 'gpt-4.1';
-const CLAUDE_PARSE_MODEL = 'claude-sonnet-4-5';
+// Opus on intake — this is the highest-reasoning task in the app
+// (multimodal: audio transcript + images + PDFs, domain inference,
+// supply/install decomposition, implicit upsell extraction, AND
+// human-voice reply generation). Sonnet beat gpt-4.1 on the Tony
+// A/B; we're pushing further to top-tier reasoning here. Cost
+// ~25¢/call vs ~5¢ on Sonnet — fine for a feature that runs once
+// per inbound lead.
+const CLAUDE_PARSE_MODEL = 'claude-opus-4-5';
 
 export type ParseModelChoice = 'gpt-4.1' | 'claude-sonnet';
 
