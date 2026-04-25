@@ -30,7 +30,7 @@ const coreTools: AiTool[] = [
 /** Renovation-specific tools (projects, budget, time/expense, change orders). */
 const renovationTools: AiTool[] = [...projectTools, ...timeExpenseTools, ...changeOrderTools];
 
-/** All 37 tools registered for the AI chat. */
+/** All tools registered for the AI chat (count tracked in tests/unit/ai/tool-definitions.test.ts). */
 export const allTools: AiTool[] = [...coreTools, ...renovationTools];
 
 /** Build a handler lookup map for fast dispatch. */

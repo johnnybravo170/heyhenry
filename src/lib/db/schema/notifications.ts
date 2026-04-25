@@ -29,7 +29,7 @@ export const notifications = pgTable(
   (table) => [
     check(
       'notifications_kind_check',
-      sql`${table.kind} IN ('task_assigned','task_done','task_blocked','task_help','task_verified','task_rejected')`,
+      sql`${table.kind} IN ('task_assigned','task_done','task_blocked','task_help','task_verified','task_rejected','henry_suggestion')`,
     ),
   ],
 );

@@ -228,6 +228,10 @@ export async function approveEstimateAction(
     actor: 'customer',
   });
 
+  // Henry suggestion: seed tasks from estimate scope buckets.
+  const { onEstimateApproved } = await import('@/server/ai/triggers');
+  await onEstimateApproved(p.id as string);
+
   return { ok: true, id: p.id as string };
 }
 

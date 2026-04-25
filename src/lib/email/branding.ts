@@ -31,7 +31,8 @@ export type EmailTemplateKey =
   | 'portal_invite'
   | 'job_booking'
   | 'lead_notification'
-  | 'referral_invite';
+  | 'referral_invite'
+  | 'pulse_update';
 
 const LOGO_SIGN_SECONDS = 60 * 60 * 24 * 30; // 30 days
 

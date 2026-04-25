@@ -298,6 +298,10 @@ export async function approveChangeOrderAction(
     byName: nameParsed.data.approved_by_name,
   }).catch((err) => console.error('[change-order] notification dispatch failed:', err));
 
+  // Henry suggestion: create tasks for the new scope items.
+  const { onChangeOrderApproved } = await import('@/server/ai/triggers');
+  await onChangeOrderApproved(coData.id as string);
+
   return { ok: true, id: coData.id as string };
 }
 

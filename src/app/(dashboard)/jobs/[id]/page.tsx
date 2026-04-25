@@ -17,6 +17,7 @@ import { DeleteJobButton } from '@/components/features/jobs/delete-job-button';
 import { InlineScheduler } from '@/components/features/jobs/inline-scheduler';
 import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
 import { JobStatusSelect } from '@/components/features/jobs/job-status-select';
+import { UpdateClientButton } from '@/components/features/jobs/update-client-button';
 import { PhotoGallery } from '@/components/features/photos/photo-gallery';
 import { PhotoUpload } from '@/components/features/photos/photo-upload';
 import { QuoteStatusBadge } from '@/components/features/quotes/quote-status-badge';
@@ -90,6 +91,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         <div className="flex items-start gap-4">
           <JobStatusSelect jobId={job.id} currentStatus={job.status} hasPhotos={photoCount > 0} />
           <div className="flex items-center gap-2">
+            <UpdateClientButton jobId={job.id} />
             <Button asChild variant="outline" size="sm">
               <Link href={`/jobs/${job.id}/edit`}>
                 <Pencil className="size-3.5" />

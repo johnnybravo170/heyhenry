@@ -2,6 +2,7 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getJob, listJobs, listWorklogForJob } from '@/lib/db/queries/jobs';
 import { createClient } from '@/lib/supabase/server';
 import { sendSms } from '@/lib/twilio/client';
+import { draftPulseAction } from '@/server/actions/pulse';
 import {
   formatCad,
   formatDate,
@@ -580,6 +581,42 @@ export const jobTools: AiTool[] = [
         return output;
       } catch (e) {
         return `Failed to get upcoming jobs: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  },
+  {
+    definition: {
+      name: 'draft_pulse_update',
+      description:
+        'Draft a Project Pulse update for a job (homeowner-facing progress summary). Returns the draft body so the owner can review before approving and sending. Does NOT send anything by itself.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          job_id: { type: 'string', description: 'Job UUID' },
+        },
+        required: ['job_id'],
+      },
+    },
+    handler: async (input) => {
+      try {
+        const tenant = await getCurrentTenant();
+        if (!tenant) return 'Not authenticated.';
+
+        const result = await draftPulseAction(input.job_id as string);
+        if (!result.ok) return `Failed to draft pulse update: ${result.error}`;
+
+        // Pull the draft body so Henry can show it back to the owner.
+        const supabase = await createClient();
+        const { data } = await supabase
+          .from('pulse_updates')
+          .select('body_md')
+          .eq('id', result.id)
+          .maybeSingle();
+
+        const body = (data?.body_md as string | undefined) ?? '(empty draft)';
+        return `Drafted pulse update (id ${result.id.slice(0, 8)}). Open the job page and click "Update Client" to review and send.\n\n${body}`;
+      } catch (e) {
+        return `Failed to draft pulse update: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   },

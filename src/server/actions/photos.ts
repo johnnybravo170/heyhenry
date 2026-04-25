@@ -106,6 +106,13 @@ export async function uploadPhotoAction(formData: FormData): Promise<PhotoAction
   revalidatePath('/photos-demo');
   if (jobId) revalidatePath(`/jobs/${jobId}`);
   if (projectId) revalidatePath(`/projects/${projectId}`);
+
+  // Henry suggestion: photo might verify a done task that requires a photo.
+  if (jobId) {
+    const { onPhotoUploaded } = await import('@/server/ai/triggers');
+    await onPhotoUploaded({ jobId, photoId: data.id as string });
+  }
+
   return { ok: true, id: data.id };
 }
 

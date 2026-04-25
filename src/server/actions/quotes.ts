@@ -455,6 +455,10 @@ export async function acceptQuoteAction(input: { quoteId: string }): Promise<Quo
     related_id: input.quoteId,
   });
 
+  // Henry suggestion: seed tasks from the quote's scope buckets.
+  const { onQuoteApproved } = await import('@/server/ai/triggers');
+  await onQuoteApproved(input.quoteId);
+
   revalidatePath('/quotes');
   revalidatePath(`/quotes/${input.quoteId}`);
   return { ok: true, id: input.quoteId };
@@ -923,6 +927,10 @@ export async function approveQuotePublicAction(
       }
     }
   }
+
+  // Henry suggestion: seed tasks from quote scope buckets.
+  const { onQuoteApproved } = await import('@/server/ai/triggers');
+  await onQuoteApproved(quoteId);
 
   return { ok: true };
 }
