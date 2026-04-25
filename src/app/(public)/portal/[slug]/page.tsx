@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { DecisionPanel, type PortalDecision } from '@/components/features/portal/decision-panel';
 import { PhaseRail } from '@/components/features/portal/phase-rail';
 import {
   type PortalGalleryPhoto,
@@ -106,6 +107,49 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
 
   const totalBudget = originalEstimate + approvedCOTotal;
 
+  // Slice 3 — pending homeowner decisions for the queue panel.
+  const { data: decisionRows } = await admin
+    .from('project_decisions')
+    .select('id, approval_code, label, description, due_date, photo_refs')
+    .eq('project_id', projectId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  // Resolve photo refs to signed URLs.
+  const decisionPhotoPaths = new Set<string>();
+  for (const row of decisionRows ?? []) {
+    const refs = ((row as Record<string, unknown>).photo_refs ?? []) as Array<{
+      storage_path?: string;
+    }>;
+    for (const r of refs) if (r?.storage_path) decisionPhotoPaths.add(r.storage_path);
+  }
+  const decisionSignedMap = new Map<string, string>();
+  if (decisionPhotoPaths.size > 0) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrls(Array.from(decisionPhotoPaths), 3600);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) decisionSignedMap.set(row.path, row.signedUrl);
+    }
+  }
+  const portalDecisions: PortalDecision[] = (decisionRows ?? [])
+    .filter((r) => Boolean((r as Record<string, unknown>).approval_code))
+    .map((r) => {
+      const row = r as Record<string, unknown>;
+      const refs = (row.photo_refs ?? []) as Array<{ storage_path?: string }>;
+      const photoUrls = refs
+        .map((ref) => (ref?.storage_path ? decisionSignedMap.get(ref.storage_path) : null))
+        .filter((u): u is string => Boolean(u));
+      return {
+        id: row.id as string,
+        approval_code: row.approval_code as string,
+        label: row.label as string,
+        description: (row.description as string | null) ?? null,
+        due_date: (row.due_date as string | null) ?? null,
+        photo_urls: photoUrls,
+      };
+    });
+
   // Slice 2 — homeowner photo gallery from operator-tagged photos. Pulls
   // from the photos table where the operator has set portal_tags AND
   // left client_visible=true. Separate from `project_portal_updates`
@@ -207,6 +251,9 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{p.name as string}</h1>
         {customerName ? <p className="mt-1 text-sm text-muted-foreground">{customerName}</p> : null}
       </header>
+
+      {/* Decision queue — pinned to the top because urgent ask. */}
+      <DecisionPanel decisions={portalDecisions} defaultCustomerName={customerName} />
 
       {/* Phase rail — homeowner-facing milestone tracker. Read-only here;
           operator advances/regresses from the project detail Portal tab. */}
