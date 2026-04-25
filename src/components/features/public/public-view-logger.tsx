@@ -8,7 +8,7 @@ import {
   logQuoteViewAction,
 } from '@/server/actions/public-views';
 
-type ResourceType = 'change_order' | 'portal' | 'invoice' | 'quote';
+type ResourceType = 'change_order' | 'portal' | 'invoice' | 'quote' | 'decision' | 'home-record';
 
 export function PublicViewLogger({
   resourceType,
@@ -25,7 +25,7 @@ export function PublicViewLogger({
       sessionId: sessionStorage.getItem('hh-session') ?? undefined,
       userAgent: navigator.userAgent,
     };
-    const run = () => {
+    const run = (): Promise<unknown> => {
       switch (resourceType) {
         case 'change_order':
           return logChangeOrderViewAction(identifier, input);
@@ -35,6 +35,11 @@ export function PublicViewLogger({
           return logInvoiceViewAction(identifier, input);
         case 'quote':
           return logQuoteViewAction(identifier, input);
+        // 'decision' and 'home-record' don't have logger actions yet —
+        // their public routes still embed the component for forward-
+        // compat once we want analytics on tap-through rates.
+        default:
+          return Promise.resolve();
       }
     };
     run().catch(() => {});
