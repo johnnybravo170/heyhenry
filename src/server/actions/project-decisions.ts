@@ -245,3 +245,79 @@ export async function askDecisionByCodeAction(input: {
   revalidatePath(`/projects/${d.project_id as string}`);
   return { ok: true };
 }
+
+/**
+ * AI cluster #4 — Henry suggests homeowner decisions based on recent
+ * project events. Pulls last few memos / notes / photo captions and
+ * the project description, asks Claude what decisions the contractor
+ * should queue, returns 0-3 suggestions. Returns empty list silently
+ * on AI failure.
+ */
+export type SuggestDecisionsResult =
+  | {
+      ok: true;
+      suggestions: Array<{ label: string; description: string | null; options: string[] }>;
+    }
+  | { ok: false; error: string };
+
+export async function suggestDecisionsAction(projectId: string): Promise<SuggestDecisionsResult> {
+  const supabase = await createClient();
+
+  // Project header.
+  const { data: project } = await supabase
+    .from('projects')
+    .select('name, description')
+    .eq('id', projectId)
+    .single();
+  if (!project) return { ok: false, error: 'Project not found.' };
+  const p = project as Record<string, unknown>;
+
+  // Recent context — newest first, modest limits.
+  const [memosRes, notesRes, photosRes, pendingRes] = await Promise.all([
+    supabase
+      .from('project_memos')
+      .select('transcript')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabase
+      .from('project_notes')
+      .select('body')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('photos')
+      .select('caption')
+      .eq('project_id', projectId)
+      .is('deleted_at', null)
+      .not('caption', 'is', null)
+      .order('taken_at', { ascending: false, nullsFirst: false })
+      .limit(8),
+    supabase
+      .from('project_decisions')
+      .select('label')
+      .eq('project_id', projectId)
+      .eq('status', 'pending'),
+  ]);
+
+  const { suggestDecisions } = await import('@/lib/ai/decision-suggester');
+  const suggestions = await suggestDecisions({
+    projectName: (p.name as string) ?? 'Project',
+    projectDescription: (p.description as string | null) ?? null,
+    recentMemos: (memosRes.data ?? [])
+      .map((r) => (r as Record<string, unknown>).transcript as string | null)
+      .filter((s): s is string => Boolean(s?.trim())),
+    recentNotes: (notesRes.data ?? [])
+      .map((r) => (r as Record<string, unknown>).body as string | null)
+      .filter((s): s is string => Boolean(s?.trim())),
+    recentPhotoCaptions: (photosRes.data ?? [])
+      .map((r) => (r as Record<string, unknown>).caption as string | null)
+      .filter((s): s is string => Boolean(s?.trim())),
+    pendingLabels: (pendingRes.data ?? []).map(
+      (r) => (r as Record<string, unknown>).label as string,
+    ),
+  });
+
+  return { ok: true, suggestions };
+}

@@ -1,5 +1,6 @@
 import { DecisionForm } from '@/components/features/portal/decision-form';
 import { DecisionList } from '@/components/features/portal/decision-list';
+import { DecisionSuggestions } from '@/components/features/portal/decision-suggestions';
 import { PhaseRail } from '@/components/features/portal/phase-rail';
 import { PortalToggle } from '@/components/features/portal/portal-toggle';
 import { PortalUpdateForm } from '@/components/features/portal/portal-update-form';
@@ -43,6 +44,7 @@ export default async function PortalTabServer({ projectId }: { projectId: string
           <DecisionForm projectId={projectId} />
         </div>
         <DecisionList decisions={decisions} projectId={projectId} />
+        <DecisionSuggestions projectId={projectId} />
       </div>
 
       {portalEnabled ? (
