@@ -45,6 +45,13 @@ const PARSE_MODEL = 'gpt-4.1';
 // ~25¢/call vs ~5¢ on Sonnet — fine for a feature that runs once
 // per inbound lead.
 const CLAUDE_PARSE_MODEL = 'claude-opus-4-5';
+// Sonnet runs a focused structural-integrity verification pass over
+// Opus's draft when there's a transcript to check against. Narrow
+// task ("find missing scope areas + missing numbers"), much faster
+// model — adds ~6-10s vs Opus's ~30-35s, but pulls the floor up
+// where Opus alone defaulted whole bucket categories to qty:1/scope.
+// Only fires when audio transcript exists; image-only runs skip it.
+const VERIFY_MODEL = 'claude-sonnet-4-5';
 
 export type ParseModelChoice = 'gpt-4.1' | 'claude-sonnet';
 
@@ -202,6 +209,20 @@ export async function parseInboundLeadAction(
     if (!openaiResult.ok) return { ok: false, error: openaiResult.error };
     draft = openaiResult.draft;
     parsedBy = PARSE_MODEL;
+  }
+
+  // Structural-integrity second pass — only when there's a transcript
+  // to check against. Sonnet re-reads the transcript, finds scope
+  // areas / numbers / prices that the first pass either dropped or
+  // buried in description prose, and returns a corrected draft. If
+  // the verify call fails for any reason, fall back to the first
+  // draft rather than blocking the operator's flow.
+  if (transcript && transcript.length > 0) {
+    const verified = await runVerifyPass(draft, transcript);
+    if (verified.ok) {
+      draft = verified.draft;
+      parsedBy = `${parsedBy} → ${VERIFY_MODEL} (verify)`;
+    }
   }
 
   // If operator typed a customer name, prefer it over whatever the model
@@ -519,5 +540,93 @@ async function runClaudeParse(
     (b): b is Anthropic.Messages.ToolUseBlock => b.type === 'tool_use',
   );
   if (!toolBlock) return { ok: false, error: 'Claude returned no tool_use block.' };
+  return { ok: true, draft: toolBlock.input as ParsedIntake };
+}
+
+/**
+ * Structural-integrity verification pass. The first-pass model (Opus or
+ * gpt-4.1) is the highest-reasoning step but exhibits high run-to-run
+ * variance — sometimes it gives a comprehensive draft with quantities
+ * propagated to every line, sometimes it defaults whole bucket
+ * categories to qty:1/scope and silently drops scope areas the speaker
+ * mentioned.
+ *
+ * This pass is deliberately narrow and domain-agnostic:
+ *   1. Did the first draft create a bucket for every distinct scope
+ *      area / trade / material the transcript mentions?
+ *   2. Did every number / dimension / count / lineal-ft / sq-ft in the
+ *      transcript end up on a qty field (not buried in description
+ *      prose)?
+ *   3. Did every quoted unit price end up in unit_price_cents?
+ *
+ * Sonnet runs this in ~6-10s on top of Opus's ~30-35s — well within
+ * the page's 60s budget. Only fires when there is an audio transcript;
+ * image-only runs skip it because images don't carry the same kind of
+ * spoken numerical detail and the marginal value drops.
+ *
+ * If this call fails for any reason (network, schema mismatch, etc.)
+ * the caller falls back to the first-pass draft. The verify pass
+ * should never block the operator's flow.
+ */
+const VERIFY_SYSTEM_PROMPT = `You are reviewing a draft estimate that another AI just produced from a contractor's voice memo. The draft may be missing scope areas or measurements that the contractor mentioned in the transcript.
+
+Your job is a structural integrity check, NOT a re-do. Preserve everything correct. Fix what was missed.
+
+1. SCOPE COMPLETENESS — Read the transcript. For every distinct trade, material, room, or scope area the contractor mentions, verify a bucket exists in the draft. If a scope area is missing, ADD a bucket for it with appropriate supply / install lines. Apply the same supply-and-install decomposition the first pass should have used: a "supply" line and an "install" line, plus pre-paint / finishing / disposal where the speaker mentioned them.
+
+2. QUANTITY COMPLETENESS — For every number, dimension, count, square-footage, lineal-footage, hourly figure the contractor mentions, verify it appears on the qty field of the appropriate line item — NOT just in description prose. If a number is buried in a description string or missing entirely, MOVE it onto the qty field with the correct unit. Math: if the speaker says "9 sixteen-foot lengths" the qty is 144 lineal ft, not 9. If a single sq-ft figure (e.g. "657 sq ft") describes the whole work area, propagate it to every install / supply line that covers that area.
+
+3. PRICE COMPLETENESS — If the contractor quoted a real unit price ("$0.50 a lineal foot", "$50 per sheet"), verify it appears in unit_price_cents (integer cents) on the right line. Do NOT invent prices.
+
+4. "(BY OTHERS)" EXCLUSION BUCKETS — If the contractor explicitly says the customer or a third party (painter friend, son-in-law, relative) is handling part of the scope, ensure there's a bucket whose name ends with "(by others)" containing those line items at qty: 0 / unit_price_cents: 0 with notes explaining who's doing it.
+
+5. PRESERVE everything else in the draft. Don't rewrite working content. Don't change the customer fields, project name/description, signals, image_roles, or reply_draft unless directly required by the corrections above.
+
+Return the corrected draft using the same JSON schema. Call submit_intake with the corrected structure.`;
+
+async function runVerifyPass(draft: ParsedIntake, transcript: string): Promise<ParseModelResult> {
+  const client = getAnthropicClient();
+  const userText = [
+    'Here is the transcript the first-pass model worked from:',
+    '',
+    '<transcript>',
+    transcript,
+    '</transcript>',
+    '',
+    'Here is the draft it produced:',
+    '',
+    '<draft>',
+    JSON.stringify(draft, null, 2),
+    '</draft>',
+    '',
+    'Apply the structural-integrity check and return the corrected draft.',
+  ].join('\n');
+
+  let response: Awaited<ReturnType<typeof client.messages.create>>;
+  try {
+    response = await client.messages.create({
+      model: VERIFY_MODEL,
+      max_tokens: 8000,
+      temperature: 0,
+      system: VERIFY_SYSTEM_PROMPT,
+      tools: [
+        {
+          name: 'submit_intake',
+          description: 'Submit the corrected intake structure for the operator to review.',
+          input_schema:
+            INTAKE_JSON_SCHEMA.schema as unknown as Anthropic.Messages.Tool['input_schema'],
+        },
+      ],
+      tool_choice: { type: 'tool', name: 'submit_intake' },
+      messages: [{ role: 'user', content: userText }],
+    });
+  } catch (e) {
+    return { ok: false, error: `Verify error: ${e instanceof Error ? e.message : String(e)}` };
+  }
+
+  const toolBlock = response.content.find(
+    (b): b is Anthropic.Messages.ToolUseBlock => b.type === 'tool_use',
+  );
+  if (!toolBlock) return { ok: false, error: 'Verify returned no tool_use block.' };
   return { ok: true, draft: toolBlock.input as ParsedIntake };
 }
