@@ -5,6 +5,7 @@ import { ChatProvider } from '@/components/chat/chat-provider';
 import { ChatToggle } from '@/components/chat/chat-toggle';
 import { PastDueBanner } from '@/components/features/billing/past-due-banner';
 import { MfaEnforcementBanner } from '@/components/features/settings/mfa-enforcement-banner';
+import { FeedbackButton } from '@/components/layout/feedback-button';
 import { Header } from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
@@ -74,6 +75,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             </TenantProvider>
           </div>
         </div>
+        <FeedbackButton />
         <ChatToggle />
         <ChatPanel />
       </ChatProvider>
