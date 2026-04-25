@@ -41,7 +41,7 @@ cd ops && pnpm dev     # runs on :3100 so it doesn't collide with :3000
 
 ## Deploy
 
-Separate Vercel project. Repo: `johnnybravo170/smartfusion`. Root dir: `ops/`.
+Separate Vercel project. Repo: `johnnybravo170/heyhenry`. Root dir: `ops/`.
 Domain: `ops.heyhenry.io`.
 
 ## API example

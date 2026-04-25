@@ -48,7 +48,7 @@ The key's scopes (granted by the admin at creation) decide which tools actually 
   "mcpServers": {
     "heyhenry-ops": {
       "command": "node",
-      "args": ["/absolute/path/to/smartfusion/mcp-ops/dist/index.js"],
+      "args": ["/absolute/path/to/heyhenry/mcp-ops/dist/index.js"],
       "env": {
         "OPS_BASE_URL": "https://ops.heyhenry.io",
         "OPS_API_KEY": "ops_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx_<secret>",
