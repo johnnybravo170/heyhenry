@@ -143,3 +143,31 @@ export async function setDocumentClientVisibleAction(
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
+
+/**
+ * Classify a document by filename (and optional text snippet) into a
+ * DocumentType so the upload form can pre-fill the Type select. Cheap
+ * regex first, Claude Haiku fallback. Tenant-scoped (uses RLS-aware
+ * client only to verify the caller is authenticated).
+ */
+export async function classifyDocumentTypeAction(input: {
+  filename: string;
+  textSnippet?: string;
+}): Promise<{ ok: true; type: string } | { ok: false; error: string }> {
+  if (!input.filename || input.filename.trim().length === 0) {
+    return { ok: false, error: 'Missing filename.' };
+  }
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const { classifyDocumentType } = await import('@/lib/ai/document-classifier');
+  try {
+    const type = await classifyDocumentType({
+      filename: input.filename,
+      textSnippet: input.textSnippet,
+    });
+    return { ok: true, type };
+  } catch (err) {
+    return { ok: false, error: `Henry: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}

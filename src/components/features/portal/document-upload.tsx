@@ -21,7 +21,10 @@ import {
   type DocumentType,
   documentTypeLabels,
 } from '@/lib/validators/project-document';
-import { uploadProjectDocumentAction } from '@/server/actions/project-documents';
+import {
+  classifyDocumentTypeAction,
+  uploadProjectDocumentAction,
+} from '@/server/actions/project-documents';
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -45,15 +48,32 @@ export function DocumentUpload({
     fileRef.current?.click();
   }
 
-  function onFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    submit(file);
-    // Reset input so picking the same file again still fires onChange.
+    // Reset the input first so picking the same file again still fires
+    // onChange, even if classifier+submit takes time.
     if (fileRef.current) fileRef.current.value = '';
+
+    // Henry classifier runs first — gives us a better Type guess to
+    // show in the dropdown AND to ride along on the upload itself, so
+    // the doc lands in the right category without the operator
+    // intervening. Cheap regex catches most filenames in <10ms; Claude
+    // fallback adds a small delay only on ambiguous names.
+    let chosenType = type;
+    try {
+      const res = await classifyDocumentTypeAction({ filename: file.name });
+      if (res.ok && (DOCUMENT_TYPES as readonly string[]).includes(res.type)) {
+        chosenType = res.type as DocumentType;
+        if (chosenType !== type) setType(chosenType);
+      }
+    } catch {
+      // Fall through to whatever the operator had selected.
+    }
+    submit(file, chosenType);
   }
 
-  function submit(file: File) {
+  function submit(file: File, overrideType?: DocumentType) {
     if (file.size > MAX_BYTES) {
       toast.error('File is larger than 25 MB.');
       return;
@@ -61,7 +81,7 @@ export function DocumentUpload({
     const fd = new FormData();
     fd.set('file', file);
     fd.set('project_id', projectId);
-    fd.set('type', type);
+    fd.set('type', overrideType ?? type);
     fd.set('title', title || file.name);
     fd.set('expires_at', expiresAt);
     fd.set('notes', notes);
