@@ -324,6 +324,16 @@ export function useHenry(): UseHenryReturn {
 
         case 'error': {
           const msg = ('error' in evt && evt.error?.message) || 'Realtime error';
+          const code = ('error' in evt && evt.error?.code) || '';
+          // Suppress harmless server complaints. "Cancellation failed: no
+          // active response" fires when stopSpeaking() races a response that
+          // already finished — annoying red banner, no user impact.
+          const isHarmless =
+            /no active response/i.test(msg) || code === 'response_cancel_not_active';
+          if (isHarmless) {
+            console.warn('[Henry] suppressed realtime error:', msg);
+            return;
+          }
           console.error('[Henry] realtime error:', msg, evt);
           setError(msg);
           return;
