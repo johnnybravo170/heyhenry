@@ -7,7 +7,7 @@
           {
             "type": "command",
             "if": "Bash(git push*)",
-            "command": "cd /Users/henry/projects/smartfusion && bash scripts/verify-deploy.sh",
+            "command": "cd /Users/henry/projects/heyhenry && bash scripts/verify-deploy.sh",
             "timeout": 200,
             "statusMessage": "Verifying Vercel deployment..."
           }
