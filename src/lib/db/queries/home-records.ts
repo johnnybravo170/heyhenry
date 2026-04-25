@@ -22,7 +22,8 @@ export type HomeRecordSnapshotV1 = {
   generated_at: string;
   contractor: {
     name: string;
-    logo_url: string | null;
+    /** Storage path in the photos bucket — re-signed at render time. */
+    logo_storage_path: string | null;
   };
   customer: {
     name: string | null;

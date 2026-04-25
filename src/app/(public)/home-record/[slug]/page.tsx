@@ -69,13 +69,21 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
   const photoPaths = snapshot.photos.map((p) => p.storage_path);
   const docPaths = snapshot.documents.map((d) => d.storage_path);
 
+  // Logo lives in the photos bucket too — bundle into the same batch
+  // sign call to avoid an extra round trip.
+  const logoPath = snapshot.contractor.logo_storage_path;
+  const allPhotoPaths = logoPath ? [...photoPaths, logoPath] : photoPaths;
+
   const photoUrlMap = new Map<string, string>();
-  if (photoPaths.length > 0) {
-    const { data: signed } = await admin.storage.from('photos').createSignedUrls(photoPaths, 3600);
+  if (allPhotoPaths.length > 0) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrls(allPhotoPaths, 3600);
     for (const row of signed ?? []) {
       if (row.path && row.signedUrl) photoUrlMap.set(row.path, row.signedUrl);
     }
   }
+  const logoUrl = logoPath ? (photoUrlMap.get(logoPath) ?? null) : null;
   const docUrlMap = new Map<string, string>();
   if (docPaths.length > 0) {
     const { data: signed } = await admin.storage
@@ -137,6 +145,14 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
 
       {/* Header */}
       <header className="mb-10 text-center">
+        {logoUrl ? (
+          // biome-ignore lint/performance/noImgElement: signed URL bypasses next/image
+          <img
+            src={logoUrl}
+            alt={snapshot.contractor.name}
+            className="mx-auto mb-4 max-h-14 w-auto object-contain"
+          />
+        ) : null}
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Home Record
         </p>

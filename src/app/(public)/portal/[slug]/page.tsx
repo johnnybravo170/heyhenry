@@ -46,7 +46,7 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
     .select(
       `id, name, lifecycle_stage, percent_complete, start_date, target_end_date,
        portal_slug, portal_enabled,
-       tenants:tenant_id (name),
+       tenants:tenant_id (name, logo_storage_path),
        customers:customer_id (name)`,
     )
     .eq('portal_slug', slug)
@@ -63,6 +63,17 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
   const customerName = (customer?.name as string) ?? '';
   const projectId = p.id as string;
   const percentComplete = (p.percent_complete as number) ?? 0;
+
+  // Sign the contractor logo (lives in the photos bucket, same
+  // convention as the rest of the app's tenant logos).
+  const logoStoragePath = (tenant?.logo_storage_path as string | null) ?? null;
+  let logoUrl: string | null = null;
+  if (logoStoragePath) {
+    const { data: signedLogo } = await admin.storage
+      .from('photos')
+      .createSignedUrl(logoStoragePath, 3600);
+    logoUrl = signedLogo?.signedUrl ?? null;
+  }
 
   // Load homeowner-facing phase rail (Slice 1 of Customer Portal build).
   // Admin client bypasses RLS — phases inherit visibility from the
@@ -391,6 +402,14 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
       <PublicViewLogger resourceType="portal" identifier={slug} />
       {/* Header */}
       <header className="mb-8 text-center">
+        {logoUrl ? (
+          // biome-ignore lint/performance/noImgElement: signed URL bypasses next/image
+          <img
+            src={logoUrl}
+            alt={businessName}
+            className="mx-auto mb-3 max-h-12 w-auto object-contain"
+          />
+        ) : null}
         <p className="text-sm font-medium text-muted-foreground">{businessName}</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{p.name as string}</h1>
         {customerName ? <p className="mt-1 text-sm text-muted-foreground">{customerName}</p> : null}

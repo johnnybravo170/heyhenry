@@ -117,7 +117,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
 
   const { data: tenantRow } = await supabase
     .from('tenants')
-    .select('name, logo_url')
+    .select('name, logo_storage_path')
     .eq('id', tenant.id)
     .single();
   const t = (tenantRow ?? {}) as Record<string, unknown>;
@@ -189,7 +189,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
     generated_at: new Date().toISOString(),
     contractor: {
       name: (t.name as string) ?? tenant.name ?? 'Contractor',
-      logo_url: (t.logo_url as string | null) ?? null,
+      logo_storage_path: (t.logo_storage_path as string | null) ?? null,
     },
     customer: {
       name: (customer?.name as string | null) ?? null,
