@@ -44,6 +44,7 @@ export default async function DocumentsTabServer({ projectId }: { projectId: str
             projectId={projectId}
             existingSlug={homeRecord?.slug ?? null}
             hasPdf={Boolean(homeRecord?.pdf_path)}
+            hasZip={Boolean(homeRecord?.zip_path)}
           />
         </div>
       </div>

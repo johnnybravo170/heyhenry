@@ -13,24 +13,35 @@
  * fresh one.
  */
 
-import { Download, ExternalLink, FileText, Loader2, RotateCw, Sparkles } from 'lucide-react';
+import {
+  Archive,
+  Download,
+  ExternalLink,
+  FileText,
+  Loader2,
+  RotateCw,
+  Sparkles,
+} from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   generateHomeRecordAction,
   generateHomeRecordPdfAction,
+  generateHomeRecordZipAction,
 } from '@/server/actions/home-records';
 
 type Props = {
   projectId: string;
   existingSlug: string | null;
   hasPdf: boolean;
+  hasZip: boolean;
 };
 
-export function HomeRecordButton({ projectId, existingSlug, hasPdf }: Props) {
+export function HomeRecordButton({ projectId, existingSlug, hasPdf, hasZip }: Props) {
   const [pending, startTransition] = useTransition();
   const [pdfPending, startPdfTransition] = useTransition();
+  const [zipPending, startZipTransition] = useTransition();
 
   function generate() {
     startTransition(async () => {
@@ -57,6 +68,20 @@ export function HomeRecordButton({ projectId, existingSlug, hasPdf }: Props) {
     });
   }
 
+  function buildZip() {
+    startZipTransition(async () => {
+      const res = await generateHomeRecordZipAction(projectId);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success('ZIP archive ready.');
+      if (res.signedUrl) {
+        window.open(res.signedUrl, '_blank', 'noopener');
+      }
+    });
+  }
+
   if (!existingSlug) {
     return (
       <Button type="button" onClick={generate} disabled={pending}>
@@ -68,6 +93,7 @@ export function HomeRecordButton({ projectId, existingSlug, hasPdf }: Props) {
 
   const viewUrl = `/home-record/${existingSlug}`;
   const downloadUrl = `/home-record/${existingSlug}/download`;
+  const zipUrl = `/home-record/${existingSlug}/download-zip`;
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button asChild variant="default" size="sm">
@@ -112,6 +138,41 @@ export function HomeRecordButton({ projectId, existingSlug, hasPdf }: Props) {
             <FileText className="size-4" />
           )}
           Generate PDF
+        </Button>
+      )}
+
+      {hasZip ? (
+        <>
+          <Button asChild variant="outline" size="sm">
+            <a href={zipUrl} target="_blank" rel="noreferrer">
+              <Archive className="size-4" />
+              Download ZIP
+            </a>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={buildZip}
+            disabled={zipPending}
+            title="Rebuild the ZIP with the latest snapshot + PDF"
+          >
+            {zipPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Archive className="size-4" />
+            )}
+            Rebuild ZIP
+          </Button>
+        </>
+      ) : (
+        <Button type="button" variant="outline" size="sm" onClick={buildZip} disabled={zipPending}>
+          {zipPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Archive className="size-4" />
+          )}
+          Generate ZIP
         </Button>
       )}
     </div>

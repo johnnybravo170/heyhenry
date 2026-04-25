@@ -26,6 +26,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { PortalPhotoTag } from '@/lib/validators/portal-photo';
 import type { DocumentType } from '@/lib/validators/project-document';
 import type { SelectionCategory } from '@/lib/validators/project-selection';
+import { generateHomeRecordZip, type ZipDoc, type ZipPhoto } from '@/lib/zip/home-record-zip';
 
 export type HomeRecordActionResult = { ok: true; slug: string } | { ok: false; error: string };
 
@@ -345,6 +346,162 @@ export async function generateHomeRecordPdfAction(
   // an immediate download.
   const { data: signed } = await supabase.storage
     .from('home-record-pdfs')
+    .createSignedUrl(storagePath, 3600);
+
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true, signedUrl: signed?.signedUrl ?? '' };
+}
+
+/**
+ * Generate the ZIP archive version of a home record. Reads the snapshot,
+ * fetches every client-visible photo + document by signed URL, includes
+ * the existing PDF (if generated), wraps everything in a folder layout
+ * with a README.txt, and uploads to the `home-record-zips` bucket.
+ *
+ * Unlike the PDF, the ZIP is durably permanent — file copies inside
+ * the archive don't depend on Storage signed URLs, so the homeowner
+ * can save the ZIP forever and never lose access.
+ *
+ * Latency: this can be the slowest action in the pipeline (one fetch
+ * per photo + per document, plus archive compression). The project
+ * detail page already exports `maxDuration = 60` which covers a
+ * typical residential reno (≤ 100 photos, ≤ 50 docs at 1-3 MB each).
+ * Larger projects may need a background-job approach in Slice 6d.
+ */
+export type HomeRecordZipActionResult =
+  | { ok: true; signedUrl: string }
+  | { ok: false; error: string };
+
+export async function generateHomeRecordZipAction(
+  projectId: string,
+): Promise<HomeRecordZipActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from('home_records')
+    .select('id, slug, snapshot, pdf_path')
+    .eq('project_id', projectId)
+    .maybeSingle();
+  if (!row) return { ok: false, error: 'Generate the Home Record first.' };
+
+  const r = row as Record<string, unknown>;
+  const snapshot = r.snapshot as HomeRecordSnapshotV1;
+  const slug = r.slug as string;
+  const homeRecordId = r.id as string;
+  const pdfPath = (r.pdf_path as string | null) ?? null;
+
+  const admin = createAdminClient();
+
+  // Fetch every photo (admin → bypass RLS).
+  const photoBundle: ZipPhoto[] = [];
+  if (snapshot.photos.length > 0) {
+    const { data: signed } = await admin.storage.from('photos').createSignedUrls(
+      snapshot.photos.map((p) => p.storage_path),
+      600,
+    );
+    for (const entry of signed ?? []) {
+      if (!entry.path || !entry.signedUrl) continue;
+      try {
+        const res = await fetch(entry.signedUrl);
+        if (!res.ok) continue;
+        const bytes = Buffer.from(await res.arrayBuffer());
+        // For each tag the photo is in, emit a ZipPhoto entry — the
+        // builder routes by tag folder.
+        const photoMeta = snapshot.photos.find((p) => p.storage_path === entry.path);
+        if (!photoMeta) continue;
+        const filename = photoMeta.storage_path.split('/').pop() ?? 'photo.jpg';
+        for (const tag of photoMeta.portal_tags) {
+          photoBundle.push({
+            storage_path: entry.path,
+            bytes,
+            filename,
+            tag,
+          });
+        }
+      } catch {
+        // Skip — better than failing the whole archive.
+      }
+    }
+  }
+
+  // Fetch every document.
+  const docBundle: ZipDoc[] = [];
+  if (snapshot.documents.length > 0) {
+    const { data: signed } = await admin.storage.from('project-docs').createSignedUrls(
+      snapshot.documents.map((d) => d.storage_path),
+      600,
+    );
+    for (const entry of signed ?? []) {
+      if (!entry.path || !entry.signedUrl) continue;
+      try {
+        const res = await fetch(entry.signedUrl);
+        if (!res.ok) continue;
+        const bytes = Buffer.from(await res.arrayBuffer());
+        const docMeta = snapshot.documents.find((d) => d.storage_path === entry.path);
+        if (!docMeta) continue;
+        // Use the document title as the filename (with the extension
+        // off the storage path) — friendlier than the random storage
+        // basename when the homeowner extracts the ZIP.
+        const ext = entry.path.split('.').pop() ?? 'pdf';
+        const filenameBase = docMeta.title.replace(/[^A-Za-z0-9 _.-]/g, '').trim() || 'document';
+        const filename = `${filenameBase}.${ext}`;
+        docBundle.push({
+          storage_path: entry.path,
+          bytes,
+          filename,
+          type: docMeta.type,
+        });
+      } catch {
+        // Skip
+      }
+    }
+  }
+
+  // Optionally pull the PDF in.
+  let pdfBytes: Buffer | null = null;
+  if (pdfPath) {
+    const { data: signed } = await admin.storage
+      .from('home-record-pdfs')
+      .createSignedUrl(pdfPath, 600);
+    if (signed?.signedUrl) {
+      try {
+        const res = await fetch(signed.signedUrl);
+        if (res.ok) pdfBytes = Buffer.from(await res.arrayBuffer());
+      } catch {
+        // Skip — README will note that the PDF wasn't included.
+      }
+    }
+  }
+
+  let zipBytes: Buffer;
+  try {
+    zipBytes = await generateHomeRecordZip(snapshot, photoBundle, docBundle, pdfBytes);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `ZIP generation failed: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  const storagePath = `${tenant.id}/${projectId}/${slug}.zip`;
+  const { error: upErr } = await supabase.storage
+    .from('home-record-zips')
+    .upload(storagePath, zipBytes, {
+      contentType: 'application/zip',
+      upsert: true,
+    });
+  if (upErr) return { ok: false, error: `Upload failed: ${upErr.message}` };
+
+  const { error: updErr } = await supabase
+    .from('home_records')
+    .update({ zip_path: storagePath })
+    .eq('id', homeRecordId);
+  if (updErr) return { ok: false, error: updErr.message };
+
+  const { data: signed } = await supabase.storage
+    .from('home-record-zips')
     .createSignedUrl(storagePath, 3600);
 
   revalidatePath(`/projects/${projectId}`);
