@@ -31,6 +31,7 @@ const ALL_SCOPES = [
   'read:kanban',
   'write:kanban',
   'write:email',
+  'write:feedback',
   'admin:maintenance',
 ];
 
