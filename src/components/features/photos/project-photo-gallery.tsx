@@ -7,6 +7,7 @@
 
 import { ImagePlus } from 'lucide-react';
 import { listPhotosByProject, listTenantJobTypes } from '@/lib/db/queries/photos';
+import { listPhasesForProject } from '@/lib/db/queries/project-phases';
 import { PhotoCard } from './photo-card';
 
 export async function ProjectPhotoGallery({
@@ -16,10 +17,12 @@ export async function ProjectPhotoGallery({
   projectId: string;
   tenantId: string;
 }) {
-  const [photos, tenantJobTypes] = await Promise.all([
+  const [photos, tenantJobTypes, phaseRows] = await Promise.all([
     listPhotosByProject(projectId),
     listTenantJobTypes(tenantId),
+    listPhasesForProject(projectId),
   ]);
+  const phases = phaseRows.map((p) => ({ id: p.id, name: p.name }));
 
   if (photos.length === 0) {
     return (
@@ -41,7 +44,7 @@ export async function ProjectPhotoGallery({
       data-count={photos.length}
     >
       {photos.map((photo) => (
-        <PhotoCard key={photo.id} photo={photo} tenantJobTypes={tenantJobTypes} />
+        <PhotoCard key={photo.id} photo={photo} tenantJobTypes={tenantJobTypes} phases={phases} />
       ))}
     </div>
   );

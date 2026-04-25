@@ -48,6 +48,8 @@ export type PhotoRow = {
   portal_tags: string[];
   /** When false, hides a portal-tagged photo from the homeowner. */
   client_visible: boolean;
+  /** Optional link to a project_phases row — photo appears inline on the timeline. */
+  phase_id: string | null;
 };
 
 export type PhotoWithUrl = PhotoRow & { url: string | null };
@@ -58,7 +60,7 @@ export type PhotoListFilters = {
 };
 
 const PHOTO_COLUMNS =
-  'id, tenant_id, job_id, project_id, memo_id, storage_path, tag, caption, taken_at, created_at, updated_at, ai_tag, ai_tag_confidence, ai_caption, ai_caption_confidence, caption_source, quality_flags, ai_processed_at, ai_showcase_score, ai_showcase_reason, is_favorite, job_type, portal_tags, client_visible';
+  'id, tenant_id, job_id, project_id, memo_id, storage_path, tag, caption, taken_at, created_at, updated_at, ai_tag, ai_tag_confidence, ai_caption, ai_caption_confidence, caption_source, quality_flags, ai_processed_at, ai_showcase_score, ai_showcase_reason, is_favorite, job_type, portal_tags, client_visible, phase_id';
 
 async function decorateWithUrls(rows: PhotoRow[]): Promise<PhotoWithUrl[]> {
   if (rows.length === 0) return [];

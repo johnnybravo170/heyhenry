@@ -62,3 +62,19 @@ export async function togglePhotoClientVisibleAction(
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
+
+/**
+ * Attach the photo to a phase (or detach by passing null). Powers the
+ * inline-on-timeline rendering on /portal/<slug> and on the Home Record.
+ */
+export async function setPhotoPhaseAction(
+  photoId: string,
+  phaseId: string | null,
+  projectId: string,
+): Promise<PortalPhotoActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from('photos').update({ phase_id: phaseId }).eq('id', photoId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}

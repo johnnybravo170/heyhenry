@@ -5,18 +5,29 @@
  * tracker that sits above the portal updates feed. NOT a Gantt; pills are
  * equal width and date ranges only show on the active step.
  *
+ * Tap a pill to expand its phase panel below: shows the phase status +
+ * any photos pinned to that phase via the operator's PhotoPortalButton.
+ *
  * Used in two places:
  *   1. /portal/<slug> public page — read-only (no callbacks)
  *   2. Project detail Portal tab — operator advances/regresses
  */
 
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { ProjectPhase } from '@/lib/db/queries/project-phases';
 import { cn } from '@/lib/utils';
 import { advancePhaseAction, regressPhaseAction } from '@/server/actions/project-phases';
+
+export type PhaseRailPhoto = {
+  id: string;
+  phase_id: string;
+  url: string;
+  caption: string | null;
+};
 
 type PhaseRailProps = {
   phases: ProjectPhase[];
@@ -25,11 +36,26 @@ type PhaseRailProps = {
    * the public portal where homeowners only read.
    */
   projectId?: string;
+  /**
+   * Phase-pinned photos. Empty omits the expand-on-tap behaviour. The
+   * pill is still labelled with status; clicking just no-ops.
+   */
+  phasePhotos?: PhaseRailPhoto[];
 };
 
-export function PhaseRail({ phases, projectId }: PhaseRailProps) {
+export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProps) {
   const [isPending, startTransition] = useTransition();
+  const [expandedPhaseId, setExpandedPhaseId] = useState<string | null>(null);
+  const [openPhotoUrl, setOpenPhotoUrl] = useState<string | null>(null);
   const editable = Boolean(projectId);
+
+  // Bucket photos by phase for fast lookup.
+  const photosByPhase = new Map<string, PhaseRailPhoto[]>();
+  for (const photo of phasePhotos) {
+    const list = photosByPhase.get(photo.phase_id) ?? [];
+    list.push(photo);
+    photosByPhase.set(photo.phase_id, list);
+  }
 
   function onAdvance() {
     if (!projectId) return;
@@ -103,24 +129,85 @@ export function PhaseRail({ phases, projectId }: PhaseRailProps) {
         {phases.map((p) => {
           const isCurrent = p.status === 'in_progress';
           const isComplete = p.status === 'complete';
+          const photos = photosByPhase.get(p.id) ?? [];
+          const isExpanded = expandedPhaseId === p.id;
+          const expandable = photos.length > 0;
           return (
             <li
               key={p.id}
               aria-current={isCurrent ? 'step' : undefined}
               className={cn(
-                'flex min-w-[7rem] flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-center text-xs font-medium',
+                'flex min-w-[7rem] flex-1 flex-col items-stretch overflow-hidden rounded-md border text-center text-xs font-medium',
                 isCurrent && 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30',
                 isComplete &&
                   'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200',
                 !isCurrent && !isComplete && 'border-muted bg-muted/40 text-muted-foreground',
               )}
             >
-              {isComplete ? <Check className="size-3.5" aria-hidden /> : null}
-              <span className="truncate">{p.name}</span>
+              <button
+                type="button"
+                onClick={() => setExpandedPhaseId(isExpanded ? null : expandable ? p.id : null)}
+                disabled={!expandable}
+                className={cn(
+                  'flex w-full items-center justify-center gap-1.5 px-3 py-2',
+                  expandable && 'cursor-pointer hover:bg-black/[0.03]',
+                  !expandable && 'cursor-default',
+                )}
+                aria-expanded={expandable ? isExpanded : undefined}
+              >
+                {isComplete ? <Check className="size-3.5" aria-hidden /> : null}
+                <span className="truncate">{p.name}</span>
+                {expandable ? (
+                  <span className="ml-1 inline-flex size-4 items-center justify-center rounded-full bg-black/10 text-[10px] tabular-nums">
+                    {photos.length}
+                  </span>
+                ) : null}
+              </button>
             </li>
           );
         })}
       </ol>
+
+      {expandedPhaseId ? (
+        <div className="mt-3 rounded-md border bg-muted/20 p-3">
+          <p className="mb-2 text-xs font-medium">
+            Photos from {phases.find((p) => p.id === expandedPhaseId)?.name}
+          </p>
+          <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-6">
+            {(photosByPhase.get(expandedPhaseId) ?? []).map((photo) => (
+              <button
+                key={photo.id}
+                type="button"
+                className="block aspect-square overflow-hidden rounded-md border bg-background"
+                onClick={() => setOpenPhotoUrl(photo.url)}
+                aria-label={photo.caption ?? 'Open photo'}
+              >
+                {/* biome-ignore lint/performance/noImgElement: signed URLs */}
+                <img
+                  src={photo.url}
+                  alt={photo.caption ?? ''}
+                  loading="lazy"
+                  className="size-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <Dialog open={!!openPhotoUrl} onOpenChange={(o) => !o && setOpenPhotoUrl(null)}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogTitle className="sr-only">Photo</DialogTitle>
+          {openPhotoUrl ? (
+            // biome-ignore lint/performance/noImgElement: signed URLs
+            <img
+              src={openPhotoUrl}
+              alt=""
+              className="max-h-[70vh] w-full rounded-md object-contain"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

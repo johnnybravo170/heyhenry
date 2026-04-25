@@ -63,7 +63,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
   // Phases.
   const { data: phaseRows } = await supabase
     .from('project_phases')
-    .select('name, status, started_at, completed_at')
+    .select('id, name, status, started_at, completed_at')
     .eq('project_id', projectId)
     .order('display_order', { ascending: true });
 
@@ -75,14 +75,16 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
     .order('room', { ascending: true })
     .order('display_order', { ascending: true });
 
-  // Photos — only the ones the operator has tagged for the homeowner.
+  // Photos — homeowner-visible AND either tagged for the gallery or
+  // pinned to a phase. Phase-only photos still need to ride along so
+  // the Home Record timeline can render them.
   const { data: photoRows } = await supabase
     .from('photos')
-    .select('id, storage_path, caption, portal_tags, taken_at')
+    .select('id, storage_path, caption, portal_tags, taken_at, phase_id')
     .eq('project_id', projectId)
     .eq('client_visible', true)
     .is('deleted_at', null)
-    .not('portal_tags', 'eq', '{}')
+    .or('portal_tags.neq.{},phase_id.not.is.null')
     .order('taken_at', { ascending: true, nullsFirst: false });
 
   // Documents — same client-visible filter.
@@ -133,6 +135,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
       target_end_date: (p.target_end_date as string | null) ?? null,
     },
     phases: (phaseRows ?? []).map((row) => ({
+      id: (row as Record<string, unknown>).id as string,
       name: (row as Record<string, unknown>).name as string,
       status: (row as Record<string, unknown>).status as 'upcoming' | 'in_progress' | 'complete',
       started_at: ((row as Record<string, unknown>).started_at as string | null) ?? null,
@@ -161,6 +164,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
         caption: (r.caption as string | null) ?? null,
         portal_tags: ((r.portal_tags as string[] | null) ?? []) as PortalPhotoTag[],
         taken_at: (r.taken_at as string | null) ?? null,
+        phase_id: (r.phase_id as string | null) ?? null,
       };
     }),
     documents: (docRows ?? []).map((row) => {

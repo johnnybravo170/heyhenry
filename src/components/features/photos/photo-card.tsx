@@ -60,9 +60,12 @@ function qualityWarning(flags: PhotoQualityFlags): string | null {
 export function PhotoCard({
   photo,
   tenantJobTypes = [],
+  phases = [],
 }: {
   photo: PhotoWithUrl;
   tenantJobTypes?: string[];
+  /** Optional phase list for the "Pin to phase" picker on the portal popover. */
+  phases?: Array<{ id: string; name: string }>;
 }) {
   const [open, setOpen] = useState(false);
   const [broken, setBroken] = useState(false);
@@ -195,6 +198,8 @@ export function PhotoCard({
             projectId={photo.project_id}
             initialTags={photo.portal_tags ?? []}
             initialClientVisible={photo.client_visible ?? true}
+            initialPhaseId={photo.phase_id ?? null}
+            phases={phases}
           />
         ) : null}
         <PhotoFavoriteButton

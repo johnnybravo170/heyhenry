@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { DecisionPanel, type PortalDecision } from '@/components/features/portal/decision-panel';
-import { PhaseRail } from '@/components/features/portal/phase-rail';
+import { PhaseRail, type PhaseRailPhoto } from '@/components/features/portal/phase-rail';
 import {
   type PortalDocument,
   PortalDocuments,
@@ -71,6 +71,42 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
     .eq('project_id', projectId)
     .order('display_order', { ascending: true });
   const phases = (phaseRows ?? []) as ProjectPhase[];
+
+  // Phase-pinned photos for the expandable rail.
+  const { data: phasePhotoRows } = await admin
+    .from('photos')
+    .select('id, phase_id, storage_path, caption, client_visible')
+    .eq('project_id', projectId)
+    .not('phase_id', 'is', null)
+    .eq('client_visible', true)
+    .is('deleted_at', null)
+    .order('taken_at', { ascending: true, nullsFirst: false });
+
+  const phasePhotoPaths = (phasePhotoRows ?? [])
+    .map((r) => (r as Record<string, unknown>).storage_path as string)
+    .filter(Boolean);
+  const phasePhotoSignedMap = new Map<string, string>();
+  if (phasePhotoPaths.length > 0) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrls(phasePhotoPaths, 3600);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) phasePhotoSignedMap.set(row.path, row.signedUrl);
+    }
+  }
+  const phasePhotos: PhaseRailPhoto[] = (phasePhotoRows ?? [])
+    .map((r) => {
+      const row = r as Record<string, unknown>;
+      const url = phasePhotoSignedMap.get(row.storage_path as string);
+      if (!url) return null;
+      return {
+        id: row.id as string,
+        phase_id: row.phase_id as string,
+        url,
+        caption: (row.caption as string | null) ?? null,
+      };
+    })
+    .filter((p): p is PhaseRailPhoto => p !== null);
 
   // Load portal updates
   const { data: updates } = await admin
@@ -319,7 +355,7 @@ export default async function PortalPage({ params }: { params: Promise<{ slug: s
           operator advances/regresses from the project detail Portal tab. */}
       {phases.length > 0 ? (
         <div className="mb-8">
-          <PhaseRail phases={phases} />
+          <PhaseRail phases={phases} phasePhotos={phasePhotos} />
         </div>
       ) : null}
 

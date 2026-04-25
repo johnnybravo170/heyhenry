@@ -37,6 +37,10 @@ export type HomeRecordSnapshotV1 = {
     target_end_date: string | null;
   };
   phases: Array<{
+    /** Stable id from project_phases — lets photos.phase_id resolve to
+     *  a snapshot phase row even though the rest of the snapshot is
+     *  denormalized. */
+    id: string;
     name: string;
     status: 'upcoming' | 'in_progress' | 'complete';
     started_at: string | null;
@@ -60,6 +64,9 @@ export type HomeRecordSnapshotV1 = {
     caption: string | null;
     portal_tags: PortalPhotoTag[];
     taken_at: string | null;
+    /** Optional pin to a phase — populated when the photo was attached
+     *  to a project_phases row at snapshot time. */
+    phase_id: string | null;
   }>;
   documents: Array<{
     type: DocumentType;

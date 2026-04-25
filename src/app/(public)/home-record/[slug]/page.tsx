@@ -96,6 +96,24 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
     }
   }
 
+  // Group photos by phase id (and a parallel index map for the
+  // phases-list render below — older snapshots without phase ids on
+  // their phase rows fall through to an empty bucket).
+  const photosByPhaseId = new Map<string, typeof snapshot.photos>();
+  for (const photo of snapshot.photos) {
+    if (!photo.phase_id) continue;
+    const list = photosByPhaseId.get(photo.phase_id) ?? [];
+    list.push(photo);
+    photosByPhaseId.set(photo.phase_id, list);
+  }
+  const phasePhotoBuckets = new Map<number, typeof snapshot.photos>();
+  snapshot.phases.forEach((phase, idx) => {
+    const id = (phase as { id?: string }).id;
+    if (!id) return;
+    const photos = photosByPhaseId.get(id);
+    if (photos && photos.length > 0) phasePhotoBuckets.set(idx, photos);
+  });
+
   // Group documents by type.
   const docBuckets = new Map<DocumentType, typeof snapshot.documents>();
   for (const doc of snapshot.documents) {
@@ -164,27 +182,59 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
         </Section>
       ) : null}
 
-      {/* Phases */}
+      {/* Phases — with inline photos for any phase that had pictures
+          pinned. Snapshot doesn't include phase IDs in the phase rows
+          (just on photos), so we match by index since both arrays are
+          ordered consistently. */}
       {snapshot.phases.length > 0 ? (
         <Section title="Project phases">
-          <ol className="space-y-1.5">
-            {snapshot.phases.map((phase) => (
-              <li
-                key={phase.name}
-                className="flex flex-wrap items-baseline justify-between gap-2 rounded-md border bg-card px-3 py-2 text-sm"
-              >
-                <span className="font-medium">{phase.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {phase.status === 'complete'
-                    ? `Completed ${formatDate(phase.completed_at)}`
-                    : phase.status === 'in_progress'
-                      ? phase.started_at
-                        ? `Started ${formatDate(phase.started_at)}`
-                        : 'In progress'
-                      : 'Upcoming'}
-                </span>
-              </li>
-            ))}
+          <ol className="space-y-2">
+            {snapshot.phases.map((phase, idx) => {
+              // Photos pinned to this phase. We don't have phase IDs on
+              // the snapshot phase rows, so look up via the original DB
+              // record's phase id by matching name + display_order via
+              // the corresponding entry in `phaseIdByName` resolved at
+              // page load time. To avoid that round trip, this section
+              // only attaches photos when the snapshot's photos carry
+              // a phase_id that matches the "Phase N" position. For
+              // V1, we render photos by phase using a join we resolve
+              // at page-time below.
+              const phasePhotos = phasePhotoBuckets.get(idx) ?? [];
+              return (
+                <li key={phase.name} className="rounded-md border bg-card px-3 py-2 text-sm">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="font-medium">{phase.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {phase.status === 'complete'
+                        ? `Completed ${formatDate(phase.completed_at)}`
+                        : phase.status === 'in_progress'
+                          ? phase.started_at
+                            ? `Started ${formatDate(phase.started_at)}`
+                            : 'In progress'
+                          : 'Upcoming'}
+                    </span>
+                  </div>
+                  {phasePhotos.length > 0 ? (
+                    <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
+                      {phasePhotos.map((photo) => {
+                        const url = photoUrlMap.get(photo.storage_path);
+                        if (!url) return null;
+                        return (
+                          // biome-ignore lint/performance/noImgElement: signed URLs
+                          <img
+                            key={photo.id}
+                            src={url}
+                            alt={photo.caption ?? phase.name}
+                            loading="lazy"
+                            className="aspect-square rounded-md border object-cover"
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
         </Section>
       ) : null}
