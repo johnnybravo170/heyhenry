@@ -204,6 +204,7 @@ function escapeHtml(s: string): string {
 export async function loginAction(input: {
   email: string;
   password: string;
+  next?: string;
 }): Promise<ActionError | never> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) {
@@ -226,6 +227,15 @@ export async function loginAction(input: {
   if (aal?.nextLevel === 'aal2' && aal.currentLevel === 'aal1') {
     redirect('/login/mfa');
   }
+
+  // Honor ?next= when present (email link → login → original page).
+  // Only same-origin paths; reject protocol-relative or external.
+  const requestedNext = input.next;
+  const safeNext =
+    requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
+      ? requestedNext
+      : null;
+  if (safeNext) redirect(safeNext);
 
   // Role-aware destination: workers → /w, bookkeepers → /bk, else /dashboard.
   // Uses admin client because the session cookie isn't attached to the

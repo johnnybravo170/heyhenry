@@ -78,24 +78,31 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Authenticated user hitting /login, /signup, or /magic-link → push
-  // them to /dashboard (or /w if they're a worker).
+  // them to ?next= if present and safe, else /dashboard (or /w if worker).
   if (user && isAuthRoute) {
     const { data: member } = await supabase
       .from('tenant_members')
       .select('role')
       .eq('user_id', user.id)
       .maybeSingle();
+    const requestedNext = url.searchParams.get('next');
+    const safeNext =
+      requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
+        ? requestedNext
+        : null;
     const dest = url.clone();
-    dest.pathname = member?.role === 'worker' ? '/w' : '/dashboard';
+    dest.pathname = safeNext ?? (member?.role === 'worker' ? '/w' : '/dashboard');
     dest.search = '';
     return NextResponse.redirect(dest);
   }
 
-  // Unauthenticated visit to a protected route → /login.
+  // Unauthenticated visit to a protected route → /login?next=<original>
+  // so post-login they land on the page they actually wanted (e.g. an
+  // estimate link from email).
   if (!user && isProtected) {
     const dest = url.clone();
     dest.pathname = '/login';
-    dest.search = '';
+    dest.search = `?next=${encodeURIComponent(pathname + (url.search || ''))}`;
     return NextResponse.redirect(dest);
   }
 

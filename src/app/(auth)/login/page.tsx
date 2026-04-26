@@ -51,15 +51,17 @@ function LoginForm() {
     const email = String(form.get('email') ?? '');
     const password = String(form.get('password') ?? '');
 
+    const next = searchParams.get('next') ?? undefined;
+    const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
     startTransition(async () => {
-      const result = await loginAction({ email, password });
+      const result = await loginAction({ email, password, next });
       if (result && 'error' in result) {
         setError(result.error);
         toast.error(result.error);
         return;
       }
       // Server action redirects on success; this is a fallback.
-      router.push('/dashboard');
+      router.push(safeNext);
     });
   }
 
