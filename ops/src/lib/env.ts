@@ -33,4 +33,7 @@ export const env = {
   get resendApiKey() {
     return process.env.RESEND_API_KEY ?? null;
   },
+  get sentryWebhookSecret() {
+    return req('SENTRY_WEBHOOK_SECRET');
+  },
 };
