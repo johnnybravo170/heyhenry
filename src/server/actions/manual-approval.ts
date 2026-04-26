@@ -140,12 +140,13 @@ export async function manuallyApproveEstimateAction(
     .eq('tenant_id', tenant.id)
     .single();
   if (projErr || !project) return { ok: false, error: 'Project not found.' };
-  if (project.estimate_status !== 'pending_approval') {
+  if (project.estimate_status !== 'pending_approval' && project.estimate_status !== 'draft') {
     return {
       ok: false,
-      error: 'Estimate must be sent (awaiting approval) before marking approved.',
+      error: 'Estimate must be a draft or awaiting approval.',
     };
   }
+  const bypassedSend = project.estimate_status === 'draft';
 
   const uploaded = await uploadProofsFromFormData(formData, {
     tenantId: tenant.id,
@@ -178,6 +179,7 @@ export async function manuallyApproveEstimateAction(
       approved_by: parsed.data.customer_name,
       method: parsed.data.method,
       manual: true,
+      bypassed_send: bypassedSend,
       proof_count: uploaded.paths.length,
     },
     actor: tenant.member.id,
@@ -187,7 +189,7 @@ export async function manuallyApproveEstimateAction(
     tenant_id: tenant.id,
     entry_type: 'system',
     title: 'Estimate approved (manual)',
-    body: `Estimate for "${project.name}" marked approved by ${parsed.data.customer_name} via ${manualApprovalMethodLabels[parsed.data.method]}.`,
+    body: `Estimate for "${project.name}" marked approved by ${parsed.data.customer_name} via ${manualApprovalMethodLabels[parsed.data.method]}${bypassedSend ? ' — recorded without sending to customer.' : '.'}`,
     related_type: 'project',
     related_id: projectId,
   });
@@ -227,9 +229,10 @@ export async function manuallyDeclineEstimateAction(
     .eq('tenant_id', tenant.id)
     .single();
   if (projErr || !project) return { ok: false, error: 'Project not found.' };
-  if (project.estimate_status !== 'pending_approval') {
-    return { ok: false, error: 'Estimate must be sent before declining.' };
+  if (project.estimate_status !== 'pending_approval' && project.estimate_status !== 'draft') {
+    return { ok: false, error: 'Estimate must be a draft or awaiting approval.' };
   }
+  const bypassedSend = project.estimate_status === 'draft';
 
   const uploaded = await uploadProofsFromFormData(formData, {
     tenantId: tenant.id,
@@ -261,6 +264,7 @@ export async function manuallyDeclineEstimateAction(
     meta: {
       method: parsed.data.method,
       manual: true,
+      bypassed_send: bypassedSend,
       reason: parsed.data.reason ?? null,
       proof_count: uploaded.paths.length,
     },
@@ -271,7 +275,7 @@ export async function manuallyDeclineEstimateAction(
     tenant_id: tenant.id,
     entry_type: 'system',
     title: 'Estimate declined (manual)',
-    body: `Estimate for "${project.name}" marked declined via ${manualApprovalMethodLabels[parsed.data.method]}.`,
+    body: `Estimate for "${project.name}" marked declined via ${manualApprovalMethodLabels[parsed.data.method]}${bypassedSend ? ' — recorded without sending to customer.' : '.'}`,
     related_type: 'project',
     related_id: projectId,
   });
@@ -314,9 +318,10 @@ export async function manuallyApproveChangeOrderAction(
     .eq('tenant_id', tenant.id)
     .single();
   if (coErr || !co) return { ok: false, error: 'Change order not found.' };
-  if (co.status !== 'pending_approval') {
-    return { ok: false, error: 'Change order must be sent before marking approved.' };
+  if (co.status !== 'pending_approval' && co.status !== 'draft') {
+    return { ok: false, error: 'Change order must be a draft or awaiting approval.' };
   }
+  const bypassedSend = co.status === 'draft';
 
   const uploaded = await uploadProofsFromFormData(formData, {
     tenantId: tenant.id,
@@ -369,7 +374,7 @@ export async function manuallyApproveChangeOrderAction(
     tenant_id: tenant.id,
     entry_type: 'system',
     title: 'Change order approved (manual)',
-    body: `Change order "${co.title}" marked approved by ${parsed.data.customer_name} via ${manualApprovalMethodLabels[parsed.data.method]}.`,
+    body: `Change order "${co.title}" marked approved by ${parsed.data.customer_name} via ${manualApprovalMethodLabels[parsed.data.method]}${bypassedSend ? ' — recorded without sending to customer.' : '.'}`,
     related_type: 'project',
     related_id: co.project_id,
   });
@@ -407,9 +412,10 @@ export async function manuallyDeclineChangeOrderAction(
     .eq('tenant_id', tenant.id)
     .single();
   if (coErr || !co) return { ok: false, error: 'Change order not found.' };
-  if (co.status !== 'pending_approval') {
-    return { ok: false, error: 'Change order must be sent before declining.' };
+  if (co.status !== 'pending_approval' && co.status !== 'draft') {
+    return { ok: false, error: 'Change order must be a draft or awaiting approval.' };
   }
+  const bypassedSend = co.status === 'draft';
 
   const uploaded = await uploadProofsFromFormData(formData, {
     tenantId: tenant.id,
@@ -438,7 +444,7 @@ export async function manuallyDeclineChangeOrderAction(
     tenant_id: tenant.id,
     entry_type: 'system',
     title: 'Change order declined (manual)',
-    body: `Change order "${co.title}" marked declined via ${manualApprovalMethodLabels[parsed.data.method]}.`,
+    body: `Change order "${co.title}" marked declined via ${manualApprovalMethodLabels[parsed.data.method]}${bypassedSend ? ' — recorded without sending to customer.' : '.'}`,
     related_type: 'project',
     related_id: co.project_id,
   });

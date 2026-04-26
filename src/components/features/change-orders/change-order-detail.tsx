@@ -139,7 +139,13 @@ export function ChangeOrderDetail({
               Delete
             </button>
           ) : null}
-          {co.status === 'pending_approval' ? (
+          {/*
+           * Manual override — customer said yes/no off-platform, or operator
+           * is backfilling an imported change order. Available in both draft
+           * and pending_approval. The dialog warns when triggered from draft
+           * (no customer notification will go out).
+           */}
+          {co.status === 'draft' || co.status === 'pending_approval' ? (
             <>
               <button
                 type="button"
@@ -157,15 +163,17 @@ export function ChangeOrderDetail({
               >
                 Mark declined
               </button>
-              <button
-                type="button"
-                onClick={handleVoid}
-                disabled={loading}
-                className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-              >
-                Cancel
-              </button>
             </>
+          ) : null}
+          {co.status === 'pending_approval' ? (
+            <button
+              type="button"
+              onClick={handleVoid}
+              disabled={loading}
+              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
           ) : null}
         </div>
       </div>
@@ -313,6 +321,7 @@ export function ChangeOrderDetail({
         resourceType="change_order"
         resourceId={co.id}
         mode={manualDialog.mode}
+        bypassedSend={co.status === 'draft'}
         onSuccess={() => {
           toast.success(
             manualDialog.mode === 'approve'

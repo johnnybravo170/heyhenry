@@ -243,7 +243,17 @@ export function EstimateTab({
               >
                 Preview &amp; resend
               </Button>
-              {/* Manual override: customer said yes/no off-platform. */}
+            </>
+          ) : null}
+          {/*
+           * Manual override — customer said yes/no off-platform, or operator
+           * is backfilling an imported / historical project. Available in
+           * draft (with cost lines) and pending_approval. The dialog warns
+           * the operator when triggered from draft (no customer notification).
+           */}
+          {approval.status === 'pending_approval' ||
+          (approval.status === 'draft' && costLines.length > 0) ? (
+            <>
               <Button
                 size="sm"
                 variant="outline"
@@ -258,10 +268,12 @@ export function EstimateTab({
               >
                 Mark declined
               </Button>
-              <Button size="sm" variant="ghost" onClick={resetEstimate} disabled={isPending}>
-                Reset
-              </Button>
             </>
+          ) : null}
+          {approval.status === 'pending_approval' ? (
+            <Button size="sm" variant="ghost" onClick={resetEstimate} disabled={isPending}>
+              Reset
+            </Button>
           ) : null}
           {approval.status === 'approved' || approval.status === 'declined' ? (
             <Button size="sm" variant="ghost" onClick={resetEstimate} disabled={isPending}>
@@ -498,6 +510,7 @@ export function EstimateTab({
         resourceType="estimate"
         resourceId={projectId}
         mode={manualDialog.mode}
+        bypassedSend={approval.status === 'draft'}
         onSuccess={() => {
           toast.success(
             manualDialog.mode === 'approve'

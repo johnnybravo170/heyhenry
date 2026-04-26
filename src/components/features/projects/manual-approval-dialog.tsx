@@ -12,7 +12,7 @@
  * owns the form state + file list + submission.
  */
 
-import { Paperclip, X } from 'lucide-react';
+import { AlertTriangle, Paperclip, X } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,6 +47,7 @@ export function ManualApprovalDialog({
   resourceType,
   resourceId,
   mode,
+  bypassedSend = false,
   onSuccess,
 }: {
   open: boolean;
@@ -54,6 +55,12 @@ export function ManualApprovalDialog({
   resourceType: ResourceType;
   resourceId: string;
   mode: Mode;
+  /**
+   * True when the resource is still in draft (never sent to the customer).
+   * Renders a warning banner so the operator knows no email/SMS will go out.
+   * Use case: verbal approval, or backfilling an imported / historical project.
+   */
+  bypassedSend?: boolean;
   onSuccess?: () => void;
 }) {
   const [method, setMethod] = useState<ManualApprovalMethod>('manual_text');
@@ -145,6 +152,17 @@ export function ManualApprovalDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
+          {bypassedSend ? (
+            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <div>
+                <strong>The customer will not be notified.</strong> This {resourceLabel} hasn't been
+                sent. Use this only for verbal approvals or when backfilling a project that was
+                already approved off-platform.
+              </div>
+            </div>
+          ) : null}
+
           <div className="flex flex-col gap-2">
             <Label>How did they respond?</Label>
             <div className="grid grid-cols-2 gap-2">
