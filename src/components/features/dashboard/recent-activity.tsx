@@ -42,7 +42,11 @@ export function RecentActivity({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Activity</CardTitle>
+        <CardTitle>
+          <Link href="/inbox" className="hover:underline">
+            Recent Activity
+          </Link>
+        </CardTitle>
         <Link href="/inbox" className="text-sm text-primary underline underline-offset-4">
           View all
         </Link>

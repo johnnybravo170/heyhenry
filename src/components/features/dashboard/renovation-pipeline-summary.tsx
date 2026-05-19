@@ -60,7 +60,11 @@ export function RenovationPipelineSummary({ metrics }: { metrics: RenovationPipe
   return (
     <section>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground">Pipeline</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          <Link href="/projects" className="hover:underline">
+            Pipeline
+          </Link>
+        </h2>
         <Link href="/projects" className="text-xs text-muted-foreground hover:underline">
           View all →
         </Link>

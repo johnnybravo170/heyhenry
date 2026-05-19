@@ -247,7 +247,11 @@ export function PersonalTasksCard({ tasks }: { tasks: TaskRow[] }) {
   return (
     <section className="min-w-0 rounded-xl border bg-card p-4">
       <header className="flex items-center justify-between pb-2">
-        <h3 className="text-sm font-semibold">Your to-do</h3>
+        <h3 className="text-sm font-semibold">
+          <Link href="/todos" className="hover:underline">
+            Your to-do
+          </Link>
+        </h3>
         <Link href="/todos" className="text-xs text-primary hover:underline">
           See all
         </Link>

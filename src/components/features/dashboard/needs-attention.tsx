@@ -51,7 +51,11 @@ export function NeedsAttention({ items }: { items: AttentionItem[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Needs Attention</CardTitle>
+        <CardTitle>
+          <Link href="/inbox" className="hover:underline">
+            Needs Attention
+          </Link>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {visible.length === 0 ? (

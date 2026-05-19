@@ -133,7 +133,11 @@ export function AwaitingApprovalList({ projects, variant = 'compact', limit = 5 
       <CardHeader className="pb-2">
         <div className="flex items-baseline justify-between gap-2">
           <div>
-            <CardTitle className="text-base">Awaiting approval</CardTitle>
+            <CardTitle className="text-base">
+              <Link href="/projects?view=awaiting_approval" className="hover:underline">
+                Awaiting approval
+              </Link>
+            </CardTitle>
             <CardDescription>
               {projects.length} estimate{projects.length === 1 ? '' : 's'} waiting on the customer
             </CardDescription>

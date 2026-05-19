@@ -57,7 +57,11 @@ export function PipelineSummary({ metrics }: { metrics: PipelineMetrics }) {
   return (
     <section>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground">Pipeline</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          <Link href="/quotes" className="hover:underline">
+            Pipeline
+          </Link>
+        </h2>
         <Link href="/quotes" className="text-xs text-muted-foreground hover:underline">
           View all →
         </Link>
