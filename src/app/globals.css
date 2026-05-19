@@ -27,6 +27,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -49,38 +51,43 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.48 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* HeyHenry "Paper" palette — warm surfaces, neutral ink, single rust accent.
+     Canonical source: DESIGN.md + heyhenry-brand/heyhenry-brand-package.md §5.
+     Rust is an accent, not a theme: primary buttons and focus rings stay ink. */
+  --background: #f7f5f0; /* warm paper */
+  --foreground: #0a0a0a; /* ink */
+  --card: #ffffff; /* white cards float on paper */
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #0a0a0a; /* primary buttons are ink */
+  --primary-foreground: #ffffff;
+  --secondary: #f1efe9; /* subtle cream fill */
+  --secondary-foreground: #0a0a0a;
+  --muted: #efece4; /* cream fill; also drives active nav (bg-muted) */
+  --muted-foreground: #6b6b6b;
+  --accent: #efece4; /* cream hover fill */
+  --accent-foreground: #0a0a0a;
+  --destructive: #b91c1c; /* brand danger */
+  --border: rgba(10, 10, 10, 0.08); /* hairline */
+  --input: rgba(10, 10, 10, 0.12); /* rule border */
+  --ring: #0a0a0a; /* focus ring is ink (applied at /50 in base layer) */
+  --brand: #c2410c; /* rust accent — use sparingly via bg-brand/text-brand */
+  --brand-foreground: #ffffff;
+  --chart-1: #c2410c; /* rust */
+  --chart-2: #1e40af; /* blue */
+  --chart-3: #15803d; /* green */
+  --chart-4: #b45309; /* amber */
+  --chart-5: #6b6b6b; /* muted ink */
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #fbfaf6; /* lighter than body — chrome doesn't darken the field */
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #0a0a0a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #efece4; /* deepest cream — active nav */
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: rgba(10, 10, 10, 0.08);
+  --sidebar-ring: #0a0a0a;
 }
 
 .dark {
@@ -102,6 +109,8 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  --brand: #c2410c; /* rust — light + dark share the accent for now (dark palette TBD) */
+  --brand-foreground: #ffffff;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
