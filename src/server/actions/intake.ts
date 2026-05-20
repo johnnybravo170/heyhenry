@@ -153,11 +153,16 @@ export type IntakeAugmentation = {
 
 const AUGMENT_SCHEMA: Record<string, unknown> = {
   type: 'object',
+  // additionalProperties: false required for OpenAI strict mode — see the
+  // note on ARTIFACT_CLASSIFY_SCHEMA. Without it the OpenAI tier-climb 400s
+  // and augmentation silently returns [].
+  additionalProperties: false,
   properties: {
     suggestions: {
       type: 'array',
       items: {
         type: 'object',
+        additionalProperties: false,
         properties: {
           title: { type: 'string' },
           reasoning: { type: 'string' },
@@ -202,11 +207,19 @@ Title is short (max ~50 chars). Reasoning is one sentence. Return JSON via the s
 
 const ARTIFACT_CLASSIFY_SCHEMA: Record<string, unknown> = {
   type: 'object',
+  // additionalProperties: false on EVERY object is required by OpenAI's
+  // strict structured-output mode. Without it, the gateway's tier-climb
+  // to OpenAI (when Gemini is overloaded) 400s — and classifyArtifacts
+  // silently falls back to mime defaults (every PDF → kind='other'),
+  // which is exactly the "Henry couldn't classify it" failure. Gemini is
+  // lenient about the omission; OpenAI is not. Mirror INTAKE_JSON_SCHEMA.
+  additionalProperties: false,
   properties: {
     artifacts: {
       type: 'array',
       items: {
         type: 'object',
+        additionalProperties: false,
         properties: {
           index: { type: 'integer' },
           kind: { type: 'string', enum: [...ARTIFACT_KINDS] },
@@ -1242,8 +1255,16 @@ async function classifyArtifacts(
         (row.label ?? '').trim().slice(0, 200) || mimeDefaultLabel(visualFiles, row.index);
       results.push({ index: row.index, kind, label });
     }
-  } catch {
+  } catch (err) {
     // Fall back to mime-derived defaults so the chip row still renders.
+    // Capture to Sentry — a silent fallback here means EVERY artifact gets
+    // mislabelled (PDFs → 'other'), which looks like "Henry can't classify"
+    // to the operator. This catch swallowed an OpenAI strict-schema 400 for
+    // weeks; never let it go unobserved again.
+    Sentry.captureException(err, {
+      tags: { stage: 'intake.classify', task: 'intake_artifact_classify' },
+      extra: { tenantId, visualCount: visualFiles.length },
+    });
     for (const { index, file } of visualFiles) {
       results.push({
         index,

@@ -13,9 +13,11 @@
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { IntakeRowActions } from '@/components/features/inbox/intake-row-actions';
 import { IntakeSourceChip } from '@/components/features/inbox/intake-source-chip';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { loadIntakeDraft } from '@/lib/db/queries/intake-drafts';
+import { type InboxIntakeRow, loadIntakeDraft } from '@/lib/db/queries/intake-drafts';
+import { createClient } from '@/lib/supabase/server';
 
 const KIND_LABEL: Record<string, string> = {
   voice_memo: 'Voice memo',
@@ -58,6 +60,46 @@ export default async function IntakeDraftDetailPage({
 
   const extraction = draft.ai_extraction?.[draft.ai_extraction.active] ?? draft.ai_extraction?.v1;
 
+  // Load active projects for the action dialogs (apply → bill / document /
+  // photo / message all need a project picker), then build the row shape
+  // IntakeRowActions expects from the loaded draft. Actions live here AND
+  // on the list row so the operator can act from wherever they opened it.
+  const supabase = await createClient();
+  const { data: projectsRaw } = await supabase
+    .from('projects')
+    .select('id, name')
+    .eq('tenant_id', tenant.id)
+    .is('deleted_at', null)
+    .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
+    .order('name');
+  const projects = (projectsRaw ?? []).map((p) => ({
+    id: p.id as string,
+    name: p.name as string,
+  }));
+
+  const firstArtifact = draft.artifacts[0] ?? null;
+  const actionRow: InboxIntakeRow = {
+    id: draft.id,
+    source: draft.source,
+    disposition: draft.disposition,
+    status: draft.status,
+    customer_name: draft.customer_name,
+    primary_kind: firstArtifact?.kind ?? null,
+    primary_artifact_path: firstArtifact?.path ?? null,
+    primary_artifact_mime: firstArtifact?.mime ?? null,
+    primary_artifact_bytes: firstArtifact?.size ?? null,
+    thumbnail_url: null,
+    artifact_count: draft.artifacts.length,
+    email_subject: null,
+    email_from: null,
+    accepted_project_id: draft.accepted_project_id,
+    recognized_customer_id: draft.recognized_customer_id,
+    applied_destination_kind: null,
+    applied_destination_id: null,
+    applied_at: null,
+    created_at: draft.created_at,
+  };
+
   return (
     <div className="space-y-5">
       <Link
@@ -68,17 +110,20 @@ export default async function IntakeDraftDetailPage({
         Back to inbox
       </Link>
 
-      <header className="flex flex-wrap items-center gap-2">
-        <IntakeSourceChip source={draft.source} />
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-          {DISPOSITION_LABEL[draft.disposition] ?? draft.disposition}
-        </span>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-          parser: {draft.status}
-        </span>
-        {draft.parsed_by && (
-          <span className="text-xs text-muted-foreground">{draft.parsed_by}</span>
-        )}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <IntakeSourceChip source={draft.source} />
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+            {DISPOSITION_LABEL[draft.disposition] ?? draft.disposition}
+          </span>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            parser: {draft.status}
+          </span>
+          {draft.parsed_by && (
+            <span className="text-xs text-muted-foreground">{draft.parsed_by}</span>
+          )}
+        </div>
+        <IntakeRowActions row={actionRow} projects={projects} />
       </header>
 
       {draft.error_message && (
@@ -94,6 +139,7 @@ export default async function IntakeDraftDetailPage({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {draft.artifacts.map((a) => {
               const isImage = a.mime?.startsWith('image/');
+              const isPdf = a.mime === 'application/pdf';
               return (
                 <div key={a.path} className="rounded-lg border bg-card p-3">
                   <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/30">
@@ -104,6 +150,12 @@ export default async function IntakeDraftDetailPage({
                         alt={a.label ?? a.name}
                         className="size-full object-cover"
                         loading="lazy"
+                      />
+                    ) : isPdf && a.signedUrl ? (
+                      <iframe
+                        src={`${a.signedUrl}#toolbar=0&navpanes=0&view=FitH`}
+                        title={a.label ?? a.name}
+                        className="size-full"
                       />
                     ) : (
                       <FileText className="size-6 text-muted-foreground" />
