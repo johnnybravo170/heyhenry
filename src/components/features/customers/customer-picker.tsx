@@ -28,9 +28,10 @@ export type CustomerPickerProps = {
   /**
    * If provided, "Add new customer" calls this instead of navigating
    * to /contacts/new. Used to open an inline create panel and keep
-   * the user in their workflow.
+   * the user in their workflow. Receives the current search text so the
+   * create form can pre-fill the name the user just typed.
    */
-  onAddNew?: () => void;
+  onAddNew?: (prefillName?: string) => void;
 };
 
 export function CustomerPicker({
@@ -42,8 +43,16 @@ export function CustomerPicker({
   onAddNew,
 }: CustomerPickerProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   const selected = customers.find((c) => c.id === value);
+
+  const handleAddNew = useCallback(() => {
+    setOpen(false);
+    const prefill = query.trim();
+    if (onAddNew) onAddNew(prefill || undefined);
+    else window.location.href = '/contacts/new';
+  }, [onAddNew, query]);
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -95,24 +104,28 @@ export function CustomerPicker({
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Search customers..." />
+            <CommandInput
+              placeholder="Search customers..."
+              value={query}
+              onValueChange={setQuery}
+            />
+            {/* Pinned at the top so "Add new customer" is always one click
+                away — it's the most common action when populating the
+                system, and it must never get filtered out or buried. When
+                the user has typed a name, offer to add it directly. */}
+            <button
+              type="button"
+              onClick={handleAddNew}
+              className="flex w-full items-center gap-2 border-b px-3 py-2.5 text-sm font-medium text-primary hover:bg-muted"
+            >
+              <Plus className="size-4 shrink-0" />
+              {query.trim() ? `Add "${query.trim()}"` : 'Add new customer'}
+            </button>
             <CommandList>
               <CommandEmpty>
-                <div className="flex flex-col items-center gap-2 py-2">
-                  <p className="text-sm text-muted-foreground">No customers found.</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      if (onAddNew) onAddNew();
-                      else window.location.href = '/contacts/new';
-                    }}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                  >
-                    <Plus className="size-3.5" />
-                    Add new customer
-                  </button>
-                </div>
+                <p className="py-3 text-center text-sm text-muted-foreground">
+                  No customers found.
+                </p>
               </CommandEmpty>
               <CommandGroup>
                 {customers.map((c) => (
@@ -128,18 +141,6 @@ export function CustomerPicker({
                     {c.name}
                   </CommandItem>
                 ))}
-                <CommandItem
-                  value="__add_new_customer__"
-                  onSelect={() => {
-                    setOpen(false);
-                    if (onAddNew) onAddNew();
-                    else window.location.href = '/contacts/new';
-                  }}
-                  className="text-primary"
-                >
-                  <Plus className="mr-2 size-4" />
-                  Add new customer
-                </CommandItem>
               </CommandGroup>
             </CommandList>
           </Command>

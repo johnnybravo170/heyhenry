@@ -74,8 +74,8 @@ export function CustomerPickerWithCreate({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        onAddNew={() => {
-          setDraft({ name: '', email: '', phone: '' });
+        onAddNew={(prefillName) => {
+          setDraft({ name: prefillName ?? '', email: '', phone: '' });
           setShowInline(true);
         }}
       />
