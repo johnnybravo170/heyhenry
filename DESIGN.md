@@ -11,20 +11,20 @@ A working tool, not a marketing flourish. One continuous warm field — paper ev
 
 Surfaces carry warmth; ink stays cool-neutral so the two never fight.
 
-**Surface**
-- **Page background:** `#F7F5F0` — warm paper
-- **Sidebar / top bar:** `#FBFAF6` — slightly *lighter* than body (deliberate; documents float on paper, chrome doesn't darken the field)
-- **Active nav item:** `#EFECE4` — deepest cream
+**Surface** *(deepened 2026-05-20 for warmth + contrast on low-quality displays)*
+- **Page background:** `#F3EBDB` — warm paper (deeper + warmer; white cards visibly float on it)
+- **Sidebar / top bar:** `#F7F1E6` — slightly *lighter* than body (deliberate; chrome doesn't darken the field)
+- **Active nav item:** `#E8DEC9` — deepest cream
 - **Card / surface:** `#FFFFFF` — pure white
-- **Subtle fill (⌘K chips, etc.):** `#F1EFE9`
+- **Subtle fill (⌘K chips, etc.):** `#ECE3D0`
 
 **Ink**
 - **Primary text / primary buttons:** `#0A0A0A` — near-pure black, neutral (NOT a warm charcoal)
 - **Secondary text:** `#3A3A3A`
-- **Muted (captions, inactive nav):** `#6B6B6B`
+- **Muted (captions, inactive nav):** `#57534B` — warm, deepened so it holds on poor monitors
 - **Faint (placeholders, disabled):** `#A8A8A8`
-- **Hairline border:** `rgba(10,10,10,0.08)`
-- **Rule border:** `rgba(10,10,10,0.12)`
+- **Hairline border:** `#E2D7C0` — solid warm line (replaces the old 8%-alpha hairline that vanished on low-contrast displays)
+- **Rule border:** `#D8CBB0` — solid warm
 
 **Accent & status** (each color has a soft-fill pair for badges/banners)
 - **Accent (rust):** `#C2410C` / soft `#FEF0E3` — CTAs, brand pop, one accent per screen
@@ -43,6 +43,17 @@ Use rust sparingly — it earns attention precisely because everything around it
 - **Line-height:** 1.5 body, 1.15–1.2 headings
 - **Letter-spacing:** −0.02 to −0.025em on headings ≥20px; tight (≈ −0.005em) on body
 - **Numerals:** `font-variant-numeric: tabular-nums` on every money or metric value. Right-align numeric columns.
+
+### Typographic clarity & contrast discipline
+
+*The "clarity + strong contrast" reference — borrowed from the Handoff.ai teardown (Ops vault `26e803cb`). Take the **system**, not their forest-green palette or their Bricolage display font.*
+
+- **`font-medium` (500) is the default body/UI weight** — not 400. A heavier baseline reads more substantial and legible on screen, especially on poor monitors. 600 = sub-heads/buttons; 400 = long-form body only; 700 = names/emphasis.
+- **Body uses three sizes, relentlessly:** **16 / 14 / 12px** at 1.5 line-height (default / secondary / labels). No random in-between body sizes. (The full px scale above is for headings + mono labels.)
+- **Hierarchy by tone, not just size** — the 4-step ink ramp (`#0A0A0A` → `#3A3A3A` → `#57534B` → `#A8A8A8`). A heading and its caption can be the *same size* and still read as different priority via tone. **Never gray-on-gray mush** — primary text is near-black on white (~16:1).
+- **Tight negative tracking on large headlines** (−0.02 to −0.025em); airy body (1.5), tight headings.
+- **Color is reserved for action** — rust marks the one accent/CTA per screen; everything else is neutral ink. Color = "do something."
+- **Display face: upright + neutral** — Inter (Geist / Inter Display also fine). Never quirky/humanist "semi-italic" faces (no Bricolage Grotesque). See `feedback_display_font_preference`.
 
 ## Component Stylings
 
