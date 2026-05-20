@@ -69,7 +69,7 @@ export async function loadInvoiceCustomerViewInputs(
         .order('created_at'),
       supabase
         .from('project_budget_categories')
-        .select('id, name, description_md, section')
+        .select('id, name, description_md, section, estimate_cents')
         .eq('project_id', projectId)
         .order('display_order')
         .order('name'),

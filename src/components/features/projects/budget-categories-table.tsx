@@ -1426,6 +1426,10 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                   projectId={projectId}
                   catalog={catalog}
                   defaultCategoryId={line.budget_category_id}
+                  // First line on a flat category: seed its price with the
+                  // category estimate so the typed amount isn't lost when
+                  // the operator starts itemizing.
+                  seedPriceCents={categoryLines.length === 0 ? line.estimate_cents : undefined}
                   onDone={() => setAddingLineFor(null)}
                 />
               ) : (
