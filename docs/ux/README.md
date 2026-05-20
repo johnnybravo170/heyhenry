@@ -11,6 +11,7 @@ The canonical UX foundation for HeyHenry lives in the **Ops knowledge vault** â€
 | Workflow Library (9 workflows as state machines) | `e0263cc3-9111-4bff-b2ec-e2a0335e12ed` |
 | Role Ã— Object Matrix (permissions + home bases) | `03b1ccf4-3413-4e7b-a822-cadc794d821a` |
 | Design System Map & Gap Analysis | `f9bf30bf-5515-4c04-9d4a-ba75574fbceb` |
+| IA & Navigation Map | `6529e9ae-ff73-47d7-b8ed-2ae83afe8aa9` |
 
 ## Locked decisions (Ops decisions)
 

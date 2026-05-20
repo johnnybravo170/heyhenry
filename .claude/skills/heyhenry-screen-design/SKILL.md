@@ -9,12 +9,13 @@ This produces a spec a designer, coding agent, or AI design tool can build from 
 
 ## Step 1 — Load everything
 
-Five foundation docs (search the Ops vault `mcp__6ef61ae4-...__knowledge_search` or read by ID):
+Six foundation docs (search the Ops vault `mcp__6ef61ae4-...__knowledge_search` or read by ID):
 - Positioning → Interface `5bfa59be-7640-448d-ae94-71a8219bf627`
 - Object Model `b4d880be-190d-4cf4-b868-3ea46a23e48a`
 - Workflow Library `e0263cc3-9111-4bff-b2ec-e2a0335e12ed`
 - Role × Object Matrix `03b1ccf4-3413-4e7b-a822-cadc794d821a`
 - Design System Map `f9bf30bf-5515-4c04-9d4a-ba75574fbceb`
+- IA & Navigation Map `6529e9ae-ff73-47d7-b8ed-2ae83afe8aa9`
 
 Real design system (this is what you build from):
 - [PATTERNS.md](../../../PATTERNS.md) — **read first, per [AGENTS.md](../../../AGENTS.md)**; the reusable pattern families

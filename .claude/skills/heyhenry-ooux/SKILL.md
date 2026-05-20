@@ -9,7 +9,7 @@ HeyHenry gets confusing when features are designed as a checklist of screens. Ob
 
 ## Step 1 — Load the canonical model
 
-The **Object Model** doc is the source of truth — search the Ops vault (`mcp__6ef61ae4-...__knowledge_search`) or read by ID `b4d880be-190d-4cf4-b868-3ea46a23e48a`. Pair it with the **Role × Object Matrix** (`03b1ccf4-3413-4e7b-a822-cadc794d821a`) for visibility rules. For field-level truth, the real schema is in [the app](../../../src) (migrations under `supabase/`), but design-level work usually stays above that.
+The **Object Model** doc is the source of truth — search the Ops vault (`mcp__6ef61ae4-...__knowledge_search`) or read by ID `b4d880be-190d-4cf4-b868-3ea46a23e48a`. Pair it with the **Role × Object Matrix** (`03b1ccf4-3413-4e7b-a822-cadc794d821a`) for visibility rules and the **IA & Navigation Map** (`6529e9ae-ff73-47d7-b8ed-2ae83afe8aa9`) for the nav skeleton. For field-level truth, the real schema is in [the app](../../../src) (migrations under `supabase/`), but design-level work usually stays above that.
 
 **The 20 canonical objects — reuse these, don't reinvent:**
 - *Sales:* Lead, Customer, Project (Job), Quote, Catalog Item

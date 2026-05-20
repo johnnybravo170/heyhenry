@@ -9,13 +9,14 @@ The point of this skill is to judge a screen on **workflow clarity and positioni
 
 ## Step 1 — Load the foundation
 
-These five docs live in the **Ops knowledge vault** (search via `mcp__6ef61ae4-...__knowledge_search`, or read by the IDs below). Pull the ones relevant to the screen; you don't always need all five, but you must know the positioning + object + workflow context before scoring.
+These six docs live in the **Ops knowledge vault** (search via `mcp__6ef61ae4-...__knowledge_search`, or read by the IDs below). Pull the ones relevant to the screen; you don't always need all six, but you must know the positioning + object + workflow context before scoring.
 
 - **Positioning → Interface Translation** — `5bfa59be-7640-448d-ae94-71a8219bf627` (the five promises, what every screen must do, the reject-if list)
 - **Object Model** — `b4d880be-190d-4cf4-b868-3ea46a23e48a` (the 20 objects, lifecycles, role visibility)
 - **Workflow Library** — `e0263cc3-9111-4bff-b2ec-e2a0335e12ed` (9 workflows, failure modes, Henry leverage)
 - **Role × Object Matrix** — `03b1ccf4-3413-4e7b-a822-cadc794d821a` (permissions + the homeowner boundary)
 - **Design System Map** — `f9bf30bf-5515-4c04-9d4a-ba75574fbceb` (real tokens/components + gaps)
+- **IA & Navigation Map** — `6529e9ae-ff73-47d7-b8ed-2ae83afe8aa9` (nav layers, primary nav, object tabs, role-based nav)
 
 Also skim the real design system so "implementation practicality" is grounded: [PATTERNS.md](../../../PATTERNS.md), [DESIGN.md](../../../DESIGN.md), [src/components/ui/](../../../src/components/ui/), [src/lib/ui/status-tokens.ts](../../../src/lib/ui/status-tokens.ts).
 
