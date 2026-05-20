@@ -41,6 +41,8 @@ export type IntakeArtifactWithUrl = IntakeArtifact & {
 export type IntakeDraftRow = {
   id: string;
   status: IntakeDraftStatus;
+  source: IntakeSource;
+  disposition: IntakeDisposition;
   customer_name: string | null;
   pasted_text: string | null;
   transcript: string | null;
@@ -72,7 +74,7 @@ export async function loadIntakeDraft(id: string): Promise<IntakeDraftRow | null
   const { data, error } = await supabase
     .from('intake_drafts')
     .select(
-      'id, status, customer_name, pasted_text, transcript, artifacts, augmentations, ai_extraction, parsed_by, error_message, recognized_customer_id, accepted_project_id, created_at, updated_at',
+      'id, status, source, disposition, customer_name, pasted_text, transcript, artifacts, augmentations, ai_extraction, parsed_by, error_message, recognized_customer_id, accepted_project_id, created_at, updated_at',
     )
     .eq('id', id)
     .maybeSingle();
@@ -191,9 +193,10 @@ export async function listInboxIntake(filter: InboxIntakeFilter = {}): Promise<I
   const draftToFirstVisual = new Map<string, string>();
   for (const row of data as Array<Record<string, unknown>>) {
     const artifacts = (row.artifacts as IntakeArtifact[] | null) ?? [];
-    const visual = artifacts.find(
-      (a) => a?.path && (a.mime?.startsWith('image/') || a.mime === 'application/pdf'),
-    );
+    // Only IMAGE artifacts get a thumbnail — a signed PDF URL can't render
+    // in an <img> (shows a broken-image icon). PDFs fall back to the
+    // FileText icon in IntakeRow via primary_artifact_mime.
+    const visual = artifacts.find((a) => a?.path && a.mime?.startsWith('image/'));
     if (visual?.path) {
       firstVisualPaths.push(visual.path);
       draftToFirstVisual.set(row.id as string, visual.path);

@@ -80,7 +80,8 @@ export function IntakeRow({
             <img src={row.thumbnail_url} alt="" className="size-12 object-cover" loading="lazy" />
           ) : row.primary_kind === 'sub_quote_pdf' ||
             row.primary_kind === 'spec_drawing_pdf' ||
-            row.primary_kind === 'receipt' ? (
+            row.primary_kind === 'receipt' ||
+            row.primary_artifact_mime === 'application/pdf' ? (
             <FileText className="size-5 text-muted-foreground" />
           ) : (
             <ImageIcon className="size-5 text-muted-foreground" />

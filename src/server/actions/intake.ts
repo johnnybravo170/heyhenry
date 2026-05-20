@@ -558,7 +558,9 @@ export async function parseIntakeDraftAction(
   const admin = createAdminClient();
   const { data: row, error: loadErr } = await admin
     .from('intake_drafts')
-    .select('id, tenant_id, status, customer_name, pasted_text, transcript, ai_extraction')
+    .select(
+      'id, tenant_id, status, customer_name, pasted_text, transcript, ai_extraction, artifacts',
+    )
     .eq('id', draftId)
     .maybeSingle();
   if (loadErr || !row) return { ok: false, error: 'Draft not found.' };
@@ -672,6 +674,20 @@ export async function parseIntakeDraftAction(
   // on failure. The previous augmentations are stale once the parse
   // changes, so overwrite rather than merge.
   const augmentations = await augmentScope(draft, transcript || null, tenant.id);
+
+  // Classify any still-unclassified artifacts. This is the path that makes
+  // the email/widget pipeline work: createIntakeDraftFromEmailAction stores
+  // attachments with kind=null, and the processor's call to this action is
+  // the only place they get classified. Their files persist in the intake
+  // bucket, so we can download + run the same classifier the lead-form path
+  // uses. (Lead-form retries may have had their files swept on accept — the
+  // download just fails there and we leave the nulls untouched.)
+  const persistedArtifacts = await classifyPersistedArtifacts(
+    (row.artifacts as IntakeArtifact[] | null) ?? [],
+    tenant.id,
+    admin,
+  );
+
   await admin
     .from('intake_drafts')
     .update({
@@ -679,10 +695,59 @@ export async function parseIntakeDraftAction(
       ai_extraction: envelope,
       parsed_by: model_override,
       augmentations,
+      ...(persistedArtifacts ? { artifacts: persistedArtifacts } : {}),
     })
     .eq('id', draftId);
 
   return { ok: true, draftId, draft, transcript: transcript || null, parsedBy: model_override };
+}
+
+/**
+ * Download + classify any artifacts on a persisted draft that still have
+ * kind=null. Returns the merged artifact array, or null when there's
+ * nothing to do / nothing downloadable (caller then leaves the column
+ * untouched). Visual artifacts go to the batched classifier; audio is
+ * shortcut to voice_memo by classifyArtifacts itself.
+ */
+async function classifyPersistedArtifacts(
+  artifacts: IntakeArtifact[],
+  tenantId: string,
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<IntakeArtifact[] | null> {
+  if (artifacts.length === 0) return null;
+  if (!artifacts.some((a) => a && a.kind == null)) return null;
+
+  const visualFiles: Array<{ index: number; file: File }> = [];
+  const audioIndexes: number[] = [];
+  for (let i = 0; i < artifacts.length; i++) {
+    const a = artifacts[i];
+    if (!a?.path) continue;
+    if (a.mime?.startsWith('audio/')) {
+      audioIndexes.push(i);
+      continue;
+    }
+    if (a.mime?.startsWith('image/') || a.mime === 'application/pdf') {
+      const { data: blob } = await admin.storage.from('intake-audio').download(a.path);
+      if (blob) {
+        visualFiles.push({
+          index: i,
+          file: new File([blob], a.name || 'artifact', { type: a.mime }),
+        });
+      }
+    }
+  }
+  if (visualFiles.length === 0 && audioIndexes.length === 0) return null;
+
+  const classifications = await classifyArtifacts(
+    visualFiles,
+    audioIndexes,
+    artifacts.length,
+    tenantId,
+  );
+  return artifacts.map((a, i) => {
+    const c = classifications.find((r) => r.index === i);
+    return c ? { ...a, kind: c.kind, label: c.label } : a;
+  });
 }
 
 export type AppendInboundResult =
