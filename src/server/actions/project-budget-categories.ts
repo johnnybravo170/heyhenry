@@ -296,6 +296,20 @@ export async function removeBudgetCategoryAction(input: {
     };
   }
 
+  // Delete the category's estimate lines first. The FK is ON DELETE SET NULL,
+  // so without this the lines survive with budget_category_id = NULL and
+  // resurface under the "Other work" header on the customer-facing estimate
+  // (customer-view-line-items.ts) — i.e. deleted scope reappears on a sent
+  // document. Removing the category must remove the scope it held.
+  const { error: linesError } = await supabase
+    .from('project_cost_lines')
+    .delete()
+    .eq('budget_category_id', input.id);
+
+  if (linesError) {
+    return { ok: false, error: linesError.message };
+  }
+
   const { error } = await supabase.from('project_budget_categories').delete().eq('id', input.id);
 
   if (error) {
