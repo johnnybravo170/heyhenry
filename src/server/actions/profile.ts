@@ -175,6 +175,10 @@ export async function updateOperatorProfileAction(
           email: parsed.data.notifyChangeOrderResponseEmail,
           sms: parsed.data.notifyChangeOrderResponseSms,
         },
+        estimate_approved: {
+          email: parsed.data.notifyEstimateApprovedEmail,
+          sms: parsed.data.notifyEstimateApprovedSms,
+        },
       },
       updated_at: new Date().toISOString(),
     })

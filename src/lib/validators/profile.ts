@@ -50,6 +50,9 @@ export const operatorProfileSchema = z.object({
   notifyCustomerFeedbackSms: z.boolean().default(false),
   notifyChangeOrderResponseEmail: z.boolean().default(true),
   notifyChangeOrderResponseSms: z.boolean().default(false),
+  // Estimate approval is the headline customer event — SMS defaults on.
+  notifyEstimateApprovedEmail: z.boolean().default(true),
+  notifyEstimateApprovedSms: z.boolean().default(true),
 });
 
 export type OperatorProfileInput = z.infer<typeof operatorProfileSchema>;
