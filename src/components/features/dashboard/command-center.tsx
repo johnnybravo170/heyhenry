@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 type ChangeOrderRow = {
   id: string;
   job_id: string | null;
+  project_id: string | null;
   total_cents: number;
   customer_name: string | null;
 };
@@ -182,7 +183,13 @@ export function CommandCenter({
                   className="flex min-w-0 items-center justify-between gap-3 py-1.5 text-sm"
                 >
                   <Link
-                    href={co.job_id ? `/jobs/${co.job_id}` : '#'}
+                    href={
+                      co.job_id
+                        ? `/jobs/${co.job_id}`
+                        : co.project_id
+                          ? `/projects/${co.project_id}`
+                          : '#'
+                    }
                     className="min-w-0 flex-1 truncate hover:underline"
                   >
                     {co.customer_name ?? 'Change order'} ·{' '}

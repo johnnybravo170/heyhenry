@@ -78,30 +78,43 @@ export async function listChangeOrderLines(changeOrderId: string): Promise<Chang
  * Joins through the job to surface the customer name in the listing.
  */
 export async function listPendingChangeOrdersForDashboard(): Promise<
-  Array<{ id: string; job_id: string | null; total_cents: number; customer_name: string | null }>
+  Array<{
+    id: string;
+    job_id: string | null;
+    project_id: string | null;
+    total_cents: number;
+    customer_name: string | null;
+  }>
 > {
   const supabase = await createClient();
+  // Change orders are project-scoped for renovation/tile GCs (the table was
+  // born project-first — see 0032_renovation_phase_r2.sql — and gained
+  // job_id later in 0034). Join BOTH so a project-scoped CO (job_id null)
+  // still resolves a customer name and a destination.
   const { data } = await supabase
     .from('change_orders')
-    .select('id, job_id, cost_impact_cents, status, jobs:job_id (id, customers:customer_id (name))')
+    .select(
+      'id, job_id, project_id, cost_impact_cents, status, jobs:job_id (id, customers:customer_id (name)), projects:project_id (id, customers:customer_id (name))',
+    )
     .eq('status', 'pending_approval')
     .order('created_at', { ascending: false })
     .limit(20);
 
-  return (data ?? []).map((row) => {
-    const jobObj = Array.isArray(row.jobs) ? row.jobs[0] : row.jobs;
-    const customerObj = jobObj
-      ? Array.isArray(jobObj.customers)
-        ? jobObj.customers[0]
-        : jobObj.customers
-      : null;
-    return {
-      id: row.id as string,
-      job_id: (row.job_id as string | null) ?? null,
-      total_cents: (row.cost_impact_cents as number) ?? 0,
-      customer_name: (customerObj?.name as string | undefined) ?? null,
-    };
-  });
+  const nameFrom = (rel: unknown): string | null => {
+    const obj = Array.isArray(rel) ? rel[0] : rel;
+    if (!obj) return null;
+    const customers = (obj as { customers?: unknown }).customers;
+    const customerObj = Array.isArray(customers) ? customers[0] : customers;
+    return ((customerObj as { name?: string } | null)?.name as string | undefined) ?? null;
+  };
+
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    job_id: (row.job_id as string | null) ?? null,
+    project_id: (row.project_id as string | null) ?? null,
+    total_cents: (row.cost_impact_cents as number) ?? 0,
+    customer_name: nameFrom(row.jobs) ?? nameFrom(row.projects),
+  }));
 }
 
 export async function listChangeOrders(
