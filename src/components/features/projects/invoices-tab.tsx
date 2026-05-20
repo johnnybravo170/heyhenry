@@ -8,12 +8,15 @@ import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/features/invoices/record-payment-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { DrawGstMode } from '@/lib/invoices/draw-gst-mode';
+import { invoiceTotalCents } from '@/lib/invoices/totals';
 import { withFrom } from '@/lib/nav/from-link';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import {
   createInvoiceFromEstimateAction,
   createMilestoneInvoiceAction,
   generateFinalInvoiceAction,
+  setProjectDrawGstModeAction,
 } from '@/server/actions/invoices';
 
 type InvoiceSummary = {
@@ -24,6 +27,7 @@ type InvoiceSummary = {
   percent_complete: number | null;
   amount_cents: number;
   tax_cents: number;
+  line_items: { total_cents?: number | null }[] | null;
   customer_note: string | null;
   created_at: string;
 };
@@ -32,11 +36,17 @@ function DrawForm({
   projectId,
   defaultLabel,
   defaultPercent,
+  gstMode,
+  taxRate,
   onDone,
 }: {
   projectId: string;
   defaultLabel: string;
   defaultPercent: number;
+  /** Resolved project GST mode — drives the preview math + label. */
+  gstMode: DrawGstMode;
+  /** Tenant's combined tax rate (e.g. 0.05). Drives the GST preview. */
+  taxRate: number;
   onDone: () => void;
 }) {
   const router = useRouter();
@@ -94,9 +104,14 @@ function DrawForm({
     (s, item) => s + Math.round(parseFloat(item.amountRaw || '0') * 100),
     0,
   );
-  // GST is embedded in the total (tax-inclusive). Back-compute the
-  // portion so the operator sees what's inside the customer's total.
-  const gstEmbedded = Math.round((total * 0.05) / 1.05);
+  // GST preview depends on the project's mode:
+  //  - inclusive: entered total is the all-in; back-compute embedded GST.
+  //  - on_top: entered total is the subtotal; add GST to get the all-in.
+  const onTop = gstMode === 'on_top';
+  const gstCents = onTop
+    ? Math.round(total * taxRate)
+    : Math.round((total * taxRate) / (1 + taxRate));
+  const customerTotal = onTop ? total + gstCents : total;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border bg-muted/30 p-4">
@@ -177,11 +192,24 @@ function DrawForm({
 
       {total > 0 && (
         <p className="text-sm">
-          <span className="text-muted-foreground">Total: </span>
-          <span className="font-medium">{formatCurrency(total)}</span>
-          <span className="text-muted-foreground ml-2">
-            (incl. {formatCurrency(gstEmbedded)} GST)
-          </span>
+          {onTop ? (
+            <>
+              <span className="text-muted-foreground">Subtotal: </span>
+              <span className="font-medium">{formatCurrency(total)}</span>
+              <span className="text-muted-foreground ml-2">
+                + {formatCurrency(gstCents)} GST ={' '}
+              </span>
+              <span className="font-medium">{formatCurrency(customerTotal)}</span>
+            </>
+          ) : (
+            <>
+              <span className="text-muted-foreground">Total: </span>
+              <span className="font-medium">{formatCurrency(customerTotal)}</span>
+              <span className="text-muted-foreground ml-2">
+                (incl. {formatCurrency(gstCents)} GST)
+              </span>
+            </>
+          )}
         </p>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -202,6 +230,10 @@ export function InvoicesTab({
   invoices,
   contractRevenueCents,
   estimateApproved,
+  drawGstMode,
+  projectGstModeOverride,
+  tenantDefaultGstMode,
+  taxRate,
 }: {
   projectId: string;
   invoices: InvoiceSummary[];
@@ -213,11 +245,33 @@ export function InvoicesTab({
    *  "Convert estimate to invoice" shortcut — the action itself doesn't
    *  enforce approval, but offering it on a draft would be misleading. */
   estimateApproved: boolean;
+  /** Resolved draw GST mode (project override → tenant default → inclusive). */
+  drawGstMode: DrawGstMode;
+  /** The project's own override, or null when inheriting the tenant default. */
+  projectGstModeOverride: string | null;
+  /** Tenant default, shown in the "Account default" option label. */
+  tenantDefaultGstMode: DrawGstMode;
+  /** Tenant combined tax rate for the new-draw preview. */
+  taxRate: number;
 }) {
   const router = useRouter();
   const [showDrawForm, setShowDrawForm] = useState(false);
   const [finalPending, startFinalTransition] = useTransition();
   const [convertPending, startConvertTransition] = useTransition();
+  const [gstModePending, startGstModeTransition] = useTransition();
+
+  function handleGstModeChange(value: string) {
+    const next = value === 'inherit' ? null : (value as DrawGstMode);
+    startGstModeTransition(async () => {
+      const res = await setProjectDrawGstModeAction({ projectId, mode: next });
+      if (res.ok) {
+        toast.success('Draw GST display updated.');
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
+    });
+  }
 
   function handleFinalInvoice() {
     startFinalTransition(async () => {
@@ -264,10 +318,11 @@ export function InvoicesTab({
   const draws = invoices.filter((inv) => inv.doc_type === 'draw');
   const otherInvoices = invoices.filter((inv) => inv.doc_type !== 'draw');
 
-  // For tax-inclusive draws, amount_cents IS the customer total. For
-  // legacy rows that weren't tax-inclusive, total = amount + tax.
+  // Single source of truth for the customer total — handles inclusive draws
+  // (amount IS the all-in), on-top draws + estimate-derived invoices
+  // (amount + additive line_items + GST), and legacy rows.
   function customerTotalCents(inv: InvoiceSummary) {
-    return inv.tax_inclusive ? inv.amount_cents : inv.amount_cents + inv.tax_cents;
+    return invoiceTotalCents(inv);
   }
 
   const drawsTotalCents = draws
@@ -307,6 +362,22 @@ export function InvoicesTab({
         <Button size="sm" variant="outline" onClick={handleFinalInvoice} disabled={finalPending}>
           {finalPending ? 'Generating…' : 'Generate final invoice'}
         </Button>
+
+        <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          GST on draws
+          <select
+            className="rounded-md border bg-background px-2 py-1 text-foreground"
+            value={projectGstModeOverride ?? 'inherit'}
+            onChange={(e) => handleGstModeChange(e.target.value)}
+            disabled={gstModePending}
+          >
+            <option value="inherit">
+              Account default ({tenantDefaultGstMode === 'on_top' ? 'on top' : 'included'})
+            </option>
+            <option value="inclusive">GST included</option>
+            <option value="on_top">GST on top</option>
+          </select>
+        </label>
       </div>
 
       {showDrawForm && (
@@ -314,6 +385,8 @@ export function InvoicesTab({
           projectId={projectId}
           defaultLabel={defaultLabel}
           defaultPercent={defaultPercent}
+          gstMode={drawGstMode}
+          taxRate={taxRate}
           onDone={() => setShowDrawForm(false)}
         />
       )}

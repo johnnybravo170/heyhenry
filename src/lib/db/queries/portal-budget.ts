@@ -18,6 +18,7 @@
  *   as the operator Budget tab to avoid drift between the two surfaces.
  */
 
+import { invoiceTotalCents } from '@/lib/invoices/totals';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 import type { createAdminClient } from '@/lib/supabase/admin';
 import type { CustomerViewMode } from '@/lib/validators/project-customer-view';
@@ -127,7 +128,7 @@ export async function getPortalBudgetSummary(
       .eq('status', 'approved'),
     admin
       .from('invoices')
-      .select('amount_cents, tax_cents, tax_inclusive, status')
+      .select('amount_cents, tax_cents, tax_inclusive, line_items, status')
       .eq('project_id', projectId)
       .eq('doc_type', 'draw')
       .is('deleted_at', null)
@@ -269,10 +270,14 @@ export async function getPortalBudgetSummary(
   let drawsInvoiced = 0;
   let drawsPaid = 0;
   for (const r of (drawsResult.data ?? []) as Array<Record<string, unknown>>) {
-    const amount = (r.amount_cents as number) ?? 0;
-    const tax = (r.tax_cents as number) ?? 0;
-    const taxInclusive = Boolean(r.tax_inclusive);
-    const total = taxInclusive ? amount : amount + tax;
+    // Handles inclusive (amount IS the all-in) and on-top draws (amount=0 +
+    // additive line_items + GST) via the shared total helper.
+    const total = invoiceTotalCents({
+      amount_cents: (r.amount_cents as number) ?? 0,
+      tax_cents: (r.tax_cents as number) ?? 0,
+      tax_inclusive: Boolean(r.tax_inclusive),
+      line_items: (r.line_items as { total_cents?: number | null }[] | null) ?? null,
+    });
     drawsInvoiced += total;
     if (r.status === 'paid') drawsPaid += total;
   }

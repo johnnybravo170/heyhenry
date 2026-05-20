@@ -18,6 +18,13 @@ import { loadInvoiceCustomerViewInputs } from '@/lib/db/queries/invoice-customer
 import type { InvoiceLineItem } from '@/lib/db/queries/invoices';
 import { computeCostPlusBreakdown } from '@/lib/invoices/cost-plus-markup';
 import { buildCustomerViewLineItems } from '@/lib/invoices/customer-view-line-items';
+import {
+  type DrawGstMode,
+  type InvoicingPrefs,
+  isDrawGstMode,
+  resolveDrawGstMode,
+} from '@/lib/invoices/draw-gst-mode';
+import { getPrefs, updatePrefs } from '@/lib/prefs/tenant-prefs';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { getPaymentProvider } from '@/lib/providers/factory';
 import { createClient } from '@/lib/supabase/server';
@@ -1110,7 +1117,7 @@ export async function createMilestoneInvoiceAction(input: {
 
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, customer_id, name')
+    .select('id, customer_id, name, draw_gst_mode')
     .eq('id', input.projectId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -1126,20 +1133,31 @@ export async function createMilestoneInvoiceAction(input: {
   }));
   const totalCents = items.reduce((s, li) => s + li.total_cents, 0);
 
-  // Milestone invoices on a project are draws — operator types the total
-  // they want the customer to pay and we back-compute the GST portion.
-  // Customer-facing copy reads "incl. $X GST" rather than "+ $X GST".
-  const { data: cust } = await supabase
-    .from('customers')
-    .select('tax_exempt')
-    .eq('id', project.customer_id)
-    .maybeSingle();
+  // Draws inherit their GST display mode from the project (falling back to
+  // the tenant default, then 'inclusive'). The operator types the same line
+  // items either way; only how GST is presented differs:
+  //   - inclusive: entered total IS the all-in; GST backed out ("incl. $X GST")
+  //   - on_top:    entered total is the subtotal; GST added ("+ $X GST")
+  const [{ data: cust }, invoicingPrefs] = await Promise.all([
+    supabase.from('customers').select('tax_exempt').eq('id', project.customer_id).maybeSingle(),
+    getPrefs<InvoicingPrefs>(tenant.id, 'invoicing'),
+  ]);
+  const gstMode = resolveDrawGstMode(project.draw_gst_mode, invoicingPrefs.drawGstMode);
   const taxExempt = Boolean(cust?.tax_exempt);
   const { canadianTax } = await import('@/lib/providers/tax/canadian');
   const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
+  const rate = taxCtx.totalRate;
+
+  // Inclusive: amount_cents carries the all-in total, GST embedded.
+  // On-top: follow the tax-exclusive convention in invoices/totals.ts —
+  // amount_cents=0, additive line_items, GST added on top.
+  const inclusive = gstMode === 'inclusive';
   const taxCents = taxExempt
     ? 0
-    : Math.round((totalCents * taxCtx.totalRate) / (1 + taxCtx.totalRate));
+    : inclusive
+      ? Math.round((totalCents * rate) / (1 + rate))
+      : Math.round(totalCents * rate);
+  const amountCents = inclusive ? totalCents : 0;
 
   const pct =
     typeof input.percentComplete === 'number' &&
@@ -1156,8 +1174,8 @@ export async function createMilestoneInvoiceAction(input: {
       customer_id: project.customer_id,
       status: 'draft',
       doc_type: 'draw',
-      tax_inclusive: true,
-      amount_cents: totalCents,
+      tax_inclusive: inclusive,
+      amount_cents: amountCents,
       tax_cents: taxCents,
       line_items: items,
       customer_note: input.label,
@@ -1180,6 +1198,50 @@ export async function createMilestoneInvoiceAction(input: {
   revalidatePath(`/projects/${input.projectId}`);
   revalidatePath('/invoices');
   return { ok: true, id: data.id as string };
+}
+
+/**
+ * Set (or clear) a project's draw GST display mode. `mode: null` clears the
+ * override so the project inherits the tenant default. Only affects NEW draws;
+ * existing invoices keep their per-row tax_inclusive flag.
+ */
+export async function setProjectDrawGstModeAction(input: {
+  projectId: string;
+  mode: DrawGstMode | null;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+  if (input.mode !== null && !isDrawGstMode(input.mode)) {
+    return { ok: false, error: 'Invalid GST mode.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('projects')
+    .update({ draw_gst_mode: input.mode })
+    .eq('id', input.projectId)
+    .is('deleted_at', null);
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/projects/${input.projectId}`);
+  return { ok: true };
+}
+
+/**
+ * Set the tenant-wide default draw GST display mode. Stored in the
+ * `invoicing` tenant-prefs namespace; projects without their own override
+ * inherit this. Defaults to 'inclusive' when never set.
+ */
+export async function setTenantDrawGstModeAction(input: {
+  mode: DrawGstMode;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
+  if (!isDrawGstMode(input.mode)) return { ok: false, error: 'Invalid GST mode.' };
+
+  await updatePrefs(tenant.id, 'invoicing', { drawGstMode: input.mode });
+  revalidatePath('/settings');
+  return { ok: true };
 }
 
 export async function createInvoiceFromEstimateAction(input: {
