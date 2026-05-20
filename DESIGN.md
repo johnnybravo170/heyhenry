@@ -44,6 +44,17 @@ Use rust sparingly — it earns attention precisely because everything around it
 - **Letter-spacing:** −0.02 to −0.025em on headings ≥20px; tight (≈ −0.005em) on body
 - **Numerals:** `font-variant-numeric: tabular-nums` on every money or metric value. Right-align numeric columns.
 
+### Typographic clarity & contrast discipline
+
+*The "clarity + strong contrast" reference — borrowed from the Handoff.ai teardown (Ops vault `26e803cb`). Take the **system**, not their forest-green palette or their Bricolage display font.*
+
+- **`font-medium` (500) is the default body/UI weight** — not 400. A heavier baseline reads more substantial and legible on screen, especially on poor monitors. 600 = sub-heads/buttons; 400 = long-form body only; 700 = names/emphasis.
+- **Body uses three sizes, relentlessly:** **16 / 14 / 12px** at 1.5 line-height (default / secondary / labels). No random in-between body sizes. (The full px scale above is for headings + mono labels.)
+- **Hierarchy by tone, not just size** — the 4-step ink ramp (`#0A0A0A` → `#3A3A3A` → `#57534B` → `#A8A8A8`). A heading and its caption can be the *same size* and still read as different priority via tone. **Never gray-on-gray mush** — primary text is near-black on white (~16:1).
+- **Tight negative tracking on large headlines** (−0.02 to −0.025em); airy body (1.5), tight headings.
+- **Color is reserved for action** — rust marks the one accent/CTA per screen; everything else is neutral ink. Color = "do something."
+- **Display face: upright + neutral** — Inter (Geist / Inter Display also fine). Never quirky/humanist "semi-italic" faces (no Bricolage Grotesque). See `feedback_display_font_preference`.
+
 ## Component Stylings
 
 - **Buttons (primary):** ink fill `#0A0A0A`, white label, 9px radius, 34px height, 12px padding-inline, font 13/600. Hover: lift to `#222`.
