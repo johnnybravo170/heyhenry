@@ -13,6 +13,13 @@ export function setInvoiceTimezone(tz: string) {
   _timezone = tz;
 }
 
+/** Vertical injected from tenant context so the revenue summary's
+ * operational counts match the owner dashboard (projects vs jobs/quotes). */
+let _isRenovation = false;
+export function setInvoiceVertical(vertical: string | null | undefined) {
+  _isRenovation = vertical === 'renovation' || vertical === 'tile';
+}
+
 export const invoiceTools: AiTool[] = [
   {
     definition: {
@@ -66,7 +73,7 @@ export const invoiceTools: AiTool[] = [
     definition: {
       name: 'get_revenue_summary',
       description:
-        'Revenue summary: total revenue (paid invoices), outstanding amount, open jobs, and pending quotes for the current month.',
+        'Revenue summary: total revenue (paid invoices), outstanding amount, and active work for the current month.',
       input_schema: {
         type: 'object',
         properties: {},
@@ -74,13 +81,18 @@ export const invoiceTools: AiTool[] = [
     },
     handler: async () => {
       try {
-        const metrics = await getKeyMetrics(_timezone);
+        const metrics = await getKeyMetrics(_timezone, _isRenovation);
 
         let output = `Revenue Summary (This Month)\n${'='.repeat(40)}\n\n`;
         output += `Total Revenue: ${formatCad(metrics.revenueThisMonthCents)}\n`;
         output += `Outstanding (Unpaid): ${formatCad(metrics.outstandingCents)}\n`;
-        output += `Open Jobs: ${metrics.openJobsCount}\n`;
-        output += `Pending Quotes: ${metrics.pendingQuotesCount}\n`;
+        if (_isRenovation) {
+          output += `Active Projects: ${metrics.activeProjectsCount}\n`;
+          output += `Awaiting Approval: ${metrics.awaitingApprovalCount}\n`;
+        } else {
+          output += `Open Jobs: ${metrics.openJobsCount}\n`;
+          output += `Pending Quotes: ${metrics.pendingQuotesCount}\n`;
+        }
 
         return output;
       } catch (e) {
