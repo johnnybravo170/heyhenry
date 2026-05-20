@@ -6,11 +6,15 @@ import { formatCurrency } from '@/lib/pricing/calculator';
 export function KeyMetrics({
   metrics,
   revenueYtdCents,
+  isRenovation = false,
 }: {
   metrics: KeyMetricsData;
   revenueYtdCents: number;
+  /** Renovation/tile GCs work in projects, not jobs/quotes — swap the
+   * operational tiles accordingly. */
+  isRenovation?: boolean;
 }) {
-  const cards = [
+  const moneyCards = [
     {
       label: 'Revenue this month',
       value: formatCurrency(metrics.revenueThisMonthCents),
@@ -23,19 +27,39 @@ export function KeyMetrics({
       detail: 'Sent invoices awaiting payment',
       href: '/invoices?status=sent',
     },
-    {
-      label: 'Open jobs',
-      value: metrics.openJobsCount,
-      detail: 'Booked or in progress',
-      href: '/jobs',
-    },
-    {
-      label: 'Pending quotes',
-      value: metrics.pendingQuotesCount,
-      detail: 'Sent, awaiting response',
-      href: '/quotes?status=sent',
-    },
   ];
+
+  const operationalCards = isRenovation
+    ? [
+        {
+          label: 'Active projects',
+          value: metrics.activeProjectsCount,
+          detail: 'In progress',
+          href: '/projects?view=active',
+        },
+        {
+          label: 'Awaiting approval',
+          value: metrics.awaitingApprovalCount,
+          detail: 'Estimate sent, awaiting customer',
+          href: '/projects?view=awaiting_approval',
+        },
+      ]
+    : [
+        {
+          label: 'Open jobs',
+          value: metrics.openJobsCount,
+          detail: 'Booked or in progress',
+          href: '/jobs',
+        },
+        {
+          label: 'Pending quotes',
+          value: metrics.pendingQuotesCount,
+          detail: 'Sent, awaiting response',
+          href: '/quotes?status=sent',
+        },
+      ];
+
+  const cards = [...moneyCards, ...operationalCards];
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

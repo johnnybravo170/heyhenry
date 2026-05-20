@@ -8,17 +8,18 @@ import { getAttentionItems, getKeyMetrics, getRevenueYtd } from '@/lib/db/querie
 export async function MetricsSection() {
   const { tenant } = await requireTenant();
   const tz = tenant.timezone;
+  const isRenovation = tenant.vertical === 'renovation' || tenant.vertical === 'tile';
 
   const [metrics, revenueYtdCents, attentionItems, recentActivity] = await Promise.all([
-    getKeyMetrics(tz),
+    getKeyMetrics(tz, isRenovation),
     getRevenueYtd(tz),
-    getAttentionItems(tz),
+    getAttentionItems(tz, isRenovation),
     getRecentActivityFeed(),
   ]);
 
   return (
     <>
-      <KeyMetrics metrics={metrics} revenueYtdCents={revenueYtdCents} />
+      <KeyMetrics metrics={metrics} revenueYtdCents={revenueYtdCents} isRenovation={isRenovation} />
       <NeedsAttention items={attentionItems} />
       <RecentActivity entries={recentActivity} timezone={tz} />
     </>

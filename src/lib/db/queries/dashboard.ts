@@ -35,8 +35,14 @@ export type TodaysJob = {
 export type KeyMetrics = {
   revenueThisMonthCents: number;
   outstandingCents: number;
+  /** PW: jobs booked/in-progress. */
   openJobsCount: number;
+  /** PW: quotes sent, awaiting response. */
   pendingQuotesCount: number;
+  /** GC (renovation/tile): projects with lifecycle_stage = active (in progress). */
+  activeProjectsCount: number;
+  /** GC (renovation/tile): projects with the estimate sent, awaiting the customer. */
+  awaitingApprovalCount: number;
 };
 
 export type AttentionItem =
@@ -184,11 +190,37 @@ export async function getTodaysJobs(timezone: string): Promise<TodaysJob[]> {
   });
 }
 
-export async function getKeyMetrics(timezone: string): Promise<KeyMetrics> {
+export async function getKeyMetrics(timezone: string, isRenovation = false): Promise<KeyMetrics> {
   const supabase = await createClient();
   const monthStart = monthStartIso(timezone);
 
-  const [paidThisMonth, sentInvoices, openJobs, pendingQuotes] = await Promise.all([
+  // The third/fourth tiles swap by vertical: PW counts jobs + sent quotes,
+  // while renovation/tile GCs (who don't use the quoting tool — see
+  // quotes/page.tsx) count active projects + estimates awaiting approval.
+  const countA = isRenovation
+    ? supabase
+        .from('projects')
+        .select('id', { count: 'exact', head: true })
+        .eq('lifecycle_stage', 'active')
+        .is('deleted_at', null)
+    : supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['booked', 'in_progress'])
+        .is('deleted_at', null);
+  const countB = isRenovation
+    ? supabase
+        .from('projects')
+        .select('id', { count: 'exact', head: true })
+        .eq('lifecycle_stage', 'awaiting_approval')
+        .is('deleted_at', null)
+    : supabase
+        .from('quotes')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'sent')
+        .is('deleted_at', null);
+
+  const [paidThisMonth, sentInvoices, a, b] = await Promise.all([
     // Revenue this month: sum of paid invoices
     supabase
       .from('invoices')
@@ -202,24 +234,14 @@ export async function getKeyMetrics(timezone: string): Promise<KeyMetrics> {
       .select('amount_cents, tax_cents, tax_inclusive, line_items')
       .eq('status', 'sent')
       .is('deleted_at', null),
-    // Open jobs count
-    supabase
-      .from('jobs')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['booked', 'in_progress'])
-      .is('deleted_at', null),
-    // Pending quotes count
-    supabase
-      .from('quotes')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'sent')
-      .is('deleted_at', null),
+    countA,
+    countB,
   ]);
 
   if (paidThisMonth.error) throw new Error(`Metrics: ${paidThisMonth.error.message}`);
   if (sentInvoices.error) throw new Error(`Metrics: ${sentInvoices.error.message}`);
-  if (openJobs.error) throw new Error(`Metrics: ${openJobs.error.message}`);
-  if (pendingQuotes.error) throw new Error(`Metrics: ${pendingQuotes.error.message}`);
+  if (a.error) throw new Error(`Metrics: ${a.error.message}`);
+  if (b.error) throw new Error(`Metrics: ${b.error.message}`);
 
   const revenueThisMonthCents = (paidThisMonth.data ?? []).reduce(
     (sum, inv) => sum + invoiceTotalCents(inv as InvoiceTotalRow),
@@ -234,8 +256,10 @@ export async function getKeyMetrics(timezone: string): Promise<KeyMetrics> {
   return {
     revenueThisMonthCents,
     outstandingCents,
-    openJobsCount: openJobs.count ?? 0,
-    pendingQuotesCount: pendingQuotes.count ?? 0,
+    openJobsCount: isRenovation ? 0 : (a.count ?? 0),
+    pendingQuotesCount: isRenovation ? 0 : (b.count ?? 0),
+    activeProjectsCount: isRenovation ? (a.count ?? 0) : 0,
+    awaitingApprovalCount: isRenovation ? (b.count ?? 0) : 0,
   };
 }
 
@@ -398,12 +422,29 @@ export async function getRenovationPipelineMetrics(
   };
 }
 
-export async function getAttentionItems(timezone: string): Promise<AttentionItem[]> {
+export async function getAttentionItems(
+  timezone: string,
+  isRenovation = false,
+): Promise<AttentionItem[]> {
   const supabase = await createClient();
   const now = new Date();
   const today = todayDateStr(timezone);
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Renovation/tile GCs don't use the quoting tool (estimates live on
+  // projects — see quotes/page.tsx), so the stale-quote signal is dead for
+  // them. Skip the query entirely rather than surface empty PW logic.
+  const staleQuotesQuery = isRenovation
+    ? null
+    : supabase
+        .from('quotes')
+        .select('id, sent_at, customers:customer_id (name)')
+        .eq('status', 'sent')
+        .lt('sent_at', threeDaysAgo)
+        .is('deleted_at', null)
+        .order('sent_at', { ascending: true })
+        .limit(10);
 
   const [overdueTodos, staleQuotes, overdueInvoices] = await Promise.all([
     // Overdue todos
@@ -414,15 +455,7 @@ export async function getAttentionItems(timezone: string): Promise<AttentionItem
       .lt('due_date', today)
       .order('due_date', { ascending: true })
       .limit(10),
-    // Stale quotes (sent > 3 days ago, no response)
-    supabase
-      .from('quotes')
-      .select('id, sent_at, customers:customer_id (name)')
-      .eq('status', 'sent')
-      .lt('sent_at', threeDaysAgo)
-      .is('deleted_at', null)
-      .order('sent_at', { ascending: true })
-      .limit(10),
+    staleQuotesQuery,
     // Overdue invoices (sent > 14 days ago, unpaid)
     supabase
       .from('invoices')
@@ -437,7 +470,7 @@ export async function getAttentionItems(timezone: string): Promise<AttentionItem
   ]);
 
   if (overdueTodos.error) throw new Error(`Attention: ${overdueTodos.error.message}`);
-  if (staleQuotes.error) throw new Error(`Attention: ${staleQuotes.error.message}`);
+  if (staleQuotes?.error) throw new Error(`Attention: ${staleQuotes.error.message}`);
   if (overdueInvoices.error) throw new Error(`Attention: ${overdueInvoices.error.message}`);
 
   const items: AttentionItem[] = [];
@@ -452,7 +485,7 @@ export async function getAttentionItems(timezone: string): Promise<AttentionItem
     });
   }
 
-  for (const quote of staleQuotes.data ?? []) {
+  for (const quote of staleQuotes?.data ?? []) {
     const row = quote as Record<string, unknown>;
     items.push({
       kind: 'stale_quote',
