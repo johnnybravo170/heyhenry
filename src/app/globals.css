@@ -51,26 +51,28 @@
 }
 
 :root {
-  /* HeyHenry "Paper" palette — warm surfaces, neutral ink, single rust accent.
-     Canonical source: DESIGN.md + heyhenry-brand/heyhenry-brand-package.md §5.
+  /* HeyHenry "Paper" palette — deepened 2026-05-20 for warmth + contrast on
+     low-quality displays: deeper/warmer paper, solid warm borders (the old
+     8%-alpha hairlines vanished on cheap monitors), white cards that visibly
+     float, ink text. Kept in sync with DESIGN.md.
      Rust is an accent, not a theme: primary buttons and focus rings stay ink. */
-  --background: #f7f5f0; /* warm paper */
+  --background: #f3ebdb; /* warm paper — deeper + warmer so white cards float */
   --foreground: #0a0a0a; /* ink */
-  --card: #ffffff; /* white cards float on paper */
+  --card: #ffffff; /* white cards float on the deeper paper */
   --card-foreground: #0a0a0a;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;
   --primary: #0a0a0a; /* primary buttons are ink */
   --primary-foreground: #ffffff;
-  --secondary: #f1efe9; /* subtle cream fill */
+  --secondary: #efe7d6; /* warm cream fill */
   --secondary-foreground: #0a0a0a;
-  --muted: #efece4; /* cream fill; also drives active nav (bg-muted) */
-  --muted-foreground: #6b6b6b;
-  --accent: #efece4; /* cream hover fill */
+  --muted: #ece3d0; /* deeper cream fill; also drives active nav (bg-muted) */
+  --muted-foreground: #57534b; /* warm + deeper — holds on low-contrast displays */
+  --accent: #e8dec9; /* deeper cream hover/active fill */
   --accent-foreground: #0a0a0a;
   --destructive: #b91c1c; /* brand danger */
-  --border: rgba(10, 10, 10, 0.08); /* hairline */
-  --input: rgba(10, 10, 10, 0.12); /* rule border */
+  --border: #e2d7c0; /* solid warm hairline — visible on poor monitors */
+  --input: #d8cbb0; /* stronger warm border on input fields */
   --ring: #0a0a0a; /* focus ring is ink (applied at /50 in base layer) */
   --brand: #c2410c; /* rust accent — use sparingly via bg-brand/text-brand */
   --brand-foreground: #ffffff;
@@ -78,15 +80,15 @@
   --chart-2: #1e40af; /* blue */
   --chart-3: #15803d; /* green */
   --chart-4: #b45309; /* amber */
-  --chart-5: #6b6b6b; /* muted ink */
+  --chart-5: #57534b; /* muted ink */
   --radius: 0.625rem;
-  --sidebar: #fbfaf6; /* lighter than body — chrome doesn't darken the field */
+  --sidebar: #f7f1e6; /* lighter than body, still warm */
   --sidebar-foreground: #0a0a0a;
   --sidebar-primary: #0a0a0a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #efece4; /* deepest cream — active nav */
+  --sidebar-accent: #e8dec9; /* deeper cream — active nav */
   --sidebar-accent-foreground: #0a0a0a;
-  --sidebar-border: rgba(10, 10, 10, 0.08);
+  --sidebar-border: #e2d7c0;
   --sidebar-ring: #0a0a0a;
 }
 

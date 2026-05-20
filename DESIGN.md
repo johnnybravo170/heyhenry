@@ -11,20 +11,20 @@ A working tool, not a marketing flourish. One continuous warm field — paper ev
 
 Surfaces carry warmth; ink stays cool-neutral so the two never fight.
 
-**Surface**
-- **Page background:** `#F7F5F0` — warm paper
-- **Sidebar / top bar:** `#FBFAF6` — slightly *lighter* than body (deliberate; documents float on paper, chrome doesn't darken the field)
-- **Active nav item:** `#EFECE4` — deepest cream
+**Surface** *(deepened 2026-05-20 for warmth + contrast on low-quality displays)*
+- **Page background:** `#F3EBDB` — warm paper (deeper + warmer; white cards visibly float on it)
+- **Sidebar / top bar:** `#F7F1E6` — slightly *lighter* than body (deliberate; chrome doesn't darken the field)
+- **Active nav item:** `#E8DEC9` — deepest cream
 - **Card / surface:** `#FFFFFF` — pure white
-- **Subtle fill (⌘K chips, etc.):** `#F1EFE9`
+- **Subtle fill (⌘K chips, etc.):** `#ECE3D0`
 
 **Ink**
 - **Primary text / primary buttons:** `#0A0A0A` — near-pure black, neutral (NOT a warm charcoal)
 - **Secondary text:** `#3A3A3A`
-- **Muted (captions, inactive nav):** `#6B6B6B`
+- **Muted (captions, inactive nav):** `#57534B` — warm, deepened so it holds on poor monitors
 - **Faint (placeholders, disabled):** `#A8A8A8`
-- **Hairline border:** `rgba(10,10,10,0.08)`
-- **Rule border:** `rgba(10,10,10,0.12)`
+- **Hairline border:** `#E2D7C0` — solid warm line (replaces the old 8%-alpha hairline that vanished on low-contrast displays)
+- **Rule border:** `#D8CBB0` — solid warm
 
 **Accent & status** (each color has a soft-fill pair for badges/banners)
 - **Accent (rust):** `#C2410C` / soft `#FEF0E3` — CTAs, brand pop, one accent per screen
