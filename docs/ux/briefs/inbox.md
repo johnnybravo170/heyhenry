@@ -1,54 +1,52 @@
-# OD Brief — Inbox / Triage
+# OD Brief — Inbox (Intake · Todos · Work log)
 
-> **Status:** Draft 1 — first Open Design pass (loop-calibration screen).
-> **How to use:** paste into a new Open Design project using the registered **HeyHenry** design system (Paper — warm cream/ink/rust). Generate **desktop (master–detail)** + **mobile (stacked cards)** frames. Then run `heyhenry-design-critique` on the output and iterate.
-> **Foundation:** baked into this brief (curated from the Ops vault). Canonical foundation index: [`../README.md`](../README.md).
+> **Status:** Draft 2 — **regrounded against the real implementation.** Draft 1 described a communications-triage inbox (Leads/Messages/Calls/Approvals) that does not exist; this replaces it.
+> **Grounded in:** `src/app/(dashboard)/inbox/*`, the `intake_drafts` schema (`supabase/migrations/`), `src/server/actions/inbox-intake.ts`. Foundation docs = the target layer.
+> **How to use:** paste into a new OD project (HeyHenry "Paper" design system); generate **hi-fi desktop (master–detail) + mobile**; then run `heyhenry-design-critique`.
 
-**Objects:** Lead, Message Thread, Call, Approval (+ Henry Action) · **Workflow:** Lead Intake & Triage (#1) · **Roles:** Owner, Admin · **Primary action:** act on the top item (reply / book / quote / approve / convert)
+**Real model:** the Inbox is a 3-tab surface — **Intake · Todos · Work log** ("Henry's intake activity, your todos, and the work log — all in one place"). **Roles:** owner / admin / member (dashboard). **Primary object:** `intake_drafts`. **Primary action:** **Apply** a staged draft to its destination.
 
 ## Purpose
-One place to clear everything that needs the contractor's attention — new leads, customer messages, calls, approvals — with Henry having already classified, extracted fields, and proposed the next action for each. The job is fast triage: confirm or correct Henry's pre-work, then move each item onward. "Inbox zero" should feel achievable, not like a wall of unread.
+Henry ingests messy inputs — forwarded emails, lead-form submissions, dropped files, voice memos — **classifies + extracts** each one, and **stages** it for the operator to confirm. The operator reviews Henry's read, corrects if needed, and **Applies** each item to where it belongs (a cost, a document, a photo, a message, a new project). Their todos and a work-log feed share the surface.
 
-## Layout
-- **Top bar:** "Inbox" + a calm, labeled **Henry triage summary** ("3 new leads, 2 messages waiting on you, 1 approval stale 2 days"). Filter chips: All · Leads · Messages · Calls · Approvals. ⌘K search. **No red unread counter.**
-- **List (left / full-width mobile):** one card per item — sender (first name) + channel icon (call/SMS/email/web); **Henry classification chip** (Lead/Message/Approval/Spam, labeled AI, one-tap editable); one-line Henry summary; age + a *quiet* urgency cue; **suggested next action as the card's primary button** ("Book site visit" / "Draft reply" / "Convert to lead" / "Review & approve").
-- **Detail (right pane desktop / push view mobile):** full thread or call transcript + Henry's extracted fields (lead: name, phone, scope, address) with **per-field confidence**, low-confidence flagged; action buttons; activity/audit collapsed at bottom.
+## Layout — Intake tab (master–detail)
+- **Header:** "Inbox" + tab nav **Intake (n) · Todos (n) · Work log (n)** with live counts. On Intake, a calm banner: *"Forward bills, sub-quotes, drawings, photos, customer emails — anything — to henry@inbound.heyhenry.io. Henry classifies and stages each one for your confirmation."* Filters: **Search · Source · Status**.
+- **List (left / full-width mobile):** one card per `intake_draft` — **source** chip (email / lead form / drop / voice / web share) · Henry's **classified intent** (vendor bill / sub-quote / document / photo / message / new lead) · one-line summary · age · **status** (Needs review / Needs action / Error) · primary button **Apply** (+ Open).
+- **Detail (right / push view):** artifact preview (PDF / photo / email body / voice transcript) + **Henry's extracted fields with per-field confidence** (low-confidence flagged) + **Apply** (opens the intent dialog) + Dismiss. *(OD draft-1's extracted-fields-with-confidence panel and Apply actions transfer directly — they were the right vocabulary on the wrong content model.)*
+
+## The Apply flow (the heart of the screen)
+**Apply** opens an intent dialog keyed to the artifact kind, creates the destination, and stamps the draft `applied`:
+- receipt → **vendor bill** (`project_costs`) · sub-quote PDF → **sub-quote** · drawing/spec → **document** (`project_documents`) · photo → **project photo** (`photos`) · customer email → **message** · lead form → **new project** (creates customer + project).
+- Each dialog: pick-or-create the **project** to attach to + the key fields, **pre-filled from Henry's extraction**. After Apply: **undo / move-to-another-project / edit**.
 
 ## Progressive disclosure
-- **Snapshot (always):** the triage list — who, channel, classification, summary, next action.
-- **Operational:** open an item → detail pane with thread/transcript + fields + actions.
-- **Detail:** edit fields, correct classification, play recording / read transcript.
-- **Audit:** "Henry classified as Lead (92%) · 2h ago" + actions taken.
+- **Snapshot:** the triage list (source · intent · summary · status · Apply).
+- **Operational:** open a draft → preview + extracted fields + Apply.
+- **Detail:** correct a field / change the intent / read the full transcript.
+- **Audit:** "Henry classified as Receipt (92%) · applied to Smith Reno as a vendor bill" — disposition history.
 
-## Henry intelligence touchpoints (embedded, never a chat)
-Classify every inbound · extract structured fields with confidence · summarize each item + the whole inbox · propose the next action · dedupe ("same caller as this SMS"). Every Henry output is **labeled + editable + undoable**; the user's act is one-tap confirm/correct. **No chat box on this screen** — Henry is the triage intelligence, not a panel.
+## Henry intelligence (the real `ai_extraction`)
+Classify the artifact → suggest the destination intent · extract structured fields **with confidence** (flag low) · match to an existing project/customer (`recognized_customer_id`) · transcribe voice memos. Labeled + editable; **the operator confirms every Apply** — no auto-apply to records.
+
+## Todos & Work log tabs
+- **Todos:** the operator's task list (`todos`/`tasks`) — quick-add, due date, optional project link. Not intake.
+- **Work log:** chronological `worklog_entries` feed (created / applied / sent), searchable — the activity record.
 
 ## Role variations
-- **Owner / Admin:** full inbox (core daily work for both).
-- **Crew:** no access — leads/triage hidden; crew get Today/Tasks.
-- **Homeowner:** N/A.
+Owner / Admin / Member (dashboard surface). **Not** a worker or homeowner surface.
 
 ## Mobile vs desktop
-- **Mobile-first (triage from the truck):** stacked cards, tap to expand, one-tap accept/correct Henry's classification, ≥44px targets; capture-now/clean-up-later.
-- **Desktop:** master–detail (list + detail pane); batch select for bulk classify/dismiss; keyboard nav (j/k move, Enter open, e act).
-- **Offline:** cached recent inbox readable; actions queue + sync on reconnect.
+- **Desktop:** master–detail; batch select for multi-dismiss / multi-apply.
+- **Mobile:** stacked cards → tap to preview + Apply; one-tap accept Henry's intent. Forward-by-email is the dominant capture path (no heavy mobile form).
 
 ## Financial / Canadian
-Light here (pre-money). CA phone format. No tax/holdback chrome — that appears when a lead becomes a Quote (next screen). Don't invent financial chrome here.
+Receipts/bills carry GST (`gst_cents`) → the vendor-bill Apply dialog pre-fills tax. CAD. (No holdback.)
 
 ## States
-- **Empty:** "Inbox zero — nothing needs you right now." + "New leads, messages, and approvals land here as they come in." (Feel ahead, not behind.)
-- **Loading:** skeleton cards.
-- **Error:** "Couldn't load your inbox — retry."
-- **Offline/partial:** "Showing your last synced inbox; new items appear when you're back online."
+- **Empty:** "Nothing waiting on you. Forward bills, quotes, photos, or emails to henry@inbound.heyhenry.io and they'll land here." (calm, with the forward affordance).
+- **Loading:** skeleton cards. **Error:** a draft in `error` disposition → "Henry couldn't read this — open to classify manually." **Offline:** cached list.
 
-## Visual identity
-Warm paper bg (`#F7F5F0`), white item cards, ink text. Classification chips use status soft-pairs (lead = neutral/info, stale approval = warn, spam = muted). Rust (`#C2410C`) reserved for the single most-urgent accent or the primary action — one pop, not a field of rust. Calm; Linear-not-Buildertrend.
-
-## Reject-if self-check (passed)
-No chat box (Henry is inline triage); no per-seat; every item links to a real object; no "47 unread" doom; approval state visible; plain English; AI labeled + undoable; mobile-first; all states specified; warm identity called out.
-
-## Open questions (decide with OD output in hand)
-1. **Unified vs channel-tabbed inbox** — recommend one unified stream, filterable by type (calmer; "one app not a stack").
-2. **Inbox vs Leads boundary** — recommend Inbox = new/untriaged items only; once triaged, a lead lives in the Leads pipeline (leaves the inbox).
-3. **Henry auto-action** — never auto-send/auto-convert; always one-tap human confirm.
+## Open questions
+1. Keep Intake / Todos / Work log as three tabs, or split Work log into a global activity surface? (Current: 3 tabs.)
+2. Batch-apply for same-kind drafts (a stack of receipts → one project)?
+3. Relative prominence of the "forward to henry@inbound" affordance vs. an in-app drop-zone?
