@@ -1,109 +1,152 @@
 # OD Brief — Project Hub (the execution workspace)
 
-> **Grounded in:** `src/app/(dashboard)/projects/[id]/page.tsx` (the shell — header, tab IA, lifecycle-default-tab, per-tab streaming), `tabs/overview-tab-server.tsx` (VarianceSection + ProjectFactsSection + TimelineSection), `tabs/costs-tab-server.tsx` + `costs-tab.tsx` + `costs-subtabs.tsx` (Spend), `tabs/invoices-tab-server.tsx` + `invoices-tab.tsx` (Customer Billing), `tabs/{time,schedule,messages,gallery,portal,selections,documents,memos,crew}-tab-server.tsx`, `budget-summary.tsx` (`VarianceTab`), `unsent-changes-chip.tsx`, `scope-diff-review.tsx` / `scope-diff-review-client.tsx`, `applied-co-banner.tsx`, `project-timeline.tsx`, `project-intake-zone.tsx`, `staged-emails-banner.tsx`, `management-fee-editor.tsx` / `billing-mode-editor.tsx` / `percent-complete-editor.tsx`, `henry-insight-strip.tsx` + `getProjectInsights` (**dead — see Henry**); queries `getVarianceReport`, `getBudgetVsActual`, `getProjectDrawSummary`, `getProjectProgress`, `getUnsentDiff`/`getLatestSnapshot`, `getProjectChangeOrderContributions`; actions `createMilestoneInvoiceAction`, `createInvoiceFromEstimateAction`, `generateFinalInvoiceAction`, `createPurchaseOrderAction`, `upsertBillWithAttachmentAction`, `createChangeOrderFromUnsentDiffAction`, `revertChangeAction`; migration `0097` (lifecycle_stage). Vault: Project Hub Spec `6c0de27d`, Object Model `b4d880be`, Role Matrix `03b1ccf4`, IA/Nav `6529e9ae`; `docs/ux/sacred-path-map.md`. Siblings: **`briefs/estimate.md`** (the SAME Budget table, authoring face), **`briefs/invoices.md`** (the cross-project Billing/AR list), **`briefs/projects-list.md`** (entry point).
+> **Grounded in:** `src/app/(dashboard)/projects/[id]/page.tsx` (the shell — header, tab IA, lifecycle-default-tab, per-tab streaming), `tabs/overview-tab-server.tsx` (VarianceSection + ProjectFactsSection + TimelineSection), `tabs/costs-tab-server.tsx` + `costs-tab.tsx` + `costs-subtabs.tsx` (Spend), `tabs/invoices-tab-server.tsx` + `invoices-tab.tsx` (Billing), `tabs/time-tab-server.tsx` (Labour), `tabs/{schedule,messages,gallery,portal,selections,documents,memos,crew}-tab-server.tsx`, `budget-summary.tsx` (`VarianceTab`), `unsent-changes-chip.tsx`, `scope-diff-review.tsx`, `applied-co-banner.tsx`, `project-timeline.tsx`, `project-intake-zone.tsx`, `project-name-editor.tsx`, `percent-complete-editor.tsx`, `management-fee-editor.tsx`, `billing-mode-editor.tsx`, `henry-insight-strip.tsx` + `getProjectInsights` (**dead — see Henry**); `server/actions/project-assignments.ts` (`assignWorkerAction` — owner/admin only; nullable per-job rate overrides); queries `getVarianceReport`, `getBudgetVsActual`, `getProjectDrawSummary`, `getProjectProgress`, `getUnsentDiff`/`getLatestSnapshot`, `getProjectChangeOrderContributions`; migrations `0051_worker_profiles.sql` (`default_hourly_rate_cents`), `0054_pay_and_charge_rates.sql` (`default_charge_rate_cents` on workers; `charge_rate_cents` on assignments), `0052_project_assignments.sql` (`scheduled_date` nullable), `0097` (lifecycle_stage). Vault: Project Hub Spec `6c0de27d`, Object Model `b4d880be`, Role Matrix `03b1ccf4`, IA/Nav `6529e9ae`; `docs/ux/sacred-path-map.md`. Siblings: **`briefs/estimate.md`** (the SAME Budget table, authoring face), **`briefs/invoices.md`** (the cross-project Billing/AR list), **`briefs/customer-documents.md`** (the homeowner-facing docs the Client hub manages), **`briefs/projects-list.md`** (entry point).
 > **How to use:** paste into the OD project (HeyHenry "Paper" palette — deepened + the clarity discipline in DESIGN.md), generate hi-fi desktop + mobile, then run `heyhenry-design-critique`.
 >
-> **Shared-component constraint (read first).** The **Budget tab is one component** serving two postures. `briefs/estimate.md` specs its **authoring** face (pre-approval: build + price scope). This brief specs its **execution** face (post-approval: track actuals) — plus the rest of the Hub. They must reconcile into a **single state-adaptive table**, not two designs. Switch is `estimate_status`/`lifecycle_stage` (`planning`/`awaiting_approval` → authoring + Budget default tab; `active`+ → execution + Overview default tab).
+> **Shared-component constraint.** The **Budget tab is one component** in two postures. `estimate.md` specs its **authoring** face (pre-approval: build + price scope); this brief specs its **execution** face (post-approval: track actuals). They reconcile into a **single state-adaptive table**, switched by `estimate_status`/`lifecycle_stage` — not two designs.
 >
-> **Current vs target:** the Hub is **built and deep** — a streaming shell (header + 6 primary + 7 secondary tabs), a unified Budget table that wakes its Spent/Committed/Remaining columns in execution, a Spend ledger (POs/bills/expenses/sub-quotes), a project-scoped Customer Billing tab (draws + final), a post-approval **scope-diff** contract-protection mechanism, and an Overview "cockpit." Target deltas: (1) **Overview becomes a real "what needs attention today" cockpit** (revive the dead `getProjectInsights` under Henry chrome); (2) **fix Spend** (the mislabeled "Paid" cell + a single reconciled Committed number); (3) **make scope-diff first-class** (it's the discipline that keeps the contract trustworthy); (4) **wire Henry's Pulse client-update to the project** (today it only exists on the legacy jobs surface); (5) Paper palette + three-type-size discipline + money discipline throughout; (6) tuned mobile ("doing work"). **Flagged** where target differs.
+> **Persistent-header principle (governs this rewrite).** This header sits on top of *every* project tab. So it carries **identity + state + wayfinding only — never a metric a dedicated page already owns.** Margin lives on Overview/Budget; draws on Billing. Putting a cockpit on every page is the "duplicate-metric-row" smell. (A reusable rule: *persistent chrome carries level-appropriate identity; it never duplicates a dedicated surface.*)
+>
+> **Current vs target:** the Hub is built and deep, but the chrome sprawls — a header that stacks identity + a 7-pill secondary-nav row + Versions + a naked trash icon, **navigation split across two rows** (secondary in the header, primary below), 13 tab destinations, and scattered editable project attributes (name in the header, mgmt-fee/billing/dates in Overview's "facts grid"). Target: a **lean identity-only header** with a **Project Details card** for the editable attributes; **one unified nav** trimmed from 13 → ~9 by grouping (Client hub) and relocating (Crew, Notes); clearer names (**Time→Labour**, **Customer Billing→Billing**); Overview freed to be a real **"what needs you" cockpit**; and the execution-posture Budget/Spend/scope-diff fixes. **Flagged** where target differs.
 
-**Object:** the **Project** in execution (`projects` active+, with its budget / costs / invoices / scope-diff / field capture) · **Roles:** owner / admin / member (full); worker (assigned field capture, separate `/w`); homeowner (portal only) · **Primary action:** know if the job is on-track and on-margin, and do the next thing that keeps it moving.
+**Object:** the **Project** in execution (`projects` active+, with its budget / costs / labour / invoices / scope-diff / crew / field capture) · **Roles:** owner / admin / member (full); worker (assigned field capture, separate `/w`); homeowner (portal only) · **Primary action:** know if the job is on-track and on-margin, and do the next thing that keeps it moving.
 
 ## Purpose
-The operator's **run-the-job** cockpit. Per the Project Hub spec: **"NOT a miniature Procore… the smallest reliable surface that keeps the job moving, protects margin, and captures the truth from the field."** A reno GC opens this to answer: *am I making money on this job, what's changed since the customer signed, what can I bill, and what needs me today.* Everything else (Gantt depth, RFIs, submittals) is deliberately out of V1.
+The operator's **run-the-job** workspace. Per the Project Hub Spec: *"NOT a miniature Procore… the smallest reliable surface that keeps the job moving, protects margin, and captures the truth from the field."* The **Overview** tab is the cockpit ("am I making money, what's changed since they signed, what can I bill, what needs me today"); the header is just calm identity chrome that's true on every tab.
 
 ## The data truth this screen must reflect
-- **Lifecycle drives posture** (`0097`): `planning → awaiting_approval → active → on_hold → complete | cancelled` (+ `declined`). `active`+ = execution; the Hub lands on **Overview** and the Budget table renders **collapsed, actuals-forward**.
-- **Budget-vs-actual** (`getBudgetVsActual` / `getVarianceReport`): `estimate` (Σ priced lines) − **`spent`** (labour from `time_entries` + bills + expenses from `project_costs`, **pre-tax** since GST is an ITC) − **`committed`** (accepted sub-quotes + active PO lines) = **`remaining`**. **`margin_at_risk = estimated_revenue − actual − committed`** (revenue = scope subtotal + management fee, incl. per-CO fee overrides). Negative margin-at-risk = danger.
-- **The approved estimate is the contract baseline.** Post-approval scope edits are **diffed** against the latest signed snapshot (`getUnsentDiff` vs `getLatestSnapshot`); each change is classified `henry_suggests: send_as_co | internal`. **The hub never silently rewrites the contract** — it surfaces the diff and routes customer-impacting changes to a change order.
-- **Billing is draw-based:** `doc_type` `draw | invoice | final`; no partial payments (stages are separate draws); no holdback; overdue derived (`sent` + `sent_at` > 14d). Cost-plus (`is_cost_plus`) vs fixed-price governs the final-invoice math.
-- **Field truth = photos + worklog + memos + time** (no "daily log" object). Capture is mobile, offline-tolerant, capture-now/clean-up-later.
+- **Lifecycle drives posture** (`0097`): `planning → awaiting_approval → active → on_hold → complete | cancelled` (+ `declined`). `active`+ = execution; the Hub lands on **Overview**, the Budget table renders collapsed + actuals-forward.
+- **Budget-vs-actual** (`getBudgetVsActual`/`getVarianceReport`): `estimate` (Σ priced lines) − **spent** (labour from `time_entries` + bills + expenses from `project_costs`, **pre-tax**) − **committed** (accepted sub-quotes + active POs) = **remaining**. **`margin_at_risk = estimated_revenue − actual − committed`** (revenue = scope subtotal + management fee). Negative = danger.
+- **Approved estimate = the contract baseline.** Post-approval scope edits are diffed against the latest signed snapshot (`getUnsentDiff`); each change is `henry_suggests: send_as_co | internal`. The hub never silently rewrites the contract.
+- **Crew = `project_assignments`** (project_id, worker_profile_id, **`scheduled_date` nullable**, `hourly_rate_cents`, `charge_rate_cents`, notes; unique on project+worker+date). **`scheduled_date IS NULL` = ongoing crew (the roster); a set date = a scheduled day (the grid).** Roster and schedule are one table split by that column.
+- **Workers carry account-level default rates** — `worker_profiles.default_hourly_rate_cents` (pay) + `default_charge_rate_cents` (charge). The per-assignment rates are **nullable overrides** (null = inherit the worker's default).
+- **Billing is draw-based** (`doc_type` draw/invoice/final; no partial payments; no holdback; overdue = `sent` + `sent_at` > 14d). Cost-plus (`is_cost_plus`) vs fixed-price governs the final invoice.
+- **Field truth = photos + worklog + memos + time** (no "daily log").
 
-## The shell — header + nav *(target — rework: tighter, unified, calmer)*
-*Current flaws (operator-confirmed): **not space-efficient** — 7 labeled secondary-tab pills + vertical dividers + a naked trash icon crammed into the header's actions row; **not path-efficient** — navigation is split across two places (secondary tabs in the header, primary tabs in a row below), so the operator looks in two spots to get anywhere; **not info-efficient** — a long line-clamped description competes for space while the one number that matters (margin/health) isn't in the header at all; and it reads cluttered. Rework it.*
+## The two postures (Budget tab)
+- **Authoring** (`estimate_status` draft/declined, pre-approval): build + price scope — columns Category · Estimate · Margin; execution columns dormant. *(Specced in `estimate.md`.)*
+- **Execution** (`approved`, active+): the same table, actuals-forward — **Spent · Committed · Remaining + progress bars** wake up; CO chips + "spent by source" appear; sections default collapsed. *(This brief.)*
 
-Keep the streaming architecture (header paints <100ms; tabs stream in their own Suspense). Restyle to Paper. The header does **two jobs only — orient and navigate — in a tight top zone:**
-- **Identity row (one line):** inline-editable name (`ProjectNameEditor`) + **lifecycle status badge** (`status-tokens.ts`) + customer link. Low-frequency actions (**Versions, Delete**, edit/settings) collapse into a single **overflow "⋯" menu** — off the main surface (kills the naked trash icon + the floating Versions dropdown). Description → one truncated line, full text on expand/hover (it rarely earns a glance).
-- **Health stat strip (the info-efficient answer):** **one** scannable row of the few numbers that matter — mono-uppercase eyebrows + tabular values: **% Complete · Margin** (health-toned — on-margin / thin / **at-risk** from `getVarianceReport`) **· Draws** (sent · paid · **outstanding**, `getProjectDrawSummary`) **· Target end / days left**. Replaces today's scattered inline %-complete + draws paragraph + the separately-proposed margin chip with one dense strip (DESIGN.md "section header bar with rolled-up metrics + health"). CAD, tabular-nums, de-emph cents.
-- **One unified nav (the path-efficient answer):** **fold the 7 secondary tabs into the single tab bar** so navigation lives in *one* place, not split header/below. Primary destinations (Budget · Spend · Time · Schedule · Customer Billing · **Overview**) read prominent; the secondary set (Messages · Gallery · Portal · Selections · Documents · Notes · Crew) reads as a lighter tier or behind a **"More ▾"** overflow — preserving the unread badges (messages, ideas). This also chips at the 13-tab sprawl (open question). Mobile stays the `<select>` (`ProjectTabSelect`).
-- **The capture front door stays adjacent:** `ProjectIntakeZone` ("Add to project" — drop the mess, Henry files it: receipts→costs, photos→gallery, sub-quote PDFs→sub-quotes, texts→scope) is the one *action* that belongs by the header. Give it a consistent compact home (a button that opens the drop target), not a wide always-open zone competing with the stat strip. Henry-label it.
-- **Contextual banners** (`UnsentChangesChip`, `StagedEmailsBanner`) sit *between* the stat strip and the tab bar — alerts, not chrome; visible only when live.
-- **Aesthetic:** Paper, minimal dividers, mono-uppercase metric eyebrows, three type sizes, near-black ink — a calm instrument panel, not a toolbar.
+## The shell — header + nav *(target — lean identity, one nav)*
+Keep the streaming architecture (header paints <100ms; tabs stream). The header does **two jobs only — orient and navigate:**
+- **Identity row (one line):** inline-editable name + a **`▾` chevron** that opens the **Project Details card** (below) + the **lifecycle status badge** (`✓ Active`, via `status-tokens.ts`).
+- **Customer (quiet, secondary, linked):** keep it — it's *identity* ("the Mohan job") and a one-tap path to call/email the homeowner from any tab — but as a small muted line, not a bold one. (It's identity, not a metric; if the header ever still feels heavy, it can move into the Details card.)
+- **`✦ Add` (ghost):** the `ProjectIntakeZone` capture front door (drop the mess → Henry files it: receipts→costs, photos→gallery, sub-quote PDFs→sub-quotes, texts→scope). A **light ghost button** that opens the drop target — not a heavy black button competing with the global "New Project."
+- **`⋯` overflow:** Versions, Delete, Duplicate. Kills the dangling, label-less trash icon (a11y + accident risk).
+- **No metrics in the header.** No % complete, no margin/draws strip — those live on Overview/Budget/Billing. (% complete moves to Overview; if an always-on cue is ever missed, the lightest option is a thin hairline progress line under the title — don't add it pre-emptively.)
+- **Transient alerts ride below the header, only when live:** `UnsentChangesChip`, `StagedEmailsBanner` — alerts, not permanent chrome. (The "Electrical dates locked: Mar 24–27" line moves to **Schedule** — it's a schedule fact, not header furniture.)
+- **One unified nav** (the path-efficient fix): the tab bar is the *only* place to navigate — no separate header-actions row of destination pills. Primary tabs prominent; the grouped/secondary set lighter or behind **"More ▾"**, badges preserved. Mobile = the `<select>` (`ProjectTabSelect`).
 
-## Overview = the cockpit *(target — the biggest opportunity)*
-Today Overview is three stacked blocks: the **variance card** (`VarianceTab` — estimated/committed/actual/margin-at-risk + CO contributions), a **facts grid** (Start · Target End · Mgmt Fee · Billing mode · # Categories — keep, restyle), and an **activity timeline** (`ProjectTimeline`). It reports numbers; it doesn't yet say *what to do.*
-- **Target: a "Today / Needs attention" strip at the top** — a prioritized, Henry-chromed **"do this" list (ranked actions, not a wall of numbers)** surfacing only the few things that need the operator: **margin at risk**, **N unsent changes** (customer-impacting), **draw ready to bill** (peach — matches Billing), **overdue draw** (danger), **schedule slip**, **unread customer messages/ideas**, **missing receipts / unpaid bills**. Each item is a one-line statement + a one-tap action — when nothing's wrong it collapses to a calm "On track — nothing needs you." **Revive the dead `getProjectInsights`** (it already computes over/under-budget, unsent-changes, on-track rules — built, wired nowhere) as the engine behind this strip.
-- **Henry chrome + fill discipline:** ✦ HENRY label + rust left-border + rust action button; **fill reflects meaning** — *ready-to-bill* = peach `#FEF0E3` (matches the Billing brief), a *caution* (margin/overdue) = warn-soft or danger-soft, a neutral heads-up = white. **Never danger-red on a positive.**
-- Keep variance + facts + timeline below the attention strip — the cockpit is "what to do" first, "the numbers" second, "what happened" third.
+```
+[<]                          🕐 Log time   $ Log Expense   [+ New Project]   Northbeam Construction ⇕
+Glenwood Heights Master Suite Addition ▾    ✓ Active                    ✦ Add    ⋯
+Daniel & Priya Mohan                                                    (quiet, linked)
+──────────────────────────────────────────────────────────────────────────────────────
+Budget   Spend   Labour   Schedule   Billing   Overview            Client²   Photos   Documents
+```
+
+## The Project Details card *(target — new; the `▾` target)*
+Clicking the name's **`▾`** opens a popover (desktop) / sheet (mobile) holding the **editable project-level attributes** — consolidating what's scattered today (inline name edit in the header + Overview's "facts grid"):
+```
+┌ Project details ───────────────────────────────── ┐
+│ Name        Glenwood Heights Master Suite Addition ✎│
+│ Customer    Daniel & Priya Mohan ↗                  │
+│ Description Master suite addition over garage… ✎    │
+│ Dates       Mar 3 → May 30 (target) ✎               │
+│ Billing     Cost-plus · Mgmt fee 18% ✎              │
+│ Status      ✓ Active                                │
+│ ── Crew ────────────────────────────────────────── │
+│  ☑ Mike Reyes     $52/hr pay · $80/hr charge   ⌄    │
+│  ☑ Dave T. (sub)  sub-trade                    ⌄    │
+│  + Add crew                                         │
+└─────────────────────────────────────────────────────┘
+```
+- **It becomes the project-settings home that doesn't exist today** — and lets us **delete Overview's facts grid**, freeing Overview to be a cockpit.
+- `▾` = details/attributes (view + edit); `⋯` = actions (Versions/Delete/Duplicate). Two clear meanings.
+
+### Crew (in the Details card) — roster only, simplified
+*(This is the project-level half of the old "Crew" tab; scheduling is separate — see below.)*
+- **Assignment = a multi-select checklist** of the tenant's workers + subs (not a one-at-a-time form). Each row shows the worker's **account default rate** (`default_hourly_rate_cents` / `default_charge_rate_cents`) read-only/muted, so the operator sees what they're paying/charging. Tick → **Add to crew** (writes `project_assignments` with `scheduled_date = null`, rate overrides null = inherit).
+- **Override on demand:** a per-row **`⌄`** expands pay-override / charge-override / note — only when *this job* pays or charges someone differently (writes the nullable `project_assignments` rates; blank = inherit). This replaces today's always-shown 4-field form, which surfaced the rarely-needed override as prominent empty fields.
+- *Build check:* confirm the assign action **reads the worker default when the override is blank** (the variance RPC already `COALESCE`s `hourly_rate_cents`) so labour costing is correct on inherited rates.
+- Owner/admin only (`assignWorkerAction` asserts it).
+
+## Tab IA *(target — 13 → ~9, one bar)*
+**Primary (the work):** `Budget · Spend · Labour · Schedule · Billing · Overview`
+**Grouped/secondary:** `Client² · Photos · Documents`
+- **Renames (label-only — keep route keys, like Invoices→Billing):** **Time → Labour** (it's labour hours + worker invoices; de-collides from Schedule = *actuals* vs *plan*; matches the `material·labour·sub·equipment·overhead` cost vocabulary; Canadian spelling, the *u*). **Customer Billing → Billing** (resolves the "Client" collision).
+- **Spend keeps its name** (not "Expenses" — that collides with the standalone Overhead-Expenses screen and is too narrow for committed POs/sub-quotes/bills). With Labour split out, **Labour = internal hours, Spend = external money out** — a clean pair.
+- **Client hub (new grouped tab):** the homeowner-relationship surfaces as subheads — **Messages · Selections · Portal & Updates** — plus curating *what the client sees* (which photos/docs are shared). It's the operator-side mirror of the customer portal, and the home for the Henry **Pulse** client-update once wired (see Henry). Default it to **Messages** (most-used) and put the **unread badge on the `Client` tab** so you see "²" without entering. (Trade-off accepted: grouping adds a click; the default + badge mitigate it.)
+- **Don't fold internal/library surfaces into Client:** **Photos** stays its own surface (internal-first capture + before/after/concern tagging + the portal-visible flag; Client just curates the shared set). **Documents** stays (internal store + Home Record; client-facing docs surface in Client). **Notes** is internal → **fold into Overview's activity feed** (target — confirm). **Crew** → the Details card (roster) + the dispatch board (scheduling).
+- Net: **removes** tabs (passes the reject-if rule), groups by mental model, and resolves the 13-tab sprawl.
+
+## Overview = the cockpit *(target — "what needs you," not a wall of numbers)*
+Today Overview = a variance card + a **facts grid** (start/end/mgmt-fee/billing/#categories — **moves to the Details card**) + a timeline. Target:
+- **A "Today / Needs attention" strip on top** — a ranked **"do this" list (not a wall of stats)**: margin at risk, N unsent changes (customer-impacting), draw ready to bill (peach), overdue draw (danger), schedule slip, unread client messages/ideas, missing receipts/unpaid bills. Each = one-line statement + one-tap action; when nothing's wrong it collapses to a calm "On track — nothing needs you." **Revive the dead `getProjectInsights`** (over/under-budget · unsent-changes · on-track rules — built, wired nowhere) as the engine.
+- Below: the **variance/margin** card (`VarianceTab`) and the **activity feed** (the timeline, now also absorbing the internal **Notes**). This is where the numbers the header *doesn't* duplicate actually live.
 
 ## Budget — execution posture
-The same table from `estimate.md`, now actuals-forward. **Spent · Committed · Remaining** columns + multi-segment **progress bars** are live; **CO chips** mark categories touched by applied change orders; the **"spent by source"** strip (Labour/Bills/Expenses → deep-links to Time/Spend) appears; per-line **actuals** expand (`CostLineActualsInline`). The `AppliedChangeOrdersBanner` ("Estimate signed · N applied COs" + version history) anchors the top. Money/colour discipline: move raw `red-600`/`amber-600`/`green-500` onto `status-tokens.ts` soft pairs (over = danger, projected-over = warn) + token progress colours; collapse the ~6 font sizes to three. **Sections default collapsed** in execution (status-tracking posture); the operator expands what they're watching.
+The estimate table, now actuals-forward: **Spent · Committed · Remaining** + multi-segment **progress bars** live; **CO chips** on touched categories; the **"spent by source"** strip (Labour/Bills/Expenses → deep-links to Labour/Spend); per-line actuals expand. `AppliedChangeOrdersBanner` anchors the top. Move raw `red-600`/`amber-600`/`green-500` onto `status-tokens.ts` soft pairs + token progress colours; collapse the ~6 font sizes to three. Sections default **collapsed** in execution.
 
-## Scope-diff / unsent-changes — the contract-protection spine *(target — make it first-class)*
-This is the discipline that makes the whole sacred path trustworthy. On approval (and on each CO apply) the scope is **snapshotted**. Any later edit to `project_cost_lines`/`project_budget_categories` is diffed by `getUnsentDiff` and classified `send_as_co` (label/total change → customer-impacting) vs `internal` (reorg).
-- **`UnsentChangesChip`** (shell): *"N unsent changes since v{N} · ±$X · M look customer-impacting"* → opens the review.
-- **`ScopeDiffReviewClient`** modal (`?review=diff`): per-row **Revert to last signed**; footer **Create Change Order** (`createChangeOrderFromUnsentDiffAction` → the CO editor — its own brief, S5). **Fix the stale copy** ("send the rest as a change order from the Changes tab" — the button now creates it inline).
-- **Target gap:** there's **no "send the customer a non-billable update" path** here — only CO or portal. For *internal* reorgs that the customer should still *see* (e.g. a substitution at no cost), offer a "note the customer" path that routes to the portal update (below), distinct from a billable CO.
+## Scope-diff / unsent-changes — the contract-protection spine
+On approval (+ each CO apply) the scope is snapshotted; later edits are diffed (`getUnsentDiff`, classified `send_as_co | internal`). **`UnsentChangesChip`** (below the header): *"N unsent changes since v{N} · ±$X · M look customer-impacting"* → opens **`ScopeDiffReviewClient`** (`?review=diff`): per-row **Revert to last signed**; footer **Create Change Order** (`createChangeOrderFromUnsentDiffAction` → the CO editor — see `change-order.md`). Fix the stale modal copy ("send the rest as a CO from the Changes tab" — the button creates it inline). Add a **"notify customer (non-billable)"** path for internal-but-visible changes (routes to the portal update, distinct from a billable CO).
 
-## Spend (costs) — fix + restyle
-The project ledger: **POs** (inline `POForm`, status draft→sent→acknowledged→received→closed), **vendor bills** + **expenses** (merged into one "Costs" surface), **sub-quotes**. "By type" / "By category" views; deep-linked from Budget (`?focus=<category>`). Keep the structure; fix:
-- **BUG — the "Paid" summary cell shows total *expenses*, not paid bills** (`costs-tab.tsx:282/372`). Relabel/recompute to a true Paid figure (or drop it).
-- **One Committed number.** Today "Committed" (accepted sub-quotes) and "PO'd" (open POs) are parallel silos that don't reconcile with `VarianceTab`'s `committed_cents` (= sub-quotes + POs). **Target:** a single Committed that matches the Budget/variance definition, with sub-quotes/POs as its breakdown.
-- **Stable landing subtab** (today it shifts by data presence — disorienting).
-- Paper + money discipline; receipts/attachments as thumbnails; Henry "missing receipt?" / "categorize this bill" nudges (capture-now/clean-up-later).
+## Spend — fix + restyle
+The project's **external money-out** ledger (POs, vendor bills, sub-quotes, expenses), grouped by category; "By type"/"By category"; deep-linked from Budget. Fixes: **the "Paid" summary cell shows total *expenses*, not paid bills** (`costs-tab.tsx:282/372`) — relabel/recompute; **one Committed number** that reconciles with `VarianceTab` (sub-quotes + POs as its breakdown, not two silos); **stable landing subtab**. Paper + `Money` + token chips (Uncategorized = `warning`-soft, not ad-hoc amber); Henry "missing receipt?" / "categorize this bill" nudges (capture-now/clean-up-later).
 
-## Customer Billing — dovetail the AR brief
-Project-scoped billing. **Draws table** (`doc_type=draw`: Label · Status · % Complete · Total · % of Contract, with a *"Drawn to date $X of $Y · Z%"* header from `getProjectDrawSummary`) + **Invoices table** (final + legacy). Actions: **+ New draw** (`DrawForm` → `createMilestoneInvoiceAction`, live GST preview), **Invoice full estimate** (gated on approved, `createInvoiceFromEstimateAction`), **Generate final** (`generateFinalInvoiceAction`), per-project **GST-on-draws** override; per-row **Mark paid** (`RecordPaymentDialog`) + **View** (→ shared `/invoices/[id]`).
-- **Dovetail `briefs/invoices.md`:** same `RecordPaymentDialog`, same draw vocabulary, same money discipline, same **peach "Ready to bill draw N — $X?"** Henry prompt. This tab is the per-project face; the AR screen is the cross-project roll-up — they must feel like one system. **Make the draw schedule legible** ("Draw 3 of 5") — the cure for the orphan-draft problem the AR brief names.
+## Labour (was "Time")
+Labour hours (`time_entries`) + worker invoices, by worker, at the assignment's pay/charge rate — rolling into budget actuals (`getBudgetVsActual` labour). Restyle to Paper + `Money`; show approve-hours flow; this is the **internal** money-out tab paired with **Spend**. (Rename is label-only; route key stays `time`.)
 
-## Secondary tabs (keep; light treatment, Paper restyle)
-- **Time** — labour `time_entries` + worker invoices.
-- **Schedule** — Gantt tasks, **v0 read-only** (no CPM in V1 — per Scope Lock); bootstrap panel when empty; customer-notify with Undo.
-- **Messages** — `project_messages` thread; prompts to enable the portal if off.
-- **Gallery** — before/after/progress photos (first-class per Scope Lock); upload + auto-tag (`acceptAiTagAction`).
-- **Portal** — enable/visibility, phases, decisions, and **`PortalUpdateForm`** (the manual client-update composer — see Henry gap).
-- **Selections** — per-room selections + the customer **idea-board** (unread badge in the shell).
-- **Documents** — file store + **Home Record** generate/email + trade contacts.
-- **Notes** — unified notes/memos/events feed including Henry items (`henry_q`/`henry_a`/`reply_draft`).
-- **Crew** — 14-day assignment grid + roster.
+## Billing (was "Customer Billing")
+Project-scoped billing — **Draws** (`doc_type=draw`: Label · Status · % Complete · Total · % of Contract + "Drawn to date $X of $Y") + **Invoices** (final + legacy). Actions: **+ New draw** (`createMilestoneInvoiceAction`, live GST preview), **Invoice full estimate** (gated on approved), **Generate final**; per-row **Mark paid** (`RecordPaymentDialog`) + **View** (→ shared `/invoices/[id]`). Dovetail `invoices.md`: same `RecordPaymentDialog`, same draw vocabulary, the **peach "Ready to bill draw N — $X?"** Henry prompt, legible "Draw 3 of 5."
+
+## Photos · Documents · Schedule (secondary/work tabs)
+- **Photos** — before/after/progress/concern library; upload + auto-tag (`acceptAiTagAction`); portal-visible flag drives what Client shares.
+- **Documents** — internal file store + **Home Record** generate/email + trade contacts; client-facing docs surface in Client.
+- **Schedule** — the job's timeline (milestones/phases/tasks); **v0 read-only** (no CPM in V1 per Scope Lock). Will host the **crew-day slice** when the dispatch board lands (below). The "Electrical dates locked" cue belongs here.
+
+## Crew scheduling — a cross-project surface (deferred)
+Crew **scheduling** (who's on which site which day = `project_assignments` with a set `scheduled_date`) is inherently **cross-project** — a worker is one body across all jobs. So it wants a **global dispatch board in the left nav** (account-level), the same `project_assignments` data, which **feeds** the project. The project keeps a **filtered slice** ("this job's crew days," on Schedule), read-mostly with light write-back — *one model, two scopes; not a separate engine, not just a link.*
+- **V1:** ship the **roster** (the Details-card checklist, `scheduled_date` null) now; **defer** the dated grid + the global dispatch board (Scope Lock defers scheduling; Schedule is v0 read-only). **The global dispatch board earns its own brief.**
 
 ## Henry intelligence (built · dead · gap)
-- **Built/live:** `VarianceTab` margin numbers (Overview + Budget header); the **scope-diff** with `henry_suggests`; Notes-tab Henry Q&A / reply-draft; `ProjectIntakeZone` classify-and-file; photo auto-tag.
-- **DEAD — revive it:** `getProjectInsights` + `henry-insight-strip.tsx` (rule-based over/under-budget · unsent-changes · on-track) are built but **wired nowhere** (docstring still says "Budget page (Executing mode)"). This is the engine for the **Overview attention strip** above — the cheapest big win in the Hub.
-- **GAP — wire Pulse to the project:** Henry's **auto-drafted client update** (`UpdateClientButton` → `draftPulseAction`/`approvePulseAction` — Henry drafts a progress update from project activity, operator reviews + sends SMS/email) lives **only on the legacy `jobs` surface**. The project hub has only the **manual** `PortalUpdateForm`. **Target:** bring Pulse to the Portal/Overview surface — Henry drafts, operator approves + sends (never auto-send). This is the headline Henry-leverage gap on the execution side.
-- Discipline: Henry is the guide, the GC is the hero; embedded intelligence, not a chat box; nothing customer-facing auto-sends.
+- **Built/live:** `VarianceTab` margin numbers; the **scope-diff** with `henry_suggests`; intake classify-and-file (`ProjectIntakeZone`); photo auto-tag.
+- **DEAD — revive it:** `getProjectInsights` + `henry-insight-strip.tsx` → the **Overview attention strip** (the cheapest big win).
+- **GAP — wire Pulse to the project:** the Henry **auto-drafted client update** (`draftPulseAction`/`approvePulseAction` — Henry drafts a progress update from project activity → operator approves → sends SMS/email) lives **only on the legacy jobs surface**. The project hub has only the *manual* `PortalUpdateForm`. Bring Pulse into the **Client hub** (Portal & Updates). Henry drafts; operator sends; never auto-send.
+- **Henry-prompt chrome** where it appears: ✦ HENRY + rust left-border + rust action; **fill = meaning** (peach = ready-to-bill/positive, warn-soft = caution, danger-soft = at-risk, never danger-red on a positive). Crew default rates are plain inherited data, not a Henry surface.
 
 ## Role variations
-- **Owner / admin / member:** full Hub incl. cost/margin/spend (RLS tenant-scoped, role-agnostic for project data).
-- **Worker:** field capture only, on assigned projects, via `/w` — photos, time, assigned tasks, expenses (if `can_log_expenses`); **never** sees margin, costs, billing, or other projects. (The worker app is its own surface — not this screen, but the Hub's captured truth comes from it.)
-- **Homeowner:** the public **portal** only (phases, decisions, shared photos, messages, pay) — never the Hub; never cost/markup/margin/other customers. The portal boundary is load-bearing.
+- **Owner / admin / member:** full Hub incl. cost/margin/spend/labour. (Crew assignment is **owner/admin only** — `assignWorkerAction`.)
+- **Worker:** field capture only, assigned projects, via `/w` — never margin/costs/billing/other projects.
+- **Homeowner:** the public **portal** only (the Client hub is the operator-side mirror) — never the Hub; never cost/markup/margin.
 
 ## Mobile vs desktop
-**"Mobile is for doing work; desktop is for thinking work"** (Project Hub spec). Project Overview is the one surface equally critical on both.
-- **Desktop:** the full cockpit + dense Budget/Spend tables + multi-line authoring/reconciliation.
-- **Mobile:** glance the **cockpit attention strip + margin/draws health**, **capture** (the `ProjectIntakeZone` drop-zone, photos, voice memo), check **Schedule**, log **Time**, fire **quick actions** (mark a draw paid, approve a Pulse draft, answer a message). Dense tables → **stacked cards** (Budget category cards: name · estimate · spent · remaining + a thin bar; Spend cards by type). Tab nav = `<select>`. 44px+ targets. The diff-review + send dialogs → bottom sheets.
+*"Mobile = doing work; desktop = thinking work."* Overview is critical on both.
+- **Desktop:** full cockpit + dense Budget/Spend/Labour tables + multi-line authoring/reconciliation; Details card as a popover.
+- **Mobile:** glance the **cockpit attention strip + status badge**, **capture** (`✦ Add` drop-zone, photos, voice), check Schedule, log Labour, fire quick actions (mark a draw paid, approve a Pulse draft, answer a message). Dense tables → stacked cards; tab nav = `<select>`; Details card → a **sheet** (incl. the Crew checklist); diff-review/send → bottom sheets.
 
 ## Financial / Canadian
-- **CAD**, tabular-nums, de-emph cents everywhere money appears. **GST/HST** province-aware on draws/finals (live preview in `DrawForm`); GST-on-draws mode per project. **Management fee** = the cost-plus markup; **cost-plus vs fixed-price** toggle (`BillingModeEditor`) governs final-invoice math. **No holdback.** WCB/place-name texture where relevant.
+**CAD**, tabular-nums, de-emph cents via `Money` everywhere. **GST/HST** province-aware on draws/finals; **management fee** = the cost-plus markup; cost-plus vs fixed-price (`BillingModeEditor`, now in the Details card) governs the final invoice. **No holdback.** WCB/place-name texture.
 
 ## States
-- **Just approved (entering execution):** Overview cockpit, empty-ish attention strip ("on track — nothing needs you"), budget collapsed/actuals-forward, scope baseline = "Original estimate."
-- **In flight:** attention strip populated; unsent-changes chip when scope diverges; draws being billed.
-- **At risk:** margin-at-risk negative → danger health chip + top of attention strip.
-- **Complete / closeout:** final invoice generated; the closeout actions (Home Record, gallery, final paid).
-- **On hold / cancelled:** muted; clear status badge; actions appropriately gated.
-- **Loading:** the existing per-section skeletons (keep).
+- **Just approved (entering execution):** Overview cockpit, calm attention strip, budget collapsed/actuals-forward, baseline = "Original estimate."
+- **In flight:** attention strip populated; unsent-changes chip when scope diverges; draws billed.
+- **At risk:** margin-at-risk negative → danger at the top of the strip + the lifecycle/health read on Overview (not the header).
+- **Complete / closeout:** final invoice; Home Record; gallery; final paid.
+- **On hold / cancelled:** muted; clear status badge; actions gated.
+- **Loading:** per-section skeletons (keep).
 
 ## Visual identity
-Deepened **Paper** palette; white cards float on warm paper; solid hairlines; near-black ink. **Three type sizes (16/14/12)** + the 4-step ink ramp (the Budget table currently breaks this). **Rust is the single accent** — primary CTA + Henry action buttons; status/over-budget via `status-tokens.ts` soft pairs (never raw red/amber/green/blue). **Henry prompts carry the consistent chrome** (✦ HENRY + rust left-border + rust action; **fill reflects meaning** — peach = ready-to-bill/positive, warn-soft = caution, danger-soft = at-risk, white = neutral; **never danger-red on a positive**). Money right-aligned, tabular, de-emph cents. Mono-uppercase eyebrows for metric labels.
+Deepened **Paper**; white cards on warm paper; solid hairlines; near-black ink. The **header is calm identity chrome** — name + status + quiet customer + one ghost action + an overflow; no metric furniture. **Three type sizes (16/14/12)** + the ink ramp. **Rust is the single accent** (primary CTA + Henry actions); status/over-budget via `status-tokens.ts` soft pairs. **Henry prompts** carry the chrome + fill-reflects-meaning rule. Money right-aligned, tabular, de-emph cents. Mono-uppercase eyebrows for metric labels (on the pages that own them).
 
 ## Accessibility
-WCAG 2.2 AA: near-black ink on white; never color-only for status/margin/over-budget (pair with label + icon); inline editors keep the §4 keyboard contract + focus ring; tab nav + `<select>` keyboard-operable; attention-strip items are real links/buttons with focus order; ≥44px targets on mobile capture + quick actions; the cockpit health/margin figures are reachable and announce their state.
+WCAG 2.2 AA: near-black ink on white; never colour-only for status/margin/over-budget (label + glyph); the `▾` Details trigger + `⋯` overflow are labeled, focus-ringed, keyboard-operable; the Crew checklist + override disclosures are keyboard-reachable; tab nav + `<select>` operable; attention-strip items are real links/buttons; ≥44px targets on mobile capture + quick actions.
 
 ## Open questions
-- **Tab IA (the 13):** fold/group toward the spec's ~10-section, Overview-led shape, or keep the current 6+7? Needs a deliberate call (don't sprawl further). *(Bigger discussion — decide off the OD output.)*
-- **Reviving `getProjectInsights`:** confirm the rule set is what we want surfaced (over/under-budget, unsent-changes, on-track) and where it lives (Overview strip only, or also a thin Budget-tab banner).
-- **Pulse → project:** wire the existing jobs-side Pulse to the project Portal/Overview, or build fresh? (Lean: reuse `draftPulseAction`/`approvePulseAction`.) Sequencing vs the rest of V1?
-- **Spend "Committed" reconciliation:** confirm the single Committed = sub-quotes + POs definition matches `VarianceTab` and the Budget table everywhere.
-- **"Notify customer (non-billable)" path:** is a portal-update route for internal-but-visible scope changes wanted, distinct from a billable CO?
-- **Shared Budget component:** this brief + `estimate.md` must be designed so OD produces ONE adaptive table. Generate them together or back-to-back; critique the seam explicitly.
+- **Notes → Overview activity** — confirm folding the internal Notes feed (incl. `henry_q`/`henry_a`) into the Overview timeline vs keeping a light internal tab.
+- **Client hub click-cost** — default-to-Messages + badge-on-tab is the mitigation; validate it doesn't slow the most-common action too much.
+- **Global dispatch board** — its own brief; confirm the project Schedule "crew-day slice" is the right per-project view when it lands.
+- **Assign action reads worker default** — build-check that blank overrides inherit `worker_profiles` defaults end-to-end (not stored null without a COALESCE downstream).
+- **% complete fully off the header** — confirm (it's on Overview); or a thin hairline progress line under the title if missed.
+- **Reviving `getProjectInsights`** — confirm the rule set + that the strip lives on Overview only.
+- **Pulse → project** — reuse `draftPulseAction`/`approvePulseAction` into the Client hub; sequencing vs the rest of V1.
