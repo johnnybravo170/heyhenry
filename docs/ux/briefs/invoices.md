@@ -58,7 +58,12 @@ No `due_date`; reuse the rule the dashboard already computes — **`status='sent
 
 ## Mobile vs desktop
 - **Desktop:** cockpit + filter bar + project-grouped expandable table.
-- **Mobile:** cockpit collapses to **Ready-to-bill · Outstanding · Overdue**. Projects render as **stacked cards** (name + customer, billing position, status-rollup chip) that **tap to expand** into their draws/invoices. "Mark paid" / "Send reminder" / "Bill draw" are **44px+** thumb targets. Filters in a sheet / native `<select>`. PATTERNS.md §18.
+- **Mobile:**
+  - **Cockpit** → the three numbers only (Ready-to-bill · Outstanding · Overdue) — no hidden 4th to scroll past. **Header:** title + search only (no Import button — it's in the Import hub).
+  - **Collapsed project card:** name + customer · status-rollup chip (`Ready $X` / `N overdue` / `Paid in full` / `Draft`). Tap to expand.
+  - **Expanded card MUST show both, in order** *(the v1 mock showed only the position — that was the bug)*: **(1)** the billing position (Contract → Billed → Paid → Outstanding → **Remaining**), then **(2)** the **draws/invoices list** — each row: doc-type (Draw N / Invoice) + amount + status badge (incl. **overdue + age**) + **its action** (Mark paid / Send reminder / Bill draw). Ready-to-bill projects show the Henry "bill draw N?" prompt + Bill-draw button.
+  - **Sticky project header on scroll.** A long draw list scrolls the project title off-screen — but each draw row carries a *money action* (Send reminder / Mark paid / Bill draw), so the operator must always see *whose* money they're acting on. Pin a **thin header (project name + customer + rollup chip)** while within that project's draws, swapping to the next as you scroll past. Keep pinned chrome minimal — the **cockpit + filter row yield on scroll** (scroll away / collapse to a thin strip) so two thick bars never stack on a phone. Standard sticky-section-header pattern.
+  - All actions **44px+** thumb targets. **Filters (Status / Sort) → a single sheet control, NOT a horizontal scroll-row** (PATTERNS.md §9 — mobile = native select). Honor grid-cols-1 + `min-w-0` (PATTERNS.md §18).
 
 ## Financial / Canadian
 - **GST/HST breakdown** per invoice (in the expanded rows; de-emph cents). Flag `missing-gst-notice` where absent. **No GST-collected total here** — that's the Expenses GST reports.

@@ -15,7 +15,7 @@ The operator's directory of every relationship the business tracks — customers
 - Leads arrive from a real pipeline (lead-capture widget, lead-intake form, notification emails) and land here.
 
 ## Layout
-- **Header:** "Contacts" + subhead "{n} contacts on file" (or "{n} shown of {m}" when filtered). Right: **Import with Henry** (ghost, Sparkles) + **New contact** (primary, ink, rust reserved for this one CTA). *(Drop the redundant third "Add new" button currently pinned in the filter row — keep one create path.)*
+- **Header:** "Contacts" + subhead "{n} contacts on file" (or "{n} shown of {m}" when filtered). Right: **New contact** (primary, ink, rust reserved for this one CTA). **Import with Henry is NOT a header action** — bulk contact import is an onboarding/migration task, so it lives in the standalone **Import hub** (same call as Billing). *(Also drop the redundant "Add new" button currently pinned in the filter row — keep one create path.)*
 - **Filter bar (keep — works today):**
   - **Search** — name / email / phone / city, debounced, URL-state (`?q=`). Keep.
   - **Kind chips:** All · Lead · Customer · Vendor · Sub-trade · Inspector · Referral partner · Other (`?kind=`). When **Customer** is active, a second row reveals subtype chips: All customers · Residential · Commercial (`?type=`). Keep this hierarchy. *(No Agent chip — de-scoped for GC.)*
@@ -37,7 +37,7 @@ Today `customer-type-badge.tsx` paints **8 raw Tailwind hues** (blue / amber / e
 - **⚠ This is a PATTERNS.md §7 pattern with named siblings** (project / invoice / job / quote / change-order status badges all read from `status-tokens.ts`). Changing the kind palette is an explicit decision — **surface it for blessing; don't silently repaint.** Status badges elsewhere stay as-is.
 
 ## Henry intelligence
-- **Import with Henry** (real, PATTERNS.md §16) — AI-classified bulk import with deterministic dedup tiers, ephemeral preview, `import_batch` provenance + one-click rollback. Keep the entry point prominent.
+- **Import with Henry** (real, PATTERNS.md §16) — AI-classified bulk import (dedup tiers, ephemeral preview, `import_batch` provenance + rollback). **Lives in the standalone Import hub, not on this screen** — onboarding/migration, not a daily directory action (same call as Billing).
 - **Create-time duplicate detection** (real — `existing-matches-banner.tsx`, `confirmCreate`): when adding a contact, Henry surfaces strong/weak matches with "Use this / Create anyway." Keep.
 - **List-level duplicate surfacing + merge** *(target — flag as such):* the dedup engine (`lib/customers/dedup.ts`) already exists; surface its hits at the directory level as a **quiet passive banner / quick-filter** — e.g. "2 possible duplicates — review" → merge flow. (The live data shows "Home Depot Pro" as both a Lead **and** a Vendor — exactly this case.) Label as Henry; merge is reversible (soft-delete) — give an undo.
 - **Stale-lead nudge** *(target):* leads with no project past N days lean to the stale cue / a "needs attention" quick-filter. Henry as embedded triage, **not a chat box.**
@@ -55,8 +55,9 @@ Today `customer-type-badge.tsx` paints **8 raw Tailwind hues** (blue / amber / e
   - **Line 3:** the one signal — lead → "No project yet · 18d"; customer → "2 active · $4,200 due" — with the "messaging off" cue inline when present.
   - **No location, no added-date.** Internal vertical gap + bottom padding so Line 3 can't collide; section labels get clear top/bottom margin.
   - **Header subhead stays short on mobile** ("24 contacts") — the kind chips already carry the per-kind counts; don't repeat "· 6 leads · 8 customers" (it wraps).
-  - **Keep "Import with Henry" OUT of the kind-chip scroll row** — kind chips own that row; Import lives under the "+" / a secondary spot.
-  Filters collapse into a sheet / native `<select>` (PATTERNS.md §9). New contact + Import thumb-reachable; **44px+ touch targets**; honor the grid-cols-1 + `min-w-0` + hide-hover-only rules (PATTERNS.md §18).
+  - **No Import button on this screen** — bulk contact import lives in the Import hub (onboarding/migration).
+  - **Filters → a single sheet control, NOT a horizontal scroll-row.** The 8 kinds don't fit a chip strip on a phone (only ~3 show; the rest *and the active filter* hide off-screen). Use one **"Kind: All ▾"** button (active kind + count) that opens a sheet listing every kind with its count, Customer → Residential/Commercial nested. This is the **PATTERNS.md §9** rule (mobile = native select, never horizontal scroll). *Desktop keeps the inline chips — all 8 fit, no scroll.*
+  New contact ("+") thumb-reachable; **44px+ touch targets**; honor the grid-cols-1 + `min-w-0` + hide-hover-only rules (PATTERNS.md §18).
 
 ## Financial / Canadian
 - **AR outstanding** in **CAD**, tabular-nums, de-emphasized cents — owner/admin only.
