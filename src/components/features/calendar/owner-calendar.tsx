@@ -474,20 +474,34 @@ export function OwnerCalendar({
         )}
       </div>
 
-      {/* Mobile stacked day list */}
+      {/* Mobile: by-worker = a "who's where" day snapshot (crew → their job
+          on the anchored day); other views = the stacked day list. */}
       <div className={cn('sm:hidden', pending && 'pointer-events-none opacity-70')}>
-        <MobileDayList
-          view={view}
-          windowStart={windowStart}
-          windowEnd={windowEnd}
-          anchorMonth={anchor.getMonth()}
-          byDate={byDate}
-          projectById={projectById}
-          workerById={workerById}
-          onOpenAssign={(date) => openAssign(date, date, null)}
-          onRemove={handleRemove}
-          tz={tz}
-        />
+        {view === 'by-worker' ? (
+          <MobileByWorkerDay
+            day={windowStart}
+            workers={workers}
+            byDate={byDate}
+            projectById={projectById}
+            unavailByKey={unavailByKey}
+            onOpenAssign={(workerProfileId, date) => openAssign(date, date, null, workerProfileId)}
+            onSelectChip={(a) => setActiveChip(a.id)}
+            tz={tz}
+          />
+        ) : (
+          <MobileDayList
+            view={view}
+            windowStart={windowStart}
+            windowEnd={windowEnd}
+            anchorMonth={anchor.getMonth()}
+            byDate={byDate}
+            projectById={projectById}
+            workerById={workerById}
+            onOpenAssign={(date) => openAssign(date, date, null)}
+            onRemove={handleRemove}
+            tz={tz}
+          />
+        )}
       </div>
 
       {/* Chip popover (action sheet for the focused chip). */}
@@ -1442,6 +1456,124 @@ function ProjectRow({
         })}
       </div>
     </>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Mobile: by-worker "who's where" day snapshot
+// ----------------------------------------------------------------------
+
+function MobileByWorkerDay({
+  day,
+  workers,
+  byDate,
+  projectById,
+  unavailByKey,
+  onOpenAssign,
+  onSelectChip,
+  tz,
+}: {
+  day: string;
+  workers: CalendarWorker[];
+  byDate: Map<string, CalendarAssignment[]>;
+  projectById: Map<string, CalendarProject>;
+  unavailByKey: Map<string, string>;
+  onOpenAssign: (workerProfileId: string, date: string) => void;
+  onSelectChip: (assignment: CalendarAssignment) => void;
+  tz: string;
+}) {
+  const crew = sortCrew(workers);
+  const dayItems = byDate.get(day) ?? [];
+
+  if (crew.length === 0) {
+    return (
+      <div className="rounded-lg border bg-background p-6 text-center text-sm text-muted-foreground">
+        No crew yet. Invite a worker from{' '}
+        <Link href="/settings/team" className="underline">
+          Settings › Team
+        </Link>
+        .
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 px-1 text-sm font-medium">
+        {new Intl.DateTimeFormat('en-CA', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+        }).format(parseIso(day))}
+        {isToday(day, tz) ? (
+          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-primary-foreground">
+            Today
+          </span>
+        ) : null}
+      </div>
+
+      {crew.map((w) => {
+        const items = dayItems.filter((a) => a.worker_profile_id === w.profile_id);
+        const conflict = new Set(items.map((a) => a.project_id)).size >= 2;
+        const reason = unavailByKey.get(`${w.profile_id}:${day}`);
+        return (
+          <div
+            key={w.profile_id}
+            className={cn(
+              'rounded-lg border bg-background',
+              conflict && 'border-destructive/50 bg-destructive/10',
+            )}
+          >
+            <div className="flex items-center justify-between gap-2 px-3 py-2">
+              <span className="flex items-center gap-2">
+                <span className="text-sm font-medium">{w.display_name}</span>
+                {w.worker_type === 'subcontractor' ? (
+                  <span className="rounded bg-muted px-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    sub
+                  </span>
+                ) : null}
+                {conflict ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-destructive">
+                    <AlertTriangle className="size-3" /> Conflict
+                  </span>
+                ) : null}
+              </span>
+              {items.length === 0 && !reason ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenAssign(w.profile_id, day)}
+                  className="text-xs font-medium text-primary"
+                >
+                  Tap to schedule
+                </button>
+              ) : null}
+            </div>
+            {items.length > 0 || reason ? (
+              <div className="flex flex-wrap gap-1 border-t px-3 py-2">
+                {items.map((a) => {
+                  const proj = projectById.get(a.project_id);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => onSelectChip(a)}
+                      className={cn('rounded border px-2 py-1 text-xs', projectColor(a.project_id))}
+                    >
+                      {proj?.name ?? 'Project'}
+                    </button>
+                  );
+                })}
+                {items.length === 0 && reason ? (
+                  <span className="rounded border border-dashed border-muted-foreground/30 bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
+                    {REASON_LABELS[reason] ?? 'Off'}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
