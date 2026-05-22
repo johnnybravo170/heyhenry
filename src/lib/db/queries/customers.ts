@@ -198,6 +198,37 @@ export async function countCustomers(filters: CustomerListFilters = {}): Promise
   return count ?? 0;
 }
 
+export type ContactKindCounts = Record<CustomerRow['kind'], number> & { all: number };
+
+/**
+ * Per-kind contact tallies for the directory filter chips. One pass over the
+ * tenant's kind column (mirrors countProjectsByLifecycleStage). RLS scopes it.
+ */
+export async function countCustomersByKind(): Promise<ContactKindCounts> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('customers').select('kind').is('deleted_at', null);
+  if (error) {
+    throw new Error(`Failed to count customers by kind: ${error.message}`);
+  }
+  const counts: ContactKindCounts = {
+    all: 0,
+    lead: 0,
+    customer: 0,
+    vendor: 0,
+    sub: 0,
+    agent: 0,
+    inspector: 0,
+    referral: 0,
+    other: 0,
+  };
+  for (const row of data ?? []) {
+    const k = (row as { kind?: CustomerRow['kind'] }).kind;
+    if (k && k in counts) counts[k] += 1;
+    counts.all += 1;
+  }
+  return counts;
+}
+
 export async function getCustomer(id: string): Promise<CustomerRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase

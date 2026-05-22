@@ -17,6 +17,10 @@ export type ProjectCustomerSummary = {
   /** Nullable: legacy customers (and contacts created via lead intake) may
    *  not have a categorical type set yet. Don't gate rendering on it. */
   type: 'residential' | 'commercial' | 'agent' | null;
+  /** Job-site locale, surfaced under the project name on the list. Sourced
+   *  from the customer's address (projects carry no address of their own). */
+  city: string | null;
+  province: string | null;
 };
 
 export type ProjectRow = {
@@ -104,7 +108,7 @@ export type LifecycleStageCounts = Record<LifecycleStage, number>;
 const PROJECT_COLUMNS =
   'id, tenant_id, customer_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, is_cost_plus, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, estimate_approval_method, estimate_approved_by_member_id, estimate_approval_proof_paths, estimate_approval_notes, terms_text, document_type, deleted_at, created_at, updated_at';
 
-const PROJECT_WITH_CUSTOMER_SELECT = `${PROJECT_COLUMNS}, customers:customer_id (id, name, type)`;
+const PROJECT_WITH_CUSTOMER_SELECT = `${PROJECT_COLUMNS}, customers:customer_id (id, name, type, city, province)`;
 
 function extractCustomer(raw: unknown): ProjectCustomerSummary | null {
   if (!raw) return null;
@@ -118,7 +122,13 @@ function extractCustomer(raw: unknown): ProjectCustomerSummary | null {
     obj.type === 'residential' || obj.type === 'commercial' || obj.type === 'agent'
       ? obj.type
       : null;
-  return { id: obj.id, name: obj.name, type };
+  return {
+    id: obj.id,
+    name: obj.name,
+    type,
+    city: typeof obj.city === 'string' ? obj.city : null,
+    province: typeof obj.province === 'string' ? obj.province : null,
+  };
 }
 
 function normalizeProject(row: Record<string, unknown>): ProjectWithCustomer {

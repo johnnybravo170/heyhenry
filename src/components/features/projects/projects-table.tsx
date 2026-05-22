@@ -9,7 +9,7 @@
  * only). One progress number + an "over budget" flag — no second burn metric.
  */
 
-import { ChevronDown, ChevronsUpDown, ChevronUp, TriangleAlert } from 'lucide-react';
+import { ChevronDown, ChevronsUpDown, ChevronUp, MapPin, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
@@ -30,6 +30,8 @@ type ProjectRow = {
   work_status_pct: number;
   cost_burn_pct: number;
   customer: { id: string; name: string } | null;
+  /** Job-site locale ("Abbotsford · BC") shown under the project name. */
+  region: string | null;
 };
 
 type CustomerOption = { id: string; name: string };
@@ -142,6 +144,12 @@ export function ProjectsTable({
                       </Link>
                       <ProjectNameEditor projectId={p.id} name={p.name} variant="inline" />
                     </span>
+                    {p.region ? (
+                      <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3" aria-hidden />
+                        {p.region}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {p.customer ? (
@@ -192,6 +200,12 @@ export function ProjectsTable({
                 </Link>
                 <ProjectStatusBadge stage={p.lifecycle_stage} />
               </div>
+              {p.region ? (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="size-3" aria-hidden />
+                  {p.region}
+                </span>
+              ) : null}
               {p.customer ? (
                 <Link
                   href={`/contacts/${p.customer.id}`}
