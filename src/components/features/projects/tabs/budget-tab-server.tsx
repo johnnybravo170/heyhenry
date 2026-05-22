@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { AppliedChangeOrdersBanner } from '@/components/features/change-orders/applied-co-banner';
 import { BudgetCategoriesTable } from '@/components/features/projects/budget-categories-table';
+import {
+  BudgetAlertChips,
+  BudgetSummaryPanel,
+} from '@/components/features/projects/budget-cockpit';
 import { EstimateApprovalActions } from '@/components/features/projects/estimate-approval-actions';
 import { EstimateFeedbackCard } from '@/components/features/projects/estimate-feedback-card';
 import { EstimateSentBanner } from '@/components/features/projects/estimate-sent-banner';
@@ -13,11 +17,12 @@ import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getProjectChangeOrderContributions } from '@/lib/db/queries/change-orders';
 import { getCostLineActualsByProject } from '@/lib/db/queries/cost-line-actuals';
-import { listCostLines } from '@/lib/db/queries/cost-lines';
+import { getProjectProgress, getVarianceReport, listCostLines } from '@/lib/db/queries/cost-lines';
 import { listEstimateSnippets } from '@/lib/db/queries/estimate-snippets';
 import { listMaterialsCatalog } from '@/lib/db/queries/materials-catalog';
 import { getBudgetVsActual } from '@/lib/db/queries/project-budget-categories';
 import { getEstimateViewStats } from '@/lib/db/queries/project-events';
+import { getUnsentDiff } from '@/lib/db/queries/project-scope-diff';
 import { listProjectVersions } from '@/lib/db/queries/project-versions';
 import { getProject } from '@/lib/db/queries/projects';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -59,6 +64,9 @@ export default async function BudgetTabServer({
     tenant,
     viewStats,
     snippets,
+    progress,
+    variance,
+    diff,
     { data: feedbackRowsRaw },
   ] = await Promise.all([
     getBudgetVsActual(projectId),
@@ -71,6 +79,9 @@ export default async function BudgetTabServer({
     getCurrentTenant(),
     getEstimateViewStats(projectId),
     listEstimateSnippets(),
+    getProjectProgress(projectId),
+    getVarianceReport(projectId),
+    getUnsentDiff(projectId),
     supabase
       .from('project_estimate_comments')
       .select('id, body, cost_line_id, seen_at, created_at')
@@ -124,8 +135,35 @@ export default async function BudgetTabServer({
   const showSendForApproval = sendable;
   const hasActionRow = showSendForApproval;
 
+  // Cockpit (alert chips + budget summary), per the budget OD. Margin /
+  // unsent-scope alerts are execution-posture concerns; the summary panel
+  // shows whenever there's scope.
+  const estimateCents = budget.total_estimate_cents;
+  const spentCents = budget.total_actual_cents;
+  const committedCents = budget.total_committed_cents;
+  const remainingCents = budget.total_remaining_cents;
+  const revenueCents = variance.estimated_cents;
+  const marginCents = revenueCents - spentCents - committedCents;
+  const marginPct = revenueCents > 0 ? Math.round((marginCents / revenueCents) * 100) : null;
+  const targetPct = Math.round((variance.mgmt_fee_rate ?? 0) * 100);
+  const marginAtRisk = marginPct !== null && marginPct < targetPct;
+  const baselineVersion = diff.has_baseline ? diff.baseline_version : null;
+  const unsentCount = diff.has_baseline ? diff.total_change_count : 0;
+  const isExecution = !isPreApproval;
+
   return (
     <div className="flex flex-col gap-3">
+      {isExecution ? (
+        <BudgetAlertChips
+          projectId={projectId}
+          marginPct={marginPct}
+          targetPct={targetPct}
+          marginAtRisk={marginAtRisk}
+          unsentCount={unsentCount}
+          unsentDeltaCents={diff.total_delta_cents}
+        />
+      ) : null}
+
       <EstimateSentBanner
         estimateStatus={estimateStatus}
         sentAt={(project?.estimate_sent_at as string | null) ?? null}
@@ -146,6 +184,10 @@ export default async function BudgetTabServer({
         appliedCount={coContributions.appliedOrder.length}
         projectId={projectId}
         versions={versions}
+        customerName={project?.customer?.name ?? null}
+        approvedAt={(project?.estimate_approved_at as string | null) ?? null}
+        baselineVersion={baselineVersion}
+        approvalCode={(project?.estimate_approval_code as string | null) ?? null}
       />
 
       {/* Approval-state actions: declined banner, manual-override metadata, */}
@@ -185,6 +227,18 @@ export default async function BudgetTabServer({
           <ScopeScaffoldGenerator projectId={projectId} />
           <StarterTemplatePicker projectId={projectId} />
         </>
+      ) : null}
+
+      {!isEmptyScope ? (
+        <BudgetSummaryPanel
+          projectId={projectId}
+          estimateCents={estimateCents}
+          spentCents={spentCents}
+          committedCents={committedCents}
+          remainingCents={remainingCents}
+          workStatusPct={progress.workStatusPct}
+          baselineVersion={baselineVersion}
+        />
       ) : null}
 
       <BudgetCategoriesTable
