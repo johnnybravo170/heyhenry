@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import {
   bulkAssignDatesAction,
   moveAssignmentToAction,
+  reassignAssignmentToWorkerAction,
   removeAssignmentAction,
 } from '@/server/actions/project-assignments';
 import { AssignWorkersDialog } from './assign-workers-dialog';
@@ -284,6 +285,38 @@ export function OwnerCalendar({
     });
   }
 
+  // By-worker pivot: dragging a chip cell-to-cell. Same worker → shift date
+  // (project unchanged); different worker → reassign the person (project
+  // unchanged, lands on the target day).
+  function handleByWorkerMove(input: {
+    assignmentId: string;
+    projectId: string;
+    fromWorkerProfileId: string;
+    fromDate: string;
+    toWorkerProfileId: string;
+    toDate: string;
+  }) {
+    if (input.fromWorkerProfileId === input.toWorkerProfileId && input.fromDate === input.toDate) {
+      return;
+    }
+    const sameWorker = input.fromWorkerProfileId === input.toWorkerProfileId;
+    startTransition(async () => {
+      const res = sameWorker
+        ? await moveAssignmentToAction({
+            assignment_id: input.assignmentId,
+            target_project_id: input.projectId,
+            target_date: input.toDate,
+          })
+        : await reassignAssignmentToWorkerAction({
+            assignment_id: input.assignmentId,
+            target_worker_profile_id: input.toWorkerProfileId,
+            target_date: input.toDate,
+          });
+      if (!res.ok) toast.error(res.error ?? 'Failed to move.');
+      else toast.success(sameWorker ? 'Moved.' : 'Reassigned.');
+    });
+  }
+
   function handleExtend(input: {
     projectId: string;
     workerProfileId: string;
@@ -406,6 +439,7 @@ export function OwnerCalendar({
             unavailByKey={unavailByKey}
             onOpenAssign={(workerProfileId, date) => openAssign(date, date, null, workerProfileId)}
             onSelectChip={(a) => setActiveChip(a.id)}
+            onMove={handleByWorkerMove}
             activeChipId={activeChip}
             tz={tz}
           />
@@ -628,6 +662,13 @@ function sortCrew(workers: CalendarWorker[]): CalendarWorker[] {
   );
 }
 
+type ByWorkerChipDrag = {
+  assignmentId: string;
+  projectId: string;
+  fromWorkerProfileId: string;
+  fromDate: string;
+};
+
 function ByWorkerGrid({
   windowStart,
   byDate,
@@ -636,6 +677,7 @@ function ByWorkerGrid({
   unavailByKey,
   onOpenAssign,
   onSelectChip,
+  onMove,
   activeChipId,
   tz,
 }: {
@@ -646,9 +688,19 @@ function ByWorkerGrid({
   unavailByKey: Map<string, string>;
   onOpenAssign: (workerProfileId: string, date: string) => void;
   onSelectChip: (assignment: CalendarAssignment) => void;
+  onMove: (input: {
+    assignmentId: string;
+    projectId: string;
+    fromWorkerProfileId: string;
+    fromDate: string;
+    toWorkerProfileId: string;
+    toDate: string;
+  }) => void;
   activeChipId: string | null;
   tz: string;
 }) {
+  const [chipDrag, setChipDrag] = useState<ByWorkerChipDrag | null>(null);
+
   const days: string[] = [];
   const start = parseIso(windowStart);
   for (let i = 0; i < 14; i++) {
@@ -716,6 +768,22 @@ function ByWorkerGrid({
               bookedDays={bookedDays}
               onOpenAssign={onOpenAssign}
               onSelectChip={onSelectChip}
+              chipDragActive={chipDrag !== null}
+              onChipDragStart={setChipDrag}
+              onChipDragEnd={() => setChipDrag(null)}
+              onCellDrop={(toWorkerProfileId, toDate) => {
+                if (chipDrag) {
+                  onMove({
+                    assignmentId: chipDrag.assignmentId,
+                    projectId: chipDrag.projectId,
+                    fromWorkerProfileId: chipDrag.fromWorkerProfileId,
+                    fromDate: chipDrag.fromDate,
+                    toWorkerProfileId,
+                    toDate,
+                  });
+                }
+                setChipDrag(null);
+              }}
               activeChipId={activeChipId}
               tz={tz}
             />
@@ -725,7 +793,8 @@ function ByWorkerGrid({
       <p className="border-t bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
         Each row is one crew member across all jobs. A{' '}
         <span className="font-medium text-destructive">red ⚠ cell</span> means they&rsquo;re booked
-        on two sites the same day. Tap an open cell to schedule, a chip for details.
+        on two sites the same day. Tap an open cell to schedule, a chip for details, or drag a chip
+        to another day or crew member to reschedule / reassign.
       </p>
     </div>
   );
@@ -740,6 +809,10 @@ function WorkerRow({
   bookedDays,
   onOpenAssign,
   onSelectChip,
+  chipDragActive,
+  onChipDragStart,
+  onChipDragEnd,
+  onCellDrop,
   activeChipId,
   tz,
 }: {
@@ -751,6 +824,10 @@ function WorkerRow({
   bookedDays: number;
   onOpenAssign: (workerProfileId: string, date: string) => void;
   onSelectChip: (assignment: CalendarAssignment) => void;
+  chipDragActive: boolean;
+  onChipDragStart: (drag: ByWorkerChipDrag) => void;
+  onChipDragEnd: () => void;
+  onCellDrop: (toWorkerProfileId: string, toDate: string) => void;
   activeChipId: string | null;
   tz: string;
 }) {
@@ -782,12 +859,25 @@ function WorkerRow({
           const reason = unavailByKey.get(`${worker.profile_id}:${iso}`);
 
           return (
+            // biome-ignore lint/a11y/noStaticElementInteractions: drop target wraps interactive chips/buttons; keyboard path is the chip/empty-cell buttons
             <div
               key={iso}
+              onDragOver={(e) => {
+                if (chipDragActive) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }
+              }}
+              onDrop={(e) => {
+                if (!chipDragActive) return;
+                e.preventDefault();
+                onCellDrop(worker.profile_id, iso);
+              }}
               className={cn(
                 'min-h-[52px] space-y-0.5 border-b border-r p-1 last:border-r-0',
                 isWeekend(iso) && 'bg-muted/10',
                 isToday(iso, tz) && 'ring-1 ring-inset ring-primary/40',
+                chipDragActive && 'bg-primary/5',
                 conflict &&
                   'bg-destructive/10 ring-1 ring-inset ring-destructive/50 dark:bg-destructive/20',
               )}
@@ -807,10 +897,22 @@ function WorkerRow({
                   <button
                     key={a.id}
                     type="button"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', a.id);
+                      onChipDragStart({
+                        assignmentId: a.id,
+                        projectId: a.project_id,
+                        fromWorkerProfileId: worker.profile_id,
+                        fromDate: iso,
+                      });
+                    }}
+                    onDragEnd={onChipDragEnd}
                     onClick={() => onSelectChip(a)}
                     title={proj?.name ?? 'Project'}
                     className={cn(
-                      'flex w-full items-center rounded border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:brightness-95',
+                      'flex w-full cursor-grab items-center rounded border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:brightness-95 active:cursor-grabbing',
                       projectColor(a.project_id),
                       activeChipId === a.id && 'ring-2 ring-foreground ring-offset-1',
                     )}
