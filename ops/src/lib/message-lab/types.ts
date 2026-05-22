@@ -94,6 +94,8 @@ export const messageEvalReactionSchema = z.object({
   decision: reactionDecisionSchema,
   reason: z.string(),
   comments: reactionCommentsSchema.partial().nullable(),
+  sample_count: z.number().int().default(1),
+  buy_votes: z.number().int().default(0),
   raw_text: z.string().nullable(),
   provider: z.string().nullable(),
   model: z.string().nullable(),
@@ -128,7 +130,12 @@ export type ArchetypeVerdict = {
   emoji: string;
   evidence_basis: Archetype['evidence_basis'];
   attractiveness_rank: number | null;
+  /** Majority verdict across the samples. */
   decision: 'buy' | 'no_buy';
+  /** How many of the parsed samples leaned buy, and how many parsed at all —
+   *  surfaced as a per-archetype lean ("2/3 buy") instead of a hard flip. */
+  buy_votes: number;
+  sample_count: number;
   reason: string;
   comments: Partial<ReactionComments> | null;
 };

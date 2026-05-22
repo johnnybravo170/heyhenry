@@ -102,17 +102,22 @@ export function MessageLabForm() {
 }
 
 function Results({ result }: { result: EvalResult }) {
-  const pct = Math.round(result.buy_ratio * 100);
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <span className="text-3xl font-semibold tracking-tight">
-          {result.buy_count}/{result.total}
-        </span>
-        <span className="text-[var(--muted-foreground)]">would buy ({pct}%)</span>
-        <span className="text-xs text-[var(--muted-foreground)]">
-          {result.spent_cents.toFixed(1)}¢
-        </span>
+      <div>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-2xl font-semibold tracking-tight">
+            Panel lean: {result.buy_count}/{result.total}
+          </span>
+          <span className="text-[var(--muted-foreground)]">archetypes lean buy</span>
+          <span className="text-xs text-[var(--muted-foreground)]">
+            {result.spent_cents.toFixed(1)}¢
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+          Comparative signal — use it to compare drafts on this same panel, not as a conversion
+          estimate. The objections and reasons below are the real output.
+        </p>
       </div>
 
       {result.objections.length > 0 ? (
@@ -142,14 +147,21 @@ function Results({ result }: { result: EvalResult }) {
                 ) : null}
                 <span className="text-xs text-[var(--muted-foreground)]">{v.evidence_basis}</span>
               </div>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  v.decision === 'buy'
-                    ? 'bg-emerald-500/15 text-emerald-600'
-                    : 'bg-red-500/15 text-red-600'
-                }`}
-              >
-                {v.decision === 'buy' ? 'Would buy' : "Wouldn't buy"}
+              <span className="flex items-center gap-2">
+                {v.sample_count > 0 ? (
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    {v.buy_votes}/{v.sample_count} buy
+                  </span>
+                ) : null}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    v.decision === 'buy'
+                      ? 'bg-emerald-500/15 text-emerald-600'
+                      : 'bg-red-500/15 text-red-600'
+                  }`}
+                >
+                  {v.decision === 'buy' ? 'Leans buy' : 'Leans no'}
+                </span>
               </span>
             </div>
             <p className="mt-2 text-sm">{v.reason}</p>
