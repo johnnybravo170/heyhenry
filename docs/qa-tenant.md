@@ -1,12 +1,17 @@
-# QA tenant
+# QA tenants
 
-There is one designated QA / demo tenant on **production**. Use it for any
-manual click-through testing — login flows, dashboards, the worker and
+Two designated QA / demo tenants on **production**, one per vertical. Use them
+for manual click-through testing — login flows, dashboards, the worker and
 bookkeeper layouts, sending estimates/invoices, etc.
 
-## The tenant
+**Pick the tenant that matches the feature's vertical.** Overflow Test Co is
+`pressure_washing` and has NO projects/budgets/change-orders — so it can't
+exercise the GC surfaces (Project Hub, Budget, Spend, Labour, Billing). For
+GC / renovation features, use **Maple Ridge Renos**.
 
-**Overflow Test Co** — `7098bd96-9cdd-47af-a412-3679af4cb536`, `pressure_washing` vertical.
+## Overflow Test Co (pressure_washing)
+
+`7098bd96-9cdd-47af-a412-3679af4cb536`, `pressure_washing` vertical.
 
 | Role | Login | Lands on |
 |---|---|---|
@@ -14,9 +19,23 @@ bookkeeper layouts, sending estimates/invoices, etc.
 | worker | `overflowtest+worker@example.com` | `/w` |
 | bookkeeper | `overflowtest+bookkeeper@example.com` | `/bk` |
 
-Shared password is in the ops knowledge vault (search "QA tenant credentials").
-It's not a real secret — the tenant is inert (see below) — but it's kept out
-of the repo anyway.
+## Maple Ridge Renos (renovation / GC)
+
+`a5925193-fedb-4164-bd7c-91122f6e1ef3`, `vertical='renovation'`. Seeded with a
+real project (**Maple Heights Full Home Reno**, active/approved) carrying 3
+budget sections · 8 categories · cost lines · realized spend (Framing is
+deliberately over budget) — so the Budget tab and other GC surfaces render
+populated.
+
+| Role | Login | Lands on |
+|---|---|---|
+| owner | `gcdemo@example.com` | `/dashboard` |
+| worker | `gcdemo+worker@example.com` | `/w` |
+
+Set up / re-seed with `node scripts/setup-gc-demo-tenant.mjs` (idempotent).
+
+Shared passwords are in the ops knowledge vault (search "QA tenant credentials").
+Not real secrets — both tenants are inert (see below) — but kept out of the repo.
 
 ## What `is_demo` does
 
