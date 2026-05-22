@@ -53,8 +53,8 @@ These six are the headline. They change what "trustworthy end to end" (the Scope
 **Objects:** `quotes` (+ `quote_line_items`, `quote_surfaces`) ← `customers`.
 **State machine:** `draft → sent → accepted | rejected | expired`.
 **Happy path:** `createQuoteAction` (`quotes.ts:70`, status `draft`, prices server-side) → operator refines lines → `sendQuoteAction` (`quotes.ts:262`, `draft→sent`, generates PDF, mints `approval_code`, emails a `/view/{id}` link).
-**Decision points:** fixed-price vs cost-plus framing; which scope buckets to include (intake may have flagged opt-outs as upsell-hidden CO candidates).
-**Failure modes:** AI misses a scope bucket → under-quote (scope-gap detection mitigates, not eliminates); surface/sqft pricing wrong (PW-shaped pricing carryover); email bounces → customer never sees it; quote sits unanswered → **stale** (the classic time-sink).
+**Decision points:** fixed-price vs cost-plus framing; which scope categories to include (intake may have flagged opt-outs as upsell-hidden CO candidates).
+**Failure modes:** AI misses a scope category → under-quote (scope-gap detection mitigates, not eliminates); surface/sqft pricing wrong (PW-shaped pricing carryover); email bounces → customer never sees it; quote sits unanswered → **stale** (the classic time-sink).
 **Approval points:** none internal; external approval is S2.
 **Role handoffs:** operator → (send) → homeowner.
 **Henry leverage (built):** voice/screenshot → quote draft; scope-gap detection; plain-English line descriptions; **Stale Quote Chaser** (`/quotes/stale`). The JVD/Lori case (30–60 min manual thread-parsing → 5 min review) is the canonical win here.
