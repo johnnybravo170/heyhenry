@@ -108,6 +108,9 @@ export default async function ProjectsPage({
       work_status_pct: prog?.workStatusPct ?? 0,
       cost_burn_pct: prog?.costBurnPct ?? 0,
       customer: p.customer ? { id: p.customer.id, name: p.customer.name } : null,
+      region: p.customer
+        ? [p.customer.city, p.customer.province].filter(Boolean).join(' · ') || null
+        : null,
     };
   });
 

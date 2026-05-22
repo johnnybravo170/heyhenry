@@ -7,7 +7,12 @@ import { CustomerSearchBar } from '@/components/features/customers/customer-sear
 import { CustomerTable } from '@/components/features/customers/customer-table';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { countCustomers, getContactSignals, listCustomers } from '@/lib/db/queries/customers';
+import {
+  countCustomers,
+  countCustomersByKind,
+  getContactSignals,
+  listCustomers,
+} from '@/lib/db/queries/customers';
 import {
   type ContactKind,
   type CustomerType,
@@ -66,9 +71,10 @@ export default async function ContactsPage({
   // Money (AR due) is owner/admin only — crew see activity without dollars.
   const canSeeMoney = tenant?.member.role === 'owner' || tenant?.member.role === 'admin';
 
-  const [customers, grandTotal] = await Promise.all([
+  const [customers, grandTotal, kindCounts] = await Promise.all([
     listCustomers({ ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     countCustomers(filters),
+    countCustomersByKind(),
   ]);
 
   const signals = await getContactSignals(
@@ -116,7 +122,7 @@ export default async function ContactsPage({
 
       {showSearchBar ? (
         <Suspense fallback={null}>
-          <CustomerSearchBar defaultQuery={query} />
+          <CustomerSearchBar defaultQuery={query} kindCounts={kindCounts} />
         </Suspense>
       ) : null}
 

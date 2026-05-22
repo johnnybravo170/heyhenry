@@ -40,7 +40,14 @@ const VISIBLE_KINDS = contactKinds.filter((k) => k !== 'agent') as Exclude<Conta
 /** Customer subtypes for the secondary filter row (agent lives on kind, not here). */
 const CUSTOMER_SUBTYPES = ['residential', 'commercial'] as const;
 
-export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
+export function CustomerSearchBar({
+  defaultQuery,
+  kindCounts,
+}: {
+  defaultQuery: string;
+  /** Per-kind tallies for the chip counts (+ `all`). */
+  kindCounts?: Partial<Record<ContactKind | 'all', number>>;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(defaultQuery);
@@ -139,10 +146,13 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
         }
         className="block w-full rounded-md border bg-background px-3 py-2 text-sm md:hidden"
       >
-        <option value="all">All kinds</option>
+        <option value="all">
+          All kinds{typeof kindCounts?.all === 'number' ? ` (${kindCounts.all})` : ''}
+        </option>
         {VISIBLE_KINDS.map((k) => (
           <option key={k} value={k}>
             {contactKindLabels[k]}
+            {typeof kindCounts?.[k] === 'number' ? ` (${kindCounts[k]})` : ''}
           </option>
         ))}
       </select>
@@ -152,11 +162,17 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Kind:
         </span>
-        <FilterChip label="All" active={currentKind === null} onClick={() => applyKind(null)} />
+        <FilterChip
+          label="All"
+          count={kindCounts?.all}
+          active={currentKind === null}
+          onClick={() => applyKind(null)}
+        />
         {VISIBLE_KINDS.map((k) => (
           <FilterChip
             key={k}
             label={contactKindLabels[k]}
+            count={kindCounts?.[k]}
             active={currentKind === k}
             onClick={() => applyKind(k)}
             data-kind={k}
@@ -208,11 +224,13 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
 
 function FilterChip({
   label,
+  count,
   active,
   onClick,
   ...rest
 }: {
   label: string;
+  count?: number;
   active: boolean;
   onClick: () => void;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -226,6 +244,11 @@ function FilterChip({
       {...rest}
     >
       {label}
+      {typeof count === 'number' ? (
+        <span className={cn('ml-1 tabular-nums', active ? 'opacity-70' : 'text-muted-foreground')}>
+          {count}
+        </span>
+      ) : null}
     </Button>
   );
 }
