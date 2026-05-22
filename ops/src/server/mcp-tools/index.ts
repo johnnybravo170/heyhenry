@@ -19,6 +19,7 @@ import { registerIdeaTools } from './ideas';
 import { registerIncidentTools } from './incidents';
 import { registerKanbanTools } from './kanban';
 import { registerKnowledgeTools } from './knowledge';
+import { registerMessageLabTools } from './message_eval';
 import { registerMetaTools } from './meta';
 import { registerReviewQueueTools } from './review_queue';
 import { registerRoadmapTools } from './roadmap';
@@ -74,6 +75,9 @@ export function registerScopedTools(server: McpServer, ctx: McpToolCtx) {
   }
   if (any(ctx.scopes, 'write:email')) {
     registerEmailTools(server, ctx);
+  }
+  if (any(ctx.scopes, 'read:message_lab', 'write:message_lab')) {
+    registerMessageLabTools(server, ctx);
   }
 
   // Meta tools (memory guide + cross-surface lookup + activity digest).

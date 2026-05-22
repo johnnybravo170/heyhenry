@@ -35,7 +35,9 @@ export type BoardCallKind =
   | 'chair_extract_cruxes'
   | 'chair_turn'
   | 'chair_synthesis'
-  | 'context_summary';
+  | 'context_summary'
+  // Message Lab: one archetype embodying a customer and reacting to copy.
+  | 'archetype_reaction';
 
 export type BoardModelChoice = {
   provider: LlmProviderName;
@@ -53,6 +55,10 @@ export const DEFAULT_BOARD_MODELS: Record<BoardCallKind, BoardModelChoice> = {
   chair_turn: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   chair_synthesis: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   context_summary: { provider: 'anthropic', model: 'claude-haiku-4-5' },
+  // Fast + cheap: accuracy comes from the dossier, not the model. ~10
+  // archetypes run in parallel per eval, so latency matters. Overridable
+  // per-eval if a run wants a heavier model.
+  archetype_reaction: { provider: 'anthropic', model: 'claude-haiku-4-5' },
 };
 
 // Kimi preset. Pinned to k2.6 (Apr 2026). Bumped from k2.5 in May 2026

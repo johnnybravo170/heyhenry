@@ -136,6 +136,8 @@ export type Scope =
   | 'write:board'
   | 'write:board:run'
   | 'write:board:review'
+  | 'read:message_lab'
+  | 'write:message_lab'
   | 'admin:maintenance'
   | 'admin:keys';
 
