@@ -36,15 +36,16 @@ The runtime tz on Vercel is UTC. Bare `Date.toLocaleDateString(...)` / `toLocale
 
 `tests/unit/timezone-no-bare-tolocale.test.ts` blocks bare `toLocale*` and bare `new Intl.DateTimeFormat(...)` calls in CI. See PATTERNS.md §23 for the full convention including adjacent gotchas (`Date.getHours()`, `Date.toLocaleString` on Dates) the lint rule doesn't catch.
 
-# QA tenant
+# QA tenants
 
-There is one designated QA / demo tenant on production — **Overflow Test Co**
-(`7098bd96-9cdd-47af-a412-3679af4cb536`) — for manual click-through testing of
-login, dashboards, the worker/bookkeeper layouts, and send flows. It's flagged
-`tenants.is_demo = true`, which suppresses all its outbound email + SMS and
-excludes it from platform metrics. Logins (owner / worker / bookkeeper) and the
-full convention are in `docs/qa-tenant.md`; the shared password is in the ops
-knowledge vault.
+Two designated QA / demo tenants on production, one per vertical — both flagged
+`tenants.is_demo = true` (suppresses outbound email + SMS, excluded from
+platform metrics). **Match the tenant to the feature's vertical:**
+- **Overflow Test Co** (`7098bd96-9cdd-47af-a412-3679af4cb536`, `pressure_washing`) — login, dashboards, worker/bookkeeper layouts, send flows.
+- **Maple Ridge Renos** (`a5925193-fedb-4164-bd7c-91122f6e1ef3`, `renovation`) — GC surfaces (Project Hub, Budget, Spend, Labour, Billing). Has a seeded project with a populated budget; Overflow has none. Re-seed via `node scripts/setup-gc-demo-tenant.mjs`.
+
+Logins + the full convention are in `docs/qa-tenant.md`; shared passwords are
+in the ops knowledge vault.
 
 Any new cross-tenant aggregate query must exclude demo tenants — see
 `src/lib/tenants/demo.ts`.
