@@ -229,22 +229,30 @@ export function CustomerTable({
                 {contactKindLabels[kind]} <span className="tabular-nums">{rows.length}</span>
               </h2>
               {rows.map((customer) => (
-                <Link
+                // Card is a div, not a link: the name uses a stretched overlay
+                // link (after:absolute) so the whole card is tappable WITHOUT
+                // nesting the tel:/mailto: anchors inside an outer <a> (invalid
+                // HTML → hydration mismatch). Reach links sit above via z-10.
+                <div
                   key={customer.id}
-                  href={`/contacts/${customer.id}`}
                   className={cn(
                     'relative flex flex-col gap-2 rounded-xl border bg-card p-4',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    'focus-within:ring-2 focus-within:ring-ring',
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-semibold">{customer.name}</span>
+                    <Link
+                      href={`/contacts/${customer.id}`}
+                      className="font-semibold after:absolute after:inset-0 after:rounded-[inherit] focus-visible:outline-none"
+                    >
+                      {customer.name}
+                    </Link>
                     <CustomerTypeBadge type={customer.type} kind={customer.kind} />
                   </div>
                   <div className="relative z-10 w-fit">
                     <Reach customer={customer} />
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <div className="relative z-10 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Signal
                       signal={customer.signal}
                       kind={customer.kind}
@@ -253,7 +261,7 @@ export function CustomerTable({
                     />
                     {customer.do_not_auto_message ? <MessagingOff /> : null}
                   </div>
-                </Link>
+                </div>
               ))}
             </section>
           );
