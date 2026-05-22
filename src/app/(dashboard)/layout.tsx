@@ -51,7 +51,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // and must keep their access.
 
   const timezone = tenant?.timezone || 'America/Vancouver';
-  const vertical = tenant?.vertical || 'pressure_washing';
+  const vertical = tenant?.vertical || 'renovation';
   const [operatorProfile, memberships, verticalPack, isAdmin, taxCtx] = await Promise.all([
     tenant && currentUser ? getOperatorProfile(tenant.id, currentUser.id) : Promise.resolve(null),
     currentUser ? listUserMemberships(currentUser.id) : Promise.resolve([]),

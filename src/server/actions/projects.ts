@@ -200,6 +200,47 @@ export async function updateProjectStartDateAction(input: {
   return { ok: true, id: input.id };
 }
 
+/**
+ * Patch just the description. Used by the Project Details card's inline
+ * editor. Empty string clears it. Single-field action so the card doesn't
+ * have to reconstruct the full project record.
+ */
+export async function updateProjectDescriptionAction(input: {
+  id: string;
+  description: string;
+}): Promise<ProjectActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('projects')
+    .update({ description: emptyToNull(input.description), updated_at: new Date().toISOString() })
+    .eq('id', input.id)
+    .is('deleted_at', null);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/projects');
+  revalidatePath(`/projects/${input.id}`);
+  return { ok: true, id: input.id };
+}
+
+/**
+ * Patch just the target_end_date. Sibling to `updateProjectStartDateAction`
+ * for the Project Details card. `null` clears the value.
+ */
+export async function updateProjectTargetEndDateAction(input: {
+  id: string;
+  target_end_date: string | null;
+}): Promise<ProjectActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('projects')
+    .update({ target_end_date: input.target_end_date, updated_at: new Date().toISOString() })
+    .eq('id', input.id)
+    .is('deleted_at', null);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/projects');
+  revalidatePath(`/projects/${input.id}`);
+  return { ok: true, id: input.id };
+}
+
 export async function updateProjectManagementFeeAction(input: {
   id: string;
   rate: number;

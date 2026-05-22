@@ -4,8 +4,9 @@
  * JSON requires either a corresponding consumer or a sane default here.
  *
  * Fallback: if no row exists for the requested vertical (or the DB is
- * unreachable), we return a minimal pressure_washing-shaped pack so the
- * shell keeps rendering. Logged so we notice.
+ * unreachable), we return a minimal renovation-shaped (GC) pack so the
+ * shell keeps rendering. GC is the product's core focus and the default
+ * vertical. Logged so we notice.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -23,10 +24,16 @@ export type VerticalPack = {
   navItems: VerticalNavItem[];
 };
 
+// GC (renovation) shape — mirrors the renovation vertical pack so the
+// fallback matches the product's core focus, not the legacy PW set.
 const FALLBACK_NAV: VerticalNavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
   { href: '/business-health', label: 'Business Health', icon: 'TrendingUp' },
   { href: '/contacts', label: 'Contacts', icon: 'Users' },
+  { href: '/projects', label: 'Projects', icon: 'FolderKanban' },
+  { href: '/calendar', label: 'Calendar', icon: 'CalendarDays' },
+  { href: '/invoices', label: 'Invoices', icon: 'FileText' },
+  { href: '/expenses', label: 'Expenses', icon: 'Receipt' },
   { href: '/inbox/intake', label: 'Inbox', icon: 'Inbox' },
   { href: '/settings', label: 'Settings', icon: 'Settings' },
 ];
@@ -54,7 +61,7 @@ function withImportHub(navItems: VerticalNavItem[]): VerticalNavItem[] {
 }
 
 export async function loadVerticalPack(vertical: string | null | undefined): Promise<VerticalPack> {
-  const v = vertical || 'pressure_washing';
+  const v = vertical || 'renovation';
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('vertical_profile_packs')
