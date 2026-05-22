@@ -89,7 +89,7 @@ When you add a new status value to an enum, update the matching `*StatusTone` ma
 - `src/components/features/jobs/job-status-badge.tsx`
 - `src/components/features/quotes/quote-status-badge.tsx`
 - `src/components/features/change-orders/change-order-status-badge.tsx`
-- `src/components/features/customers/customer-type-badge.tsx` — kind colors (customer/lead/vendor/sub/etc.) — separate palette from status tones by design
+- `src/components/features/customers/customer-type-badge.tsx` — contact **kind** pill. The 8-hue kind rainbow was retired (2026-05 UX redesign): a category is not an action, so every kind renders one calm neutral pill. The sole exception is `lead`, which reuses the shared `warning` tone from `status-tokens.ts` ("warm, not closed yet"). Don't reintroduce per-kind colors here — kind is not status. The badges above stay colored because they encode state.
 - `src/components/features/inbox/worklog-entry-type-badge.tsx`
 - `src/components/features/worker/worker-invoice-status-badge.tsx`
 - `src/components/features/projects/project-costs-section.tsx` — inline `CostStatusBadge` for the unified Costs surface (`paid_receipt` / `bill_unpaid` / `bill_paid`). Uses the shared `projectCostStatusTone` map in `status-tokens.ts`; no standalone badge file because the three values are tightly coupled to a single rendering surface.

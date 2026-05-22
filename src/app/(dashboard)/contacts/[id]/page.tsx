@@ -108,7 +108,11 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
-            <CustomerTypeBadge type={customer.type as CustomerType} kind={customer.kind} />
+            <CustomerTypeBadge
+              type={customer.type as CustomerType}
+              kind={customer.kind}
+              withSubtype
+            />
           </div>
           <p className="text-sm text-muted-foreground">Added {formatDate(customer.created_at)}</p>
         </div>

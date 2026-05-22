@@ -1,11 +1,13 @@
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { ContactsPager } from '@/components/features/customers/contacts-pager';
 import { CustomerEmptyState } from '@/components/features/customers/customer-empty-state';
 import { CustomerSearchBar } from '@/components/features/customers/customer-search-bar';
 import { CustomerTable } from '@/components/features/customers/customer-table';
 import { Button } from '@/components/ui/button';
-import { countCustomers, listCustomers } from '@/lib/db/queries/customers';
+import { getCurrentTenant } from '@/lib/auth/helpers';
+import { countCustomers, getContactSignals, listCustomers } from '@/lib/db/queries/customers';
 import {
   type ContactKind,
   type CustomerType,
@@ -14,6 +16,8 @@ import {
 } from '@/lib/validators/customer';
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
+
+const PAGE_SIZE = 50;
 
 function parseKind(value: string | string[] | undefined): ContactKind | null {
   if (typeof value !== 'string') return null;
@@ -30,6 +34,12 @@ function parseQuery(value: string | string[] | undefined): string {
   return value.trim();
 }
 
+function parsePage(value: string | string[] | undefined): number {
+  if (typeof value !== 'string') return 1;
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
 export const metadata = {
   title: 'Contacts — HeyHenry',
 };
@@ -43,23 +53,36 @@ export default async function ContactsPage({
   const query = parseQuery(resolvedSearchParams.q);
   const kind = parseKind(resolvedSearchParams.kind);
   const type = parseType(resolvedSearchParams.type);
+  const page = parsePage(resolvedSearchParams.page);
   const hasFilters = Boolean(query || kind || type);
 
-  const [customers, totalCount] = await Promise.all([
-    listCustomers({
-      search: query || undefined,
-      kind: kind ?? undefined,
-      type: type ?? undefined,
-      limit: 200,
-    }),
-    hasFilters ? countCustomers() : Promise.resolve(-1),
+  const filters = {
+    search: query || undefined,
+    kind: kind ?? undefined,
+    type: type ?? undefined,
+  };
+
+  const tenant = await getCurrentTenant();
+  // Money (AR due) is owner/admin only — crew see activity without dollars.
+  const canSeeMoney = tenant?.member.role === 'owner' || tenant?.member.role === 'admin';
+
+  const [customers, grandTotal] = await Promise.all([
+    listCustomers({ ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
+    countCustomers(filters),
   ]);
 
-  // When there are no filters, the `customers.length` is the total. When
-  // filters are applied, we fetched total separately so we can show whether
-  // the database is empty vs. just filtered-empty.
-  const grandTotal = hasFilters ? totalCount : customers.length;
+  const signals = await getContactSignals(
+    customers.map((c) => c.id),
+    { includeMoney: canSeeMoney },
+  );
+  const rows = customers.map((c) => ({
+    ...c,
+    signal: signals.get(c.id) ?? { activeProjects: 0, totalProjects: 0, arDueCents: null },
+  }));
+
   const showingCount = customers.length;
+  const rangeStart = grandTotal === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = (page - 1) * PAGE_SIZE + showingCount;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -70,24 +93,16 @@ export default async function ContactsPage({
             {grandTotal === 0
               ? 'Nobody in the system yet.'
               : hasFilters
-                ? `${showingCount} shown of ${grandTotal} contact${grandTotal === 1 ? '' : 's'}`
+                ? `${rangeStart}–${rangeEnd} of ${grandTotal} contact${grandTotal === 1 ? '' : 's'}`
                 : `${grandTotal} contact${grandTotal === 1 ? '' : 's'} on file`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline">
-            <Link href="/contacts/import">
-              <Sparkles className="size-3.5" />
-              Import with Henry
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/contacts/new">
-              <Plus className="size-3.5" />
-              New contact
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href="/contacts/new">
+            <Plus className="size-3.5" />
+            New contact
+          </Link>
+        </Button>
       </header>
 
       {grandTotal > 0 ? (
@@ -97,9 +112,12 @@ export default async function ContactsPage({
       ) : null}
 
       {showingCount === 0 ? (
-        <CustomerEmptyState variant={grandTotal === 0 ? 'fresh' : 'filtered'} />
+        <CustomerEmptyState variant={hasFilters ? 'filtered' : 'fresh'} />
       ) : (
-        <CustomerTable customers={customers} />
+        <>
+          <CustomerTable customers={rows} />
+          <ContactsPager page={page} pageSize={PAGE_SIZE} total={grandTotal} />
+        </>
       )}
     </div>
   );

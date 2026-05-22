@@ -12,7 +12,7 @@ export function CustomerEmptyState({ variant }: { variant: 'fresh' | 'filtered' 
   if (variant === 'filtered') {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-card py-16 text-center">
-        <p className="text-sm font-medium">No customers match that search.</p>
+        <p className="text-sm font-medium">No contacts match these filters.</p>
         <p className="text-sm text-muted-foreground">
           Try a different name, or clear the filter to see everyone.
         </p>
@@ -29,14 +29,19 @@ export function CustomerEmptyState({ variant }: { variant: 'fresh' | 'filtered' 
         <UserPlus className="size-6 text-muted-foreground" aria-hidden />
       </div>
       <div className="space-y-1">
-        <h2 className="text-base font-semibold">No customers yet</h2>
+        <h2 className="text-base font-semibold">No contacts yet</h2>
         <p className="text-sm text-muted-foreground">
-          Add your first customer to start quoting, scheduling, and invoicing.
+          Add your first customer, vendor, or sub — or import your list with Henry.
         </p>
       </div>
-      <Button asChild>
-        <Link href="/contacts/new">Add your first customer</Link>
-      </Button>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button asChild>
+          <Link href="/contacts/new">Add a contact</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/contacts/import">Import with Henry</Link>
+        </Button>
+      </div>
     </div>
   );
 }
