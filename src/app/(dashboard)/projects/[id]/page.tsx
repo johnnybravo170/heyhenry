@@ -1,9 +1,9 @@
-import { FileText, ImageIcon, Link2, MessageCircle, Mic, Palette, Users } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { DeleteProjectButton } from '@/components/features/projects/delete-project-button';
-import { PercentCompleteEditor } from '@/components/features/projects/percent-complete-editor';
+import { CrewRoster } from '@/components/features/projects/crew-roster';
+import { ProjectActionsMenu } from '@/components/features/projects/project-actions-menu';
+import { ProjectDetailsCard } from '@/components/features/projects/project-details-card';
 import { ProjectIntakeZone } from '@/components/features/projects/project-intake-zone';
 import { ProjectNameEditor } from '@/components/features/projects/project-name-editor';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
@@ -11,26 +11,26 @@ import { ProjectTabSelect } from '@/components/features/projects/project-tab-sel
 import { ScopeDiffReview } from '@/components/features/projects/scope-diff-review';
 import { StagedEmailsBanner } from '@/components/features/projects/staged-emails-banner';
 import BudgetTabServer from '@/components/features/projects/tabs/budget-tab-server';
+import ClientHubTabServer, {
+  type ClientSubtab,
+} from '@/components/features/projects/tabs/client-hub-tab-server';
 import CostsTabServer from '@/components/features/projects/tabs/costs-tab-server';
-import CrewTabServer from '@/components/features/projects/tabs/crew-tab-server';
 import DocumentsTabServer from '@/components/features/projects/tabs/documents-tab-server';
 import GalleryTabServer from '@/components/features/projects/tabs/gallery-tab-server';
 import InvoicesTabServer from '@/components/features/projects/tabs/invoices-tab-server';
 import MemosTabServer from '@/components/features/projects/tabs/memos-tab-server';
-import MessagesTabServer from '@/components/features/projects/tabs/messages-tab-server';
 import OverviewTabServer from '@/components/features/projects/tabs/overview-tab-server';
-import PortalTabServer from '@/components/features/projects/tabs/portal-tab-server';
 import ScheduleTabServer from '@/components/features/projects/tabs/schedule-tab-server';
-import SelectionsTabServer from '@/components/features/projects/tabs/selections-tab-server';
 import { TabSkeleton } from '@/components/features/projects/tabs/tab-skeleton';
 import TimeTabServer from '@/components/features/projects/tabs/time-tab-server';
 import { UnsentChangesChip } from '@/components/features/projects/unsent-changes-chip';
 import { VersionsDropdown } from '@/components/features/projects/versions-dropdown';
-import { getProjectProgress } from '@/lib/db/queries/cost-lines';
-import { getProjectDrawSummary } from '@/lib/db/queries/invoices';
+import { getCurrentTenant } from '@/lib/auth/helpers';
+import { listCustomers } from '@/lib/db/queries/customers';
+import { listAssignmentsForProject } from '@/lib/db/queries/project-assignments';
 import { listBudgetCategoriesForProject } from '@/lib/db/queries/project-budget-categories';
 import { getProject } from '@/lib/db/queries/projects';
-import { formatCurrency } from '@/lib/pricing/calculator';
+import { listWorkerProfiles } from '@/lib/db/queries/worker-profiles';
 import type { LifecycleStage } from '@/lib/validators/project';
 
 // Audio transcription of voice memos can take up to ~30s — bump the
@@ -59,7 +59,7 @@ type Tab =
   | 'selections'
   | 'documents'
   | 'messages'
-  | 'crew';
+  | 'client';
 
 /**
  * Project detail shell. Renders the header + tab nav synchronously, then
@@ -89,10 +89,17 @@ export default async function ProjectDetailPage({
   // Budget under the unified-Budget design (decision 6790ef2b). Old
   // ?tab=buckets bookmarks also remap. Anything else passes through.
   const rawTab = resolvedSearchParams.tab;
+  // Messages / Selections / Portal fold into the unified Client hub. Old
+  // ?tab=messages bookmarks remap to the hub with the matching subtab.
+  const clientSubtab: ClientSubtab =
+    (resolvedSearchParams.client as ClientSubtab | undefined) ??
+    (rawTab === 'selections' ? 'selections' : rawTab === 'portal' ? 'portal' : 'messages');
   const explicitTab =
     rawTab === 'buckets' || rawTab === 'estimate' || rawTab === 'change-orders'
       ? 'budget'
-      : (rawTab as Tab | undefined);
+      : rawTab === 'messages' || rawTab === 'selections' || rawTab === 'portal'
+        ? 'client'
+        : (rawTab as Tab | undefined);
 
   // Default-expanded behaviour for the unified Budget tab. Defaulted
   // by lifecycle stage (planning/awaiting_approval → expanded; active+
@@ -108,43 +115,87 @@ export default async function ProjectDetailPage({
         ? false
         : null;
 
+  // Crew roster (in the Project Details card) is owner/admin only — the
+  // underlying assignment actions assert the role, so we also gate the
+  // fetch + render. `tenant.id` equals the project's tenant under RLS.
+  const tenant = await getCurrentTenant();
+  const canManageCrew =
+    !!tenant && (tenant.member.role === 'owner' || tenant.member.role === 'admin');
+  const tenantId = tenant?.id;
+
   // Shell-only queries. getProject is React.cache-wrapped, so generateMetadata
   // + the shell + any inner tab that also calls it (e.g. OverviewTab) dedupe
   // to a single DB hit per request.
-  const [project, projectCategories, progress, draws, unreadMessagesRes, unreadIdeasRes] =
-    await Promise.all([
-      getProject(id),
-      listBudgetCategoriesForProject(id),
-      getProjectProgress(id),
-      getProjectDrawSummary(id),
-      // Unread inbound messages count for the Messages tab badge. Cheap
-      // query thanks to idx_pm_tenant_unread_inbound. Failure is non-fatal
-      // (we just hide the badge).
-      (async () => {
-        const supabase = await import('@/lib/supabase/server').then((m) => m.createClient());
-        const c = await supabase;
-        return c
-          .from('project_messages')
-          .select('id', { count: 'exact', head: true })
-          .eq('project_id', id)
-          .eq('direction', 'inbound')
-          .is('read_by_operator_at', null);
-      })(),
-      // Unread customer-idea-board items for the Selections tab badge.
-      // Cheap thanks to idx_pibi_tenant_unread. Failure is non-fatal.
-      (async () => {
-        const supabase = await import('@/lib/supabase/server').then((m) => m.createClient());
-        const c = await supabase;
-        return c
-          .from('project_idea_board_items')
-          .select('id', { count: 'exact', head: true })
-          .eq('project_id', id)
-          .is('read_by_operator_at', null);
-      })(),
-    ]);
+  const [
+    project,
+    projectCategories,
+    customerList,
+    crewWorkers,
+    crewAssignments,
+    unreadMessagesRes,
+    unreadIdeasRes,
+  ] = await Promise.all([
+    getProject(id),
+    listBudgetCategoriesForProject(id),
+    // Customer options for the ⋯ overflow's Duplicate dialog (clone needs a
+    // target customer, defaulting to this project's customer).
+    listCustomers({ limit: 500 }),
+    canManageCrew && tenantId ? listWorkerProfiles(tenantId) : Promise.resolve([]),
+    canManageCrew && tenantId ? listAssignmentsForProject(tenantId, id) : Promise.resolve([]),
+    // Unread inbound messages count for the Messages tab badge. Cheap
+    // query thanks to idx_pm_tenant_unread_inbound. Failure is non-fatal
+    // (we just hide the badge).
+    (async () => {
+      const supabase = await import('@/lib/supabase/server').then((m) => m.createClient());
+      const c = await supabase;
+      return c
+        .from('project_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', id)
+        .eq('direction', 'inbound')
+        .is('read_by_operator_at', null);
+    })(),
+    // Unread customer-idea-board items for the Selections tab badge.
+    // Cheap thanks to idx_pibi_tenant_unread. Failure is non-fatal.
+    (async () => {
+      const supabase = await import('@/lib/supabase/server').then((m) => m.createClient());
+      const c = await supabase;
+      return c
+        .from('project_idea_board_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', id)
+        .is('read_by_operator_at', null);
+    })(),
+  ]);
   if (!project) notFound();
   const unreadMessages = unreadMessagesRes.count ?? 0;
   const unreadIdeas = unreadIdeasRes.count ?? 0;
+  const customerOptions = customerList.map((c) => ({ id: c.id, name: c.name }));
+
+  // Crew roster (owner/admin only) — the project-level roster lives in the
+  // Project Details card now. `scheduled_date IS NULL` = ongoing crew; dated
+  // assignments are the (deferred) scheduling surface, excluded here.
+  const crewSlot = canManageCrew ? (
+    <CrewRoster
+      projectId={id}
+      workers={crewWorkers.map((w) => ({
+        profile_id: w.id,
+        display_name: w.display_name ?? 'Worker',
+        worker_type: w.worker_type,
+        default_hourly_rate_cents: w.default_hourly_rate_cents,
+        default_charge_rate_cents: w.default_charge_rate_cents,
+      }))}
+      assignments={crewAssignments
+        .filter((a) => a.scheduled_date === null)
+        .map((a) => ({
+          id: a.id,
+          worker_profile_id: a.worker_profile_id,
+          hourly_rate_cents: a.hourly_rate_cents,
+          charge_rate_cents: a.charge_rate_cents,
+          notes: a.notes,
+        }))}
+    />
+  ) : undefined;
 
   // Stage-aware default tab when the operator hits /projects/[id] without a
   // ?tab=... query. Planning lands on Budget (the work to do); active and
@@ -159,143 +210,89 @@ export default async function ProjectDetailPage({
   // authoring. Active+ defaults collapsed (status-tracking posture).
   const budgetExpanded = explicitExpand ?? (stage === 'planning' || stage === 'awaiting_approval');
 
-  // Tab order follows the project lifecycle. Estimate + Change Orders
-  // folded into Budget under the unified-Budget design — kept as
-  // route aliases above for backward compatibility, but no longer
-  // rendered as separate tab pills.
-  const tabs: { key: Tab; label: string }[] = [
+  // One unified nav (no separate header-actions pill row). Primary tabs
+  // are the run-the-job work; the secondary group (Client / Photos /
+  // Documents / Notes) sits in a lighter tier in the same bar. Estimate +
+  // Change Orders fold into Budget; Messages / Selections / Portal fold
+  // into the Client hub — all kept as route aliases above. Renames are
+  // label-only (route keys unchanged): Time→Labour, Customer Billing→Billing,
+  // Gallery→Photos.
+  // (Notes stays in the secondary group until the Overview-attention-strip
+  // card folds the internal Notes feed into the Overview timeline.)
+  const primaryTabs: { key: Tab; label: string }[] = [
     { key: 'budget', label: 'Budget' },
     { key: 'costs', label: 'Spend' },
-    { key: 'time', label: 'Time' },
+    { key: 'time', label: 'Labour' },
     { key: 'schedule', label: 'Schedule' },
-    { key: 'invoices', label: 'Customer Billing' },
+    { key: 'invoices', label: 'Billing' },
     { key: 'overview', label: 'Overview' },
   ];
-  const secondaryTabs: {
-    key: Tab;
-    label: string;
-    icon: 'gallery' | 'portal' | 'memos' | 'crew' | 'selections' | 'documents' | 'messages';
-  }[] = [
-    { key: 'messages', label: 'Messages', icon: 'messages' },
-    { key: 'gallery', label: 'Gallery', icon: 'gallery' },
-    { key: 'portal', label: 'Portal', icon: 'portal' },
-    { key: 'selections', label: 'Selections', icon: 'selections' },
-    { key: 'documents', label: 'Documents', icon: 'documents' },
-    { key: 'memos', label: 'Notes', icon: 'memos' },
-    { key: 'crew', label: 'Crew', icon: 'crew' },
+  const secondaryTabs: { key: Tab; label: string; badge?: number }[] = [
+    { key: 'client', label: 'Client', badge: unreadMessages + unreadIdeas },
+    { key: 'gallery', label: 'Photos' },
+    { key: 'documents', label: 'Documents' },
+    { key: 'memos', label: 'Notes' },
   ];
+  const allTabs = [...primaryTabs, ...secondaryTabs];
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      {/* Header */}
+      {/* Header — lean identity chrome only (orient + navigate). No
+          metrics: % complete lives on Overview, draws on Billing. The `▾`
+          opens the Project Details card (attributes); the `⋯` is the
+          actions overflow. */}
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        {/* Info column: capped at max-w-3xl so customer + description */}
-        {/* don't span the full viewport (lines were wrapping at ~150 */}
-        {/* chars, way past comfortable reading width). */}
-        <div className="max-w-3xl">
-          <div className="flex items-center gap-3">
+        <div className="min-w-0 max-w-3xl">
+          {/* Identity row: name + ▾ details + status badge. */}
+          <div className="flex flex-wrap items-center gap-2">
             <ProjectNameEditor projectId={project.id} name={project.name} />
+            <ProjectDetailsCard
+              projectId={project.id}
+              name={project.name}
+              customer={
+                project.customer ? { id: project.customer.id, name: project.customer.name } : null
+              }
+              description={project.description}
+              startDate={project.start_date}
+              targetEndDate={project.target_end_date}
+              isCostPlus={project.is_cost_plus}
+              managementFeeRate={project.management_fee_rate}
+              lifecycleStage={project.lifecycle_stage as LifecycleStage}
+              crewSlot={crewSlot}
+            />
             <ProjectStatusBadge stage={project.lifecycle_stage as LifecycleStage} />
           </div>
+          {/* Customer — quiet, secondary, linked identity (the "Mohan job"
+              + a one-tap path to the homeowner from any tab). */}
           {project.customer ? (
-            <p className="mt-1 text-sm">
-              <Link
-                href={`/contacts/${project.customer.id}`}
-                className="font-medium hover:underline"
-              >
+            <p className="mt-1 text-sm text-muted-foreground">
+              <Link href={`/contacts/${project.customer.id}`} className="hover:underline">
                 {project.customer.name}
               </Link>
             </p>
           ) : null}
-          {project.description ? (
-            <p
-              className="mt-1 line-clamp-2 text-sm text-muted-foreground"
-              title={project.description}
-            >
-              {project.description}
-            </p>
-          ) : null}
-          <div className="mt-1">
-            <PercentCompleteEditor workStatusPct={progress.workStatusPct} />
-          </div>
-          {draws.has_any ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Draws</span>{' '}
-              {formatCurrency(draws.sent_cents)} sent
-              <span className="mx-1">·</span>
-              {formatCurrency(draws.paid_cents)} paid
-              {draws.outstanding_cents > 0 ? (
-                <>
-                  <span className="mx-1">·</span>
-                  <span className="font-medium text-amber-700">
-                    {formatCurrency(draws.outstanding_cents)} outstanding
-                  </span>
-                </>
-              ) : null}
-            </p>
-          ) : null}
         </div>
-        {/* Actions row: three visual clusters separated by vertical */}
-        {/* dividers — utility chips · primary CTA · secondary actions. */}
-        {/* Old layout had Versions floating in the title row and a naked */}
-        {/* trash icon directly next to the black "Add to project" CTA, */}
-        {/* which was accident-prone. Versions and Delete now live in the */}
-        {/* secondary cluster behind a divider. */}
+        {/* Actions row — capture + utility only. Destination pills now live
+            in the single unified nav below (no separate header pill row). */}
         <div className="flex flex-wrap items-center gap-1">
-          {secondaryTabs.map((s) => {
-            const active = tab === s.key;
-            const Icon =
-              s.icon === 'gallery'
-                ? ImageIcon
-                : s.icon === 'portal'
-                  ? Link2
-                  : s.icon === 'selections'
-                    ? Palette
-                    : s.icon === 'documents'
-                      ? FileText
-                      : s.icon === 'memos'
-                        ? Mic
-                        : s.icon === 'messages'
-                          ? MessageCircle
-                          : Users;
-            const badgeCount =
-              s.key === 'messages' ? unreadMessages : s.key === 'selections' ? unreadIdeas : 0;
-            const showBadge = badgeCount > 0;
-            return (
-              <Link
-                key={s.key}
-                href={`/projects/${id}?tab=${s.key}`}
-                prefetch={false}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                  active
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <Icon className="size-3.5" />
-                {s.label}
-                {showBadge ? (
-                  <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                    {badgeCount > 9 ? '9+' : badgeCount}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
           <ProjectIntakeZone
             projectId={project.id}
+            appearance="ghost"
             categories={projectCategories.map((b) => ({
               id: b.id,
               name: b.name,
               section: (b.section as 'interior' | 'exterior' | 'general') ?? 'general',
             }))}
           />
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
           <Suspense fallback={null}>
             <VersionsDropdown projectId={id} />
           </Suspense>
-          <DeleteProjectButton projectId={project.id} projectName={project.name} />
+          <ProjectActionsMenu
+            projectId={project.id}
+            projectName={project.name}
+            defaultCustomerId={project.customer?.id ?? null}
+            customers={customerOptions}
+          />
         </div>
       </header>
 
@@ -323,18 +320,17 @@ export default async function ProjectDetailPage({
         <ProjectTabSelect
           projectId={id}
           currentTab={tab}
-          tabs={[...tabs, ...secondaryTabs.map((s) => ({ key: s.key, label: s.label }))]}
+          tabs={allTabs.map((t) => ({ key: t.key, label: t.label }))}
         />
       </div>
-      <div className="mb-6 hidden flex-wrap gap-1 border-b lg:flex">
-        {tabs.map((t) => (
+      <div className="mb-6 hidden flex-wrap items-center gap-1 border-b lg:flex">
+        {primaryTabs.map((t) => (
           <Link
             key={t.key}
             href={`/projects/${id}?tab=${t.key}`}
             // Default Next.js behaviour: prefetch on hover for app-router
             // pages. Cuts perceived tab-switch latency since the data is
-            // warm by the time the operator clicks. Explicit `true` here
-            // documents intent vs the prior `false`.
+            // warm by the time the operator clicks.
             prefetch
             className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
               tab === t.key
@@ -343,6 +339,29 @@ export default async function ProjectDetailPage({
             }`}
           >
             {t.label}
+          </Link>
+        ))}
+        {/* Secondary group — lighter tier in the same bar (Client / Photos /
+            Documents / Notes). Client carries the unread badge (messages +
+            customer ideas). */}
+        <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden="true" />
+        {secondaryTabs.map((t) => (
+          <Link
+            key={t.key}
+            href={`/projects/${id}?tab=${t.key}`}
+            prefetch={false}
+            className={`-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors ${
+              tab === t.key
+                ? 'border-primary font-medium text-primary'
+                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
+            }`}
+          >
+            {t.label}
+            {t.badge && t.badge > 0 ? (
+              <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {t.badge > 9 ? '9+' : t.badge}
+              </span>
+            ) : null}
           </Link>
         ))}
       </div>
@@ -362,11 +381,17 @@ export default async function ProjectDetailPage({
         {tab === 'schedule' ? <ScheduleTabServer projectId={id} /> : null}
         {tab === 'memos' ? <MemosTabServer projectId={id} /> : null}
         {tab === 'gallery' ? <GalleryTabServer projectId={id} /> : null}
-        {tab === 'portal' ? <PortalTabServer projectId={id} /> : null}
-        {tab === 'selections' ? <SelectionsTabServer projectId={id} /> : null}
         {tab === 'documents' ? <DocumentsTabServer projectId={id} /> : null}
-        {tab === 'messages' ? <MessagesTabServer projectId={id} /> : null}
-        {tab === 'crew' ? <CrewTabServer projectId={id} /> : null}
+        {/* Client hub — Messages / Selections / Portal & Updates grouped
+            behind one tab, switched by ?client=<subtab>. */}
+        {tab === 'client' ? (
+          <ClientHubTabServer
+            projectId={id}
+            subtab={clientSubtab}
+            unreadMessages={unreadMessages}
+            unreadIdeas={unreadIdeas}
+          />
+        ) : null}
       </Suspense>
     </div>
   );

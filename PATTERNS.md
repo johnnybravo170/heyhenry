@@ -42,6 +42,8 @@ Soft-delete confirmations follow one shape. When you change the wording, button 
 
 All three use shadcn `AlertDialog`, wrap the action in a transition, and surface errors via toast. Delete variants additionally handle `NEXT_REDIRECT`.
 
+`delete-project-button.tsx` and `clone-project-dialog.tsx` each accept an optional controlled-open mode (`open` / `onOpenChange` / `hideTrigger`) so a parent can drive them trigger-less. The project ⋯ overflow (`project-actions-menu.tsx`) uses this to host Duplicate + Delete behind one labeled menu instead of loose icon buttons. Default (uncontrolled, self-triggered) behaviour is unchanged for the projects-table callers.
+
 ---
 
 ## 4. Inline edit fields (click-to-edit)
@@ -50,7 +52,8 @@ Click-to-edit fields use the same keyboard contract: Enter saves, Escape cancels
 
 - `src/components/features/projects/project-name-editor.tsx` — heading + inline variants.
 - `src/components/features/projects/percent-complete-editor.tsx` — slider variant; shows "edit" hint on hover.
-- `src/components/features/projects/management-fee-editor.tsx` — number-as-percent variant on the Overview facts grid; writes a worklog entry on change.
+- `src/components/features/projects/management-fee-editor.tsx` — number-as-percent variant; writes a worklog entry on change.
+- `src/components/features/projects/project-details-card.tsx` — the `▾` Project Details card. Hosts inline editors for name / description / dates (its local `InlineText` + `DateField` follow the same Enter-saves / Escape-cancels / blur-saves contract) and composes `BillingModeEditor` + `ManagementFeeEditor`. This is the consolidated project-settings home that replaced Overview's "facts grid."
 
 ---
 
@@ -97,7 +100,7 @@ When you add a new status value to an enum, update the matching `*StatusTone` ma
 
 Two grid surfaces today, both built on `project_assignments`. **Forked on purpose** — the per-project view is drag-heavy, the owner view is click-to-modal. Once the owner view stabilizes, evaluate extracting a shared core (date math, weekend handling, project-color hash).
 
-- `src/components/features/projects/crew-schedule-grid.tsx` — per-project drag-to-schedule grid (rows = workers).
+- `src/components/features/projects/crew-schedule-grid.tsx` — per-project drag-to-schedule grid (rows = workers). **Currently orphaned** — the Crew tab was retired (roster moved to the Project Details card via `crew-roster.tsx`); this dated grid is slated to move onto the Schedule tab when the deferred dispatch board lands. See `docs/ux/briefs/project-hub.md` §"Crew scheduling".
 - `src/components/features/calendar/owner-calendar.tsx` — tenant-wide month + 14-day views (rows = projects in 14-day; calendar cells in month).
 - `src/components/features/jobs/job-calendar.tsx` — month grid for jobs only.
 
@@ -113,6 +116,7 @@ URL-param driven (`?tab=estimate`); `router.replace()` to avoid history pollutio
 - `src/components/features/projects/project-tab-select.tsx` (mobile select)
 - The project detail page renders a row of `<Link>` tabs above `lg`, the select below it.
 - The customer portal at `/portal/[slug]` introduces a minimal "Project" / "Messages" split via the same `?tab=` query param. Future PRs will likely break the Project tab into Updates / Budget / Photos / Files sub-tabs as those surfaces grow.
+- The project **Client hub** (`tabs/client-hub-tab-server.tsx`) is a grouped tab: a top-level `?tab=client` with its own second-level sub-nav (`?client=messages|selections|portal`) rendering the existing Messages / Selections / Portal tab servers. The unread badge (messages + customer ideas) shows on the parent `Client` nav tab; per-subhead badges repeat on the sub-nav. Old `?tab=messages|selections|portal` bookmarks alias to the hub with the matching subtab. This is the model to copy if another set of related tabs needs grouping.
 - `src/components/features/tasks/job-tabs.tsx` — distinct-route variant on the job detail page (`/jobs/[id]` vs `/jobs/[id]/tasks`). Used when each tab needs its own server component shell rather than re-rendering off a query param.
 
 ---

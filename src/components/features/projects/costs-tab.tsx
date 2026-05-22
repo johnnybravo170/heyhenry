@@ -3,7 +3,7 @@
 /**
  * Project Costs tab. Post-unification this is a thin orchestrator:
  *
- *   - Summary strip (Committed / PO'd / Billed / Paid)
+ *   - Summary strip (Committed / Billed / Paid)
  *   - "By type" vs "By category" toggle
  *   - Subtab nav (Vendor quotes / POs / Costs)
  *   - One of: SubQuotesSection, PO section, ProjectCostsSection
@@ -17,8 +17,9 @@ import { useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Money } from '@/components/ui/money';
 import type { PurchaseOrderRow, PurchaseOrderStatus } from '@/lib/db/queries/purchase-orders';
-import { formatCurrency, formatCurrencyCompact } from '@/lib/pricing/calculator';
+import { formatCurrency } from '@/lib/pricing/calculator';
 import {
   createPurchaseOrderAction,
   updatePurchaseOrderStatusAction,
@@ -270,19 +271,30 @@ export function CostsTab({
     });
   }
 
-  const totalPOs = purchaseOrders
+  // Open POs = active obligations (sent/acknowledged/received), part of
+  // Committed below.
+  const committedPos = purchaseOrders
     .filter((po) => ['sent', 'acknowledged', 'received'].includes(po.status))
     .reduce((s, po) => s + po.total_cents, 0);
-
-  // Summary strip: keep the legacy "Billed" + "Paid" split so the
-  // headline doesn't collapse to a single rolled-up number — the
-  // operator still cares about how much is owed vs paid even though
-  // the row-level UI no longer splits them.
-  const totalBills = bills.reduce((s, b) => s + b.amount_cents, 0);
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount_cents, 0);
-  const committedTotal = subQuotes
+  const committedQuotes = subQuotes
     .filter((q) => q.status === 'accepted')
     .reduce((s, q) => s + q.total_cents, 0);
+  // ONE reconciled Committed = accepted sub-quotes + open POs. Matches
+  // `getVarianceReport.committed_cents` (committed_vendor_quotes_cents +
+  // committed_pos_cents); sub-quotes + POs are its breakdown, not two
+  // parallel headline silos.
+  const committedTotal = committedQuotes + committedPos;
+
+  // Billed = all vendor bills received (pre-GST subtotal, matching the
+  // variance model). Paid = bills actually settled + receipts (which are
+  // paid by definition). The old "Paid" cell summed *all expenses* and
+  // ignored paid bills entirely — that was the bug.
+  const totalBills = bills.reduce((s, b) => s + b.amount_cents, 0);
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount_cents, 0);
+  const paidBills = bills
+    .filter((b) => b.status === 'paid')
+    .reduce((s, b) => s + b.amount_cents, 0);
+  const paidTotal = paidBills + totalExpenses;
 
   const searchParams = useSearchParams();
   const sub: CostsSubtabKey = (() => {
@@ -290,14 +302,11 @@ export function CostsTab({
     if (raw === 'quotes' || raw === 'pos' || raw === 'costs') return raw;
     // Legacy deep-links (?sub=bills, ?sub=expenses) — fold into Costs.
     if (raw === 'bills' || raw === 'expenses') return 'costs';
-    // No explicit subtab — pick the first one that has content so the
-    // page isn't a wall of "No quotes yet" when there are 18 costs sitting
-    // one click away. Quotes still wins on a tie since it's the most
-    // common entry point for new spend.
-    if (subQuotes.length > 0) return 'quotes';
-    if (bills.length + expenses.length > 0) return 'costs';
-    if (purchaseOrders.length > 0) return 'pos';
-    return 'quotes';
+    // Stable landing subtab — always Costs (the actual money-out ledger of
+    // bills + receipts). Previously this shifted based on which subtab had
+    // data, so the same project could land you on a different tab as spend
+    // accrued — disorienting. Quotes / POs are one labeled click away.
+    return 'costs';
   })();
   const groupByCategory = searchParams?.get('view') === 'category';
   // Drill-down filter: Budget tab links here with `?focus=<budget_category_id>`
@@ -348,28 +357,25 @@ export function CostsTab({
 
   return (
     <div className="space-y-4">
-      {/* Summary strip. Narrow screens get a 2-column grid (readable and
-          predictable); sm+ flows to a single row so the whole story is on
-          one line where there's space. formatCurrencyCompact drops .00 on
-          whole-dollar amounts to save width on mobile. */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border bg-muted/20 px-4 py-3 text-sm sm:flex sm:flex-wrap sm:gap-4">
+      {/* Summary strip — Committed · Billed · Paid. Narrow screens get a
+          3-column grid; sm+ flows to a single row. Amounts render through
+          the shared `Money` component (tabular, de-emphasised cents). */}
+      <div className="grid grid-cols-3 gap-x-4 gap-y-1 rounded-lg border bg-muted/20 px-4 py-3 text-sm sm:flex sm:flex-wrap sm:gap-6">
         <div>
           <span className="text-muted-foreground">Committed</span>{' '}
-          <span className="font-semibold tabular-nums">
-            {formatCurrencyCompact(committedTotal)}
-          </span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">PO&apos;d</span>{' '}
-          <span className="font-semibold tabular-nums">{formatCurrencyCompact(totalPOs)}</span>
+          <Money cents={committedTotal} emphasis />
+          {committedQuotes > 0 && committedPos > 0 ? (
+            <span className="ml-1 text-xs text-muted-foreground">
+              (quotes <Money cents={committedQuotes} /> · POs <Money cents={committedPos} />)
+            </span>
+          ) : null}
         </div>
         <div>
           <span className="text-muted-foreground">Billed</span>{' '}
-          <span className="font-semibold tabular-nums">{formatCurrencyCompact(totalBills)}</span>
+          <Money cents={totalBills} emphasis />
         </div>
         <div>
-          <span className="text-muted-foreground">Paid</span>{' '}
-          <span className="font-semibold tabular-nums">{formatCurrencyCompact(totalExpenses)}</span>
+          <span className="text-muted-foreground">Paid</span> <Money cents={paidTotal} emphasis />
         </div>
       </div>
 
@@ -520,10 +526,10 @@ export function CostsTab({
                 );
               })}
 
-              {totalPOs > 0 && (
+              {committedPos > 0 && (
                 <p className="text-right text-sm">
                   <span className="text-muted-foreground">Committed (open POs): </span>
-                  <span className="font-semibold">{formatCurrency(totalPOs)}</span>
+                  <span className="font-semibold">{formatCurrency(committedPos)}</span>
                 </p>
               )}
             </div>

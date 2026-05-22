@@ -26,9 +26,18 @@ import { deleteProjectAction } from '@/server/actions/projects';
 export function DeleteProjectButton({
   projectId,
   projectName,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger = false,
 }: {
   projectId: string;
   projectName: string;
+  /** Controlled-open mode — pass both to drive the confirm dialog from a
+   * parent (e.g. the project ⋯ overflow menu). Omit for the default
+   * self-triggered icon-button behaviour. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -49,17 +58,19 @@ export function DeleteProjectButton({
   }
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label="Delete project"
-          className="size-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      </AlertDialogTrigger>
+    <AlertDialog open={controlledOpen} onOpenChange={controlledOnOpenChange}>
+      {hideTrigger ? null : (
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Delete project"
+            className="size-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </AlertDialogTrigger>
+      )}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete {projectName}?</AlertDialogTitle>

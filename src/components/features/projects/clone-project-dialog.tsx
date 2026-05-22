@@ -40,14 +40,25 @@ export function CloneProjectDialog({
   projectName,
   defaultCustomerId,
   customers,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger = false,
 }: {
   projectId: string;
   projectName: string;
   defaultCustomerId: string | null;
   customers: CustomerOption[];
+  /** Controlled-open mode — pass both to drive the dialog from a parent
+   * (e.g. the project ⋯ overflow menu). Omit for the default self-triggered
+   * icon-button behaviour used in the projects table. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = controlledOnOpenChange ?? setUncontrolledOpen;
   const [pending, startTransition] = useTransition();
 
   const [name, setName] = useState(`Copy of ${projectName}`);
@@ -99,16 +110,18 @@ export function CloneProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label="Clone project"
-          className="size-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <Copy className="size-3.5" />
-        </Button>
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Clone project"
+            className="size-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Copy className="size-3.5" />
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Clone {projectName}</DialogTitle>
