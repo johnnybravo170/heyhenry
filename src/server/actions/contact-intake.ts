@@ -24,6 +24,7 @@ import {
 import { type AttachedFile, gateway, isAiError } from '@/lib/ai-gateway';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { type ContactMatch, findContactMatches } from '@/lib/db/queries/contact-matches';
+import { normalizePhone } from '@/lib/phone';
 import { createClient } from '@/lib/supabase/server';
 import type { ContactKind } from '@/lib/validators/customer';
 
@@ -143,7 +144,7 @@ export async function acceptInboundContactAction(input: {
       type: null,
       name,
       email: draft.email?.trim() || null,
-      phone: draft.phone?.trim() || null,
+      phone: normalizePhone(draft.phone),
       address_line1: draft.address?.trim() || null,
       city: draft.city?.trim() || null,
       province: draft.province?.trim() || null,

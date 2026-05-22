@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CustomerForm } from '@/components/features/customers/customer-form';
 import { getCustomer } from '@/lib/db/queries/customers';
+import { formatPhone } from '@/lib/phone';
 import type { CustomerCreateInput, CustomerType } from '@/lib/validators/customer';
 import { type CustomerActionResult, updateCustomerAction } from '@/server/actions/customers';
 
@@ -21,7 +22,7 @@ export default async function EditContactPage({ params }: { params: Promise<{ id
     name: customer.name,
     email: customer.email ?? '',
     additionalEmails: customer.additional_emails ?? [],
-    phone: customer.phone ?? '',
+    phone: formatPhone(customer.phone),
     addressLine1: customer.address_line1 ?? '',
     city: customer.city ?? '',
     province: customer.province ?? '',

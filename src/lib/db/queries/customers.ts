@@ -12,6 +12,7 @@
  */
 
 import { type ArInvoice, arOutstanding } from '@/lib/invoices/ar';
+import { phoneDigits } from '@/lib/phone';
 import { createClient } from '@/lib/supabase/server';
 
 export type CustomerRow = {
@@ -149,9 +150,17 @@ function applyListFilters<
   const search = filters.search?.trim();
   if (search) {
     const needle = `%${escapeForOr(search)}%`;
-    q = q.or(
-      `name.ilike.${needle},email.ilike.${needle},phone.ilike.${needle},city.ilike.${needle}`,
-    );
+    const clauses = [
+      `name.ilike.${needle}`,
+      `email.ilike.${needle}`,
+      `phone.ilike.${needle}`,
+      `city.ilike.${needle}`,
+    ];
+    // Phones are stored canonical (E.164), so a formatted query like
+    // "604-555" won't substring-match. Also match on the query's bare digits.
+    const digits = phoneDigits(search);
+    if (digits.length >= 3) clauses.push(`phone.ilike.%${digits}%`);
+    q = q.or(clauses.join(','));
   }
   return q;
 }

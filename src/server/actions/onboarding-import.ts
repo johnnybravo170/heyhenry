@@ -35,6 +35,7 @@ import {
   type ProposedCustomer,
   tierLabel,
 } from '@/lib/customers/dedup';
+import { normalizePhone } from '@/lib/phone';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -347,7 +348,7 @@ export async function commitCustomerImportAction(input: {
       tenant_id: tenant.id,
       name: r.proposed.name,
       email: r.proposed.email ?? null,
-      phone: r.proposed.phone ?? null,
+      phone: normalizePhone(r.proposed.phone),
       address_line1: r.proposed.addressLine1 ?? null,
       city: r.proposed.city ?? null,
       province: r.proposed.province ?? null,

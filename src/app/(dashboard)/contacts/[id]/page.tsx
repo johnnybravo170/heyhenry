@@ -24,6 +24,7 @@ import {
 } from '@/lib/db/queries/customers';
 import { invoiceTotalCents } from '@/lib/db/queries/invoices';
 import { listTasksForLead } from '@/lib/db/queries/tasks';
+import { formatPhone } from '@/lib/phone';
 import type { CustomerType } from '@/lib/validators/customer';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
 import type { JobStatus } from '@/lib/validators/job';
@@ -129,7 +130,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
       <section className="grid gap-4 rounded-xl border bg-card p-5 md:grid-cols-3">
         <ContactRow icon={Mail} label="Email" value={customer.email} />
-        <ContactRow icon={Phone} label="Phone" value={customer.phone} />
+        <ContactRow icon={Phone} label="Phone" value={formatPhone(customer.phone)} />
         <ContactRow icon={MapPin} label="Address" value={addressLines(customer)} />
         {!customer.email && !customer.phone && !addressLines(customer) ? (
           <p className="md:col-span-3 text-sm text-muted-foreground">
