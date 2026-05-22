@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OD — Billing — HeyHenry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 28px 80px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--rust);
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; color: var(--ink); }
+  .lede { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 56ch; line-height: 1.55; }
+  .meta {
+    margin-top: 22px; display: flex; gap: 18px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase; flex-wrap: wrap;
+  }
+  .meta span strong { color: var(--ink); font-weight: 700; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .screen-card {
+    background: var(--card); border: 1px solid var(--hair); border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 120ms, border-color 120ms;
+    text-decoration: none; color: inherit;
+  }
+  .screen-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .screen-thumb {
+    aspect-ratio: 16/10; background: var(--bg); border-bottom: 1px solid var(--hair);
+    position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px;
+  }
+  .screen-thumb iframe {
+    width: 1440px; height: 900px; transform: scale(0.32); transform-origin: top left;
+    border: 0; pointer-events: none; position: absolute; top: 0; left: 0;
+  }
+  .screen-thumb.mobile iframe {
+    width: 390px; height: 844px; transform: scale(0.45); transform-origin: center;
+    position: static;
+  }
+  .screen-thumb.mobile { background: #ECE3D0; }
+  .screen-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .screen-eyebrow {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .screen-title { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; color: var(--ink); }
+  .screen-desc { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.5; }
+  .notes {
+    margin-top: 48px; background: var(--card); border: 1px solid var(--hair);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .notes h2 {
+    margin: 0 0 12px; font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
+    font-family: var(--mono); text-transform: uppercase; color: var(--ink);
+  }
+  .notes ul { margin: 0; padding-left: 16px; color: var(--ink-2); font-size: 14px; line-height: 1.6; }
+  .notes li + li { margin-top: 6px; }
+  .notes code {
+    font-family: var(--mono); font-size: 12px; background: var(--bg);
+    border: 1px solid var(--hair); border-radius: 4px; padding: 1px 5px; color: var(--ink);
+  }
+  .notes strong { color: var(--ink); font-weight: 600; }
+  .notes .open-q {
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--hair);
+    color: var(--muted); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OD · HeyHenry · Paper palette (deepened 2026-05-20)</div>
+  <h1>Billing</h1>
+  <p class="lede">
+    The operator&rsquo;s get-paid surface — organized by project, not by invoice document, because a GC
+    thinks in draw schedules. Answers three questions at a glance: what&rsquo;s ready to bill, what&rsquo;s
+    owed, what&rsquo;s overdue. Henry surfaces the next billable draw quietly; rust is reserved for it.
+  </p>
+  <div class="meta">
+    <span><strong>Object</strong> &middot; Project &middot; Invoice (Draw)</span>
+    <span><strong>Roles</strong> &middot; owner / admin</span>
+    <span><strong>Primary action</strong> &middot; bill the next draw</span>
+    <span><strong>Mock data</strong> &middot; 4 BC projects &middot; 7 draws</span>
+  </div>
+  <div class="grid">
+    <a class="screen-card" href="screens/desktop.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop.html" loading="lazy" title="Billing desktop preview"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">01 &middot; Desktop</div>
+        <div class="screen-title">Default populated &middot; 1280 wide</div>
+        <div class="screen-desc">
+          4-tile cockpit + status chips + project-grouped table with the billing position
+          (Contract&nbsp;&rarr;&nbsp;Billed&nbsp;&rarr;&nbsp;Paid&nbsp;&rarr;&nbsp;Outstanding&nbsp;&rarr;&nbsp;Remaining)
+          and Hillcrest expanded showing 4 draws &mdash; one paid via Interac, one via cheque, one sent, one overdue 28&nbsp;days.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile.html" loading="lazy" title="Billing mobile preview"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">02 &middot; Mobile</div>
+        <div class="screen-title">Stacked cards &middot; 390 wide (iPhone)</div>
+        <div class="screen-desc">
+          Cockpit collapses to 3 tiles (Ready / Outstanding / Overdue). Filter strip collapses to a
+          status sheet. Each project is a tap-to-expand card; <code>Bill draw</code> and <code>Send reminder</code>
+          are 44&times;44 thumb-reachable.
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="notes">
+    <h2>Brief alignment</h2>
+    <ul>
+      <li><strong>Organized by project, not invoice document</strong> &mdash; each row is a project; expanding it reveals its draws. A GC thinks in draws, not invoice docs.</li>
+      <li><strong>Billing position is the language</strong> &mdash; Contract &rarr; Billed &rarr; Paid &rarr; Outstanding &rarr; Remaining-to-bill. Tabular numerals, demoted cents. No margin or cost surfaced.</li>
+      <li><strong>The cockpit is actionable</strong> &mdash; four clickable filters. <code>Ready to bill</code> is the rust-accent tile because that&rsquo;s the one the operator should click first. <code>Overdue</code> renders the number in danger red without taking the rust accent. <strong>No GST-collected tile</strong> &mdash; that lives on Expenses.</li>
+      <li><strong>Status badges are soft-pair tokens, not a rainbow</strong> &mdash; Draft / Sent / Paid / Overdue / Void come from <code>status-tokens.ts</code>. Overdue carries an inline <code>28d</code> age divider. Rollup chips reuse the same soft-pair vocabulary (Ready / 1 overdue / Paid in full / Draft).</li>
+      <li><strong>Henry shows up twice, quietly</strong> &mdash; once as the ready-to-bill prompt on Donahue (&ldquo;Framing complete &mdash; bill draw 2?&rdquo; with a single rust <code>Bill draw</code> button), and once as a passive trace on the overdue Hillcrest draw 4 (&ldquo;Henry sent a reminder 3d ago&rdquo;). Not a chat box.</li>
+      <li><strong>Sort order honors the brief</strong> &mdash; ready-to-bill surfaces first, paid-in-full sinks to the bottom: Donahue &rarr; Hillcrest (expanded) &rarr; Bandsma (draft) &rarr; Petrov (paid).</li>
+      <li><strong>No &ldquo;New invoice&rdquo; button</strong> &mdash; invoices are generated from a project&rsquo;s draw schedule. Only ghost <code>Import with Henry</code> in the header.</li>
+      <li><strong>Three type sizes on screen</strong> &mdash; 16px (project names, KPI labels-of-the-day), 14px (body / cells / customer line), 12px (status badges, sub-labels, cents, dates). Mono used only as labelling device (column headers, invoice hashes, KPI eyebrows, draw sub-labels).</li>
+    </ul>
+    <div class="open-q">
+      <strong>Out of scope this pass:</strong> the empty state (Henry receipt icon + &ldquo;Complete a job and generate an invoice to start getting paid.&rdquo;) is described in the brief but not rendered here. Holdback handling, GST remittance, and the customer-facing invoice document are explicitly out of scope per the must-nots.
+    </div>
+  </div>
+</div>
+</body>
+</html>
