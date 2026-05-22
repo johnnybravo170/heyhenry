@@ -39,6 +39,7 @@ export type CalendarProject = {
 export type CalendarWorker = {
   profile_id: string;
   display_name: string;
+  worker_type: 'employee' | 'subcontractor';
 };
 
 export type CalendarUnavailability = {
@@ -76,7 +77,7 @@ export async function getOwnerCalendarData(
       .lte('scheduled_date', endDate),
     admin
       .from('worker_profiles')
-      .select('id, display_name, tenant_member_id')
+      .select('id, display_name, tenant_member_id, worker_type')
       .eq('tenant_id', tenantId),
     admin
       .from('projects')
@@ -142,6 +143,7 @@ export async function getOwnerCalendarData(
   const workers: CalendarWorker[] = (workersRes.data ?? []).map((w) => ({
     profile_id: w.id as string,
     display_name: (w.display_name as string | null) ?? 'Worker',
+    worker_type: (w.worker_type as 'employee' | 'subcontractor' | null) ?? 'employee',
   }));
 
   const projects: CalendarProject[] = (
