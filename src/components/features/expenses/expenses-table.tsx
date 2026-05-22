@@ -241,7 +241,7 @@ export function ExpensesTable({
                           project →
                         </Link>
                       ) : (
-                        <span className="text-xs">overhead</span>
+                        <span className="text-xs">general overhead</span>
                       )}
                     </td>
                   ) : (

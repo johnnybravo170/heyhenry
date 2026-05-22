@@ -38,7 +38,7 @@ export default async function OverheadExpensesPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Overhead expenses</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">General Overhead expenses</h1>
           <p className="text-sm text-muted-foreground">
             Operating costs not tied to a project — fuel, tools, office, etc.
           </p>
@@ -97,7 +97,7 @@ export default async function OverheadExpensesPage() {
 
       {expenses.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-          <p className="text-muted-foreground">No overhead expenses logged yet.</p>
+          <p className="text-muted-foreground">No general overhead expenses logged yet.</p>
           <Button asChild>
             <Link href="/expenses/new">
               <Plus className="mr-1 size-3.5" />

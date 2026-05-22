@@ -14,7 +14,7 @@ import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const metadata = {
-  title: 'Edit overhead expense — HeyHenry',
+  title: 'Edit general overhead expense — HeyHenry',
 };
 
 export default async function EditOverheadExpensePage({
@@ -75,7 +75,7 @@ export default async function EditOverheadExpensePage({
       </Link>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Edit overhead expense</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Edit general overhead expense</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Fix the category, tweak the amount, or replace the receipt.
           </p>

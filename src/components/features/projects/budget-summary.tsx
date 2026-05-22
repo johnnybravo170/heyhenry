@@ -240,7 +240,7 @@ export function VarianceTab({
           highlight
         />
         <StatBox
-          label="Committed"
+          label="Projected Cost"
           value={formatCurrency(committed_cents)}
           href={projectId ? `/projects/${projectId}?tab=costs&sub=quotes` : undefined}
         />
@@ -393,7 +393,7 @@ export function VarianceTab({
           })()}
         />
         <CompositionCard
-          title="Committed"
+          title="Projected Cost"
           rows={[
             ...(committed_vendor_quotes_cents > 0
               ? [
@@ -490,7 +490,7 @@ export function VarianceTab({
                   <th className="w-8 px-2 py-2" />
                   <th className="px-3 py-2 text-left font-medium">Category</th>
                   <th className="px-3 py-2 text-right font-medium">Estimated</th>
-                  <th className="px-3 py-2 text-right font-medium">Committed</th>
+                  <th className="px-3 py-2 text-right font-medium">Projected Cost</th>
                   <th className="px-3 py-2 text-right font-medium">Actual</th>
                   <th className="px-3 py-2 text-right font-medium">Projected Margin</th>
                 </tr>

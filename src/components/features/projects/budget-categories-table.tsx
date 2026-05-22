@@ -601,14 +601,14 @@ export function BudgetCategoriesTable({
                         className="px-3 py-1.5 text-right font-medium"
                         title="Promised but not yet realized: accepted vendor quotes + active POs"
                       >
-                        Committed
+                        Projected Cost
                         <span aria-hidden className="invisible text-[0.7em]">
                           .00
                         </span>
                       </th>
                       <th
                         className="px-3 py-1.5 text-right font-medium"
-                        title="Estimate − Spent − Committed. Bar shows progress; negative = over budget."
+                        title="Estimate − Spent − Projected Cost. Bar shows progress; negative = over budget."
                       >
                         Remaining
                         <span aria-hidden className="invisible text-[0.7em]">
@@ -781,7 +781,7 @@ function BudgetProgressBar({
 
   const tooltip = [
     `Spent ${formatCurrencyCompact(spentCents)}`,
-    committedCents > 0 ? `Committed ${formatCurrencyCompact(committedCents)}` : null,
+    committedCents > 0 ? `Projected Cost ${formatCurrencyCompact(committedCents)}` : null,
     `Estimate ${formatCurrencyCompact(estimateCents)}`,
   ]
     .filter(Boolean)

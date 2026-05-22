@@ -303,7 +303,7 @@ export function GstRemittancePanel({
                         ? `${row.kind === 'bill' ? 'Bill' : 'Expense'} · ${row.project_name}`
                         : row.kind === 'bill'
                           ? 'Bill (project)'
-                          : 'Overhead expense'}
+                          : 'General overhead expense'}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground">{row.date}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
@@ -322,7 +322,7 @@ export function GstRemittancePanel({
 
       {/* Overhead breakdown by category */}
       <BreakdownSection
-        title={`Overhead expenses · ${taxLabel} paid`}
+        title={`General overhead expenses · ${taxLabel} paid`}
         total={report.paid_overhead.tax_cents}
         exportHref={`/api/expenses/gst-remittance-csv?from=${activeFrom}&to=${activeTo}`}
       >
