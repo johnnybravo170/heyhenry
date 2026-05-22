@@ -21,6 +21,7 @@ import { registerScopedTools } from '@/server/mcp-tools';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 const CORS_HEADERS: Record<string, string> = {
   'access-control-allow-origin': '*',

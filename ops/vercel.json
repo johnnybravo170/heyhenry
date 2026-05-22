@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./ ../pnpm-lock.yaml ../pnpm-workspace.yaml",
   "crons": [
     {
       "path": "/api/ops/maintenance/run?task=weekly",
