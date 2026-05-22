@@ -3,18 +3,21 @@
 /**
  * Owner-wide calendar.
  *
- * Two layouts:
+ * Three layouts (pivots over the same project_assignments data):
  * - "month" (default): standard 7×5 calendar grid. Each cell stacks
  *   colored chips, one per (project, worker) assignment that day. Click a
  *   cell to open the assign dialog with the date prefilled.
- * - "two-week": Gantt-ish rows = projects, columns = 14 days. Each cell
- *   shows a worker chip per assignment.
+ * - "two-week": rows = projects, columns = 14 days (by-project pivot).
+ * - "by-worker": rows = crew members, columns = 14 days. Surfaces each
+ *   worker's whole week across all jobs + flags cross-project
+ *   double-booking (same worker, two sites, one day — which the DB unique
+ *   index per project+worker+date does NOT catch).
  *
- * Both support a "skip weekends" toggle (default on) — when on, the
+ * All support a "skip weekends" toggle (default on) — when on, the
  * assign dialog excludes Sat/Sun from the date range it submits.
  */
 
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
@@ -46,7 +49,19 @@ import {
 } from '@/server/actions/project-assignments';
 import { AssignWorkersDialog } from './assign-workers-dialog';
 
-type View = 'month' | 'two-week';
+type View = 'month' | 'two-week' | 'by-worker';
+
+// Local label map for unavailability reason tags. Mirrors REASON_LABELS in
+// `lib/db/queries/worker-unavailability.ts` — duplicated here on purpose
+// because that module is server-only (createAdminClient) and this is a
+// client component.
+const REASON_LABELS: Record<string, string> = {
+  vacation: 'Vacation',
+  sick: 'Sick',
+  other_job: 'Other job',
+  personal: 'Personal',
+  other: 'Off',
+};
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 const MONTH_NAMES = [
@@ -109,7 +124,13 @@ function isToday(iso: string, tz: string): boolean {
 
 type DialogState =
   | { open: false }
-  | { open: true; projectId: string | null; startDate: string; endDate: string };
+  | {
+      open: true;
+      projectId: string | null;
+      startDate: string;
+      endDate: string;
+      workerProfileId: string | null;
+    };
 
 export function OwnerCalendar({
   view,
@@ -154,6 +175,16 @@ export function OwnerCalendar({
     return map;
   }, [assignments]);
 
+  // Unavailability lookup keyed `${worker_profile_id}:${date}` → reason tag,
+  // for the by-worker grid's off-day cells.
+  const unavailByKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of unavailability) {
+      map.set(`${u.worker_profile_id}:${u.unavailable_date}`, u.reason_tag);
+    }
+    return map;
+  }, [unavailability]);
+
   // For two-week view: only show projects that are active OR have any
   // assignment in the window. Avoids rendering 50 dormant projects.
   // Sort by status (in_progress > planning > complete > cancelled), then name.
@@ -184,25 +215,28 @@ export function OwnerCalendar({
 
   const anchor = parseIso(anchorDate);
 
+  // The day-anchored views (two-week + by-worker) page by 14 days and store
+  // a full YYYY-MM-DD anchor; month pages by month and stores YYYY-MM.
+  const dayAnchored = view !== 'month';
+
   function navigate(deltaMonths: number, deltaDays: number) {
     const d = new Date(anchor);
     d.setMonth(d.getMonth() + deltaMonths);
     d.setDate(d.getDate() + deltaDays);
-    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const params = new URLSearchParams(sp ?? undefined);
-    params.set('ym', ym);
-    if (view === 'two-week') {
-      // Two-week view also tracks the day inside the month — store as ?ym=YYYY-MM
-      // and we'll read ?day too if present.
-      params.set('ym', d.toISOString().slice(0, 10));
-    }
+    params.set(
+      'ym',
+      dayAnchored
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+    );
     router.push(`/calendar?${params.toString()}`);
   }
 
   function setView(next: View) {
     const params = new URLSearchParams(sp ?? undefined);
     if (next === 'month') params.delete('view');
-    else params.set('view', 'two-week');
+    else params.set('view', next);
     router.push(`/calendar?${params.toString()}`);
   }
 
@@ -212,10 +246,15 @@ export function OwnerCalendar({
     router.push(`/calendar?${params.toString()}`);
   }
 
-  function openAssign(startDate: string, endDate: string, projectId: string | null) {
+  function openAssign(
+    startDate: string,
+    endDate: string,
+    projectId: string | null,
+    workerProfileId: string | null = null,
+  ) {
     const lo = startDate <= endDate ? startDate : endDate;
     const hi = startDate <= endDate ? endDate : startDate;
-    setDialog({ open: true, projectId, startDate: lo, endDate: hi });
+    setDialog({ open: true, projectId, startDate: lo, endDate: hi, workerProfileId });
   }
 
   function handleRemove(assignmentId: string) {
@@ -277,10 +316,9 @@ export function OwnerCalendar({
     });
   }
 
-  const headerLabel =
-    view === 'two-week'
-      ? `${MONTH_NAMES[anchor.getMonth()]} ${anchor.getDate()}, ${anchor.getFullYear()}`
-      : `${MONTH_NAMES[anchor.getMonth()]} ${anchor.getFullYear()}`;
+  const headerLabel = dayAnchored
+    ? `${MONTH_NAMES[anchor.getMonth()]} ${anchor.getDate()}, ${anchor.getFullYear()}`
+    : `${MONTH_NAMES[anchor.getMonth()]} ${anchor.getFullYear()}`;
 
   return (
     <div className="space-y-4">
@@ -289,7 +327,7 @@ export function OwnerCalendar({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(view === 'month' ? -1 : 0, view === 'two-week' ? -14 : 0)}
+            onClick={() => navigate(dayAnchored ? 0 : -1, dayAnchored ? -14 : 0)}
             aria-label="Previous"
           >
             <ChevronLeft className="size-4" />
@@ -298,7 +336,7 @@ export function OwnerCalendar({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(view === 'month' ? 1 : 0, view === 'two-week' ? 14 : 0)}
+            onClick={() => navigate(dayAnchored ? 0 : 1, dayAnchored ? 14 : 0)}
             aria-label="Next"
           >
             <ChevronRight className="size-4" />
@@ -339,7 +377,19 @@ export function OwnerCalendar({
                   : 'text-muted-foreground',
               )}
             >
-              2 weeks
+              By project
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('by-worker')}
+              className={cn(
+                'rounded px-3 py-1 text-xs font-medium transition',
+                view === 'by-worker'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground',
+              )}
+            >
+              By worker
             </button>
           </div>
         </div>
@@ -347,7 +397,19 @@ export function OwnerCalendar({
 
       {/* Desktop grids */}
       <div className={cn('hidden sm:block', pending && 'pointer-events-none opacity-70')}>
-        {view === 'month' ? (
+        {view === 'by-worker' ? (
+          <ByWorkerGrid
+            windowStart={windowStart}
+            byDate={byDate}
+            workers={workers}
+            projectById={projectById}
+            unavailByKey={unavailByKey}
+            onOpenAssign={(workerProfileId, date) => openAssign(date, date, null, workerProfileId)}
+            onSelectChip={(a) => setActiveChip(a.id)}
+            activeChipId={activeChip}
+            tz={tz}
+          />
+        ) : view === 'month' ? (
           <MonthGrid
             windowStart={windowStart}
             windowEnd={windowEnd}
@@ -444,6 +506,7 @@ export function OwnerCalendar({
           initialProjectId={dialog.projectId}
           initialStartDate={dialog.startDate}
           initialEndDate={dialog.endDate}
+          initialWorkerId={dialog.workerProfileId}
           skipWeekends={skipWeekends}
         />
       ) : null}
@@ -549,6 +612,235 @@ function MonthGrid({
         })}
       </div>
     </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// By-worker grid (crew rows × 14 days) — the dispatch board
+// ----------------------------------------------------------------------
+
+/** Sort: employees before subs, then by name. */
+function sortCrew(workers: CalendarWorker[]): CalendarWorker[] {
+  return [...workers].sort(
+    (a, b) =>
+      (a.worker_type === 'subcontractor' ? 1 : 0) - (b.worker_type === 'subcontractor' ? 1 : 0) ||
+      a.display_name.localeCompare(b.display_name),
+  );
+}
+
+function ByWorkerGrid({
+  windowStart,
+  byDate,
+  workers,
+  projectById,
+  unavailByKey,
+  onOpenAssign,
+  onSelectChip,
+  activeChipId,
+  tz,
+}: {
+  windowStart: string;
+  byDate: Map<string, CalendarAssignment[]>;
+  workers: CalendarWorker[];
+  projectById: Map<string, CalendarProject>;
+  unavailByKey: Map<string, string>;
+  onOpenAssign: (workerProfileId: string, date: string) => void;
+  onSelectChip: (assignment: CalendarAssignment) => void;
+  activeChipId: string | null;
+  tz: string;
+}) {
+  const days: string[] = [];
+  const start = parseIso(windowStart);
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    days.push(isoDate(d));
+  }
+
+  const crew = sortCrew(workers);
+
+  if (crew.length === 0) {
+    return (
+      <div className="rounded-lg border bg-background p-8 text-center text-sm text-muted-foreground">
+        No crew yet. Invite a worker from{' '}
+        <Link href="/settings/team" className="underline">
+          Settings › Team
+        </Link>{' '}
+        to start scheduling.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border bg-background">
+      <div className="grid min-w-[1100px]" style={{ gridTemplateColumns: '200px 1fr' }}>
+        {/* Header */}
+        <div className="border-b border-r bg-muted/40 px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Crew
+        </div>
+        <div
+          className="grid border-b bg-muted/40"
+          style={{ gridTemplateColumns: 'repeat(14, minmax(70px, 1fr))' }}
+        >
+          {days.map((iso) => {
+            const d = parseIso(iso);
+            return (
+              <div
+                key={iso}
+                className={cn(
+                  'border-r px-1 py-2 text-center text-xs font-medium last:border-r-0',
+                  isWeekend(iso) ? 'bg-muted/30 text-muted-foreground' : '',
+                  isToday(iso, tz) && 'bg-primary/10 text-primary',
+                )}
+              >
+                <div>{DAY_NAMES[d.getDay()]}</div>
+                <div className="text-[10px]">{d.getDate()}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Worker rows */}
+        {crew.map((w) => {
+          const bookedDays = days.filter((iso) =>
+            (byDate.get(iso) ?? []).some((a) => a.worker_profile_id === w.profile_id),
+          ).length;
+          return (
+            <WorkerRow
+              key={w.profile_id}
+              worker={w}
+              days={days}
+              byDate={byDate}
+              projectById={projectById}
+              unavailByKey={unavailByKey}
+              bookedDays={bookedDays}
+              onOpenAssign={onOpenAssign}
+              onSelectChip={onSelectChip}
+              activeChipId={activeChipId}
+              tz={tz}
+            />
+          );
+        })}
+      </div>
+      <p className="border-t bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
+        Each row is one crew member across all jobs. A{' '}
+        <span className="font-medium text-destructive">red ⚠ cell</span> means they&rsquo;re booked
+        on two sites the same day. Tap an open cell to schedule, a chip for details.
+      </p>
+    </div>
+  );
+}
+
+function WorkerRow({
+  worker,
+  days,
+  byDate,
+  projectById,
+  unavailByKey,
+  bookedDays,
+  onOpenAssign,
+  onSelectChip,
+  activeChipId,
+  tz,
+}: {
+  worker: CalendarWorker;
+  days: string[];
+  byDate: Map<string, CalendarAssignment[]>;
+  projectById: Map<string, CalendarProject>;
+  unavailByKey: Map<string, string>;
+  bookedDays: number;
+  onOpenAssign: (workerProfileId: string, date: string) => void;
+  onSelectChip: (assignment: CalendarAssignment) => void;
+  activeChipId: string | null;
+  tz: string;
+}) {
+  return (
+    <>
+      {/* Worker label */}
+      <div className="flex flex-col justify-center border-b border-r px-3 py-2">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-medium">{worker.display_name}</span>
+          {worker.worker_type === 'subcontractor' ? (
+            <span className="shrink-0 rounded bg-muted px-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              sub
+            </span>
+          ) : null}
+        </div>
+        <span className="text-[11px] text-muted-foreground">
+          {bookedDays === 0 ? 'open all week' : `${bookedDays}d booked`}
+        </span>
+      </div>
+
+      {/* Day cells */}
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(14, minmax(70px, 1fr))' }}>
+        {days.map((iso) => {
+          const items = (byDate.get(iso) ?? []).filter(
+            (a) => a.worker_profile_id === worker.profile_id,
+          );
+          const distinctProjects = new Set(items.map((a) => a.project_id));
+          const conflict = distinctProjects.size >= 2;
+          const reason = unavailByKey.get(`${worker.profile_id}:${iso}`);
+
+          return (
+            <div
+              key={iso}
+              className={cn(
+                'min-h-[52px] space-y-0.5 border-b border-r p-1 last:border-r-0',
+                isWeekend(iso) && 'bg-muted/10',
+                isToday(iso, tz) && 'ring-1 ring-inset ring-primary/40',
+                conflict &&
+                  'bg-destructive/10 ring-1 ring-inset ring-destructive/50 dark:bg-destructive/20',
+              )}
+            >
+              {conflict ? (
+                <div
+                  className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-destructive"
+                  title="Double-booked — on two jobs this day"
+                >
+                  <AlertTriangle className="size-3" /> Conflict
+                </div>
+              ) : null}
+
+              {items.map((a) => {
+                const proj = projectById.get(a.project_id);
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => onSelectChip(a)}
+                    title={proj?.name ?? 'Project'}
+                    className={cn(
+                      'flex w-full items-center rounded border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:brightness-95',
+                      projectColor(a.project_id),
+                      activeChipId === a.id && 'ring-2 ring-foreground ring-offset-1',
+                    )}
+                  >
+                    <span className="truncate">{proj?.name ?? 'Project'}</span>
+                  </button>
+                );
+              })}
+
+              {items.length === 0 && reason ? (
+                <div className="rounded border border-dashed border-muted-foreground/30 bg-muted/30 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                  {REASON_LABELS[reason] ?? 'Off'}
+                </div>
+              ) : null}
+
+              {items.length === 0 && !reason ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenAssign(worker.profile_id, iso)}
+                  aria-label={`Schedule ${worker.display_name} on ${iso}`}
+                  className="flex h-full min-h-[44px] w-full items-center justify-center rounded text-muted-foreground/40 transition hover:bg-muted/40 hover:text-muted-foreground"
+                >
+                  +
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 

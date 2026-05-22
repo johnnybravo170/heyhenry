@@ -35,21 +35,23 @@ export default async function CalendarPage({
 
   const sp = await searchParams;
   const ymRaw = typeof sp.ym === 'string' ? sp.ym : null;
-  const view = sp.view === 'two-week' ? 'two-week' : 'month';
+  const view =
+    sp.view === 'two-week' ? 'two-week' : sp.view === 'by-worker' ? 'by-worker' : 'month';
 
-  // Anchor date: parse ?ym=YYYY-MM, default to today.
+  // Anchor date: parse ?ym=YYYY-MM (month) or YYYY-MM-DD (day-anchored
+  // two-week / by-worker views), default to today.
   let anchor = new Date();
-  if (ymRaw && /^\d{4}-\d{2}$/.test(ymRaw)) {
-    const [y, m] = ymRaw.split('-').map(Number);
-    anchor = new Date(y, (m ?? 1) - 1, 1);
+  if (ymRaw && /^\d{4}-\d{2}(-\d{2})?$/.test(ymRaw)) {
+    const [y, m, d] = ymRaw.split('-').map(Number);
+    anchor = new Date(y, (m ?? 1) - 1, d ?? 1);
   }
 
   // Window: full month (padded to whole weeks) for month view; 14 days from
-  // anchor for two-week view. Either way, we over-fetch by a few days to
-  // cover the rendered grid edges.
+  // anchor for the two-week + by-worker views. Either way, we over-fetch by a
+  // few days to cover the rendered grid edges.
   let windowStart: Date;
   let windowEnd: Date;
-  if (view === 'two-week') {
+  if (view === 'two-week' || view === 'by-worker') {
     windowStart = new Date(anchor);
     windowEnd = new Date(anchor);
     windowEnd.setDate(windowEnd.getDate() + 13);
