@@ -35,10 +35,10 @@ function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
 }
 
-function daysSince(iso: string): number {
+function daysSince(iso: string, nowMs: number): number {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return 0;
-  return Math.max(0, Math.floor((Date.now() - then) / 86_400_000));
+  return Math.max(0, Math.floor((nowMs - then) / 86_400_000));
 }
 
 /** Phone-first reach: phone is primary (tap-to-call), email muted secondary. */
@@ -73,13 +73,15 @@ function Signal({
   signal,
   kind,
   createdAt,
+  nowMs,
 }: {
   signal: ContactSignal;
   kind: ContactKind;
   createdAt: string;
+  nowMs: number;
 }) {
   if (kind === 'lead') {
-    const age = daysSince(createdAt);
+    const age = daysSince(createdAt, nowMs);
     if (age <= LEAD_FRESH_DAYS) {
       return (
         <span className="text-sm">
@@ -156,7 +158,14 @@ function MessagingOff() {
  * detail page via a stretched overlay link (PATTERNS: row-as-link) — the
  * phone/email links sit above it (`z-10`) so tap-to-call still works.
  */
-export function CustomerTable({ customers }: { customers: ContactRow[] }) {
+export function CustomerTable({
+  customers,
+  nowMs,
+}: {
+  customers: ContactRow[];
+  /** Server-stable timestamp for relative-time rendering (avoids hydration drift). */
+  nowMs: number;
+}) {
   return (
     <>
       {/* Desktop table */}
@@ -200,6 +209,7 @@ export function CustomerTable({ customers }: { customers: ContactRow[] }) {
                     signal={customer.signal}
                     kind={customer.kind}
                     createdAt={customer.created_at}
+                    nowMs={nowMs}
                   />
                 </TableCell>
               </TableRow>
@@ -239,6 +249,7 @@ export function CustomerTable({ customers }: { customers: ContactRow[] }) {
                       signal={customer.signal}
                       kind={customer.kind}
                       createdAt={customer.created_at}
+                      nowMs={nowMs}
                     />
                     {customer.do_not_auto_message ? <MessagingOff /> : null}
                   </div>

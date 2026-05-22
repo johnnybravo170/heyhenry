@@ -83,6 +83,13 @@ export default async function ContactsPage({
   const showingCount = customers.length;
   const rangeStart = grandTotal === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = (page - 1) * PAGE_SIZE + showingCount;
+  // A single server-stable timestamp for any relative-time rendering in the
+  // (client) table — passed as a prop so SSR and hydration agree (no Date.now
+  // mismatch). The directory shows the search bar whenever a filter is active
+  // OR the directory is non-empty, so a zero-result filter never traps the
+  // user on a chrome-less page.
+  const nowMs = Date.now();
+  const showSearchBar = hasFilters || grandTotal > 0;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -90,10 +97,12 @@ export default async function ContactsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
           <p className="text-sm text-muted-foreground">
-            {grandTotal === 0
+            {!hasFilters && grandTotal === 0
               ? 'Nobody in the system yet.'
               : hasFilters
-                ? `${rangeStart}–${rangeEnd} of ${grandTotal} contact${grandTotal === 1 ? '' : 's'}`
+                ? grandTotal === 0
+                  ? 'No matches'
+                  : `${rangeStart}–${rangeEnd} of ${grandTotal} contact${grandTotal === 1 ? '' : 's'}`
                 : `${grandTotal} contact${grandTotal === 1 ? '' : 's'} on file`}
           </p>
         </div>
@@ -105,7 +114,7 @@ export default async function ContactsPage({
         </Button>
       </header>
 
-      {grandTotal > 0 ? (
+      {showSearchBar ? (
         <Suspense fallback={null}>
           <CustomerSearchBar defaultQuery={query} />
         </Suspense>
@@ -115,7 +124,7 @@ export default async function ContactsPage({
         <CustomerEmptyState variant={hasFilters ? 'filtered' : 'fresh'} />
       ) : (
         <>
-          <CustomerTable customers={rows} />
+          <CustomerTable customers={rows} nowMs={nowMs} />
           <ContactsPager page={page} pageSize={PAGE_SIZE} total={grandTotal} />
         </>
       )}
