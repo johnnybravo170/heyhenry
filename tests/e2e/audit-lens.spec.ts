@@ -104,7 +104,10 @@ test.describe
 
     test('Budget tab shows CO chip on the modified line + applied-CO banner', async ({ page }) => {
       await signInAsOwner(page, seed);
-      await page.goto(`/projects/${seed.projectId}?tab=budget`);
+      // ?expand=all forces sections open: the redesigned execution-posture
+      // budget table collapses sections by default, so category-level CO
+      // chips only render once their section is expanded.
+      await page.goto(`/projects/${seed.projectId}?tab=budget&expand=all`);
 
       // Chip on the affected line in the budget table.
       const chip = page.getByText(`CO ${coShortId}`, { exact: false }).first();
@@ -120,7 +123,7 @@ test.describe
 
     test('Budget tab shows CO chip linking to the applied CO', async ({ page }) => {
       await signInAsOwner(page, seed);
-      await page.goto(`/projects/${seed.projectId}?tab=budget`);
+      await page.goto(`/projects/${seed.projectId}?tab=budget&expand=all`);
 
       // The chip is an <a> linking to /projects/.../change-orders/<co.id>
       // with a `?from=...&fromLabel=...` smart-back suffix. Match the
