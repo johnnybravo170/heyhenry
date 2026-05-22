@@ -50,6 +50,10 @@ function parseDir(value: string | string[] | undefined): 'asc' | 'desc' {
   return value === 'asc' || value === 'desc' ? value : 'desc';
 }
 
+function parseOverBudget(value: string | string[] | undefined): boolean {
+  return value === 'overbudget';
+}
+
 function parsePage(value: string | string[] | undefined): number {
   if (typeof value !== 'string') return 1;
   const n = Number.parseInt(value, 10);
@@ -66,9 +70,10 @@ export default async function ProjectsPage({
   const query = parseQuery(resolved.q);
   const sort = parseSort(resolved.sort);
   const dir = parseDir(resolved.dir);
+  const overBudget = parseOverBudget(resolved.attention);
   const page = parsePage(resolved.page);
   const hasFilters = Boolean(
-    query || resolved.status, // an explicit status param counts as a filter
+    query || resolved.status || overBudget, // an explicit filter param counts
   );
 
   // Resolve customers matching the search term so we can match on
@@ -81,14 +86,18 @@ export default async function ProjectsPage({
     stages,
     name: query || undefined,
     customerIds,
+    overBudget: overBudget || undefined,
     sort,
     dir,
   };
 
-  const [projects, grandTotal, stageCounts, allCustomers] = await Promise.all([
+  const [projects, grandTotal, stageCounts, overBudgetCount, allCustomers] = await Promise.all([
     listProjects({ ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     countProjects(filters),
     countProjectsByLifecycleStage(),
+    // Chip count is global (like the per-stage counts) — independent of the
+    // status / search filters currently applied.
+    countProjects({ overBudget: true }),
     // For the clone row-action's customer picker.
     listCustomers({ limit: 500 }),
   ]);
@@ -106,7 +115,7 @@ export default async function ProjectsPage({
       start_date: p.start_date,
       estimate_sent_at: p.estimate_sent_at,
       work_status_pct: prog?.workStatusPct ?? 0,
-      cost_burn_pct: prog?.costBurnPct ?? 0,
+      over_budget: p.is_over_budget,
       customer: p.customer ? { id: p.customer.id, name: p.customer.name } : null,
       region: p.customer
         ? [p.customer.city, p.customer.province].filter(Boolean).join(' · ') || null
@@ -165,6 +174,8 @@ export default async function ProjectsPage({
               activeStages={stages}
               stageCounts={stageCounts}
               defaultQuery={query}
+              overBudgetActive={overBudget}
+              overBudgetCount={overBudgetCount}
             />
           </Suspense>
 

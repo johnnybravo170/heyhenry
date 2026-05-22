@@ -61,6 +61,12 @@ export type ProjectRow = {
    * document heading + auto-default snippets; internal UX is identical.
    */
   document_type: 'estimate' | 'quote';
+  /**
+   * Denormalized "needs attention" signal: project-level burn > 100% OR any
+   * budget category over its envelope. Trigger-maintained (see migration
+   * 20260522212244). Single source of truth for the list filter + row badge.
+   */
+  is_over_budget: boolean;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -96,6 +102,10 @@ export type ProjectListFilters = {
   name?: string;
   /** Customer ids whose name matched the search term — OR'd with the name match. */
   customerIds?: string[];
+  /** "Needs attention" quick-filter: only over-budget projects. Backed by the
+   *  denormalized `projects.is_over_budget` signal + partial index — cheap at
+   *  scale (no per-row burn recompute across the result set). */
+  overBudget?: boolean;
   /** DB-backed sort column. Progress (% complete) is computed per-page, not sortable here. */
   sort?: ProjectListSort;
   dir?: 'asc' | 'desc';
@@ -106,7 +116,7 @@ export type ProjectListFilters = {
 export type LifecycleStageCounts = Record<LifecycleStage, number>;
 
 const PROJECT_COLUMNS =
-  'id, tenant_id, customer_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, is_cost_plus, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, estimate_approval_method, estimate_approved_by_member_id, estimate_approval_proof_paths, estimate_approval_notes, terms_text, document_type, deleted_at, created_at, updated_at';
+  'id, tenant_id, customer_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, is_cost_plus, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, estimate_approval_method, estimate_approved_by_member_id, estimate_approval_proof_paths, estimate_approval_notes, terms_text, document_type, is_over_budget, deleted_at, created_at, updated_at';
 
 const PROJECT_WITH_CUSTOMER_SELECT = `${PROJECT_COLUMNS}, customers:customer_id (id, name, type, city, province)`;
 
@@ -153,7 +163,7 @@ const SORT_COLUMN: Record<ProjectListSort, string> = {
 /** Shared filter application for listProjects + countProjects. */
 function applyProjectListFilters<
   T extends {
-    is: (col: string, value: null) => T;
+    is: (col: string, value: null | boolean) => T;
     eq: (col: string, value: string) => T;
     in: (col: string, values: readonly string[]) => T;
     or: (expr: string) => T;
@@ -167,6 +177,7 @@ function applyProjectListFilters<
     q = q.eq('lifecycle_stage', filters.stage);
   }
   if (filters.customer_id) q = q.eq('customer_id', filters.customer_id);
+  if (filters.overBudget) q = q.is('is_over_budget', true);
 
   const name = filters.name?.trim();
   if (name) {
