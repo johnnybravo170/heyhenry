@@ -1,0 +1,1406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Billing · HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+
+  /* Phone frame (identical to Spend / Labour mobile) */
+  .phone {
+    width: 390px; height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  /* iOS status bar */
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .signal { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+  .signal i { display: block; width: 2.5px; background: var(--ink); border-radius: 1px; }
+  .signal i:nth-child(1) { height: 4px; }
+  .signal i:nth-child(2) { height: 6px; }
+  .signal i:nth-child(3) { height: 8px; }
+  .signal i:nth-child(4) { height: 10px; }
+  .battery { width: 22px; height: 11px; border: 1.2px solid var(--ink); border-radius: 3px; position: relative; }
+  .battery::after { content: ''; position: absolute; right: -3px; top: 2.5px; width: 2px; height: 4px; background: var(--ink); border-radius: 1px; }
+  .battery::before { content: ''; position: absolute; left: 1px; top: 1px; width: 14px; height: 5px; background: var(--ink); border-radius: 1px; }
+
+  /* App header */
+  .app-header {
+    padding: 8px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    cursor: pointer;
+    margin-left: -6px;
+  }
+  .header-back svg { width: 14px; height: 14px; }
+  .header-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .icon-btn-sm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn-sm svg { width: 16px; height: 16px; }
+  .add-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .add-pill .glyph { color: var(--rust); font-size: 13px; }
+
+  .header-title {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    flex: 1; min-width: 0;
+  }
+  .header-title h1 .chev {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    margin-left: 2px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    vertical-align: -4px;
+  }
+  .header-title h1 .chev svg { width: 11px; height: 11px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-pill .check { display: grid; place-items: center; width: 9px; height: 9px; }
+  .status-pill .check svg { width: 9px; height: 9px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+
+  /* Tab dropdown — Billing carries a danger-toned "1" (1 overdue draw) */
+  .tab-select-wrap {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-select {
+    flex: 1;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tab-select .arrow { margin-left: auto; color: var(--muted); display: grid; place-items: center; }
+  .tab-select .arrow svg { width: 12px; height: 12px; }
+  .tab-select .total-sep { margin-left: 8px; color: var(--faint); }
+  .tab-select .total-badge {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--danger-soft); color: var(--danger);
+    padding: 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  /* Scrollable body */
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 92px;
+    scroll-padding-top: 14px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* Open-menu preview — shows per-tab badges in dropdown */
+  .menu-preview {
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 6px;
+    background: transparent;
+  }
+  .menu-preview .preview-eyebrow {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .menu-preview .mi-row {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .menu-preview .mi {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 7px 3px 8px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    font-size: 11px; font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.005em;
+  }
+  .menu-preview .mi.is-active { background: var(--nav-active); color: var(--ink); border-color: var(--rule); }
+  .menu-preview .mi .b {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+  .menu-preview .mi .b.warn   { color: var(--warn);   background: var(--warn-soft); }
+  .menu-preview .mi .b.danger { color: var(--danger); background: var(--danger-soft); }
+  .menu-preview .mi .b.rust   { color: #fff; background: var(--rust); }
+
+  /* Section eyebrow */
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    margin: 2px 4px 6px;
+  }
+  .section-eyebrow .label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-eyebrow .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Stacked position card — 5 sum-rows + actionables ───── */
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 4px 14px;
+  }
+  .sum-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 4px;
+    align-items: baseline;
+    padding: 11px 0;
+    border-top: 1px dashed var(--rule);
+  }
+  .sum-row:first-of-type { border-top: 0; padding-top: 13px; }
+  .sum-label {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: baseline;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .sum-meta {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .sum-meta strong {
+    color: var(--ink-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .sum-meta .sep { color: var(--faint); margin: 0 3px; }
+  .sum-meta.is-rust { color: var(--rust); }
+  .sum-meta.is-rust strong { color: var(--rust); }
+  .sum-value {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-align: right;
+    align-self: baseline;
+  }
+  .sum-value.is-shout { color: var(--rust); }
+  .sum-value.is-shout .cents { color: rgba(194,65,12,0.6); }
+  .sum-value .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+  /* Actionables (stacked on mobile, peach + danger as full-width tiles) */
+  .actionables-stack {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px 0 4px;
+    border-top: 1px dashed var(--rule);
+  }
+  .action-tile {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-family: var(--sans);
+    cursor: pointer;
+    text-align: left;
+    background: transparent;
+    width: 100%;
+    min-height: 44px;
+  }
+  .action-tile .at-stack {
+    display: flex; flex-direction: column; gap: 2px;
+    min-width: 0;
+  }
+  .action-tile .at-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .action-tile .at-glyph { font-size: 12px; line-height: 1; }
+  .action-tile .at-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .action-tile .at-money {
+    margin-left: auto;
+    font-size: 17px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .action-tile .at-money .cents { font-size: 11px; font-weight: 500; color: var(--muted); }
+  .action-tile.is-ready  { background: var(--rust-soft);   border-color: rgba(194,65,12,0.22); color: var(--rust); text-decoration: none; }
+  .action-tile.is-overdue { background: var(--danger-soft); border-color: rgba(185,28,28,0.22); color: var(--danger); }
+  .action-tile .at-link {
+    margin-left: auto;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    color: var(--rust);
+    border-bottom: 1px solid rgba(194,65,12,0.32);
+    padding-bottom: 1px;
+  }
+
+  .sum-foot {
+    padding: 10px 0 4px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sum-foot strong { color: var(--ink-2); font-weight: 700; }
+  .sum-foot a {
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* ───── Action row (mobile — primary CTA + GST select) ───── */
+  .action-row {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .btn-rust {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    min-height: 44px;
+    width: 100%;
+  }
+  .btn-rust svg { width: 13px; height: 13px; }
+  .secondary-row {
+    display: flex; gap: 8px;
+  }
+  .btn-ghost-line {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 40px;
+    padding: 0 10px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    flex: 1;
+    min-height: 44px;
+  }
+  .btn-ghost-line[aria-disabled="true"] {
+    background: var(--chip-fill);
+    color: var(--faint);
+    cursor: not-allowed;
+    flex-direction: column;
+    gap: 1px;
+    padding: 6px 10px;
+    height: auto; min-height: 44px;
+  }
+  .btn-ghost-line[aria-disabled="true"] .label-row {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-ghost-line .why {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 600;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .btn-ghost-line svg { width: 12px; height: 12px; }
+  .gst-select {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 40px;
+    padding: 0 12px 0 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+  }
+  .gst-select .label-pre { color: var(--muted); font-weight: 500; }
+  .gst-select strong { color: var(--ink); font-weight: 700; }
+  .gst-select svg { width: 11px; height: 11px; color: var(--muted); }
+
+  /* ───── Region head ───── */
+  .region-head-m {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 4px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .region-title-m {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .region-meta-m {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .region-meta-m strong { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
+  .region-actions-m {
+    margin-left: auto;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .filter-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 30px;
+    padding: 0 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .filter-pill svg { width: 10px; height: 10px; color: var(--muted); }
+  .filter-pill .label-pre { color: var(--muted); font-weight: 500; margin-right: 2px; }
+
+  /* Status pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    border-radius: 4px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .pill.is-draft   { color: var(--ink-2); background: var(--chip-fill); }
+  .pill.is-sent    { color: var(--warn);  background: var(--warn-soft); }
+  .pill.is-paid    { color: var(--ok);    background: var(--ok-soft); }
+  .pill.is-overdue { color: var(--danger);background: var(--danger-soft); }
+
+  .method-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .method-chip.is-stripe  { color: #635BFF; background: rgba(99,91,255,0.08); }
+  .method-chip.is-interac { color: #B68800; background: rgba(255,184,28,0.16); }
+
+  /* ───── Stacked draw card ───── */
+  .draw-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .draw-card + .draw-card { margin-top: 8px; }
+  .draw-card.is-overdue {
+    background: rgba(254, 226, 226, 0.2);
+    border-color: rgba(185,28,28,0.18);
+  }
+  .dc-head {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .dc-name {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    min-width: 0;
+    flex: 1;
+  }
+  .dc-pct {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-left: auto;
+  }
+  .dc-pct .unit { color: var(--faint); }
+  .dc-meta {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.3;
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .dc-meta strong { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .dc-meta .age {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--danger);
+    background: var(--danger-soft);
+    padding: 2px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+  }
+  .dc-money {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 8px 0 4px;
+    border-top: 1px dashed var(--rule);
+  }
+  .dc-money .lab {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .dc-money .of-contract {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .dc-money .of-contract strong { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
+  .dc-money .total {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+  }
+  .dc-money .total .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .dc-footer {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .row-action {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    height: 40px;
+    padding: 0 12px;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    line-height: 1.2;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .row-action svg { width: 12px; height: 12px; }
+  .row-action.is-flex { flex: 1; }
+
+  /* AR autopilot strip — info-soft, labeled, cancelable */
+  .ar-strip {
+    margin-top: 4px;
+    padding: 8px 10px;
+    background: var(--info-soft);
+    border: 1px solid rgba(30,64,175,0.16);
+    border-radius: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .ar-strip .lab {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ar-strip .ar-text { color: var(--ink-2); font-weight: 500; }
+  .ar-strip .ar-text strong { color: var(--ink); font-weight: 700; }
+  .ar-strip .body-row {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ar-strip .cancel {
+    margin-left: auto;
+    color: var(--info);
+    font-family: var(--sans);
+    font-size: 11px; font-weight: 600;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(30,64,175,0.3);
+    padding-bottom: 1px;
+    flex-shrink: 0;
+  }
+
+  /* ───── Henry Ready-to-bill nudge (peach card, mobile) ───── */
+  .henry-nudge {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194,65,12,0.18);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 12px 12px 0;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .henry-mark {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .henry-mark .glyph { font-size: 13px; line-height: 1; }
+  .henry-text {
+    color: var(--ink); font-size: 13px; font-weight: 500; line-height: 1.5;
+    letter-spacing: -0.005em;
+  }
+  .henry-text strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .henry-text .sub-line {
+    display: block;
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+  }
+  .henry-text .sub-line .target { color: var(--ink-2); font-weight: 700; text-transform: none; letter-spacing: 0; }
+  .henry-text .sub-line .sep { color: var(--faint); margin: 0 3px; }
+  .henry-row {
+    display: flex; gap: 6px;
+  }
+  .henry-cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    flex: 1;
+    min-height: 44px;
+  }
+  .henry-dismiss {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 44px;
+    padding: 0 14px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+  }
+
+  /* ───── + New draw bottom-sheet (docked in body for the spec) ───── */
+  .sheet {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 0;
+    overflow: hidden;
+  }
+  .sheet-handle {
+    height: 18px;
+    display: grid; place-items: center;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+  }
+  .sheet-handle .bar {
+    width: 36px; height: 4px;
+    border-radius: 999px;
+    background: var(--faint);
+  }
+  .sheet-head {
+    padding: 12px 14px 6px;
+    display: flex; align-items: baseline; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .sheet-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .sheet-title { font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .sheet-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .sheet-body {
+    padding: 8px 14px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sheet-grid {
+    display: grid;
+    grid-template-columns: 1fr 90px;
+    gap: 8px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .field label .req { color: var(--rust); font-weight: 700; margin-left: 2px; }
+  .field label .helper {
+    font-family: var(--sans);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .field input[type="text"],
+  .field input[type="number"],
+  .field select,
+  .field textarea {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 500;
+    height: 40px;
+    min-height: 40px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Line items inside the sheet */
+  .lineitems {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .lineitems-head {
+    padding: 8px 10px 6px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; justify-content: space-between;
+  }
+  .lineitem {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    padding: 8px 10px 4px;
+    border-top: 1px solid var(--hair);
+    align-items: center;
+  }
+  .lineitem:first-of-type { border-top: 0; }
+  .lineitem input[type="text"] {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 7px 9px;
+    font-size: 12px;
+    color: var(--ink);
+    height: 36px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .lineitem .amt-row {
+    display: flex; align-items: center; gap: 4px;
+    grid-column: 1 / -1;
+  }
+  .lineitem .amt-row label {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .lineitem .amt-row input[type="number"] {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 7px 9px;
+    font-size: 13px;
+    color: var(--ink);
+    height: 36px;
+    flex: 1;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-family: var(--sans);
+    box-sizing: border-box;
+  }
+  .lineitem .li-del {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .lineitem .li-del svg { width: 13px; height: 13px; }
+  .add-line {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin: 4px 10px 10px;
+    height: 36px;
+    padding: 0 12px;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px dashed var(--rule);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+  }
+  .add-line svg { width: 11px; height: 11px; color: var(--muted); }
+
+  /* Live GST preview — same info-soft mode-aware element as desktop */
+  .gst-preview {
+    padding: 10px 12px;
+    background: var(--info-soft);
+    border: 1px solid rgba(30,64,175,0.16);
+    border-radius: 9px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .gst-preview .head-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .gst-preview .lab {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .gst-preview .mode-note {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+  }
+  .gst-preview .calc {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    line-height: 1.55;
+  }
+  .gst-preview .calc .num { color: var(--ink); font-weight: 700; }
+  .gst-preview .calc .total { color: var(--ink); font-weight: 800; font-size: 14px; }
+
+  /* Bottom tab bar — Projects active (same as Spend / Labour mobile) */
+  .tab-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 76px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    padding: 0 4px 18px;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--muted);
+    font-size: 10px; font-weight: 600;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .tab-item.active { color: var(--ink); }
+  .tab-item svg { width: 18px; height: 18px; }
+  .tab-item .label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .tab-item.with-count { position: relative; }
+  .tab-item .count {
+    position: absolute; top: 0; right: calc(50% - 18px);
+    background: var(--rust); color: #fff;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    line-height: 1.4;
+    min-width: 14px;
+    text-align: center;
+  }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- iOS status bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="island"></span>
+      <span class="right">
+        <span class="signal"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="battery"></span>
+      </span>
+    </div>
+
+    <!-- App header (identical shell to Spend / Labour mobile) -->
+    <div class="app-header">
+      <div class="header-top">
+        <button class="header-back" aria-label="Back to projects"><svg><use href="#i-chevron-left"/></svg></button>
+        <span class="header-crumb">Projects</span>
+        <span class="header-actions">
+          <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+          <button class="icon-btn-sm" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </span>
+      </div>
+      <div class="header-title">
+        <h1>Glenwood Heights<br/>Master Suite Addition
+          <span class="chev" aria-label="Project details"><svg><use href="#i-chevron-down"/></svg></span>
+        </h1>
+        <span class="status-pill status-active">
+          <span class="check"><svg><use href="#i-check"/></svg></span>Active
+        </span>
+      </div>
+      <div class="customer-line">
+        <a href="#">Daniel &amp; Priya Mohan</a>
+      </div>
+
+      <!-- Nav as a select — Billing carries danger-toned "1" (1 overdue draw).
+           First time Billing gets a tab-owned count; Budget² and Client² are
+           the existing precedents (warn-soft and rust-fill respectively).
+           Same count drives Overview's "Needs You" ranking. -->
+      <div class="tab-select-wrap" role="navigation" aria-label="Project sections">
+        <div class="tab-select" aria-expanded="false" title="1 overdue draw — same count drives the Overview Needs-You ranking">
+          <span>Billing</span>
+          <span class="total-sep">&middot;</span>
+          <span class="total-badge" aria-label="1 overdue draw">1</span>
+          <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="body">
+
+      <!-- Open-menu preview (design-spec — shows the per-option badges in the
+           dropdown; Billing is danger-toned because the overdue draw is the
+           critical alert; Labour/Budget/Spend keep their warn-soft tone). -->
+      <div class="menu-preview" aria-hidden="true">
+        <span class="preview-eyebrow">Open menu flags</span>
+        <div class="mi-row">
+          <span class="mi">Budget<span class="b warn">2</span></span>
+          <span class="mi">Spend<span class="b warn">1</span></span>
+          <span class="mi">Labour<span class="b warn">2</span></span>
+          <span class="mi is-active">Billing<span class="b danger">1</span></span>
+          <span class="mi">Client<span class="b rust">2</span></span>
+        </div>
+      </div>
+
+      <!-- ═══════ Position card — 5 stacked sum-rows + actionables stack ═══════ -->
+      <section aria-label="Billing position">
+        <div class="section-eyebrow">
+          <span class="label">Billing</span>
+          <span class="meta">Mohan &middot; draws &amp; invoices</span>
+        </div>
+        <div class="summary-card">
+          <div class="sum-row">
+            <span class="sum-label">Contract</span>
+            <span class="sum-meta">Estimate <strong>$135,000</strong> <span class="sep">+</span> COs <strong>$7,000</strong></span>
+            <span class="sum-value">$142,000<span class="cents">.00</span></span>
+          </div>
+          <div class="sum-row">
+            <span class="sum-label">Billed</span>
+            <span class="sum-meta"><strong>47.3%</strong> of contract</span>
+            <span class="sum-value">$67,200<span class="cents">.00</span></span>
+          </div>
+          <div class="sum-row">
+            <span class="sum-label">Paid</span>
+            <span class="sum-meta"><strong>2</strong>&nbsp;draws cleared</span>
+            <span class="sum-value">$56,000<span class="cents">.00</span></span>
+          </div>
+          <div class="sum-row">
+            <span class="sum-label">Outstanding</span>
+            <span class="sum-meta is-rust">All on <strong>Draw 3</strong></span>
+            <span class="sum-value is-shout">$11,200<span class="cents">.00</span></span>
+          </div>
+          <div class="sum-row">
+            <span class="sum-label">Remaining</span>
+            <span class="sum-meta"><strong>52.7%</strong> left of contract</span>
+            <span class="sum-value">$74,800<span class="cents">.00</span></span>
+          </div>
+
+          <!-- Actionables — Ready-to-bill chip anchors to Henry's suggestion
+               below (no $ or draw # restated). Overdue is the money tile. -->
+          <div class="actionables-stack" role="group" aria-label="Billing actionables">
+            <a href="#henry-nudge" class="action-tile is-ready" aria-label="See Henry's ready-to-bill suggestion">
+              <span class="at-stack">
+                <span class="at-eyebrow"><span class="at-glyph">&#10022;</span>Ready to bill</span>
+                <span class="at-meta">Henry has a draft below</span>
+              </span>
+              <span class="at-link">See suggestion &rarr;</span>
+            </a>
+            <button class="action-tile is-overdue" type="button">
+              <span class="at-stack">
+                <span class="at-eyebrow">Overdue</span>
+                <span class="at-meta">1 draw &middot; 17 days past sent</span>
+              </span>
+              <span class="at-money">$11,200<span class="cents">.00</span></span>
+            </button>
+          </div>
+
+          <div class="sum-foot">
+            <span><strong>Contract</strong> = approved estimate + change orders</span>
+            <span>All projects&rsquo; AR on <a href="#">Billing &rarr;</a></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════ Action row — primary rust + secondary ghosts + GST mode ═══════ -->
+      <section aria-label="Billing actions">
+        <div class="action-row">
+          <button class="btn-rust" type="button"><svg><use href="#i-plus"/></svg>New draw</button>
+          <div class="secondary-row">
+            <button class="btn-ghost-line" type="button" aria-disabled="true" title="Lump-sum invoice not available — draws already exist on this project">
+              <span class="label-row"><svg><use href="#i-file"/></svg>Invoice full estimate</span>
+              <span class="why">draws exist</span>
+            </button>
+            <button class="btn-ghost-line" type="button" aria-disabled="true" title="Generate final — available when the project reaches 100% complete">
+              <span class="label-row"><svg><use href="#i-check"/></svg>Generate final</span>
+              <span class="why">at 100%</span>
+            </button>
+          </div>
+          <button class="gst-select" type="button" aria-haspopup="listbox">
+            <span><span class="label-pre">GST on draws &middot; </span><strong>On top</strong></span>
+            <svg><use href="#i-chevron-down"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══════ Henry Ready-to-bill nudge (peach, the embedded-intel win) ═══════ -->
+      <div id="henry-nudge" class="henry-nudge" role="region" aria-label="Henry ready-to-bill suggestion">
+        <span class="henry-mark"><span class="glyph">&#10022;</span>Henry &middot; ready to bill</span>
+        <span class="henry-text">
+          Rough-in&rsquo;s done &mdash; bill <strong>Draw 4</strong> for <strong>$11,760</strong>?
+          <span class="sub-line">
+            <span class="target">Rough-in inspection passed May 18</span>
+            <span class="sep">&middot;</span> Framing + Electrical + Plumbing complete
+          </span>
+        </span>
+        <div class="henry-row">
+          <button class="henry-cta" type="button">Open draft draw</button>
+          <button class="henry-dismiss" type="button">Not now</button>
+        </div>
+      </div>
+
+      <!-- ═══════ Draws region — stacked cards ═══════ -->
+      <section id="region-draws" aria-label="Draws">
+        <div class="region-head-m">
+          <span class="region-title-m">Draws</span>
+          <span class="region-meta-m"><strong>3</strong>&nbsp;draws <span style="color:var(--faint); margin:0 3px;">&middot;</span> <strong>1</strong>&nbsp;overdue</span>
+          <div class="region-actions-m">
+            <div class="filter-pill" role="button" tabindex="0">
+              <span class="label-pre">Status</span> All
+              <svg><use href="#i-chevron-down"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 1 — Draw 3 OVERDUE (sent May 5, 17d). Danger-tint card, age chip,
+             AR autopilot strip beneath, ghost Mark-paid + Send-reminder. -->
+        <article class="draw-card is-overdue" role="article">
+          <div class="dc-head">
+            <span class="pill is-overdue"><span class="dot"></span>Overdue</span>
+            <span class="dc-name">Draw 3 &middot; Drywall start</span>
+            <span class="dc-pct">50<span class="unit">%</span></span>
+          </div>
+          <div class="dc-meta">
+            Sent <strong>May 5</strong>
+            <span class="age">17d</span>
+          </div>
+          <div class="dc-money">
+            <span>
+              <span class="lab">Total</span>
+              <span class="of-contract"><strong>7.9%</strong>&nbsp;of contract</span>
+            </span>
+            <span class="total">$11,200<span class="cents">.00</span></span>
+          </div>
+          <div class="dc-footer">
+            <button class="row-action is-flex" type="button"><svg><use href="#i-check"/></svg>Mark paid</button>
+            <button class="row-action is-flex" type="button"><svg><use href="#i-send"/></svg>Send reminder</button>
+          </div>
+          <div class="ar-strip" role="status">
+            <span class="lab">AR autopilot</span>
+            <div class="body-row">
+              <span class="ar-text"><strong>Reminder #2</strong> &middot; tomorrow 9 AM</span>
+              <a href="#" class="cancel">Cancel</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2 — Draw 2 PAID via Stripe May 8 -->
+        <article class="draw-card" role="article">
+          <div class="dc-head">
+            <span class="pill is-paid"><span class="dot"></span>Paid</span>
+            <span class="dc-name">Draw 2 &middot; Framing complete</span>
+            <span class="dc-pct">35<span class="unit">%</span></span>
+          </div>
+          <div class="dc-meta">
+            Paid <strong>May 8</strong>
+            <span class="method-chip is-stripe">Stripe</span>
+          </div>
+          <div class="dc-money">
+            <span>
+              <span class="lab">Total</span>
+              <span class="of-contract"><strong>22.5%</strong>&nbsp;of contract</span>
+            </span>
+            <span class="total">$32,000<span class="cents">.00</span></span>
+          </div>
+          <div class="dc-footer">
+            <button class="row-action is-flex" type="button">View</button>
+          </div>
+        </article>
+
+        <!-- Card 3 — Draw 1 PAID via Interac e-Transfer Apr 12 (at parity with Stripe) -->
+        <article class="draw-card" role="article">
+          <div class="dc-head">
+            <span class="pill is-paid"><span class="dot"></span>Paid</span>
+            <span class="dc-name">Draw 1 &middot; Permit + foundation</span>
+            <span class="dc-pct">15<span class="unit">%</span></span>
+          </div>
+          <div class="dc-meta">
+            Paid <strong>Apr 12</strong>
+            <span class="method-chip is-interac">Interac e-Transfer</span>
+          </div>
+          <div class="dc-money">
+            <span>
+              <span class="lab">Total</span>
+              <span class="of-contract"><strong>16.9%</strong>&nbsp;of contract</span>
+            </span>
+            <span class="total">$24,000<span class="cents">.00</span></span>
+          </div>
+          <div class="dc-footer">
+            <button class="row-action is-flex" type="button">View</button>
+          </div>
+        </article>
+      </section>
+
+      <!-- ═══════ + New draw bottom-sheet (docked for the spec — slides up on phone)
+           ═══════ Prefilled from Henry's nudge: milestone label, % complete, one
+           line item, live GST preview honoring the project's draw GST mode. -->
+      <div class="sheet" role="dialog" aria-label="New draw">
+        <div class="sheet-handle"><span class="bar"></span></div>
+        <div class="sheet-head">
+          <span class="sheet-eyebrow">&#10022; New draw &middot; prefilled</span>
+          <span class="sheet-title">Draw 4</span>
+          <span class="sheet-meta">saves a draft &middot; opens the invoice to send</span>
+        </div>
+        <div class="sheet-body">
+          <div class="field">
+            <label>Milestone label <span class="req">*</span></label>
+            <input type="text" value="Draw #4 — Rough-in complete" />
+          </div>
+          <div class="sheet-grid">
+            <div class="field">
+              <label>% Complete <span class="helper">— optional</span></label>
+              <input type="number" min="0" max="100" step="1" value="65" />
+            </div>
+            <div class="field">
+              <label>GST mode</label>
+              <input type="text" value="On top" readonly style="background:var(--chip-fill); color:var(--ink-2);" />
+            </div>
+          </div>
+
+          <div class="lineitems" aria-label="Line items">
+            <div class="lineitems-head">
+              <span>Line items</span>
+              <span>Amount</span>
+            </div>
+            <div class="lineitem">
+              <input type="text" value="Rough-in milestone — framing, electrical &amp; plumbing" />
+              <div class="amt-row">
+                <label>Amount</label>
+                <input type="number" step="0.01" min="0" value="11200.00" />
+                <button class="li-del" type="button" aria-label="Remove line"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+            <button class="add-line" type="button"><svg><use href="#i-plus"/></svg>Add line</button>
+          </div>
+
+          <div class="gst-preview" aria-label="Live GST preview">
+            <div class="head-row">
+              <span class="lab">Live GST preview</span>
+              <span class="mode-note">GST on top</span>
+            </div>
+            <div class="calc">
+              Subtotal <span class="num">$11,200.00</span>
+              <span style="color:var(--faint);">+</span>
+              GST 5% <span class="num">$560.00</span>
+              <span style="color:var(--faint);">=</span>
+              <span class="total">$11,760.00</span>
+            </div>
+          </div>
+
+          <button class="btn-rust" type="submit"><svg><use href="#i-check"/></svg>Create draft</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom tab bar (Projects active) -->
+    <nav class="tab-bar" aria-label="Primary">
+      <div class="tab-item"><svg><use href="#i-dashboard"/></svg><span class="label">Today</span></div>
+      <div class="tab-item with-count"><svg><use href="#i-inbox"/></svg><span class="label">Inbox</span><span class="count">7</span></div>
+      <div class="tab-item active"><svg><use href="#i-folder"/></svg><span class="label">Projects</span></div>
+      <div class="tab-item"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></div>
+      <div class="tab-item"><svg><use href="#i-more"/></svg><span class="label">More</span></div>
+    </nav>
+
+  </div>
+</div>
+
+</body>
+</html>

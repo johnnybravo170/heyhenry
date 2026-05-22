@@ -1,0 +1,1598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Schedule · HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --ph-demo:        #C2410C; --ph-demo-soft:        #FEF0E3;
+    --ph-framing:     #1E40AF; --ph-framing-soft:     #E6EDFA;
+    --ph-roughin:     #0F766E; --ph-roughin-soft:     #CCFBF1;
+    --ph-inspection:  #0E7490; --ph-inspection-soft:  #CFFAFE;
+    --ph-drywall:     #6D28D9; --ph-drywall-soft:     #EDE9FE;
+    --ph-cabinets:    #B45309; --ph-cabinets-soft:    #FEF3C7;
+    --ph-finishes:    #15803D; --ph-finishes-soft:    #DCFCE7;
+    --ph-punch:       #BE123C; --ph-punch-soft:       #FFE4E6;
+    --done:           #15803D; --done-soft:           #DCFCE7;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+
+  /* Phone frame (identical to Spend / Labour / Billing mobile) */
+  .phone {
+    width: 390px; height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .signal { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+  .signal i { display: block; width: 2.5px; background: var(--ink); border-radius: 1px; }
+  .signal i:nth-child(1) { height: 4px; }
+  .signal i:nth-child(2) { height: 6px; }
+  .signal i:nth-child(3) { height: 8px; }
+  .signal i:nth-child(4) { height: 10px; }
+  .battery { width: 22px; height: 11px; border: 1.2px solid var(--ink); border-radius: 3px; position: relative; }
+  .battery::after { content: ''; position: absolute; right: -3px; top: 2.5px; width: 2px; height: 4px; background: var(--ink); border-radius: 1px; }
+  .battery::before { content: ''; position: absolute; left: 1px; top: 1px; width: 14px; height: 5px; background: var(--ink); border-radius: 1px; }
+
+  .app-header {
+    padding: 8px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    cursor: pointer;
+    margin-left: -6px;
+  }
+  .header-back svg { width: 14px; height: 14px; }
+  .header-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .icon-btn-sm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn-sm svg { width: 16px; height: 16px; }
+  .add-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .add-pill .glyph { color: var(--rust); font-size: 13px; }
+
+  .header-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .header-title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    flex: 1; min-width: 0;
+  }
+  .header-title h1 .chev {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    margin-left: 2px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    vertical-align: -4px;
+  }
+  .header-title h1 .chev svg { width: 11px; height: 11px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-pill .check { display: grid; place-items: center; width: 9px; height: 9px; }
+  .status-pill .check svg { width: 9px; height: 9px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+
+  /* Tab select — Schedule carries danger-toned "1" (1 behind task) */
+  .tab-select-wrap {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-select {
+    flex: 1;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tab-select .arrow { margin-left: auto; color: var(--muted); display: grid; place-items: center; }
+  .tab-select .arrow svg { width: 12px; height: 12px; }
+  .tab-select .total-sep { margin-left: 8px; color: var(--faint); }
+  .tab-select .total-badge {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--danger-soft); color: var(--danger);
+    padding: 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  /* Scrollable body — gap 12px tighter than Billing because Schedule has
+     more region variety per scroll */
+  .scroll-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px 92px;
+    scroll-padding-top: 12px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* Anchor row — quiet, top of body */
+  .anchor-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 2px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .anchor-row .ar-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .anchor-row strong { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .anchor-row .ar-edit {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    color: var(--faint);
+    border: 1px solid transparent;
+    background: transparent;
+    display: grid; place-items: center;
+  }
+  .anchor-row .ar-edit svg { width: 10px; height: 10px; }
+
+  /* Segmented toggle — List | Timeline. Default LIST. */
+  .seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--chip-fill);
+    padding: 3px;
+    border-radius: 9px;
+    border: 1px solid var(--hair);
+  }
+  .seg button {
+    height: 32px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    border-radius: 7px;
+    letter-spacing: -0.005em;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .seg button.is-on {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .seg button svg { width: 12px; height: 12px; }
+
+  /* This-week digest — the default view target */
+  .digest {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 11px;
+  }
+  .digest-head {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .digest-head .title {
+    font-size: 15px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .digest-head .week {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .digest-head .behind-pill {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid rgba(185,28,28,0.18);
+    font-family: var(--sans);
+    font-size: 11px; font-weight: 700;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .digest-head .behind-pill .glyph { font-size: 10px; }
+  .digest-head .behind-pill .count { font-family: var(--mono); }
+
+  .digest-rows {
+    display: flex; flex-direction: column;
+    gap: 4px;
+  }
+  .digest-row {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 10px;
+    align-items: baseline;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .digest-row .dl-key {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .digest-row .dl-val { color: var(--ink); font-weight: 500; }
+  .digest-row .dl-val .sep { color: var(--faint); margin: 0 4px; }
+  .digest-row .dl-val .empty { color: var(--faint); font-weight: 500; }
+  .digest-row .dl-val .behind-glyph {
+    color: var(--danger);
+    font-weight: 700;
+    margin-right: 2px;
+  }
+  .digest-row .dl-val .day-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Legend — across the bottom of the digest */
+  .digest-legend {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .digest-legend .li { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-swatch {
+    width: 18px; height: 7px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .legend-swatch.is-firm { background: var(--ph-roughin); }
+  .legend-swatch.is-rough {
+    background: repeating-linear-gradient(135deg, var(--ph-roughin) 0 4px, var(--ph-roughin-soft) 4px 8px);
+    opacity: 0.85;
+  }
+  .legend-swatch.is-done { background: var(--done); opacity: 0.85; }
+  .legend-swatch.is-behind {
+    background: var(--ph-drywall);
+    box-shadow: inset 0 0 0 1.5px var(--danger);
+  }
+
+  /* Toolbar — meta + + Add task */
+  .mtoolbar {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .mtoolbar .meta {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+  }
+  .mtoolbar .meta strong { color: var(--ink); font-weight: 700; }
+  .mtoolbar .meta .sep { color: var(--faint); margin: 0 4px; }
+  .mtoolbar .add-btn {
+    height: 36px;
+    padding: 0 12px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    flex-shrink: 0;
+  }
+  .mtoolbar .add-btn svg { width: 12px; height: 12px; }
+
+  /* ✦ Henry cascade card — stacked full-width */
+  .cascade {
+    background: var(--warn-soft);
+    border: 1px solid rgba(180,83,9,0.20);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 12px 12px 0;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .cascade .mark {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .cascade .mark .glyph { font-size: 13px; line-height: 1; }
+  .cascade-text {
+    color: var(--ink); font-size: 13px; font-weight: 500; line-height: 1.45;
+    letter-spacing: -0.005em;
+  }
+  .cascade-text strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cascade-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .cascade-meta strong { color: var(--ink-2); font-weight: 700; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .cascade-meta .sep { color: var(--faint); margin: 0 4px; }
+  .cascade-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .cascade-actions button {
+    height: 38px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .cascade-actions .undo {
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid rgba(58,58,58,0.18);
+  }
+  .cascade-actions .undo svg { width: 11px; height: 11px; }
+  .cascade-actions .notify {
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+  }
+  .cascade-actions .notify svg { width: 11px; height: 11px; }
+
+  /* Task list — stacked cards. Each card: phase chip + task name + dates
+     + Mark done / Bump 1 day inline actions (≥44px). */
+  .task-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .task-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .task-card.is-done { background: rgba(220, 252, 231, 0.18); }
+  .task-card.is-behind { border-color: rgba(185,28,28,0.30); background: rgba(254, 226, 226, 0.12); }
+  .task-card.is-in-progress { box-shadow: inset 3px 0 0 var(--ph-roughin); }
+  .task-card.is-in-progress.is-behind { box-shadow: inset 3px 0 0 var(--danger); }
+
+  .task-card .tc-top { display: flex; align-items: center; gap: 8px; }
+  .task-card .phase-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+  .phase-chip .sw { width: 6px; height: 6px; border-radius: 50%; }
+  .phase-chip.ph-demo       { color: var(--ph-demo);       background: var(--ph-demo-soft); }
+  .phase-chip.ph-demo .sw   { background: var(--ph-demo); }
+  .phase-chip.ph-framing    { color: var(--ph-framing);    background: var(--ph-framing-soft); }
+  .phase-chip.ph-framing .sw{ background: var(--ph-framing); }
+  .phase-chip.ph-roughin    { color: var(--ph-roughin);    background: var(--ph-roughin-soft); }
+  .phase-chip.ph-roughin .sw{ background: var(--ph-roughin); }
+  .phase-chip.ph-inspection    { color: var(--ph-inspection);    background: var(--ph-inspection-soft); }
+  .phase-chip.ph-inspection .sw{ background: var(--ph-inspection); }
+  .phase-chip.ph-drywall    { color: var(--ph-drywall);    background: var(--ph-drywall-soft); }
+  .phase-chip.ph-drywall .sw{ background: var(--ph-drywall); }
+  .phase-chip.ph-cabinets   { color: var(--ph-cabinets);   background: var(--ph-cabinets-soft); }
+  .phase-chip.ph-cabinets .sw{ background: var(--ph-cabinets); }
+  .phase-chip.ph-finishes   { color: var(--ph-finishes);   background: var(--ph-finishes-soft); }
+  .phase-chip.ph-finishes .sw{ background: var(--ph-finishes); }
+  .phase-chip.ph-punch      { color: var(--ph-punch);      background: var(--ph-punch-soft); }
+  .phase-chip.ph-punch .sw  { background: var(--ph-punch); }
+
+  .task-card .tc-state {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+  .tc-state.is-done { background: var(--ok-soft); color: var(--ok); }
+  .tc-state.is-firm { background: var(--chip-fill); color: var(--ink-2); }
+  .tc-state.is-rough {
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px dashed var(--rule);
+    padding: 2px 6px;
+  }
+  .tc-state.is-behind { background: var(--danger-soft); color: var(--danger); }
+  .tc-state.is-in-progress { background: var(--info-soft); color: var(--info); }
+  .tc-state .glyph { font-size: 10px; }
+
+  .task-card .tc-name {
+    font-size: 15px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    line-height: 1.25;
+  }
+  .task-card.is-done .tc-name {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--faint);
+  }
+  .task-card .tc-dates {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+    flex-wrap: wrap;
+  }
+  .task-card .tc-dates strong { color: var(--ink-2); font-weight: 700; text-transform: none; letter-spacing: 0; }
+  .task-card .tc-dates .sep { color: var(--faint); }
+  .task-card .tc-dates .working-days { color: var(--ink-2); font-weight: 700; }
+  .task-card .tc-dates .was {
+    color: var(--faint);
+    text-decoration: line-through;
+    text-decoration-color: var(--faint);
+  }
+  .task-card .tc-internal-chip {
+    display: inline-flex; align-items: center;
+    padding: 1px 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+  }
+
+  .task-card .tc-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .task-card .tc-act {
+    height: 44px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .task-card .tc-act:hover { background: var(--chip-fill); border-color: var(--ink-2); }
+  .task-card .tc-act.is-primary {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .task-card .tc-act.is-primary:hover { background: #222; border-color: #222; }
+  .task-card .tc-act svg { width: 12px; height: 12px; }
+
+  /* Crew this week (read-only) */
+  .crew-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .crew-card .label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .crew-card .crew-list {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .crew-card .crew-list strong { font-weight: 700; }
+  .crew-card .crew-list .days {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .crew-card .crew-list .sub-chip {
+    display: inline-flex; align-items: center;
+    margin-right: 4px;
+    padding: 0 5px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+  }
+  .crew-card .crew-link {
+    margin-top: 4px;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 600;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1px;
+    align-self: flex-start;
+  }
+  .crew-card .crew-link svg { width: 11px; height: 11px; }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     Timeline view — full-fidelity horizontal-scroll Gantt.
+     The page scrolls vertically; the Gantt scrolls horizontally INSIDE its
+     own card. Sticky-left name column (130px ≈ 40% of phone width) stays
+     frozen as the time axis scrolls under it. Bars use the exact desktop
+     vocabulary: firm solid · rough dashed · done emerald · behind danger
+     outline + ⚠ glyph. No drag/resize on mobile — tap → task editor modal.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* View-swap — toggle drives this. Default = list. */
+  .scroll-body[data-view="list"]     .view-timeline { display: none; }
+  .scroll-body[data-view="timeline"] .view-list     { display: none; }
+
+  .view-timeline { display: block; }
+
+  .tl-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    /* `clip` (not `hidden`) so the day strip inside can sticky-top relative
+       to the phone's .scroll-body without getting trapped in a scroll context
+       here. Still clips rounded corners and overflowing bars at the right edge. */
+    overflow: clip;
+  }
+  .tl-meta {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;            /* hint wraps below on narrow phones */
+    row-gap: 4px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--chrome);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .tl-meta .tl-today-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .tl-meta .tl-today-pill .dot {
+    width: 5px; height: 5px; border-radius: 999px;
+    background: var(--rust);
+  }
+  .tl-meta .tl-range { color: var(--ink-2); }
+  .tl-meta .tl-hint {
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--faint);
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    text-transform: none;
+  }
+  .tl-meta .sep { color: var(--faint); }
+
+  .tl-scroll {
+    overflow-x: auto;
+    /* `clip` (not `hidden`) on Y so vertical sticky bubbles up to .scroll-body
+       instead of being trapped in this scroll port. */
+    overflow-y: clip;
+    -webkit-overflow-scrolling: touch;
+    /* Custom scrollbar styling — keeps the affordance visible on desktop
+       preview without looking native-app-clunky on iOS. */
+    scrollbar-color: var(--rule) transparent;
+    scrollbar-width: thin;
+  }
+  .tl-scroll::-webkit-scrollbar { height: 4px; }
+  .tl-scroll::-webkit-scrollbar-thumb {
+    background: var(--rule);
+    border-radius: 999px;
+  }
+
+  .tl-grid {
+    /* Sticky 130px name col + 21 day cols × 30px = 760px wide grid.
+       Visible day region inside scroller = 338 - 130 = 208px ≈ 7 days. */
+    display: grid;
+    grid-template-columns: 130px repeat(21, 30px);
+    width: 760px;
+    position: relative;
+  }
+
+  /* Sticky-top-left header for the name column — covers rows 1+2 (month + day).
+     Owns the corner: sticks both left (as the page scrolls horizontally inside
+     .tl-scroll) AND top (as the page scrolls vertically inside .scroll-body).
+     z:7 keeps it above the sticky-top day strip (z:5) and sticky-left name
+     cells (z:4) where they intersect. */
+  .tl-name-head {
+    grid-column: 1 / 2;
+    grid-row: 1 / 3;
+    position: sticky; left: 0; top: 0;
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+    z-index: 7;
+    min-height: 40px;
+    display: flex; align-items: center;
+    padding: 0 10px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Month strip — row 1, spanning the days of that month. Sticky-top so the
+     day axis pins to the top of .scroll-body when the timeline scrolls past
+     the viewport top. Bars and weekend bands slide up behind it. */
+  .tl-month {
+    position: sticky; top: 0;
+    z-index: 5;
+    background: var(--chrome);
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 6px 8px 4px;
+    border-bottom: 1px solid var(--hair);
+    grid-row: 1 / 2;
+  }
+  .tl-month.is-mar { grid-column: 2 / 11; }
+  .tl-month.is-apr { grid-column: 11 / 23; }
+
+  /* Day strip — row 2 numerals (1-indexed day-of-month). Sticky-top below
+     the month strip; `top: 20px` parks it flush under the ~20px month row. */
+  .tl-day {
+    position: sticky; top: 20px;
+    z-index: 5;
+    background: var(--chrome);
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 0 7px;
+    border-bottom: 1px solid var(--hair);
+    line-height: 1;
+    grid-row: 2 / 3;
+  }
+  .tl-day.is-weekend { color: var(--faint); }
+  .tl-day.is-today {
+    color: var(--rust);
+    font-weight: 700;
+    background: var(--rust-soft);
+  }
+
+  /* Sticky-left name column — frozen as days scroll under. ~40% of phone.
+     The ::after extends the row's border-bottom rightward across the bars
+     area so every task row reads as a continuous strip — same treatment as
+     the desktop gantt. Warm hair at 55% so it recedes behind colored bars. */
+  .tl-name {
+    grid-column: 1 / 2;
+    background: var(--card);
+    border-right: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+    padding: 0 10px;
+    display: flex; align-items: center; gap: 7px;
+    min-height: 30px;
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    position: sticky; left: 0;
+    z-index: 5;
+  }
+  .tl-name::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    bottom: -1px;
+    width: 630px;          /* 21 day cols × 30px */
+    height: 1px;
+    background: rgba(226,215,192,0.55);
+    pointer-events: none;
+  }
+  .tl-name.is-done {
+    color: var(--muted);
+  }
+  .tl-name.is-done .tn-text {
+    text-decoration: line-through;
+    text-decoration-color: var(--faint);
+  }
+  .tl-name .behind-glyph {
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 1;
+  }
+  .tn-dot {
+    width: 8px; height: 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .tn-dot.ph-demo { background: var(--ph-demo); }
+  .tn-dot.ph-framing { background: var(--ph-framing); }
+  .tn-dot.ph-roughin { background: var(--ph-roughin); }
+  .tn-dot.ph-inspection { background: var(--ph-inspection); }
+  .tn-dot.ph-drywall { background: var(--ph-drywall); }
+  .tn-dot.ph-cabinets { background: var(--ph-cabinets); }
+  .tn-dot.ph-finishes { background: var(--ph-finishes); }
+  .tn-dot.ph-punch { background: var(--ph-punch); }
+  .tn-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Vertical day-gridlines overlay — faint 1px lines at each of the 21 day-col
+     boundaries so the eye can track which column a bar starts/ends in. Sits
+     below bars + weekend bands. The container `.tl-grid` is position:relative;
+     this overlay fills the body area (below the 40px month + day-header
+     strip, right of the 130px name col). */
+  .tl-vert-lines {
+    position: absolute;
+    top: 40px;             /* below month + day header strip */
+    left: 130px;           /* right of the sticky name col */
+    width: 630px;          /* 21 day cols × 30px */
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 29px,
+      rgba(226,215,192,0.55) 29px,
+      rgba(226,215,192,0.55) 30px
+    );
+  }
+
+  /* Weekend bands — sit behind bars; translucent paper-wash so the bar
+     reads visually receded across Sat/Sun (working-day discipline). */
+  .tl-weekend {
+    grid-row: 3 / -1;
+    background: rgba(232,215,192,0.55);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .tl-weekend.w1 { grid-column: 7 / 9; }   /* Mar 28-29 */
+  .tl-weekend.w2 { grid-column: 14 / 16; } /* Apr 4-5 */
+  .tl-weekend.w3 { grid-column: 21 / 23; } /* Apr 11-12 */
+
+  /* TODAY vertical rule — rust, paints over bars + bands. Below the sticky
+     name col so the name column always covers it cleanly when scrolled. */
+  .tl-today {
+    grid-row: 1 / -1;
+    grid-column: 12 / 13;
+    border-left: 1.5px solid var(--rust);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* Bars — buttons so tap = open task editor modal (per brief: no drag/
+     resize on mobile, just tap). Same vocab as desktop. */
+  .tl-bar {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    appearance: none;
+    height: 18px;
+    margin: 6px 0;
+    border-radius: 3px;
+    z-index: 2;
+    position: relative;
+    padding: 0;
+    display: flex; align-items: center;
+    font-family: inherit;
+    color: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tl-bar:focus-visible {
+    outline: 2px solid var(--rust);
+    outline-offset: 2px;
+  }
+  /* Firm = solid phase color */
+  .tl-bar.is-firm.ph-roughin   { background: var(--ph-roughin); }
+  .tl-bar.is-firm.ph-drywall   { background: var(--ph-drywall); }
+  /* Rough = dashed border + phase-soft fill */
+  .tl-bar.is-rough.ph-roughin     { border: 1px dashed var(--ph-roughin);    background: var(--ph-roughin-soft); }
+  .tl-bar.is-rough.ph-inspection  { border: 1px dashed var(--ph-inspection); background: var(--ph-inspection-soft); }
+  .tl-bar.is-rough.ph-cabinets    { border: 1px dashed var(--ph-cabinets);   background: var(--ph-cabinets-soft); }
+  .tl-bar.is-rough.ph-finishes    { border: 1px dashed var(--ph-finishes);   background: var(--ph-finishes-soft); }
+  .tl-bar.is-rough.ph-punch       { border: 1px dashed var(--ph-punch);      background: var(--ph-punch-soft); }
+  /* Done = emerald (handled via --done) */
+  .tl-bar.is-done {
+    background: var(--done);
+  }
+  .tl-bar.is-done .bar-check {
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    margin-left: 5px;
+    line-height: 1;
+  }
+  /* Behind = danger outline + glyph (never colour-only) */
+  .tl-bar.is-behind {
+    box-shadow: inset 0 0 0 1.5px var(--danger);
+  }
+  /* In-progress on a firm bar — soft shoulder showing completed portion.
+     The completed portion uses a slightly darker phase tone. */
+  .tl-bar.is-in-progress::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 55%;
+    background: rgba(0,0,0,0.18);
+    border-radius: 3px 0 0 3px;
+    pointer-events: none;
+  }
+  /* +Nd cascade pill — small mono badge on the bar's right edge */
+  .tl-bar .bar-tag {
+    position: absolute;
+    top: -4px;
+    right: -3px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-family: var(--mono);
+    font-size: 8px; font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    z-index: 3;
+  }
+  /* Behind ⚠ glyph riding on the bar itself */
+  .tl-bar .bar-glyph {
+    position: absolute;
+    left: 4px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 1;
+    z-index: 3;
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    position: absolute; left: 0; right: 0; bottom: 6px;
+    display: flex; justify-content: center;
+    pointer-events: none;
+  }
+  .home-indicator .hbar {
+    width: 134px; height: 5px; background: var(--ink);
+    border-radius: 999px; opacity: 0.9;
+  }
+
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+    <symbol id="i-gantt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="9" height="3" rx="1"/><rect x="7" y="11" width="11" height="3" rx="1"/><rect x="11" y="17" width="9" height="3" rx="1"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- iOS status bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="island"></span>
+      <span class="right">
+        <span class="signal"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="battery"></span>
+      </span>
+    </div>
+
+    <!-- App header — identical shell to Spend / Labour / Billing mobile -->
+    <div class="app-header">
+      <div class="header-top">
+        <button class="header-back" aria-label="Back to projects"><svg><use href="#i-chevron-left"/></svg></button>
+        <span class="header-crumb">Projects</span>
+        <span class="header-actions">
+          <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+          <button class="icon-btn-sm" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </span>
+      </div>
+      <div class="header-title">
+        <h1>Glenwood Heights<br/>Master Suite Addition
+          <span class="chev" aria-label="Project details"><svg><use href="#i-chevron-down"/></svg></span>
+        </h1>
+        <span class="status-pill status-active">
+          <span class="check"><svg><use href="#i-check"/></svg></span>Active
+        </span>
+      </div>
+      <div class="customer-line">
+        <a href="#">Daniel &amp; Priya Mohan</a>
+      </div>
+
+      <!-- Schedule carries a danger-toned "1" (1 behind task). Same predicate
+           drives the Overview "Needs You" ranking — count is consistent. -->
+      <div class="tab-select-wrap" role="navigation" aria-label="Project sections">
+        <div class="tab-select" aria-expanded="false" title="1 behind task — same count drives the Overview Needs-You ranking">
+          <span>Schedule</span>
+          <span class="total-sep">&middot;</span>
+          <span class="total-badge" aria-label="1 behind task">1</span>
+          <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable body — digest-first per mobile brief ("doing the work,
+         not thinking the work"). The This-week digest and the Henry cascade
+         live ABOVE the toggle so they apply to BOTH views. Below the toggle:
+         List (default) or Timeline (horizontal-scroll Gantt). -->
+    <div class="scroll-body" data-view="list">
+
+      <!-- Anchor — quiet, sets the timeline zero point -->
+      <div class="anchor-row">
+        <span class="ar-eyebrow">Project start</span>
+        <strong>Mon, Mar 23 2026</strong>
+        <button class="ar-edit" aria-label="Edit project start date"><svg><use href="#i-edit"/></svg></button>
+      </div>
+
+      <!-- ═══════ Region 1 — This-week digest ═══════
+           ABOVE the toggle — applies to BOTH views. At-a-glance read in three
+           rows + a "behind" pill. The legend at the bottom teaches the same
+           vocabulary the Timeline bars use below the toggle. -->
+      <section class="digest" aria-label="This week's schedule digest">
+        <div class="digest-head">
+          <span class="title">This week</span>
+          <span class="week">Mar 30&nbsp;–&nbsp;Apr 5</span>
+          <button class="behind-pill" type="button" aria-label="1 task behind">
+            <span class="glyph" aria-hidden="true">&#9888;</span>
+            <span class="count">1</span>
+            <span>behind</span>
+          </button>
+        </div>
+
+        <div class="digest-rows">
+          <div class="digest-row">
+            <span class="dl-key">Active now</span>
+            <span class="dl-val">
+              <span class="behind-glyph" aria-label="behind">&#9888;</span>Drywall
+              <span class="sep">&middot;</span>
+              Plumbing rough-in
+            </span>
+          </div>
+          <div class="digest-row">
+            <span class="dl-key">Starts</span>
+            <span class="dl-val">
+              Cabinets &amp; fixtures
+              <span class="day-hint">Thu</span>
+            </span>
+          </div>
+          <div class="digest-row">
+            <span class="dl-key">Finishes</span>
+            <span class="dl-val"><span class="empty">&mdash;</span></span>
+          </div>
+        </div>
+
+        <div class="digest-legend" aria-label="Bar legend">
+          <span class="li"><span class="legend-swatch is-firm"></span>Firm</span>
+          <span class="li"><span class="legend-swatch is-rough"></span>Rough</span>
+          <span class="li"><span class="legend-swatch is-done"></span>Done</span>
+          <span class="li"><span class="legend-swatch is-behind"></span>Behind</span>
+        </div>
+      </section>
+
+      <!-- ═══════ Region 2 — Henry cascade ═══════
+           ABOVE the toggle — applies to BOTH views. Stacks full-width on
+           mobile. Undo / Notify customer as a 2-up grid (Notify slightly
+           wider as the more-likely action — but still ghost on the destructive
+           side). Caution-soft fill (warn-soft), rust ✦ left-border + glyph. -->
+      <div class="cascade" role="status" aria-label="Henry: schedule cascade">
+        <div class="mark"><span class="glyph">&#10022;</span>Henry</div>
+        <div class="cascade-text">
+          Moving <strong>Drywall</strong> <strong>+3 working&nbsp;days</strong> pushed <strong>Finishes</strong>, <strong>Punch&nbsp;List</strong> &amp; <strong>Final&nbsp;Walkthrough</strong>.
+        </div>
+        <div class="cascade-meta">
+          New finish <strong>Apr 2</strong><span class="sep">&rarr;</span><strong>Apr 8</strong>
+          <span class="sep">&middot;</span>
+          3 downstream tasks moved
+        </div>
+        <div class="cascade-actions">
+          <button class="undo" type="button"><svg><use href="#i-undo"/></svg>Undo</button>
+          <button class="notify" type="button"><svg><use href="#i-send"/></svg>Notify customer</button>
+        </div>
+      </div>
+
+      <!-- ═══════ Region 3 — Segmented toggle ═══════
+           List default. Wired by the inline script at the bottom of the file
+           — toggling flips the [data-view] attribute on .scroll-body, which
+           the CSS uses to hide/show .view-list and .view-timeline. -->
+      <div class="seg" role="tablist" aria-label="Schedule view">
+        <button class="is-on" role="tab" aria-selected="true" data-target-view="list">
+          <svg><use href="#i-list"/></svg>List
+        </button>
+        <button role="tab" aria-selected="false" data-target-view="timeline">
+          <svg><use href="#i-gantt"/></svg>Timeline
+        </button>
+      </div>
+
+      <!-- ═══════ Region 4 — Toolbar ═══════
+           Universal across List + Timeline. "tap to edit" covers list cards
+           AND timeline bars (per brief: tap a bar → opens the task editor
+           modal, the same one the list opens). Destructive globals (Clear,
+           Auto-link) live behind the ⋯ header overflow on mobile. -->
+      <div class="mtoolbar" role="toolbar" aria-label="Schedule actions">
+        <span class="meta">
+          <strong>9</strong> tasks
+          <span class="sep">&middot;</span>
+          tap to edit
+        </span>
+        <button class="add-btn" type="button"><svg><use href="#i-plus"/></svg>Add</button>
+      </div>
+
+      <!-- ═══════ Region 5 — LIST view (default) ═══════
+           Stacked cards: phase chip + state pill + name + dates + inline
+           Mark done / Bump 1 day actions at ≥44px. The two highest-frequency
+           edits don't cost a dialog — that's the mobile leverage. -->
+      <ul class="task-list view-list" aria-label="Schedule tasks">
+
+        <li class="task-card is-done">
+          <div class="tc-top">
+            <span class="phase-chip ph-demo"><span class="sw"></span>Demo</span>
+            <span class="tc-state is-done"><span class="glyph" aria-hidden="true">&#10003;</span>Done</span>
+          </div>
+          <div class="tc-name">Demo</div>
+          <div class="tc-dates">
+            <span class="working-days">3 working&nbsp;days</span>
+            <span class="sep">&middot;</span>
+            <strong>Mar 23&nbsp;&rarr;&nbsp;Mar 25</strong>
+          </div>
+        </li>
+
+        <li class="task-card is-done">
+          <div class="tc-top">
+            <span class="phase-chip ph-framing"><span class="sw"></span>Framing</span>
+            <span class="tc-state is-done"><span class="glyph" aria-hidden="true">&#10003;</span>Done</span>
+          </div>
+          <div class="tc-name">Frame partitions</div>
+          <div class="tc-dates">
+            <span class="working-days">4 working&nbsp;days</span>
+            <span class="sep">&middot;</span>
+            <strong>Mar 24&nbsp;&rarr;&nbsp;Mar 27</strong>
+          </div>
+        </li>
+
+        <!-- BEHIND task — leads the visible list (after the two done items)
+             so the slipped item is impossible to miss. Outline + ⚠ glyph +
+             danger state pill + in-progress shoulder treatment + the two
+             single-tap actions Mark done / Bump 1 day. -->
+        <li class="task-card is-behind is-in-progress">
+          <div class="tc-top">
+            <span class="phase-chip ph-drywall"><span class="sw"></span>Drywall</span>
+            <span class="tc-state is-behind"><span class="glyph" aria-hidden="true">&#9888;</span>Behind &middot; in progress</span>
+          </div>
+          <div class="tc-name">Hang &amp; tape drywall</div>
+          <div class="tc-dates">
+            <span class="working-days">6 working&nbsp;days</span>
+            <span class="sep">&middot;</span>
+            <span class="was">Was due Apr 1</span>
+            <span class="sep">&middot;</span>
+            <strong>now Mon Apr 6</strong>
+          </div>
+          <div class="tc-actions">
+            <button class="tc-act is-primary" type="button"><svg><use href="#i-check"/></svg>Mark done</button>
+            <button class="tc-act" type="button"><svg><use href="#i-clock"/></svg>Bump 1 day</button>
+          </div>
+        </li>
+
+        <li class="task-card is-in-progress">
+          <div class="tc-top">
+            <span class="phase-chip ph-roughin"><span class="sw"></span>Rough-in</span>
+            <span class="tc-state is-in-progress">In progress</span>
+          </div>
+          <div class="tc-name">Electrical rough-in</div>
+          <div class="tc-dates">
+            <span class="working-days">8 working&nbsp;days</span>
+            <span class="sep">&middot;</span>
+            <strong>Mar 26&nbsp;&rarr;&nbsp;Mon Apr 6</strong>
+          </div>
+          <div class="tc-actions">
+            <button class="tc-act is-primary" type="button"><svg><use href="#i-check"/></svg>Mark done</button>
+            <button class="tc-act" type="button">Lock dates</button>
+          </div>
+        </li>
+
+        <li class="task-card">
+          <div class="tc-top">
+            <span class="phase-chip ph-roughin"><span class="sw"></span>Rough-in</span>
+            <span class="tc-state is-rough">Rough</span>
+            <span class="tc-internal-chip" style="margin-left: 6px;">Internal</span>
+          </div>
+          <div class="tc-name">Plumbing rough-in</div>
+          <div class="tc-dates">
+            <span class="working-days">7 working&nbsp;days</span>
+            <span class="sep">&middot;</span>
+            <strong>Mar 30&nbsp;&rarr;&nbsp;Tue Apr 7</strong>
+          </div>
+        </li>
+
+        <li class="task-card">
+          <div class="tc-top">
+            <span class="phase-chip ph-inspection"><span class="sw"></span>Inspection</span>
+            <span class="tc-state is-rough">Rough</span>
+          </div>
+          <div class="tc-name">Final inspection</div>
+          <div class="tc-dates">
+            <span class="working-days">1 working&nbsp;day</span>
+            <span class="sep">&middot;</span>
+            <strong>Wed Apr 1</strong>
+          </div>
+        </li>
+
+        <!-- Starts THIS WEEK — Cabinets surfaces in digest, this card carries
+             the planned start. Rough (operator hasn't locked dates yet). -->
+        <li class="task-card">
+          <div class="tc-top">
+            <span class="phase-chip ph-cabinets"><span class="sw"></span>Cabinets &amp; Fixtures</span>
+            <span class="tc-state is-rough">Rough</span>
+          </div>
+          <div class="tc-name">Cabinet install</div>
+          <div class="tc-dates">
+            <span class="working-days">4 working&nbsp;days</span>
+            <span class="sep">&middot;</span>
+            <strong>Thu Apr 2&nbsp;&rarr;&nbsp;Tue Apr 7</strong>
+          </div>
+        </li>
+
+        <li class="task-card">
+          <div class="tc-top">
+            <span class="phase-chip ph-finishes"><span class="sw"></span>Finishes</span>
+            <span class="tc-state is-rough">Rough &middot; +3d cascade</span>
+          </div>
+          <div class="tc-name">Finishes</div>
+          <div class="tc-dates">
+            <span class="working-days">3 working&nbsp;days</span>
+            <span class="sep">&middot;</span>
+            <strong>Mon Apr 6&nbsp;&rarr;&nbsp;Wed Apr 8</strong>
+            <span class="sep">&middot;</span>
+            <span class="was">was end Apr 2</span>
+          </div>
+        </li>
+
+        <li class="task-card">
+          <div class="tc-top">
+            <span class="phase-chip ph-punch"><span class="sw"></span>Punch List</span>
+            <span class="tc-state is-rough">Rough &middot; +3d cascade</span>
+          </div>
+          <div class="tc-name">Punch list &amp; final walkthrough</div>
+          <div class="tc-dates">
+            <span class="working-days">1 working&nbsp;day</span>
+            <span class="sep">&middot;</span>
+            <strong>Wed Apr 8</strong>
+            <span class="sep">&middot;</span>
+            <span class="was">was Apr 2</span>
+          </div>
+        </li>
+      </ul>
+
+      <!-- ═══════ Region 6 — TIMELINE view (Gantt) ═══════
+           Full-fidelity horizontal-scroll Gantt. The page scrolls vertically;
+           this scroller scrolls horizontally INSIDE the card. Sticky-left
+           name col (~40% of phone width) stays frozen as the time axis slides
+           under it. Bars = same vocabulary as desktop (firm solid · rough
+           dashed · done emerald · behind danger outline + ⚠ glyph). Tap a
+           bar → opens the task editor modal — same one the list opens. NO
+           drag/resize on mobile (per brief — that stays desktop). Auto-scroll
+           on open centres this week (see inline script below). -->
+      <section class="view-timeline" aria-label="Schedule timeline">
+        <div class="tl-card">
+          <div class="tl-meta">
+            <span class="tl-today-pill" aria-label="Today is April 2">
+              <span class="dot" aria-hidden="true"></span>Apr 2
+            </span>
+            <span class="sep">&middot;</span>
+            <span class="tl-range">Mar 23&nbsp;&ndash;&nbsp;Apr 12</span>
+            <span class="tl-hint">tap a bar to edit · swipe &rarr;</span>
+          </div>
+
+          <div class="tl-scroll" id="tl-scroll">
+            <div class="tl-grid">
+
+              <!-- Header — sticky-left name corner + month strip + day strip -->
+              <div class="tl-name-head">Task</div>
+              <div class="tl-month is-mar">Mar 2026</div>
+              <div class="tl-month is-apr">Apr 2026</div>
+
+              <div class="tl-day" style="grid-column: 2;">23</div>
+              <div class="tl-day" style="grid-column: 3;">24</div>
+              <div class="tl-day" style="grid-column: 4;">25</div>
+              <div class="tl-day" style="grid-column: 5;">26</div>
+              <div class="tl-day" style="grid-column: 6;">27</div>
+              <div class="tl-day is-weekend" style="grid-column: 7;">28</div>
+              <div class="tl-day is-weekend" style="grid-column: 8;">29</div>
+              <div class="tl-day" style="grid-column: 9;">30</div>
+              <div class="tl-day" style="grid-column: 10;">31</div>
+              <div class="tl-day" style="grid-column: 11;">1</div>
+              <div class="tl-day is-today" style="grid-column: 12;">2</div>
+              <div class="tl-day" style="grid-column: 13;">3</div>
+              <div class="tl-day is-weekend" style="grid-column: 14;">4</div>
+              <div class="tl-day is-weekend" style="grid-column: 15;">5</div>
+              <div class="tl-day" style="grid-column: 16;">6</div>
+              <div class="tl-day" style="grid-column: 17;">7</div>
+              <div class="tl-day" style="grid-column: 18;">8</div>
+              <div class="tl-day" style="grid-column: 19;">9</div>
+              <div class="tl-day" style="grid-column: 20;">10</div>
+              <div class="tl-day is-weekend" style="grid-column: 21;">11</div>
+              <div class="tl-day is-weekend" style="grid-column: 22;">12</div>
+
+              <!-- Vertical day-gridlines overlay (z=0, below bars + bands).
+                   Faint 1px lines at each of the 21 day-col boundaries. -->
+              <div class="tl-vert-lines" aria-hidden="true"></div>
+
+              <!-- Weekend bands (sit behind bars; receded paper-wash) -->
+              <div class="tl-weekend w1" aria-hidden="true"></div>
+              <div class="tl-weekend w2" aria-hidden="true"></div>
+              <div class="tl-weekend w3" aria-hidden="true"></div>
+
+              <!-- TODAY rule (paints over bars + bands) -->
+              <div class="tl-today" aria-hidden="true"></div>
+
+              <!-- ─── 9 tasks, one row each, in canonical phase order ─── -->
+
+              <!-- 1. Demo · DONE -->
+              <div class="tl-name is-done" style="grid-row: 3;">
+                <span class="tn-dot ph-demo"></span>
+                <span class="tn-text">Demo</span>
+              </div>
+              <button class="tl-bar is-done" type="button"
+                      style="grid-row: 3; grid-column: 2 / 5;"
+                      aria-label="Demo · done · Mar 23 to Mar 25 · tap to edit">
+                <span class="bar-check" aria-hidden="true">&#10003;</span>
+              </button>
+
+              <!-- 2. Frame partitions · DONE -->
+              <div class="tl-name is-done" style="grid-row: 4;">
+                <span class="tn-dot ph-framing"></span>
+                <span class="tn-text">Frame partitions</span>
+              </div>
+              <button class="tl-bar is-done" type="button"
+                      style="grid-row: 4; grid-column: 3 / 7;"
+                      aria-label="Frame partitions · done · Mar 24 to Mar 27 · tap to edit">
+                <span class="bar-check" aria-hidden="true">&#10003;</span>
+              </button>
+
+              <!-- 3. Electrical rough-in · FIRM, 8 working days Mar 26 → Apr 6.
+                   Bar crosses 2 weekends — the weekend bands tint the bar
+                   visibly, reading "no work Sat/Sun." -->
+              <div class="tl-name" style="grid-row: 5;">
+                <span class="tn-dot ph-roughin"></span>
+                <span class="tn-text">Electrical rough-in</span>
+              </div>
+              <button class="tl-bar is-firm ph-roughin" type="button"
+                      style="grid-row: 5; grid-column: 5 / 17;"
+                      aria-label="Electrical rough-in · firm · 8 working days · Mar 26 to Apr 6 · tap to edit">
+              </button>
+
+              <!-- 4. Plumbing rough-in · ROUGH (internal) -->
+              <div class="tl-name" style="grid-row: 6;">
+                <span class="tn-dot ph-roughin"></span>
+                <span class="tn-text">Plumbing rough-in</span>
+              </div>
+              <button class="tl-bar is-rough ph-roughin" type="button"
+                      style="grid-row: 6; grid-column: 9 / 18;"
+                      aria-label="Plumbing rough-in · rough (internal) · 7 working days · Mar 30 to Apr 7 · tap to edit">
+              </button>
+
+              <!-- 5. Final inspection · ROUGH, single-day -->
+              <div class="tl-name" style="grid-row: 7;">
+                <span class="tn-dot ph-inspection"></span>
+                <span class="tn-text">Final inspection</span>
+              </div>
+              <button class="tl-bar is-rough ph-inspection" type="button"
+                      style="grid-row: 7; grid-column: 11 / 12;"
+                      aria-label="Final inspection · rough · 1 working day · Wed Apr 1 · tap to edit">
+              </button>
+
+              <!-- 6. Drywall · BEHIND (firm + in-progress + danger outline).
+                   ⚠ glyph rides on the bar AND on the name. The in-progress
+                   shoulder shows ~55% completed. -->
+              <div class="tl-name" style="grid-row: 8;">
+                <span class="tn-dot ph-drywall"></span>
+                <span class="behind-glyph" aria-label="behind">&#9888;</span>
+                <span class="tn-text">Hang &amp; tape drywall</span>
+              </div>
+              <button class="tl-bar is-firm ph-drywall is-behind is-in-progress" type="button"
+                      style="grid-row: 8; grid-column: 9 / 17;"
+                      aria-label="Hang and tape drywall · BEHIND · 6 working days · in progress, now finishing Mon Apr 6 · tap to edit">
+                <span class="bar-glyph" aria-hidden="true">&#9888;</span>
+              </button>
+
+              <!-- 7. Cabinet install · ROUGH, starts Thu Apr 2 -->
+              <div class="tl-name" style="grid-row: 9;">
+                <span class="tn-dot ph-cabinets"></span>
+                <span class="tn-text">Cabinet install</span>
+              </div>
+              <button class="tl-bar is-rough ph-cabinets" type="button"
+                      style="grid-row: 9; grid-column: 12 / 18;"
+                      aria-label="Cabinet install · rough · 4 working days · Thu Apr 2 to Tue Apr 7 · tap to edit">
+              </button>
+
+              <!-- 8. Finishes · ROUGH + cascade pill (+3d) -->
+              <div class="tl-name" style="grid-row: 10;">
+                <span class="tn-dot ph-finishes"></span>
+                <span class="tn-text">Finishes</span>
+              </div>
+              <button class="tl-bar is-rough ph-finishes" type="button"
+                      style="grid-row: 10; grid-column: 16 / 19;"
+                      aria-label="Finishes · rough · 3 working days · Mon Apr 6 to Wed Apr 8 · was Apr 2, +3 days cascade from Drywall · tap to edit">
+                <span class="bar-tag" aria-hidden="true">+3D</span>
+              </button>
+
+              <!-- 9. Punch list & final walkthrough · ROUGH + cascade pill -->
+              <div class="tl-name" style="grid-row: 11;">
+                <span class="tn-dot ph-punch"></span>
+                <span class="tn-text">Punch list</span>
+              </div>
+              <button class="tl-bar is-rough ph-punch" type="button"
+                      style="grid-row: 11; grid-column: 18 / 19;"
+                      aria-label="Punch list and final walkthrough · rough · 1 working day · Wed Apr 8 · was Apr 2, +3 days cascade from Drywall · tap to edit">
+                <span class="bar-tag" aria-hidden="true">+3D</span>
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════ Region 7 — Crew this week (read-only) ═══════
+           Applies to BOTH views — sits below the swappable area. Deep-links
+           to /calendar; never an editor here. -->
+      <div class="crew-card" aria-label="Crew this week (read-only)">
+        <span class="label">Crew this week</span>
+        <div class="crew-list">
+          <span><strong>Mike Reyes</strong><span class="days">Mon&ndash;Wed</span></span>
+          <span><span class="sub-chip">Sub</span><strong>Dave T.</strong><span class="days">Mon&ndash;Fri</span></span>
+        </div>
+        <a class="crew-link" href="#">Manage in Calendar<svg><use href="#i-arrow-right"/></svg></a>
+      </div>
+
+    </div>
+
+    <!-- Home indicator -->
+    <div class="home-indicator"><span class="hbar"></span></div>
+
+  </div>
+</div>
+
+<script>
+  /* ─── Schedule toggle: List ⇄ Timeline ─────────────────────────────────
+     Flips [data-view] on .scroll-body. CSS uses the attribute to hide/show
+     the .view-list and .view-timeline branches. On the first Timeline open,
+     centers the Gantt on this-week (today = Apr 2, day 11 of 21) by setting
+     scrollLeft to a precomputed offset. No external deps. */
+  (function () {
+    var root = document.querySelector('.scroll-body');
+    var btns = document.querySelectorAll('.seg button[data-target-view]');
+    var scroller = document.getElementById('tl-scroll');
+
+    /* Visible day region inside the scroller ≈ container width − 130px (sticky
+       name col). Days are 30px each. To centre Apr 2 (day 11, grid-col 12,
+       which begins at grid-x = 130 + 10*30 = 430), we want grid-x 430 to land
+       at the centre of the visible day region. Empirically 200 places Mar 30
+       → Apr 5 (this-week) inside the visible window with today in the middle. */
+    var CENTER_THIS_WEEK = 200;
+
+    function centerTimeline() {
+      if (!scroller) return;
+      scroller.scrollLeft = CENTER_THIS_WEEK;
+    }
+
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var v = btn.getAttribute('data-target-view');
+        root.setAttribute('data-view', v);
+        btns.forEach(function (b) {
+          var on = b === btn;
+          b.classList.toggle('is-on', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        if (v === 'timeline') {
+          /* Defer one frame — display: none → block needs layout before
+             scrollLeft will take effect. */
+          requestAnimationFrame(centerTimeline);
+        }
+      });
+    });
+
+    /* Pre-set the scroll position so the Gantt opens centred regardless of
+       which view runs first. */
+    centerTimeline();
+  })();
+</script>
+
+</body>
+</html>

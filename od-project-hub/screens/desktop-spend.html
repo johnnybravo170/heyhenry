@@ -695,7 +695,7 @@
     color: var(--ink-2);
     font-weight: 500;
   }
-  .cell-cat.is-empty { color: var(--warn); font-style: italic; }
+  .cell-cat.is-empty { color: var(--faint); }
   .cell-desc {
     font-size: 13px;
     color: var(--ink-2);
@@ -748,28 +748,22 @@
   .pill.neutral      { color: var(--ink-2); background: var(--chip-fill); }
   .pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
-  /* Row action — Mark paid (rust soft chip) */
+  /* Row action — Mark paid (demoted to ghost; rust reserved for primary CTAs) */
   .row-action {
     display: inline-flex; align-items: center; gap: 4px;
     font-family: var(--sans);
     font-size: 12px; font-weight: 600;
-    color: var(--rust);
-    background: var(--rust-soft);
-    border: 1px solid rgba(194,65,12,0.2);
+    color: var(--ink-2);
+    background: transparent;
+    border: 1px solid var(--hair);
     padding: 4px 9px;
     border-radius: 6px;
     cursor: pointer;
     line-height: 1.2;
     white-space: nowrap;
   }
-  .row-action:hover { background: #FBE3D0; border-color: rgba(194,65,12,0.4); }
+  .row-action:hover { background: var(--chip-fill); border-color: var(--rule); color: var(--ink); }
   .row-action svg { width: 11px; height: 11px; }
-  .row-action.muted {
-    color: var(--muted);
-    background: transparent;
-    border-color: var(--hair);
-  }
-  .row-action.muted:hover { color: var(--ink); border-color: var(--rule); background: var(--chip-fill); }
 
   /* Sub-tab content footer / divider */
   .sub-foot {
@@ -961,7 +955,7 @@
   }
   .ql-amt .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
 
-  /* Bucket allocations */
+  /* Category allocations */
   .allocation-row {
     display: grid;
     grid-template-columns: 1fr 22px 1fr auto;
@@ -991,12 +985,12 @@
     color: var(--faint);
     font-size: 12px;
   }
-  .ar-bucket {
+  .ar-category {
     color: var(--ink-2);
     font-weight: 600;
     font-size: 13px;
   }
-  .ar-bucket.is-missing {
+  .ar-category.is-missing {
     color: var(--warn);
     font-style: italic;
     font-weight: 500;
@@ -1055,15 +1049,15 @@
     height: 28px;
     padding: 0 10px;
     background: var(--card);
-    border: 1px solid var(--rust);
+    border: 1px solid var(--rule);
     border-radius: 6px;
-    color: var(--rust);
+    color: var(--ink);
     font-family: var(--sans);
-    font-size: 12px; font-weight: 700;
+    font-size: 12px; font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
   }
-  .henry-cta:hover { background: var(--rust-soft); }
+  .henry-cta:hover { background: var(--chip-fill); border-color: var(--ink); }
 
   /* Allocation tally */
   .allocation-tally {
@@ -1281,7 +1275,7 @@
         <div class="alert-chips" role="region" aria-label="Spend alerts">
           <button class="chip-alert is-warn" type="button">
             <span class="mark"><svg><use href="#i-hash"/></svg></span>
-            <span class="body"><strong>2 uncategorized costs</strong></span>
+            <span class="body"><strong>1 uncategorized cost</strong></span>
             <svg class="arrow"><use href="#i-arrow-right"/></svg>
           </button>
         </div>
@@ -1300,7 +1294,7 @@
                 <span class="var-sub">Quotes <strong>$18,000</strong> <span class="sep">&middot;</span> POs <strong>$6,800</strong></span>
               </div>
               <div class="var-cell">
-                <span class="var-label">Billed</span>
+                <span class="var-label">Vendor-billed</span>
                 <span class="var-value">$38,300<span class="cents">.00</span></span>
                 <span class="var-sub"><a href="#" class="unpaid-shout">$6,200 unpaid &rarr;</a></span>
               </div>
@@ -1313,7 +1307,7 @@
 
             <div class="summary-foot">
               <span><strong>Committed</strong> reconciles with Budget tab</span>
-              <span class="reconcile">Labour lives on <a href="#">Labour &rarr;</a></span>
+              <span class="reconcile">Sub time + worker invoices live on <a href="#">Labour &rarr;</a></span>
             </div>
           </div>
         </div>
@@ -1384,7 +1378,7 @@
               <span class="right">Total</span>
             </div>
 
-            <!-- Coast Electric — Vendor bill · Unpaid (the rust Mark paid lives in Status cell) -->
+            <!-- Coast Electric — Vendor bill · Unpaid (ghost Mark paid; rust reserved for the primary CTAs) -->
             <div class="cost-row" role="row">
               <span class="cell-date">May 10</span>
               <span class="cell-vendor"><strong>Coast Electric</strong></span>
@@ -1435,15 +1429,12 @@
               <span class="cell-total">$180<span class="cents">.00</span></span>
             </div>
 
-            <!-- Misc hardware — Uncategorized (the alert chip target) -->
+            <!-- Misc hardware — Uncategorized (pill is the single flag; row tap opens categorize) -->
             <div class="cost-row" role="row">
               <span class="cell-date">May 17</span>
               <span class="cell-vendor"><strong>Misc hardware</strong></span>
-              <span class="cell-status">
-                <span class="pill uncat">Uncategorized</span>
-                <button class="row-action muted" type="button"><svg><use href="#i-hash"/></svg>Categorize</button>
-              </span>
-              <span class="cell-cat is-empty">needs a category</span>
+              <span class="cell-status"><span class="pill uncat">Uncategorized</span></span>
+              <span class="cell-cat is-empty">&mdash;</span>
               <span class="cell-desc is-empty">&mdash;</span>
               <span class="cell-amt">91<span class="cents">.43</span></span>
               <span class="cell-amt">4<span class="cents">.57</span></span>
@@ -1453,8 +1444,10 @@
           </div>
 
           <div class="sub-foot">
-            <strong>5</strong>&nbsp;costs <span class="sep">&middot;</span> <strong>$19,426</strong>&nbsp;total
-            <span class="sep">&middot;</span> 1 unpaid <span class="sep">&middot;</span> 1 uncategorized
+            <strong>5</strong>&nbsp;entries
+            <span class="sep">&middot;</span> <strong>2</strong>&nbsp;vendor bills (1 unpaid)
+            <span class="sep">&middot;</span> <strong>3</strong>&nbsp;receipts
+            <span class="sep">&middot;</span> 1 uncategorized
             <span class="right">GST 5% auto, override per row</span>
           </div>
         </section>
@@ -1514,22 +1507,22 @@
                   </div>
                 </div>
 
-                <!-- Bucket allocations: each line mapped to a budget category -->
+                <!-- Category allocations: each line mapped to a budget category -->
                 <div class="quote-section">
-                  <div class="qs-eyebrow">Bucket allocations</div>
+                  <div class="qs-eyebrow">Category allocations</div>
 
                   <div class="allocation-row">
                     <span class="ar-line">Flooring<span class="num">$50.00</span></span>
                     <span class="ar-arrow">&rarr;</span>
-                    <span class="ar-bucket">Flooring</span>
+                    <span class="ar-category">Flooring</span>
                     <span class="ar-status ok">matched</span>
                   </div>
 
                   <div class="allocation-row is-no-match">
                     <span class="ar-line">Structural framing + roof<span class="num">$238.14</span></span>
                     <span class="ar-arrow">&rarr;</span>
-                    <span class="ar-bucket is-missing">no matching bucket</span>
-                    <span class="ar-status warn">Henry asks</span>
+                    <span class="ar-category is-missing">needs a category</span>
+                    <span class="ar-status warn">no match</span>
                   </div>
                 </div>
 
@@ -1537,10 +1530,10 @@
                 <div class="henry-note">
                   <span class="henry-mark"><span class="glyph">&#10022;</span>Henry</span>
                   <span class="henry-text">
-                    Suggested but no matching category &mdash; pick a bucket to allocate:
+                    Suggested but no matching category &mdash; pick one to allocate:
                     <span class="line">&bull; Structural framing + roof &mdash; <span class="amt">$238.14</span></span>
                   </span>
-                  <button class="henry-cta">Map to bucket &#9662;</button>
+                  <button class="henry-cta">Pick category &#9662;</button>
                 </div>
 
                 <!-- Allocation tally (balanced = emerald, accept enabled) -->
