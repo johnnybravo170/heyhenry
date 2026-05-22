@@ -2,12 +2,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { CrewRoster } from '@/components/features/projects/crew-roster';
+import {
+  PrimaryTabAlertBadge,
+  ProjectTabSelectWithAlerts,
+} from '@/components/features/projects/primary-tab-alert-badge';
 import { ProjectActionsMenu } from '@/components/features/projects/project-actions-menu';
 import { ProjectDetailsCard } from '@/components/features/projects/project-details-card';
 import { ProjectIntakeZone } from '@/components/features/projects/project-intake-zone';
 import { ProjectNameEditor } from '@/components/features/projects/project-name-editor';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
-import { ProjectTabSelect } from '@/components/features/projects/project-tab-select';
 import { ScopeDiffReview } from '@/components/features/projects/scope-diff-review';
 import { StagedEmailsBanner } from '@/components/features/projects/staged-emails-banner';
 import BudgetTabServer from '@/components/features/projects/tabs/budget-tab-server';
@@ -29,6 +32,7 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { listCustomers } from '@/lib/db/queries/customers';
 import { listAssignmentsForProject } from '@/lib/db/queries/project-assignments';
 import { listBudgetCategoriesForProject } from '@/lib/db/queries/project-budget-categories';
+import { getProjectTabAlerts } from '@/lib/db/queries/project-tab-alerts';
 import { getProject } from '@/lib/db/queries/projects';
 import { listWorkerProfiles } from '@/lib/db/queries/worker-profiles';
 import type { LifecycleStage } from '@/lib/validators/project';
@@ -171,6 +175,15 @@ export default async function ProjectDetailPage({
   const unreadMessages = unreadMessagesRes.count ?? 0;
   const unreadIdeas = unreadIdeasRes.count ?? 0;
   const customerOptions = customerList.map((c) => ({ id: c.id, name: c.name }));
+
+  // Per-tab attention counts for the nav badges. Kicked off here (not
+  // awaited) so it runs in parallel with the rest of the render and
+  // streams into each primary-tab label via its own Suspense boundary —
+  // it never blocks the synchronous header paint. Resolves to all-zero
+  // (badges hidden) if the tenant is somehow unavailable.
+  const tabAlertsPromise = tenantId
+    ? getProjectTabAlerts(id, tenantId)
+    : Promise.resolve({ budget: 0, costs: 0, time: 0, schedule: 0, invoices: 0 });
 
   // Crew roster (owner/admin only) — the project-level roster lives in the
   // Project Details card now. `scheduled_date IS NULL` = ongoing crew; dated
@@ -317,10 +330,12 @@ export default async function ProjectDetailPage({
       {/* Tab navigation: <select> dropdown on narrow screens, full row above
           the lg breakpoint. */}
       <div className="mb-6 lg:hidden">
-        <ProjectTabSelect
+        <ProjectTabSelectWithAlerts
           projectId={id}
           currentTab={tab}
           tabs={allTabs.map((t) => ({ key: t.key, label: t.label }))}
+          clientUnread={unreadMessages + unreadIdeas}
+          alertsPromise={tabAlertsPromise}
         />
       </div>
       <div className="mb-6 hidden flex-wrap items-center gap-1 border-b lg:flex">
@@ -332,13 +347,22 @@ export default async function ProjectDetailPage({
             // pages. Cuts perceived tab-switch latency since the data is
             // warm by the time the operator clicks.
             prefetch
-            className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            className={`-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
               tab === t.key
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
             }`}
           >
             {t.label}
+            {/* Overview is the aggregator ("Needs You" strip), not an alert
+                owner — every other primary tab carries its per-tab count. */}
+            {t.key === 'budget' ||
+            t.key === 'costs' ||
+            t.key === 'time' ||
+            t.key === 'schedule' ||
+            t.key === 'invoices' ? (
+              <PrimaryTabAlertBadge tabKey={t.key} alertsPromise={tabAlertsPromise} />
+            ) : null}
           </Link>
         ))}
         {/* Secondary group — lighter tier in the same bar (Client / Photos /
