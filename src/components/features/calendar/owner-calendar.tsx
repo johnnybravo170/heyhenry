@@ -12,10 +12,6 @@
  *
  * Both support a "skip weekends" toggle (default on) — when on, the
  * assign dialog excludes Sat/Sun from the date range it submits.
- *
- * TODO(extract): the per-project crew-schedule-grid.tsx covers a similar
- * surface for one project. Once this view stabilizes, evaluate extracting
- * a shared core.
  */
 
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';

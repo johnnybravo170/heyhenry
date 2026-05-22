@@ -98,9 +98,8 @@ When you add a new status value to an enum, update the matching `*StatusTone` ma
 
 ## 8. Calendar / schedule grids
 
-Two grid surfaces today, both built on `project_assignments`. **Forked on purpose** — the per-project view is drag-heavy, the owner view is click-to-modal. Once the owner view stabilizes, evaluate extracting a shared core (date math, weekend handling, project-color hash).
+Built on `project_assignments`. The per-project dated drag-to-schedule grid was **removed** when the Crew tab was retired (the roster moved to the Project Details card via `crew-roster.tsx`; dated scheduling is deferred to the future global dispatch board — see `docs/ux/briefs/project-hub.md` §"Crew scheduling"). Revive it from git history (`crew-schedule-grid.tsx`) when that brief lands and the project Schedule tab grows its crew-day slice.
 
-- `src/components/features/projects/crew-schedule-grid.tsx` — per-project drag-to-schedule grid (rows = workers). **Currently orphaned** — the Crew tab was retired (roster moved to the Project Details card via `crew-roster.tsx`); this dated grid is slated to move onto the Schedule tab when the deferred dispatch board lands. See `docs/ux/briefs/project-hub.md` §"Crew scheduling".
 - `src/components/features/calendar/owner-calendar.tsx` — tenant-wide month + 14-day views (rows = projects in 14-day; calendar cells in month).
 - `src/components/features/jobs/job-calendar.tsx` — month grid for jobs only.
 
