@@ -105,9 +105,10 @@
   <h1>Project Hub</h1>
   <p class="lede">
     The operator&rsquo;s run-the-job workspace for one active renovation. Persistent shell (lean identity header +
-    one unified nav) carried across every tab. Two tabs in the set so far &mdash; <strong>Overview</strong>
-    (the &ldquo;what needs you&rdquo; cockpit) and <strong>Budget</strong> (the execution-posture scope table:
-    spend &middot; commit &middot; remaining + scope-diff entry points).
+    one unified nav) carried across every tab. Three tabs in the set so far &mdash; <strong>Overview</strong>
+    (the &ldquo;what needs you&rdquo; cockpit), <strong>Budget</strong> (the execution-posture scope table:
+    spend &middot; commit &middot; remaining + scope-diff entry points), and <strong>Spend</strong>
+    (the external money-out ledger &mdash; subs &middot; POs &middot; vendor bills &middot; expenses, grouped by Budget&rsquo;s categories, with the corrected Committed/Billed/Unpaid/Paid summary).
   </p>
   <div class="meta">
     <span><strong>Object</strong> &middot; Project in execution</span>
@@ -168,6 +169,33 @@
           Tab nav shows &ldquo;Budget &middot; 2&rdquo; (warn-soft tab-owned count). Alert chips stack at top; signed banner is one calm line.
           2&times;2 summary &middot; segmented bar.
           Scope = stacked section + category cards. Section rows carry their own chips so collapsed sections still surface their at-risk items. Plumbing card expanded into cost lines (with the source-strip below).
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/desktop-spend.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-spend.html" loading="lazy" title="Project Hub Spend &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">05 &middot; Desktop &middot; Spend</div>
+        <div class="screen-title">External money-out ledger</div>
+        <div class="screen-desc">
+          Same shell, Spend tab active (warn-soft &ldquo;1&rdquo; badge for the missing-receipts alert; Budget&sup2; carries over). Two warn-soft chips at top &mdash; missing receipts &middot; uncategorized costs.
+          Summary strip corrected to the four real money-out moments: Committed $24,800 &middot; Billed $38,300 &middot; Unpaid $6,200 (rust, actionable) &middot; Paid $32,100 &mdash; Paid is actually-paid, not total expenses; Committed reconciles with Budget.
+          Ledger grouped by Budget&rsquo;s sections/categories &mdash; same nesting, dotted left rail, no tint. Status pills via token soft-pairs (PAID, UNPAID, PO SENT, RECEIVED, SUB ACCEPTED, UNCATEGORIZED). Coast Electric carries an inline Mark paid; Misc hardware orphans into its own &ldquo;Needs categorizing&rdquo; group with a Categorize action.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile-spend.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile-spend.html" loading="lazy" title="Project Hub Spend &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">06 &middot; Mobile &middot; Spend</div>
+        <div class="screen-title">Stacked cost cards &middot; 390 wide</div>
+        <div class="screen-desc">
+          Tab select carries &ldquo;Spend &middot; 1&rdquo;. Alert chips stack single-line. Compact 2&times;2 summary &mdash; the Unpaid cell pulls rust (the actionable owe).
+          Segmented control: By category / By type. Ledger = stacked cost cards (vendor + label + amount + status pill + meta line for date / category / PO# + 44px receipt thumbnail tile that doubles as the kind cue: paperclip = receipt attached, truck = open PO, handshake = sub-quote signed, camera = no receipt missing-state). Coast Electric&rsquo;s Mark paid lives in the card footer; Misc hardware gets its own Needs-categorizing group.
         </div>
       </div>
     </a>

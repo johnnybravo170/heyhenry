@@ -527,7 +527,7 @@
   }
   .table-col-head .right { text-align: right; }
 
-  /* Section row */
+  /* Section row — caps + weight do the work; no tint (lives directly on card) */
   .section-row {
     display: grid;
     grid-template-columns: 24px 1fr 110px 110px 110px 160px;
@@ -536,10 +536,10 @@
     padding: 13px 18px 13px 14px;
     border-top: 1px solid var(--hair);
     cursor: pointer;
-    background: #FBF6EC;
+    background: var(--card);
   }
   .section-row:first-of-type { border-top: 0; }
-  .section-row:hover { background: #F7F0DD; }
+  .section-row:hover { background: #FFFCF7; }
   .section-twist {
     width: 18px; height: 18px;
     display: grid; place-items: center;
@@ -642,11 +642,23 @@
   .cat-chip.info { color: var(--info); background: var(--info-soft); }
   .cat-chip.ok { color: var(--ok); background: var(--ok-soft); }
 
-  /* Cost line expand area — shares the parent table's 6-col grid so values align */
+  /* Cost line expand area — single subtle tint scoped to the child tray
+     + thin left rail descending from the parent category's chevron */
   .cost-lines {
     background: #FBF6EC;
     border-top: 1px solid var(--hair);
     padding: 4px 0 14px;
+    position: relative;
+  }
+  .cost-lines::before {
+    content: "";
+    position: absolute;
+    left: 26px;          /* aligns with chevron center: 14px padding + 12px half-col */
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--hair);
+    pointer-events: none;
   }
   .cost-line {
     display: grid;
@@ -654,7 +666,7 @@
     gap: 12px;
     align-items: center;
     padding: 9px 18px 9px 14px;
-    border-top: 1px dashed var(--rule);
+    border-top: 1px solid var(--hair);
     font-size: 13px;
     color: var(--ink-2);
   }
@@ -677,10 +689,11 @@
     text-align: right;
     font-variant-numeric: tabular-nums;
     font-size: 13px;
+    font-weight: 400;     /* lighter than category-row 500 so totals don't read twice */
     color: var(--ink);
     white-space: nowrap;
   }
-  .cost-line .cl-num .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+  .cost-line .cl-num .cents { color: var(--muted); font-size: 11px; font-weight: 400; }
   .cost-line .cl-num.is-zero { color: var(--faint); }
   .cost-line .cl-num.is-muted { color: var(--muted); }
 

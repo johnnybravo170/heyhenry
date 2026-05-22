@@ -1,0 +1,1594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Spend · HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Shell (identical to Budget) ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 13px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink); font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .org-switcher:hover { background: rgba(232,222,201,.5); }
+  .org-avatar { width: 24px; height: 24px; border-radius: 6px; background: var(--rust); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: inherit;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn .icon { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-input);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 22px 28px 80px;
+    display: flex; flex-direction: column;
+  }
+
+  /* Project header */
+  .project-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 2px 0 14px;
+  }
+  .project-head-text { flex: 1; min-width: 0; position: relative; }
+  .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .project-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .details-trigger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .details-trigger:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .details-trigger svg { width: 14px; height: 14px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-pill .check { width: 10px; height: 10px; display: grid; place-items: center; }
+  .status-pill .check svg { width: 10px; height: 10px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+  .customer-line {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+  .head-actions { display: flex; gap: 6px; flex-shrink: 0; padding-top: 6px; }
+  .btn-add {
+    background: transparent;
+    border-color: var(--hair);
+    color: var(--ink-2);
+    height: 34px;
+  }
+  .btn-add:hover {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.3);
+    color: var(--rust);
+  }
+  .btn-add .henry-glyph { color: var(--rust); }
+
+  /* Unified nav */
+  .tab-strip {
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center;
+    overflow-x: auto;
+  }
+  .tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 14px;
+    font-size: 14px; font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.is-on {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+  .tab.is-secondary { color: var(--faint); font-weight: 500; }
+  .tab.is-secondary:hover { color: var(--ink-2); }
+  .tab-divider {
+    width: 1px; height: 18px;
+    background: var(--rule);
+    margin: 0 10px;
+    flex-shrink: 0;
+  }
+  .tab-count {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--rust);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .tab-count-soft {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--warn);
+    background: var(--warn-soft);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+
+  /* ───── Spend body ───── */
+  .spend { margin-top: 22px; display: flex; flex-direction: column; gap: 18px; }
+
+  /* Alert chips */
+  .alert-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip-alert {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px 8px 11px;
+    border-radius: 999px;
+    font-size: 13px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    line-height: 1;
+    cursor: pointer;
+  }
+  .chip-alert .mark {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .chip-alert .mark svg { width: 10px; height: 10px; }
+  .chip-alert .body { color: var(--ink); font-weight: 500; }
+  .chip-alert .body strong { font-weight: 700; }
+  .chip-alert .arrow { width: 11px; height: 11px; color: var(--muted); margin-left: 2px; }
+  .chip-alert.is-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+  }
+  .chip-alert.is-warn .mark { background: var(--warn); color: #fff; }
+  .chip-alert.is-warn .arrow { color: var(--ink-2); }
+
+  /* Summary panel */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px 10px;
+  }
+  .panel-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .panel-sub {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-left: 8px;
+  }
+
+  .summary-body { padding: 4px 18px 18px; }
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    align-items: baseline;
+    padding-top: 6px;
+  }
+  .var-cell { display: flex; flex-direction: column; gap: 4px; }
+  .var-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .var-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .var-value .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .var-sub {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .var-sub strong {
+    color: var(--ink-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .var-sub .sep { color: var(--faint); margin: 0 3px; }
+  .unpaid-shout {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--rust);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700;
+    text-transform: none;
+    letter-spacing: -0.01em;
+    border-bottom: 1px solid rgba(194,65,12,0.25);
+    padding-bottom: 1px;
+    cursor: pointer;
+  }
+  .unpaid-shout:hover { border-bottom-color: var(--rust); }
+
+  .summary-foot {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--rule);
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .summary-foot strong { color: var(--ink); font-weight: 700; }
+  .summary-foot .sep { color: var(--faint); }
+  .summary-foot .reconcile {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .summary-foot .reconcile a {
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--rule);
+  }
+  .summary-foot .reconcile a:hover { color: var(--ink); }
+
+  /* Scope head with segmented toggle */
+  .scope-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 4px;
+  }
+  .scope-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .scope-meta {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .scope-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  .seg-toggle {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--chip-fill);
+    border-radius: 8px;
+  }
+  .seg-opt {
+    background: transparent;
+    border: 0;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .seg-opt:hover { color: var(--ink); }
+  .seg-opt.is-on {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(10,10,10,0.06);
+  }
+
+  /* ───── Sub-tabs (the procurement workflow grouping) ───── */
+  .sub-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--chip-fill);
+    border-radius: 10px;
+    align-self: flex-start;
+  }
+  .sub-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .sub-tab:hover { color: var(--ink); }
+  .sub-tab.is-on {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(10,10,10,0.08), inset 0 0 0 1px var(--hair);
+  }
+  .sub-tab-count {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    background: rgba(10,10,10,0.04);
+    padding: 1px 6px;
+    border-radius: 999px;
+    line-height: 1.4;
+    text-transform: lowercase;
+    letter-spacing: 0;
+  }
+  .sub-tab.is-on .sub-tab-count { background: var(--chip-fill); color: var(--ink-2); }
+  .sub-tab-count.is-warn {
+    color: var(--warn);
+    background: var(--warn-soft);
+  }
+  .sub-tab.is-on .sub-tab-count.is-warn { background: var(--warn-soft); color: var(--warn); }
+
+  /* ───── Sub-tab content frame ───── */
+  .sub-content {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .sub-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--hair);
+    flex-wrap: wrap;
+  }
+
+  /* Filter chips (All / Unpaid / Paid) */
+  .filter-chips { display: flex; gap: 4px; }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px;
+    padding: 0 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .filter-chip:hover { color: var(--ink); background: var(--chip-fill); }
+  .filter-chip.is-on {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .filter-chip .count {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: rgba(10,10,10,0.06);
+    color: var(--muted);
+    padding: 1px 5px;
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+  .filter-chip.is-on .count {
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.95);
+  }
+
+  .sub-header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* Add cost — primary rust button */
+  .btn-rust {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-rust:hover { background: #A8390B; border-color: #A8390B; }
+  .btn-rust svg { width: 12px; height: 12px; }
+
+  .btn-ghost-line {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-ghost-line:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-ghost-line svg { width: 12px; height: 12px; }
+
+  /* Cost-gate preview (the "Did you pay this already?" fork) */
+  .cost-gate-preview {
+    margin: 10px 18px 0;
+    padding: 12px 14px;
+    background: var(--chrome);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .gate-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .gate-prompt {
+    font-size: 13px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .gate-options { display: flex; gap: 6px; margin-left: auto; }
+  .gate-opt {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px;
+    padding: 0 11px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    color: var(--ink-2);
+    font-size: 12px; font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .gate-opt:hover { background: var(--chip-fill); border-color: var(--rule); color: var(--ink); }
+  .gate-opt strong { color: var(--ink); font-weight: 700; }
+
+  /* ───── Cost table ───── */
+  .cost-table {
+    padding: 4px 0 0;
+  }
+  .cost-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 162px 116px 1.1fr 90px 64px 96px;
+    gap: 14px;
+    align-items: center;
+    padding: 11px 18px;
+    font-size: 13px;
+    color: var(--ink-2);
+    border-top: 1px solid var(--hair);
+  }
+  .cost-row.cost-th {
+    background: var(--chrome);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 11px 18px 10px;
+    border-top: 0;
+  }
+  .cost-row.cost-th .right { text-align: right; }
+  .cost-row:nth-of-type(2) { border-top: 0; }
+
+  .cell-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .cell-vendor {
+    display: flex; flex-direction: column; gap: 1px;
+    min-width: 0;
+  }
+  .cell-vendor strong {
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+  }
+  .cell-vendor .desc {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .cell-status {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .cell-cat {
+    font-size: 13px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .cell-cat.is-empty { color: var(--warn); font-style: italic; }
+  .cell-desc {
+    font-size: 13px;
+    color: var(--ink-2);
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cell-desc.is-empty { color: var(--faint); }
+  .cell-amt {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    font-weight: 500;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .cell-amt .cents { color: var(--muted); font-size: 11px; }
+  .cell-amt.is-muted { color: var(--faint); font-style: italic; }
+  .cell-total {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .cell-total .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+
+  /* Cost-status pills (longer labels — "Vendor bill · Unpaid" etc) */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .pill.paid-receipt { color: var(--ok); background: var(--ok-soft); }
+  .pill.bill-unpaid  { color: var(--warn); background: var(--warn-soft); }
+  .pill.bill-paid    { color: var(--ok); background: var(--ok-soft); }
+  .pill.uncat        { color: var(--warn); background: var(--warn-soft); }
+  .pill.warn         { color: var(--warn); background: var(--warn-soft); }
+  .pill.ok           { color: var(--ok); background: var(--ok-soft); }
+  .pill.info         { color: var(--info); background: var(--info-soft); }
+  .pill.neutral      { color: var(--ink-2); background: var(--chip-fill); }
+  .pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* Row action — Mark paid (rust soft chip) */
+  .row-action {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194,65,12,0.2);
+    padding: 4px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .row-action:hover { background: #FBE3D0; border-color: rgba(194,65,12,0.4); }
+  .row-action svg { width: 11px; height: 11px; }
+  .row-action.muted {
+    color: var(--muted);
+    background: transparent;
+    border-color: var(--hair);
+  }
+  .row-action.muted:hover { color: var(--ink); border-color: var(--rule); background: var(--chip-fill); }
+
+  /* Sub-tab content footer / divider */
+  .sub-foot {
+    padding: 12px 18px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sub-foot strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sub-foot .sep { color: var(--faint); }
+  .sub-foot .right { margin-left: auto; }
+
+  /* ───── Sub-tab callout (design-spec divider) ───── */
+  .sub-tab-callout {
+    margin-top: 24px;
+    padding: 14px 18px;
+    background: transparent;
+    border: 1px dashed var(--rule);
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 12px;
+    color: var(--muted);
+  }
+  .callout-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .callout-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .callout-title .glyph { color: var(--rust); margin-right: 4px; }
+  .callout-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ───── Vendor quotes sub-tab ───── */
+  .quote-metric {
+    display: flex; align-items: baseline; gap: 6px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .quote-metric strong {
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+  }
+  .quote-metric .pending strong { color: var(--warn); }
+  .quote-metric .sep { color: var(--faint); margin: 0 4px; }
+
+  /* Upload-quote button (the centerpiece Henry action) */
+  .btn-upload {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 34px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-upload:hover { background: #A8390B; border-color: #A8390B; }
+  .btn-upload .glyph { font-size: 14px; line-height: 1; }
+  .btn-upload-cap {
+    display: inline-block;
+    margin-left: 10px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Quote cards */
+  .quote-cards {
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .quote-card {
+    background: var(--card);
+    border-top: 1px solid var(--hair);
+    overflow: hidden;
+  }
+  .quote-card:first-of-type { border-top: 0; }
+  .quote-head {
+    display: grid;
+    grid-template-columns: 18px 1fr auto auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 18px;
+    cursor: pointer;
+  }
+  .quote-head:hover { background: #FFFCF7; }
+  .quote-twist {
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+  }
+  .quote-twist svg { width: 11px; height: 11px; transition: transform 120ms; }
+  .quote-card.is-open .quote-twist svg { transform: rotate(90deg); }
+  .quote-vendor-block {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .vendor-name {
+    font-size: 15px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .quote-label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .quote-label::before { content: "— "; color: var(--faint); }
+  .quote-date {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .quote-total {
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .quote-total .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+
+  .quote-card.is-pending {
+    box-shadow: inset 3px 0 0 0 var(--warn);
+  }
+  .quote-card.is-pending .quote-head { background: rgba(254, 243, 199, 0.18); }
+  .quote-card.is-pending .quote-head:hover { background: rgba(254, 243, 199, 0.32); }
+
+  /* Expanded body */
+  .quote-body {
+    padding: 0 18px 18px 48px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .quote-section { display: flex; flex-direction: column; gap: 6px; }
+  .qs-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+
+  /* Quote line items */
+  .quote-line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: baseline;
+    padding: 6px 0;
+    border-top: 1px dashed var(--rule);
+    font-size: 13px;
+  }
+  .quote-line:first-of-type { border-top: 0; padding-top: 2px; }
+  .ql-name { color: var(--ink-2); font-weight: 500; }
+  .ql-amt {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .ql-amt .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+
+  /* Bucket allocations */
+  .allocation-row {
+    display: grid;
+    grid-template-columns: 1fr 22px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 12px;
+    background: #FBF6EC;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .allocation-row + .allocation-row { margin-top: 6px; }
+  .allocation-row.is-no-match {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+  }
+  .ar-line { color: var(--ink); font-weight: 500; min-width: 0; }
+  .ar-line .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ar-arrow {
+    text-align: center;
+    color: var(--faint);
+    font-size: 12px;
+  }
+  .ar-bucket {
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .ar-bucket.is-missing {
+    color: var(--warn);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .ar-status {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .ar-status.ok { color: var(--ok); background: var(--ok-soft); }
+  .ar-status.warn { color: var(--warn); background: rgba(255,255,255,0.6); border: 1px solid rgba(180,83,9,0.3); }
+
+  /* Henry note */
+  .henry-note {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 10px 10px 0;
+    padding: 11px 14px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .henry-mark {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .henry-mark .glyph { font-size: 13px; line-height: 1; }
+  .henry-text { color: var(--ink-2); font-size: 13px; font-weight: 500; line-height: 1.5; }
+  .henry-text strong { color: var(--ink); font-weight: 700; }
+  .henry-text .line {
+    display: block;
+    margin-top: 3px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .henry-text .line .amt {
+    color: var(--ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .henry-cta {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 28px;
+    padding: 0 10px;
+    background: var(--card);
+    border: 1px solid var(--rust);
+    border-radius: 6px;
+    color: var(--rust);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .henry-cta:hover { background: var(--rust-soft); }
+
+  /* Allocation tally */
+  .allocation-tally {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    align-self: flex-start;
+  }
+  .allocation-tally strong { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .allocation-tally.is-balanced {
+    background: var(--ok-soft);
+    color: var(--ok);
+    border: 1px solid rgba(21,128,61,0.18);
+  }
+  .allocation-tally.is-balanced strong { color: var(--ok); }
+  .allocation-tally.is-imbalanced {
+    background: var(--warn-soft);
+    color: var(--warn);
+    border: 1px solid rgba(180,83,9,0.22);
+  }
+  .allocation-tally .icon {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: currentColor;
+    color: var(--ok-soft);
+    display: grid; place-items: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* Quote actions */
+  .quote-actions {
+    display: flex; align-items: center; gap: 8px;
+    padding-top: 4px;
+    border-top: 1px dashed var(--rule);
+    margin-top: 2px;
+    flex-wrap: wrap;
+  }
+  .btn-accept {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 36px;
+    padding: 0 18px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-accept:hover { background: #A8390B; border-color: #A8390B; }
+  .btn-accept[disabled],
+  .btn-accept.is-disabled {
+    background: var(--chip-fill);
+    color: var(--faint);
+    border-color: var(--hair);
+    cursor: not-allowed;
+  }
+  .btn-quote-action {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 36px;
+    padding: 0 12px;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-quote-action:hover { background: var(--chip-fill); border-color: var(--rule); color: var(--ink); }
+  .btn-quote-action.is-muted { color: var(--faint); }
+  .btn-quote-action.is-muted:hover { color: var(--muted); }
+  .quote-hint {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ok);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .quote-hint.is-blocked { color: var(--warn); }
+
+  /* Accepted/superseded compact card */
+  .quote-card.is-accepted .quote-head { background: var(--card); }
+  .quote-card.is-accepted .vendor-name { color: var(--ink); }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/><path d="M19 14l.7 1.9 1.9.7-1.9.7L19 19l-.7-1.7-1.9-.7 1.9-.7z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Construction</span>
+          <span class="org-sub">Langley, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices&hellip;</span>
+        <span class="chip-kbd">&#8984; K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-plus"/></svg>New project</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <!-- Project header (identical to Budget) -->
+      <section class="project-head">
+        <div class="project-head-text">
+          <div class="title-row">
+            <h1 class="project-title">Glenwood Heights Master Suite Addition</h1>
+            <button class="details-trigger" aria-label="Project details">
+              <svg><use href="#i-chevron-down"/></svg>
+            </button>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line">
+            <a href="#">Daniel &amp; Priya Mohan</a>
+          </div>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-add">
+            <span class="henry-glyph" aria-hidden="true">&#10022;</span>
+            Add
+          </button>
+          <button class="icon-btn" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </div>
+      </section>
+
+      <!-- Tabs — SPEND active. Badge "1" = 1 alert (uncategorized costs). -->
+      <nav class="tab-strip" aria-label="Project sections">
+        <button class="tab">Budget <span class="tab-count-soft" title="2 alerts">2</span></button>
+        <button class="tab is-on">Spend <span class="tab-count-soft" title="1 alert">1</span></button>
+        <button class="tab">Labour</button>
+        <button class="tab">Schedule</button>
+        <button class="tab">Billing</button>
+        <button class="tab">Overview</button>
+        <span class="tab-divider" aria-hidden="true"></span>
+        <button class="tab is-secondary">Client <span class="tab-count">2</span></button>
+        <button class="tab is-secondary">Photos</button>
+        <button class="tab is-secondary">Documents</button>
+      </nav>
+
+      <!-- Spend body -->
+      <section class="spend" aria-label="Spend">
+
+        <!-- Spend-owned alert (only one — receipt-OCR/missing-receipt nudges are TARGET, not built) -->
+        <div class="alert-chips" role="region" aria-label="Spend alerts">
+          <button class="chip-alert is-warn" type="button">
+            <span class="mark"><svg><use href="#i-hash"/></svg></span>
+            <span class="body"><strong>2 uncategorized costs</strong></span>
+            <svg class="arrow"><use href="#i-arrow-right"/></svg>
+          </button>
+        </div>
+
+        <!-- Summary panel: Committed (with breakdown) · Billed (+ rust unpaid shout) · Paid -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Money out</span>
+            <span class="panel-sub">External &middot; vendors &amp; subs only</span>
+          </div>
+          <div class="summary-body">
+            <div class="summary-row">
+              <div class="var-cell">
+                <span class="var-label">Committed</span>
+                <span class="var-value">$24,800<span class="cents">.00</span></span>
+                <span class="var-sub">Quotes <strong>$18,000</strong> <span class="sep">&middot;</span> POs <strong>$6,800</strong></span>
+              </div>
+              <div class="var-cell">
+                <span class="var-label">Billed</span>
+                <span class="var-value">$38,300<span class="cents">.00</span></span>
+                <span class="var-sub"><a href="#" class="unpaid-shout">$6,200 unpaid &rarr;</a></span>
+              </div>
+              <div class="var-cell">
+                <span class="var-label">Paid</span>
+                <span class="var-value">$32,100<span class="cents">.00</span></span>
+                <span class="var-sub">Actually paid out</span>
+              </div>
+            </div>
+
+            <div class="summary-foot">
+              <span><strong>Committed</strong> reconciles with Budget tab</span>
+              <span class="reconcile">Labour lives on <a href="#">Labour &rarr;</a></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scope head: view toggle (workflow grouping) -->
+        <div class="scope-head">
+          <span class="scope-eyebrow">Procurement</span>
+          <span class="scope-meta">External money-out workflow</span>
+          <div class="scope-actions">
+            <div class="seg-toggle" role="radiogroup" aria-label="Group by">
+              <button class="seg-opt is-on" role="radio" aria-checked="true">By type</button>
+              <button class="seg-opt" role="radio" aria-checked="false">By category</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-tabs (the new procurement workflow grouping) -->
+        <nav class="sub-tabs" role="tablist" aria-label="Spend sub-section">
+          <button class="sub-tab" role="tab">
+            Vendor quotes
+            <span class="sub-tab-count is-warn">1 pending</span>
+          </button>
+          <button class="sub-tab" role="tab">
+            POs
+            <span class="sub-tab-count">3 active</span>
+          </button>
+          <button class="sub-tab is-on" role="tab" aria-selected="true">
+            Costs
+            <span class="sub-tab-count">5</span>
+          </button>
+        </nav>
+
+        <!-- ═══════ COSTS sub-tab (default landing) ═══════ -->
+        <section class="sub-content" aria-label="Costs ledger">
+          <div class="sub-header">
+            <div class="filter-chips" role="radiogroup" aria-label="Filter costs">
+              <button class="filter-chip is-on" role="radio" aria-checked="true">All <span class="count">5</span></button>
+              <button class="filter-chip" role="radio" aria-checked="false">Unpaid <span class="count">1</span></button>
+              <button class="filter-chip" role="radio" aria-checked="false">Paid <span class="count">4</span></button>
+            </div>
+            <div class="sub-header-actions">
+              <button class="btn-rust"><svg><use href="#i-plus"/></svg>Add cost</button>
+            </div>
+          </div>
+
+          <!-- "Did you pay this already?" — the cost-gate fork shown as a small preview -->
+          <div class="cost-gate-preview" aria-label="Cost intake gate preview">
+            <span class="gate-eyebrow">When you tap Add cost</span>
+            <span class="gate-prompt">Did you pay this already?</span>
+            <div class="gate-options">
+              <button class="gate-opt"><strong>Yes</strong> &mdash; it&rsquo;s a receipt</button>
+              <button class="gate-opt"><strong>No</strong> &mdash; it&rsquo;s a vendor bill</button>
+            </div>
+          </div>
+
+          <!-- Cost table: Date · Vendor · Status · Category · Description · Subtotal · GST · Total -->
+          <div class="cost-table" role="table">
+
+            <!-- Header -->
+            <div class="cost-row cost-th" role="row">
+              <span>Date</span>
+              <span>Vendor</span>
+              <span>Status</span>
+              <span>Category</span>
+              <span>Description</span>
+              <span class="right">Subtotal</span>
+              <span class="right">GST</span>
+              <span class="right">Total</span>
+            </div>
+
+            <!-- Coast Electric — Vendor bill · Unpaid (the rust Mark paid lives in Status cell) -->
+            <div class="cost-row" role="row">
+              <span class="cell-date">May 10</span>
+              <span class="cell-vendor"><strong>Coast Electric</strong></span>
+              <span class="cell-status">
+                <span class="pill bill-unpaid">Vendor bill &middot; Unpaid</span>
+                <button class="row-action" type="button"><svg><use href="#i-check"/></svg>Mark paid</button>
+              </span>
+              <span class="cell-cat">Electrical</span>
+              <span class="cell-desc">rough-in materials</span>
+              <span class="cell-amt">3,904<span class="cents">.76</span></span>
+              <span class="cell-amt">195<span class="cents">.24</span></span>
+              <span class="cell-total">$4,100<span class="cents">.00</span></span>
+            </div>
+
+            <!-- BC Lumber — Vendor bill · Paid -->
+            <div class="cost-row" role="row">
+              <span class="cell-date">May 2</span>
+              <span class="cell-vendor"><strong>BC Lumber</strong></span>
+              <span class="cell-status"><span class="pill bill-paid">Vendor bill &middot; Paid</span></span>
+              <span class="cell-cat">Framing</span>
+              <span class="cell-desc">framing lumber</span>
+              <span class="cell-amt">12,571<span class="cents">.43</span></span>
+              <span class="cell-amt">628<span class="cents">.57</span></span>
+              <span class="cell-total">$13,200<span class="cents">.00</span></span>
+            </div>
+
+            <!-- City of Langley — Paid receipt -->
+            <div class="cost-row" role="row">
+              <span class="cell-date">Mar 14</span>
+              <span class="cell-vendor"><strong>City of Langley</strong></span>
+              <span class="cell-status"><span class="pill paid-receipt">Paid receipt</span></span>
+              <span class="cell-cat">Permits &amp; fees</span>
+              <span class="cell-desc">building permit</span>
+              <span class="cell-amt">1,850<span class="cents">.00</span></span>
+              <span class="cell-amt is-muted">&mdash;</span>
+              <span class="cell-total">$1,850<span class="cents">.00</span></span>
+            </div>
+
+            <!-- Site fuel — Paid receipt -->
+            <div class="cost-row" role="row">
+              <span class="cell-date">May 15</span>
+              <span class="cell-vendor"><strong>Site fuel</strong></span>
+              <span class="cell-status"><span class="pill paid-receipt">Paid receipt</span></span>
+              <span class="cell-cat">Site costs</span>
+              <span class="cell-desc is-empty">&mdash;</span>
+              <span class="cell-amt">171<span class="cents">.43</span></span>
+              <span class="cell-amt">8<span class="cents">.57</span></span>
+              <span class="cell-total">$180<span class="cents">.00</span></span>
+            </div>
+
+            <!-- Misc hardware — Uncategorized (the alert chip target) -->
+            <div class="cost-row" role="row">
+              <span class="cell-date">May 17</span>
+              <span class="cell-vendor"><strong>Misc hardware</strong></span>
+              <span class="cell-status">
+                <span class="pill uncat">Uncategorized</span>
+                <button class="row-action muted" type="button"><svg><use href="#i-hash"/></svg>Categorize</button>
+              </span>
+              <span class="cell-cat is-empty">needs a category</span>
+              <span class="cell-desc is-empty">&mdash;</span>
+              <span class="cell-amt">91<span class="cents">.43</span></span>
+              <span class="cell-amt">4<span class="cents">.57</span></span>
+              <span class="cell-total">$96<span class="cents">.00</span></span>
+            </div>
+
+          </div>
+
+          <div class="sub-foot">
+            <strong>5</strong>&nbsp;costs <span class="sep">&middot;</span> <strong>$19,426</strong>&nbsp;total
+            <span class="sep">&middot;</span> 1 unpaid <span class="sep">&middot;</span> 1 uncategorized
+            <span class="right">GST 5% auto, override per row</span>
+          </div>
+        </section>
+
+        <!-- ═══════ Sub-tab callout (design-spec divider) ═══════ -->
+        <div class="sub-tab-callout" aria-hidden="true">
+          <span class="callout-eyebrow">When you switch sub-tab to &rarr;</span>
+          <span class="callout-title"><span class="glyph">&#10022;</span>Vendor quotes (1 pending)</span>
+          <span class="callout-meta">centerpiece &middot; Henry sub-quote review</span>
+        </div>
+
+        <!-- ═══════ VENDOR QUOTES sub-tab content ═══════ -->
+        <section class="sub-content" aria-label="Vendor quotes review">
+          <div class="sub-header">
+            <div class="quote-metric">
+              <span><strong>$18,000</strong>&nbsp;committed</span>
+              <span class="sep">&middot;</span>
+              <span class="pending"><strong>$288</strong>&nbsp;pending review</span>
+            </div>
+            <div class="sub-header-actions">
+              <button class="btn-upload">
+                <span class="glyph" aria-hidden="true">&#10022;</span>
+                Upload quote
+              </button>
+              <span class="btn-upload-cap">Henry reads &amp; pre-fills</span>
+              <button class="btn-ghost-line"><svg><use href="#i-plus"/></svg>New vendor quote</button>
+            </div>
+          </div>
+
+          <div class="quote-cards" role="list">
+
+            <!-- ─── TRIO — Pending review, EXPANDED, BALANCED (Accept enabled) ─── -->
+            <article class="quote-card is-pending is-open" role="listitem" aria-expanded="true">
+              <div class="quote-head">
+                <span class="quote-twist"><svg><use href="#i-chevron-right"/></svg></span>
+                <span class="quote-vendor-block">
+                  <span class="vendor-name">TRIO Contracting Ltd</span>
+                  <span class="quote-label">structural &amp; finishes</span>
+                </span>
+                <span class="pill warn">Pending review</span>
+                <span class="quote-date">May 19</span>
+                <span class="quote-total">$288<span class="cents">.14</span></span>
+              </div>
+
+              <div class="quote-body">
+
+                <!-- Quote lines (what Henry read off the PDF) -->
+                <div class="quote-section">
+                  <div class="qs-eyebrow">Quote lines &mdash; read by Henry</div>
+                  <div class="quote-line">
+                    <span class="ql-name">Flooring</span>
+                    <span class="ql-amt">$50<span class="cents">.00</span></span>
+                  </div>
+                  <div class="quote-line">
+                    <span class="ql-name">Structural framing + roof</span>
+                    <span class="ql-amt">$238<span class="cents">.14</span></span>
+                  </div>
+                </div>
+
+                <!-- Bucket allocations: each line mapped to a budget category -->
+                <div class="quote-section">
+                  <div class="qs-eyebrow">Bucket allocations</div>
+
+                  <div class="allocation-row">
+                    <span class="ar-line">Flooring<span class="num">$50.00</span></span>
+                    <span class="ar-arrow">&rarr;</span>
+                    <span class="ar-bucket">Flooring</span>
+                    <span class="ar-status ok">matched</span>
+                  </div>
+
+                  <div class="allocation-row is-no-match">
+                    <span class="ar-line">Structural framing + roof<span class="num">$238.14</span></span>
+                    <span class="ar-arrow">&rarr;</span>
+                    <span class="ar-bucket is-missing">no matching bucket</span>
+                    <span class="ar-status warn">Henry asks</span>
+                  </div>
+                </div>
+
+                <!-- Henry note for unmatched lines -->
+                <div class="henry-note">
+                  <span class="henry-mark"><span class="glyph">&#10022;</span>Henry</span>
+                  <span class="henry-text">
+                    Suggested but no matching category &mdash; pick a bucket to allocate:
+                    <span class="line">&bull; Structural framing + roof &mdash; <span class="amt">$238.14</span></span>
+                  </span>
+                  <button class="henry-cta">Map to bucket &#9662;</button>
+                </div>
+
+                <!-- Allocation tally (balanced = emerald, accept enabled) -->
+                <div class="allocation-tally is-balanced">
+                  <span class="icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                  Allocated <strong>$288.14</strong> of <strong>$288.14</strong> &mdash; balanced
+                </div>
+
+                <!-- Actions row (Accept enabled because balanced) -->
+                <div class="quote-actions">
+                  <button class="btn-accept" type="button">Accept</button>
+                  <button class="btn-quote-action" type="button">Reject</button>
+                  <button class="btn-quote-action" type="button">Edit</button>
+                  <button class="btn-quote-action is-muted" type="button">Delete</button>
+                  <span class="quote-hint">&#10003; balanced &mdash; Accept enabled</span>
+                </div>
+              </div>
+            </article>
+
+            <!-- ─── Pacific Wallboard — Accepted (collapsed) ─── -->
+            <article class="quote-card is-accepted" role="listitem">
+              <div class="quote-head">
+                <span class="quote-twist"><svg><use href="#i-chevron-right"/></svg></span>
+                <span class="quote-vendor-block">
+                  <span class="vendor-name">Pacific Wallboard</span>
+                  <span class="quote-label">drywall &amp; finishing</span>
+                </span>
+                <span class="pill ok">Accepted</span>
+                <span class="quote-date">Apr 28</span>
+                <span class="quote-total">$8,400<span class="cents">.00</span></span>
+              </div>
+            </article>
+
+          </div>
+
+          <div class="sub-foot">
+            <strong>2</strong>&nbsp;vendor quotes
+            <span class="sep">&middot;</span> 1 accepted ($8,400)
+            <span class="sep">&middot;</span> 1 pending ($288)
+            <span class="right">Accept feeds Committed in Budget</span>
+          </div>
+        </section>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

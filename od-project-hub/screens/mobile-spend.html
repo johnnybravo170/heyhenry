@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Spend · HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 390px; height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  /* iOS status bar */
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .signal { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+  .signal i { display: block; width: 2.5px; background: var(--ink); border-radius: 1px; }
+  .signal i:nth-child(1) { height: 4px; }
+  .signal i:nth-child(2) { height: 6px; }
+  .signal i:nth-child(3) { height: 8px; }
+  .signal i:nth-child(4) { height: 10px; }
+  .battery { width: 22px; height: 11px; border: 1.2px solid var(--ink); border-radius: 3px; position: relative; }
+  .battery::after { content: ''; position: absolute; right: -3px; top: 2.5px; width: 2px; height: 4px; background: var(--ink); border-radius: 1px; }
+  .battery::before { content: ''; position: absolute; left: 1px; top: 1px; width: 14px; height: 5px; background: var(--ink); border-radius: 1px; }
+
+  /* App header (shell — same as Budget mobile) */
+  .app-header {
+    padding: 8px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    cursor: pointer;
+    margin-left: -6px;
+  }
+  .header-back svg { width: 14px; height: 14px; }
+  .header-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .icon-btn-sm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn-sm:hover { background: var(--chip-fill); color: var(--ink); }
+  .icon-btn-sm svg { width: 16px; height: 16px; }
+  .add-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .add-pill .glyph { color: var(--rust); font-size: 13px; }
+
+  .header-title {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    flex: 1; min-width: 0;
+  }
+  .header-title h1 .chev {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    margin-left: 2px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    vertical-align: -4px;
+  }
+  .header-title h1 .chev svg { width: 11px; height: 11px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-pill .check { display: grid; place-items: center; width: 9px; height: 9px; }
+  .status-pill .check svg { width: 9px; height: 9px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+
+  /* Tab dropdown */
+  .tab-select-wrap {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-select {
+    flex: 1;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tab-select .arrow { margin-left: auto; color: var(--muted); display: grid; place-items: center; }
+  .tab-select .arrow svg { width: 12px; height: 12px; }
+  .tab-select .total-sep { margin-left: 8px; color: var(--faint); }
+  .tab-select .total-badge {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--warn-soft); color: var(--warn);
+    padding: 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  /* Scrollable body */
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 92px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* Alert chips */
+  .alert-chips { display: flex; flex-direction: column; gap: 8px; }
+  .chip-alert {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    line-height: 1.4;
+    cursor: pointer;
+    min-height: 44px;
+    text-align: left;
+    font-family: var(--sans);
+    color: var(--ink-2);
+  }
+  .chip-alert .mark {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .chip-alert .mark svg { width: 11px; height: 11px; }
+  .chip-alert .chip-text {
+    flex: 1; min-width: 0;
+    color: var(--ink); font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip-alert .chip-text strong { font-weight: 700; }
+  .chip-alert .chip-text .muted { color: var(--muted); }
+  .chip-alert .chip-text .sep { color: var(--faint); margin: 0 3px; }
+  .chip-alert .arrow { width: 12px; height: 12px; color: var(--muted); flex-shrink: 0; }
+  .chip-alert.is-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+  }
+  .chip-alert.is-warn .mark { background: var(--warn); }
+  .chip-alert.is-warn .arrow { color: var(--warn); }
+
+  /* Section eyebrow */
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 4px 6px;
+  }
+  .section-eyebrow .label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-eyebrow .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Compact summary card */
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 12px;
+  }
+  .sum-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+  }
+  .sum-cell { display: flex; flex-direction: column; gap: 2px; }
+  .sum-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .sum-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .sum-value .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .sum-cell.is-action .sum-label { color: var(--warn); }
+  .sum-cell.is-action .sum-value::after {
+    content: "→";
+    display: inline-block;
+    margin-left: 6px;
+    color: var(--rust);
+    font-size: 12px;
+    font-weight: 500;
+    transform: translateY(-1px);
+  }
+  .sum-foot {
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center;
+  }
+  .sum-foot strong { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sum-foot a {
+    margin-left: auto;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Segmented toggle */
+  .seg-toggle {
+    display: flex;
+    padding: 3px;
+    background: var(--chip-fill);
+    border-radius: 9px;
+    gap: 0;
+  }
+  .seg-opt {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    color: var(--muted);
+    padding: 9px 6px;
+    border-radius: 7px;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    min-height: 38px;
+    white-space: nowrap;
+  }
+  .seg-opt.is-on {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(10,10,10,0.06);
+  }
+
+  /* Section group title */
+  .group-head {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 0 2px 4px;
+    margin-top: 6px;
+  }
+  .group-head .name {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .group-head .count {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .group-head .total {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Stacked cost card */
+  .cost-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 12px 11px;
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 10px 10px;
+    align-items: start;
+    min-height: 64px;
+  }
+  .cost-card + .cost-card { margin-top: 8px; }
+  .cost-card .receipt-thumb {
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    background: linear-gradient(135deg, #FFF 0%, #F7F1E6 100%);
+    display: grid; place-items: center;
+    color: var(--ink-2);
+    flex-shrink: 0;
+    grid-row: span 2;
+  }
+  .cost-card .receipt-thumb svg { width: 16px; height: 16px; }
+  .cost-card .receipt-thumb.missing {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+    color: var(--warn);
+  }
+  .cost-card .receipt-thumb.open-po {
+    background: linear-gradient(135deg, #FBF6EC 0%, #F3EBDB 100%);
+    color: var(--muted);
+  }
+  .cost-card .receipt-thumb.sub {
+    background: var(--ok-soft);
+    border-color: rgba(21,128,61,0.22);
+    color: var(--ok);
+  }
+  .cost-card .vendor-block {
+    min-width: 0;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .cost-card .vendor {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  .cost-card .label {
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .cost-card .meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    font-weight: 500;
+    text-transform: uppercase;
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+  .cost-card .amt {
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: right;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .cost-card .amt .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+  .cost-card .footer {
+    grid-column: 2 / 4;
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .cost-card .footer .pill { flex-shrink: 0; }
+  .cost-card .footer .row-action {
+    margin-left: auto;
+  }
+
+  /* Status pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    border-radius: 4px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .pill.paid         { color: var(--ok);    background: var(--ok-soft); }
+  .pill.unpaid       { color: var(--warn);  background: var(--warn-soft); }
+  .pill.po-sent      { color: var(--info);  background: var(--info-soft); }
+  .pill.received     { color: var(--ink-2); background: var(--chip-fill); }
+  .pill.sub-accepted { color: var(--ok);    background: var(--ok-soft); }
+  .pill.uncat        { color: var(--warn);  background: var(--warn-soft); }
+
+  /* Row action — Mark paid */
+  .row-action {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194,65,12,0.18);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    line-height: 1.2;
+    min-height: 30px;
+    font-family: var(--sans);
+  }
+  .row-action svg { width: 11px; height: 11px; }
+  .row-action.muted {
+    color: var(--muted);
+    background: transparent;
+    border-color: var(--hair);
+  }
+
+  /* Footer add row */
+  .add-cluster {
+    margin-top: 4px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 11px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .add-cluster .lead {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .add-cluster .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .btn-add-row {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 9px 10px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    min-height: 40px;
+    font-family: var(--sans);
+  }
+  .btn-add-row:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--rule); }
+  .btn-add-row svg { width: 11px; height: 11px; }
+  .btn-add-row.is-primary {
+    background: var(--rust);
+    color: #fff;
+    border-color: var(--rust);
+  }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 76px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    padding: 0 4px 18px;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--muted);
+    font-size: 10px; font-weight: 600;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .tab-item.active { color: var(--ink); }
+  .tab-item svg { width: 18px; height: 18px; }
+  .tab-item .label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .tab-item.with-count { position: relative; }
+  .tab-item .count {
+    position: absolute; top: 0; right: calc(50% - 18px);
+    background: var(--rust); color: #fff;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-camera-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.5"/><path d="M9.5 4h5L17 7h4a2 2 0 0 1 2 2v9.5"/><path d="M14.12 15.12A3 3 0 1 1 9.88 10.88"/><line x1="2" y1="2" x2="22" y2="22"/></symbol>
+    <symbol id="i-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></symbol>
+    <symbol id="i-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-5-5 5-5"/><path d="M13 7l5 5-5 5"/><path d="M6 12h12"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- iOS status bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="island"></span>
+      <span class="right">
+        <span class="signal"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="battery"></span>
+      </span>
+    </div>
+
+    <!-- App header (identical to Budget mobile) -->
+    <div class="app-header">
+      <div class="header-top">
+        <button class="header-back" aria-label="Back to projects"><svg><use href="#i-chevron-left"/></svg></button>
+        <span class="header-crumb">Projects</span>
+        <span class="header-actions">
+          <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+          <button class="icon-btn-sm" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </span>
+      </div>
+      <div class="header-title">
+        <h1>Glenwood Heights<br/>Master Suite Addition
+          <span class="chev" aria-label="Project details"><svg><use href="#i-chevron-down"/></svg></span>
+        </h1>
+        <span class="status-pill status-active">
+          <span class="check"><svg><use href="#i-check"/></svg></span>Active
+        </span>
+      </div>
+      <div class="customer-line">
+        <a href="#">Daniel &amp; Priya Mohan</a>
+      </div>
+
+      <!-- Nav as a select, carrying Spend's "1" alert badge -->
+      <div class="tab-select-wrap" role="navigation" aria-label="Project sections">
+        <div class="tab-select" aria-expanded="false">
+          <span>Spend</span>
+          <span class="total-sep">&middot;</span>
+          <span class="total-badge">1</span>
+          <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="body">
+
+      <!-- Spend-owned alert chips -->
+      <div class="alert-chips" role="region" aria-label="Spend alerts">
+        <button class="chip-alert is-warn" type="button">
+          <span class="mark"><svg><use href="#i-receipt"/></svg></span>
+          <span class="chip-text"><strong>3 missing receipts</strong> <span class="sep">&middot;</span> <span class="muted">May 18</span></span>
+          <svg class="arrow"><use href="#i-arrow-right"/></svg>
+        </button>
+
+        <button class="chip-alert is-warn" type="button">
+          <span class="mark"><svg><use href="#i-hash"/></svg></span>
+          <span class="chip-text"><strong>2 uncategorized costs</strong></span>
+          <svg class="arrow"><use href="#i-arrow-right"/></svg>
+        </button>
+      </div>
+
+      <!-- Summary card -->
+      <section aria-label="Money out">
+        <div class="section-eyebrow">
+          <span class="label">Money out</span>
+          <span class="meta">external only</span>
+        </div>
+        <div class="summary-card">
+          <div class="sum-grid">
+            <div class="sum-cell">
+              <span class="sum-label">Committed</span>
+              <span class="sum-value">$24,800<span class="cents">.00</span></span>
+            </div>
+            <div class="sum-cell">
+              <span class="sum-label">Billed</span>
+              <span class="sum-value">$38,300<span class="cents">.00</span></span>
+            </div>
+            <div class="sum-cell is-action">
+              <span class="sum-label">Unpaid</span>
+              <span class="sum-value">$6,200<span class="cents">.00</span></span>
+            </div>
+            <div class="sum-cell">
+              <span class="sum-label">Paid</span>
+              <span class="sum-value">$32,100<span class="cents">.00</span></span>
+            </div>
+          </div>
+          <div class="sum-foot">
+            <span><strong>10</strong> entries</span>
+            <a href="#">Labour →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Segmented toggle -->
+      <div class="seg-toggle" role="radiogroup" aria-label="Group by">
+        <button class="seg-opt is-on" role="radio" aria-checked="true">By category</button>
+        <button class="seg-opt" role="radio" aria-checked="false">By type</button>
+        <button class="seg-opt" role="radio" aria-checked="false">By vendor</button>
+      </div>
+
+      <!-- ─── SITE & STRUCTURE ─── -->
+      <section aria-label="Site & structure">
+        <div class="group-head">
+          <span class="name">Site &amp; structure</span>
+          <span class="count">6 entries</span>
+          <span class="total">$27,070</span>
+        </div>
+
+        <!-- D. Tomic -->
+        <div class="cost-card">
+          <div class="receipt-thumb sub" title="Sub quote signed"><svg><use href="#i-handshake"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">D. Tomic</span>
+            <span class="label">framing &amp; finish</span>
+            <span class="meta">May 6 &middot; Framing</span>
+          </div>
+          <div class="amt">$9,600<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill sub-accepted">Sub accepted</span>
+          </div>
+        </div>
+
+        <!-- BC Lumber framing lumber -->
+        <div class="cost-card">
+          <div class="receipt-thumb" title="Receipt attached"><svg><use href="#i-paperclip"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">BC Lumber</span>
+            <span class="label">framing lumber</span>
+            <span class="meta">May 2 &middot; Framing</span>
+          </div>
+          <div class="amt">$13,200<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill paid">Paid</span>
+          </div>
+        </div>
+
+        <!-- BC Lumber framing pkg PO -->
+        <div class="cost-card">
+          <div class="receipt-thumb open-po" title="Open PO"><svg><use href="#i-truck"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">BC Lumber</span>
+            <span class="label">framing pkg</span>
+            <span class="meta">May 8 &middot; Framing &middot; PO #4191</span>
+          </div>
+          <div class="amt">$2,000<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill received">Received</span>
+          </div>
+        </div>
+
+        <!-- City of Langley permit -->
+        <div class="cost-card">
+          <div class="receipt-thumb" title="Receipt attached"><svg><use href="#i-paperclip"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">City of Langley</span>
+            <span class="label">building permit</span>
+            <span class="meta">Mar 14 &middot; Permits &amp; fees</span>
+          </div>
+          <div class="amt">$1,850<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill paid">Paid</span>
+          </div>
+        </div>
+
+        <!-- Site fuel -->
+        <div class="cost-card">
+          <div class="receipt-thumb" title="Receipt attached"><svg><use href="#i-paperclip"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">Site fuel</span>
+            <span class="meta">May 15 &middot; Site costs</span>
+          </div>
+          <div class="amt">$180<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill paid">Paid</span>
+          </div>
+        </div>
+
+        <!-- Dump fees (no receipt) -->
+        <div class="cost-card">
+          <div class="receipt-thumb missing" title="No receipt"><svg><use href="#i-camera-off"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">Dump fees</span>
+            <span class="meta">May 18 &middot; Site costs</span>
+          </div>
+          <div class="amt">$240<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill paid">Paid</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── TRADES ─── -->
+      <section aria-label="Trades">
+        <div class="group-head">
+          <span class="name">Trades</span>
+          <span class="count">3 entries</span>
+          <span class="total">$17,300</span>
+        </div>
+
+        <!-- Coast Electric (UNPAID — Mark paid action) -->
+        <div class="cost-card">
+          <div class="receipt-thumb" title="Receipt attached"><svg><use href="#i-paperclip"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">Coast Electric</span>
+            <span class="label">rough-in materials</span>
+            <span class="meta">May 10 &middot; Electrical</span>
+          </div>
+          <div class="amt">$4,100<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill unpaid">Unpaid</span>
+            <button class="row-action" type="button"><svg><use href="#i-check"/></svg>Mark paid</button>
+          </div>
+        </div>
+
+        <!-- Kohler PO -->
+        <div class="cost-card">
+          <div class="receipt-thumb open-po" title="Open PO"><svg><use href="#i-truck"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">Kohler</span>
+            <span class="label">plumbing fixtures</span>
+            <span class="meta">May 12 &middot; Plumbing &middot; PO #4218</span>
+          </div>
+          <div class="amt">$4,800<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill po-sent">PO sent</span>
+          </div>
+        </div>
+
+        <!-- Pacific Wallboard sub -->
+        <div class="cost-card">
+          <div class="receipt-thumb sub" title="Sub quote signed"><svg><use href="#i-handshake"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">Pacific Wallboard</span>
+            <span class="label">drywall &amp; finishing</span>
+            <span class="meta">Apr 28 &middot; Insulation &amp; drywall</span>
+          </div>
+          <div class="amt">$8,400<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill sub-accepted">Sub accepted</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── NEEDS CATEGORIZING ─── -->
+      <section aria-label="Needs categorizing">
+        <div class="group-head">
+          <span class="name">Needs categorizing</span>
+          <span class="count">1 entry</span>
+          <span class="total">$96</span>
+        </div>
+
+        <div class="cost-card">
+          <div class="receipt-thumb missing" title="No receipt"><svg><use href="#i-camera-off"/></svg></div>
+          <div class="vendor-block">
+            <span class="vendor">Misc hardware</span>
+            <span class="meta">May 17 &middot; No category</span>
+          </div>
+          <div class="amt">$96<span class="cents">.00</span></div>
+          <div class="footer">
+            <span class="pill uncat">Uncategorized</span>
+            <button class="row-action muted" type="button"><svg><use href="#i-hash"/></svg>Categorize</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Add to ledger cluster -->
+      <div class="add-cluster">
+        <span class="lead">Add to ledger</span>
+        <div class="row">
+          <button class="btn-add-row is-primary"><svg><use href="#i-plus"/></svg>Add bill</button>
+          <button class="btn-add-row"><svg><use href="#i-plus"/></svg>Add expense</button>
+          <button class="btn-add-row"><svg><use href="#i-plus"/></svg>Add PO</button>
+          <button class="btn-add-row"><svg><use href="#i-plus"/></svg>Accept sub-quote</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom tab bar -->
+    <nav class="tab-bar" aria-label="Primary">
+      <div class="tab-item"><svg><use href="#i-dashboard"/></svg><span class="label">Today</span></div>
+      <div class="tab-item with-count"><svg><use href="#i-inbox"/></svg><span class="label">Inbox</span><span class="count">7</span></div>
+      <div class="tab-item active"><svg><use href="#i-folder"/></svg><span class="label">Projects</span></div>
+      <div class="tab-item"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></div>
+      <div class="tab-item"><svg><use href="#i-more"/></svg><span class="label">More</span></div>
+    </nav>
+
+  </div>
+</div>
+
+</body>
+</html>
