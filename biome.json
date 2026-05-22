@@ -19,7 +19,8 @@
       "!**/build",
       "!**/src/components/ui",
       "!**/components.json",
-      "!**/.claude"
+      "!**/.claude",
+      "!**/*.artifact.json"
     ]
   },
   "formatter": {
