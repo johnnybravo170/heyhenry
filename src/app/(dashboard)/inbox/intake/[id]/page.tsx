@@ -12,7 +12,7 @@
 
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { IntakeRowActions } from '@/components/features/inbox/intake-row-actions';
 import { IntakeSourceChip } from '@/components/features/inbox/intake-source-chip';
 import { getCurrentTenant } from '@/lib/auth/helpers';
@@ -52,7 +52,7 @@ export default async function IntakeDraftDetailPage({
 
   const tenant = await getCurrentTenant();
   if (!tenant) {
-    return <p className="text-sm text-muted-foreground">Not signed in.</p>;
+    redirect(`/login?next=/inbox/intake/${id}`);
   }
 
   const draft = await loadIntakeDraft(id);

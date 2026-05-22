@@ -50,6 +50,29 @@ function extOf(contentType: string): string {
   return 'bin';
 }
 
+/**
+ * Strip boilerplate footers that mailing lists / relay services append.
+ * Currently handles Google Groups. Strips from the first footer-marker line
+ * onward, including any preceding blank lines.
+ */
+function stripRelayFooters(text: string): string {
+  // Google Groups appends one or more of these lines at the bottom.
+  const GOOGLE_GROUPS_MARKERS = [
+    /^You received this message because you are subscribed to the Google Groups/im,
+    /^To unsubscribe from this group and stop receiving emails from it/im,
+    /^To view this discussion on the web visit/im,
+    /^For more options, visit https:\/\/groups\.google\.com/im,
+  ];
+
+  let cutAt = text.length;
+  for (const pattern of GOOGLE_GROUPS_MARKERS) {
+    const m = pattern.exec(text);
+    if (m && m.index < cutAt) cutAt = m.index;
+  }
+
+  return text.slice(0, cutAt).trimEnd();
+}
+
 /** Format the email envelope into the draft's pasted_text — Henry's "forwarding context". */
 function formatPastedText(args: {
   fromAddress: string;
@@ -59,7 +82,7 @@ function formatPastedText(args: {
 }): string {
   const senderLine = args.fromName ? `${args.fromName} <${args.fromAddress}>` : args.fromAddress;
   const subject = args.subject?.trim() || '(no subject)';
-  const body = args.bodyText?.trim() || '';
+  const body = stripRelayFooters(args.bodyText?.trim() || '');
   return [`Forwarded by: ${senderLine}`, `Subject: ${subject}`, '', body]
     .join('\n')
     .slice(0, 16000); // hard cap so Postmark never blows up the column
