@@ -3,7 +3,9 @@
  *
  * Wraps the `get_business_health_metrics(p_year INT)` RPC. The function is
  * SECURITY INVOKER, so the calling user's RLS scopes the result to their
- * tenant. See `supabase/migrations/0169_business_health_metrics_rpc.sql`.
+ * tenant. Defined in `supabase/migrations/0169_business_health_metrics_rpc.sql`;
+ * revenue + AR were made tax-aware (via the SQL `invoice_total_cents`, the
+ * mirror of `invoiceTotalCents`) in `20260522170008_ar_tax_aware_business_health.sql`.
  */
 
 import type { OwnerDrawType } from '@/lib/db/schema/owner-draws';

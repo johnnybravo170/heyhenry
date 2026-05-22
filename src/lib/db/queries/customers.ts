@@ -11,6 +11,7 @@
  * soft-deleted rows. `getCustomer` optionally includes them for admin UX.
  */
 
+import { type ArInvoice, arOutstanding } from '@/lib/invoices/ar';
 import { createClient } from '@/lib/supabase/server';
 
 export type CustomerRow = {
@@ -215,6 +216,100 @@ export type CustomerRelated = {
   jobs: RelatedJob[];
   invoices: RelatedInvoice[];
 };
+
+/**
+ * Per-row directory signal — answers "does this contact matter right now?"
+ *
+ *  - `activeProjects` — count of non-terminal projects (the GC's live work).
+ *  - `totalProjects` — any project at all; 0 ⇒ the contact is a lead
+ *    ("jobs are gravity"; migration 0113).
+ *  - `arDueCents` — outstanding receivable, tax-aware via the canonical AR
+ *    helper. `null` when money is hidden (member role) so the UI never has a
+ *    figure to leak.
+ */
+export type ContactSignal = {
+  activeProjects: number;
+  totalProjects: number;
+  arDueCents: number | null;
+};
+
+/** A directory row enriched with its computed signal — what the list renders. */
+export type ContactRow = CustomerRow & { signal: ContactSignal };
+
+/** Project lifecycle stages that count as "live work" for the directory signal. */
+const ACTIVE_PROJECT_STAGES = ['planning', 'awaiting_approval', 'active', 'on_hold'];
+
+/**
+ * Compute the directory signal for a set of contacts in one round-trip each
+ * for projects and (when money is visible) outstanding invoices. Intended to
+ * run for the **visible page only** — pass the page's customer IDs, not the
+ * whole roster. RLS scopes both queries to the tenant.
+ */
+export async function getContactSignals(
+  customerIds: string[],
+  options: { includeMoney: boolean },
+): Promise<Map<string, ContactSignal>> {
+  const signals = new Map<string, ContactSignal>();
+  if (customerIds.length === 0) return signals;
+  for (const id of customerIds) {
+    signals.set(id, {
+      activeProjects: 0,
+      totalProjects: 0,
+      arDueCents: options.includeMoney ? 0 : null,
+    });
+  }
+
+  const supabase = await createClient();
+
+  const projectsRes = await supabase
+    .from('projects')
+    .select('customer_id, lifecycle_stage')
+    .in('customer_id', customerIds)
+    .is('deleted_at', null);
+  if (projectsRes.error) {
+    throw new Error(`Failed to load contact project signals: ${projectsRes.error.message}`);
+  }
+  for (const row of (projectsRes.data ?? []) as {
+    customer_id: string | null;
+    lifecycle_stage: string | null;
+  }[]) {
+    if (!row.customer_id) continue;
+    const sig = signals.get(row.customer_id);
+    if (!sig) continue;
+    sig.totalProjects += 1;
+    if (row.lifecycle_stage && ACTIVE_PROJECT_STAGES.includes(row.lifecycle_stage)) {
+      sig.activeProjects += 1;
+    }
+  }
+
+  if (options.includeMoney) {
+    const invoicesRes = await supabase
+      .from('invoices')
+      .select(
+        'customer_id, status, paid_at, deleted_at, sent_at, amount_cents, tax_cents, tax_inclusive, line_items',
+      )
+      .in('customer_id', customerIds)
+      .eq('status', 'sent')
+      .is('paid_at', null)
+      .is('deleted_at', null);
+    if (invoicesRes.error) {
+      throw new Error(`Failed to load contact AR signals: ${invoicesRes.error.message}`);
+    }
+    const byCustomer = new Map<string, ArInvoice[]>();
+    for (const row of (invoicesRes.data ?? []) as ({ customer_id: string | null } & ArInvoice)[]) {
+      if (!row.customer_id) continue;
+      const list = byCustomer.get(row.customer_id) ?? [];
+      list.push(row);
+      byCustomer.set(row.customer_id, list);
+    }
+    for (const [customerId, invoices] of byCustomer) {
+      const sig = signals.get(customerId);
+      if (sig) sig.arDueCents = arOutstanding(invoices);
+    }
+  }
+
+  return signals;
+}
 
 export async function getCustomerRelated(id: string): Promise<CustomerRelated> {
   const supabase = await createClient();

@@ -5,6 +5,7 @@
  * filter on `tenant_id` in application code.
  */
 
+import { AR_OVERDUE_DAYS, arOutstanding } from '@/lib/invoices/ar';
 import { createClient } from '@/lib/supabase/server';
 import { invoiceTotalCents } from './invoices';
 
@@ -228,11 +229,12 @@ export async function getKeyMetrics(timezone: string, isRenovation = false): Pro
       .eq('status', 'paid')
       .gte('paid_at', monthStart)
       .is('deleted_at', null),
-    // Outstanding: sent but unpaid invoices
+    // Outstanding: sent but unpaid invoices (canonical AR filter — see ar.ts)
     supabase
       .from('invoices')
-      .select('amount_cents, tax_cents, tax_inclusive, line_items')
+      .select('status, paid_at, deleted_at, amount_cents, tax_cents, tax_inclusive, line_items')
       .eq('status', 'sent')
+      .is('paid_at', null)
       .is('deleted_at', null),
     countA,
     countB,
@@ -248,10 +250,8 @@ export async function getKeyMetrics(timezone: string, isRenovation = false): Pro
     0,
   );
 
-  const outstandingCents = (sentInvoices.data ?? []).reduce(
-    (sum, inv) => sum + invoiceTotalCents(inv as InvoiceTotalRow),
-    0,
-  );
+  // Canonical AR definition (tax-aware total + sent/unpaid/non-deleted filter).
+  const outstandingCents = arOutstanding(sentInvoices.data ?? []);
 
   return {
     revenueThisMonthCents,
@@ -430,7 +430,10 @@ export async function getAttentionItems(
   const now = new Date();
   const today = todayDateStr(timezone);
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  // Overdue threshold shared with the canonical AR helper (ar.ts).
+  const arOverdueCutoff = new Date(
+    now.getTime() - AR_OVERDUE_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   // Renovation/tile GCs don't use the quoting tool (estimates live on
   // projects — see quotes/page.tsx), so the stale-quote signal is dead for
@@ -456,14 +459,15 @@ export async function getAttentionItems(
       .order('due_date', { ascending: true })
       .limit(10),
     staleQuotesQuery,
-    // Overdue invoices (sent > 14 days ago, unpaid)
+    // Overdue invoices (sent past the AR overdue threshold, unpaid)
     supabase
       .from('invoices')
       .select(
         'id, amount_cents, tax_cents, tax_inclusive, line_items, sent_at, customers:customer_id (name)',
       )
       .eq('status', 'sent')
-      .lt('sent_at', fourteenDaysAgo)
+      .is('paid_at', null)
+      .lt('sent_at', arOverdueCutoff)
       .is('deleted_at', null)
       .order('sent_at', { ascending: true })
       .limit(10),

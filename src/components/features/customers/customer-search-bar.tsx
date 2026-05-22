@@ -5,16 +5,20 @@
  *
  * State lives in the URL (`?q=…&kind=…&type=…`) so links are shareable and the
  * browser back button works. Typing is debounced (300ms) so we don't thrash
- * the server on every keystroke.
+ * the server on every keystroke. Any filter change resets `page` to 1.
  *
  * Filter hierarchy:
- *   - Kind chip row: All / Customers / Vendors / Subs / Agents / Inspectors / Referrals / Other
- *   - When kind=customer is active, a second row appears with the customer
- *     subtype chips (Residential / Commercial).
+ *   - Kind: All / Lead / Customer / Vendor / Sub-trade / Inspector /
+ *     Referral partner / Other. (Agent is de-scoped for the GC vertical — the
+ *     kind still exists in the data model, just unsurfaced here.)
+ *   - When kind=customer is active, a second row reveals the customer subtype
+ *     (Residential / Commercial).
+ *
+ * PATTERNS.md §9: mobile uses a native <select>, never a horizontal scroll
+ * row; desktop keeps the inline chips (all kinds fit).
  */
 
-import { Plus, Search, X } from 'lucide-react';
-import Link from 'next/link';
+import { Search, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +33,9 @@ import {
 } from '@/lib/validators/customer';
 
 const DEBOUNCE_MS = 300;
+
+/** Kinds surfaced in the GC directory — agent is de-scoped (see header). */
+const VISIBLE_KINDS = contactKinds.filter((k) => k !== 'agent') as Exclude<ContactKind, 'agent'>[];
 
 /** Customer subtypes for the secondary filter row (agent lives on kind, not here). */
 const CUSTOMER_SUBTYPES = ['residential', 'commercial'] as const;
@@ -53,7 +60,7 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
 
   const paramsString = searchParams?.toString();
 
-  // Debounce the search query.
+  // Debounce the search query. Resets pagination on change.
   useEffect(() => {
     const params = new URLSearchParams(paramsString);
     const current = params.get('q') ?? '';
@@ -62,6 +69,7 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
     const id = setTimeout(() => {
       if (query) params.set('q', query);
       else params.delete('q');
+      params.delete('page');
       startTransition(() => {
         router.replace(`/contacts?${params.toString()}`);
       });
@@ -75,8 +83,9 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
     if (next) params.set('kind', next);
     else params.delete('kind');
     // Changing kind clears any subtype filter (subtype only meaningful for
-    // kind=customer).
+    // kind=customer) and resets pagination.
     if (next !== 'customer') params.delete('type');
+    params.delete('page');
     startTransition(() => {
       router.replace(`/contacts?${params.toString()}`);
     });
@@ -88,6 +97,7 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
     else params.delete('type');
     // Subtype implies kind=customer.
     params.set('kind', 'customer');
+    params.delete('page');
     startTransition(() => {
       router.replace(`/contacts?${params.toString()}`);
     });
@@ -120,12 +130,30 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Mobile: native select (PATTERNS §9) */}
+      <select
+        aria-label="Filter by kind"
+        value={currentKind ?? 'all'}
+        onChange={(e) =>
+          applyKind(e.target.value === 'all' ? null : (e.target.value as ContactKind))
+        }
+        className="block w-full rounded-md border bg-background px-3 py-2 text-sm md:hidden"
+      >
+        <option value="all">All kinds</option>
+        {VISIBLE_KINDS.map((k) => (
+          <option key={k} value={k}>
+            {contactKindLabels[k]}
+          </option>
+        ))}
+      </select>
+
+      {/* Desktop: inline chips */}
+      <div className="hidden flex-wrap items-center gap-2 md:flex">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Kind:
         </span>
         <FilterChip label="All" active={currentKind === null} onClick={() => applyKind(null)} />
-        {contactKinds.map((k) => (
+        {VISIBLE_KINDS.map((k) => (
           <FilterChip
             key={k}
             label={contactKindLabels[k]}
@@ -134,34 +162,45 @@ export function CustomerSearchBar({ defaultQuery }: { defaultQuery: string }) {
             data-kind={k}
           />
         ))}
-        <Button variant="outline" size="xs" asChild className="ml-auto">
-          <Link href="/contacts/new">
-            <Plus className="size-3.5" />
-            Add new
-          </Link>
-        </Button>
       </div>
 
       {currentKind === 'customer' ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Type:
-          </span>
-          <FilterChip
-            label="All customers"
-            active={currentSubtype === null}
-            onClick={() => applySubtype(null)}
-          />
-          {CUSTOMER_SUBTYPES.map((t) => (
+        <>
+          <select
+            aria-label="Filter by customer type"
+            value={currentSubtype ?? 'all'}
+            onChange={(e) =>
+              applySubtype(e.target.value === 'all' ? null : (e.target.value as CustomerType))
+            }
+            className="block w-full rounded-md border bg-background px-3 py-2 text-sm md:hidden"
+          >
+            <option value="all">All customers</option>
+            {CUSTOMER_SUBTYPES.map((t) => (
+              <option key={t} value={t}>
+                {customerTypeLabels[t]}
+              </option>
+            ))}
+          </select>
+          <div className="hidden flex-wrap items-center gap-2 md:flex">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Type:
+            </span>
             <FilterChip
-              key={t}
-              label={customerTypeLabels[t]}
-              active={currentSubtype === t}
-              onClick={() => applySubtype(t)}
-              data-type={t}
+              label="All customers"
+              active={currentSubtype === null}
+              onClick={() => applySubtype(null)}
             />
-          ))}
-        </div>
+            {CUSTOMER_SUBTYPES.map((t) => (
+              <FilterChip
+                label={customerTypeLabels[t]}
+                key={t}
+                active={currentSubtype === t}
+                onClick={() => applySubtype(t)}
+                data-type={t}
+              />
+            ))}
+          </div>
+        </>
       ) : null}
     </div>
   );

@@ -48,9 +48,8 @@ test.describe
       // Jane is residential — filtering to commercial hides her.
       await page.getByRole('button', { name: 'Commercial', exact: true }).click();
       await page.waitForURL(/type=commercial/);
-      // Empty-state copy is still "No customers match that search."
-      // even on the renamed /contacts page — minor stale string in product.
-      await expect(page.getByText(/no customers match that search/i)).toBeVisible();
+      // Filtered-empty copy uses contact-directory language.
+      await expect(page.getByText(/no contacts match these filters/i)).toBeVisible();
 
       // Switch to Residential — Jane reappears.
       await page.getByRole('button', { name: 'Residential', exact: true }).click();
@@ -85,9 +84,8 @@ test.describe
       await expect(page.getByRole('link', { name: 'Acme Supply' })).not.toBeVisible();
 
       await searchbox.fill('xyznope');
-      // Empty-state copy is still "No customers match that search."
-      // even on the renamed /contacts page — minor stale string in product.
-      await expect(page.getByText(/no customers match that search/i)).toBeVisible();
+      // Filtered-empty copy uses contact-directory language.
+      await expect(page.getByText(/no contacts match these filters/i)).toBeVisible();
     });
 
     test('edit + delete a customer through the UI', async ({ page }) => {
