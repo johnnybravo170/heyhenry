@@ -28,7 +28,7 @@ function svc(): S {
   return createServiceClient();
 }
 
-const REACTION_MAX_TOKENS = 700;
+const REACTION_MAX_TOKENS = 1500;
 const OBJECTION_MAX_TOKENS = 500;
 
 // ── Archetypes ──────────────────────────────────────────────────────────
