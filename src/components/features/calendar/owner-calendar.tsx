@@ -1221,11 +1221,15 @@ function ProjectRow({
         ) : null}
       </button>
 
-      {/* Right side: own 14-col grid where cells span the full height and bars sit in lanes */}
+      {/* Right side: own 14-col grid where cells span the full height and bars sit in lanes.
+          Explicit row tracks (an unused 0px base, one 26px track per lane to seat the bars,
+          then a trailing 1fr that absorbs the remaining minHeight) so the `gridRow: 1 / -1`
+          cell backgrounds reliably fill the row instead of collapsing to the bars' height. */}
       <div
         className="grid border-b"
         style={{
           gridTemplateColumns: `repeat(14, minmax(70px, 1fr))`,
+          gridTemplateRows: `0px repeat(${lanes}, 26px) 1fr`,
           minHeight: `${rowMinHeight}px`,
         }}
       >
