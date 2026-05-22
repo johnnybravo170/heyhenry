@@ -245,7 +245,12 @@ function FilterChip({
     >
       {label}
       {typeof count === 'number' ? (
-        <span className={cn('ml-1 tabular-nums', active ? 'opacity-70' : 'text-muted-foreground')}>
+        // aria-hidden: the count is visual context; the chip's accessible name
+        // stays the kind label ("Customer"), not "Customer 8".
+        <span
+          aria-hidden
+          className={cn('ml-1 tabular-nums', active ? 'opacity-70' : 'text-muted-foreground')}
+        >
           {count}
         </span>
       ) : null}
