@@ -28,7 +28,7 @@ type ProjectRow = {
   start_date: string | null;
   estimate_sent_at: string | null;
   work_status_pct: number;
-  cost_burn_pct: number;
+  over_budget: boolean;
   customer: { id: string; name: string } | null;
   /** Job-site locale ("Abbotsford · BC") shown under the project name. */
   region: string | null;
@@ -168,7 +168,7 @@ export function ProjectsTable({
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{startLabel(p.start_date)}</td>
                   <td className="px-4 py-3 text-right">
-                    <Progress pct={p.work_status_pct} overBudget={p.cost_burn_pct > 100} />
+                    <Progress pct={p.work_status_pct} overBudget={p.over_budget} />
                   </td>
                   <td className="px-2 py-3 text-right">
                     <CloneProjectDialog
@@ -216,7 +216,7 @@ export function ProjectsTable({
               ) : null}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                 <span>{startLabel(p.start_date)}</span>
-                <Progress pct={p.work_status_pct} overBudget={p.cost_burn_pct > 100} />
+                <Progress pct={p.work_status_pct} overBudget={p.over_budget} />
                 {cue ? <span className="text-xs">{cue}</span> : null}
               </div>
             </div>
