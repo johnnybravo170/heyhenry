@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OD — Project Hub — HeyHenry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 28px 80px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--rust);
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; color: var(--ink); }
+  .lede { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 56ch; line-height: 1.55; }
+  .meta {
+    margin-top: 22px; display: flex; gap: 18px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase; flex-wrap: wrap;
+  }
+  .meta span strong { color: var(--ink); font-weight: 700; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .screen-card {
+    background: var(--card); border: 1px solid var(--hair); border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 120ms, border-color 120ms;
+    text-decoration: none; color: inherit;
+  }
+  .screen-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .screen-thumb {
+    aspect-ratio: 16/10; background: var(--bg); border-bottom: 1px solid var(--hair);
+    position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px;
+  }
+  .screen-thumb iframe {
+    width: 1440px; height: 900px; transform: scale(0.32); transform-origin: top left;
+    border: 0; pointer-events: none; position: absolute; top: 0; left: 0;
+  }
+  .screen-thumb.mobile iframe {
+    width: 390px; height: 844px; transform: scale(0.45); transform-origin: center;
+    position: static;
+  }
+  .screen-thumb.mobile { background: #ECE3D0; }
+  .screen-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .screen-eyebrow {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .screen-title { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; color: var(--ink); }
+  .screen-desc { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.5; }
+  .notes {
+    margin-top: 48px; background: var(--card); border: 1px solid var(--hair);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .notes h2 {
+    margin: 0 0 12px; font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
+    font-family: var(--mono); text-transform: uppercase; color: var(--ink);
+  }
+  .notes ul { margin: 0; padding-left: 16px; color: var(--ink-2); font-size: 14px; line-height: 1.6; }
+  .notes li + li { margin-top: 6px; }
+  .notes code {
+    font-family: var(--mono); font-size: 12px; background: var(--bg);
+    border: 1px solid var(--hair); border-radius: 4px; padding: 1px 5px; color: var(--ink);
+  }
+  .notes strong { color: var(--ink); font-weight: 600; }
+  .notes .open-q {
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--hair);
+    color: var(--muted); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OD &middot; HeyHenry &middot; Paper palette</div>
+  <h1>Project Hub</h1>
+  <p class="lede">
+    The operator&rsquo;s run-the-job workspace for one active renovation. Persistent shell (lean identity header +
+    one unified nav) carried across every tab. Two tabs in the set so far &mdash; <strong>Overview</strong>
+    (the &ldquo;what needs you&rdquo; cockpit) and <strong>Budget</strong> (the execution-posture scope table:
+    spend &middot; commit &middot; remaining + scope-diff entry points).
+  </p>
+  <div class="meta">
+    <span><strong>Object</strong> &middot; Project in execution</span>
+    <span><strong>Roles</strong> &middot; owner / admin / member</span>
+    <span><strong>Primary action</strong> &middot; do the next thing that keeps the job moving</span>
+    <span><strong>Mock</strong> &middot; Glenwood Heights &middot; Mohan &middot; Northbeam Construction</span>
+  </div>
+  <div class="grid">
+    <a class="screen-card" href="screens/desktop.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop.html" loading="lazy" title="Project Hub Overview &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">01 &middot; Desktop &middot; Overview</div>
+        <div class="screen-title">Active Glenwood Heights &middot; cockpit</div>
+        <div class="screen-desc">
+          Lean header + Project Details popover (Name / Customer / Description / Dates / Billing / Status + Crew checklist).
+          One unified 9-tab nav with a soft Budget&sup2; alert count.
+          &ldquo;Needs you&rdquo; cockpit ranked by Henry &mdash; margin-at-risk (top, danger-soft wash) &middot; ready-to-bill draw &middot; unsent CO &middot; client message &middot; missing receipts collapsed into &ldquo;+1 more.&rdquo;
+          Budget &amp; margin card + Henry diagnostic strip + recent activity feed.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile.html" loading="lazy" title="Project Hub Overview &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">02 &middot; Mobile &middot; Overview</div>
+        <div class="screen-title">Cockpit on a truck &middot; 390 wide</div>
+        <div class="screen-desc">
+          Compact lean header. Tab nav collapses to a single select; trigger carries the total alert count, dropdown rows carry per-tab badges (Budget&sup2; &middot; Spend&sup1; &middot; Billing&sup1; &middot; Client&sup2;).
+          Same Needs-you stack &middot; 2&times;2 summary &middot; segmented bar &middot; activity feed. Bottom tab bar with Projects active.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/desktop-budget.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-budget.html" loading="lazy" title="Project Hub Budget &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">03 &middot; Desktop &middot; Budget</div>
+        <div class="screen-title">Execution posture &middot; scope table</div>
+        <div class="screen-desc">
+          Same shell, Budget tab active. Two compact alert chips at top (margin-at-risk &middot; 2 unsent scope changes) &middot; calm signed-estimate banner (v3, 2 applied COs) &middot; budget summary with the dual-metric progress (53% complete &middot; 61% consumed).
+          Scope table grouped into 3 sections (Site &amp; Structure collapsed with &ldquo;Framing over $4,800&rdquo; chip surfaced; Trades expanded showing Electrical &middot; Plumbing &middot; Insulation &amp; Drywall; Envelope &amp; Finishes collapsed with Windows-over + Flooring-projected chips). Plumbing further expanded showing five cost lines + a &ldquo;Spent by source&rdquo; strip that deep-links to Labour &middot; Bills &middot; Sub commits.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile-budget.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile-budget.html" loading="lazy" title="Project Hub Budget &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">04 &middot; Mobile &middot; Budget</div>
+        <div class="screen-title">Stacked cards &middot; 390 wide</div>
+        <div class="screen-desc">
+          Tab nav shows &ldquo;Budget &middot; 2&rdquo; (warn-soft tab-owned count). Alert chips stack at top; signed banner is one calm line.
+          2&times;2 summary &middot; segmented bar.
+          Scope = stacked section + category cards. Section rows carry their own chips so collapsed sections still surface their at-risk items. Plumbing card expanded into cost lines (with the source-strip below).
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="notes">
+    <h2>Brief alignment</h2>
+    <ul>
+      <li><strong>Lean identity-only header</strong> &mdash; name + &#9662; chevron + Active badge on line 1; muted linked customer on line 2; ghost &ldquo;&#10022; Add&rdquo; + &ldquo;&#8943;&rdquo; overflow on the right. No metrics in the persistent chrome &mdash; carries across every tab unchanged (Overview &amp; Budget shown).</li>
+      <li><strong>Project Details popover</strong> &mdash; consolidates name, customer, description, dates, billing, status into one card + a Crew checklist with each worker&rsquo;s default pay/charge rate read-only and a per-row &ldquo;&#9662; override&rdquo; disclosure.</li>
+      <li><strong>ONE unified nav</strong> &mdash; 9 tabs (Budget &middot; Spend &middot; Labour &middot; Schedule &middot; Billing &middot; Overview &middot; Client &middot; Photos &middot; Documents). Soft warn-tone &ldquo;&sup2;&rdquo; count on the Budget tab (the alerts&rsquo; owning surface); rust &ldquo;&sup2;&rdquo; on Client for unread messages. Mobile collapses to a select with a total badge on the trigger + per-tab badges in the dropdown.</li>
+      <li><strong>Alert surfacing model</strong> &mdash; same alerts surface in three layers: as <em>chips</em> on their owning tab (Budget shows margin-at-risk + unsent scope changes), as a <em>count badge</em> on the tab label (Budget&sup2;), and as a row in the Overview &ldquo;Needs you&rdquo; aggregator. No stacked banners; no duplicate homes.</li>
+      <li><strong>Henry-fill = meaning</strong> &mdash; danger-soft for at-risk, rust-soft <em>peach</em> for ready-to-bill (positive, never danger-red), warn-soft for unsent changes, info-soft for client message + CO chips, ok-soft for accepted sub-quotes. Sparkles reserved for genuine Henry <em>insights</em> (the Budget-card diagnostic strip on Overview, the &ldquo;&#10022; Add&rdquo; capture button) &mdash; not on every alert row.</li>
+      <li><strong>Budget &mdash; execution posture</strong> &mdash; the same component as the estimate&rsquo;s authoring face, actuals-forward. Columns Category &middot; Estimate &middot; Spent &middot; Committed &middot; Remaining (+ thin multi-segment bar). Sections default collapsed; one expanded (Trades). One category drill-in (Plumbing) with cost lines + &ldquo;Spent by source&rdquo; deep-links. Calm signed-estimate banner anchors the top above the summary.</li>
+      <li><strong>Dual budget read</strong> &mdash; &ldquo;53% complete &middot; 61% of budget consumed &middot; $86,100 of $142,000.&rdquo; Two distinct metrics; the gap is the margin story. Never merged.</li>
+      <li><strong>Three type sizes</strong> &mdash; 28 title, 16 panel titles, 14 body, 12 secondary; 11px mono uppercase for eyebrows/labels. Tabular numerals on every money figure; cents demoted.</li>
+      <li><strong>Single accent</strong> &mdash; rust is reserved for the &ldquo;Bill draw&rdquo; CTA, the &#10022; Add button, and Henry insight glyphs only. Status uses soft-pair tones (label + glyph + small chip), never raw red/amber/blue blocks.</li>
+    </ul>
+    <div class="open-q">
+      <strong>Notes:</strong> Mock data is Glenwood Heights Master Suite Addition (Daniel &amp; Priya Mohan) under Northbeam Construction &mdash; 53% complete, 61% of budget consumed, status Active. The Budget tab here is the <em>execution</em> face (post-approval); the same component&rsquo;s authoring face (pre-approval columns Category &middot; Cost &middot; Markup% &middot; Price) lives in <code>estimate.md</code> and is a follow-up build.
+    </div>
+  </div>
+</div>
+</body>
+</html>

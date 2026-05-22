@@ -61,3 +61,8 @@ supabase/.temp
 !.env.local.example
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+
+# OD render output (od-*.html / od-*/) IS committed — it's the build reference the coding machine pulls alongside the briefs.
+# Only ignore loose ad-hoc screenshots + OD tooling.
+*-Screenshot-*.png
+.od-skills/

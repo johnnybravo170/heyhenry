@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Budget · HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 13px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink); font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .org-switcher:hover { background: rgba(232,222,201,.5); }
+  .org-avatar { width: 24px; height: 24px; border-radius: 6px; background: var(--rust); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: inherit;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn .icon { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-input);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 22px 28px 80px;
+    display: flex; flex-direction: column;
+  }
+
+  /* Project header (identity row + closed details trigger) */
+  .project-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 2px 0 14px;
+  }
+  .project-head-text { flex: 1; min-width: 0; position: relative; }
+  .title-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .project-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .details-trigger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .details-trigger:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .details-trigger svg { width: 14px; height: 14px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-pill .check { width: 10px; height: 10px; display: grid; place-items: center; }
+  .status-pill .check svg { width: 10px; height: 10px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+  .customer-line {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .customer-line a {
+    color: var(--muted);
+    border-bottom: 1px solid transparent;
+  }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+  .head-actions { display: flex; gap: 6px; flex-shrink: 0; padding-top: 6px; }
+  .btn-add {
+    background: transparent;
+    border-color: var(--hair);
+    color: var(--ink-2);
+    height: 34px;
+  }
+  .btn-add:hover {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.3);
+    color: var(--rust);
+  }
+  .btn-add .henry-glyph { color: var(--rust); }
+
+  /* Unified nav */
+  .tab-strip {
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center;
+    overflow-x: auto;
+  }
+  .tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 14px;
+    font-size: 14px; font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.is-on {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+  .tab.is-secondary { color: var(--faint); font-weight: 500; }
+  .tab.is-secondary:hover { color: var(--ink-2); }
+  .tab-divider {
+    width: 1px; height: 18px;
+    background: var(--rule);
+    margin: 0 10px;
+    flex-shrink: 0;
+  }
+  .tab-count {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--rust);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .tab-count-soft {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--warn);
+    background: var(--warn-soft);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+
+  /* Budget body */
+  .budget { margin-top: 22px; display: flex; flex-direction: column; gap: 18px; }
+
+  /* Alert chip row */
+  .alert-chips {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .chip-alert {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px 8px 11px;
+    border-radius: 999px;
+    font-size: 13px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    line-height: 1;
+    cursor: pointer;
+  }
+  .chip-alert .mark {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .chip-alert .mark svg { width: 10px; height: 10px; }
+  .chip-alert .body { color: var(--ink); font-weight: 500; }
+  .chip-alert .body strong { font-weight: 700; }
+  .chip-alert .body .amt { font-variant-numeric: tabular-nums; }
+  .chip-alert .body .muted { color: var(--muted); }
+  .chip-alert .body .sep { color: var(--faint); margin: 0 2px; }
+  .chip-alert .arrow { width: 11px; height: 11px; color: var(--muted); margin-left: 2px; }
+  .chip-alert.is-danger {
+    background: var(--danger-soft);
+    border-color: rgba(185,28,28,0.22);
+  }
+  .chip-alert.is-danger .mark { background: var(--danger); color: #fff; }
+  .chip-alert.is-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+  }
+  .chip-alert.is-warn .mark { background: var(--warn); color: #fff; }
+  .chip-alert.is-warn .arrow, .chip-alert.is-danger .arrow { color: var(--ink-2); }
+
+  /* Signed-estimate calm banner */
+  .signed-banner {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 16px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--ok);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .signed-banner .signed-mark {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--ok-soft); color: var(--ok);
+    display: grid; place-items: center;
+  }
+  .signed-banner .signed-mark svg { width: 11px; height: 11px; }
+  .signed-banner strong { color: var(--ink); font-weight: 600; }
+  .signed-banner .sep { color: var(--faint); margin: 0 3px; }
+  .signed-banner .ver {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .signed-banner .view-link {
+    margin-left: auto;
+    color: var(--ink-2);
+    font-weight: 600;
+    font-family: var(--mono);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .signed-banner .view-link svg { width: 10px; height: 10px; color: var(--muted); }
+
+  /* Budget summary panel */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px 10px;
+  }
+  .panel-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .panel-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .panel-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ink-2);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: transparent; border: 0;
+    cursor: pointer;
+  }
+  .panel-link:hover { background: var(--chip-fill); color: var(--ink); }
+  .panel-link svg { width: 10px; height: 10px; }
+
+  .summary-body { padding: 4px 18px 18px; }
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    align-items: baseline;
+    padding-top: 6px;
+  }
+  .var-cell { display: flex; flex-direction: column; gap: 4px; }
+  .var-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .var-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .var-value .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .var-sub {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .progress-stack {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--rule);
+  }
+  .progress-meta {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .progress-meta strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .progress-meta .sep { color: var(--faint); }
+  .progress-meta .right { margin-left: auto; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .seg-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--chip-fill);
+  }
+  .seg-spent { background: var(--ink); }
+  .seg-committed { background: #7A6A4D; }
+  .seg-bar i { display: block; height: 100%; }
+  .seg-legend {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .seg-legend .sw {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle;
+  }
+  .seg-legend .sw.spent { background: var(--ink); }
+  .seg-legend .sw.committed { background: #7A6A4D; }
+  .seg-legend .sw.remaining { background: var(--chip-fill); border: 1px solid var(--rule); }
+  .seg-legend strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Scope table */
+  .scope-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+  .scope-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .scope-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .scope-actions { display: flex; gap: 4px; align-items: center; }
+
+  .table {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+  }
+  .table-col-head {
+    display: grid;
+    grid-template-columns: 24px 1fr 110px 110px 110px 160px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 18px 9px 14px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    border-top-left-radius: var(--radius-card);
+    border-top-right-radius: var(--radius-card);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    position: sticky;
+    top: 56px;
+    z-index: 5;
+  }
+  .table-col-head .right { text-align: right; }
+
+  /* Section row */
+  .section-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 110px 110px 110px 160px;
+    gap: 12px;
+    align-items: center;
+    padding: 13px 18px 13px 14px;
+    border-top: 1px solid var(--hair);
+    cursor: pointer;
+    background: #FBF6EC;
+  }
+  .section-row:first-of-type { border-top: 0; }
+  .section-row:hover { background: #F7F0DD; }
+  .section-twist {
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    color: var(--muted);
+  }
+  .section-twist svg { width: 11px; height: 11px; transition: transform 120ms; }
+  .section-row.is-open .section-twist svg { transform: rotate(90deg); }
+  .section-name {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-name .count {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .section-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .section-num .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .section-num.is-over { color: var(--danger); }
+  .section-num.is-muted { color: var(--muted); font-weight: 500; }
+
+  .section-prog {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-prog .mini-bar {
+    flex: 1; height: 6px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+    overflow: hidden;
+    display: flex;
+  }
+  .section-prog .mini-bar i { height: 100%; display: block; }
+  .section-prog .mini-bar .s { background: var(--ink); }
+  .section-prog .mini-bar .c { background: #7A6A4D; }
+  .section-prog .mini-bar .over { background: var(--danger); }
+  .section-prog .pct {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    width: 38px; text-align: right;
+    letter-spacing: 0.02em;
+  }
+
+  /* Category row */
+  .cat-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 110px 110px 110px 160px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 18px 12px 14px;
+    border-top: 1px solid var(--hair);
+    background: var(--card);
+    cursor: pointer;
+  }
+  .cat-row:hover { background: #FFFCF7; }
+  .cat-twist {
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    color: var(--faint);
+  }
+  .cat-twist svg { width: 10px; height: 10px; transition: transform 120ms; }
+  .cat-row.is-open .cat-twist svg { transform: rotate(90deg); }
+  .cat-name {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cat-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink); font-weight: 500;
+    font-size: 14px;
+  }
+  .cat-num .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .cat-num.is-zero { color: var(--faint); }
+  .cat-num.is-over { color: var(--danger); font-weight: 600; }
+
+  /* Status chips on category rows */
+  .cat-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+  .cat-chip.danger { color: var(--danger); background: var(--danger-soft); }
+  .cat-chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .cat-chip.info { color: var(--info); background: var(--info-soft); }
+  .cat-chip.ok { color: var(--ok); background: var(--ok-soft); }
+
+  /* Cost line expand area — shares the parent table's 6-col grid so values align */
+  .cost-lines {
+    background: #FBF6EC;
+    border-top: 1px solid var(--hair);
+    padding: 4px 0 14px;
+  }
+  .cost-line {
+    display: grid;
+    grid-template-columns: 24px 1fr 110px 110px 110px 160px;
+    gap: 12px;
+    align-items: center;
+    padding: 9px 18px 9px 14px;
+    border-top: 1px dashed var(--rule);
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .cost-line:first-of-type { border-top: 0; }
+  .cost-line .cl-spacer { display: block; }
+  .cost-line .cl-name {
+    padding-left: 24px;
+    color: var(--ink);
+    font-weight: 500;
+    min-width: 0;
+  }
+  .cost-line .cl-name .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 6px;
+    letter-spacing: 0.02em;
+  }
+  .cost-line .cl-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .cost-line .cl-num .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+  .cost-line .cl-num.is-zero { color: var(--faint); }
+  .cost-line .cl-num.is-muted { color: var(--muted); }
+
+  /* Actions area below the cost lines — aligned with name column start */
+  .cl-actions {
+    padding: 10px 18px 0 50px;  /* 14 + 24 + 12 = 50, aligns with name column */
+    display: flex; flex-direction: column;
+    gap: 12px;
+  }
+  .cl-add {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 10px;
+    border: 1px dashed var(--rule);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 13px; font-weight: 500;
+    background: transparent;
+    cursor: pointer;
+  }
+  .cl-add:hover { color: var(--ink); border-color: var(--ink-2); }
+  .cl-add svg { width: 11px; height: 11px; }
+
+  /* Spent by source strip */
+  .source-strip {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 13px;
+  }
+  .source-strip .src-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .source-strip .src-item {
+    display: inline-flex; align-items: baseline; gap: 4px;
+    color: var(--ink-2);
+  }
+  .source-strip .src-item strong {
+    color: var(--ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .source-strip .src-item.is-link {
+    color: var(--ink-2);
+    border-bottom: 1px solid transparent;
+    cursor: pointer;
+  }
+  .source-strip .src-item.is-link:hover { border-bottom-color: var(--rule); color: var(--ink); }
+  .source-strip .sep { color: var(--faint); }
+  .source-strip .src-arrow { width: 10px; height: 10px; color: var(--muted); }
+
+  /* Add row footer */
+  .add-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 18px 13px 14px;
+    border-top: 1px solid var(--hair);
+    background: var(--chrome);
+    border-bottom-left-radius: var(--radius-card);
+    border-bottom-right-radius: var(--radius-card);
+  }
+  .add-row .btn-add-line {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    border: 1px dashed var(--rule);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 13px; font-weight: 600;
+    background: transparent;
+    cursor: pointer;
+  }
+  .add-row .btn-add-line:hover { color: var(--ink); border-color: var(--ink-2); }
+  .add-row .btn-add-line svg { width: 11px; height: 11px; }
+
+  /* Drag handle */
+  .grip {
+    color: var(--faint);
+    cursor: grab;
+    width: 12px; height: 12px;
+    margin-right: 4px;
+  }
+  .grip svg { width: 12px; height: 12px; }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/><path d="M19 14l.7 1.9 1.9.7-1.9.7L19 19l-.7-1.7-1.9-.7 1.9-.7z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="0.6" fill="currentColor"/><circle cx="9" cy="12" r="0.6" fill="currentColor"/><circle cx="9" cy="18" r="0.6" fill="currentColor"/><circle cx="15" cy="6" r="0.6" fill="currentColor"/><circle cx="15" cy="12" r="0.6" fill="currentColor"/><circle cx="15" cy="18" r="0.6" fill="currentColor"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-collapse-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Construction</span>
+          <span class="org-sub">Langley, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices&hellip;</span>
+        <span class="chip-kbd">&#8984; K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-plus"/></svg>New project</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <!-- Project header (lean, popover closed) -->
+      <section class="project-head">
+        <div class="project-head-text">
+          <div class="title-row">
+            <h1 class="project-title">Glenwood Heights Master Suite Addition</h1>
+            <button class="details-trigger" aria-label="Project details">
+              <svg><use href="#i-chevron-down"/></svg>
+            </button>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line">
+            <a href="#">Daniel &amp; Priya Mohan</a>
+          </div>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-add">
+            <span class="henry-glyph" aria-hidden="true">&#10022;</span>
+            Add
+          </button>
+          <button class="icon-btn" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </div>
+      </section>
+
+      <!-- Tabs — BUDGET active -->
+      <nav class="tab-strip" aria-label="Project sections">
+        <button class="tab is-on">Budget <span class="tab-count-soft" title="2 alerts">2</span></button>
+        <button class="tab">Spend</button>
+        <button class="tab">Labour</button>
+        <button class="tab">Schedule</button>
+        <button class="tab">Billing</button>
+        <button class="tab">Overview</button>
+        <span class="tab-divider" aria-hidden="true"></span>
+        <button class="tab is-secondary">Client <span class="tab-count">2</span></button>
+        <button class="tab is-secondary">Photos</button>
+        <button class="tab is-secondary">Documents</button>
+      </nav>
+
+      <!-- Budget body -->
+      <section class="budget" aria-label="Budget">
+
+        <!-- Alert chips: margin at risk + unsent scope changes -->
+        <div class="alert-chips" role="region" aria-label="Budget alerts">
+          <button class="chip-alert is-danger" type="button">
+            <span class="mark"><svg><use href="#i-alert-triangle"/></svg></span>
+            <span class="body"><strong>Margin at risk</strong> <span class="sep">&middot;</span> <strong>6%</strong> vs <strong>18%</strong></span>
+            <svg class="arrow"><use href="#i-arrow-right"/></svg>
+          </button>
+
+          <button class="chip-alert is-warn" type="button">
+            <span class="mark"><svg><use href="#i-shuffle"/></svg></span>
+            <span class="body"><strong>2 unsent scope changes</strong> since v2 <span class="sep">&middot;</span> <span class="amt">+$3,200</span></span>
+            <svg class="arrow"><use href="#i-arrow-right"/></svg>
+          </button>
+        </div>
+
+        <!-- Signed-estimate calm banner -->
+        <div class="signed-banner">
+          <span class="signed-mark"><svg><use href="#i-check"/></svg></span>
+          <span><strong>Estimate signed</strong> by Daniel &amp; Priya Mohan, Mar 1 <span class="sep">&middot;</span> 2 applied change orders <span class="sep">&middot;</span> contract baseline</span>
+          <span class="ver">v3</span>
+          <a class="view-link" href="#">View signed PDF <svg><use href="#i-arrow-right"/></svg></a>
+        </div>
+
+        <!-- Budget summary panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Budget summary</span>
+            <div class="panel-actions">
+              <button class="panel-link">Variance by category <svg><use href="#i-arrow-right"/></svg></button>
+            </div>
+          </div>
+          <div class="summary-body">
+            <div class="summary-row">
+              <div class="var-cell">
+                <span class="var-label">Estimate</span>
+                <span class="var-value">$142,000<span class="cents">.00</span></span>
+                <span class="var-sub">Contract baseline &middot; v3</span>
+              </div>
+              <div class="var-cell">
+                <span class="var-label">Spent</span>
+                <span class="var-value">$61,300<span class="cents">.00</span></span>
+                <span class="var-sub">Labour + bills</span>
+              </div>
+              <div class="var-cell">
+                <span class="var-label">Committed</span>
+                <span class="var-value">$24,800<span class="cents">.00</span></span>
+                <span class="var-sub">Subs + open POs</span>
+              </div>
+              <div class="var-cell">
+                <span class="var-label">Remaining</span>
+                <span class="var-value">$55,900<span class="cents">.00</span></span>
+                <span class="var-sub">After committed</span>
+              </div>
+            </div>
+
+            <div class="progress-stack">
+              <div class="progress-meta">
+                <span><strong>53% complete</strong></span>
+                <span class="sep">&middot;</span>
+                <span><strong>61%</strong> of budget consumed</span>
+                <span class="right">$86,100 of $142,000</span>
+              </div>
+              <div class="seg-bar" aria-hidden="true">
+                <i class="seg-spent" style="width:43.2%;"></i>
+                <i class="seg-committed" style="width:17.5%;"></i>
+              </div>
+              <div class="seg-legend">
+                <span><span class="sw spent"></span>Spent <strong>$61,300</strong> &middot; 43%</span>
+                <span><span class="sw committed"></span>Committed <strong>$24,800</strong> &middot; 17%</span>
+                <span><span class="sw remaining"></span>Remaining <strong>$55,900</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scope table -->
+        <section aria-label="Scope">
+          <div class="scope-head">
+            <span class="scope-eyebrow">Scope &middot; 3 sections &middot; 10 categories</span>
+            <span class="scope-meta">Sections collapse for scan</span>
+            <div class="scope-actions">
+              <button class="icon-btn" aria-label="Filter"><svg><use href="#i-filter"/></svg></button>
+              <button class="icon-btn" aria-label="Collapse all"><svg><use href="#i-collapse-all"/></svg></button>
+            </div>
+          </div>
+
+          <div class="table" role="table">
+
+            <!-- Column header (sticky) -->
+            <div class="table-col-head" role="row">
+              <span></span>
+              <span>Category</span>
+              <span class="right">Estimate</span>
+              <span class="right">Spent</span>
+              <span class="right">Committed</span>
+              <span class="right">Remaining</span>
+            </div>
+
+            <!-- ─── Section 1: SITE & STRUCTURE (collapsed) ─── -->
+            <div class="section-row" role="row" aria-expanded="false">
+              <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
+              <span class="section-name">Site &amp; structure <span class="count">3 categories</span> <span class="cat-chip danger">Framing over $4,800</span></span>
+              <span class="section-num">$31,900<span class="cents">.00</span></span>
+              <span class="section-num is-over">$36,700<span class="cents">.00</span></span>
+              <span class="section-num is-muted">&mdash;</span>
+              <span class="section-prog">
+                <span class="mini-bar">
+                  <i class="s" style="width:100%;"></i>
+                  <i class="over" style="width:15%;"></i>
+                </span>
+                <span class="pct" style="color:var(--danger);">115%</span>
+              </span>
+            </div>
+
+            <!-- ─── Section 2: TRADES (EXPANDED) ─── -->
+            <div class="section-row is-open" role="row" aria-expanded="true">
+              <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
+              <span class="section-name">Trades <span class="count">3 categories</span></span>
+              <span class="section-num">$46,700<span class="cents">.00</span></span>
+              <span class="section-num">$11,400<span class="cents">.00</span></span>
+              <span class="section-num">$17,200<span class="cents">.00</span></span>
+              <span class="section-prog">
+                <span class="mini-bar">
+                  <i class="s" style="width:24.4%;"></i>
+                  <i class="c" style="width:36.8%;"></i>
+                </span>
+                <span class="pct">61%</span>
+              </span>
+            </div>
+
+            <!-- Trades / Electrical -->
+            <div class="cat-row" role="row">
+              <span class="cat-twist"><svg><use href="#i-chevron-right"/></svg></span>
+              <span class="cat-name">
+                <span class="grip"><svg><use href="#i-grip"/></svg></span>
+                Electrical
+                <span class="cat-chip info">CO 2</span>
+              </span>
+              <span class="cat-num">$14,500<span class="cents">.00</span></span>
+              <span class="cat-num">$8,200<span class="cents">.00</span></span>
+              <span class="cat-num">$2,800<span class="cents">.00</span></span>
+              <span class="section-prog">
+                <span class="mini-bar">
+                  <i class="s" style="width:56.6%;"></i>
+                  <i class="c" style="width:19.3%;"></i>
+                </span>
+                <span class="pct">76%</span>
+              </span>
+            </div>
+
+            <!-- Trades / Plumbing — EXPANDED -->
+            <div class="cat-row is-open" role="row" aria-expanded="true">
+              <span class="cat-twist"><svg><use href="#i-chevron-right"/></svg></span>
+              <span class="cat-name">
+                <span class="grip"><svg><use href="#i-grip"/></svg></span>
+                Plumbing
+              </span>
+              <span class="cat-num">$18,200<span class="cents">.00</span></span>
+              <span class="cat-num">$3,200<span class="cents">.00</span></span>
+              <span class="cat-num">$6,000<span class="cents">.00</span></span>
+              <span class="section-prog">
+                <span class="mini-bar">
+                  <i class="s" style="width:17.6%;"></i>
+                  <i class="c" style="width:33.0%;"></i>
+                </span>
+                <span class="pct">51%</span>
+              </span>
+            </div>
+
+            <!-- Plumbing cost lines — one table, share parent grid -->
+            <div class="cost-lines">
+              <div class="cost-line">
+                <span class="cl-spacer"></span>
+                <span class="cl-name">Rough-in labour <span class="meta">32 hrs &times; $80/hr</span></span>
+                <span class="cl-num">$2,560<span class="cents">.00</span></span>
+                <span class="cl-num">$2,560<span class="cents">.00</span></span>
+                <span class="cl-num is-zero">&mdash;</span>
+                <span class="cl-num is-zero">&mdash;</span>
+              </div>
+              <div class="cost-line">
+                <span class="cl-spacer"></span>
+                <span class="cl-name">Rough-in materials <span class="meta">PEX, fittings, hangers</span></span>
+                <span class="cl-num">$640<span class="cents">.00</span></span>
+                <span class="cl-num">$640<span class="cents">.00</span></span>
+                <span class="cl-num is-zero">&mdash;</span>
+                <span class="cl-num is-zero">&mdash;</span>
+              </div>
+              <div class="cost-line">
+                <span class="cl-spacer"></span>
+                <span class="cl-name">Fixtures <span class="meta">Kohler &middot; PO #4218</span></span>
+                <span class="cl-num">$4,800<span class="cents">.00</span></span>
+                <span class="cl-num is-zero">&mdash;</span>
+                <span class="cl-num">$4,800<span class="cents">.00</span></span>
+                <span class="cl-num is-zero">&mdash;</span>
+              </div>
+              <div class="cost-line">
+                <span class="cl-spacer"></span>
+                <span class="cl-name">Drain assembly <span class="meta">D. Tomic &middot; sub-line</span></span>
+                <span class="cl-num">$1,200<span class="cents">.00</span></span>
+                <span class="cl-num is-zero">&mdash;</span>
+                <span class="cl-num">$1,200<span class="cents">.00</span></span>
+                <span class="cl-num is-zero">&mdash;</span>
+              </div>
+              <div class="cost-line">
+                <span class="cl-spacer"></span>
+                <span class="cl-name">Connection &amp; finishing labour <span class="meta">~112 hrs &times; $80/hr</span></span>
+                <span class="cl-num">$9,000<span class="cents">.00</span></span>
+                <span class="cl-num is-zero">&mdash;</span>
+                <span class="cl-num is-zero">&mdash;</span>
+                <span class="cl-num">$9,000<span class="cents">.00</span></span>
+              </div>
+
+              <div class="cl-actions">
+                <button class="cl-add"><svg><use href="#i-plus"/></svg>Add line</button>
+                <div class="source-strip">
+                  <span class="src-label">Spent by source</span>
+                  <span class="src-item is-link">Labour <strong>$3,200</strong> <svg class="src-arrow"><use href="#i-arrow-right"/></svg></span>
+                  <span class="sep">&middot;</span>
+                  <span class="src-item">Bills <strong style="color:var(--faint);">$0</strong></span>
+                  <span class="sep">&middot;</span>
+                  <span class="src-item is-link">Sub commits <strong>$6,000</strong> <svg class="src-arrow"><use href="#i-arrow-right"/></svg></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Trades / Insulation & Drywall -->
+            <div class="cat-row" role="row">
+              <span class="cat-twist"><svg><use href="#i-chevron-right"/></svg></span>
+              <span class="cat-name">
+                <span class="grip"><svg><use href="#i-grip"/></svg></span>
+                Insulation &amp; drywall
+                <span class="cat-chip ok">Sub accepted</span>
+              </span>
+              <span class="cat-num">$14,000<span class="cents">.00</span></span>
+              <span class="cat-num is-zero">$0</span>
+              <span class="cat-num">$8,400<span class="cents">.00</span></span>
+              <span class="section-prog">
+                <span class="mini-bar">
+                  <i class="c" style="width:60.0%;"></i>
+                </span>
+                <span class="pct">60%</span>
+              </span>
+            </div>
+
+            <!-- ─── Section 3: ENVELOPE & FINISHES (collapsed) ─── -->
+            <div class="section-row" role="row" aria-expanded="false">
+              <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
+              <span class="section-name">Envelope &amp; finishes <span class="count">4 categories</span> <span class="cat-chip danger">Windows over $900</span> <span class="cat-chip warn">Flooring projected over</span></span>
+              <span class="section-num">$63,400<span class="cents">.00</span></span>
+              <span class="section-num">$13,200<span class="cents">.00</span></span>
+              <span class="section-num">$7,600<span class="cents">.00</span></span>
+              <span class="section-prog">
+                <span class="mini-bar">
+                  <i class="s" style="width:20.8%;"></i>
+                  <i class="c" style="width:12.0%;"></i>
+                </span>
+                <span class="pct">33%</span>
+              </span>
+            </div>
+
+            <!-- Add section/category footer -->
+            <div class="add-row">
+              <button class="btn-add-line"><svg><use href="#i-plus"/></svg>Add category</button>
+              <button class="btn-add-line"><svg><use href="#i-plus"/></svg>Add section</button>
+            </div>
+
+          </div>
+        </section>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1040 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Budget · HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 390px; height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  /* iOS status bar */
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .signal { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+  .signal i { display: block; width: 2.5px; background: var(--ink); border-radius: 1px; }
+  .signal i:nth-child(1) { height: 4px; }
+  .signal i:nth-child(2) { height: 6px; }
+  .signal i:nth-child(3) { height: 8px; }
+  .signal i:nth-child(4) { height: 10px; }
+  .battery { width: 22px; height: 11px; border: 1.2px solid var(--ink); border-radius: 3px; position: relative; }
+  .battery::after { content: ''; position: absolute; right: -3px; top: 2.5px; width: 2px; height: 4px; background: var(--ink); border-radius: 1px; }
+  .battery::before { content: ''; position: absolute; left: 1px; top: 1px; width: 14px; height: 5px; background: var(--ink); border-radius: 1px; }
+
+  /* App header (lean) */
+  .app-header {
+    padding: 8px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    cursor: pointer;
+    margin-left: -6px;
+  }
+  .header-back svg { width: 14px; height: 14px; }
+  .header-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .icon-btn-sm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn-sm:hover { background: var(--chip-fill); color: var(--ink); }
+  .icon-btn-sm svg { width: 16px; height: 16px; }
+  .add-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .add-pill .glyph { color: var(--rust); font-size: 13px; }
+
+  .header-title {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    flex: 1; min-width: 0;
+  }
+  .header-title h1 .chev {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    margin-left: 2px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    vertical-align: -4px;
+  }
+  .header-title h1 .chev svg { width: 11px; height: 11px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-pill .check { display: grid; place-items: center; width: 9px; height: 9px; }
+  .status-pill .check svg { width: 9px; height: 9px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+
+  /* Tab dropdown */
+  .tab-select-wrap {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-select {
+    flex: 1;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tab-select .arrow { margin-left: auto; color: var(--muted); display: grid; place-items: center; }
+  .tab-select .arrow svg { width: 12px; height: 12px; }
+  .tab-select .total-sep { margin-left: 8px; color: var(--faint); }
+  .tab-select .total-badge {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--warn-soft); color: var(--warn);
+    padding: 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  /* Scrollable body */
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 84px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* Alert chips */
+  .alert-chips {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .chip-alert {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    line-height: 1.4;
+    cursor: pointer;
+    min-height: 44px;
+    text-align: left;
+    font-family: var(--sans);
+    color: var(--ink-2);
+  }
+  .chip-alert .mark {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .chip-alert .mark svg { width: 11px; height: 11px; }
+  .chip-alert .chip-text {
+    flex: 1; min-width: 0;
+    display: block;
+    color: var(--ink); font-weight: 500;
+    line-height: 1.4;
+  }
+  .chip-alert .chip-text strong { font-weight: 700; }
+  .chip-alert .chip-text .muted { color: var(--muted); }
+  .chip-alert .chip-text .sep { color: var(--faint); margin: 0 3px; }
+  .chip-alert .chip-text .amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chip-alert .arrow { width: 12px; height: 12px; color: var(--muted); flex-shrink: 0; }
+  .chip-alert.is-danger {
+    background: var(--danger-soft);
+    border-color: rgba(185,28,28,0.22);
+  }
+  .chip-alert.is-danger .mark { background: var(--danger); }
+  .chip-alert.is-danger .arrow { color: var(--danger); }
+  .chip-alert.is-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+  }
+  .chip-alert.is-warn .mark { background: var(--warn); }
+  .chip-alert.is-warn .arrow { color: var(--warn); }
+
+  /* Signed banner */
+  .signed-banner {
+    display: flex; align-items: center; gap: 9px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--ok);
+    border-radius: 9px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .signed-banner .mark {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--ok-soft); color: var(--ok);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .signed-banner .mark svg { width: 10px; height: 10px; }
+  .signed-banner strong { color: var(--ink); font-weight: 600; }
+  .signed-banner .sep { color: var(--faint); margin: 0 3px; }
+  .signed-banner .ver {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  /* Section eyebrow */
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 4px 6px;
+  }
+  .section-eyebrow .label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-eyebrow .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Summary compact strip */
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px;
+  }
+  .sum-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 18px;
+  }
+  .sum-cell { display: flex; flex-direction: column; gap: 2px; }
+  .sum-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .sum-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .sum-value .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+  .summary-prog {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--rule);
+  }
+  .prog-meta {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 7px;
+    flex-wrap: wrap;
+  }
+  .prog-meta strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .prog-meta .right { margin-left: auto; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .seg-bar {
+    display: flex;
+    height: 7px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--chip-fill);
+  }
+  .seg-spent { background: var(--ink); }
+  .seg-committed { background: #7A6A4D; }
+
+  /* Section group header (collapsed) */
+  .sect-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .sect-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px;
+    background: #FBF6EC;
+    border-bottom: 1px solid var(--hair);
+    cursor: pointer;
+    min-height: 48px;
+  }
+  .sect-row:last-child { border-bottom: 0; }
+  .sect-row .twist {
+    width: 14px; height: 14px;
+    color: var(--muted);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .sect-row .twist svg { width: 11px; height: 11px; transition: transform 120ms; }
+  .sect-row.is-open .twist svg { transform: rotate(90deg); }
+  .sect-row .name {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex: 1; min-width: 0;
+  }
+  .sect-row .count {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .sect-row .total {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .sect-row .total.is-over { color: var(--danger); }
+  .sect-row .pct {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    margin-left: 6px;
+    flex-shrink: 0;
+  }
+  .sect-row .pct.is-over { color: var(--danger); }
+
+  /* Section sub-stats (collapsed row footer with chips) */
+  .sect-footer {
+    padding: 8px 14px 11px;
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .sect-footer:last-child { border-bottom: 0; }
+  .sect-footer .substat {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .sect-footer .substat strong { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sect-footer .sep { color: var(--faint); }
+
+  /* Stacked category card */
+  .cat-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .cat-card-head {
+    padding: 13px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+    cursor: pointer;
+    min-height: 48px;
+  }
+  .cat-card-title-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cat-card-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    flex: 1; min-width: 0;
+  }
+  .cat-card-twist {
+    width: 14px; height: 14px;
+    color: var(--faint);
+    display: grid; place-items: center;
+  }
+  .cat-card-twist svg { width: 11px; height: 11px; transition: transform 120ms; }
+  .cat-card.is-open .cat-card-twist svg { transform: rotate(90deg); }
+
+  .cat-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 0 14px 12px;
+    font-size: 12px;
+  }
+  .cat-card-stats .stat { display: flex; flex-direction: column; gap: 1px; }
+  .cat-card-stats .stat .lbl {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .cat-card-stats .stat .val {
+    font-size: 13px; font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .cat-card-stats .stat .val.is-zero { color: var(--faint); }
+  .cat-card-stats .stat .val.is-over { color: var(--danger); }
+
+  .cat-card-bar {
+    margin: 0 14px 12px;
+  }
+  .cat-card-bar .mini {
+    display: flex;
+    height: 6px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--chip-fill);
+  }
+  .cat-card-bar .mini i { display: block; height: 100%; }
+  .cat-card-bar .mini .s { background: var(--ink); }
+  .cat-card-bar .mini .c { background: #7A6A4D; }
+  .cat-card-bar .mini .over { background: var(--danger); }
+  .cat-card-bar .bar-meta {
+    margin-top: 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    display: flex; gap: 8px;
+  }
+  .cat-card-bar .bar-meta strong { color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cat-card-bar .bar-meta .right { margin-left: auto; }
+  .cat-card-bar .bar-meta .right.is-over { color: var(--danger); }
+
+  /* Status chips */
+  .cat-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1.4;
+    flex-shrink: 0;
+  }
+  .cat-chip.danger { color: var(--danger); background: var(--danger-soft); }
+  .cat-chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .cat-chip.info { color: var(--info); background: var(--info-soft); }
+  .cat-chip.ok { color: var(--ok); background: var(--ok-soft); }
+
+  /* Expanded card cost lines */
+  .cost-lines {
+    background: #FBF6EC;
+    border-top: 1px solid var(--hair);
+    padding: 6px 14px 12px;
+  }
+  .cost-line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    align-items: baseline;
+    padding: 9px 0;
+    border-top: 1px dashed var(--rule);
+    font-size: 13px;
+  }
+  .cost-line:first-of-type { border-top: 0; }
+  .cl-name { color: var(--ink); font-weight: 500; }
+  .cl-name .meta {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+  .cl-amt {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .cl-amt .tag {
+    display: block;
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 1px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .cl-amt .tag.spent { color: var(--ink-2); }
+  .cl-amt .tag.committed { color: var(--muted); }
+  .cl-amt .tag.projected { color: var(--faint); }
+  .cl-amt.is-zero { color: var(--faint); font-weight: 500; }
+  .cl-amt.is-projected { color: var(--muted); font-weight: 500; }
+
+  .cl-add {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border: 1px dashed var(--rule);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 13px; font-weight: 500;
+    background: transparent;
+    cursor: pointer;
+    min-height: 36px;
+    font-family: var(--sans);
+  }
+  .cl-add svg { width: 11px; height: 11px; }
+
+  /* Source strip */
+  .source-strip {
+    margin-top: 10px;
+    padding: 9px 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 12px;
+  }
+  .source-strip .src-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .source-strip .src-items {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    align-items: baseline;
+  }
+  .source-strip .src-item {
+    display: inline-flex; align-items: baseline; gap: 4px;
+    color: var(--ink-2);
+  }
+  .source-strip .src-item strong {
+    color: var(--ink); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .source-strip .src-item .arrow { width: 9px; height: 9px; color: var(--muted); }
+  .source-strip .sep { color: var(--faint); }
+
+  /* Add row footer (table-level) */
+  .add-row {
+    padding: 12px 14px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: flex; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .add-row .btn-add-line {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 8px 10px;
+    border: 1px dashed var(--rule);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 12px; font-weight: 600;
+    background: transparent;
+    cursor: pointer;
+    min-height: 36px;
+    font-family: var(--sans);
+  }
+  .add-row .btn-add-line svg { width: 11px; height: 11px; }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    position: absolute;
+    left: 12px; right: 12px; bottom: 12px;
+    height: 64px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    border-bottom-left-radius: 36px;
+    border-bottom-right-radius: 36px;
+    padding: 0 4px 18px;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--muted);
+    font-size: 10px; font-weight: 600;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .tab-item.active { color: var(--ink); }
+  .tab-item svg { width: 18px; height: 18px; }
+  .tab-item .label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .tab-item.with-count { position: relative; }
+  .tab-item .count {
+    position: absolute; top: 0; right: calc(50% - 18px);
+    background: var(--rust); color: #fff;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- iOS status bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="island"></span>
+      <span class="right">
+        <span class="signal"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="battery"></span>
+      </span>
+    </div>
+
+    <!-- App header -->
+    <div class="app-header">
+      <div class="header-top">
+        <button class="header-back" aria-label="Back to projects"><svg><use href="#i-chevron-left"/></svg></button>
+        <span class="header-crumb">Projects</span>
+        <span class="header-actions">
+          <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+          <button class="icon-btn-sm" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </span>
+      </div>
+      <div class="header-title">
+        <h1>Glenwood Heights<br/>Master Suite Addition
+          <span class="chev" aria-label="Project details"><svg><use href="#i-chevron-down"/></svg></span>
+        </h1>
+        <span class="status-pill status-active">
+          <span class="check"><svg><use href="#i-check"/></svg></span>Active
+        </span>
+      </div>
+      <div class="customer-line">
+        <a href="#">Daniel &amp; Priya Mohan</a>
+      </div>
+
+      <div class="tab-select-wrap" role="navigation" aria-label="Project sections">
+        <div class="tab-select" aria-expanded="false">
+          <span>Budget</span>
+          <span class="total-sep">&middot;</span>
+          <span class="total-badge">2</span>
+          <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="body">
+
+      <!-- Alert chips -->
+      <div class="alert-chips" role="region" aria-label="Budget alerts">
+        <button class="chip-alert is-danger" type="button">
+          <span class="mark"><svg><use href="#i-alert-triangle"/></svg></span>
+          <span class="chip-text"><strong>Margin at risk</strong> <span class="sep">&middot;</span> 6% vs 18%</span>
+          <svg class="arrow"><use href="#i-arrow-right"/></svg>
+        </button>
+
+        <button class="chip-alert is-warn" type="button">
+          <span class="mark"><svg><use href="#i-shuffle"/></svg></span>
+          <span class="chip-text"><strong>2 unsent changes</strong> <span class="sep">&middot;</span> <span class="amt">+$3,200</span></span>
+          <svg class="arrow"><use href="#i-arrow-right"/></svg>
+        </button>
+      </div>
+
+      <!-- Signed banner -->
+      <div class="signed-banner">
+        <span class="mark"><svg><use href="#i-check"/></svg></span>
+        <span><strong>Estimate signed</strong> <span class="sep">&middot;</span> 2 applied COs</span>
+        <span class="ver">v3</span>
+      </div>
+
+      <!-- Summary card -->
+      <section aria-label="Budget summary">
+        <div class="section-eyebrow">
+          <span class="label">Budget summary</span>
+          <span class="meta">contract baseline v3</span>
+        </div>
+        <div class="summary-card">
+          <div class="sum-grid">
+            <div class="sum-cell">
+              <span class="sum-label">Estimate</span>
+              <span class="sum-value">$142,000<span class="cents">.00</span></span>
+            </div>
+            <div class="sum-cell">
+              <span class="sum-label">Spent</span>
+              <span class="sum-value">$61,300<span class="cents">.00</span></span>
+            </div>
+            <div class="sum-cell">
+              <span class="sum-label">Committed</span>
+              <span class="sum-value">$24,800<span class="cents">.00</span></span>
+            </div>
+            <div class="sum-cell">
+              <span class="sum-label">Remaining</span>
+              <span class="sum-value">$55,900<span class="cents">.00</span></span>
+            </div>
+          </div>
+
+          <div class="summary-prog">
+            <div class="prog-meta">
+              <span><strong>53% complete</strong> &middot; <strong>61%</strong> consumed</span>
+              <span class="right">$86,100 / $142k</span>
+            </div>
+            <div class="seg-bar" aria-hidden="true">
+              <i class="seg-spent" style="width:43.2%;"></i>
+              <i class="seg-committed" style="width:17.5%;"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scope: sections + categories as stacked cards -->
+      <section aria-label="Scope">
+        <div class="section-eyebrow">
+          <span class="label">Scope</span>
+          <span class="meta">3 sections &middot; 10 cats</span>
+        </div>
+
+        <!-- Section 1: SITE & STRUCTURE (collapsed) -->
+        <div class="sect-card">
+          <div class="sect-row" aria-expanded="false">
+            <span class="twist"><svg><use href="#i-chevron-right"/></svg></span>
+            <span class="name">Site &amp; structure <span class="count">3 cats</span></span>
+            <span class="total">$31,900</span>
+            <span class="pct is-over">115% used</span>
+            <span class="cat-chip danger" style="margin-left:6px;">&#9888; over</span>
+          </div>
+          <div class="sect-footer">
+            <span class="substat">remaining <strong style="color:var(--danger);">&minus;$4,800</strong></span>
+            <span class="cat-chip danger" style="margin-left:auto;">Framing over $4,800</span>
+          </div>
+        </div>
+
+        <!-- Section 2: TRADES (EXPANDED — shows category cards) -->
+        <div class="sect-card">
+          <div class="sect-row is-open" aria-expanded="true">
+            <span class="twist"><svg><use href="#i-chevron-right"/></svg></span>
+            <span class="name">Trades <span class="count">3 cats</span></span>
+            <span class="total">$46,700</span>
+            <span class="pct">61% used</span>
+          </div>
+          <div class="sect-footer">
+            <span class="substat">spent <strong>$11,400</strong></span>
+            <span class="sep">&middot;</span>
+            <span class="substat">cmt <strong>$17,200</strong></span>
+            <span class="sep">&middot;</span>
+            <span class="substat">rem <strong>$18,100</strong></span>
+          </div>
+        </div>
+
+        <!-- Electrical -->
+        <div class="cat-card">
+          <div class="cat-card-head">
+            <div class="cat-card-title-row">
+              <span class="cat-card-title">Electrical</span>
+              <span class="cat-chip info">CO 2</span>
+              <span class="cat-card-twist"><svg><use href="#i-chevron-right"/></svg></span>
+            </div>
+          </div>
+          <div class="cat-card-stats">
+            <div class="stat"><span class="lbl">Est</span><span class="val">$14,500</span></div>
+            <div class="stat"><span class="lbl">Spent</span><span class="val">$8,200</span></div>
+            <div class="stat"><span class="lbl">Cmt</span><span class="val">$2,800</span></div>
+          </div>
+          <div class="cat-card-bar">
+            <div class="mini" aria-hidden="true">
+              <i class="s" style="width:56.6%;"></i>
+              <i class="c" style="width:19.3%;"></i>
+            </div>
+            <div class="bar-meta">
+              <span>Rem <strong>$3,500</strong></span>
+              <span class="right">76% used</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plumbing — EXPANDED -->
+        <div class="cat-card is-open">
+          <div class="cat-card-head">
+            <div class="cat-card-title-row">
+              <span class="cat-card-title">Plumbing</span>
+              <span class="cat-card-twist"><svg><use href="#i-chevron-right"/></svg></span>
+            </div>
+          </div>
+          <div class="cat-card-stats">
+            <div class="stat"><span class="lbl">Est</span><span class="val">$18,200</span></div>
+            <div class="stat"><span class="lbl">Spent</span><span class="val">$3,200</span></div>
+            <div class="stat"><span class="lbl">Cmt</span><span class="val">$6,000</span></div>
+          </div>
+          <div class="cat-card-bar">
+            <div class="mini" aria-hidden="true">
+              <i class="s" style="width:17.6%;"></i>
+              <i class="c" style="width:33.0%;"></i>
+            </div>
+            <div class="bar-meta">
+              <span>Rem <strong>$9,000</strong></span>
+              <span class="right">51% used</span>
+            </div>
+          </div>
+
+          <!-- Cost lines -->
+          <div class="cost-lines">
+            <div class="cost-line">
+              <span class="cl-name">Rough-in labour <span class="meta">32 hrs &times; $80/hr</span></span>
+              <span class="cl-amt">$2,560<span class="tag spent">spent</span></span>
+            </div>
+            <div class="cost-line">
+              <span class="cl-name">Rough-in materials <span class="meta">PEX, fittings, hangers</span></span>
+              <span class="cl-amt">$640<span class="tag spent">spent</span></span>
+            </div>
+            <div class="cost-line">
+              <span class="cl-name">Fixtures <span class="meta">Kohler &middot; PO #4218</span></span>
+              <span class="cl-amt">$4,800<span class="tag committed">committed</span></span>
+            </div>
+            <div class="cost-line">
+              <span class="cl-name">Drain assembly <span class="meta">D. Tomic &middot; sub-line</span></span>
+              <span class="cl-amt">$1,200<span class="tag committed">committed</span></span>
+            </div>
+            <div class="cost-line">
+              <span class="cl-name">Connection &amp; finishing labour <span class="meta">not started</span></span>
+              <span class="cl-amt is-projected">$9,000<span class="tag projected">projected</span></span>
+            </div>
+
+            <button class="cl-add"><svg><use href="#i-plus"/></svg>Add line</button>
+
+            <div class="source-strip">
+              <span class="src-label">Spent by source</span>
+              <div class="src-items">
+                <span class="src-item">Labour <strong>$3,200</strong> <svg class="arrow"><use href="#i-arrow-right"/></svg></span>
+                <span class="sep">&middot;</span>
+                <span class="src-item">Bills <strong style="color:var(--faint);">$0</strong></span>
+                <span class="sep">&middot;</span>
+                <span class="src-item">Sub cmt <strong>$6,000</strong> <svg class="arrow"><use href="#i-arrow-right"/></svg></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insulation & Drywall -->
+        <div class="cat-card">
+          <div class="cat-card-head">
+            <div class="cat-card-title-row">
+              <span class="cat-card-title">Insulation &amp; drywall</span>
+              <span class="cat-chip ok">Sub accepted</span>
+              <span class="cat-card-twist"><svg><use href="#i-chevron-right"/></svg></span>
+            </div>
+          </div>
+          <div class="cat-card-stats">
+            <div class="stat"><span class="lbl">Est</span><span class="val">$14,000</span></div>
+            <div class="stat"><span class="lbl">Spent</span><span class="val is-zero">$0</span></div>
+            <div class="stat"><span class="lbl">Cmt</span><span class="val">$8,400</span></div>
+          </div>
+          <div class="cat-card-bar">
+            <div class="mini" aria-hidden="true">
+              <i class="c" style="width:60.0%;"></i>
+            </div>
+            <div class="bar-meta">
+              <span>Rem <strong>$5,600</strong></span>
+              <span class="right">60% committed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: ENVELOPE & FINISHES (collapsed) -->
+        <div class="sect-card">
+          <div class="sect-row" aria-expanded="false">
+            <span class="twist"><svg><use href="#i-chevron-right"/></svg></span>
+            <span class="name">Envelope &amp; finishes <span class="count">4 cats</span></span>
+            <span class="total">$63,400</span>
+            <span class="pct">33% used</span>
+          </div>
+          <div class="sect-footer">
+            <span class="substat">rem <strong>$42,600</strong></span>
+            <span class="cat-chip danger" style="margin-left:auto;">Windows over $900</span>
+            <span class="cat-chip warn">Flooring projected</span>
+          </div>
+        </div>
+
+        <!-- Add row footer (table-level) -->
+        <div class="sect-card" style="background: var(--chrome);">
+          <div class="add-row">
+            <button class="btn-add-line"><svg><use href="#i-plus"/></svg>Add category</button>
+            <button class="btn-add-line"><svg><use href="#i-plus"/></svg>Add section</button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Bottom tab bar -->
+    <nav class="tab-bar" aria-label="Primary">
+      <div class="tab-item"><svg><use href="#i-dashboard"/></svg><span class="label">Today</span></div>
+      <div class="tab-item with-count"><svg><use href="#i-inbox"/></svg><span class="label">Inbox</span><span class="count">7</span></div>
+      <div class="tab-item active"><svg><use href="#i-folder"/></svg><span class="label">Projects</span></div>
+      <div class="tab-item"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></div>
+      <div class="tab-item"><svg><use href="#i-more"/></svg><span class="label">More</span></div>
+    </nav>
+
+  </div>
+</div>
+
+</body>
+</html>
