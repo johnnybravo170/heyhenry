@@ -80,11 +80,23 @@ export type ProjectWithRelations = ProjectWithCustomer & {
   budget_categories: BudgetCategorySummary[];
 };
 
+export type ProjectListSort = 'name' | 'customer' | 'status' | 'start' | 'created';
+
 export type ProjectListFilters = {
+  /** Single-stage filter (legacy callers). */
   stage?: LifecycleStage;
+  /** Multi-stage filter (the redesigned list). Takes precedence over `stage`. */
+  stages?: LifecycleStage[];
   customer_id?: string;
+  /** Free-text search over project name. Combine with `customerIds` for "name OR customer". */
   name?: string;
+  /** Customer ids whose name matched the search term — OR'd with the name match. */
+  customerIds?: string[];
+  /** DB-backed sort column. Progress (% complete) is computed per-page, not sortable here. */
+  sort?: ProjectListSort;
+  dir?: 'asc' | 'desc';
   limit?: number;
+  offset?: number;
 };
 
 export type LifecycleStageCounts = Record<LifecycleStage, number>;
@@ -114,28 +126,82 @@ function normalizeProject(row: Record<string, unknown>): ProjectWithCustomer {
   return { ...(rest as ProjectRow), customer: extractCustomer(customerRaw) };
 }
 
+/** Escape PostgREST ilike wildcards so "%" / "_" in user input don't blow scope. */
+function escapeIlike(term: string): string {
+  return term.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/** Map a sort key to the projects column it orders by (DB-backed columns only). */
+const SORT_COLUMN: Record<ProjectListSort, string> = {
+  name: 'name',
+  customer: 'created_at', // customer is a join; fall back to created (not server-sortable)
+  status: 'created_at', // status is a filter, not a meaningful server sort
+  start: 'start_date',
+  created: 'created_at',
+};
+
+/** Shared filter application for listProjects + countProjects. */
+function applyProjectListFilters<
+  T extends {
+    is: (col: string, value: null) => T;
+    eq: (col: string, value: string) => T;
+    in: (col: string, values: readonly string[]) => T;
+    or: (expr: string) => T;
+  },
+>(query: T, filters: ProjectListFilters): T {
+  let q = query.is('deleted_at', null);
+
+  if (filters.stages && filters.stages.length > 0) {
+    q = q.in('lifecycle_stage', filters.stages);
+  } else if (filters.stage) {
+    q = q.eq('lifecycle_stage', filters.stage);
+  }
+  if (filters.customer_id) q = q.eq('customer_id', filters.customer_id);
+
+  const name = filters.name?.trim();
+  if (name) {
+    const needle = `%${escapeIlike(name)}%`;
+    const ids = filters.customerIds ?? [];
+    // "project name OR a customer whose name matched the term".
+    q =
+      ids.length > 0
+        ? q.or(`name.ilike.${needle},customer_id.in.(${ids.join(',')})`)
+        : q.or(`name.ilike.${needle}`);
+  }
+  return q;
+}
+
 export async function listProjects(
   filters: ProjectListFilters = {},
 ): Promise<ProjectWithCustomer[]> {
   const supabase = await createClient();
   const limit = filters.limit ?? 200;
+  const offset = filters.offset ?? 0;
+  const sortCol = SORT_COLUMN[filters.sort ?? 'created'];
+  const ascending = (filters.dir ?? (filters.sort === 'name' ? 'asc' : 'desc')) === 'asc';
 
-  let query = supabase.from('projects').select(PROJECT_WITH_CUSTOMER_SELECT).is('deleted_at', null);
+  let query = supabase.from('projects').select(PROJECT_WITH_CUSTOMER_SELECT);
+  query = applyProjectListFilters(query, filters) as typeof query;
 
-  if (filters.stage) query = query.eq('lifecycle_stage', filters.stage);
-  if (filters.customer_id) query = query.eq('customer_id', filters.customer_id);
-  if (filters.name) {
-    // Escape PostgREST ilike wildcards in user input so "%" / "_" don't blow scope.
-    const escaped = filters.name.replace(/[\\%_]/g, (c) => `\\${c}`);
-    query = query.ilike('name', `%${escaped}%`);
-  }
-
-  const { data, error } = await query.order('created_at', { ascending: false }).limit(limit);
+  const { data, error } = await query
+    .order(sortCol, { ascending, nullsFirst: false })
+    .range(offset, offset + limit - 1);
 
   if (error) {
     throw new Error(`Failed to list projects: ${error.message}`);
   }
   return (data ?? []).map((row) => normalizeProject(row as Record<string, unknown>));
+}
+
+export async function countProjects(filters: ProjectListFilters = {}): Promise<number> {
+  const supabase = await createClient();
+  let query = supabase.from('projects').select('id', { count: 'exact', head: true });
+  query = applyProjectListFilters(query, filters) as typeof query;
+  const { count, error } = await query;
+  if (error) {
+    throw new Error(`Failed to count projects: ${error.message}`);
+  }
+  return count ?? 0;
 }
 
 /**

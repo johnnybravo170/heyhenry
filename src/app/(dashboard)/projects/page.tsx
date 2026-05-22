@@ -1,27 +1,59 @@
 import { Plus, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { AwaitingApprovalList } from '@/components/features/projects/awaiting-approval-list';
-import { ProjectTabs } from '@/components/features/projects/project-tabs';
+import { ProjectsFilterBar } from '@/components/features/projects/projects-filter-bar';
+import { ProjectsPager } from '@/components/features/projects/projects-pager';
 import { ProjectsTable } from '@/components/features/projects/projects-table';
 import { Button } from '@/components/ui/button';
-import { getProjectsAwaitingApproval } from '@/lib/db/queries/awaiting-approval';
 import { listProjectProgress } from '@/lib/db/queries/cost-lines';
 import { listCustomers } from '@/lib/db/queries/customers';
-import { countProjectsByLifecycleStage, listProjects } from '@/lib/db/queries/projects';
-import type { LifecycleStage } from '@/lib/validators/project';
+import {
+  countProjects,
+  countProjectsByLifecycleStage,
+  listProjects,
+  type ProjectListSort,
+} from '@/lib/db/queries/projects';
+import { type LifecycleStage, lifecycleStages } from '@/lib/validators/project';
 
 export const metadata = {
   title: 'Projects — HeyHenry',
 };
 
-type ViewKey = 'all' | 'awaiting_approval' | 'active' | 'complete';
-
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
-function parseView(value: string | string[] | undefined): ViewKey {
-  if (value === 'active' || value === 'complete' || value === 'awaiting_approval') return value;
-  return 'all';
+const PAGE_SIZE = 50;
+
+/** Stages shown by default — paused / closed jobs are hidden until toggled on. */
+const DEFAULT_STAGES: LifecycleStage[] = ['planning', 'awaiting_approval', 'active'];
+const SORT_KEYS: ProjectListSort[] = ['name', 'customer', 'status', 'start', 'created'];
+
+function parseStages(value: string | string[] | undefined): LifecycleStage[] {
+  if (typeof value !== 'string') return DEFAULT_STAGES;
+  const picked = value
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s): s is LifecycleStage => (lifecycleStages as readonly string[]).includes(s));
+  return picked.length > 0 ? picked : DEFAULT_STAGES;
+}
+
+function parseQuery(value: string | string[] | undefined): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function parseSort(value: string | string[] | undefined): ProjectListSort {
+  return typeof value === 'string' && (SORT_KEYS as string[]).includes(value)
+    ? (value as ProjectListSort)
+    : 'created';
+}
+
+function parseDir(value: string | string[] | undefined): 'asc' | 'desc' {
+  return value === 'asc' || value === 'desc' ? value : 'desc';
+}
+
+function parsePage(value: string | string[] | undefined): number {
+  if (typeof value !== 'string') return 1;
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
 }
 
 export default async function ProjectsPage({
@@ -30,46 +62,59 @@ export default async function ProjectsPage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const resolved = await searchParams;
-  const view = parseView(resolved.view);
+  const stages = parseStages(resolved.status);
+  const query = parseQuery(resolved.q);
+  const sort = parseSort(resolved.sort);
+  const dir = parseDir(resolved.dir);
+  const page = parsePage(resolved.page);
+  const hasFilters = Boolean(
+    query || resolved.status, // an explicit status param counts as a filter
+  );
 
-  const [projects, counts, awaitingApproval, allCustomers] = await Promise.all([
-    listProjects({ limit: 200 }),
+  // Resolve customers matching the search term so we can match on
+  // "project name OR customer name" in one paginated query.
+  const customerIds = query
+    ? (await listCustomers({ search: query, limit: 100 })).map((c) => c.id)
+    : [];
+
+  const filters = {
+    stages,
+    name: query || undefined,
+    customerIds,
+    sort,
+    dir,
+  };
+
+  const [projects, grandTotal, stageCounts, allCustomers] = await Promise.all([
+    listProjects({ ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
+    countProjects(filters),
     countProjectsByLifecycleStage(),
-    // Always fetch — we need the count for the tab label even on other tabs.
-    getProjectsAwaitingApproval(),
+    // For the clone row-action's customer picker.
     listCustomers({ limit: 500 }),
   ]);
   const customerOptions = allCustomers.map((c) => ({ id: c.id, name: c.name }));
-  // "All" excludes on_hold by default so paused jobs don't clutter the list.
-  // Dedicated filter can surface them later if JVD asks.
-  const total =
-    counts.planning +
-    counts.awaiting_approval +
-    counts.active +
-    counts.declined +
-    counts.complete +
-    counts.cancelled;
-  const active = counts.active;
 
-  // Active tab = estimate-approved work actually happening. Planning and
-  // awaiting_approval have their own surfaces; on_hold / declined / cancelled
-  // are excluded.
-  const filtered =
-    view === 'active'
-      ? projects.filter((p) => p.lifecycle_stage === 'active')
-      : view === 'complete'
-        ? projects.filter((p) => p.lifecycle_stage === 'complete')
-        : projects.filter((p) => p.lifecycle_stage !== 'on_hold');
+  const progress = await listProjectProgress(projects.map((p) => p.id));
+  const nowMs = Date.now();
 
-  // Batch-fetch derived progress (work status + cost burn) for visible rows.
-  const progress = await listProjectProgress(filtered.map((p) => p.id));
+  const rows = projects.map((p) => {
+    const prog = progress.get(p.id);
+    return {
+      id: p.id,
+      name: p.name,
+      lifecycle_stage: p.lifecycle_stage as LifecycleStage,
+      start_date: p.start_date,
+      estimate_sent_at: p.estimate_sent_at,
+      work_status_pct: prog?.workStatusPct ?? 0,
+      cost_burn_pct: prog?.costBurnPct ?? 0,
+      customer: p.customer ? { id: p.customer.id, name: p.customer.name } : null,
+    };
+  });
 
-  const tabCounts = {
-    all: total,
-    awaiting_approval: awaitingApproval.length,
-    active,
-    complete: counts.complete,
-  };
+  const directoryEmpty = !hasFilters && grandTotal === 0;
+  const showingCount = rows.length;
+  const rangeStart = grandTotal === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = (page - 1) * PAGE_SIZE + showingCount;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -77,7 +122,9 @@ export default async function ProjectsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
           <p className="text-sm text-muted-foreground">
-            {total === 0 ? 'No projects yet.' : `${active} active · ${counts.complete} complete`}
+            {directoryEmpty
+              ? 'No projects yet.'
+              : `${stageCounts.active} active · ${stageCounts.complete} complete`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -96,42 +143,51 @@ export default async function ProjectsPage({
         </div>
       </header>
 
-      {total > 0 && (
-        <Suspense fallback={null}>
-          <ProjectTabs counts={tabCounts} />
-        </Suspense>
-      )}
-
-      {view === 'awaiting_approval' ? (
-        <AwaitingApprovalList projects={awaitingApproval} variant="full" />
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-          <p className="text-muted-foreground">
+      {directoryEmpty ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-card py-20 text-center">
+          <p className="text-sm text-muted-foreground">
             Create your first renovation project to get started.
           </p>
           <Button asChild>
             <Link href="/projects/new">
-              <Plus className="mr-1 size-3.5" />
+              <Plus className="size-3.5" />
               New project
             </Link>
           </Button>
         </div>
       ) : (
-        <ProjectsTable
-          projects={filtered.map((p) => {
-            const prog = progress.get(p.id);
-            return {
-              id: p.id,
-              name: p.name,
-              lifecycle_stage: p.lifecycle_stage as LifecycleStage,
-              start_date: p.start_date,
-              work_status_pct: prog?.workStatusPct ?? 0,
-              cost_burn_pct: prog?.costBurnPct ?? 0,
-              customer: p.customer ? { id: p.customer.id, name: p.customer.name } : null,
-            };
-          })}
-          customerOptions={customerOptions}
-        />
+        <>
+          <Suspense fallback={null}>
+            <ProjectsFilterBar
+              activeStages={stages}
+              stageCounts={stageCounts}
+              defaultQuery={query}
+            />
+          </Suspense>
+
+          {showingCount === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-card py-16 text-center">
+              <p className="text-sm font-medium">No projects match these filters.</p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/projects">Clear filters</Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              <ProjectsTable
+                projects={rows}
+                sort={sort}
+                dir={dir}
+                nowMs={nowMs}
+                customerOptions={customerOptions}
+              />
+              <p className="px-1 text-xs text-muted-foreground tabular-nums">
+                {rangeStart}–{rangeEnd} of {grandTotal}
+              </p>
+              <ProjectsPager page={page} pageSize={PAGE_SIZE} total={grandTotal} />
+            </>
+          )}
+        </>
       )}
     </div>
   );
