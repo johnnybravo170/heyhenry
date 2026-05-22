@@ -30,6 +30,9 @@ function svc(): S {
 
 const REACTION_MAX_TOKENS = 1500;
 const OBJECTION_MAX_TOKENS = 500;
+// Each archetype reacts N times; the decision is a majority vote of the
+// parsed samples. Kills single-sample noise and surfaces "wobblers".
+const SAMPLES_PER_ARCHETYPE = 3;
 
 // ── Archetypes ──────────────────────────────────────────────────────────
 
@@ -193,6 +196,9 @@ function buildReactionSystem(a: ArchetypeWithDossier): Array<{ text: string; cac
     {
       text: `## Who you are\nYou are ${a.emoji} ${a.name} — "${a.tagline}". Embody this person fully; become them.`,
     },
+    {
+      text: `## How to decide (read carefully)\nMost contractors do NOT buy software — "no" is the common, default, expected answer, and a no_buy is exactly as useful to this study as a buy. You are not here to be agreeable or to help the company; you are protecting your own time and money. Hold the exact skepticism, objections, and trust requirements described in YOUR profile above. Only choose 'buy' if this specific copy genuinely overcomes the specific objections you carry AND you would realistically take the next step within the next week. If even one of your core objections is left unaddressed, or anything reads as hype, vaporware, or pressure, choose 'no_buy'. Do not give it the benefit of the doubt.`,
+    },
     ...(a.dossier ? [{ text: `## Your full profile\n${a.dossier}`, cache: true as const }] : []),
   ];
 }
@@ -229,9 +235,125 @@ function buildReactionUser(copy: string, message_type: MessageType, goal: string
     .join('\n');
 }
 
-/** Run the full panel synchronously and return the aggregate result.
- *  Fans reactions out in parallel; one bad reaction degrades to a no_buy
- *  stub rather than failing the eval. */
+/** One reaction sample. Parses or throws. */
+async function reactOnce(
+  a: ArchetypeWithDossier,
+  copy: string,
+  message_type: MessageType,
+  goal: string,
+  choice: ReturnType<typeof pickModel>,
+): Promise<{
+  parsed: ReactionOutput;
+  raw: string;
+  cost_cents: number;
+  provider: string;
+  model: string;
+}> {
+  const res = await callLlm(choice, {
+    task: 'ops:message-lab',
+    system: buildReactionSystem(a),
+    messages: [{ role: 'user', content: buildReactionUser(copy, message_type, goal) }],
+    temperature: 0.7,
+    max_tokens: REACTION_MAX_TOKENS,
+    json: true,
+  });
+  return {
+    parsed: parseReaction(res.text),
+    raw: res.text,
+    cost_cents: res.cost_cents,
+    provider: res.provider,
+    model: res.model,
+  };
+}
+
+type SampledArchetype = {
+  verdict: ArchetypeVerdict;
+  cost: number;
+  raw: string | null;
+  provider: string | null;
+  model: string | null;
+};
+
+/** Sample one archetype N times and majority-vote the decision. Parse/call
+ *  failures are dropped from the denominator (NOT counted as no_buy), so a
+ *  flaky model run doesn't bias the verdict. Tie or zero parsed → no_buy
+ *  (conservative — the burden is on the copy to win a clear majority). */
+async function sampleArchetype(
+  a: ArchetypeWithDossier,
+  copy: string,
+  message_type: MessageType,
+  goal: string,
+  choice: ReturnType<typeof pickModel>,
+): Promise<SampledArchetype> {
+  const settled = await Promise.allSettled(
+    Array.from({ length: SAMPLES_PER_ARCHETYPE }, () =>
+      reactOnce(a, copy, message_type, goal, choice),
+    ),
+  );
+
+  let cost = 0;
+  let provider: string | null = null;
+  let model: string | null = null;
+  const parsed: Array<{ r: ReactionOutput; raw: string }> = [];
+  for (const s of settled) {
+    if (s.status === 'fulfilled') {
+      cost += s.value.cost_cents;
+      provider = s.value.provider;
+      model = s.value.model;
+      parsed.push({ r: s.value.parsed, raw: s.value.raw });
+    }
+  }
+
+  const sample_count = parsed.length;
+  const buy_votes = parsed.filter((p) => p.r.decision === 'buy').length;
+  const decision: 'buy' | 'no_buy' =
+    sample_count > 0 && buy_votes * 2 > sample_count ? 'buy' : 'no_buy';
+
+  // Representative reaction: a parsed sample that matches the majority verdict
+  // (so the surfaced reason agrees with the vote), else the first parsed one,
+  // else a stub when every sample failed to parse.
+  const repHit = parsed.find((p) => p.r.decision === decision) ?? parsed[0];
+  const rep: ReactionOutput = repHit?.r ?? {
+    decision,
+    reason: '(no reaction parsed across samples)',
+    relates: '',
+    appeals: '',
+    turns_off: '',
+    would_make_buy: '',
+  };
+
+  return {
+    verdict: {
+      archetype_id: a.id,
+      slug: a.slug,
+      name: a.name,
+      emoji: a.emoji,
+      evidence_basis: a.evidence_basis,
+      attractiveness_rank: a.attractiveness_rank,
+      decision,
+      buy_votes,
+      sample_count,
+      reason: rep.reason,
+      comments: {
+        relates: rep.relates,
+        appeals: rep.appeals,
+        turns_off: rep.turns_off,
+        would_make_buy: rep.would_make_buy,
+      },
+    },
+    cost,
+    raw: repHit?.raw ?? null,
+    provider,
+    model,
+  };
+}
+
+/** Run the full panel synchronously and return the aggregate result. Each
+ *  archetype is sampled N times in parallel and majority-voted; the headline
+ *  is the count of archetypes that LEAN buy. Treat that count as a
+ *  comparative signal across drafts on the same panel — NOT a conversion
+ *  forecast (LLM panels skew agreeable; the trustworthy output is the
+ *  per-archetype reasons + collated objections). */
 export async function runEval(eval_id: string): Promise<EvalResult> {
   const ev = await getEval(eval_id);
   if (!ev) throw new Error(`eval ${eval_id} not found`);
@@ -251,91 +373,34 @@ export async function runEval(eval_id: string): Promise<EvalResult> {
       model: ev.model_override,
     });
 
-    let spent = 0;
-    const verdicts: ArchetypeVerdict[] = await Promise.all(
-      archetypes.map(async (a) => {
-        let parsed: ReactionOutput;
-        let raw = '';
-        let provider: string | null = null;
-        let model: string | null = null;
-        let prompt_tokens: number | null = null;
-        let completion_tokens: number | null = null;
-        let cost: number | null = null;
-        let latency: number | null = null;
-        try {
-          const res = await callLlm(choice, {
-            task: 'ops:message-lab',
-            system: buildReactionSystem(a),
-            messages: [
-              { role: 'user', content: buildReactionUser(copy, ev.message_type, ev.goal) },
-            ],
-            temperature: 0.7,
-            max_tokens: REACTION_MAX_TOKENS,
-            json: true,
-          });
-          raw = res.text;
-          provider = res.provider;
-          model = res.model;
-          prompt_tokens = res.prompt_tokens;
-          completion_tokens = res.completion_tokens;
-          cost = res.cost_cents;
-          latency = res.latency_ms;
-          spent += res.cost_cents;
-          parsed = parseReaction(res.text);
-        } catch (err) {
-          // Degrade: treat an unparseable/failed reaction as a no_buy with
-          // the error captured, so the panel still returns a verdict.
-          parsed = {
-            decision: 'no_buy',
-            reason: `(no reaction — ${err instanceof Error ? err.message : String(err)})`,
-            relates: '',
-            appeals: '',
-            turns_off: '',
-            would_make_buy: '',
-          };
-        }
-
-        await svc()
-          .schema('ops')
-          .from('message_eval_reactions')
-          .insert({
-            eval_id,
-            archetype_id: a.id,
-            decision: parsed.decision,
-            reason: parsed.reason,
-            comments: {
-              relates: parsed.relates,
-              appeals: parsed.appeals,
-              turns_off: parsed.turns_off,
-              would_make_buy: parsed.would_make_buy,
-            },
-            raw_text: raw || null,
-            provider,
-            model,
-            prompt_tokens,
-            completion_tokens,
-            cost_cents: cost,
-            latency_ms: latency,
-          });
-
-        return {
-          archetype_id: a.id,
-          slug: a.slug,
-          name: a.name,
-          emoji: a.emoji,
-          evidence_basis: a.evidence_basis,
-          attractiveness_rank: a.attractiveness_rank,
-          decision: parsed.decision,
-          reason: parsed.reason,
-          comments: {
-            relates: parsed.relates,
-            appeals: parsed.appeals,
-            turns_off: parsed.turns_off,
-            would_make_buy: parsed.would_make_buy,
-          },
-        } satisfies ArchetypeVerdict;
-      }),
+    const sampled = await Promise.all(
+      archetypes.map((a) => sampleArchetype(a, copy, ev.message_type, ev.goal, choice)),
     );
+
+    let spent = 0;
+    const verdicts: ArchetypeVerdict[] = [];
+    for (let i = 0; i < sampled.length; i++) {
+      const s = sampled[i];
+      const a = archetypes[i];
+      spent += s.cost;
+      await svc()
+        .schema('ops')
+        .from('message_eval_reactions')
+        .insert({
+          eval_id,
+          archetype_id: a.id,
+          decision: s.verdict.decision,
+          reason: s.verdict.reason,
+          comments: s.verdict.comments,
+          sample_count: s.verdict.sample_count,
+          buy_votes: s.verdict.buy_votes,
+          raw_text: s.raw,
+          provider: s.provider,
+          model: s.model,
+          cost_cents: Math.round(s.cost * 100) / 100,
+        });
+      verdicts.push(s.verdict);
+    }
 
     const buy_count = verdicts.filter((v) => v.decision === 'buy').length;
     const no_buy_count = verdicts.length - buy_count;

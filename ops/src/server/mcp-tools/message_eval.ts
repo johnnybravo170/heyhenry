@@ -35,9 +35,10 @@ export function registerMessageLabTools(server: McpServer, ctx: McpToolCtx) {
   server.tool(
     'message_eval_run',
     [
-      'Run a piece of marketing copy past the synthetic customer-archetype focus group and get a buy/no-buy verdict from each, with reasons.',
-      'Use this BEFORE shipping ad/email/landing/sales copy. Submit a draft, read why the no-buys did not convert, revise, resubmit.',
-      'Runs synchronously (~10-30s). The score is the buy/total split; `objections` is the deduplicated punch list to write against.',
+      'Run a piece of marketing copy past the synthetic customer-archetype focus group. Each archetype is sampled several times and majority-votes a buy/no-buy lean, with reasons.',
+      'Use this BEFORE shipping ad/email/landing/sales copy. The PRIMARY output is qualitative: `objections` (the deduplicated punch list to rewrite against) and each archetype’s reason.',
+      'IMPORTANT: `panel_lean` is a COMPARATIVE signal only — use it to A/B drafts on the same panel ("v2 beat v1, 6 vs 4"), NOT as a conversion forecast. LLM panels skew agreeable, so the absolute number runs high; trust the deltas and the reasons, not the percentage.',
+      'Runs synchronously (~20-40s).',
     ].join(' '),
     {
       copy: z.string().min(1).max(40_000).describe('The marketing copy to test.'),
@@ -88,20 +89,24 @@ export function registerMessageLabTools(server: McpServer, ctx: McpToolCtx) {
 
         return jsonResult({
           eval_id: result.eval_id,
-          score: `${result.buy_count}/${result.total} would buy`,
-          buy_count: result.buy_count,
-          no_buy_count: result.no_buy_count,
-          buy_ratio: Math.round(result.buy_ratio * 100) / 100,
+          // Qualitative first — this is what to act on.
           objections: result.objections,
           verdicts: result.verdicts.map((v) => ({
             archetype: v.name,
             decision: v.decision,
+            lean: `${v.buy_votes}/${v.sample_count} buy`,
             reason: v.reason,
             turns_off: v.comments?.turns_off ?? '',
             would_make_buy: v.comments?.would_make_buy ?? '',
             evidence_basis: v.evidence_basis,
             attractiveness_rank: v.attractiveness_rank,
           })),
+          // Comparative signal only — see tool description.
+          panel_lean: `${result.buy_count}/${result.total} archetypes lean buy`,
+          panel_lean_note:
+            'Comparative instrument, NOT a conversion forecast. Compare against another draft run on the same panel; trust the delta and the reasons, not this number.',
+          buy_count: result.buy_count,
+          no_buy_count: result.no_buy_count,
           spent_cents: result.spent_cents,
         });
       },
