@@ -17,6 +17,7 @@ const PRIMARY_NAV = [
   { href: '/knowledge', label: 'Knowledge' },
   { href: '/agents', label: 'Agents' },
   { href: '/board', label: 'Board' },
+  { href: '/message-lab', label: 'Message Lab' },
 ];
 
 // Less-frequent admin surfaces. Behind a "More" disclosure so they
