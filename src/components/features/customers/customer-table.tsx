@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { ContactRow, ContactSignal } from '@/lib/db/queries/customers';
+import { formatPhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import { type ContactKind, contactKindLabels } from '@/lib/validators/customer';
 import { CustomerTypeBadge } from './customer-type-badge';
@@ -53,7 +54,7 @@ function Reach({ customer }: { customer: ContactRow }) {
           href={telHref(customer.phone)}
           className="relative z-10 w-fit font-medium tabular-nums hover:underline"
         >
-          {customer.phone}
+          {formatPhone(customer.phone)}
         </a>
       ) : null}
       {customer.email ? (

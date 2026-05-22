@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod';
+import { normalizePhone } from '@/lib/phone';
 
 /**
  * Contact kinds (per the `customers.kind` column introduced in migration
@@ -124,7 +125,10 @@ export const customerCreateSchema = z.object({
         .array(z.string().email({ message: 'Enter a valid email address.' }))
         .max(10, { message: 'At most 10 additional emails.' }),
     ),
-  phone: optionalText(30, 'Phone'),
+  // Normalized to canonical storage form (E.164 for NANP) at the point of
+  // entry, so every contact is stored consistently regardless of how it was
+  // typed. Empty stays empty (the action converts "" → null).
+  phone: optionalText(30, 'Phone').transform((v) => (v ? (normalizePhone(v) ?? v) : v)),
   addressLine1: optionalText(200, 'Address'),
   city: optionalText(100, 'City'),
   province: optionalText(40, 'Province'),
