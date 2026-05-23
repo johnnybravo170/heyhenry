@@ -147,6 +147,31 @@ Mostly **N/A** — Schedule carries dates, not money. Money only leaks in via th
 - **Notify queued:** the single inline Undo strip (restyled to `status-tokens`).
 - **Error:** action failures via `toast` (§5), never native `alert()`.
 
+## Subscreen inventory
+Every surface this tab spawns. All spec **inline** — none are heavy enough to graduate to their own brief/row (Schedule's subscreens are all modals / popovers / inline panels within the tab).
+
+**Modals / dialogs**
+- **Task editor** (`schedule-task-editor.tsx`; create + edit) — name · start · **duration (working days)** · status · **Lock dates / share with customer** (rough→firm) · client-visible · notes · phase-grouped "Depends on" picker · Delete. Trigger: tap a bar (edit) / "+ Add task" (create). Delete → `AlertDialog` (§3), not native `confirm()`. States: validation (name/duration), saving.
+- **Template picker** (sub-modal of the empty-state bootstrap) — lists `project_type_templates` (Kitchen / Bath reno…) + trade counts; pick → bootstrap.
+- **Clear & start over** / **Auto-link dependencies** — two destructive `AlertDialog` confirms (§3, replacing native `confirm()`/`alert()`), tucked in the toolbar `⋯` overflow; errors via `toast` (§5).
+- **Preview as customer** — read-only `portal-schedule-gantt.tsx` (firm bars only) in a drawer; opened before locking/notifying. No edit.
+
+**Sub-flows**
+- **Bootstrap** (empty state, 3 sources): *Apply template* → picker → layout · *Build from budget* → ✦ loading ("Henry sequenced your budget…", 3–5s) → Gantt · *Start blank* → opens the task editor.
+- **Cascade-Henry moment** (transient, after a drag/resize cascades): inline ✦ summary — "Moving Drywall +3 working days pushed 3 tasks · finish Apr 2→Apr 8" — actions **Undo** + (firm & client-visible) **Notify customer**. Dismissible; not a modal.
+
+**Expansion / disclosure**
+- **Toolbar `⋯` overflow** — Clear + Auto-link (the demoted destructive actions).
+- **"Depends on" picker** — multi-select inside the task editor, **grouped by phase** past ~15 tasks.
+- **Per-bar quick actions** — hover (desktop) / long-press (mobile) popover: **Mark done** · **Lock dates**, without opening the modal.
+
+**Inline / transient**
+- **Notify-queued strip** — "Customer email queued · Undo" (restyle to `status-tokens`); the 5-min cancel window.
+- **Bar tooltip** — custom popover (name · working-day range · duration · confidence); touch-safe, not native `title`.
+
+**View-state (mobile)**
+- **List ↔ Timeline toggle** — List (the This-week digest, default) vs Timeline (read-mostly horizontal-scroll Gantt). **Build the Timeline view** — the first OD pass left it empty.
+
 ## Accessibility
 WCAG 2.2 AA. Bar state **never colour-only** — done carries the strike, behind carries an outline + glyph, firm/rough differ by fill *and* the legend; in_progress needs a non-colour cue; receded-weekend segments must not drop contrast below AA for the bar label. Quick-actions and digest rows are real buttons/links, keyboard-operable, ≥44px on mobile. The drag bar's `aria-label` tooltip + focusable resize handle — preserve on refactor. Sticky-left name column + horizontal scroll stay. Tab nav + `<select>` mirror (§9). Replace native dialogs (focus-trap + ESC come free with the §3 AlertDialog). Dates render in tenant tz (PATTERNS §23).
 

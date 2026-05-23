@@ -72,7 +72,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Budget | ✅ (project-hub) | ✅ `…-budget` | — | ✅ #278/#281 | |
 | Spend | ✅ (project-hub) | ✅ `…-spend` | — | ✅ #290/#291/#298 | |
 | Labour | ✅ (project-hub) | ✅ `…-labour` | — | ✅ #294 | |
-| Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; working-day/slip/Henry deep work outstanding · **subscreens: 🟡 in progress (research 2026-05-22)** |
+| Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; working-day/slip/Henry deep work outstanding · **subscreens: ✅ specced inline (schedule.md)** |
 | Billing (project) | 🟡 (project-hub §Billing; no standalone) | ✅ `…-billing` | — | ✅ #296 | dedicated brief intentionally skipped |
 | **Client** | ✅ `client.md` | ✅ `…-client` | **2** (wire Pulse + reorg; chip+restyle) | ⬜ | briefed 2026-05-22; **build not started** |
 | Photos / Documents / Notes | 🟡 (project-hub) | ⬜ | — | ? | secondary tabs; lower priority |
