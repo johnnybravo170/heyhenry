@@ -1,0 +1,1604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Client · HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --bubble-out:   #EAE0CB;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  /* Layout: 2-column wrap, one phone per cell */
+  .stage {
+    max-width: 1760px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 60px 40px;
+    justify-items: center;
+  }
+  .stage-cell { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+  /* Frame label above each phone */
+  .frame-label {
+    width: 100%;
+    max-width: 420px;
+    padding: 10px 14px;
+    background: var(--chip-fill);
+    border-left: 3px solid var(--ink);
+    border-radius: 0 8px 8px 0;
+    display: flex; flex-direction: column; gap: 4px;
+    font-family: var(--sans);
+    color: var(--ink);
+  }
+  .frame-label.is-variant { border-left-color: var(--rust); }
+  .frame-label .kind {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+  }
+  .frame-label.is-variant .kind { color: var(--rust); }
+  .frame-label .title {
+    font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em;
+  }
+  .frame-label .meta {
+    font-size: 12px; color: var(--muted); font-weight: 500;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 390px; height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  /* iOS status bar */
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .signal { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+  .signal i { display: block; width: 2.5px; background: var(--ink); border-radius: 1px; }
+  .signal i:nth-child(1) { height: 4px; }
+  .signal i:nth-child(2) { height: 6px; }
+  .signal i:nth-child(3) { height: 8px; }
+  .signal i:nth-child(4) { height: 10px; }
+  .battery { width: 22px; height: 11px; border: 1.2px solid var(--ink); border-radius: 3px; position: relative; }
+  .battery::after { content: ''; position: absolute; right: -3px; top: 2.5px; width: 2px; height: 4px; background: var(--ink); border-radius: 1px; }
+  .battery::before { content: ''; position: absolute; left: 1px; top: 1px; width: 14px; height: 5px; background: var(--ink); border-radius: 1px; }
+
+  /* App header */
+  .app-header {
+    padding: 8px 14px 10px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    cursor: pointer;
+    margin-left: -6px;
+  }
+  .header-back svg { width: 14px; height: 14px; }
+  .header-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .icon-btn-sm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn-sm svg { width: 16px; height: 16px; }
+  .add-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .add-pill .glyph { color: var(--rust); font-size: 12px; }
+
+  .header-title {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    flex: 1; min-width: 0;
+  }
+  .header-title h1 .chev {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    margin-left: 2px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    vertical-align: -4px;
+  }
+  .header-title h1 .chev svg { width: 11px; height: 11px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-pill .check { display: grid; place-items: center; width: 9px; height: 9px; }
+  .status-pill .check svg { width: 9px; height: 9px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 3px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+
+  /* Tab select (Client) */
+  .tab-select-wrap {
+    margin-top: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-select {
+    flex: 1;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tab-select .arrow { margin-left: auto; color: var(--muted); display: grid; place-items: center; }
+  .tab-select .arrow svg { width: 12px; height: 12px; }
+  .tab-select .total-sep { margin-left: 8px; color: var(--faint); }
+  .tab-select .total-badge {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--rust); color: #fff;
+    padding: 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  /* Sub-hub row (Messages | Selections | Portal) */
+  .subhub-row {
+    margin-top: 8px;
+    display: flex; align-items: center; gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .subhub-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .subhub-pill.is-on {
+    background: var(--nav-active);
+    border-color: var(--rule);
+    color: var(--ink);
+  }
+  .subhub-pill .b {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+  .subhub-pill .b.rust { color: #fff; background: var(--rust); }
+  .subhub-pill .b.warn { color: var(--warn); background: var(--warn-soft); }
+
+  .portal-strip-mini {
+    margin-top: 8px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .portal-strip-mini .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 3px var(--ok-soft);
+    flex-shrink: 0;
+  }
+  .portal-strip-mini.is-off .dot { background: var(--faint); box-shadow: 0 0 0 3px var(--chip-fill); }
+  .portal-strip-mini .state { font-weight: 700; color: var(--ink); }
+  .portal-strip-mini.is-off .state { color: var(--muted); }
+  .portal-strip-mini .sep { color: var(--faint); }
+  .portal-strip-mini .l {
+    color: var(--ink-2); font-weight: 600;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1px;
+  }
+  .portal-strip-mini .l.is-info { color: var(--info); border-bottom-color: rgba(30,64,175,0.3); }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     MESSAGES — thread + composer
+     ═══════════════════════════════════════════════════════════════════ */
+  .body-msg {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 8px;
+    display: flex; flex-direction: column; justify-content: flex-end; gap: 14px;
+    background: linear-gradient(180deg, #FBF7EE 0%, var(--bg) 60%);
+  }
+  .day-rule {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .day-rule::before,
+  .day-rule::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+  .bubble-row { display: flex; gap: 8px; }
+  .bubble-row.is-in  { justify-content: flex-start; }
+  .bubble-row.is-out { justify-content: flex-end; }
+  .bubble-meta {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .bubble-row.is-out .bubble-meta { justify-content: flex-end; }
+  .bubble-meta .name { color: var(--ink-2); font-weight: 700; }
+  .bubble-meta .sep { color: var(--faint); }
+
+  .channel-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 8px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+  }
+  .channel-chip svg { width: 8px; height: 8px; }
+  .channel-chip.is-portal { color: var(--info); background: var(--info-soft); }
+  .channel-chip.is-email  { color: var(--ink-2); background: var(--chip-fill); }
+  .channel-chip.is-sms    { color: var(--ok); background: var(--ok-soft); }
+
+  .bubble-col { display: flex; flex-direction: column; max-width: 80%; min-width: 0; }
+  .bubble {
+    padding: 10px 12px;
+    border-radius: 13px;
+    font-size: 14px;
+    line-height: 1.45;
+    letter-spacing: -0.005em;
+    word-wrap: break-word;
+  }
+  .bubble.is-in {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.is-out {
+    background: var(--bubble-out);
+    color: var(--ink);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble .b-foot {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* Composer — pinned at the bottom of the screen */
+  .composer-m {
+    flex-shrink: 0;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 8px 10px 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .composer-head-m {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .composer-channel-m {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    font-size: 10px; font-weight: 700;
+    color: var(--ink-2);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .composer-channel-m .lab-pre { letter-spacing: 0.04em; }
+  .composer-channel-m svg { width: 9px; height: 9px; color: var(--muted); }
+  .composer-channel-m .ch-icon { display: inline-flex; align-items: center; }
+  .composer-channel-m .ch-icon svg { width: 11px; height: 11px; color: var(--ink); }
+  .composer-hint-m {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 0 2px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .composer-hint-m .glyph { color: var(--rust); font-size: 11px; line-height: 1; }
+  .composer-henry-m {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 8px;
+    background: transparent;
+    color: var(--rust);
+    font-size: 11px; font-weight: 700;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .composer-henry-m .glyph { font-size: 12px; }
+  .composer-input-m {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 6px;
+    align-items: flex-end;
+  }
+  .composer-textarea-m {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    resize: none;
+    min-height: 44px;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .composer-attach-m {
+    width: 44px; height: 44px;
+    border-radius: 9px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .composer-attach-m svg { width: 15px; height: 15px; }
+  .composer-send-m {
+    height: 44px; min-width: 44px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    letter-spacing: -0.005em;
+  }
+  .composer-send-m svg { width: 13px; height: 13px; }
+
+  /* Portal-off info strip (in Messages variant) */
+  .portal-off-strip-m {
+    padding: 10px 12px;
+    background: var(--info-soft);
+    border-bottom: 1px solid rgba(30,64,175,0.16);
+    display: flex; flex-direction: column; gap: 5px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .portal-off-strip-m .lab-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .portal-off-strip-m .lab {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 6px;
+    background: rgba(30,64,175,0.10);
+    border-radius: 4px;
+  }
+  .portal-off-strip-m .lab-row a {
+    margin-left: auto;
+    color: var(--info);
+    font-weight: 700;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(30,64,175,0.3);
+    padding-bottom: 1px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .portal-off-strip-m .lab-row a svg { width: 10px; height: 10px; }
+  .portal-off-strip-m strong { color: var(--ink); font-weight: 700; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     PULSE — review & send card
+     ═══════════════════════════════════════════════════════════════════ */
+  .body-pulse {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .section-eyebrow-m {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 2px;
+  }
+  .section-eyebrow-m .label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-eyebrow-m .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .pulse-card-m {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 12px 12px 0;
+    overflow: hidden;
+  }
+  .pulse-head-m {
+    padding: 11px 12px 9px;
+    background: var(--rust-soft);
+    border-bottom: 1px solid rgba(194,65,12,0.15);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .pulse-eyebrow-m {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .pulse-eyebrow-m .glyph { font-size: 12px; }
+  .pulse-title-m { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; line-height: 1.3; }
+  .pulse-since-m {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .pulse-body-m { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  .pulse-signal-m {
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .signal-chip-m {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .signal-chip-m svg { width: 9px; height: 9px; color: var(--muted); }
+
+  .field-m { display: flex; flex-direction: column; gap: 4px; }
+  .field-label-m {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .pulse-subject-input-m {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .pulse-draft-m {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    white-space: pre-wrap;
+    min-height: 160px;
+  }
+  .pulse-draft-m strong { font-weight: 700; }
+
+  .pulse-actions-m {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .btn-rust-m {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    min-height: 44px;
+    width: 100%;
+  }
+  .btn-rust-m svg { width: 13px; height: 13px; }
+  .btn-ghost-row-m {
+    display: flex; gap: 6px;
+  }
+  .btn-ghost-m {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    height: 40px;
+    padding: 0 12px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    flex: 1;
+    min-height: 44px;
+  }
+  .btn-ghost-m svg { width: 12px; height: 12px; color: var(--muted); }
+
+  .pulse-foot-m {
+    padding: 8px 12px 10px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pulse-foot-m strong { color: var(--ink-2); font-weight: 700; }
+  .pulse-foot-m .sep { color: var(--faint); }
+
+  /* Past update row (under the draft on Pulse screen) */
+  .feed-row-m {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    align-items: flex-start;
+  }
+  .feed-icon-m {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    display: grid; place-items: center;
+    margin-top: 1px;
+  }
+  .feed-icon-m svg { width: 11px; height: 11px; }
+  .feed-body-m { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .feed-title-m { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .feed-meta-m {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     DECISIONS — answer / post
+     ═══════════════════════════════════════════════════════════════════ */
+  .body-dec {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .decision-card-m {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--warn);
+    border-radius: 0 12px 12px 0;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .decision-card-m.is-pinned {
+    background: linear-gradient(180deg, var(--warn-soft) 0%, var(--card) 30%);
+  }
+  .dec-eyebrow-m {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .dec-eyebrow-m .pin {
+    background: var(--warn-soft);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .dec-title-m {
+    font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em;
+    line-height: 1.3;
+  }
+  .dec-meta-m {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .dec-meta-m strong { color: var(--ink-2); font-weight: 700; }
+  .dec-meta-m .sep { color: var(--faint); }
+
+  /* Inline option chips (tile options) */
+  .dec-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .dec-option {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 8px;
+    display: flex; flex-direction: column; gap: 5px;
+    text-align: left;
+  }
+  .dec-option .swatch {
+    aspect-ratio: 1 / 1;
+    border-radius: 6px;
+  }
+  .dec-option .swatch.is-carrara {
+    background: linear-gradient(120deg, #F2EFE7 0%, #E1DDD2 50%, #F5F2EA 100%);
+  }
+  .dec-option .swatch.is-calacatta {
+    background: linear-gradient(135deg, #F5F2EA 0%, #D9D3C5 60%, #E1DCCC 100%);
+  }
+  .dec-option .swatch.is-honedslate {
+    background: linear-gradient(160deg, #5A5851 0%, #3D3B36 100%);
+  }
+  .dec-option .opt-name {
+    font-size: 11px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .dec-option .opt-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+
+  .dec-actions-m {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  /* Reply composer (for posting a decision back) */
+  .dec-reply {
+    background: var(--bg);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .dec-reply textarea {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    resize: none;
+    min-height: 56px;
+    line-height: 1.4;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .dec-reply .lab {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Henry suggestion strip (decision) */
+  .henry-suggest-m {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 10px 10px 0;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .henry-suggest-m .h-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .henry-suggest-m .h-mark {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .henry-suggest-m .h-mark .glyph { font-size: 12px; }
+  .henry-suggest-m .h-text {
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .henry-suggest-m .h-text strong { color: var(--ink); font-weight: 700; }
+  .henry-suggest-m .h-cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    height: 36px;
+    padding: 0 10px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    border: 1px solid rgba(194,65,12,0.22);
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .henry-suggest-m .h-cta svg { width: 11px; height: 11px; }
+
+  /* New-decision composer */
+  .new-decision-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .new-decision-card .nd-title {
+    font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em;
+  }
+  .new-decision-card .nd-input {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 500;
+    color: var(--ink);
+    width: 100%;
+    height: 44px;
+    box-sizing: border-box;
+  }
+  .new-decision-card textarea.nd-input {
+    min-height: 64px;
+    height: auto;
+    resize: none;
+    line-height: 1.4;
+  }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 76px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    padding: 0 4px 18px;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--muted);
+    font-size: 10px; font-weight: 600;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .tab-item.active { color: var(--ink); }
+  .tab-item svg { width: 18px; height: 18px; }
+  .tab-item .label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .tab-item.with-count { position: relative; }
+  .tab-item .count {
+    position: absolute; top: 0; right: calc(50% - 18px);
+    background: var(--rust); color: #fff;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    line-height: 1.4;
+    min-width: 14px;
+    text-align: center;
+  }
+
+  .body-pad-tab { padding-bottom: 92px; }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.39 1.9.81 2.78a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.3-1.38a2 2 0 0 1 2.11-.45c.88.41 1.82.69 2.78.81a2 2 0 0 1 1.72 2z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/><path d="M19 14l.7 1.9 1.9.7-1.9.7L19 19l-.7-1.7-1.9-.7 1.9-.7z"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+
+  <!-- ╔══════════════════════════════════════════════════════════════╗
+       ║  PHONE 1 — MESSAGES THREAD + COMPOSER (default, primary)    ║
+       ╚══════════════════════════════════════════════════════════════╝ -->
+  <div class="stage-cell">
+    <div class="frame-label">
+      <span class="kind">Phone 1 &middot; default</span>
+      <span class="title">Messages thread + composer</span>
+      <span class="meta">Reply on the go &middot; ≥44px send &middot; one scrollback across channels</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="right">
+            <span class="signal"><i></i><i></i><i></i><i></i></span>
+            <span>5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <div class="app-header">
+          <div class="header-top">
+            <button class="header-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+            <span class="header-crumb">Projects</span>
+            <span class="header-actions">
+              <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+              <button class="icon-btn-sm" aria-label="More"><svg><use href="#i-more"/></svg></button>
+            </span>
+          </div>
+          <div class="header-title">
+            <h1>Glenwood Heights<br/>Master Suite Addition
+              <span class="chev" aria-label="Details"><svg><use href="#i-chevron-down"/></svg></span>
+            </h1>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line">Daniel &amp; Priya Mohan</div>
+
+          <!-- Tab select: Client active, rust badge 3 -->
+          <div class="tab-select-wrap" role="navigation" aria-label="Project sections">
+            <div class="tab-select" aria-expanded="false">
+              <span>Client</span>
+              <span class="total-sep">&middot;</span>
+              <span class="total-badge" aria-label="3 unread">3</span>
+              <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+            </div>
+          </div>
+
+          <!-- Sub-hub: Messages active -->
+          <div class="subhub-row" role="tablist">
+            <span class="subhub-pill is-on">Messages <span class="b rust">2</span></span>
+            <span class="subhub-pill">Selections <span class="b warn">1</span></span>
+            <span class="subhub-pill">Portal</span>
+          </div>
+
+          <!-- Portal-on chip -->
+          <div class="portal-strip-mini">
+            <span class="dot" aria-hidden="true"></span>
+            <span><span class="state">Portal on</span></span>
+            <span class="sep">&middot;</span>
+            <span class="l">Preview</span>
+            <span class="sep">&middot;</span>
+            <span class="l">Share</span>
+          </div>
+        </div>
+
+        <!-- Thread -->
+        <div class="body-msg" role="log" aria-live="polite">
+
+          <div class="day-rule">Apr 25</div>
+
+          <div class="bubble-row is-in">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="name">Daniel</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-email"><svg><use href="#i-mail"/></svg>Email</span>
+                <span class="sep">&middot;</span>
+                <span>9:02 AM</span>
+              </div>
+              <div class="bubble is-in">
+                Looks great. Priya was asking about the closet shelving &mdash; maple option?
+              </div>
+            </div>
+          </div>
+
+          <div class="day-rule">Today &middot; May 22</div>
+
+          <div class="bubble-row is-in">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="name">Daniel</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-sms"><svg><use href="#i-phone"/></svg>SMS</span>
+                <span class="sep">&middot;</span>
+                <span>2h ago</span>
+              </div>
+              <div class="bubble is-in">
+                Any chance we can swap to the brushed nickel pulls? Saw a few in a magazine Priya bookmarked.
+              </div>
+            </div>
+          </div>
+
+          <div class="bubble-row is-out">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span>1h ago</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-email"><svg><use href="#i-mail"/></svg>Email</span>
+                <span class="sep">&middot;</span>
+                <span class="name">You</span>
+              </div>
+              <div class="bubble is-out">
+                Great choice &mdash; I'll price the difference and send a quick change order so we keep the budget aligned.
+                <div class="b-foot">
+                  <svg style="width:9px;height:9px;"><use href="#i-check"/></svg>
+                  Delivered &middot; 1h
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Composer pinned bottom -->
+        <div class="composer-m">
+          <div class="composer-head-m">
+            <button class="composer-channel-m" aria-haspopup="listbox" aria-label="Send via — Portal, Email, or SMS">
+              <span class="lab-pre" style="color:var(--muted); font-weight:600;">Via</span>
+              <span class="ch-icon"><svg><use href="#i-phone"/></svg></span>SMS
+              <svg style="margin-left:2px;"><use href="#i-chevron-down"/></svg>
+            </button>
+            <button class="composer-henry-m">
+              <span class="glyph">&#10022;</span> Draft a reply
+            </button>
+          </div>
+          <span class="composer-hint-m"><span class="glyph">&#10022;</span> Daniel replies fastest on SMS</span>
+          <div class="composer-input-m">
+            <textarea class="composer-textarea-m" placeholder="Reply to Daniel &amp; Priya&hellip;"></textarea>
+            <button class="composer-attach-m" aria-label="Attach"><svg><use href="#i-paperclip"/></svg></button>
+            <button class="composer-send-m"><svg><use href="#i-send"/></svg>Send</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ╔══════════════════════════════════════════════════════════════╗
+       ║  PHONE 2 — PULSE "REVIEW & SEND" CARD                        ║
+       ╚══════════════════════════════════════════════════════════════╝ -->
+  <div class="stage-cell">
+    <div class="frame-label">
+      <span class="kind">Phone 2 &middot; default</span>
+      <span class="title">✦ Pulse · review &amp; send</span>
+      <span class="meta">Henry drafts from this week's activity &middot; you tap to send</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="right">
+            <span class="signal"><i></i><i></i><i></i><i></i></span>
+            <span>5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <div class="app-header">
+          <div class="header-top">
+            <button class="header-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+            <span class="header-crumb">Projects</span>
+            <span class="header-actions">
+              <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+              <button class="icon-btn-sm" aria-label="More"><svg><use href="#i-more"/></svg></button>
+            </span>
+          </div>
+          <div class="header-title">
+            <h1>Glenwood Heights<br/>Master Suite Addition
+              <span class="chev" aria-label="Details"><svg><use href="#i-chevron-down"/></svg></span>
+            </h1>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line">Daniel &amp; Priya Mohan</div>
+
+          <div class="tab-select-wrap">
+            <div class="tab-select" aria-expanded="false">
+              <span>Client</span>
+              <span class="total-sep">&middot;</span>
+              <span class="total-badge">3</span>
+              <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+            </div>
+          </div>
+
+          <div class="subhub-row">
+            <span class="subhub-pill">Messages <span class="b rust">2</span></span>
+            <span class="subhub-pill">Selections <span class="b warn">1</span></span>
+            <span class="subhub-pill is-on">Portal</span>
+          </div>
+
+          <div class="portal-strip-mini">
+            <span class="dot" aria-hidden="true"></span>
+            <span><span class="state">Portal on</span></span>
+            <span class="sep">&middot;</span>
+            <span class="l">Preview</span>
+          </div>
+        </div>
+
+        <div class="body-pulse body-pad-tab">
+
+          <div class="section-eyebrow-m">
+            <span class="label">Updates</span>
+            <span class="meta">Last sent Apr 24</span>
+          </div>
+
+          <!-- The Pulse Henry card -->
+          <article class="pulse-card-m" aria-label="Pulse draft">
+            <div class="pulse-head-m">
+              <span class="pulse-eyebrow-m"><span class="glyph">&#10022;</span>Henry &middot; Pulse draft</span>
+              <span class="pulse-title-m">Here's a progress update from this week. Review &amp; send?</span>
+              <span class="pulse-since-m">6 signals &middot; May 16&ndash;22</span>
+            </div>
+            <div class="pulse-body-m">
+
+              <div class="pulse-signal-m">
+                <span class="signal-chip-m"><svg><use href="#i-check"/></svg>Rough-in done</span>
+                <span class="signal-chip-m"><svg><use href="#i-camera"/></svg>12 photos</span>
+                <span class="signal-chip-m"><svg><use href="#i-check"/></svg>Inspection passed</span>
+                <span class="signal-chip-m"><svg><use href="#i-zap"/></svg>2d ahead</span>
+              </div>
+
+              <div class="field-m">
+                <span class="field-label-m">Subject</span>
+                <input class="pulse-subject-input-m" type="text" value="Week 8 &mdash; rough-in's done, drywall next" />
+              </div>
+
+              <div class="field-m">
+                <span class="field-label-m">Body &middot; drafted, editable</span>
+                <div class="pulse-draft-m" contenteditable="true">Hi Daniel &amp; Priya &mdash;
+
+<strong>Drywall went up in the primary bath</strong> and <strong>electrical rough-in passed inspection</strong> on Monday. Closet framing's done &mdash; ready for the maple shelving.
+
+Next: drywall starts Tuesday, paint by mid-June. About <strong>2 days ahead</strong> of schedule.
+
+12 photos in the portal gallery. Need your eyes on the <strong>tile selection</strong> this week so we can order ahead of drywall.
+
+&mdash; Mike</div>
+              </div>
+
+              <div class="pulse-actions-m">
+                <button class="btn-rust-m"><svg><use href="#i-send"/></svg>Send to client</button>
+                <div class="btn-ghost-row-m">
+                  <button class="btn-ghost-m"><svg><use href="#i-eye"/></svg>Preview</button>
+                  <button class="btn-ghost-m"><svg><use href="#i-pen"/></svg>Write your own</button>
+                </div>
+              </div>
+
+            </div>
+            <div class="pulse-foot-m">
+              <strong>&rarr; Portal + Daniel + Priya</strong>
+              <span class="sep">&middot;</span>
+              <span>No auto-send</span>
+            </div>
+          </article>
+
+          <!-- Past update glimpse -->
+          <div class="section-eyebrow-m" style="margin-top: 4px;">
+            <span class="label">Past updates</span>
+            <span class="meta">3 sent</span>
+          </div>
+          <div class="feed-row-m">
+            <span class="feed-icon-m"><svg><use href="#i-check"/></svg></span>
+            <div class="feed-body-m">
+              <span class="feed-title-m">Framing complete</span>
+              <span class="feed-meta-m">Apr 24 &middot; Portal + Email</span>
+            </div>
+          </div>
+
+        </div>
+
+        <nav class="tab-bar" aria-label="Primary">
+          <div class="tab-item"><svg><use href="#i-dashboard"/></svg><span class="label">Today</span></div>
+          <div class="tab-item with-count"><svg><use href="#i-inbox"/></svg><span class="label">Inbox</span><span class="count">7</span></div>
+          <div class="tab-item active"><svg><use href="#i-folder"/></svg><span class="label">Projects</span></div>
+          <div class="tab-item"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></div>
+          <div class="tab-item"><svg><use href="#i-more"/></svg><span class="label">More</span></div>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ╔══════════════════════════════════════════════════════════════╗
+       ║  PHONE 3 — DECISIONS · ANSWER + POST                         ║
+       ╚══════════════════════════════════════════════════════════════╝ -->
+  <div class="stage-cell">
+    <div class="frame-label">
+      <span class="kind">Phone 3 &middot; default</span>
+      <span class="title">Decisions · answer one, post the next</span>
+      <span class="meta">Pinned to client portal &middot; tap to nudge or compose a new ask</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="right">
+            <span class="signal"><i></i><i></i><i></i><i></i></span>
+            <span>5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <div class="app-header">
+          <div class="header-top">
+            <button class="header-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+            <span class="header-crumb">Projects</span>
+            <span class="header-actions">
+              <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+              <button class="icon-btn-sm" aria-label="More"><svg><use href="#i-more"/></svg></button>
+            </span>
+          </div>
+          <div class="header-title">
+            <h1>Glenwood Heights<br/>Master Suite Addition
+              <span class="chev" aria-label="Details"><svg><use href="#i-chevron-down"/></svg></span>
+            </h1>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line">Daniel &amp; Priya Mohan</div>
+
+          <div class="tab-select-wrap">
+            <div class="tab-select" aria-expanded="false">
+              <span>Client</span>
+              <span class="total-sep">&middot;</span>
+              <span class="total-badge">3</span>
+              <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+            </div>
+          </div>
+
+          <div class="subhub-row">
+            <span class="subhub-pill">Messages <span class="b rust">2</span></span>
+            <span class="subhub-pill">Selections <span class="b warn">1</span></span>
+            <span class="subhub-pill is-on">Portal</span>
+          </div>
+        </div>
+
+        <div class="body-dec body-pad-tab">
+
+          <div class="section-eyebrow-m">
+            <span class="label">Decisions</span>
+            <span class="meta">1 pending &middot; 1 new ask</span>
+          </div>
+
+          <!-- Pending decision card with options -->
+          <article class="decision-card-m is-pinned">
+            <span class="dec-eyebrow-m">
+              <span>Pending</span>
+              <span class="pin">Pinned to portal</span>
+            </span>
+            <span class="dec-title-m">Tile selection &mdash; primary bath floor</span>
+            <span class="dec-meta-m">
+              Asked Daniel &amp; Priya <strong>2 days ago</strong><br/>
+              <span class="sep">&middot;</span> needed by <strong>May 26</strong>
+              <span class="sep">&middot;</span> 3 options
+            </span>
+
+            <div class="dec-options" aria-label="Options the client sees">
+              <div class="dec-option">
+                <div class="swatch is-carrara"></div>
+                <span class="opt-name">Carrara</span>
+                <span class="opt-sub">12&times;24 honed</span>
+              </div>
+              <div class="dec-option">
+                <div class="swatch is-calacatta"></div>
+                <span class="opt-name">Calacatta</span>
+                <span class="opt-sub">12&times;24 polished</span>
+              </div>
+              <div class="dec-option">
+                <div class="swatch is-honedslate"></div>
+                <span class="opt-name">Slate</span>
+                <span class="opt-sub">12&times;12 honed</span>
+              </div>
+            </div>
+
+            <div class="dec-actions-m">
+              <button class="btn-rust-m"><svg><use href="#i-message"/></svg>Nudge Daniel &amp; Priya</button>
+              <div class="btn-ghost-row-m">
+                <button class="btn-ghost-m"><svg><use href="#i-eye"/></svg>View on portal</button>
+                <button class="btn-ghost-m"><svg><use href="#i-pen"/></svg>Edit ask</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Henry suggestion -->
+          <div class="henry-suggest-m">
+            <div class="h-row">
+              <span class="h-mark"><span class="glyph">&#10022;</span>Henry</span>
+            </div>
+            <span class="h-text">Tile is on the <strong>critical path</strong> &mdash; drywall finishes May 28. Ask them to confirm <strong>this week</strong> so the order has lead time.</span>
+            <button class="h-cta">Compose decision <svg><use href="#i-arrow-right"/></svg></button>
+          </div>
+
+          <!-- New-decision composer (mobile inline rather than a modal) -->
+          <div class="new-decision-card">
+            <span class="nd-title">New decision &mdash; ask the client</span>
+            <div class="field-m">
+              <span class="field-label-m">Title</span>
+              <input class="nd-input" type="text" placeholder="e.g. Cabinet pulls &mdash; brushed nickel vs chrome" />
+            </div>
+            <div class="field-m">
+              <span class="field-label-m">Context for the client</span>
+              <textarea class="nd-input" placeholder="What do they need to know to decide?"></textarea>
+            </div>
+            <button class="btn-rust-m"><svg><use href="#i-plus"/></svg>Add options &amp; pin to portal</button>
+          </div>
+
+        </div>
+
+        <nav class="tab-bar" aria-label="Primary">
+          <div class="tab-item"><svg><use href="#i-dashboard"/></svg><span class="label">Today</span></div>
+          <div class="tab-item with-count"><svg><use href="#i-inbox"/></svg><span class="label">Inbox</span><span class="count">7</span></div>
+          <div class="tab-item active"><svg><use href="#i-folder"/></svg><span class="label">Projects</span></div>
+          <div class="tab-item"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></div>
+          <div class="tab-item"><svg><use href="#i-more"/></svg><span class="label">More</span></div>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ╔══════════════════════════════════════════════════════════════╗
+       ║  PHONE 4 — VARIANT: MESSAGES with PORTAL DISABLED            ║
+       ╚══════════════════════════════════════════════════════════════╝ -->
+  <div class="stage-cell">
+    <div class="frame-label is-variant">
+      <span class="kind">Phone 4 &middot; variant</span>
+      <span class="title">Messages · portal disabled</span>
+      <span class="meta">Calm info strip &middot; notify-only &middot; Enable inline</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="right">
+            <span class="signal"><i></i><i></i><i></i><i></i></span>
+            <span>5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <div class="app-header">
+          <div class="header-top">
+            <button class="header-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+            <span class="header-crumb">Projects</span>
+            <span class="header-actions">
+              <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+              <button class="icon-btn-sm" aria-label="More"><svg><use href="#i-more"/></svg></button>
+            </span>
+          </div>
+          <div class="header-title">
+            <h1>Glenwood Heights<br/>Master Suite Addition
+              <span class="chev" aria-label="Details"><svg><use href="#i-chevron-down"/></svg></span>
+            </h1>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line">Daniel &amp; Priya Mohan</div>
+
+          <div class="tab-select-wrap">
+            <div class="tab-select" aria-expanded="false">
+              <span>Client</span>
+              <span class="total-sep">&middot;</span>
+              <span class="total-badge">3</span>
+              <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+            </div>
+          </div>
+
+          <div class="subhub-row">
+            <span class="subhub-pill is-on">Messages <span class="b rust">2</span></span>
+            <span class="subhub-pill">Selections <span class="b warn">1</span></span>
+            <span class="subhub-pill">Portal</span>
+          </div>
+
+          <!-- Portal-OFF chip -->
+          <div class="portal-strip-mini is-off">
+            <span class="dot" aria-hidden="true"></span>
+            <span><span class="state">Portal off</span></span>
+            <span class="sep">&middot;</span>
+            <span class="l is-info">Enable</span>
+          </div>
+        </div>
+
+        <!-- Calm info strip — info-soft, NOT warn -->
+        <div class="portal-off-strip-m">
+          <div class="lab-row">
+            <span class="lab">Portal off</span>
+            <a>Enable <svg><use href="#i-arrow-right"/></svg></a>
+          </div>
+          <span>Messages still <strong>notify the client</strong> by email and SMS &mdash; but they can't read the thread until you enable the portal.</span>
+        </div>
+
+        <div class="body-msg" role="log" aria-live="polite">
+
+          <div class="day-rule">Today &middot; May 22</div>
+
+          <div class="bubble-row is-in">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="name">Daniel</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-sms"><svg><use href="#i-phone"/></svg>SMS</span>
+                <span class="sep">&middot;</span>
+                <span>2h ago</span>
+              </div>
+              <div class="bubble is-in">
+                Any chance we can swap to the brushed nickel pulls?
+              </div>
+            </div>
+          </div>
+
+          <div class="bubble-row is-out">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span>1h ago</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-email"><svg><use href="#i-mail"/></svg>Email</span>
+                <span class="sep">&middot;</span>
+                <span class="name">You</span>
+              </div>
+              <div class="bubble is-out">
+                Great choice &mdash; I'll price the difference and send a change order.
+                <div class="b-foot">
+                  <svg style="width:9px;height:9px;"><use href="#i-check"/></svg>
+                  Email + SMS &middot; not on portal
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="composer-m">
+          <div class="composer-head-m">
+            <button class="composer-channel-m" aria-haspopup="listbox" aria-label="Send via — Email or SMS (portal disabled)">
+              <span class="lab-pre" style="color:var(--muted); font-weight:600;">Via</span>
+              <span class="ch-icon"><svg><use href="#i-phone"/></svg></span>SMS
+              <svg style="margin-left:2px;"><use href="#i-chevron-down"/></svg>
+            </button>
+            <button class="composer-henry-m">
+              <span class="glyph">&#10022;</span> Draft a reply
+            </button>
+          </div>
+          <span class="composer-hint-m"><span class="glyph">&#10022;</span> Daniel replies fastest on SMS</span>
+          <div class="composer-input-m">
+            <textarea class="composer-textarea-m" placeholder="Reply to Daniel &amp; Priya&hellip;"></textarea>
+            <button class="composer-attach-m" aria-label="Attach"><svg><use href="#i-paperclip"/></svg></button>
+            <button class="composer-send-m"><svg><use href="#i-send"/></svg>Send</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
