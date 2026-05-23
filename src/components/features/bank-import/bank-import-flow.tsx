@@ -15,7 +15,7 @@
  * coa-mapping-panel.tsx so the two surfaces feel like the same family.
  */
 
-import { Loader2, Pencil, RotateCcw, Upload } from 'lucide-react';
+import { Loader2, Pencil, RefreshCw, RotateCcw, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useId, useState, useTransition } from 'react';
 import { toast } from 'sonner';
@@ -31,8 +31,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { BankPreset, DateFormat, ParsedStatement } from '@/lib/bank-recon';
+import { type StatusTone, statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import { importBankStatementAction, parseBankStatementAction } from '@/server/actions/bank-import';
+import { runAutoMatchAction } from '@/server/actions/bank-match';
+
+/**
+ * Parser-detection confidence → status-tokens tone. This is the CSV preset
+ * detector (deterministic plumbing), NOT the Henry matcher — so soft-pair
+ * tones but no ✦ attribution.
+ */
+const DETECTION_TONE: Record<'high' | 'medium' | 'low', StatusTone> = {
+  high: 'success',
+  medium: 'warning',
+  low: 'hold',
+};
 
 const PRESET_OPTIONS: Array<{ value: BankPreset | 'auto'; label: string }> = [
   { value: 'auto', label: 'Auto-detect' },
@@ -70,6 +83,7 @@ type Stage =
   | {
       kind: 'done';
       result: {
+        statement_id: string;
         total_rows: number;
         inserted: number;
         skipped_duplicates: number;
@@ -195,7 +209,7 @@ function UploadStage({ onParsed }: { onParsed: (file: File, preview: ParsedState
           onRemove={() => setFiles([])}
           accept=".csv,text/csv,text/plain"
           multiple={false}
-          hint="CSV only · max 5MB"
+          hint="CSV today · max 5MB · PDF coming"
           disabled={pending}
         />
 
@@ -230,6 +244,7 @@ function PreviewStage({
   onReparse: (next: ParsedStatement) => void;
   onReset: () => void;
   onImported: (result: {
+    statement_id: string;
     total_rows: number;
     inserted: number;
     skipped_duplicates: number;
@@ -277,6 +292,7 @@ function PreviewStage({
         return;
       }
       onImported({
+        statement_id: res.statement_id,
         total_rows: res.total_rows,
         inserted: res.inserted,
         skipped_duplicates: res.skipped_duplicates,
@@ -287,12 +303,7 @@ function PreviewStage({
     });
   }
 
-  const confidenceTone =
-    preview.confidence === 'high'
-      ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
-      : preview.confidence === 'medium'
-        ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
-        : 'bg-rose-100 text-rose-900 dark:bg-rose-950/40 dark:text-rose-200';
+  const detectionTone = statusToneClass[DETECTION_TONE[preview.confidence]];
 
   return (
     <Card>
@@ -306,7 +317,9 @@ function PreviewStage({
       <CardContent className="flex flex-col gap-4">
         {/* Detection summary */}
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', confidenceTone)}>
+          <span
+            className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', detectionTone)}
+          >
             {preview.confidence} confidence
           </span>
           <span className="text-muted-foreground">·</span>
@@ -326,9 +339,7 @@ function PreviewStage({
           {preview.encoding_fallback_used ? (
             <>
               <span className="text-muted-foreground">·</span>
-              <span className="text-amber-700 dark:text-amber-400">
-                Recovered from non-UTF-8 encoding
-              </span>
+              <span className="text-muted-foreground">Recovered from non-UTF-8 encoding</span>
             </>
           ) : null}
           <Button
@@ -381,9 +392,14 @@ function PreviewStage({
                     key={`hdr-${i}`}
                     className={cn(
                       'whitespace-nowrap px-2 py-1.5 font-medium',
-                      i === preview.column_map.date && 'bg-emerald-100 dark:bg-emerald-950/30',
-                      i === preview.column_map.description && 'bg-blue-100 dark:bg-blue-950/30',
-                      i === preview.column_map.amount && 'bg-amber-100 dark:bg-amber-950/30',
+                      // Calm Paper tints + a label so the three mapped columns
+                      // read without loud full-saturation hues.
+                      i === preview.column_map.date &&
+                        'bg-muted before:mr-1 before:text-[10px] before:font-normal before:text-muted-foreground before:content-["date"]',
+                      i === preview.column_map.description &&
+                        'bg-muted before:mr-1 before:text-[10px] before:font-normal before:text-muted-foreground before:content-["desc"]',
+                      i === preview.column_map.amount &&
+                        'bg-blue-50 before:mr-1 before:text-[10px] before:font-normal before:text-blue-700 before:content-["amount"] dark:bg-blue-950/20 dark:before:text-blue-300',
                     )}
                   >
                     {h}
@@ -404,9 +420,9 @@ function PreviewStage({
                       key={`cell-${ri}-${ci}`}
                       className={cn(
                         'whitespace-nowrap px-2 py-1.5 tabular-nums',
-                        ci === preview.column_map.date && 'bg-emerald-50 dark:bg-emerald-950/10',
-                        ci === preview.column_map.description && 'bg-blue-50 dark:bg-blue-950/10',
-                        ci === preview.column_map.amount && 'bg-amber-50 dark:bg-amber-950/10',
+                        ci === preview.column_map.date && 'bg-muted/50',
+                        ci === preview.column_map.description && 'bg-muted/50',
+                        ci === preview.column_map.amount && 'bg-blue-50/60 dark:bg-blue-950/10',
                       )}
                     >
                       {cell}
@@ -587,6 +603,7 @@ function DoneStage({
   onReset,
 }: {
   result: {
+    statement_id: string;
     total_rows: number;
     inserted: number;
     skipped_duplicates: number;
@@ -597,6 +614,25 @@ function DoneStage({
   onReset: () => void;
 }) {
   const ignored = Math.max(0, result.inserted - result.auto_matched);
+  const [rematching, startRematch] = useTransition();
+  const [rematched, setRematched] = useState<number | null>(null);
+
+  function rerun() {
+    startRematch(async () => {
+      const res = await runAutoMatchAction({ statement_id: result.statement_id });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      setRematched(res.matched);
+      toast.success(
+        res.matched > 0
+          ? `Re-scored ${res.scanned} unmatched · ${res.matched} new match${res.matched === 1 ? '' : 'es'}`
+          : `Re-scored ${res.scanned} unmatched · no new matches yet`,
+      );
+    });
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -610,9 +646,7 @@ function DoneStage({
           </li>
           {result.auto_matched > 0 ? (
             <li>
-              <strong className="tabular-nums text-emerald-700 dark:text-emerald-400">
-                {result.auto_matched}
-              </strong>{' '}
+              <strong className="tabular-nums text-foreground">{result.auto_matched}</strong>{' '}
               matched to existing invoices, expenses, or bills
               {result.auto_matched_high_confidence > 0 ? (
                 <span className="text-muted-foreground">
@@ -639,14 +673,35 @@ function DoneStage({
         <p className="text-xs text-muted-foreground">
           {result.auto_matched > 0
             ? 'Open the review queue to confirm matches and bulk-mark invoices paid.'
-            : "No matches found yet — that's normal if you haven't entered the corresponding invoices/expenses yet. Re-run matching after entering them."}
+            : "No matches found yet — that's normal if you haven't entered the corresponding invoices/expenses yet. Enter them, then re-run matching below."}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {result.auto_matched > 0 ? (
             <Button asChild>
               <Link href="/business-health/bank-review">
                 Review {result.auto_matched} match{result.auto_matched === 1 ? '' : 'es'}
               </Link>
+            </Button>
+          ) : null}
+          {/* Zero-match branch: re-run after entering the missing invoices.
+              runAutoMatchAction is idempotent — only touches unmatched rows. */}
+          {result.auto_matched === 0 ? (
+            <Button onClick={rerun} disabled={rematching}>
+              {rematching ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RefreshCw className="size-4" />
+              )}
+              <span className="ml-1">
+                {rematched !== null && rematched > 0
+                  ? `Review ${rematched} match${rematched === 1 ? '' : 'es'}`
+                  : 'Re-run matching'}
+              </span>
+            </Button>
+          ) : null}
+          {rematched !== null && rematched > 0 ? (
+            <Button asChild variant="outline">
+              <Link href="/business-health/bank-review">Open review queue</Link>
             </Button>
           ) : null}
           <Button asChild variant="outline">
