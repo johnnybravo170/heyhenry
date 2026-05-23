@@ -78,7 +78,8 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **0** (refinements only) | 🟡 #295/#303/#304/#305 | all 3 deep-work cards built: working-days (#303), slip/digest/chrome (#304), Henry cascade-explainer + notify + slip-prompt (#305). **Refinements outstanding (no open card yet):** CO→schedule inline prompt (`d0b1b72a` pt3, deferred — needs its own card: CO scope-line reads + on-tab surface + dedup) and bespoke mobile-Timeline variant. ✅-gate (live design-critique) pending · **subscreens: ✅ (schedule.md)** |
 | Billing (project) | 🟡 (project-hub §Billing; no standalone) | ✅ `…-billing` | — | ✅ #296 | dedicated brief intentionally skipped |
 | **Client** | ✅ `client.md` | ✅ `…-client` | **1** (Pulse pt1) | 🟡 #302 | chip + activity/setup reorg + decision ✦ chrome + Paper restyle built (#302); **outstanding:** wire Henry Pulse into Updates (card `b9bb93b7` pt1 — needs project-scoped `pulse_updates`: nullable `job_id` + `project_id` + project draft path; currently job-scoped) |
-| Photos / Documents / Notes | ✅ `project-secondary-tabs.md` | ⬜ | — | 🟡 (live, pre-redesign) | Paper restyle + client-visibility legibility outstanding; **Home Record generate/email + Photos graduate to own renders**; **gap flagged: Selections tab un-briefed** |
+| Photos / Documents / Notes | ✅ `project-secondary-tabs.md` | ⬜ | — | 🟡 (live, pre-redesign) | Paper restyle + client-visibility legibility outstanding; **Home Record generate/email + Photos graduate to own renders** |
+| Selections (per-room finishes) | ✅ `selections.md` | ⬜ | — | 🟡 (live, pre-redesign) | dual-authored (operator + client) finish schedule; **target: surface allowance-vs-actual variance (→ CO trigger), Paper restyle**; idea-board promotes in; feeds Home Record |
 
 ### Worker & public surfaces (separate route groups)
 | Surface | Brief | OD render | Open dev cards | Built (ref) | Notes |
@@ -93,8 +94,8 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 
 - **Bookkeeper portal** (`/bk`) — **deferred, out of redesign scope for V1 — confirmed by the sweep.** Real + shipped, but scoped out by Role × Object Matrix `03b1ccf4` (`/bk` financial-only, "out of redesign scope"), Object Model `b4d880be` (Bookkeeper-domain tables out of scope), and Workflow Library `e0263cc3` (#8 Bookkeeper Review — deferred, separate portal). Revisit only if it re-enters scope.
 
-**Gaps surfaced during the sweep (a future pass — not part of this menu):**
-- **Project → Selections tab** (`selections-tab-server`, `project_selections`) — a real secondary Hub tab with no brief; flagged in `project-secondary-tabs.md`.
+**Gaps surfaced during the sweep — all addressed:**
+- **Project → Selections tab** — found un-briefed during the sweep, **now briefed** (`selections.md`, 2026-05-23) and promoted into the Project Hub table above.
 
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
