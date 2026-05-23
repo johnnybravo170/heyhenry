@@ -77,7 +77,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; working-day/slip/Henry deep work outstanding · **subscreens: ✅ specced inline (schedule.md)** |
 | Billing (project) | 🟡 (project-hub §Billing; no standalone) | ✅ `…-billing` | — | ✅ #296 | dedicated brief intentionally skipped |
 | **Client** | ✅ `client.md` | ✅ `…-client` | **1** (Pulse pt1) | 🟡 #302 | chip + activity/setup reorg + decision ✦ chrome + Paper restyle built (#302); **outstanding:** wire Henry Pulse into Updates (card `b9bb93b7` pt1 — needs project-scoped `pulse_updates`: nullable `job_id` + `project_id` + project draft path; currently job-scoped) |
-| Photos / Documents / Notes | 🟡 (project-hub) | ⬜ | — | ? | secondary tabs; lower priority |
+| Photos / Documents / Notes | ✅ `project-secondary-tabs.md` | ⬜ | — | 🟡 (live, pre-redesign) | Paper restyle + client-visibility legibility outstanding; **Home Record generate/email + Photos graduate to own renders**; **gap flagged: Selections tab un-briefed** |
 
 ---
 
@@ -88,7 +88,6 @@ Not yet briefed; **claim one** (mark it in-progress) before starting. Most are s
 - **Settings** (+ sub-pages: Team/invite, Pricebook/materials, Portal defaults, Calendar, Billing/subscription)
 - **Worker app `/w`** (Today · Calendar · Projects · Profile + the worker-invoice queue; plan W1–W7 in `GC_WORKFLOW_PLAN.md`) — its own mobile-first surface, a big pass
 - **Public pages** — estimate / CO / invoice approval (`/approve*`), and the **customer Portal** itself (`/portal/[slug]`, customer-facing; carries the GC's brand)
-- **Project secondary tabs** — Photos · Documents · Notes (currently 🟡 in the Hub matrix)
 - **Bookkeeper portal** — *deferred (out of scope for V1)*; listed so it's not forgotten
 
 ## Cross-cutting items
