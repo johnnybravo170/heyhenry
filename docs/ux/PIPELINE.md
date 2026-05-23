@@ -62,7 +62,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Calendar (crew scheduling) | ✅ `calendar.md` | 🟡 (no `od-calendar` dir) | — | ✅ #270–#275 | built ahead of a formal OD render |
 | Estimate (Budget authoring) | ✅ | ✅ (project-hub budget) | — | ✅ #278/#281 | |
 | Quotes (PW sales-quote object) | ✅ `quotes.md` | ⬜ (PW-only) | — | ✅ (PW live) | **PW-vertical** — GC `/quotes`→`/projects`; GC quoting = `estimate.md` + project Budget + `/approve*`. Brief = map + scope boundary; **recommend no GC render**. Open: auto-create-Project-on-approval decision |
-| Change Order | ✅ | 🟡 (in progress: od-driver) | "voice/photo drafting" | 🟡 | manual flow built; refinements open |
+| Change Order | ✅ | ✅ `od-change-order` | 1 (build `01a46861`) · voice/photo (deferred) | 🟡 | redesign render converged (2-round OD loop); subscreens ✅ inline (editor · states · send · public approval); public /approve → adopt Customer-Docs shared shell |
 | Expenses | ✅ | ⬜ | — | 🟡 ? | |
 | Customer Documents | ✅ | ⬜ | — | 🟡 ? | |
 | Settings (config hub · 30 sub-pages) | ✅ `settings.md` | ⬜ | — | 🟡 (live, pre-redesign) | shell + IA brief; **target: role-filter the nav (vertical-only today), prune/merge sprawl, Paper restyle**; heavy sub-flows (Team, Billing, QuickBooks, Import) graduate to own renders |
