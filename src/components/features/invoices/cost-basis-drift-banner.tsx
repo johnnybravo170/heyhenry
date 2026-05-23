@@ -1,13 +1,10 @@
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import { formatCurrency } from '@/lib/pricing/calculator';
-
-function formatCad(cents: number): string {
-  return formatCurrency(Math.abs(cents));
-}
+import { Money } from '@/components/ui/money';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 
 /**
- * Reconciliation banner on the draft cost-plus invoice. Compares the
+ * Reconciliation caution on the draft cost-plus invoice. Compares the
  * pre-tax cost basis the invoice was billed against (frozen in
  * `line_items` at creation time) to the project's current cost rollup
  * (live read of time_entries + expenses + project_bills via the same
@@ -16,9 +13,10 @@ function formatCad(cents: number): string {
  *   (b) the helper now sees a cost source the breakdown math doesn't —
  *       investigate before sending.
  *
- * Only renders on cost-plus drafts. The action's `warning` field
- * covers the creation-time check; this banner is the persistent
- * counterpart that doesn't go away on a refresh.
+ * Only renders on cost-plus drafts. Restyled (UX redesign) from a full
+ * amber banner to an inline warn-soft caution — the customer-view preview
+ * is the hero, this is a side-note. Same warn-soft + left-border Henry
+ * chrome family as `ScheduleSlipPrompt`.
  */
 export function CostBasisDriftBanner({
   projectId,
@@ -35,27 +33,25 @@ export function CostBasisDriftBanner({
   const direction = delta > 0 ? 'higher' : 'lower';
 
   return (
-    <section className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
-      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
-      <div className="flex flex-1 flex-col gap-2 text-sm text-amber-900 dark:text-amber-100">
-        <div>
-          <p className="font-medium">Cost basis has drifted from this draft</p>
-          <p className="text-amber-800/90 dark:text-amber-200/90">
-            This draft billed {formatCad(billedCostBasisCents)} as the pre-tax cost basis, but
-            today's rollup is {formatCad(currentCostBasisCents)} — {formatCad(delta)} {direction}.
-            Either time/expenses were logged after this draft, or a cost source is missing from the
-            invoice. Regenerate the draft, or check the budget tab to see which entries differ.
-          </p>
-        </div>
-        <div>
-          <Link
-            href={`/projects/${projectId}?tab=budget`}
-            className="inline-flex items-center rounded-md border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-900 shadow-sm hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
-          >
-            Open project budget
-          </Link>
-        </div>
+    <div
+      className={`flex items-start gap-3 rounded-r-lg border border-l-2 border-l-brand p-3 ${statusToneClass.warning}`}
+    >
+      <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <div className="flex flex-1 flex-col gap-1 text-sm leading-snug">
+        <p>
+          <span className="font-semibold">Cost basis has drifted from this draft.</span> Billed{' '}
+          <Money cents={billedCostBasisCents} className="font-medium" /> · today&rsquo;s rollup{' '}
+          <Money cents={currentCostBasisCents} className="font-medium" /> —{' '}
+          <Money cents={Math.abs(delta)} className="font-medium" /> {direction}. Regenerate the
+          draft, or open the budget to see which entries differ.
+        </p>
+        <Link
+          href={`/projects/${projectId}?tab=budget`}
+          className="font-medium underline underline-offset-2"
+        >
+          Open project budget
+        </Link>
       </div>
-    </section>
+    </div>
   );
 }

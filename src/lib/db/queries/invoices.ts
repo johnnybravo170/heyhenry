@@ -33,6 +33,10 @@ export type InvoiceRow = {
   project_id: string | null;
   customer_id: string;
   status: InvoiceStatus;
+  /** Unguessable short code (mig 20260523194840) — also the basis for the
+   *  friendly, non-UUID doc number (`INV-<first 8, uppercased>`). Null on
+   *  rows created before the column was backfilled / a code is assigned. */
+  code: string | null;
   amount_cents: number;
   tax_cents: number;
   tax_inclusive: boolean;
@@ -77,7 +81,7 @@ export type InvoiceListFilters = {
 };
 
 const INVOICE_COLUMNS =
-  'id, tenant_id, job_id, project_id, customer_id, status, amount_cents, tax_cents, tax_inclusive, doc_type, stripe_invoice_id, stripe_payment_intent_id, pdf_url, sent_at, paid_at, payment_method, payment_reference, payment_notes, payment_receipt_paths, customer_note, line_items, payment_instructions_override, terms_override, policies_override, customer_view_mode, customer_view_mgmt_fee_inline, created_at, updated_at, deleted_at';
+  'id, tenant_id, job_id, project_id, customer_id, status, code, amount_cents, tax_cents, tax_inclusive, doc_type, stripe_invoice_id, stripe_payment_intent_id, pdf_url, sent_at, paid_at, payment_method, payment_reference, payment_notes, payment_receipt_paths, customer_note, line_items, payment_instructions_override, terms_override, policies_override, customer_view_mode, customer_view_mgmt_fee_inline, created_at, updated_at, deleted_at';
 
 /**
  * Re-export of the pure `invoiceTotalCents` helper.

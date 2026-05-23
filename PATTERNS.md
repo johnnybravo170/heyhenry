@@ -669,6 +669,8 @@ Use a state strip whenever a tab body has actions whose meaning depends on the *
 
 **Sibling pattern siblings to retire when porting**: `signed-banner` (= `.is-approved`), the `chip-alert.is-warn` for "unsent scope changes" (becomes `.is-pending`), and any one-off "preview & send" button floating above a card body (always wrap in `.is-pending`).
 
+**Invoice-detail React ports (status posture + inline cautions):** the operator invoice detail page (`src/app/(dashboard)/invoices/[id]/page.tsx`) reuses the same chrome family for two roles. (1) The page-level **status posture** — sent = `statusToneClass.warning` "Awaiting payment", paid = `statusToneClass.success` receipt block (date · method · ref · receipt thumbnails §21), void = `statusToneClass.neutral` closed — rendered via a local `PostureStrip` (`rounded-xl border border-l-2 border-l-brand` + a status tone). (2) The **inline cautions** — `CostBasisDriftBanner` (warn) and `MissingGstNotice` (danger) — were full amber/red banners, now `rounded-r-lg border border-l-2 border-l-brand p-3` + `statusToneClass.{warning,danger}` matching `ScheduleSlipPrompt`. When `<StateStrip>` is extracted, fold `PostureStrip`'s warning/success/neutral tones in rather than re-deriving; the inline cautions stay as the thinner caution variant.
+
 ## 28. Customer-facing money document (`<CustomerDocument>` shell)
 
 The one branded wrapper every customer-facing money document renders inside — **Estimate · Change Order · Invoice/Pay**. It is the GC's letterhead, not HeyHenry operator chrome: signed logo + business name up top, a quiet "Powered by HeyHenry" footer, **Henry invisible**. Hard boundary — **price-only**: never `unit_cost` / `markup_pct` / supplier cost / margin renders through it.
@@ -704,3 +706,13 @@ One intentional tone per action, **label + glyph paired** (never colour-only, WC
 Render the pill via `<ChangeOrderActionChip action=… [count=…] />` (`src/components/features/change-orders/change-order-action-chip.tsx`) — `count` makes a summary chip ("3 Added"). Row washes + signed-Δ tint come from the same `changeOrderActionStyle[action].rowClass` / `.deltaClass`. Used **identically** in the operator editor (`change-order-diff-form.tsx`) and the customer-facing diff view (`change-order-diff-view.tsx`) so the eye is trained once. Before/After/Δ figures: `changeOrderLineDelta(line)` (handles `modify_envelope` reading `before_snapshot.estimate_cents` and `remove`→0 after).
 
 **Operator margin read** (editor only): the sticky impact bar shows `Margin on change · X%` vs the project mgmt-fee floor, tagged `OPS`. Hard boundary — this and any cost/markup figure **never** render on a customer surface (public `/approve`, send preview, portal); the customer doc is price-only (§28).
+
+## 30. Config-fold disclosure (collapse secondary config into one "details" section)
+
+When a screen's main task is one thing but several **config / setup** affordances also need to live on the page, don't stack them as sibling banners under the primary content — fold them into a single titled disclosure so the hero stays the hero. `InvoiceDocumentDetails` (`src/components/features/invoices/invoice-document-details.tsx`) is the first instance: it wraps the tenant-defaults setup nudge + the per-invoice payment-instructions/terms/policies overrides editor (both passed as `children`, so the disclosure owns only the fold chrome — no duplicated form logic).
+
+- **One collapse, not N banners.** Children that previously each carried their own card/banner frame get *de-chromed* (the overrides editor dropped its own `Card` + inner collapse; the defaults nudge became a thin warn-soft caution) so they read as fields inside the section, not nested cards.
+- **`needsAttention` opens it on first paint** only when something is actionable (a blank tenant default, or an active override) — otherwise it's collapsed with a calm `statusLabel` ("Using tenant defaults") + a green dot. Don't auto-open for the calm case.
+- Built on the shared `Collapsible` primitive (`src/components/ui/collapsible.tsx`); chevron rotates 90° on open.
+
+Reach for this whenever a detail page sprouts a third+ secondary banner — the candidates are "config, not the main task" (terms, defaults, integrations, notification prefs).
