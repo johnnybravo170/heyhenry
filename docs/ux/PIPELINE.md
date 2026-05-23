@@ -19,6 +19,8 @@ RESEARCH ───briefs──▶ OD DRIVER ───renders+cards──▶ CODI
 
 **Lane discipline (this prevents the duplicate-work we hit):** one session owns each artifact type. Research writes **only briefs** (+ this tracker). OD Driver owns **prompts, renders, and dev cards**. Coding owns **commits to `src`**. Don't create dev cards from Research; don't write briefs from OD Driver. *(The duplicate Schedule card happened because card-creation wasn't lane-owned.)*
 
+**Verified = the Coding done-gate (no separate QA session).** Before flipping a screen to ✅ Built, Coding runs `heyhenry-design-critique` against the **live built screen** (not the OD render), logs residual design↔code variance as a Notes entry here + a follow-up card if material. Same critique skill, pointed at the app — keeps us to three lanes and off the OD-Driver bottleneck.
+
 ---
 
 ## Session-start protocol (do this every time, every session)
@@ -39,6 +41,8 @@ Research / OD Driver / Coding each run in a separate worktree so they never step
 3. **Work only your lane's artifact.**
 4. **On handoff, update this file** — flip your stage's cell + drop the ref (commit SHA / card id / render path). Commit it with your work.
 5. **Transport is git + the Ops board, not copy-paste.** Briefs live in `docs/ux/briefs/`, renders in `od-*/`, cards on the `dev` board (`epic:ux-redesign`). Read from there; the human is a checkpoint, not the courier. *(OD step is going headless via the `od-redesign-loop` skill.)*
+
+**Claim before you start (two research agents now run in parallel).** Before working a screen, mark its **Brief** cell `🟡 (in progress: <your-session>)` and commit that line — so two researchers never write the same brief. Flip to ✅ when you hand off. Same rule for any lane picking up a screen.
 
 ---
 
@@ -68,12 +72,22 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Budget | ✅ (project-hub) | ✅ `…-budget` | — | ✅ #278/#281 | |
 | Spend | ✅ (project-hub) | ✅ `…-spend` | — | ✅ #290/#291/#298 | |
 | Labour | ✅ (project-hub) | ✅ `…-labour` | — | ✅ #294 | |
-| Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; **working-day/slip/Henry deep work outstanding** |
+| Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; working-day/slip/Henry deep work outstanding · **subscreens: 🟡 in progress (research 2026-05-22)** |
 | Billing (project) | 🟡 (project-hub §Billing; no standalone) | ✅ `…-billing` | — | ✅ #296 | dedicated brief intentionally skipped |
 | **Client** | ✅ `client.md` | ✅ `…-client` | **2** (wire Pulse + reorg; chip+restyle) | ⬜ | briefed 2026-05-22; **build not started** |
 | Photos / Documents / Notes | 🟡 (project-hub) | ⬜ | — | ? | secondary tabs; lower priority |
 
 ---
+
+## Untouched screens — menu for the next research pass
+Not yet briefed; **claim one** (mark it in-progress) before starting. Most are subscreen-dense — apply the skill's Subscreen Inventory step.
+- **Settings** (+ sub-pages: Team/invite, Pricebook/materials, Portal defaults, Calendar, Billing/subscription)
+- **Business Health** (the account-level money/AR dashboard in the GC nav)
+- **Quotes** (legacy quote object — parallel entry path to projects)
+- **Worker app `/w`** (Today · Calendar · Projects · Profile + the worker-invoice queue; plan W1–W7 in `GC_WORKFLOW_PLAN.md`) — its own mobile-first surface, a big pass
+- **Public pages** — estimate / CO / invoice approval (`/approve*`), and the **customer Portal** itself (`/portal/[slug]`, customer-facing; carries the GC's brand)
+- **Project secondary tabs** — Photos · Documents · Notes (currently 🟡 in the Hub matrix)
+- **Bookkeeper portal** — *deferred (out of scope for V1)*; listed so it's not forgotten
 
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
@@ -82,4 +96,4 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 ---
 
 ## How to update this doc
-When you finish your stage for a screen: flip the cell (⬜→🟡→✅), add the ref (commit/card/render path), and commit `PIPELINE.md` alongside your work. If you discover a cell is wrong, fix it — it's only useful if it's true. Foundation docs + skills: `docs/ux/HANDOFF.md`, `docs/ux/README.md`, `.claude/skills/heyhenry-*`.
+When you finish your stage for a screen: flip the cell (⬜→🟡→✅), add the ref (commit/card/render path), and commit `PIPELINE.md` alongside your work. If you discover a cell is wrong, fix it — it's only useful if it's true. **Subscreens count:** a screen isn't fully designed until its Subscreen Inventory is done (skill step 8) — track it in the row's Notes (e.g. `subscreens: 🟡 3/6 specced`), and don't mark a screen ✅ Built+Verified with un-specced heavy subscreens. Foundation docs + skills: `docs/ux/HANDOFF.md`, `docs/ux/README.md`, `.claude/skills/heyhenry-*`.

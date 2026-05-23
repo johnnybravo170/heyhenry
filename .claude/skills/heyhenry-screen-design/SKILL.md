@@ -39,7 +39,8 @@ Primary object + workflow stage + role(s) served (run `heyhenry-ooux`/`heyhenry-
 5. **Mobile & desktop** — capture-first/thumb-friendly mobile; detail layers desktop; offline behavior if it's a field surface.
 6. **Canadian primitives** — GST/HST on money, **Interac e-Transfer at parity with Stripe**, CAD default. *(No holdback. T5018/year-end live in the bookkeeper portal — out of scope.)*
 7. **States** — empty (icon + headline + line + CTA), loading (skeleton), error, offline. Never skip these.
-8. **Visual identity** — warm cream + rust ("Paper" palette is **live** in globals.css — design to it), calm not loud, Linear-not-Buildertrend.
+8. **Subscreen inventory (don't skip — this is where briefs leak).** Enumerate EVERY surface the screen spawns, not just the hero view: modals / dialogs / drawers, expansion & disclosure states (collapsed↔expanded rows / cards / accordions), multi-step **sub-flows** (e.g. OCR→allocate→accept; a bootstrap wizard), and distinct **sub-routes** (e.g. `/invoices/[id]`, approval pages). For each: spec the **light** ones inline (one line — trigger · content · actions · states), and **graduate the heavy** ones (a real flow, a complex modal, its own route) to their own pipeline row + brief. A screen isn't designed until its subscreens are accounted for — list them even if you defer the heavy ones.
+9. **Visual identity** — warm cream + rust ("Paper" palette is **live** in globals.css — design to it), calm not loud, Linear-not-Buildertrend.
 
 ## Step 4 — Self-check against reject-if
 Run the reject-if list (see `heyhenry-design-critique` / Positioning) and fix anything that trips.
@@ -56,6 +57,7 @@ Run the reject-if list (see `heyhenry-design-critique` / Positioning) and fix an
 ## Mobile vs desktop
 ## Financial / Canadian   <GST/HST, Interac, CAD where present>
 ## States   Empty / Loading / Error / Offline
+## Subscreen inventory   <modals / drawers / expansions / sub-flows / sub-routes — each: inline-spec, or graduated to its own row/brief>
 ## Accessibility   <contrast, ≥44px targets, focus, semantics>
 ## Open questions   <assumptions; current-vs-target deltas this screen surfaces>
 ```
