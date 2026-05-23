@@ -58,6 +58,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Projects list | ✅ | ✅ `od-projects-list` | — | ✅ #277 | |
 | Inbox | ✅ | ✅ `od-inbox-triage` | — | 🟡 ? | build state unconfirmed |
 | Billing / AR (cross-project) | ✅ `invoices.md` | ✅ `od-billing` | — | ✅ #288 | |
+| Business Health (owner money cockpit) | ✅ `business-health.md` | ⬜ | — | 🟡 (live, pre-redesign) | restyle to Paper/status-tokens + cockpit hierarchy outstanding; **subscreens: bank-import + bank-review graduate to own renders** |
 | Calendar (crew scheduling) | ✅ `calendar.md` | 🟡 (no `od-calendar` dir) | — | ✅ #270–#275 | built ahead of a formal OD render |
 | Estimate (Budget authoring) | ✅ | ✅ (project-hub budget) | — | ✅ #278/#281 | |
 | Change Order | ✅ | 🟡 (in progress: od-driver) | "voice/photo drafting" | 🟡 | manual flow built; refinements open |
@@ -84,7 +85,6 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 
 Not yet briefed; **claim one** (mark it in-progress) before starting. Most are subscreen-dense — apply the skill's Subscreen Inventory step.
 - **Settings** (+ sub-pages: Team/invite, Pricebook/materials, Portal defaults, Calendar, Billing/subscription)
-- **Business Health** (the account-level money/AR dashboard in the GC nav)
 - **Quotes** (legacy quote object — parallel entry path to projects)
 - **Worker app `/w`** (Today · Calendar · Projects · Profile + the worker-invoice queue; plan W1–W7 in `GC_WORKFLOW_PLAN.md`) — its own mobile-first surface, a big pass
 - **Public pages** — estimate / CO / invoice approval (`/approve*`), and the **customer Portal** itself (`/portal/[slug]`, customer-facing; carries the GC's brand)
