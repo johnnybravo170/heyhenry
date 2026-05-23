@@ -137,13 +137,18 @@ test.describe
       await signInAsOwner(page, seed);
       await page.goto(`/projects/${seed.projectId}?tab=budget&expand=all`);
 
-      // The chip is an <a> linking to /projects/.../change-orders/<co.id>
-      // with a `?from=...&fromLabel=...` smart-back suffix. Match the
-      // path prefix; there's only one such chip on the Budget tab in
-      // this scenario (one CO touching one category).
-      const chip = page.locator(`a[href^="/projects/${seed.projectId}/change-orders/${coId}"]`);
+      // The chip is the blue "CO <shortId>" link on the touched category
+      // (title="Touched by CO: …", with a `?from=…&fromLabel=…` smart-back
+      // suffix). Target it by its accessible name — the redesigned Budget
+      // tab also renders a per-project Changes list row that links to the
+      // SAME co.id (named after the CO title), so a bare href-prefix locator
+      // now matches two elements.
+      const chip = page.getByRole('link', { name: new RegExp(`CO ${coShortId}`, 'i') });
       await expect(chip).toBeVisible();
-      await expect(chip).toHaveText(new RegExp(`CO ${coShortId}`, 'i'));
+      await expect(chip).toHaveAttribute(
+        'href',
+        new RegExp(`/projects/${seed.projectId}/change-orders/${coId}`),
+      );
     });
 
     test('Overview Revenue card lists the applied CO as its own row', async ({ page }) => {
