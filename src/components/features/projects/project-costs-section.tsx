@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Money } from '@/components/ui/money';
 import type { ProjectBillRow } from '@/lib/db/queries/project-bills';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { projectCostStatusTone, statusToneClass } from '@/lib/ui/status-tokens';
@@ -1058,14 +1059,14 @@ export function ProjectCostsSection({
                     )}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">{r.description || '—'}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {formatCurrency(r.subtotal_cents)}
+                  <td className="px-3 py-2 text-right">
+                    <Money cents={r.subtotal_cents} />
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {r.gst_cents > 0 ? formatCurrency(r.gst_cents) : '—'}
+                  <td className="px-3 py-2 text-right text-muted-foreground">
+                    {r.gst_cents > 0 ? <Money cents={r.gst_cents} /> : '—'}
                   </td>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">
-                    {formatCurrency(r.total_cents)}
+                  <td className="px-3 py-2 text-right">
+                    <Money cents={r.total_cents} className="font-medium" />
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">
