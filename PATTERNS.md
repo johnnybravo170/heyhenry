@@ -613,3 +613,36 @@ Don't re-add `max-h-*` or `overflow-y-auto` on the caller — they're already th
 - `src/components/ui/alert-dialog.tsx` — base `AlertDialogContent`.
 
 If you find yourself wanting to opt out (e.g. a dialog that should never scroll), prefer making the dialog body shorter — that's the bug.
+
+---
+
+## 27. State strip — lifecycle moment + actions  *(design primitive, OD-only)*
+
+A horizontal panel that *labels* a project / object lifecycle moment and carries its primary actions. Sibling pattern to the Schedule cascade card and the Billing Ready-to-bill nudge — same chrome family, different soft-pair flavour per state. Lives at the **top of a tab body**, above the summary card, never as floating chrome.
+
+Use a state strip whenever a tab body has actions whose meaning depends on the *current state* of the object — approval flows, sent/awaiting-response, ready-to-bill, cascade-pushed dates, ready-to-deliver, blocked. The strip both *announces* the state and *exposes* the one or two actions that move it to the next state.
+
+**Four soft-pair variants, all share chrome:**
+
+| Variant | Background | Border-left | Mark fill | Typical content |
+|---|---|---|---|---|
+| `.is-pending` | `--rust-soft` | `--rust` | `--rust` | "Budget has unsent changes — send for re-approval" + ghost `Mark approved` / ghost `Mark declined` / rust `Preview & send` |
+| `.is-sent` | `--info-soft` | `--info` | `--info` | "Sent to customer Mar 24 · awaiting response" + ghost `Resend` / ghost `Withdraw` |
+| `.is-approved` | `--card` (calm) | `--ok` | `--ok-soft` | "Approved Mar 25 by Daniel & Priya" + link `View customer view` / link `Revise` |
+| `.is-declined` | `--warn-soft` | `--warn` | `--warn` | "Declined Mar 26 — Daniel asked to drop the kitchen island" + ghost `Address feedback` / rust `Re-send` |
+
+**Rust discipline**: the rust primary CTA appears in at most ONE variant per screen (usually `.is-pending`); state-flip ghost actions don't get rust. Use `.btn-rust` (desktop) / `.ss-btn-rust` (mobile) only for the single "move forward" action.
+
+**Mobile layout**: stacks vertically — `.ss-head` (mark + body) on top, then `.ss-actions` with the two ghost buttons in a 2-col grid above a full-width 44px rust primary. Never crush the three buttons onto one row at phone widths.
+
+**Specificity gotcha** *(found while building mobile-budget.html — 2026-05-22)*: the `.state-strip.is-pending .ss-btn` ghost override beats a bare `.ss-btn-rust` rule on specificity. Declare the rust primary as `.state-strip .ss-btn.ss-btn-rust { … }` so the doubled-class selector wins the tie. Same fix applies to `.is-declined .ss-btn` once the declined-state Re-send button lands.
+
+**Canonical OD source** (until ported to React):
+- `od-project-hub/screens/desktop-budget.html` — `.state-strip.is-pending` between alert-chips and signed-banner; rust CTA = `Preview & send`.
+- `od-project-hub/screens/mobile-budget.html` — same, stacked layout; full-width rust CTA.
+- `od-project-hub/screens/desktop-schedule.html` — warn-soft cascade card (cousin of `.is-declined`): "Moving Drywall +3d pushed Finishes, Punch List & Final Walkthrough" with `Undo` + rust `Notify customer`.
+- `od-project-hub/screens/desktop-billing.html` — Ready-to-bill peach nudge (cousin of `.is-pending`): "Rough-in's done — bill draw 3 ($12,400)?" with rust `Bill draw 3`.
+
+**When the React port lands**, factor a `<StateStrip variant="pending|sent|approved|declined" mark={…} body={…} actions={…} />` primitive sitting next to `Card` in `src/components/ui/`. The four variants are the only legal ones — refuse "info" / "neutral" requests; if a moment doesn't fit one of the four soft pairs, it doesn't belong in a state strip.
+
+**Sibling pattern siblings to retire when porting**: `signed-banner` (= `.is-approved`), the `chip-alert.is-warn` for "unsent scope changes" (becomes `.is-pending`), and any one-off "preview & send" button floating above a card body (always wrap in `.is-pending`).

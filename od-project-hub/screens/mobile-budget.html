@@ -285,6 +285,93 @@
   .chip-alert.is-warn .mark { background: var(--warn); }
   .chip-alert.is-warn .arrow { color: var(--warn); }
 
+  /* State strip — lifecycle moment + actions.
+     Family: .is-pending (rust-soft) · .is-sent (info-soft) · .is-approved (ok)
+             · .is-declined (warn-soft). Same family as Schedule cascade card
+     and Billing Ready-to-bill nudge. */
+  .state-strip {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 12px;
+    border-radius: 11px;
+    border: 1px solid var(--hair);
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .state-strip .ss-head { display: flex; align-items: flex-start; gap: 10px; }
+  .state-strip .ss-mark {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: #fff;
+  }
+  .state-strip .ss-body {
+    flex: 1; min-width: 0;
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .state-strip .ss-body strong { color: var(--ink); font-weight: 600; }
+  .state-strip .ss-body .sep { color: var(--faint); margin: 0 3px; }
+  .state-strip .ss-body .amt {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink); font-weight: 600; white-space: nowrap;
+  }
+  .state-strip .ss-actions { display: flex; flex-direction: column; gap: 6px; }
+  .state-strip .ss-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .state-strip .ss-btn {
+    height: 40px;
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .state-strip .ss-btn svg { width: 14px; height: 14px; }
+  .state-strip.is-pending {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.22);
+    border-left: 3px solid var(--rust);
+  }
+  .state-strip.is-pending .ss-mark { background: var(--rust); }
+  .state-strip.is-pending .ss-btn {
+    background: transparent;
+    border-color: rgba(194,65,12,0.25);
+  }
+  /* Rust primary — declared AFTER variant rules so it wins specificity tie */
+  .state-strip .ss-btn.ss-btn-rust {
+    background: var(--rust);
+    border-color: var(--rust);
+    color: #fff;
+    width: 100%;
+    height: 44px;
+    font-size: 14px;
+  }
+  .state-strip .ss-btn.ss-btn-rust svg { color: #fff; }
+
+  .state-strip.is-sent {
+    background: var(--info-soft);
+    border-color: rgba(30,64,175,0.22);
+    border-left: 3px solid var(--info);
+  }
+  .state-strip.is-sent .ss-mark { background: var(--info); }
+
+  .state-strip.is-declined {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+    border-left: 3px solid var(--warn);
+  }
+  .state-strip.is-declined .ss-mark { background: var(--warn); }
+
   /* Signed banner */
   .signed-banner {
     display: flex; align-items: center; gap: 9px;
@@ -726,6 +813,9 @@
     <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
     <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
     <symbol id="i-shuffle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-collapse-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+    <symbol id="i-expand-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
     <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
     <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
@@ -782,19 +872,35 @@
     <!-- Scrollable body -->
     <div class="body">
 
-      <!-- Alert chips -->
+      <!-- Alert chip: margin at risk (lifecycle moment moved into state strip below) -->
       <div class="alert-chips" role="region" aria-label="Budget alerts">
         <button class="chip-alert is-danger" type="button">
           <span class="mark"><svg><use href="#i-alert-triangle"/></svg></span>
           <span class="chip-text"><strong>Margin at risk</strong> <span class="sep">&middot;</span> 6% vs 18%</span>
           <svg class="arrow"><use href="#i-arrow-right"/></svg>
         </button>
+      </div>
 
-        <button class="chip-alert is-warn" type="button">
-          <span class="mark"><svg><use href="#i-shuffle"/></svg></span>
-          <span class="chip-text"><strong>2 unsent changes</strong> <span class="sep">&middot;</span> <span class="amt">+$3,200</span></span>
-          <svg class="arrow"><use href="#i-arrow-right"/></svg>
-        </button>
+      <!-- State strip — pending re-approval (2 unsent changes after signed v3) -->
+      <div class="state-strip is-pending" role="region" aria-label="Budget approval state">
+        <div class="ss-head">
+          <span class="ss-mark" aria-hidden="true">&#10022;</span>
+          <span class="ss-body">
+            <strong>2 unsent changes</strong> since v3
+            <span class="sep">&middot;</span> <span class="amt">+$3,200</span><br>
+            Send revised baseline to Daniel &amp; Priya for re-approval.
+          </span>
+        </div>
+        <div class="ss-actions">
+          <div class="ss-actions-row">
+            <button class="ss-btn" type="button">Mark approved</button>
+            <button class="ss-btn" type="button">Mark declined</button>
+          </div>
+          <button class="ss-btn ss-btn-rust" type="button">
+            <svg><use href="#i-send"/></svg>
+            Preview &amp; send
+          </button>
+        </div>
       </div>
 
       <!-- Signed banner -->
@@ -848,6 +954,8 @@
         <div class="section-eyebrow">
           <span class="label">Scope</span>
           <span class="meta">3 sections &middot; 10 cats</span>
+          <button class="icon-btn-sm" aria-label="Expand all sections" title="Expand all" style="margin-left:6px;"><svg><use href="#i-expand-all"/></svg></button>
+          <button class="icon-btn-sm" aria-label="Collapse all sections" title="Collapse all"><svg><use href="#i-collapse-all"/></svg></button>
         </div>
 
         <!-- Section 1: SITE & STRUCTURE (collapsed) -->

@@ -336,6 +336,89 @@
   .chip-alert.is-warn .mark { background: var(--warn); color: #fff; }
   .chip-alert.is-warn .arrow, .chip-alert.is-danger .arrow { color: var(--ink-2); }
 
+  /* State strip — labels a lifecycle moment with actions.
+     Family: .is-pending (rust-soft) · .is-sent (info-soft) · .is-approved (ok)
+             · .is-declined (warn-soft). Sibling pattern of Schedule cascade card
+     and Billing Ready-to-bill nudge — same chrome, different soft-pair flavour. */
+  .state-strip {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px 11px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--hair);
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .state-strip .ss-mark {
+    width: 22px; height: 22px; border-radius: 999px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+  }
+  .state-strip .ss-mark svg { width: 11px; height: 11px; }
+  .state-strip .ss-body { min-width: 0; flex: 1; }
+  .state-strip .ss-body strong { color: var(--ink); font-weight: 600; }
+  .state-strip .ss-body .sep { color: var(--faint); margin: 0 4px; }
+  .state-strip .ss-body .amt {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink); font-weight: 600;
+  }
+  .state-strip .ss-actions {
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
+  }
+  .state-strip .ss-actions .btn { height: 30px; padding: 0 11px; font-size: 13px; }
+  .state-strip .ss-actions .btn-rust {
+    background: var(--rust); color: #fff; border-color: var(--rust);
+  }
+  .state-strip .ss-actions .btn-rust:hover { background: #A6360A; border-color: #A6360A; }
+  .state-strip .ss-actions .btn-rust .icon { color: #fff; }
+  .state-strip .ss-divider {
+    width: 1px; height: 18px;
+    background: var(--hair);
+    margin: 0 2px;
+  }
+
+  .state-strip.is-pending {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.22);
+    border-left: 3px solid var(--rust);
+    padding-left: 13px; /* keep 16px optical with 3px accent rail */
+  }
+  .state-strip.is-pending .ss-mark { background: var(--rust); color: #fff; }
+  .state-strip.is-pending .ss-actions .btn-ghost {
+    background: transparent;
+    border-color: rgba(194,65,12,0.25);
+    color: var(--ink);
+  }
+  .state-strip.is-pending .ss-actions .btn-ghost:hover {
+    background: rgba(255,255,255,0.6);
+    border-color: rgba(194,65,12,0.4);
+  }
+
+  .state-strip.is-sent {
+    background: var(--info-soft);
+    border-color: rgba(30,64,175,0.22);
+    border-left: 3px solid var(--info);
+    padding-left: 13px;
+  }
+  .state-strip.is-sent .ss-mark { background: var(--info); color: #fff; }
+
+  .state-strip.is-approved {
+    background: var(--card);
+    border-left: 3px solid var(--ok);
+    padding-left: 13px;
+  }
+  .state-strip.is-approved .ss-mark { background: var(--ok-soft); color: var(--ok); }
+
+  .state-strip.is-declined {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+    border-left: 3px solid var(--warn);
+    padding-left: 13px;
+  }
+  .state-strip.is-declined .ss-mark { background: var(--warn); color: #fff; }
+
   /* Signed-estimate calm banner */
   .signed-banner {
     display: flex; align-items: center; gap: 12px;
@@ -814,6 +897,8 @@
     <symbol id="i-grip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="0.6" fill="currentColor"/><circle cx="9" cy="12" r="0.6" fill="currentColor"/><circle cx="9" cy="18" r="0.6" fill="currentColor"/><circle cx="15" cy="6" r="0.6" fill="currentColor"/><circle cx="15" cy="12" r="0.6" fill="currentColor"/><circle cx="15" cy="18" r="0.6" fill="currentColor"/></symbol>
     <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
     <symbol id="i-collapse-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+    <symbol id="i-expand-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
   </defs>
 </svg>
 
@@ -908,22 +993,35 @@
       <!-- Budget body -->
       <section class="budget" aria-label="Budget">
 
-        <!-- Alert chips: margin at risk + unsent scope changes -->
+        <!-- Alert chip: margin at risk (lifecycle moment moved into state strip below) -->
         <div class="alert-chips" role="region" aria-label="Budget alerts">
           <button class="chip-alert is-danger" type="button">
             <span class="mark"><svg><use href="#i-alert-triangle"/></svg></span>
             <span class="body"><strong>Margin at risk</strong> <span class="sep">&middot;</span> <strong>6%</strong> vs <strong>18%</strong></span>
             <svg class="arrow"><use href="#i-arrow-right"/></svg>
           </button>
-
-          <button class="chip-alert is-warn" type="button">
-            <span class="mark"><svg><use href="#i-shuffle"/></svg></span>
-            <span class="body"><strong>2 unsent scope changes</strong> since v2 <span class="sep">&middot;</span> <span class="amt">+$3,200</span></span>
-            <svg class="arrow"><use href="#i-arrow-right"/></svg>
-          </button>
         </div>
 
-        <!-- Signed-estimate calm banner -->
+        <!-- State strip — pending re-approval (2 unsent changes after signed v3) -->
+        <div class="state-strip is-pending" role="region" aria-label="Budget approval state">
+          <span class="ss-mark" aria-hidden="true">&#10022;</span>
+          <span class="ss-body">
+            <strong>2 unsent changes</strong> since v3 <span class="sep">&middot;</span>
+            <span class="amt">+$3,200</span> <span class="sep">&middot;</span>
+            send revised baseline to Daniel &amp; Priya for re-approval
+          </span>
+          <span class="ss-actions">
+            <button class="btn btn-ghost btn-sm" type="button" title="Daniel verbally agreed — record approval">Mark approved</button>
+            <button class="btn btn-ghost btn-sm" type="button" title="Customer pushed back — record decline">Mark declined</button>
+            <span class="ss-divider" aria-hidden="true"></span>
+            <button class="btn btn-rust btn-sm" type="button">
+              <svg class="icon"><use href="#i-send"/></svg>
+              Preview &amp; send
+            </button>
+          </span>
+        </div>
+
+        <!-- Signed-estimate historical baseline -->
         <div class="signed-banner">
           <span class="signed-mark"><svg><use href="#i-check"/></svg></span>
           <span><strong>Estimate signed</strong> by Daniel &amp; Priya Mohan, Mar 1 <span class="sep">&middot;</span> 2 applied change orders <span class="sep">&middot;</span> contract baseline</span>
@@ -990,7 +1088,8 @@
             <span class="scope-meta">Sections collapse for scan</span>
             <div class="scope-actions">
               <button class="icon-btn" aria-label="Filter"><svg><use href="#i-filter"/></svg></button>
-              <button class="icon-btn" aria-label="Collapse all"><svg><use href="#i-collapse-all"/></svg></button>
+              <button class="icon-btn" aria-label="Expand all sections" title="Expand all"><svg><use href="#i-expand-all"/></svg></button>
+              <button class="icon-btn" aria-label="Collapse all sections" title="Collapse all"><svg><use href="#i-collapse-all"/></svg></button>
             </div>
           </div>
 
