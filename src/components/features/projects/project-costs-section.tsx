@@ -126,6 +126,28 @@ function displayToCents(val: string) {
   return Math.round(parseFloat(val || '0') * 100);
 }
 
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+/** Format a date-only `YYYY-MM-DD` as "Apr 28". Parses the parts directly —
+ *  no Date/tz, so a date-only value never shifts across timezones. */
+function fmtShortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return `${SHORT_MONTHS[Number(m[2]) - 1] ?? m[2]} ${Number(m[3])}`;
+}
+
 const STATUS_LABEL: Record<CostStatusKey, string> = {
   paid_receipt: 'Paid receipt',
   bill_unpaid: 'Vendor bill • Unpaid',
@@ -136,7 +158,7 @@ function CostStatusBadge({ status }: { status: CostStatusKey }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+        'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
         statusToneClass[projectCostStatusTone[status]],
       )}
     >
@@ -1024,7 +1046,9 @@ export function ProjectCostsSection({
             <tbody>
               {filtered.map((r) => (
                 <tr key={`${r.kind}:${r.id}`} className="border-b last:border-0">
-                  <td className="px-3 py-2 text-muted-foreground tabular-nums">{r.cost_date}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-muted-foreground tabular-nums">
+                    {fmtShortDate(r.cost_date)}
+                  </td>
                   <td className="px-3 py-2 font-medium">
                     <div className="flex items-center gap-1.5">
                       {r.attachment_url && (
