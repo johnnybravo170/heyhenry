@@ -31,8 +31,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Money } from '@/components/ui/money';
 import type { PaymentSourceLite } from '@/lib/db/queries/payment-sources';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import { compressReceiptIfImage, withTimeout } from '@/lib/storage/resize-image';
 import {
   type CategoryPickerOptionLite,
@@ -419,7 +419,8 @@ function ProcessingStage({
                 </span>
               ) : (
                 <span className="shrink-0 text-muted-foreground tabular-nums">
-                  {r.vendor ?? '—'} · {r.amountCents !== null ? formatCurrency(r.amountCents) : '—'}
+                  {r.vendor ?? '—'} ·{' '}
+                  {r.amountCents !== null ? <Money cents={r.amountCents} /> : '—'}
                 </span>
               )}
             </li>
