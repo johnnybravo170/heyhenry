@@ -12,19 +12,23 @@
  * surfaces things to consider, never commands). One failing source hides
  * only its own rule rather than taking down the strip.
  *
- * Consumed by `HenryInsightStrip` on the Overview tab. The per-tab nav
- * badges (`getProjectTabAlerts`) currently compute independently; unifying
- * them onto this set so the counts can't drift is a tracked follow-up
- * (see docs/ux/briefs/overview.md §"Alert-surfacing model"). `owningTab`
- * is seeded here to make that bucketing trivial.
+ * This is the single shared source for the Overview "Needs You" strip AND
+ * the per-tab nav badges + mobile `<select>` per-option counts: the badges
+ * derive from this set bucketed by `owningTab` (`getProjectTabAlerts` →
+ * `bucketInsightsByWorkTab`), so the strip total and the badges can't drift
+ * (see docs/ux/briefs/overview.md §"Alert-surfacing model"). Request-deduped
+ * via React `cache()` so the fan-out runs once per hub load.
  *
  * Not yet wired (sources not available):
  *   - `ready_to_bill` — needs a "next available draw" signal beyond
  *     `getProjectDrawSummary` (which only sums sent/paid draws).
  */
 
+import { cache } from 'react';
+import { getCurrentTenant } from '@/lib/auth/helpers';
 import { isOverdue } from '@/lib/invoices/ar';
 import { formatCurrency } from '@/lib/pricing/calculator';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getVarianceReport } from './cost-lines';
 import { getBudgetVsActual } from './project-budget-categories';
@@ -48,6 +52,8 @@ export type ProjectInsight = {
     | 'section_over_budget'
     | 'client_message'
     | 'unpaid_bills'
+    | 'worker_invoice_approvals'
+    | 'pending_subquote'
     | 'schedule_slip'
     | 'section_under_budget'
     | 'on_track';
@@ -79,11 +85,30 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
  * Compute the project's ranked insight set. Returns ALL candidates ordered
  * by descending severity (the strip caps display at ~4 + "+N more"). When
  * nothing is actionable, returns a single calm `on_track` line.
+ *
+ * `cache()`-wrapped below as `getProjectInsights` — the Overview strip AND
+ * the per-tab nav-badge derivation (`getProjectTabAlerts`) both consume this
+ * on a single hub load, so the wrapper dedupes the whole query fan-out to one
+ * computation per request rather than running every source twice.
  */
-export async function getProjectInsights(projectId: string): Promise<ProjectInsight[]> {
+async function getProjectInsightsUncached(projectId: string): Promise<ProjectInsight[]> {
   const supabase = await createClient();
+  // Worker invoices are read via the admin client (RLS isn't wired for
+  // owner-side reads), so scope explicitly by tenant + project — mirrors
+  // the previous independent badge logic in project-tab-alerts.
+  const tenantId = (await safe(() => getCurrentTenant(), null))?.id ?? null;
 
-  const [variance, diff, budget, slip, overdueDraws, unpaidBills, unread] = await Promise.all([
+  const [
+    variance,
+    diff,
+    budget,
+    slip,
+    overdueDraws,
+    unpaidBills,
+    workerInvoiceApprovals,
+    pendingSubquotes,
+    unread,
+  ] = await Promise.all([
     safe(() => getVarianceReport(projectId), null),
     safe(() => getUnsentDiff(projectId), null),
     safe(() => getBudgetVsActual(projectId), null),
@@ -116,6 +141,31 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
         .eq('source_type', 'vendor_bill')
         .eq('status', 'active')
         .eq('payment_status', 'unpaid');
+      return count ?? 0;
+    }, 0),
+
+    // Worker invoices submitted but not yet approved → Labour tab. Read via
+    // the admin client scoped by tenant + project (RLS isn't wired for
+    // owner-side reads). 0 if the tenant couldn't be resolved.
+    safe(async () => {
+      if (!tenantId) return 0;
+      const admin = createAdminClient();
+      const { count } = await admin
+        .from('worker_invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('project_id', projectId)
+        .eq('status', 'submitted');
+      return count ?? 0;
+    }, 0),
+
+    // Vendor sub-quotes awaiting operator review → Spend tab.
+    safe(async () => {
+      const { count } = await supabase
+        .from('project_sub_quotes')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .eq('status', 'pending_review');
       return count ?? 0;
     }, 0),
 
@@ -238,7 +288,33 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
     });
   }
 
-  // 7. Unpaid vendor bills on the Spend tab.
+  // 7. Worker invoices awaiting approval → Labour tab.
+  if (workerInvoiceApprovals > 0) {
+    candidates.push({
+      kind: 'worker_invoice_approvals',
+      message: `${workerInvoiceApprovals} worker ${workerInvoiceApprovals === 1 ? 'invoice' : 'invoices'} to approve.`,
+      href: '?tab=time',
+      cta: 'Open Labour',
+      owningTab: 'time',
+      priority: 58,
+      tone: 'warning',
+    });
+  }
+
+  // 8. Vendor sub-quotes awaiting review → Spend tab.
+  if (pendingSubquotes > 0) {
+    candidates.push({
+      kind: 'pending_subquote',
+      message: `${pendingSubquotes} vendor ${pendingSubquotes === 1 ? 'quote' : 'quotes'} to review.`,
+      href: '?tab=costs',
+      cta: 'Open Spend',
+      owningTab: 'costs',
+      priority: 52,
+      tone: 'info',
+    });
+  }
+
+  // 9. Unpaid vendor bills on the Spend tab.
   if (unpaidBills > 0) {
     candidates.push({
       kind: 'unpaid_bills',
@@ -251,7 +327,7 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
     });
   }
 
-  // 8. Sections substantially under budget and mostly spent — a positive
+  // 10. Sections substantially under budget and mostly spent — a positive
   //    "good time to lock this in" read. Informational (no owning tab).
   if (budget) {
     for (const line of budget.lines) {
@@ -268,7 +344,7 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
     }
   }
 
-  // 9. All-on-track fallback — a single calm line so the strip never
+  // 11. All-on-track fallback — a single calm line so the strip never
   //    looks "missing". Only when nothing actionable surfaced.
   const actionable = candidates.some((c) => c.owningTab);
   if (!actionable) {
@@ -281,4 +357,40 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
   }
 
   return candidates.sort((a, b) => b.priority - a.priority);
+}
+
+/**
+ * Request-deduped insight set. The Overview strip and the per-tab nav-badge
+ * derivation both call this on one hub load; `cache()` collapses them to a
+ * single fan-out per request.
+ */
+export const getProjectInsights = cache(getProjectInsightsUncached);
+
+/** The five primary work tabs that carry a count badge in the Project Hub
+ *  nav. `client` is intentionally excluded — its badge is an unread
+ *  item-count, not an issue-type count (see project-tab-alerts). */
+export const WORK_TAB_KEYS = ['budget', 'costs', 'time', 'schedule', 'invoices'] as const;
+export type WorkTabKey = (typeof WORK_TAB_KEYS)[number];
+
+/**
+ * Bucket an insight set into per-work-tab issue-TYPE counts: each actionable
+ * insight owned by a work tab counts as 1 for that tab (an `overdue_draw`
+ * row = 1 even if 2 draws are overdue). Pure + DB-free so it's unit-testable
+ * and so the strip total and the badges derive from one shared set and can't
+ * drift. The `client` owning tab is excluded — its badge is a separate
+ * unread item-count affordance.
+ */
+export function bucketInsightsByWorkTab(insights: ProjectInsight[]): Record<WorkTabKey, number> {
+  const counts: Record<WorkTabKey, number> = {
+    budget: 0,
+    costs: 0,
+    time: 0,
+    schedule: 0,
+    invoices: 0,
+  };
+  for (const insight of insights) {
+    const tab = insight.owningTab;
+    if (tab && tab !== 'client') counts[tab] += 1;
+  }
+  return counts;
 }
