@@ -89,6 +89,25 @@ Estimate authoring is **"thinking work" → desktop-primary** (Project Hub spec)
 ## Visual identity
 Deepened **Paper** palette: warm paper field, white cards/table that float, **solid warm hairlines** (no zebra), near-black ink. **Collapse to three type sizes (16/14/12)** + the 4-step ink ramp for hierarchy — the current table runs ~6 sizes (9/10/11/12/13/14px), which the clarity discipline forbids. **Color is reserved for action:** **rust is the single accent** (the primary Send/CTA + Henry action buttons); move the raw `red-600` / `amber-600` / `blue-100` over/projected/CO colors onto **`status-tokens.ts` soft pairs** (over = danger-soft, projected-over = warn-soft, CO chip = info-soft). Progress bars in token colors, not `gray-200`/`green-500`. Mono-uppercase eyebrows for column heads + "SECTION" labels. Money right-aligned, tabular, de-emph cents. The **estimate state chip** via `status-tokens.ts`.
 
+## Subscreen inventory
+The Budget table's **authoring** face. Subscreens spec inline; the public approval page graduates (a Public-pages screen — `research-0523`'s menu).
+
+**Modals / dialogs**
+- **Cost-line form** (`cost-line-form`) — add/edit a budget line: category · qty · unit cost/price · markup · notes · **reference-photo strip** (attach/remove `project_cost_lines.photo_storage_paths`).
+- **Estimate terms editor** (`estimate-terms-editor`) — payment terms / notes.
+- **Customer-view picker** (`estimate-customer-view-picker`) — lump-sum / sections / categories / detailed (how much the client sees; never margin).
+- **Starter-template picker** (`starter-template-picker`) — seed cost lines from a project-type template.
+
+**Sub-flows**
+- **Generate estimate from categories** — seed cost lines from category estimates → switch to the table.
+- **Send for approval** — emails the client a link to `/estimate/[code]`; on approval the **Project auto-creates** (locked convention). Preview before send (human-in-the-loop).
+
+**Expansion / disclosure**
+- Category → line in the one aligned grid; per-line inline edit (Enter/Esc/blur, §4). Management-fee + billing-mode editors inline (also in the Details card).
+
+**Sub-routes (graduate → Public pages, `research-0523`)**
+- `/estimate/[code]` — public estimate approval (customer-facing, GC brand). Cross-reference; not a Budget-tab subscreen.
+
 ## Accessibility
 WCAG 2.2 AA: near-black ink on white (~16:1); never color-only for over-budget/CO/status (pair with label/icon — `status-tokens.ts` icons already do this); inline edits keep the §4 keyboard contract + visible focus ring; drag-reorder has the existing keyboard sensor — keep; the typed-name e-signature input is labeled + required; ≥44px targets on mobile send/approve.
 

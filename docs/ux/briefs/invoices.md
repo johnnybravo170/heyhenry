@@ -82,6 +82,26 @@ Deepened **Paper** palette: white card table on paper, solid warm hairlines, ink
 
 **Henry prompts** carry consistent *chrome* — the ✦ **"HENRY"** label + a thin **rust left-border** + **rust reserved for the action button** ("Bill draw — $18,000"). The **fill reflects the prompt's meaning**: a **ready-to-bill** prompt (like this one) uses the **rust-soft peach `#FEF0E3`**, matched *exactly* to the Ready-to-bill cockpit card + chip so the "ready to bill" language reads as one warm family; a generic heads-up (e.g. the **Contacts duplicate banner**) stays **neutral/white**. **Never a danger-red fill** (`#FEE2E2`) on a *positive* nudge — red codes as an alarm. So: peach here (it's ready-to-bill), white on the dedupe banner; rust always on the action, never the container.
 
+## Subscreen inventory
+The Billing/AR list. One heavy subscreen **graduates to its own row/brief**.
+
+**Graduate → its own brief (flag for a new pipeline row)**
+- **`/invoices/[id]`** — the invoice **detail / draft** page: line editing · note · payment terms · the **customer-view override editor** (`invoice-overrides-editor` — §25 live "what the client sees" preview: lump-sum / sections / categories / detailed + mgmt-fee-inline toggle) · send · mark-paid. Substantial enough to be its own screen (vault plan: "Invoice customer-view preview screen").
+
+**Modals / dialogs**
+- **Record-payment** (`record-payment-dialog`, §19) — mark a draw/invoice paid: amount · method (**Interac at parity with card**) · date.
+
+**Sub-flows**
+- **New draw / milestone** — `Draw #N` default → `createMilestoneInvoiceAction` (live GST preview); **Invoice full estimate** (gated on approved); **Generate final** (cost-plus vs fixed).
+- **AR follow-up** — the `lib/ar/*` chase engine; overdue = `sent` > 14d.
+- **`/invoices/import`** — QBO import (V1 import-only).
+
+**Expansion / disclosure**
+- Project-grouped rows expand to their draws / invoices; per-row status + "Drawn to date $X of $Y".
+
+**Sub-routes (graduate → Public pages, `research-0523`)**
+- `/view/invoice/[id]` — public customer invoice view + pay surface.
+
 ## Accessibility
 WCAG 2.2 AA: near-black ink on white; never color-only for status/overdue (pair danger with a label + age); expand/collapse is keyboard-operable with proper `aria-expanded`; rows/links have focus order; ≥44px hit targets for Mark paid / Send reminder / Bill draw on mobile; cockpit numbers reachable and the Overdue / Ready-to-bill figures are real buttons (jump to their filtered view).
 

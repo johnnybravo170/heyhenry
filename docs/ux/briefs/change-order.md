@@ -72,6 +72,23 @@ A real per-project picture is missing: the in-hub "Change Orders" tab folded int
 ## Visual identity
 Deepened **Paper**; white cards on warm paper; solid hairlines; near-black ink. **Three type sizes (16/14/12)** + the ink ramp. **Lifecycle status via `status-tokens.ts`** (`changeOrderStatusTone`: draft=neutral, pending=warning, approved=success, declined/voided=danger/neutral, with icons). The **diff-action palette** (add/modify/remove/envelope) is a *separate, intentional* semantic system — one tone each, token-sourced, label+glyph paired (never color-only), used identically in the editor and the public diff view. **Rust is the single accent** (primary CTA + Henry actions). **Henry chrome** with the fill-reflects-meaning rule (peach = draft-ready / ready-to-bill, warn-soft = margin caution, never danger-red on a positive). Money right-aligned, tabular, de-emph cents.
 
+## Subscreen inventory
+Subscreens spec inline; the public approval page graduates (Public-pages menu).
+
+**Modals / dialogs / routes**
+- **Change-order editor** (`change-order-form`; route `/projects/[id]/change-orders/new`) — line items · why-explanation · photos. Create draft → optionally send.
+- **CO-from-diff** (`change-order-diff-form`) — build a CO from the unsent scope diff (`createChangeOrderFromUnsentDiffAction`), entered from the Budget scope-diff review.
+
+**Sub-flows**
+- **Send CO** — generate `approval_code` → email the client → `/approve/[code]` (public approval, photo proof). Preview before send. On approval: updates Project budget + schedule; **does NOT auto-bill** (locked) — available for a later owner-initiated invoice.
+- **Voice/photo CO drafting** (open dev card) — Henry drafts a CO from a voice note + photos → review (future).
+
+**Expansion / disclosure**
+- CO list + per-CO line items; status (draft / sent / approved / declined) via `status-tokens`; applied-CO contributions surface on Budget.
+
+**Sub-routes (graduate → Public pages, `research-0523`)**
+- `/approve/[code]` — public CO approval (customer-facing).
+
 ## Accessibility
 WCAG 2.2 AA: near-black ink on white; **never colour-only** for diff actions or status (pair with label + glyph — the public diff view already labels Action); typed-name e-signature input labeled + required; the live total-delta announces changes; ≥44px targets on mobile capture/approve; realtime status changes announced politely.
 
