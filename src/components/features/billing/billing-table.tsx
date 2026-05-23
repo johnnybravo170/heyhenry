@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Money } from '@/components/ui/money';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { BillingInvoice, BillingProjectPosition } from '@/lib/db/queries/billing';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import { BillingStatusBadge } from './billing-status-badge';
 import { DrawReminder } from './draw-reminder';
@@ -307,11 +308,7 @@ function RollupChip({ p }: { p: BillingProjectPosition }) {
   const base =
     'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums';
   if (p.overdue_count > 0) {
-    return (
-      <span className={cn(base, 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300')}>
-        {p.overdue_count} overdue
-      </span>
-    );
+    return <span className={cn(base, statusToneClass.danger)}>{p.overdue_count} overdue</span>;
   }
   if (p.ready_to_bill) {
     return (
@@ -322,27 +319,16 @@ function RollupChip({ p }: { p: BillingProjectPosition }) {
   }
   if (p.outstanding_cents > 0) {
     return (
-      <span
-        className={cn(base, 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300')}
-      >
+      <span className={cn(base, statusToneClass.info)}>
         {dollars(p.outstanding_cents)} outstanding
       </span>
     );
   }
   if (p.billed_cents > 0 && (p.remaining_cents === null || p.remaining_cents <= 0)) {
-    return (
-      <span
-        className={cn(
-          base,
-          'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-        )}
-      >
-        Paid in full
-      </span>
-    );
+    return <span className={cn(base, statusToneClass.success)}>Paid in full</span>;
   }
   if (p.invoices.some((i) => i.status === 'draft')) {
-    return <span className={cn(base, 'bg-muted text-muted-foreground')}>Draft</span>;
+    return <span className={cn(base, statusToneClass.neutral)}>Draft</span>;
   }
   return null;
 }

@@ -101,7 +101,7 @@ export default async function ContactsPage({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
+          <h1 className="text-[28px] font-bold tracking-tight">Contacts</h1>
           <p className="text-sm text-muted-foreground">
             {!hasFilters && grandTotal === 0
               ? 'Nobody in the system yet.'
@@ -129,10 +129,19 @@ export default async function ContactsPage({
       {showingCount === 0 ? (
         <CustomerEmptyState variant={hasFilters ? 'filtered' : 'fresh'} />
       ) : (
-        <>
-          <CustomerTable customers={rows} nowMs={nowMs} />
-          <ContactsPager page={page} pageSize={PAGE_SIZE} total={grandTotal} />
-        </>
+        <CustomerTable
+          customers={rows}
+          nowMs={nowMs}
+          footer={
+            <ContactsPager
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={grandTotal}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+            />
+          }
+        />
       )}
     </div>
   );

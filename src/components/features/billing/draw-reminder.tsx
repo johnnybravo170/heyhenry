@@ -17,7 +17,7 @@
  * per-invoice reminder log that doesn't exist yet (deferred).
  */
 
-import { Bell, Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Send } from 'lucide-react';
 import { useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -86,7 +86,7 @@ export function DrawReminder({
       {pending ? (
         <Loader2 className="size-3 animate-spin" aria-hidden />
       ) : (
-        <Bell className="size-3" aria-hidden />
+        <Send className="size-3" aria-hidden />
       )}
       Send reminder
     </Button>

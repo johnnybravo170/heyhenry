@@ -12,12 +12,13 @@
 import { ChevronDown, ChevronsUpDown, ChevronUp, MapPin, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
+import { type ReactNode, useTransition } from 'react';
 import { CloneProjectDialog } from '@/components/features/projects/clone-project-dialog';
 import { ProjectNameEditor } from '@/components/features/projects/project-name-editor';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { ProjectListSort } from '@/lib/db/queries/projects';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import type { LifecycleStage } from '@/lib/validators/project';
 
@@ -42,20 +43,35 @@ function daysSince(iso: string, nowMs: number): number {
   return Math.max(0, Math.floor((nowMs - then) / 86_400_000));
 }
 
-/** Progress cell: one % complete; over-budget rows demote the % and lead with the flag. */
+/** Progress cell: one % complete + a mini bar; over-budget rows lead with the flag. */
 function Progress({ pct, overBudget }: { pct: number; overBudget: boolean }) {
-  if (overBudget) {
-    return (
-      <span className="inline-flex items-center gap-2 whitespace-nowrap">
-        <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+  const width = `${Math.min(100, Math.max(0, pct))}%`;
+  return (
+    <span className="inline-flex flex-col items-end gap-1">
+      {overBudget ? (
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+            statusToneClass.danger,
+          )}
+        >
           <TriangleAlert className="size-3" aria-hidden />
           Over budget
         </span>
-        <span className="text-xs text-muted-foreground tabular-nums">{pct}%</span>
+      ) : null}
+      <span
+        className={cn('tabular-nums', overBudget ? 'text-xs text-muted-foreground' : undefined)}
+      >
+        {pct}%
       </span>
-    );
-  }
-  return <span className="tabular-nums">{pct}%</span>;
+      <span className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+        <span
+          className={cn('block h-full rounded-full', overBudget ? 'bg-[#B91C1C]' : 'bg-foreground')}
+          style={{ width }}
+        />
+      </span>
+    </span>
+  );
 }
 
 export function ProjectsTable({
@@ -64,6 +80,7 @@ export function ProjectsTable({
   dir,
   nowMs,
   customerOptions,
+  footer,
 }: {
   projects: ProjectRow[];
   sort: ProjectListSort;
@@ -71,6 +88,8 @@ export function ProjectsTable({
   /** Server-stable timestamp for "sent Nd ago" (avoids hydration drift). */
   nowMs: number;
   customerOptions: CustomerOption[];
+  /** Card footer row (pager + range count) rendered inside the table card. */
+  footer?: ReactNode;
 }) {
   const tz = useTenantTimezone();
   const router = useRouter();
@@ -108,81 +127,90 @@ export function ProjectsTable({
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b">
-              <SortHeader
-                label="Project"
-                sortKey="name"
-                sort={sort}
-                dir={dir}
-                onClick={navigateSort}
-              />
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Customer</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-              <SortHeader
-                label="Start"
-                sortKey="start"
-                sort={sort}
-                dir={dir}
-                onClick={navigateSort}
-              />
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">% complete</th>
-              <th className="w-px px-2 py-3" aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((p) => {
-              const cue = sentCue(p);
-              return (
-                <tr key={p.id} className="group border-b last:border-0 hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-1">
-                      <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
-                        {p.name}
-                      </Link>
-                      <ProjectNameEditor projectId={p.id} name={p.name} variant="inline" />
-                    </span>
-                    {p.region ? (
-                      <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="size-3" aria-hidden />
-                        {p.region}
+      <div className="hidden rounded-xl border bg-card md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <SortHeader
+                  label="Project"
+                  sortKey="name"
+                  sort={sort}
+                  dir={dir}
+                  onClick={navigateSort}
+                />
+                <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Customer
+                </th>
+                <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Status
+                </th>
+                <SortHeader
+                  label="Start"
+                  sortKey="start"
+                  sort={sort}
+                  dir={dir}
+                  onClick={navigateSort}
+                />
+                <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  % complete
+                </th>
+                <th className="w-px px-2 py-3" aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((p) => {
+                const cue = sentCue(p);
+                return (
+                  <tr key={p.id} className="group border-b last:border-0 hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1">
+                        <Link href={`/projects/${p.id}`} className="font-bold hover:underline">
+                          {p.name}
+                        </Link>
+                        <ProjectNameEditor projectId={p.id} name={p.name} variant="inline" />
                       </span>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {p.customer ? (
-                      <Link href={`/contacts/${p.customer.id}`} className="hover:underline">
-                        {p.customer.name}
-                      </Link>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col items-start gap-1">
-                      <ProjectStatusBadge stage={p.lifecycle_stage} />
-                      {cue ? <span className="text-xs text-muted-foreground">{cue}</span> : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{startLabel(p.start_date)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Progress pct={p.work_status_pct} overBudget={p.over_budget} />
-                  </td>
-                  <td className="px-2 py-3 text-right">
-                    <CloneProjectDialog
-                      projectId={p.id}
-                      projectName={p.name}
-                      defaultCustomerId={p.customer?.id ?? null}
-                      customers={customerOptions}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                      {p.region ? (
+                        <span className="mt-0.5 flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                          <MapPin className="size-3" aria-hidden />
+                          {p.region}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {p.customer ? (
+                        <Link href={`/contacts/${p.customer.id}`} className="hover:underline">
+                          {p.customer.name}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col items-start gap-1">
+                        <ProjectStatusBadge stage={p.lifecycle_stage} />
+                        {cue ? <span className="text-xs text-muted-foreground">{cue}</span> : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{startLabel(p.start_date)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Progress pct={p.work_status_pct} overBudget={p.over_budget} />
+                    </td>
+                    <td className="px-2 py-3 text-right">
+                      <CloneProjectDialog
+                        projectId={p.id}
+                        projectName={p.name}
+                        defaultCustomerId={p.customer?.id ?? null}
+                        customers={customerOptions}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {footer}
       </div>
 
       {/* Mobile cards */}
@@ -243,12 +271,12 @@ function SortHeader({
   const isActive = sort === sortKey;
   const Icon = !isActive ? ChevronsUpDown : dir === 'asc' ? ChevronUp : ChevronDown;
   return (
-    <th className="px-4 py-3 text-left font-medium">
+    <th className="px-4 py-3 text-left">
       <button
         type="button"
         onClick={() => onClick(sortKey)}
         className={cn(
-          'inline-flex items-center gap-1 hover:text-foreground',
+          'inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide hover:text-foreground',
           isActive ? 'text-foreground' : 'text-muted-foreground',
         )}
       >

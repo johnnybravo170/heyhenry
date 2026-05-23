@@ -115,14 +115,14 @@ export function CustomerSearchBar({
       <div className="relative flex items-center">
         <Search
           aria-hidden
-          className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
+          className="pointer-events-none absolute left-3 size-[15px] text-muted-foreground"
         />
         <Input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, email, phone, or city…"
-          className="h-9 w-full pl-9 pr-9"
+          className="h-11 w-full pl-9 pr-9"
           aria-label="Search contacts"
         />
         {query ? (
@@ -159,7 +159,7 @@ export function CustomerSearchBar({
 
       {/* Desktop: inline chips */}
       <div className="hidden flex-wrap items-center gap-2 md:flex">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Kind:
         </span>
         <FilterChip
@@ -198,7 +198,7 @@ export function CustomerSearchBar({
             ))}
           </select>
           <div className="hidden flex-wrap items-center gap-2 md:flex">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Type:
             </span>
             <FilterChip
@@ -236,11 +236,14 @@ function FilterChip({
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <Button
-      variant={active ? 'secondary' : 'outline'}
+      variant="outline"
       size="xs"
       onClick={onClick}
       aria-pressed={active}
-      className={cn(active && 'ring-1 ring-primary/20')}
+      className={cn(
+        active &&
+          'border-transparent bg-foreground text-background hover:bg-foreground hover:text-background',
+      )}
       {...rest}
     >
       {label}
