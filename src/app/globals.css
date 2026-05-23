@@ -41,6 +41,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-chrome: var(--chrome);
+  --color-paper-soft: var(--paper-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -76,6 +78,8 @@
   --ring: #0a0a0a; /* focus ring is ink (applied at /50 in base layer) */
   --brand: #c2410c; /* rust accent — use sparingly via bg-brand/text-brand */
   --brand-foreground: #ffffff;
+  --chrome: #f7f1e6; /* nav/header chrome — lighter than body paper */
+  --paper-soft: #fbf6ec; /* softest paper tint — inset fills, card feet */
   --chart-1: #c2410c; /* rust */
   --chart-2: #1e40af; /* blue */
   --chart-3: #15803d; /* green */
@@ -113,6 +117,8 @@
   --ring: oklch(0.556 0 0);
   --brand: #c2410c; /* rust — light + dark share the accent for now (dark palette TBD) */
   --brand-foreground: #ffffff;
+  --chrome: oklch(0.205 0 0); /* dark chrome shares card surface (worker app is light-only) */
+  --paper-soft: oklch(0.225 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
