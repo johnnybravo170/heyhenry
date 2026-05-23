@@ -52,7 +52,7 @@ function Reach({ customer }: { customer: ContactRow }) {
       {customer.phone ? (
         <a
           href={telHref(customer.phone)}
-          className="relative z-10 w-fit font-medium tabular-nums hover:underline"
+          className="relative z-10 w-fit font-semibold tabular-nums text-foreground hover:underline"
         >
           {formatPhone(customer.phone)}
         </a>
@@ -118,7 +118,7 @@ function Signal({
         key: 'ar',
         node: (
           <>
-            <Money cents={signal.arDueCents} emphasis /> due
+            <Money cents={signal.arDueCents} emphasis className="font-semibold" /> due
           </>
         ),
       });
@@ -192,10 +192,10 @@ export function CustomerTable({
                 <TableCell className="align-top">
                   <CustomerTypeBadge type={customer.type} kind={customer.kind} withSubtype />
                 </TableCell>
-                <TableCell className="align-top font-medium">
+                <TableCell className="align-top">
                   <Link
                     href={`/contacts/${customer.id}`}
-                    className="text-foreground after:absolute after:inset-0 after:rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:underline"
+                    className="text-base font-bold text-foreground after:absolute after:inset-0 after:rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:underline"
                   >
                     {customer.name}
                   </Link>

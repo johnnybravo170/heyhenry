@@ -56,6 +56,29 @@ type Expense = {
 
 type CostLineSummary = { id: string; label: string; budget_category_id: string | null };
 
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+/** Format a date-only `YYYY-MM-DD` as "May 19". Parses the parts directly —
+ *  no Date/Intl, so a date-only value never shifts across timezones (and
+ *  doesn't trip the bare-toLocale lint). */
+function fmtShortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return `${SHORT_MONTHS[Number(m[2]) - 1] ?? m[2]} ${Number(m[3])}`;
+}
+
 function TimeForm({
   projectId,
   categories,
@@ -695,23 +718,46 @@ export function TimeExpenseTab({
               </thead>
               <tbody>
                 {filteredTime.map((entry) => {
-                  // Show the deepest available allocation: line item if
-                  // tagged, otherwise category. Implicit hierarchy — a
-                  // tagged line item already belongs to a category, so
-                  // showing the line alone is informative.
-                  const allocation = entry.cost_line_label ?? entry.budget_category_name ?? null;
+                  // OD `.cell-alloc`: category in semibold foreground, then a
+                  // `›` chevron to the cost-line label when one is tagged.
+                  // Implicit hierarchy — a tagged line already belongs to a
+                  // category, so category + line reads the full path.
+                  const categoryName = entry.budget_category_name;
+                  const lineLabel = entry.cost_line_label;
                   const rateCents = entry.hourly_rate_cents;
                   const billedCents = Math.round(Number(entry.hours) * (rateCents ?? 0));
                   return (
                     <tr key={entry.id} className="border-b last:border-0">
-                      <td className="px-3 py-2">{entry.entry_date}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                        {fmtShortDate(entry.entry_date)}
+                      </td>
                       <td className="px-3 py-2">{entry.worker_name ?? 'Owner/admin'}</td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {allocation ?? <span className="italic">unallocated</span>}
+                      <td className="px-3 py-2">
+                        {categoryName || lineLabel ? (
+                          <span>
+                            <span className="font-semibold text-foreground">
+                              {categoryName ?? lineLabel}
+                            </span>
+                            {categoryName && lineLabel ? (
+                              <>
+                                <span className="mx-1 text-muted-foreground/60">›</span>
+                                <span>{lineLabel}</span>
+                              </>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span className="italic text-muted-foreground">unallocated</span>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{Number(entry.hours)}h</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">
-                        {rateCents != null ? <Money cents={rateCents} /> : '—'}
+                        {rateCents != null ? (
+                          <>
+                            <Money cents={rateCents} /> / h
+                          </>
+                        ) : (
+                          '—'
+                        )}
                       </td>
                       <td className="px-3 py-2 text-right">
                         {billedCents > 0 ? <Money cents={billedCents} emphasis /> : '—'}

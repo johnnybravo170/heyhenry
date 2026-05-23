@@ -252,7 +252,10 @@ function FilterChip({
         // stays the kind label ("Customer"), not "Customer 8".
         <span
           aria-hidden
-          className={cn('ml-1 tabular-nums', active ? 'opacity-70' : 'text-muted-foreground')}
+          className={cn(
+            'ml-1 font-mono text-[11px] tabular-nums',
+            active ? 'opacity-70' : 'text-muted-foreground',
+          )}
         >
           {count}
         </span>
