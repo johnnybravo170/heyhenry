@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Worker app /w — HeyHenry (desktop fallback)</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* Worker app is a phone surface — desktop is incidental. This page
+     exists so a reviewer who lands on /w on a laptop sees the right
+     framing (and a mirror of mobile.html), not a stretched-out shell.
+     Same Paper tokens + strict 16 / 14 / 12 + 11mono. */
+  :root {
+    --bg:         #F3EBDB;
+    --chrome:     #F7F1E6;
+    --card:       #FFFFFF;
+    --paper-soft: #FBF6EC;
+    --chip-fill:  #ECE3D0;
+    --ink:        #0A0A0A;
+    --ink-2:      #2A2A2A;
+    --muted:      #57534B;
+    --faint:      #8C8478;
+    --hair:       #DDD0B6;
+    --rule:       #C9BB9D;
+    --rust:       #C2410C;
+    --rust-soft:  #FEF0E3;
+    --info:       #1E40AF;  --info-soft:  #E6EDFA;
+    --warn:       #B45309;  --warn-soft:  #FEF3C7;
+    --ok:         #15803D;  --ok-soft:    #DCFCE7;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #EFE5D0;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    line-height: 1.55;
+    font-feature-settings: 'cv11', 'ss01';
+    min-height: 100vh;
+  }
+  a { color: inherit; }
+  .mono { font-family: var(--mono); }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 56px 32px 80px;
+    display: grid;
+    grid-template-columns: 1fr 390px;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .pitch h1 {
+    margin: 0 0 14px;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  .pitch h1 .mono {
+    font-size: 16px;
+    color: var(--rust);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    vertical-align: 0.18em;
+  }
+  .pitch .lede {
+    margin: 0 0 24px;
+    font-size: 16px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    max-width: 60ch;
+  }
+  .pitch .lede b { color: var(--ink); font-weight: 700; }
+
+  .why {
+    margin: 0 0 28px;
+    padding: 18px 20px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+  }
+  .why .eye {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .why p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+
+  .pillars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 0 0 28px;
+  }
+  .pillar {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .pillar .num {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .pillar h3 {
+    margin: 8px 0 6px;
+    font-size: 16px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .pillar p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .pillar p b { color: var(--ink-2); font-weight: 700; }
+
+  .hard-edges {
+    margin: 0 0 28px;
+    padding: 18px 20px;
+    background: var(--paper-soft);
+    border: 1px dashed var(--rule);
+    border-radius: 14px;
+  }
+  .hard-edges .eye {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hard-edges h3 {
+    margin: 6px 0 10px;
+    font-size: 14px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .hard-edges ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.7;
+  }
+  .hard-edges ul li b { color: var(--ink); font-weight: 700; }
+
+  .cta-row {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .cta-row a {
+    height: 48px;
+    padding: 0 18px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 14px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none;
+    letter-spacing: -0.005em;
+  }
+  .cta-row a.is-quiet {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+  }
+  .cta-row svg { width: 16px; height: 16px; }
+
+  /* Embedded phone mirror */
+  .mirror {
+    position: sticky;
+    top: 32px;
+  }
+  .mirror .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mirror .label .dot {
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: var(--rust);
+  }
+
+  .phone {
+    width: 390px;
+    border-radius: 44px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 22px 60px rgba(10, 10, 10, 0.18);
+    position: relative;
+  }
+  .phone-screen {
+    background: var(--bg);
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    height: 760px;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    padding: 0 26px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--bg);
+    position: relative;
+    z-index: 2;
+  }
+  .status-bar .right { display: flex; align-items: center; gap: 5px; }
+  .dynamic-island {
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 122px; height: 32px;
+    background: #0A0A0A;
+    border-radius: 22px;
+    z-index: 3;
+  }
+  .signal { width: 14px; height: 10px; }
+  .wifi { width: 14px; height: 10px; }
+  .battery {
+    width: 22px; height: 11px;
+    border: 1.2px solid var(--ink);
+    border-radius: 2.5px;
+    position: relative;
+    margin-left: 2px;
+    display: inline-block;
+  }
+  .battery::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 1.5px; height: 5px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+  .battery::before {
+    content: '';
+    position: absolute;
+    left: 1px; top: 1px;
+    width: 16px; height: 7px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+
+  .app-top {
+    flex-shrink: 0;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    padding: 10px 18px 12px;
+    display: flex; align-items: center; gap: 12px;
+    min-height: 56px;
+  }
+  .app-top .eye {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .app-top .ttl {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-top: 1px;
+  }
+  .app-top .more {
+    margin-left: auto;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: transparent;
+    display: grid; place-items: center;
+    color: var(--ink-2);
+    border: 0;
+    cursor: pointer;
+  }
+  .app-top .more svg { width: 18px; height: 18px; }
+
+  .scroll {
+    flex: 1; overflow-y: auto;
+    padding: 16px 16px 120px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .greeting .day {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .greeting h2 {
+    margin: 4px 0 0;
+    font-size: 24px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .card-head {
+    padding: 14px 16px 10px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .card-head h3 {
+    margin: 0;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .card-head .eye {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .card-body {
+    padding: 4px 16px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sched-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 14px;
+    min-height: 72px;
+  }
+  .sched-row .marker {
+    width: 8px; align-self: stretch;
+    border-radius: 4px;
+    background: var(--rust);
+  }
+  .sched-row .marker.is-ongoing { background: var(--chip-fill); border: 1px solid var(--rule); }
+  .sched-row .info { flex: 1; min-width: 0; }
+  .sched-row .info .ttl {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  .sched-row .info .meta {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+  .sched-row .log {
+    height: 48px;
+    padding: 0 16px;
+    border-radius: 11px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 14px; font-weight: 700;
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .sched-row .log svg { width: 16px; height: 16px; }
+
+  /* Bottom nav (matches mobile.html) */
+  .bottom-nav {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 0 0 22px;
+    z-index: 4;
+  }
+  .bottom-nav .inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr 92px 1fr 1fr;
+    align-items: stretch;
+    height: 76px;
+  }
+  .bottom-nav .tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    color: var(--muted);
+    padding: 8px 4px 0;
+  }
+  .bottom-nav .tab svg { width: 22px; height: 22px; }
+  .bottom-nav .tab .label { font-size: 12px; font-weight: 600; }
+  .bottom-nav .tab.active { color: var(--ink); }
+  .bottom-nav .tab.active .label { font-weight: 700; }
+  .bottom-nav .tab.active .active-dot {
+    width: 5px; height: 5px;
+    border-radius: 999px;
+    background: var(--ink);
+    margin-top: 1px;
+  }
+  .bottom-nav .center-slot { position: relative; }
+  .log-fab {
+    position: absolute;
+    left: 50%; bottom: 18px;
+    transform: translateX(-50%);
+    width: 64px; height: 64px;
+    border-radius: 22px;
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    border: 4px solid var(--bg);
+    box-shadow: 0 8px 22px rgba(194, 65, 12, 0.36);
+    cursor: pointer;
+    z-index: 5;
+  }
+  .log-fab .glyph {
+    font-family: var(--mono);
+    font-size: 16px; font-weight: 700;
+    line-height: 1;
+  }
+  .log-fab .label {
+    position: absolute;
+    bottom: -16px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px; font-weight: 700;
+    color: var(--ink);
+    background: var(--chrome);
+    padding: 0 4px;
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4.5" y="6" width="3" height="6" rx="0.5"/><rect x="9" y="3" width="3" height="9" rx="0.5"/><rect x="13.5" y="0" width="3" height="12" rx="0.5"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 5a10 10 0 0 1 12 0"/><path d="M4 7.5a6 6 0 0 1 8 0"/><circle cx="8" cy="10" r="1" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="page">
+
+  <div class="pitch">
+    <h1>Worker app <span class="mono">/w</span> — built for the phone, not the laptop.</h1>
+    <p class="lede">The field surface for employees and subcontractors at HeyHenry. Today&rsquo;s job, log time in two taps, snap a receipt, bill the GC. <b>Open this on your phone</b> — desktop is a fallback, not a design target.</p>
+
+    <div class="why">
+      <span class="eye">Why phone-first</span>
+      <p>This is the <b>field half</b> of the product. Tradespeople use it outdoors, with gloves, on spotty signal. Every choice — ≥44px (lean bigger) targets, camera-first capture, pickers over keyboards, bottom-anchored primary actions, offline-tolerant writes — is anchored in that reality. A laptop view of the same product wouldn&rsquo;t be wrong, it would be off-task.</p>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <span class="num">01</span>
+        <h3>4 tabs, not 8.</h3>
+        <p>Today &middot; Calendar &middot; Projects &middot; Profile, with a raised <b>Log</b> action. Tasks &middot; Time history &middot; Expenses &middot; Invoices reached from Today or Log.</p>
+      </div>
+      <div class="pillar">
+        <span class="num">02</span>
+        <h3>Capture-now, clean-later.</h3>
+        <p>Time / expense / photo writes <b>queue offline</b> and sync with an explicit "saved, will sync" state. Nothing is silently dropped.</p>
+      </div>
+      <div class="pillar">
+        <span class="num">03</span>
+        <h3>Same surface, capability-gated.</h3>
+        <p>Employees and subs share one shell; <b>worker_type</b> is an owner setting that toggles Expenses and Invoices. The worker never sees the word "subcontractor."</p>
+      </div>
+      <div class="pillar">
+        <span class="num">04</span>
+        <h3>✦ Henry accelerates capture.</h3>
+        <p>Voice → time. Receipt OCR. Invoice-from-unbilled-work. Henry drafts &middot; the worker confirms &middot; <b>never auto-submits money</b>.</p>
+      </div>
+    </div>
+
+    <div class="hard-edges">
+      <span class="eye">Hard boundaries</span>
+      <h3>What the worker never sees.</h3>
+      <ul>
+        <li><b>No customer financials.</b> No margin, no markup, no project total.</li>
+        <li><b>No other projects.</b> Only the projects this worker is assigned to.</li>
+        <li><b>No dashboard or contacts.</b> Middleware redirects to <span class="mono">/w</span>; RLS blocks the rest.</li>
+        <li><b>No "subcontractor" label.</b> They see "Time," "Invoices" (if enabled), and a profile.</li>
+      </ul>
+    </div>
+
+    <div class="cta-row">
+      <a href="./mobile.html"><svg><use href="#i-phone"/></svg>Open the phone render</a>
+      <a class="is-quiet" href="../../docs/ux/briefs/worker-app.md">Read the brief →</a>
+    </div>
+  </div>
+
+  <!-- Right column: a small live mirror of the Today screen -->
+  <div class="mirror">
+    <div class="label"><span class="dot"></span>Today &middot; mobile preview</div>
+
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="dynamic-island"></div>
+        <div class="status-bar">
+          <span>7:42</span>
+          <span class="right">
+            <svg class="signal"><use href="#i-signal"/></svg>
+            <svg class="wifi"><use href="#i-wifi"/></svg>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <header class="app-top">
+          <div>
+            <div class="eye">Maple Ridge Renos</div>
+            <div class="ttl">Today</div>
+          </div>
+          <button class="more" aria-label="More"><svg><use href="#i-more"/></svg></button>
+        </header>
+
+        <div class="scroll">
+
+          <div class="greeting">
+            <div class="day">Wed &middot; May 27</div>
+            <h2>Hi, Marcus.</h2>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Today&rsquo;s schedule</h3>
+              <span class="eye">2 projects</span>
+            </div>
+            <div class="card-body">
+              <div class="sched-row">
+                <div class="marker"></div>
+                <div class="info">
+                  <div class="ttl">Glenwood Kitchen Reno</div>
+                  <div class="meta">Scheduled &middot; 7:30 am start</div>
+                </div>
+                <button class="log"><svg><use href="#i-clock"/></svg>Log</button>
+              </div>
+              <div class="sched-row">
+                <div class="marker is-ongoing"></div>
+                <div class="info">
+                  <div class="ttl">Hillcrest Bath Remodel</div>
+                  <div class="meta">Ongoing &middot; drop in</div>
+                </div>
+                <button class="log"><svg><use href="#i-clock"/></svg>Log</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <nav class="bottom-nav">
+          <div class="inner">
+            <div class="tab active">
+              <svg><use href="#i-home"/></svg>
+              <span class="label">Today</span>
+              <span class="active-dot"></span>
+            </div>
+            <div class="tab">
+              <svg><use href="#i-calendar"/></svg>
+              <span class="label">Calendar</span>
+            </div>
+            <div class="center-slot">
+              <button class="log-fab" aria-label="Log">
+                <span class="glyph">+</span>
+                <span class="label">Log</span>
+              </button>
+            </div>
+            <div class="tab">
+              <svg><use href="#i-folder"/></svg>
+              <span class="label">Projects</span>
+            </div>
+            <div class="tab">
+              <svg><use href="#i-user"/></svg>
+              <span class="label">Profile</span>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

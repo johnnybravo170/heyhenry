@@ -87,7 +87,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 ### Worker & public surfaces (separate route groups)
 | Surface | Brief | OD render | Open dev cards | Built (ref) | Notes |
 |---|---|---|---|---|---|
-| Worker app `/w` (mobile field surface) | ✅ `worker-app.md` | ⬜ | — | 🟡 (live, W1–W7 built) | mobile-only; **target: fix 8-item bottom-nav overload, Paper restyle, offline capture**; heavy sub-flows (time/expense/invoice capture) graduate to own renders |
+| Worker app `/w` (mobile field surface) | ✅ `worker-app.md` | ✅ `od-worker-app` | 1 (build `6322a4d7`) | 🟡 (live, W1–W7 built) | render converged (1-round OD loop); **bottom-nav fixed: 4 primary (Today·Calendar·Projects·Profile) + raised Log FAB** (was up to 8) · field-hardened Paper (64px nav/FAB, 48px steppers) · Today cockpit (one-tap Log · gated sub-billing nudge · team checklist) · time-entry capture · **offline "saved, will sync"** · capability-gated · category/client terminology; heavy capture flows (time/expense/invoice) graduate to own renders |
 | Public pages (`/portal`, `/estimate`, `/approve`, `/decide`, `/view`, `/pulse`, `/home-record`) | ✅ `public-pages.md` | ⬜ | — | 🟡 (live, pre-redesign) | client-facing, no-login, brand-carrying family; **target: one unified branded Paper template + the absolute client boundary**; approval family + Portal + Home Record + Pulse graduate to own renders |
 
 ---
