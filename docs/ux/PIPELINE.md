@@ -75,7 +75,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Budget | ✅ (project-hub) | ✅ `…-budget` | — | ✅ #278/#281 | |
 | Spend | ✅ (project-hub) | ✅ `…-spend` | — | ✅ #290/#291/#298 | |
 | Labour | ✅ (project-hub) | ✅ `…-labour` | — | ✅ #294 | |
-| Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; working-day/slip/Henry deep work outstanding · **subscreens: ✅ specced inline (schedule.md)** |
+| Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **2** (slip+digest+chrome; Henry) | 🟡 #295/#303 | working-days + skip-weekends built (#303: `duration_basis` non-destructive cutover, shared `working-days.ts`, weekend-recede bars); **outstanding:** slip+digest+chrome (`0cc67bdd`), Henry cascade/notify (`d0b1b72a`). #303 unblocks the Overview `schedule_slip` rule · **subscreens: ✅ specced inline (schedule.md)** |
 | Billing (project) | 🟡 (project-hub §Billing; no standalone) | ✅ `…-billing` | — | ✅ #296 | dedicated brief intentionally skipped |
 | **Client** | ✅ `client.md` | ✅ `…-client` | **1** (Pulse pt1) | 🟡 #302 | chip + activity/setup reorg + decision ✦ chrome + Paper restyle built (#302); **outstanding:** wire Henry Pulse into Updates (card `b9bb93b7` pt1 — needs project-scoped `pulse_updates`: nullable `job_id` + `project_id` + project draft path; currently job-scoped) |
 | Photos / Documents / Notes | ✅ `project-secondary-tabs.md` | ⬜ | — | 🟡 (live, pre-redesign) | Paper restyle + client-visibility legibility outstanding; **Home Record generate/email + Photos graduate to own renders**; **gap flagged: Selections tab un-briefed** |
