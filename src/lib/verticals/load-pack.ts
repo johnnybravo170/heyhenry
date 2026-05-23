@@ -32,7 +32,7 @@ const FALLBACK_NAV: VerticalNavItem[] = [
   { href: '/contacts', label: 'Contacts', icon: 'Users' },
   { href: '/projects', label: 'Projects', icon: 'FolderKanban' },
   { href: '/calendar', label: 'Calendar', icon: 'CalendarDays' },
-  { href: '/invoices', label: 'Invoices', icon: 'FileText' },
+  { href: '/invoices', label: 'Billing', icon: 'FileText' },
   { href: '/expenses', label: 'Expenses', icon: 'Receipt' },
   { href: '/inbox/intake', label: 'Inbox', icon: 'Inbox' },
   { href: '/settings', label: 'Settings', icon: 'Settings' },
