@@ -1,0 +1,2621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Bank reconciliation — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --hold:         #475569;  --hold-soft:  #E2E8F0;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+
+  /* ───── Sidebar ───── */
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; overflow-y: auto; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-item.nested { padding-left: 30px; font-size: 14px; }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust);
+    color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .org-switcher:hover { background: rgba(232,222,201,.5); }
+  .org-avatar {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-quiet { background: transparent; color: var(--muted); border-color: transparent; }
+  .btn-quiet:hover { background: var(--chip-fill); color: var(--ink); }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn .icon { width: 14px; height: 14px; }
+  .btn-sm { height: 28px; padding: 0 9px; font-size: 12px; }
+  .btn-lg { height: 44px; padding: 0 18px; font-size: 14px; }
+  .btn-count {
+    margin-left: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+  .btn-rust .btn-count { color: rgba(255,255,255,.85); background: rgba(255,255,255,.15); }
+  .btn-disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ───── Main column ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 96px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+
+  /* ───── Frame divider ───── */
+  .frame-label {
+    display: flex; align-items: center; gap: 12px;
+    margin: 28px 0 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .frame-label:first-of-type { margin-top: 0; }
+  .frame-label .mark {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .frame-label .name {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .frame-label .path {
+    font-family: var(--mono);
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .frame-label .note {
+    margin-left: auto;
+    font-size: 12px; color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ───── Page header ───── */
+  .page-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700;
+    letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .page-title .crumb {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--chip-fill);
+    padding: 4px 8px;
+    border-radius: 6px;
+    transform: translateY(-3px);
+  }
+  .page-sub { color: var(--muted); font-size: 14px; margin-top: 4px; max-width: 640px; }
+  .page-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* ───── "What this is (and isn't)" — info-soft aside ───── */
+  .trust-aside {
+    background: var(--info-soft);
+    border: 1px solid rgba(30, 64, 175, 0.18);
+    border-left: 3px solid var(--info);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+  .trust-aside-mark {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--info);
+    display: grid; place-items: center;
+    border: 1px solid rgba(30, 64, 175, 0.18);
+  }
+  .trust-aside-mark svg { width: 12px; height: 12px; }
+  .trust-aside-body { display: flex; flex-direction: column; gap: 6px; }
+  .trust-aside-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .trust-aside ul {
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .trust-aside ul li {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 10px;
+  }
+  .trust-aside .lbl {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-top: 3px;
+  }
+  .trust-aside .lbl.isnt { color: var(--muted); }
+  .trust-aside strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Card primitive ───── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .card-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .card-sub {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .card-head-meta {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .card-body { padding: 18px 20px 18px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ───── Stage rail (3-step progress) ───── */
+  .stage-rail {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 10px 14px;
+  }
+  .stage-step {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .stage-step .pill {
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    border: 1.5px solid var(--rule);
+    display: grid; place-items: center;
+    background: var(--card);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+  }
+  .stage-step.is-done .pill { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .stage-step.is-done .pill svg { width: 11px; height: 11px; }
+  .stage-step.is-active .pill {
+    background: var(--card);
+    border-color: var(--rust);
+    color: var(--rust);
+  }
+  .stage-step.is-active { color: var(--rust); }
+  .stage-sep { width: 18px; height: 1px; background: var(--rule); flex-shrink: 0; }
+
+  /* ───── Form bits ───── */
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .field-help {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .input, .select {
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    padding: 0 12px;
+    font: inherit;
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 14px;
+    display: flex; align-items: center;
+    outline: none;
+  }
+  .input:focus, .select:focus { border-color: var(--ink); }
+  .input .placeholder { color: var(--muted); }
+  .select {
+    cursor: pointer;
+    justify-content: space-between;
+  }
+  .select .chev { width: 12px; height: 12px; color: var(--muted); }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+  /* ───── Dropzone (CSV today; PDF coming) ───── */
+  .dropzone {
+    border: 1.5px dashed var(--rule);
+    background: var(--chrome);
+    border-radius: var(--radius-card);
+    padding: 28px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    text-align: center;
+    transition: border-color 120ms, background 120ms;
+  }
+  .dropzone.is-hover {
+    border-color: var(--rust);
+    background: var(--rust-soft);
+  }
+  .dropzone-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .dropzone-icon svg { width: 22px; height: 22px; }
+  .dropzone-headline {
+    font-size: 16px; font-weight: 600; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .dropzone-hint {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dropzone-hint .later {
+    color: var(--faint);
+    margin-left: 6px;
+  }
+  .dropzone-or { font-size: 12px; color: var(--muted); }
+  .file-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-input);
+    padding: 5px 10px 5px 8px;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .file-chip .fi {
+    width: 24px; height: 24px;
+    border-radius: 5px;
+    background: var(--info-soft);
+    color: var(--info);
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+  }
+  .file-chip .name { font-weight: 600; }
+  .file-chip .size { font-family: var(--mono); color: var(--muted); font-size: 11px; }
+  .file-chip .x {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    display: inline-grid; place-items: center;
+    cursor: pointer;
+  }
+  .file-chip .x:hover { background: var(--chip-fill); color: var(--ink); }
+  .file-chip .x svg { width: 12px; height: 12px; }
+
+  /* ───── Detection summary row (preview stage) ───── */
+  .detect {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+  }
+  .detect .sep {
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .detect .meta {
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .detect .meta strong { color: var(--ink); font-weight: 700; }
+  .detect .meta .mono {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+  .detect-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ───── Confidence band (status-tokens soft pairs + glyph) ───── */
+  .band {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 9px 2px 7px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .band svg { width: 11px; height: 11px; }
+  .band.high   { background: var(--ok-soft);    color: var(--ok);     border-color: rgba(21, 128, 61, 0.22); }
+  .band.medium { background: var(--warn-soft);  color: var(--warn);   border-color: rgba(180, 83, 9, 0.25); }
+  .band.low    { background: var(--hold-soft);  color: var(--hold);   border-color: rgba(71, 85, 105, 0.25); }
+
+  /* Lighter (non-status) parse-detection pill — neutral, no ✦ */
+  .pill-neutral {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+    border: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Warnings details */
+  .warnings {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .warnings summary {
+    cursor: pointer;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    list-style: none;
+  }
+  .warnings summary::-webkit-details-marker { display: none; }
+  .warnings .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--warn);
+    background: var(--warn-soft);
+    border: 1px solid rgba(180, 83, 9, 0.25);
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .warnings ul {
+    margin: 10px 0 0;
+    padding: 0 0 0 18px;
+    color: var(--muted);
+    font-size: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  /* Column-override mapper */
+  .mapper {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .mapper-head {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .mapper-head .why {
+    margin-left: auto;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: -0.005em;
+    font-style: italic;
+  }
+  .mapper-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .mapper-foot {
+    display: flex; justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px dashed var(--rule);
+    padding-top: 12px;
+  }
+
+  /* Sample table (Paper-toned column highlights) */
+  .sample-wrap {
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .sample-strip {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 14px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .sample-strip .legend {
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .sample-strip .legend .sw {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+  }
+  .sample-strip .legend.date  .sw { background: #FAEFD3; }
+  .sample-strip .legend.desc  .sw { background: #ECE3D0; }
+  .sample-strip .legend.amt   .sw { background: #F3E0CE; }
+  .sample-strip .count {
+    margin-left: auto;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .sample-table-scroll {
+    overflow-x: auto;
+  }
+  .sample-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .sample-table th, .sample-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--hair);
+    text-align: left;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .sample-table thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--chrome);
+  }
+  .sample-table td.col-date,  .sample-table th.col-date  { background: #FAEFD3; }
+  .sample-table td.col-desc,  .sample-table th.col-desc  { background: var(--chip-fill); }
+  .sample-table td.col-amt,   .sample-table th.col-amt   { background: #F3E0CE; text-align: right; }
+  .sample-table tbody tr:last-child td { border-bottom: 0; }
+  .sample-table .date-mono { font-family: var(--mono); color: var(--ink-2); }
+  .sample-table .neg { color: var(--ink); }
+
+  /* Done stage receipt */
+  .receipt {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 16px;
+    padding: 18px 20px;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    border-left: 3px solid var(--rust);
+    border-radius: var(--radius-card);
+    align-items: flex-start;
+  }
+  .receipt-mark {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--rust);
+    border: 1px solid rgba(194, 65, 12, 0.2);
+    display: grid; place-items: center;
+  }
+  .receipt-mark svg { width: 22px; height: 22px; }
+  .receipt-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .receipt-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .receipt-headline {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .receipt-list {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 18px;
+  }
+  .receipt-list li {
+    font-size: 14px;
+    color: var(--ink-2);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .receipt-list li .num {
+    font-family: var(--sans);
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    min-width: 28px;
+    text-align: right;
+  }
+  .receipt-list li.muted, .receipt-list li.muted .num {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .receipt-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+
+  /* ───── REVIEW — counts + filter bar ───── */
+  .count-summary {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 18px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .count-summary strong {
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    text-transform: none;
+  }
+  .count-summary .sep {
+    color: var(--faint);
+  }
+  .count-summary .decision {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--sans);
+    text-transform: none;
+    letter-spacing: -0.005em;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    font-style: italic;
+  }
+  .count-summary .decision svg { width: 11px; height: 11px; color: var(--muted); }
+
+  .filter-bar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 12px 18px 14px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .filter-bar .field-label { margin-right: 4px; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 12px;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    font-size: 14px;
+    color: var(--ink-2);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .toggle .cbx-stub {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--rule);
+    background: var(--card);
+  }
+  .toggle.is-on { background: var(--chrome); border-color: var(--rule); }
+  .toggle.is-on .cbx-stub { background: var(--ink); border-color: var(--ink); position: relative; }
+  .toggle.is-on .cbx-stub::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 4px;
+    width: 4px; height: 8px;
+    border: solid #fff;
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .filter-spacer { flex: 1; }
+
+  /* Bulk bar */
+  .bulk-bar {
+    position: sticky;
+    top: 56px;
+    z-index: 5;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 0;
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid #222;
+  }
+  .bulk-bar .cbx-stub-dark {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255,255,255,.4);
+    background: transparent;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .bulk-bar.has-selection .cbx-stub-dark { background: #fff; border-color: #fff; }
+  .bulk-bar.has-selection .cbx-stub-dark::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 4px;
+    width: 4px; height: 8px;
+    border: solid var(--ink);
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .bulk-bar .count {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .bulk-bar .count strong {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    text-transform: none;
+    margin-right: 4px;
+  }
+  .bulk-bar-spacer { flex: 1; }
+  .bulk-bar-act {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    height: 34px; padding: 0 14px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .bulk-bar-act:hover { background: rgba(255,255,255,.18); }
+  .bulk-bar-act svg { width: 14px; height: 14px; }
+  .bulk-bar .btn-rust {
+    border-color: var(--rust);
+  }
+
+  /* ───── REVIEW row ───── */
+  .review-list {
+    list-style: none;
+    margin: 0; padding: 0;
+  }
+  .review-row {
+    display: grid;
+    grid-template-columns: 32px 132px 1fr 130px 36px;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .review-row:last-child { border-bottom: 0; }
+  .review-row:hover { background: rgba(236, 227, 208, .35); }
+  .review-row.is-prechecked { background: rgba(220, 252, 231, .25); }
+  .review-row.is-prechecked:hover { background: rgba(220, 252, 231, .45); }
+  .review-row.is-unmatched { opacity: .82; }
+  .review-row.is-unmatched:hover { background: rgba(232, 226, 213, .25); }
+
+  /* Checkbox */
+  .cbx {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--rule);
+    background: var(--card);
+    display: inline-grid; place-items: center;
+    cursor: pointer;
+    position: relative;
+  }
+  .cbx.is-on {
+    background: var(--ink); border-color: var(--ink);
+  }
+  .cbx.is-on::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 5px;
+    width: 5px; height: 10px;
+    border: solid #fff;
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .cbx.disabled { opacity: 0; cursor: default; }
+
+  .row-date {
+    display: flex; flex-direction: column;
+    gap: 2px;
+  }
+  .row-date .d {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-2);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .row-date .lbl {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    text-transform: none;
+  }
+
+  .row-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .row-desc {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .row-desc .vendor-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-right: 6px;
+    background: var(--chip-fill);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .row-desc.unmatched-text {
+    font-weight: 500;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 14px;
+  }
+
+  /* The ✦ Henry match line */
+  .match-line {
+    display: inline-flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .henry-mark {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+    padding: 2px 7px 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .henry-mark .star {
+    color: var(--rust);
+    font-size: 12px;
+  }
+  .henry-mark.muted {
+    color: var(--muted);
+    background: var(--chip-fill);
+    border-color: var(--rule);
+  }
+  .henry-mark.muted .star { color: var(--muted); }
+
+  .dir-glyph {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    border: 1px solid var(--rule);
+    padding: 1px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .dir-glyph.in { color: var(--ok); border-color: rgba(21, 128, 61, 0.22); background: var(--ok-soft); }
+  .dir-glyph.out { color: var(--ink-2); border-color: var(--rule); background: var(--chip-fill); }
+  .dir-glyph .arrow {
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+
+  .candidate-link {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--rule);
+    text-underline-offset: 3px;
+  }
+  .candidate-link:hover { text-decoration-color: var(--rust); color: var(--rust); }
+
+  .candidate-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .candidate-meta strong {
+    font-family: var(--sans);
+    color: var(--ink-2);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+    font-size: 12px;
+  }
+
+  /* Top-3 candidate switcher */
+  .switcher {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 26px;
+    padding: 0 10px 0 8px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .switcher:hover { background: var(--chip-fill); }
+  .switcher .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .switcher .chev { width: 11px; height: 11px; color: var(--muted); }
+
+  /* How-Henry-matched disclosure */
+  .how-matched {
+    margin-top: 6px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .how-matched summary {
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    list-style: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .how-matched summary::-webkit-details-marker { display: none; }
+  .how-matched summary .chev {
+    width: 11px; height: 11px; color: var(--muted);
+  }
+  .how-matched[open] summary { margin-bottom: 8px; }
+  .how-matched .rubric {
+    display: grid;
+    grid-template-columns: 110px 28px 1fr;
+    gap: 4px 12px;
+    align-items: center;
+  }
+  .how-matched .rubric .axis {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .how-matched .rubric .pts {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .how-matched .rubric .desc {
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .how-matched .rubric .desc strong {
+    color: var(--ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .how-matched .rubric .axis.total {
+    color: var(--rust);
+  }
+  .how-matched .rubric .pts.total {
+    color: var(--rust);
+    border-color: rgba(194, 65, 12, 0.3);
+    background: var(--rust-soft);
+  }
+  .how-matched .why-trust {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .how-matched .why-trust strong { color: var(--ink-2); font-style: normal; font-weight: 600; }
+
+  /* Signed amount column */
+  .row-amt {
+    text-align: right;
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  }
+  .row-amt .amt-glyph {
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .row-amt .arrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0 5px;
+    line-height: 18px;
+    height: 18px;
+    letter-spacing: 0.04em;
+  }
+  .row-amt.in .arrow {
+    color: var(--ok);
+    background: var(--ok-soft);
+    border-color: rgba(21, 128, 61, 0.22);
+  }
+  .row-amt.out .arrow {
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    border-color: var(--rule);
+  }
+  .row-amt .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .row-amt .lbl {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    display: inline-grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn:hover {
+    background: var(--card);
+    border-color: var(--hair);
+    color: var(--ink);
+  }
+  .icon-btn.danger-on-hover:hover {
+    background: var(--danger-soft);
+    border-color: rgba(185, 28, 28, 0.2);
+    color: var(--danger);
+  }
+  .icon-btn svg { width: 14px; height: 14px; }
+
+  /* ───── AlertDialog ───── */
+  .dialog-stage {
+    position: relative;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 36px;
+    display: grid;
+    place-items: center;
+    min-height: 360px;
+    overflow: hidden;
+  }
+  .dialog-stage::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(216, 203, 176, 0.12) 0,
+      rgba(216, 203, 176, 0.12) 12px,
+      transparent 12px,
+      transparent 24px
+    );
+  }
+  .dialog {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-card);
+    box-shadow:
+      0 1px 0 rgba(10,10,10,.04),
+      0 20px 60px -10px rgba(10,10,10,.18),
+      0 8px 24px -8px rgba(10,10,10,.10);
+    overflow: hidden;
+  }
+  .dialog-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .dialog-head .icon-stub {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    border: 1px solid rgba(194, 65, 12, 0.2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .dialog-head .icon-stub svg { width: 16px; height: 16px; }
+  .dialog-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .dialog-desc {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .dialog-body {
+    padding: 16px 22px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .dialog-summary {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .dialog-summary .line {
+    display: flex; align-items: baseline; gap: 8px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .dialog-summary .line .num {
+    font-family: var(--sans);
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    min-width: 26px;
+    text-align: right;
+  }
+  .dialog-summary .line.total {
+    border-top: 1px dashed var(--rule);
+    padding-top: 6px;
+    margin-top: 2px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .dialog-fineprint {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .dialog-fineprint strong { color: var(--ink-2); font-weight: 600; }
+  .dialog-foot {
+    padding: 14px 22px 18px;
+    border-top: 1px solid var(--hair);
+    display: flex; gap: 8px;
+    justify-content: flex-end;
+    background: var(--chrome);
+  }
+
+  /* ───── States demo grid ───── */
+  .states-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .state-cap {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 4px 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .state-cap .num {
+    background: var(--ink); color: #fff;
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    display: inline-grid; place-items: center;
+    font-size: 11px; font-weight: 700;
+  }
+
+  /* Skeleton row */
+  .skel-row {
+    display: grid;
+    grid-template-columns: 32px 132px 1fr 130px 36px;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .skel {
+    background: linear-gradient(90deg, var(--chip-fill) 0%, #F2EBDA 50%, var(--chip-fill) 100%);
+    border-radius: 6px;
+    height: 12px;
+  }
+  .skel.tall { height: 14px; }
+  .skel.short { width: 60%; }
+  .skel.shorter { width: 40%; }
+  .skel.box {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+  }
+  .skel.amt {
+    width: 88px;
+    height: 18px;
+    justify-self: end;
+  }
+  .skel-stack { display: flex; flex-direction: column; gap: 5px; }
+  .skel-stack-tight { display: flex; flex-direction: column; gap: 4px; }
+
+  /* Error retry card */
+  .err-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 28px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    text-align: center;
+    min-height: 320px;
+    justify-content: center;
+  }
+  .err-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid rgba(185, 28, 28, 0.2);
+    display: grid; place-items: center;
+  }
+  .err-icon svg { width: 22px; height: 22px; }
+  .err-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .err-sub { font-size: 14px; color: var(--muted); max-width: 320px; }
+  .err-foot { display: flex; gap: 8px; align-items: center; }
+  .err-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Zero-match empty state */
+  .empty-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 28px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    text-align: center;
+    min-height: 320px;
+    justify-content: center;
+  }
+  .empty-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: var(--chrome);
+    color: var(--muted);
+    border: 1px solid var(--hair);
+    display: grid; place-items: center;
+  }
+  .empty-icon svg { width: 22px; height: 22px; }
+  .empty-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .empty-sub { font-size: 14px; color: var(--muted); max-width: 340px; line-height: 1.5; }
+  .empty-foot { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+
+  /* Status bar in mock chrome */
+  .row-statement-link {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .small { font-size: 12px; }
+
+  .legend-row {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 12px 18px 0;
+  }
+  .legend-row .pair {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .legend-row .pair svg { width: 11px; height: 11px; }
+  .legend-row .sep { color: var(--faint); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ───── Sidebar ───── -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-label">Workspace</div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v10h14V10"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Calendar
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Projects
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Inbox
+        <span class="nav-count">3</span>
+      </div>
+      <div class="nav-section-label">Money</div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        Billing
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        Expenses
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 5-7"/></svg>
+        Business Health
+      </div>
+      <div class="nav-item nested active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4M5 7v10l7 4 7-4V7"/></svg>
+        Bank reconciliation
+        <span class="nav-count">12</span>
+      </div>
+      <div class="nav-section-label">Settings</div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings
+      </div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">MR</div>
+        <div class="org-meta">
+          <span class="org-name">Maple Ridge Renos</span>
+          <span class="org-sub">Owner — Sam</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ───── Main ───── -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span>Search</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-quiet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        </button>
+        <button class="btn btn-ghost">
+          <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="main-inner">
+
+      <!-- ───── PAGE HEAD ───── -->
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">
+            Bank reconciliation
+            <span class="crumb">Business Health</span>
+          </h1>
+          <p class="page-sub">
+            Save yourself from clicking <strong style="color: var(--ink-2);">mark paid</strong> 50 times a month. Drop in a statement, confirm the matches Henry pre-checked, and the paid pile flips in one click.
+          </p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-quiet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M15 18l-6-6 6-6"/></svg>
+            Business Health
+          </button>
+          <button class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M3 12a9 9 0 0015.5-6.3M21 5v5h-5"/></svg>
+            Re-run matching
+          </button>
+          <button class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 5v14M5 12h14"/></svg>
+            Import another statement
+          </button>
+        </div>
+      </div>
+
+      <!-- ───── Trust aside ───── -->
+      <aside class="trust-aside" aria-labelledby="trust-aside-eyebrow">
+        <div class="trust-aside-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
+        </div>
+        <div class="trust-aside-body">
+          <span id="trust-aside-eyebrow" class="trust-aside-eyebrow">What this is (and isn't)</span>
+          <ul>
+            <li>
+              <span class="lbl">Is</span>
+              <span>A <strong>payment shortcut</strong> — matches statement lines to invoices, costs, and bills already in HeyHenry, then bulk-marks them paid.</span>
+            </li>
+            <li>
+              <span class="lbl isnt">Isn't</span>
+              <span>Bank reconciliation — your book of record stays in <strong>QuickBooks</strong>. Your bookkeeper reconciles there.</span>
+            </li>
+            <li>
+              <span class="lbl isnt">Skips</span>
+              <span>Transfers, fees, interest, ATM withdrawals — those belong in <strong>QBO</strong> and are hidden by default.</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+
+      <!-- ═════════════════════════════════════════════════════════
+           FRAME A — IMPORT · STAGE 1 (UPLOAD)
+           ═════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame A</span>
+        <span class="name">Import — Upload</span>
+        <span class="path">/business-health/bank-import</span>
+        <span class="note">Stage 1 of 3 · CSV today; PDF coming</span>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Import bank statement</span>
+          <span class="card-sub">Drop a CSV; Henry will parse, match, and pre-check the obvious wins.</span>
+          <div class="card-head-meta">
+            <span class="pill-neutral">CSV · max 5MB</span>
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- Stage rail -->
+          <div class="stage-rail">
+            <div class="stage-step is-active">
+              <span class="pill">1</span>
+              Upload
+            </div>
+            <div class="stage-sep"></div>
+            <div class="stage-step">
+              <span class="pill">2</span>
+              Preview &amp; map
+            </div>
+            <div class="stage-sep"></div>
+            <div class="stage-step">
+              <span class="pill">3</span>
+              Done &amp; review
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label class="field-label" for="src-label">Statement label</label>
+              <div class="input"><span>RBC Chequing — March 2026</span></div>
+              <span class="field-help">What this statement is — you'll see it in the review queue.</span>
+            </div>
+            <div class="field">
+              <label class="field-label" for="bank-preset">Bank</label>
+              <div class="select">
+                <span>Auto-detect</span>
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+              <span class="field-help">Auto-detect handles every Canadian big bank. Override only if detection fails.</span>
+            </div>
+          </div>
+
+          <!-- Dropzone -->
+          <div class="dropzone is-hover">
+            <div class="dropzone-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            </div>
+            <div class="dropzone-headline">Drop a CSV here, or click to pick one</div>
+            <div class="dropzone-hint">CSV today<span class="later">·  PDF coming</span></div>
+            <div class="dropzone-or">— or —</div>
+            <div class="file-chip">
+              <span class="fi">CSV</span>
+              <span class="name">rbc-cheq-mar-2026.csv</span>
+              <span class="size">142 KB</span>
+              <button class="x" aria-label="Remove file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-rust btn-lg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></svg>
+              Parse statement
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ═════════════════════════════════════════════════════════
+           FRAME B — IMPORT · STAGE 2 (PREVIEW + MAPPER + SAMPLE)
+           ═════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame B</span>
+        <span class="name">Import — Preview</span>
+        <span class="path">/business-health/bank-import</span>
+        <span class="note">Stage 2 · detected preset + column-override mapper open</span>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Preview · rbc-cheq-mar-2026.csv</span>
+          <span class="card-sub">Confirm Henry's parse before importing.</span>
+          <div class="card-head-meta">
+            <button class="btn btn-quiet btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M3 12a9 9 0 0015.5-6.3M21 5v5h-5"/></svg>
+              Use a different file
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- Stage rail -->
+          <div class="stage-rail">
+            <div class="stage-step is-done">
+              <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+              Upload
+            </div>
+            <div class="stage-sep"></div>
+            <div class="stage-step is-active">
+              <span class="pill">2</span>
+              Preview &amp; map
+            </div>
+            <div class="stage-sep"></div>
+            <div class="stage-step">
+              <span class="pill">3</span>
+              Done &amp; review
+            </div>
+          </div>
+
+          <!-- Detection summary (NO ✦ — parser is deterministic plumbing, not Henry) -->
+          <div class="detect">
+            <span class="band high">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+              High confidence parse
+            </span>
+            <span class="sep">·</span>
+            <span class="meta">Detected <strong>RBC</strong></span>
+            <span class="sep">·</span>
+            <span class="meta">Date format: <span class="mono">YYYY/MM/DD</span></span>
+            <span class="sep">·</span>
+            <span class="meta"><strong>87</strong> transactions</span>
+            <div class="detect-right">
+              <button class="btn btn-ghost btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>
+                Override columns
+              </button>
+            </div>
+          </div>
+
+          <!-- Warnings -->
+          <details class="warnings">
+            <summary>
+              <span class="count">2 warnings</span>
+              <span>Two rows skipped during parse — usually fee summaries or headers Henry couldn't categorize.</span>
+              <span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted);">Click to expand</span>
+            </summary>
+            <ul>
+              <li>Row 42 — could not parse amount "—" (likely a section divider)</li>
+              <li>Row 64 — date field blank; row excluded from import</li>
+            </ul>
+          </details>
+
+          <!-- Column override mapper -->
+          <div class="mapper">
+            <div class="mapper-head">
+              Override detected columns
+              <span class="why">Auto-detect is right ~95% of the time. Override only if a column is wrong.</span>
+            </div>
+            <div class="mapper-grid">
+              <div class="field">
+                <label class="field-label">Date column</label>
+                <div class="select">
+                  <span>0 — Date</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">Description column</label>
+                <div class="select">
+                  <span>1 — Description</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">Amount column (signed)</label>
+                <div class="select">
+                  <span>3 — Amount</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">Debit column</label>
+                <div class="select">
+                  <span class="placeholder">— None / Unused —</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">Credit column</label>
+                <div class="select">
+                  <span class="placeholder">— None / Unused —</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">Date format</label>
+                <div class="select">
+                  <span>YYYY/MM/DD</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+            </div>
+            <div class="mapper-foot">
+              <button class="btn btn-ghost btn-sm">Cancel</button>
+              <button class="btn btn-primary btn-sm">Re-parse with overrides</button>
+            </div>
+          </div>
+
+          <!-- Sample table -->
+          <div class="sample-wrap">
+            <div class="sample-strip">
+              <span>Sample — first 4 of 87 rows</span>
+              <span class="legend date"><span class="sw"></span>Date</span>
+              <span class="legend desc"><span class="sw"></span>Description</span>
+              <span class="legend amt"><span class="sw"></span>Amount</span>
+              <span class="count">4 / 87</span>
+            </div>
+            <div class="sample-table-scroll">
+              <table class="sample-table">
+                <thead>
+                  <tr>
+                    <th class="col-date">Date</th>
+                    <th class="col-desc">Description</th>
+                    <th>Cheque #</th>
+                    <th class="col-amt">Amount</th>
+                    <th>Running balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="col-date"><span class="date-mono">2026/03/02</span></td>
+                    <td class="col-desc">E-TRF FROM J. ROBERTSON</td>
+                    <td></td>
+                    <td class="col-amt">3,250.00</td>
+                    <td>14,820.16</td>
+                  </tr>
+                  <tr>
+                    <td class="col-date"><span class="date-mono">2026/03/04</span></td>
+                    <td class="col-desc">CHEQUE — 1042</td>
+                    <td>1042</td>
+                    <td class="col-amt"><span class="neg">−1,892.50</span></td>
+                    <td>12,927.66</td>
+                  </tr>
+                  <tr>
+                    <td class="col-date"><span class="date-mono">2026/03/05</span></td>
+                    <td class="col-desc">STRIPE PAYOUT</td>
+                    <td></td>
+                    <td class="col-amt">1,130.00</td>
+                    <td>14,057.66</td>
+                  </tr>
+                  <tr>
+                    <td class="col-date"><span class="date-mono">2026/03/06</span></td>
+                    <td class="col-desc">HOME DEPOT #7203</td>
+                    <td></td>
+                    <td class="col-amt"><span class="neg">−642.18</span></td>
+                    <td>13,415.48</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Save-as + Import -->
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: end; border-top: 1px dashed var(--rule); padding-top: 16px;">
+            <div class="field">
+              <label class="field-label">Save as</label>
+              <div class="input"><span>RBC Chequing — March 2026</span></div>
+            </div>
+            <button class="btn btn-rust btn-lg">
+              Import 87 transactions
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ═════════════════════════════════════════════════════════
+           FRAME C — IMPORT · STAGE 3 (DONE RECEIPT)
+           ═════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame C</span>
+        <span class="name">Import — Done</span>
+        <span class="path">/business-health/bank-import</span>
+        <span class="note">Stage 3 · receipt + Re-run matching surfaced for zero-match below</span>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Statement imported</span>
+          <span class="card-sub">RBC Chequing — March 2026</span>
+        </div>
+        <div class="card-body">
+
+          <!-- Stage rail -->
+          <div class="stage-rail">
+            <div class="stage-step is-done">
+              <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+              Upload
+            </div>
+            <div class="stage-sep"></div>
+            <div class="stage-step is-done">
+              <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+              Preview &amp; map
+            </div>
+            <div class="stage-sep"></div>
+            <div class="stage-step is-active">
+              <span class="pill">3</span>
+              Done &amp; review
+            </div>
+          </div>
+
+          <div class="receipt">
+            <div class="receipt-mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+            </div>
+            <div class="receipt-body">
+              <span class="receipt-eyebrow">Import receipt</span>
+              <span class="receipt-headline">
+                85 added · 17 matched · 68 left for QBO
+              </span>
+              <ul class="receipt-list">
+                <li><span class="num">85</span> new transactions added</li>
+                <li><span class="num">17</span> matched to existing invoices, costs &amp; bills <span style="color: var(--muted); font-family: var(--mono); font-size: 11px; margin-left: 4px;">(12 high · 4 medium · 1 low)</span></li>
+                <li class="muted"><span class="num">68</span> unmatched · transfers, fees, interest — belong in QBO</li>
+                <li class="muted"><span class="num">2</span> already imported (skipped — dedup)</li>
+              </ul>
+            </div>
+            <div class="receipt-actions">
+              <button class="btn btn-rust">
+                Review 17 matches
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+              <button class="btn btn-quiet btn-sm">Back to Business Health</button>
+            </div>
+          </div>
+
+          <!-- Zero-match alternate -->
+          <div class="legend-row" style="padding: 4px 0 0;">
+            <span>Zero-match branch (when Henry finds nothing)</span>
+            <span class="sep">·</span>
+            <span style="text-transform: none; letter-spacing: -0.005em; font-family: var(--sans); font-style: italic; color: var(--muted);">normal if you haven't entered the invoices yet</span>
+          </div>
+          <div class="receipt" style="background: var(--chrome); border-color: var(--hair); border-left-color: var(--hold);">
+            <div class="receipt-mark" style="background: var(--card); color: var(--hold); border-color: rgba(71, 85, 105, 0.18);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l3 2"/></svg>
+            </div>
+            <div class="receipt-body">
+              <span class="receipt-eyebrow" style="color: var(--hold);">No matches yet</span>
+              <span class="receipt-headline">85 added · 0 matched — that's normal</span>
+              <p style="margin: 4px 0 0; font-size: 14px; color: var(--ink-2); line-height: 1.55;">
+                Henry only matches statement lines to invoices, costs, and bills <strong style="color: var(--ink);">already in HeyHenry</strong>. Enter the corresponding records first, then re-run matching to score this statement again.
+              </p>
+            </div>
+            <div class="receipt-actions">
+              <button class="btn btn-rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M3 12a9 9 0 0015.5-6.3M21 5v5h-5"/></svg>
+                Re-run matching
+              </button>
+              <button class="btn btn-quiet btn-sm">Add invoices first</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ═════════════════════════════════════════════════════════
+           FRAME D — REVIEW QUEUE
+           ═════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame D</span>
+        <span class="name">Review — Queue</span>
+        <span class="path">/business-health/bank-review</span>
+        <span class="note">Heart of the surface · ✦ Henry on the match line · pre-checked high-confidence</span>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Review queue</span>
+          <span class="card-sub">Henry pre-checked the high-confidence wins. Uncheck any you distrust, then confirm.</span>
+          <div class="card-head-meta">
+            <button class="btn btn-quiet btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M3 12a9 9 0 0015.5-6.3M21 5v5h-5"/></svg>
+              Re-run matching
+            </button>
+          </div>
+        </div>
+
+        <!-- Count summary -->
+        <div class="count-summary">
+          <strong>17</strong> to review
+          <span class="sep">·</span>
+          <span class="band high">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+            12 high
+          </span>
+          <span class="band medium">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg>
+            4 medium
+          </span>
+          <span class="band low">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+            1 low
+          </span>
+          <span class="sep">·</span>
+          <strong>68</strong>&nbsp;unmatched
+          <span class="sep">·</span>
+          <strong>9</strong>&nbsp;done
+          <span class="decision">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+            68 left for QBO — by design, not by mistake
+          </span>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <span class="field-label">Statement</span>
+          <div class="select" style="min-width: 240px;">
+            <span>RBC Chequing — March 2026</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <span class="toggle">
+            <span class="cbx-stub"></span>
+            Show unmatched (68)
+          </span>
+          <span class="filter-spacer"></span>
+          <span class="small" style="color: var(--muted); font-style: italic;">Best-match first · high-confidence pre-checked</span>
+        </div>
+
+        <!-- Bulk bar -->
+        <div class="bulk-bar has-selection">
+          <span class="cbx-stub-dark"></span>
+          <span class="count"><strong>12</strong>SELECTED — OF 17 SUGGESTED</span>
+          <span class="bulk-bar-spacer"></span>
+          <button class="bulk-bar-act">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Not an invoice
+          </button>
+          <button class="btn btn-rust">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M5 12l5 5L20 7"/></svg>
+            Confirm + mark paid
+            <span class="btn-count">12</span>
+          </button>
+        </div>
+
+        <!-- Legend strip -->
+        <div class="legend-row">
+          <span class="pair">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: var(--ok);"><path d="M5 12l5 5L20 7"/></svg>
+            high · pre-checked
+          </span>
+          <span class="pair">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--warn);"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+            medium · suggested
+          </span>
+          <span class="pair">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--hold);"><circle cx="12" cy="12" r="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+            low · scan twice
+          </span>
+          <span class="sep">·</span>
+          <span class="pair" style="text-transform: none; letter-spacing: -0.005em; font-family: var(--sans); font-size: 12px;"><span style="font-family: var(--mono); font-weight: 700;">←</span> money in</span>
+          <span class="pair" style="text-transform: none; letter-spacing: -0.005em; font-family: var(--sans); font-size: 12px;"><span style="font-family: var(--mono); font-weight: 700;">→</span> money out</span>
+        </div>
+
+        <!-- Rows -->
+        <ul class="review-list">
+
+          <!-- Row 1 — HIGH, invoice (e-Transfer in) — pre-checked + how-Henry-matched OPEN -->
+          <li class="review-row is-prechecked">
+            <span class="cbx is-on" role="checkbox" aria-checked="true" aria-label="Select for bulk action"></span>
+            <div class="row-date">
+              <span class="d">Mar 02</span>
+              <span class="lbl"><span class="row-statement-link">RBC · Mar 2026</span></span>
+            </div>
+            <div class="row-body">
+              <span class="row-desc"><span class="vendor-tag">E-TRF</span>FROM J. ROBERTSON</span>
+              <span class="match-line">
+                <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+                <span class="band high">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                  high
+                </span>
+                <span class="dir-glyph in">
+                  <span class="arrow">←</span> invoice
+                </span>
+                <a class="candidate-link" href="#">INV-2046 · J. Robertson — kitchen reno (deposit)</a>
+                <span class="candidate-meta"><strong>$3,250.00</strong> · Mar 01</span>
+              </span>
+              <details class="how-matched" open>
+                <summary>
+                  <span class="henry-mark"><span class="star">✦</span>&nbsp;How Henry matched</span>
+                  <span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted);">Deterministic — not a model</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+                </summary>
+                <div class="rubric">
+                  <span class="axis">Amount</span>
+                  <span class="pts">50 / 50</span>
+                  <span class="desc">Exact: <strong>$3,250.00</strong> deposit ↔ <strong>$3,250.00</strong> invoice total (GST-inclusive)</span>
+
+                  <span class="axis">Date</span>
+                  <span class="pts">30 / 30</span>
+                  <span class="desc">±1 day: Mar 02 deposit · Mar 01 invoice sent</span>
+
+                  <span class="axis">Payee text</span>
+                  <span class="pts">20 / 20</span>
+                  <span class="desc">"J. ROBERTSON" appears in description → customer name match</span>
+
+                  <span class="axis total">Total</span>
+                  <span class="pts total">100 / 100</span>
+                  <span class="desc"><strong>High confidence</strong> — score ≥ 85, pre-checked.</span>
+                </div>
+                <div class="why-trust">
+                  Henry <strong>proposes</strong> + pre-checks high-confidence so you can clear 50 clicks in one. But it <strong>never auto-confirms</strong> — money flips only when you hit <em>Confirm + mark paid</em>.
+                </div>
+              </details>
+            </div>
+            <div class="row-amt in">
+              <span class="amt-glyph">
+                <span class="arrow">← IN</span>
+                <span>$3,250<span class="cents">.00</span></span>
+              </span>
+            </div>
+            <button class="icon-btn danger-on-hover" aria-label="Reject">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </li>
+
+          <!-- Row 2 — HIGH, invoice (Stripe payout, GST-inclusive match — pre-checked) -->
+          <li class="review-row is-prechecked">
+            <span class="cbx is-on" role="checkbox" aria-checked="true" aria-label="Select for bulk action"></span>
+            <div class="row-date">
+              <span class="d">Mar 05</span>
+              <span class="lbl"><span class="row-statement-link">RBC · Mar 2026</span></span>
+            </div>
+            <div class="row-body">
+              <span class="row-desc"><span class="vendor-tag">DEP</span>STRIPE PAYOUT</span>
+              <span class="match-line">
+                <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+                <span class="band high">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                  high
+                </span>
+                <span class="dir-glyph in"><span class="arrow">←</span> invoice</span>
+                <a class="candidate-link" href="#">INV-2049 · M. Patel — deck refinish (final)</a>
+                <span class="candidate-meta"><strong>$1,130.00</strong> · Mar 04 · GST-incl</span>
+              </span>
+            </div>
+            <div class="row-amt in">
+              <span class="amt-glyph">
+                <span class="arrow">← IN</span>
+                <span>$1,130<span class="cents">.00</span></span>
+              </span>
+            </div>
+            <button class="icon-btn danger-on-hover" aria-label="Reject">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </li>
+
+          <!-- Row 3 — HIGH, bill (cheque out) — pre-checked -->
+          <li class="review-row is-prechecked">
+            <span class="cbx is-on" role="checkbox" aria-checked="true" aria-label="Select for bulk action"></span>
+            <div class="row-date">
+              <span class="d">Mar 04</span>
+              <span class="lbl"><span class="row-statement-link">RBC · Mar 2026</span></span>
+            </div>
+            <div class="row-body">
+              <span class="row-desc"><span class="vendor-tag">CHQ 1042</span>NORTHWEST ELECTRIC</span>
+              <span class="match-line">
+                <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+                <span class="band high">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                  high
+                </span>
+                <span class="dir-glyph out"><span class="arrow">→</span> bill</span>
+                <a class="candidate-link" href="#">Northwest Electric — rough-in (J. Robertson)</a>
+                <span class="candidate-meta"><strong>$1,892.50</strong> · Mar 01</span>
+              </span>
+            </div>
+            <div class="row-amt out">
+              <span class="amt-glyph">
+                <span class="arrow">→ OUT</span>
+                <span>$1,892<span class="cents">.50</span></span>
+              </span>
+            </div>
+            <button class="icon-btn danger-on-hover" aria-label="Reject">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </li>
+
+          <!-- Row 4 — MEDIUM, expense — NOT pre-checked, switcher visible -->
+          <li class="review-row">
+            <span class="cbx" role="checkbox" aria-checked="false" aria-label="Select for bulk action"></span>
+            <div class="row-date">
+              <span class="d">Mar 06</span>
+              <span class="lbl"><span class="row-statement-link">RBC · Mar 2026</span></span>
+            </div>
+            <div class="row-body">
+              <span class="row-desc"><span class="vendor-tag">POS</span>HOME DEPOT #7203</span>
+              <span class="match-line">
+                <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+                <span class="band medium">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+                  medium
+                </span>
+                <span class="dir-glyph out"><span class="arrow">→</span> expense</span>
+                <a class="candidate-link" href="#">Home Depot — lumber + trim (Patel)</a>
+                <span class="candidate-meta"><strong>$642.18</strong> · Mar 05</span>
+                <span class="switcher">
+                  <span class="label">Other ·</span>
+                  <span>2</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </span>
+            </div>
+            <div class="row-amt out">
+              <span class="amt-glyph">
+                <span class="arrow">→ OUT</span>
+                <span>$642<span class="cents">.18</span></span>
+              </span>
+            </div>
+            <button class="icon-btn danger-on-hover" aria-label="Reject">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </li>
+
+          <!-- Row 5 — MEDIUM, invoice — NOT pre-checked, switcher OPEN (top-3 candidates) -->
+          <li class="review-row" style="background: var(--chrome);">
+            <span class="cbx" role="checkbox" aria-checked="false" aria-label="Select for bulk action"></span>
+            <div class="row-date">
+              <span class="d">Mar 09</span>
+              <span class="lbl"><span class="row-statement-link">RBC · Mar 2026</span></span>
+            </div>
+            <div class="row-body">
+              <span class="row-desc"><span class="vendor-tag">DEP</span>CHEQUE DEPOSIT — 4811</span>
+              <span class="match-line">
+                <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+                <span class="band medium">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+                  medium
+                </span>
+                <span class="dir-glyph in"><span class="arrow">←</span> invoice</span>
+                <a class="candidate-link" href="#">INV-2051 · D. Chen — bathroom (final)</a>
+                <span class="candidate-meta"><strong>$4,520.00</strong> · Mar 03</span>
+              </span>
+              <!-- Top-3 candidate switcher — open state -->
+              <div style="margin-top: 8px; background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 4px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 6px; background: var(--rust-soft);">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <span class="band high" style="background: var(--ok-soft); color: var(--ok);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                      1 · medium
+                    </span>
+                    <span style="font-size: 14px; color: var(--ink); font-weight: 600;">INV-2051 · D. Chen — bathroom (final)</span>
+                  </span>
+                  <span style="font-family: var(--sans); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--ink); font-weight: 700;">$4,520.00</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; color: var(--ink-2);">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <span class="band medium">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+                      2 · medium
+                    </span>
+                    <span style="font-size: 14px;">INV-2048 · L. Reyes — fence stain</span>
+                  </span>
+                  <span style="font-family: var(--sans); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--ink-2); font-weight: 600;">$4,500.00</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; color: var(--ink-2);">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <span class="band low">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+                      3 · low
+                    </span>
+                    <span style="font-size: 14px;">INV-2052 · B. Singh — deposit refund</span>
+                  </span>
+                  <span style="font-family: var(--sans); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--ink-2); font-weight: 600;">$4,520.00</span>
+                </div>
+              </div>
+            </div>
+            <div class="row-amt in">
+              <span class="amt-glyph">
+                <span class="arrow">← IN</span>
+                <span>$4,520<span class="cents">.00</span></span>
+              </span>
+            </div>
+            <button class="icon-btn danger-on-hover" aria-label="Reject">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </li>
+
+          <!-- Row 6 — LOW, expense — NOT pre-checked -->
+          <li class="review-row">
+            <span class="cbx" role="checkbox" aria-checked="false" aria-label="Select for bulk action"></span>
+            <div class="row-date">
+              <span class="d">Mar 12</span>
+              <span class="lbl"><span class="row-statement-link">RBC · Mar 2026</span></span>
+            </div>
+            <div class="row-body">
+              <span class="row-desc"><span class="vendor-tag">DEBIT</span>VISA*GAS BAR ABBOTSFORD</span>
+              <span class="match-line">
+                <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+                <span class="band low">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+                  low — scan twice
+                </span>
+                <span class="dir-glyph out"><span class="arrow">→</span> expense</span>
+                <a class="candidate-link" href="#">Petro-Canada — fuel (truck)</a>
+                <span class="candidate-meta"><strong>$87.40</strong> · Mar 10 · within 1%</span>
+              </span>
+            </div>
+            <div class="row-amt out">
+              <span class="amt-glyph">
+                <span class="arrow">→ OUT</span>
+                <span>$87<span class="cents">.83</span></span>
+              </span>
+            </div>
+            <button class="icon-btn danger-on-hover" aria-label="Reject">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </li>
+
+          <!-- Row 7 — UNMATCHED (only visible with toggle on) -->
+          <li class="review-row is-unmatched">
+            <span class="cbx disabled" aria-hidden="true"></span>
+            <div class="row-date">
+              <span class="d">Mar 15</span>
+              <span class="lbl"><span class="row-statement-link">RBC · Mar 2026</span></span>
+            </div>
+            <div class="row-body">
+              <span class="row-desc unmatched-text">TRANSFER TO SAVINGS — 8021</span>
+              <span class="match-line">
+                <span class="henry-mark muted"><span class="star">✦</span>&nbsp;Henry</span>
+                <span style="font-size: 12px; color: var(--muted); font-style: italic;">
+                  Unmatched · looks like a transfer / fee / interest? Reject to skip — or leave it for QBO.
+                </span>
+              </span>
+            </div>
+            <div class="row-amt out">
+              <span class="amt-glyph">
+                <span class="arrow">→ OUT</span>
+                <span style="color: var(--muted);">$2,000<span class="cents">.00</span></span>
+              </span>
+              <span class="lbl">left for QBO</span>
+            </div>
+            <button class="icon-btn danger-on-hover" aria-label="Reject — not an invoice">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </li>
+
+        </ul>
+
+        <!-- Tail nudge -->
+        <div style="padding: 14px 20px 18px; border-top: 1px solid var(--hair); background: var(--chrome); display: flex; align-items: center; gap: 12px;">
+          <span style="font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;">Showing 6 of 17 suggested</span>
+          <span class="sep" style="color: var(--faint);">·</span>
+          <span style="font-size: 12px; color: var(--muted); font-style: italic;">Entered an invoice Henry didn't see? Re-run matching above.</span>
+          <span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted);">RBC · Mar 2026 · 87 imported</span>
+        </div>
+      </div>
+
+
+      <!-- ═════════════════════════════════════════════════════════
+           FRAME E — CONFIRM AlertDialog
+           ═════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame E</span>
+        <span class="name">Confirm + mark paid — AlertDialog</span>
+        <span class="path">PATTERNS.md §3 · replaces window.confirm</span>
+        <span class="note">The money-state gate · per-kind summary · rust commit · ghost cancel</span>
+      </div>
+
+      <div class="dialog-stage">
+        <div class="dialog" role="alertdialog" aria-labelledby="dialog-title" aria-describedby="dialog-desc">
+          <div class="dialog-head">
+            <div class="icon-stub">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+            </div>
+            <div>
+              <div id="dialog-title" class="dialog-title">Mark 12 matches as paid?</div>
+              <div id="dialog-desc" class="dialog-desc">Invoices and bills flip to <strong style="color: var(--ink);">paid</strong>; expenses are linked for audit. Bank transactions are stamped confirmed.</div>
+            </div>
+          </div>
+          <div class="dialog-body">
+            <div class="dialog-summary">
+              <div class="line">
+                <span class="num">7</span>
+                invoices → paid
+                <span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600;">money in</span>
+              </div>
+              <div class="line">
+                <span class="num">3</span>
+                bills → paid
+                <span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600;">money out</span>
+              </div>
+              <div class="line">
+                <span class="num">2</span>
+                expenses → linked for audit
+                <span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600;">money out</span>
+              </div>
+              <div class="line total">
+                <span class="num">12</span>
+                bank transactions → confirmed
+              </div>
+            </div>
+            <div class="dialog-fineprint">
+              <strong>One worklog entry</strong> records the bulk action. QBO push fires for paid invoices on save. You can undo a single match by reverting the invoice — bulk undo isn't supported.
+            </div>
+          </div>
+          <div class="dialog-foot">
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-rust">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M5 12l5 5L20 7"/></svg>
+              Confirm + mark paid
+              <span class="btn-count">12</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ═════════════════════════════════════════════════════════
+           FRAME F — STATES (skeleton + error + zero-match)
+           ═════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame F</span>
+        <span class="name">States — loading · error · zero-match</span>
+        <span class="path">/business-health/bank-review</span>
+        <span class="note">Skeleton replaces crashed-route throw · error retry · empty-state CTA</span>
+      </div>
+
+      <div class="states-grid">
+
+        <!-- 1 · Loading -->
+        <div>
+          <div class="state-cap">
+            <span class="num">1</span>
+            Loading — skeleton rows
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Review queue</span>
+              <span class="card-sub">Loading your matches…</span>
+            </div>
+            <div class="count-summary">
+              <span class="skel shorter" style="height: 14px; width: 120px;"></span>
+              <span class="sep">·</span>
+              <span class="skel" style="height: 14px; width: 70px;"></span>
+              <span class="sep">·</span>
+              <span class="skel" style="height: 14px; width: 90px;"></span>
+            </div>
+            <ul class="review-list">
+              <li class="skel-row">
+                <span class="skel box"></span>
+                <div class="skel-stack-tight">
+                  <span class="skel tall" style="width: 60px;"></span>
+                  <span class="skel short"></span>
+                </div>
+                <div class="skel-stack">
+                  <span class="skel tall" style="width: 80%;"></span>
+                  <span class="skel" style="width: 65%;"></span>
+                </div>
+                <span class="skel amt"></span>
+                <span class="skel box"></span>
+              </li>
+              <li class="skel-row">
+                <span class="skel box"></span>
+                <div class="skel-stack-tight">
+                  <span class="skel tall" style="width: 60px;"></span>
+                  <span class="skel short"></span>
+                </div>
+                <div class="skel-stack">
+                  <span class="skel tall" style="width: 70%;"></span>
+                  <span class="skel" style="width: 50%;"></span>
+                </div>
+                <span class="skel amt"></span>
+                <span class="skel box"></span>
+              </li>
+              <li class="skel-row">
+                <span class="skel box"></span>
+                <div class="skel-stack-tight">
+                  <span class="skel tall" style="width: 60px;"></span>
+                  <span class="skel short"></span>
+                </div>
+                <div class="skel-stack">
+                  <span class="skel tall" style="width: 85%;"></span>
+                  <span class="skel" style="width: 45%;"></span>
+                </div>
+                <span class="skel amt"></span>
+                <span class="skel box"></span>
+              </li>
+              <li class="skel-row">
+                <span class="skel box"></span>
+                <div class="skel-stack-tight">
+                  <span class="skel tall" style="width: 60px;"></span>
+                  <span class="skel short"></span>
+                </div>
+                <div class="skel-stack">
+                  <span class="skel tall" style="width: 75%;"></span>
+                  <span class="skel" style="width: 55%;"></span>
+                </div>
+                <span class="skel amt"></span>
+                <span class="skel box"></span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 2 · Error retry -->
+        <div>
+          <div class="state-cap">
+            <span class="num">2</span>
+            Error — graceful retry
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Review queue</span>
+            </div>
+            <div class="err-card">
+              <div class="err-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+              </div>
+              <div class="err-title">Couldn't load your matches</div>
+              <div class="err-sub">Something went sideways pulling the review queue. Your data is fine — this is just a network or query hiccup.</div>
+              <div class="err-foot">
+                <button class="btn btn-rust">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M3 12a9 9 0 0015.5-6.3M21 5v5h-5"/></svg>
+                  Retry
+                </button>
+                <button class="btn btn-ghost">Back to Business Health</button>
+              </div>
+              <span class="err-meta">ref · queue/listBankReviewQueue · 5b3f</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 · Zero-match empty -->
+        <div>
+          <div class="state-cap">
+            <span class="num">3</span>
+            Empty — nothing to review (global)
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Review queue</span>
+            </div>
+            <div class="empty-card">
+              <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4M5 7v10l7 4 7-4V7"/></svg>
+              </div>
+              <div class="empty-title">Nothing waiting</div>
+              <div class="empty-sub">Import a bank statement to see suggested matches here. Henry scores every line against your unpaid invoices, costs, and bills.</div>
+              <div class="empty-foot">
+                <button class="btn btn-rust">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></svg>
+                  Import bank statement
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 · Per-statement empty -->
+        <div>
+          <div class="state-cap">
+            <span class="num">4</span>
+            Empty — per-statement done
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Review queue</span>
+              <span class="card-sub">RBC Chequing — March 2026</span>
+            </div>
+            <div class="empty-card">
+              <div class="empty-icon" style="background: var(--ok-soft); border-color: rgba(21, 128, 61, 0.22); color: var(--ok);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="empty-title">Statement cleared</div>
+              <div class="empty-sub">All matches confirmed or skipped for this statement. 17 paid · 68 left for QBO.</div>
+              <div class="empty-foot">
+                <button class="btn btn-ghost">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 5v14M5 12h14"/></svg>
+                  Import another statement
+                </button>
+                <button class="btn btn-quiet btn-sm">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M3 12a9 9 0 0015.5-6.3M21 5v5h-5"/></svg>
+                  Re-run matching
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ───── Foot note (OD frame, not product chrome) ───── -->
+      <div style="margin-top: 32px; padding: 16px 20px; background: var(--chrome); border: 1px dashed var(--rule); border-radius: var(--radius-card); display: flex; align-items: flex-start; gap: 12px;">
+        <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6;">
+          <strong style="color: var(--ink-2); font-weight: 600;">The matcher is the leverage here.</strong>
+          Deterministic — amount (50) + date (30) + payee text (20). ≥85 = high (pre-checked), 60–84 = medium, 30–59 = low, &lt;30 = unmatched (QBO's pile). Henry <em>proposes</em>; the human <em>commits</em>. Money flips only on click. e-Transfer / cheque / Stripe / cash all reconcile the same way — amount + date + payee, not payment rail. Bookkeepers reconcile against QBO's bank feed; we don't pretend to be the book of record.
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+</body>
+</html>
