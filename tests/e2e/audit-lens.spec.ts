@@ -115,10 +115,22 @@ test.describe
 
       // AppliedChangeOrdersBanner — replaces the old "Change Order
       // history" panel. Shows the applied count inline; expanding "See
-      // history" reveals the per-CO timeline with the title.
+      // history" reveals the per-CO version timeline with the title.
       await expect(page.getByText(/applied change order/i).first()).toBeVisible();
       await page.getByRole('button', { name: /see history/i }).click();
-      await expect(page.getByText(co_title)).toBeVisible();
+
+      // The expanded timeline row labels this seeded (snapshot-less) CO
+      // as `CO — <title> (legacy)`. Assert on that timeline-specific
+      // label rather than the bare title: the redesign added a
+      // per-project ProjectChangesSection list elsewhere on the Budget
+      // tab that ALSO renders the bare CO title, so an unscoped
+      // getByText(co_title) now resolves to 2 nodes → strict-mode
+      // violation. Matching the `CO — … (legacy)` form keeps the
+      // assertion unambiguous AND still proves the applied CO surfaces in
+      // the audit history.
+      await expect(
+        page.getByText(new RegExp(`CO\\s*—.*${co_title}.*\\(legacy\\)`, 'i')),
+      ).toBeVisible();
     });
 
     test('Budget tab shows CO chip linking to the applied CO', async ({ page }) => {
