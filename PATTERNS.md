@@ -743,3 +743,17 @@ Per-room finish selections carry `allowance_cents` (the contractual budget) + `a
 **CLIENT BOUNDARY** (enforced in `portal-selections.tsx` + `portal-selections-panel.tsx`): the client sees allowance vs **their** actual + room roll-up, but **never** margin / markup / supplier / SKU, and **no Start-CO**. `project_idea_board_items` and `project_selections` stay **distinct objects** — ideas promote one-way into selections (Object Model `b4d880be`); the promoted tag is derived from `idea.promoted_to_selection_id`, the tables are never merged.
 
 Sibling instances: operator `selection-list.tsx`; portal read-only `portal-selections.tsx`; portal composer `portal-selections-panel.tsx`. OD source: `od-selections/screens/{desktop,mobile}.html`.
+
+## 32. Public brand header (`<PublicBrandHeader>` — the GC letterhead bar)
+
+The brand-chrome counterpart to `<CustomerDocument>` (§28) for the **non-money** public surfaces — the **Portal hub** and **Tap-to-decide** — that are not document-shaped enough to render *inside* CustomerDocument but still must open with the GC's letterhead, never HeyHenry's. A white `bg-card` bar floating on the warm Paper `bg-background`: signed GC logo (or two-letter text fallback) + business name + an optional context line + a quiet "secure" lock (the no-login trust signal).
+
+`src/components/features/public/public-brand-header.tsx`. Props: `logoUrl` (signed from the private `photos` bucket — brand chrome, not project data), `businessName` (doubles as logo alt), `context` (caller-supplied — project name + client first name, or "A quick decision for {name}"; **never a money / internal figure**), `hideSecure`.
+
+**Hard boundary:** renders no project data beyond the business name + the caller's `context` string — it never sees cost / margin / supplier / unit fields. The money documents (Estimate / CO / Invoice) keep using `<CustomerDocument>`'s own letterhead; this is only for the brand-header + artifact + action shape where the artifact isn't a priced doc.
+
+**Adopters:**
+- `src/app/(public)/portal/[slug]/page.tsx` — Portal hub. Sits in a rounded `bg-card` card over `bg-background`; the project hero (name + status + % complete) renders under it. Mobile gets a fixed bottom-sheet tab bar (`sm:hidden`, pure `<Link>`s, no client JS) mirroring the thumb-reachable primaries (Project/Schedule/Photos/Messages + More→Budget); the full 7-tab strip stays scrollable up top so every tab is reachable. Project-tab order: decisions pinned → status/progress → approvals → phases → docs → trades → updates → a **calm** boundary note (`Shield` glyph) that does NOT enumerate withheld categories (enumerating internal costs/supplier pricing spotlights markup — a margin tell).
+- `src/app/(public)/decide/[code]/page.tsx` — Tap-to-decide. Brand header → `DecisionPanel` artifact → one-question boundary note. Terminal/decided/dismissed states render in the same branded `Shell`.
+
+OD source: `od-public-pages/screens/{desktop,mobile}.html` (`gc-bar` recipe). Mobile is primary.
