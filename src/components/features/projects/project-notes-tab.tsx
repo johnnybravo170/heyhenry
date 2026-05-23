@@ -10,20 +10,21 @@
  * button so the primary surface is the feed and the inline note input.
  */
 
-import {
-  Bot,
-  Loader2,
-  MessageSquare,
-  Mic,
-  Send,
-  Sparkles,
-  StickyNote,
-  Trash2,
-  User as UserIcon,
-} from 'lucide-react';
+import { Lock, Mic, Play, Sparkles, StickyNote, Trash2, User as UserIcon } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { MemoUpload, type MemoUploadProps } from '@/components/features/memos/memo-upload';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -33,6 +34,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { formatDateTime } from '@/lib/date/format';
 import {
   addProjectNoteAction,
   askHenryAboutProjectAction,
@@ -131,11 +134,13 @@ export function ProjectNotesTab({
         return;
       }
       setHenryQ('');
+      // The Q + A land in the feed below as a henry_q / henry_a pair — this is
+      // an action, not a chat thread. Confirm so the operator looks down.
+      toast.success('Henry answered — added to the feed below.');
     });
   }
 
   function handleDelete(noteId: string) {
-    if (!confirm('Delete this note?')) return;
     startDeleting(async () => {
       const res = await deleteProjectNoteAction({ noteId, projectId });
       if (!res.ok) {
@@ -147,8 +152,14 @@ export function ProjectNotesTab({
 
   return (
     <div className="space-y-4">
+      {/* Internal-only banner — the Notes feed is never visible to the client. */}
+      <div className="flex items-center gap-2 rounded-lg border bg-muted px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <Lock className="size-3 shrink-0" aria-hidden />
+        Internal only · never visible to the client
+      </div>
+
       {/* Inline note composer */}
-      <div className="rounded-md border bg-card p-3">
+      <div className="rounded-xl border bg-card p-3">
         <Textarea
           rows={2}
           value={draft}
@@ -172,23 +183,23 @@ export function ProjectNotesTab({
             </DialogContent>
           </Dialog>
           <Button size="sm" onClick={handleAdd} disabled={isAdding || !draft.trim()}>
-            {isAdding ? (
-              <>
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              'Add note'
-            )}
+            {isAdding ? 'Saving…' : 'Add note'}
           </Button>
         </div>
       </div>
 
-      {/* Ask Henry */}
-      <div className="rounded-md border bg-muted/10 p-3">
-        <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <Bot className="size-3.5" />
-          Ask Henry about this project
+      {/* Ask Henry — a labeled action, NOT a chat thread. The answer drops into
+          the feed below as a henry_q / henry_a pair. Don't grow this into a
+          conversation panel (Henry is intelligence, not chat). */}
+      <div className="rounded-xl border border-brand/25 bg-card p-3.5">
+        <div className="mb-1.5 flex items-baseline gap-2">
+          <span className="flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-brand">
+            <Sparkles className="size-3" aria-hidden />
+            Ask Henry about this project
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            Answer drops into the feed below
+          </span>
         </div>
         <div className="flex items-end gap-2">
           <Textarea
@@ -204,18 +215,8 @@ export function ProjectNotesTab({
               }
             }}
           />
-          <Button
-            size="sm"
-            onClick={handleAskHenry}
-            disabled={isAsking || !henryQ.trim()}
-            className="gap-1.5"
-          >
-            {isAsking ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Send className="size-3.5" />
-            )}
-            Ask
+          <Button size="sm" onClick={handleAskHenry} disabled={isAsking || !henryQ.trim()}>
+            {isAsking ? 'Asking…' : 'Ask Henry'}
           </Button>
         </div>
       </div>
@@ -245,7 +246,7 @@ export function ProjectNotesTab({
                   isDeleting={isDeleting}
                 />
               ) : item.kind === 'henry_q' ? (
-                <ChatCard
+                <HenryTurnCard
                   speaker="user"
                   body={item.body}
                   createdAt={item.created_at}
@@ -253,7 +254,7 @@ export function ProjectNotesTab({
                   isDeleting={isDeleting}
                 />
               ) : item.kind === 'henry_a' ? (
-                <ChatCard
+                <HenryTurnCard
                   speaker="henry"
                   body={item.body}
                   createdAt={item.created_at}
@@ -292,6 +293,59 @@ export function ProjectNotesTab({
   );
 }
 
+/** Shared AlertDialog-guarded delete for every deletable feed item. */
+function FeedDeleteButton({
+  onDelete,
+  isDeleting,
+  label,
+}: {
+  onDelete: () => void;
+  isDeleting: boolean;
+  label: string;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <button
+          type="button"
+          disabled={isDeleting}
+          aria-label={label}
+          className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-destructive"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+          <AlertDialogDescription>This can&rsquo;t be undone.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onDelete}
+            disabled={isDeleting}
+            className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+          >
+            {isDeleting ? 'Deleting…' : 'Delete'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+/** A single Henry feed item: the operator's question (neutral) or Henry's
+ * answer (rust accent). Plain feed cards — never chat bubbles. */
+function FeedWhen({ iso }: { iso: string }) {
+  const tz = useTenantTimezone();
+  return (
+    <span className="font-mono text-[11px] text-muted-foreground">
+      {formatDateTime(iso, { timezone: tz })}
+    </span>
+  );
+}
+
 function NoteCard({
   body,
   author,
@@ -306,26 +360,18 @@ function NoteCard({
   isDeleting: boolean;
 }) {
   return (
-    <div className="rounded-md border bg-card p-3">
+    <div className="rounded-xl border bg-card p-3">
       <div className="flex items-start gap-2">
         <StickyNote className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <p className="whitespace-pre-wrap text-sm">{body}</p>
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span>{author ?? 'Note'}</span>
-            <span>·</span>
-            <span>{formatWhen(createdAt)}</span>
+          <div className="mt-1 flex items-center gap-2 text-muted-foreground">
+            <span className="text-xs font-medium text-foreground/70">{author ?? 'Note'}</span>
+            <span className="text-[11px]">·</span>
+            <FeedWhen iso={createdAt} />
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={isDeleting}
-          aria-label="Delete note"
-          className="text-muted-foreground hover:text-destructive"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        <FeedDeleteButton onDelete={onDelete} isDeleting={isDeleting} label="Delete note" />
       </div>
     </div>
   );
@@ -346,36 +392,30 @@ function ReplyDraftCard({
     navigator.clipboard.writeText(body).then(() => toast.success('Reply copied'));
   }
   return (
-    <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+    <div className="rounded-xl border border-brand/25 bg-card p-3">
       <div className="flex items-start gap-2">
-        <MessageSquare className="mt-0.5 size-3.5 shrink-0 text-amber-700" />
+        <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" />
         <div className="min-w-0 flex-1">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-amber-800">
+          <p className="mb-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-brand">
             Henry drafted a reply
           </p>
-          <p className="whitespace-pre-wrap text-sm text-amber-950">{body}</p>
+          <p className="whitespace-pre-wrap rounded-lg border border-brand/15 bg-brand/5 p-2.5 text-sm">
+            {body}
+          </p>
           <div className="mt-2 flex items-center gap-2">
-            <Button size="xs" variant="outline" onClick={copy} className="bg-white">
+            <Button size="xs" variant="outline" onClick={copy} className="bg-card">
               Copy reply
             </Button>
-            <span className="text-[10px] text-amber-700/80">{formatWhen(createdAt)}</span>
+            <FeedWhen iso={createdAt} />
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={isDeleting}
-          aria-label="Delete reply draft"
-          className="text-amber-700/60 hover:text-destructive"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        <FeedDeleteButton onDelete={onDelete} isDeleting={isDeleting} label="Delete reply draft" />
       </div>
     </div>
   );
 }
 
-function ChatCard({
+function HenryTurnCard({
   speaker,
   body,
   createdAt,
@@ -390,32 +430,29 @@ function ChatCard({
 }) {
   const isUser = speaker === 'user';
   return (
-    <div className={`rounded-md border p-3 ${isUser ? 'bg-card' : 'border-blue-200 bg-blue-50'}`}>
+    <div className={`rounded-xl border p-3 ${isUser ? 'bg-card' : 'border-brand/25 bg-card'}`}>
       <div className="flex items-start gap-2">
         {isUser ? (
           <UserIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
         ) : (
-          <Bot className="mt-0.5 size-3.5 shrink-0 text-blue-700" />
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" />
         )}
         <div className="min-w-0 flex-1">
-          <p className={`whitespace-pre-wrap text-sm ${isUser ? '' : 'text-blue-950'}`}>{body}</p>
-          <div
-            className={`mt-1 flex items-center gap-2 text-[10px] ${isUser ? 'text-muted-foreground' : 'text-blue-700/80'}`}
-          >
-            <span>{isUser ? 'You asked' : 'Henry'}</span>
-            <span>·</span>
-            <span>{formatWhen(createdAt)}</span>
+          {!isUser ? (
+            <p className="mb-1 font-mono text-[11px] font-bold uppercase tracking-wider text-brand">
+              Henry
+            </p>
+          ) : null}
+          <p className="whitespace-pre-wrap text-sm">{body}</p>
+          <div className="mt-1 flex items-center gap-2 text-muted-foreground">
+            <span className="text-xs font-medium text-foreground/70">
+              {isUser ? 'You asked' : 'Answer'}
+            </span>
+            <span className="text-[11px]">·</span>
+            <FeedWhen iso={createdAt} />
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={isDeleting}
-          aria-label="Delete"
-          className="text-muted-foreground hover:text-destructive"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        <FeedDeleteButton onDelete={onDelete} isDeleting={isDeleting} label="Delete" />
       </div>
     </div>
   );
@@ -439,42 +476,36 @@ function ArtifactCard({
   isDeleting: boolean;
 }) {
   return (
-    <div className="rounded-md border bg-card p-3">
+    <div className="rounded-xl border bg-card p-3">
       <div className="flex items-start gap-3">
         {imageUrl ? (
           <a
             href={imageUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block h-20 w-20 shrink-0 overflow-hidden rounded-md border"
+            className="block h-20 w-20 shrink-0 overflow-hidden rounded-lg border"
           >
             {/* biome-ignore lint/performance/noImgElement: signed URL bypasses next/image */}
             <img src={imageUrl} alt={label} className="h-full w-full object-cover" />
           </a>
         ) : (
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border bg-muted/30 text-xs text-muted-foreground">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border bg-muted/30 text-xs text-muted-foreground">
             no preview
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
             {artifactKind}
           </p>
           <p className="text-sm font-medium">{label}</p>
           {body && body !== label ? (
             <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">{body}</p>
           ) : null}
-          <p className="mt-1 text-[10px] text-muted-foreground">{formatWhen(createdAt)}</p>
+          <p className="mt-1">
+            <FeedWhen iso={createdAt} />
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={isDeleting}
-          aria-label="Delete artifact"
-          className="text-muted-foreground hover:text-destructive"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        <FeedDeleteButton onDelete={onDelete} isDeleting={isDeleting} label="Delete artifact" />
       </div>
     </div>
   );
@@ -490,21 +521,30 @@ function MemoCard({
   createdAt: string;
 }) {
   return (
-    <div className="rounded-md border bg-card p-3">
+    <div className="rounded-xl border bg-card p-3">
       <div className="flex items-start gap-2">
-        <Mic className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+          <Mic className="size-3" />
+        </span>
         <div className="min-w-0 flex-1">
+          <p className="mb-1 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+            Voice memo
+          </p>
           {transcript ? (
-            <p className="whitespace-pre-wrap text-sm">{transcript}</p>
+            <p className="whitespace-pre-wrap rounded-lg border bg-muted/30 p-2.5 text-sm italic">
+              {transcript}
+            </p>
           ) : (
             <p className="text-sm italic text-muted-foreground">
               {status === 'transcribing' ? 'Transcribing…' : 'Audio memo'}
             </p>
           )}
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span>Memo</span>
-            <span>·</span>
-            <span>{formatWhen(createdAt)}</span>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-[11px]">
+              <Play className="size-2.5 fill-current" />
+              Play
+            </span>
+            <FeedWhen iso={createdAt} />
           </div>
         </div>
       </div>
@@ -524,29 +564,21 @@ function EventCard({
   createdAt: string;
 }) {
   return (
-    <div className="rounded-md border bg-muted/20 p-3">
+    <div className="rounded-xl border bg-muted/30 p-3">
       <div className="flex items-start gap-2">
-        <Sparkles className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+          <Sparkles className="size-3" />
+        </span>
         <div className="min-w-0 flex-1">
           {title ? <p className="text-sm font-medium">{title}</p> : null}
           {body ? <p className="text-xs text-muted-foreground">{body}</p> : null}
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="capitalize">{entryType}</span>
-            <span>·</span>
-            <span>{formatWhen(createdAt)}</span>
+          <div className="mt-1 flex items-center gap-2 text-muted-foreground">
+            <span className="font-mono text-[11px] uppercase tracking-wider">{entryType}</span>
+            <span className="text-[11px]">·</span>
+            <FeedWhen iso={createdAt} />
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('en-CA', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 }
