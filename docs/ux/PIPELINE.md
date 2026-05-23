@@ -65,6 +65,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Change Order | ✅ | 🟡 (in progress: od-driver) | "voice/photo drafting" | 🟡 | manual flow built; refinements open |
 | Expenses | ✅ | ⬜ | — | 🟡 ? | |
 | Customer Documents | ✅ | ⬜ | — | 🟡 ? | |
+| Settings (config hub · 30 sub-pages) | ✅ `settings.md` | ⬜ | — | 🟡 (live, pre-redesign) | shell + IA brief; **target: role-filter the nav (vertical-only today), prune/merge sprawl, Paper restyle**; heavy sub-flows (Team, Billing, QuickBooks, Import) graduate to own renders |
 
 ### Project Hub (shell + tabs)
 | Tab | Brief | OD render | Open dev cards | Built (ref) | Notes |
@@ -85,7 +86,6 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 > 🟡 **In progress — `research-0523` (2026-05-23) is sweeping this entire list in one Research pass.** Each screen is promoted into the status tables above (✅ Brief + ref) as its brief lands; bullets are removed from this menu as they complete.
 
 Not yet briefed; **claim one** (mark it in-progress) before starting. Most are subscreen-dense — apply the skill's Subscreen Inventory step.
-- **Settings** (+ sub-pages: Team/invite, Pricebook/materials, Portal defaults, Calendar, Billing/subscription)
 - **Worker app `/w`** (Today · Calendar · Projects · Profile + the worker-invoice queue; plan W1–W7 in `GC_WORKFLOW_PLAN.md`) — its own mobile-first surface, a big pass
 - **Public pages** — estimate / CO / invoice approval (`/approve*`), and the **customer Portal** itself (`/portal/[slug]`, customer-facing; carries the GC's brand)
 - **Bookkeeper portal** — *deferred (out of scope for V1)*; listed so it's not forgotten
