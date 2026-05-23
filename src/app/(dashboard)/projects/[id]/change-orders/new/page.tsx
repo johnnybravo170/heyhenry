@@ -33,6 +33,15 @@ export default async function NewChangeOrderPage({
   // Legacy even-distribute form still reachable via ?v2=0 as an escape hatch.
   const useDiffForm = sp.v2 !== '0';
 
+  // Light prefill from an over-allowance Selection ("Start CO"). The
+  // Selections tab passes a title + reason so the operator starts from
+  // context; the cost-impact lines stay empty for them to author. Strings
+  // only — the operator still approves/sends every CO. (kanban 97627958)
+  const prefillTitle = typeof sp.title === 'string' ? sp.title : undefined;
+  const prefillReason = typeof sp.reason === 'string' ? sp.reason : undefined;
+  const createPrefill =
+    prefillTitle || prefillReason ? { title: prefillTitle, reason: prefillReason } : undefined;
+
   return (
     <div className="mx-auto w-full max-w-5xl">
       <Link
@@ -52,6 +61,7 @@ export default async function NewChangeOrderPage({
           budgetCategories={project.budget_categories}
           existingLines={await listCostLines(id)}
           defaultManagementFeeRate={project.management_fee_rate}
+          mode={{ kind: 'create', prefill: createPrefill }}
         />
       ) : (
         <ChangeOrderForm

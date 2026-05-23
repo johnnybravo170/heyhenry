@@ -1,3 +1,7 @@
+import {
+  type OverAllowanceItem,
+  OverAllowanceNudge,
+} from '@/components/features/portal/over-allowance-nudge';
 import { SelectionFormDialog } from '@/components/features/portal/selection-form-dialog';
 import { SelectionList } from '@/components/features/portal/selection-list';
 import type { GalleryPickerPhoto } from '@/components/features/portal/selection-photo-picker';
@@ -10,6 +14,8 @@ import {
 import { signIdeaBoardImageUrls } from '@/lib/storage/idea-board';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import type { SelectionCategory } from '@/lib/validators/project-selection';
+import { selectionCategoryLabels } from '@/lib/validators/project-selection';
 import type { IdeaBoardItem } from '@/server/actions/project-idea-board';
 
 export default async function SelectionsTabServer({ projectId }: { projectId: string }) {
@@ -52,6 +58,32 @@ export default async function SelectionsTabServer({ projectId }: { projectId: st
     image_url: r.image_storage_path ? (ideaSignedUrls.get(r.image_storage_path) ?? null) : null,
   }));
 
+  // Selections promoted from a client idea. Promotion is tracked one-way on
+  // the idea row (`promoted_to_selection_id`) — the tables stay distinct
+  // (Object Model b4d880be). We derive the set of promoted selection IDs so
+  // the list can render the "Promoted from idea" tag without merging objects.
+  const promotedSelectionIds = new Set(
+    ideaItemsRaw.map((r) => r.promoted_to_selection_id).filter((id): id is string => Boolean(id)),
+  );
+
+  // Deterministic over-allowance set → drives Henry's nudge. Pure allowance
+  // vs actual; no model call. The CO is human-authored from here.
+  const overAllowanceItems: OverAllowanceItem[] = selections
+    .filter(
+      (s) =>
+        s.allowance_cents != null &&
+        s.actual_cost_cents != null &&
+        s.actual_cost_cents > s.allowance_cents,
+    )
+    .map((s) => ({
+      room: s.room,
+      label:
+        [s.brand, s.name].filter(Boolean).join(' ') ||
+        (selectionCategoryLabels[s.category as SelectionCategory] ?? s.category),
+      allowanceCents: s.allowance_cents as number,
+      overByCents: (s.actual_cost_cents as number) - (s.allowance_cents as number),
+    }));
+
   // Pre-resolved signed URLs from listPhotosByProject — pass to the
   // photo-refs picker dialog. Filter to photos that have a signed URL
   // and belong to this project (project_id matches; deleted_at filters
@@ -73,13 +105,20 @@ export default async function SelectionsTabServer({ projectId }: { projectId: st
         <div>
           <h2 className="text-base font-semibold">Selections</h2>
           <p className="text-sm text-muted-foreground">
-            Per-room paint codes, tile, fixtures, hardware. The homeowner sees these on their portal
-            and they get rolled into the final Home Record.
+            Per-room paint codes, tile, fixtures, hardware — each with an allowance and what it
+            actually cost. The client sees these on their portal and they roll into the final Home
+            Record.
           </p>
         </div>
         <SelectionFormDialog projectId={projectId} />
       </div>
-      <SelectionList groups={groups} projectId={projectId} galleryPhotos={galleryPhotos} />
+      <OverAllowanceNudge projectId={projectId} items={overAllowanceItems} />
+      <SelectionList
+        groups={groups}
+        projectId={projectId}
+        galleryPhotos={galleryPhotos}
+        promotedSelectionIds={promotedSelectionIds}
+      />
     </div>
   );
 }
