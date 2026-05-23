@@ -1,0 +1,1514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Settings — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 0;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 32px;
+  }
+
+  .stage {
+    display: flex; gap: 36px;
+    flex-wrap: wrap; justify-content: center;
+  }
+
+  .frame-label {
+    text-align: center;
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .frame-label .frame-strong { color: var(--ink); }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── App header ───── */
+  .app-header {
+    padding: 14px 18px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .app-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .app-title {
+    font-size: 26px; font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .app-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 3px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .app-sub .role-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .app-actions { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: grid; place-items: center;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .icon-btn .ico { width: 18px; height: 18px; }
+
+  /* ───── Search ───── */
+  .search-zone {
+    padding: 10px 14px 8px;
+    background: var(--chrome);
+    flex-shrink: 0;
+  }
+  .search-input {
+    height: 44px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 14px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .search-input .ico { width: 16px; height: 16px; color: var(--muted); flex-shrink: 0; }
+  .search-input .kbd {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ───── Scroll area ───── */
+  .scroll-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* ───── Settings group list ───── */
+  .group-block { padding: 14px 14px 6px; }
+  .group-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 4px 8px;
+  }
+  .group-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 52px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hair);
+    cursor: pointer;
+  }
+  .row:last-child { border-bottom: 0; }
+  .row:active { background: var(--bg); }
+  .row-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .row-icon .ico { width: 14px; height: 14px; }
+  .row-body { flex: 1; min-width: 0; }
+  .row-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .row-sub {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 1px;
+  }
+  .row-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+  .row-meta {
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .row-value {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .row-value.mono { font-family: var(--mono); font-size: 11px; }
+  .row-value.ok { color: var(--ok); font-weight: 600; }
+  .row-chev {
+    width: 14px; height: 14px;
+    color: var(--faint);
+    flex-shrink: 0;
+  }
+  .row-arrow {
+    width: 14px; height: 14px;
+    color: var(--faint);
+    flex-shrink: 0;
+  }
+  .row-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok);
+  }
+  .row.is-danger .row-title { color: var(--ink-2); }
+  .row.is-danger .row-icon { color: var(--faint); }
+  .row.is-danger:active .row-title { color: var(--danger); }
+
+  /* Footer note */
+  .scroll-foot {
+    padding: 14px 18px 28px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    line-height: 1.55;
+    text-align: center;
+  }
+  .scroll-foot .foot-strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ───── Detail-screen specifics ───── */
+  .detail-header {
+    padding: 14px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    display: grid; place-items: center;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .back-btn .ico { width: 16px; height: 16px; }
+  .detail-titles { flex: 1; min-width: 0; }
+  .detail-title {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .detail-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 1px;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .detail-status {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    background: var(--ok-soft);
+    color: var(--ok);
+  }
+  .detail-status .ico { width: 11px; height: 11px; }
+
+  .form-stack {
+    padding: 14px 14px 14px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+  }
+  .form-card-title {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-bottom: 10px;
+  }
+
+  .field {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 8px 0;
+    border-top: 1px solid var(--hair);
+  }
+  .field:first-child { border-top: 0; padding-top: 2px; }
+  .field-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .field-label .label-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .field-input {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    background: var(--card);
+    padding: 0 12px;
+    font: inherit; font-weight: 500;
+    color: var(--ink); outline: none;
+  }
+  .field-input:focus { border-color: var(--ink); }
+  .field-input.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .input-prefix-row {
+    display: flex; align-items: stretch;
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    background: var(--card);
+    overflow: hidden;
+    min-height: 44px;
+  }
+  .input-prefix-row .prefix {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 0 11px;
+    border-right: 1px solid var(--hair);
+    display: grid; place-items: center;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .input-prefix-row .field-input {
+    border: 0; border-radius: 0; flex: 1; min-width: 0;
+  }
+
+  /* Logo zone (mobile) */
+  .logo-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-square {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    border: 1px solid var(--hair);
+    background: var(--bg);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .logo-bg {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 14px;
+  }
+  .logo-meta { display: flex; flex-direction: column; gap: 1px; }
+  .logo-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .logo-hint { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.02em; }
+  .logo-actions { margin-left: auto; display: flex; gap: 4px; }
+  .btn-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 32px; padding: 0 12px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    font: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Radio rows (mobile) */
+  .radio-mob {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    background: var(--card);
+    margin-bottom: 6px;
+  }
+  .radio-mob:last-child { margin-bottom: 0; }
+  .radio-mob input { margin-top: 3px; accent-color: var(--ink); }
+  .radio-mob.is-on { background: var(--bg); border-color: var(--ink); }
+  .radio-mob .r-main { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .radio-mob .r-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+  /* Saved toast (mobile) */
+  .saved-toast {
+    position: absolute;
+    left: 14px; right: 14px;
+    bottom: 18px;
+    background: var(--ok-soft);
+    border: 1px solid rgba(21, 128, 61, .25);
+    border-left: 3px solid var(--ok);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 10px 24px -8px rgba(10,10,10,.18);
+    z-index: 20;
+  }
+  .toast-mark {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: var(--card);
+    color: var(--ok);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .toast-mark .ico { width: 12px; height: 12px; }
+  .toast-text { flex: 1; font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+  .toast-text strong { color: var(--ink); font-weight: 600; }
+  .toast-text .sub { color: var(--muted); }
+  .toast-undo {
+    background: transparent; border: 0;
+    font: inherit; font-weight: 600;
+    color: var(--ok); font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .henry-tip-m {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    border-left: 3px solid var(--rust);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .henry-mark-m {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .henry-mark-m .ico { width: 11px; height: 11px; }
+  .henry-text-m {
+    flex: 1;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .henry-text-m strong { color: var(--ink); font-weight: 600; }
+  .henry-text-m .henry-label {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-right: 6px;
+  }
+  .henry-text-m .h-actions {
+    display: flex; gap: 6px;
+    margin-top: 8px;
+  }
+  .btn-rust-mob {
+    display: inline-flex; align-items: center;
+    height: 30px; padding: 0 12px;
+    border-radius: 9px;
+    background: var(--rust);
+    color: #fff;
+    border: 0;
+    font: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-text-mob {
+    background: transparent; border: 0;
+    color: var(--muted);
+    font: inherit; font-size: 12px; font-weight: 600;
+    padding: 0 8px;
+    cursor: pointer;
+  }
+
+  /* Bottom nav (browse phone) */
+  .tab-bar {
+    height: 76px;
+    padding: 8px 16px 22px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    color: var(--muted);
+    font-size: 12px; font-weight: 600;
+    border-radius: 10px;
+  }
+  .tab.is-on { color: var(--ink); background: var(--nav-active); }
+  .tab .ico { width: 18px; height: 18px; }
+
+  /* ── Mobile permission state ── */
+  .locked-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 22px 18px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  }
+  .locked-mark {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .locked-mark .ico { width: 18px; height: 18px; }
+  .locked-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .locked-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin: -4px 0 0;
+  }
+  .locked-text {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .locked-buttons {
+    display: flex; flex-direction: column; gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .locked-btn-primary {
+    height: 44px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    font: inherit; font-weight: 600; font-size: 14px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .locked-btn-ghost {
+    height: 44px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    font: inherit; font-weight: 600; font-size: 14px;
+    cursor: pointer;
+  }
+  .empty-spot {
+    text-align: center;
+    padding: 28px 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .empty-spot .empty-strong { color: var(--ink-2); display: block; font-size: 12px; letter-spacing: 0.04em; text-transform: none; margin-top: 4px; }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 14h.01"/><path d="M2 9V5a2 2 0 0 1 2-2h12"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-ruler" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a1 1 0 0 1-1.4 0L2.7 16.7a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4z"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+    <symbol id="i-hardhat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a10 10 0 0 1 20 0"/><path d="M8 18V8"/><path d="M16 18V8"/><path d="M2 18h20"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 1 — Browse (the role-filtered settings snapshot)   -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right">
+            <span>5G</span>
+            <span class="battery"></span>
+          </div>
+        </div>
+
+        <!-- App header -->
+        <header class="app-header">
+          <div class="app-title-row">
+            <div>
+              <h1 class="app-title">Settings</h1>
+              <div class="app-sub">
+                <span>Jess Donahue</span>
+                <span style="color:var(--faint)">·</span>
+                <span class="role-pill">Owner</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Search -->
+        <div class="search-zone">
+          <div class="search-input">
+            <svg class="ico"><use href="#i-search"/></svg>
+            <span>Search settings…</span>
+          </div>
+        </div>
+
+        <!-- Scroll body -->
+        <div class="scroll-area">
+
+          <!-- ACCOUNT -->
+          <section class="group-block">
+            <div class="group-label">Account</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-building"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Business profile</div>
+                  <div class="row-sub">Northbeam Build Co. · Abbotsford, BC</div>
+                </div>
+                <div class="row-meta">
+                  <span class="row-value ok">✓ Saved</span>
+                  <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+                </div>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-user"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Your profile</div>
+                  <div class="row-sub">Name, email, phone</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-shield"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Security <span class="row-pill">Owner</span></div>
+                  <div class="row-sub">2-factor · require for team</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-history"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Audit log</div>
+                  <div class="row-sub">Last 90 days of changes</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-users"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Team &amp; workers</div>
+                  <div class="row-sub">4 members · 1 invite open</div>
+                </div>
+                <svg class="row-arrow"><use href="#i-arrow-up-right"/></svg>
+              </div>
+              <div class="row is-danger">
+                <div class="row-icon"><svg class="ico"><use href="#i-trash"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Delete account <span class="row-pill">Owner</span></div>
+                  <div class="row-sub">Permanent. 30-day grace.</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- BILLING -->
+          <section class="group-block">
+            <div class="group-label">Billing &amp; plan</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-credit-card"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Billing &amp; subscription <span class="row-pill">Owner</span></div>
+                  <div class="row-sub">Builder · $49 CAD/mo · renews 14 Jun</div>
+                </div>
+                <svg class="row-arrow"><use href="#i-arrow-up-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- ESTIMATING -->
+          <section class="group-block">
+            <div class="group-label">Estimating &amp; quotes</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-trending"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Project defaults</div>
+                  <div class="row-sub">Markup 18% · GST included</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-ruler"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Estimating detail</div>
+                  <div class="row-sub">Itemized by phase</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-hardhat"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Cost catalog</div>
+                  <div class="row-sub">132 line items</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-layers"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Budget templates</div>
+                  <div class="row-sub">5 templates · last edited 12 May</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-file"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Estimate snippets</div>
+                  <div class="row-sub">14 reusable clauses</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-file"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Quotes</div>
+                  <div class="row-sub">Validity 30 days · auto-followups on</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- MONEY -->
+          <section class="group-block">
+            <div class="group-label">Money &amp; integrations</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-wallet"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Stripe</div>
+                  <div class="row-sub">Connected · acct_1Nb…0xQ</div>
+                </div>
+                <div class="row-meta">
+                  <span class="row-dot" aria-label="connected"></span>
+                  <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+                </div>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-receipt"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">QuickBooks</div>
+                  <div class="row-sub">Connect · classes · history · review</div>
+                </div>
+                <svg class="row-arrow"><use href="#i-arrow-up-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-credit-card"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Payment sources</div>
+                  <div class="row-sub">e-Transfer · Stripe · Cheque</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-file"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Invoicing</div>
+                  <div class="row-sub">Net 14 · draws GST-aware</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-tag"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Expense categories</div>
+                  <div class="row-sub">28 categories</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- OPERATIONS -->
+          <section class="group-block">
+            <div class="group-label">Operations</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-bot"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Automations</div>
+                  <div class="row-sub">3 of 5 active · what Henry does for you</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-bell"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Reminders</div>
+                  <div class="row-sub">Quote follow-ups · invoice nudges</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-layers"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Checklist</div>
+                  <div class="row-sub">Site close-out · 12 items</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-eye"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Customer portal</div>
+                  <div class="row-sub">Budget visible · schedule notify on</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- DATA -->
+          <section class="group-block">
+            <div class="group-label">Data &amp; tools</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-calendar"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Calendar feed</div>
+                  <div class="row-sub">iCal · Google Cal · Apple Cal</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-database"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Data export <span class="row-pill">Owner</span></div>
+                  <div class="row-sub">CSV · JSON · last export 28 Apr</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-upload"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Import data</div>
+                  <div class="row-sub">Customers · projects · receipts</div>
+                </div>
+                <svg class="row-arrow"><use href="#i-arrow-up-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-mic"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Voice</div>
+                  <div class="row-sub">Henry voice on · standard on every tier</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <div class="scroll-foot">
+            <span class="foot-strong">26 of 27 settings shown</span> · 1 hidden for renovation vertical · 4 sub-flows graduate
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab"><svg class="ico"><use href="#i-dashboard"/></svg>Home</div>
+          <div class="tab"><svg class="ico"><use href="#i-inbox"/></svg>Inbox</div>
+          <div class="tab"><svg class="ico"><use href="#i-folder"/></svg>Projects</div>
+          <div class="tab"><svg class="ico"><use href="#i-receipt"/></svg>Billing</div>
+          <div class="tab is-on"><svg class="ico"><use href="#i-settings"/></svg>Settings</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label"><span class="frame-strong">Browse · Owner</span> · settings/index · vertical-filtered, owner-only rows pilled</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 2 — Detail (Business profile, just saved)          -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span>9:42</span>
+          <div class="island"></div>
+          <div class="right">
+            <span>5G</span>
+            <span class="battery"></span>
+          </div>
+        </div>
+
+        <!-- Detail header (back arrow + title + saved status) -->
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to settings">
+            <svg class="ico"><use href="#i-chevron-left"/></svg>
+          </button>
+          <div class="detail-titles">
+            <div class="detail-title">Business profile</div>
+            <div class="detail-sub">Northbeam Build Co. · last edit 14s ago</div>
+          </div>
+          <span class="detail-status"><svg class="ico"><use href="#i-check"/></svg>Saved</span>
+        </header>
+
+        <!-- Scroll body -->
+        <div class="scroll-area">
+          <div class="form-stack">
+
+            <!-- Identity card -->
+            <div class="form-card">
+              <div class="form-card-title">Identity</div>
+
+              <div class="field">
+                <div class="field-label">Logo</div>
+                <div class="logo-row">
+                  <div class="logo-square"><div class="logo-bg">N</div></div>
+                  <div class="logo-meta">
+                    <span class="logo-name">northbeam-mark.png</span>
+                    <span class="logo-hint">512 × 512 · 18&nbsp;KB</span>
+                  </div>
+                  <div class="logo-actions">
+                    <button class="btn-pill">Replace</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="field-label">Business name</div>
+                <input class="field-input" value="Northbeam Build Co. Ltd." />
+              </div>
+
+              <div class="field">
+                <div class="field-label">Trading as <span style="color:var(--faint);font-weight:500">· optional</span></div>
+                <input class="field-input" value="Northbeam" />
+              </div>
+            </div>
+
+            <!-- Address card -->
+            <div class="form-card">
+              <div class="form-card-title">Mailing address</div>
+
+              <div class="field">
+                <div class="field-label">Street</div>
+                <input class="field-input" value="Unit 4 — 31555 South Fraser Way" />
+              </div>
+
+              <div class="field">
+                <div class="field-label">City</div>
+                <input class="field-input" value="Abbotsford" />
+              </div>
+
+              <div class="field">
+                <div class="field-label">Province &amp; postal</div>
+                <div class="field-grid-2" style="grid-template-columns: 1fr 1fr;">
+                  <input class="field-input" value="British Columbia" />
+                  <input class="field-input mono" value="V2T 1V2" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Tax IDs card (Canadian) -->
+            <div class="form-card">
+              <div class="form-card-title">Tax IDs · Canada</div>
+
+              <div class="field">
+                <div class="field-label">GST / HST <span class="label-pill">CRA</span></div>
+                <div class="input-prefix-row">
+                  <div class="prefix">RT 0001</div>
+                  <input class="field-input mono" value="734 219 568" />
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="field-label">WCB · British Columbia</div>
+                <input class="field-input mono" value="847261-AB-04" />
+              </div>
+            </div>
+
+            <!-- Owner-draw GST mode -->
+            <div class="form-card">
+              <div class="form-card-title">Owner-draw GST mode</div>
+              <div style="padding-top:4px">
+                <label class="radio-mob is-on">
+                  <input type="radio" name="draw" checked />
+                  <span>
+                    <span class="r-main">Track at expense time</span>
+                    <span class="r-sub">Recommended. Draws stay as transfers — no GST recalculation on payout.</span>
+                  </span>
+                </label>
+                <label class="radio-mob">
+                  <input type="radio" name="draw" />
+                  <span>
+                    <span class="r-main">Track at draw time</span>
+                    <span class="r-sub">For bookkeepers reconciling on the draw side.</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Henry tip — setting changed, downstream effect -->
+            <div class="henry-tip-m">
+              <div class="henry-mark-m"><svg class="ico"><use href="#i-sparkles"/></svg></div>
+              <div class="henry-text-m">
+                <span class="henry-label">Henry</span>
+                Your <strong>WCB number</strong> changed. The Donahue quote (sent yesterday) still shows the old one.
+                <div class="h-actions">
+                  <button class="btn-rust-mob">Re-issue quote</button>
+                  <button class="btn-text-mob">Not now</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom space so toast doesn't cover content -->
+            <div style="height: 64px"></div>
+
+          </div>
+        </div>
+
+        <!-- Saved toast -->
+        <div class="saved-toast" role="status" aria-live="polite">
+          <div class="toast-mark"><svg class="ico"><use href="#i-check"/></svg></div>
+          <div class="toast-text">
+            <strong>Saved.</strong> <span class="sub">Live on 3 quotes, 7 invoices.</span>
+          </div>
+          <button class="toast-undo">Undo</button>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label"><span class="frame-strong">Detail · Owner</span> · settings/business-profile · just-saved + Henry tip</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- Phone 3 — Browse · MEMBER view (proves the role filter works) -->
+  <!-- Owner-only destinations are removed, not pilled.              -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right">
+            <span>5G</span>
+            <span class="battery"></span>
+          </div>
+        </div>
+
+        <header class="app-header">
+          <div class="app-title-row">
+            <div>
+              <h1 class="app-title">Settings</h1>
+              <div class="app-sub">
+                <span>Marcus Reyes</span>
+                <span style="color:var(--faint)">·</span>
+                <span class="role-pill">Member</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="search-zone">
+          <div class="search-input">
+            <svg class="ico"><use href="#i-search"/></svg>
+            <span>Search settings…</span>
+          </div>
+        </div>
+
+        <div class="scroll-area">
+
+          <!-- ACCOUNT — no Security · no Team & workers · no Delete account -->
+          <section class="group-block">
+            <div class="group-label">Account</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-user"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Your profile</div>
+                  <div class="row-sub">Marcus Reyes · carpenter</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-building"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Business profile</div>
+                  <div class="row-sub">Northbeam Build Co. · Abbotsford, BC</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-history"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Audit log</div>
+                  <div class="row-sub">Last 90 days of changes</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- BILLING & PLAN group is removed entirely. -->
+
+          <!-- ESTIMATING — same 6 -->
+          <section class="group-block">
+            <div class="group-label">Estimating &amp; quotes</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-trending"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Project defaults</div>
+                  <div class="row-sub">Markup 18% · GST included</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-ruler"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Estimating detail</div>
+                  <div class="row-sub">Itemized by phase</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-hardhat"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Cost catalog</div>
+                  <div class="row-sub">132 line items</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-layers"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Budget templates</div>
+                  <div class="row-sub">5 templates · last edited 12 May</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-file"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Estimate snippets</div>
+                  <div class="row-sub">14 reusable clauses</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-file"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Quotes</div>
+                  <div class="row-sub">Validity 30 days · auto-followups on</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- MONEY — same 5 -->
+          <section class="group-block">
+            <div class="group-label">Money &amp; integrations</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-wallet"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Stripe</div>
+                  <div class="row-sub">Connected · acct_1Nb…0xQ</div>
+                </div>
+                <div class="row-meta">
+                  <span class="row-dot" aria-label="connected"></span>
+                  <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+                </div>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-receipt"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">QuickBooks</div>
+                  <div class="row-sub">Connect · classes · history · review</div>
+                </div>
+                <svg class="row-arrow"><use href="#i-arrow-up-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-credit-card"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Payment sources</div>
+                  <div class="row-sub">e-Transfer · Stripe · Cheque</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-file"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Invoicing</div>
+                  <div class="row-sub">Net 14 · draws GST-aware</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-tag"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Expense categories</div>
+                  <div class="row-sub">28 categories</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- OPERATIONS — same 4 -->
+          <section class="group-block">
+            <div class="group-label">Operations</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-bot"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Automations</div>
+                  <div class="row-sub">3 of 5 active · what Henry does for you</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-bell"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Reminders</div>
+                  <div class="row-sub">Quote follow-ups · invoice nudges</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-layers"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Checklist</div>
+                  <div class="row-sub">Site close-out · 12 items</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-eye"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Customer portal</div>
+                  <div class="row-sub">Budget visible · schedule notify on</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- DATA — no Data export -->
+          <section class="group-block">
+            <div class="group-label">Data &amp; tools</div>
+            <div class="group-card">
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-calendar"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Calendar feed</div>
+                  <div class="row-sub">iCal · Google Cal · Apple Cal</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-upload"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Import data</div>
+                  <div class="row-sub">Customers · projects · receipts</div>
+                </div>
+                <svg class="row-arrow"><use href="#i-arrow-up-right"/></svg>
+              </div>
+              <div class="row">
+                <div class="row-icon"><svg class="ico"><use href="#i-mic"/></svg></div>
+                <div class="row-body">
+                  <div class="row-title">Voice</div>
+                  <div class="row-sub">Henry voice on · standard on every tier</div>
+                </div>
+                <svg class="row-chev"><use href="#i-chevron-right"/></svg>
+              </div>
+            </div>
+          </section>
+
+          <div class="scroll-foot">
+            <span class="foot-strong">21 of 27 settings shown</span> · 5 hidden for your role · 1 hidden for renovation vertical
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab"><svg class="ico"><use href="#i-dashboard"/></svg>Home</div>
+          <div class="tab"><svg class="ico"><use href="#i-inbox"/></svg>Inbox</div>
+          <div class="tab"><svg class="ico"><use href="#i-folder"/></svg>Projects</div>
+          <div class="tab"><svg class="ico"><use href="#i-receipt"/></svg>Billing</div>
+          <div class="tab is-on"><svg class="ico"><use href="#i-settings"/></svg>Settings</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label"><span class="frame-strong">Browse · Member</span> · settings/index · 5 owner-only rows + Billing group removed</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- Phone 4 — Permission state · member deep-linked /settings/billing -->
+  <!-- The defensive complement to the filter: calm refusal, never a crash. -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <span>9:43</span>
+          <div class="island"></div>
+          <div class="right">
+            <span>5G</span>
+            <span class="battery"></span>
+          </div>
+        </div>
+
+        <!-- Detail-style header — they deep-linked, so we show the destination they aimed at -->
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to settings">
+            <svg class="ico"><use href="#i-chevron-left"/></svg>
+          </button>
+          <div class="detail-titles">
+            <div class="detail-title">Billing</div>
+            <div class="detail-sub">Marcus Reyes · Member</div>
+          </div>
+        </header>
+
+        <div class="scroll-area">
+          <div class="form-stack">
+
+            <div class="locked-card" role="alert" aria-labelledby="m-locked-title">
+              <div class="locked-mark"><svg class="ico"><use href="#i-lock"/></svg></div>
+              <div class="locked-eyebrow">Owner only</div>
+              <h2 class="locked-title" id="m-locked-title">Billing &amp; subscription</h2>
+              <p class="locked-text">Billing is managed by the account owner. Jess Donahue handles the plan, payment method, and invoices for Northbeam Build Co.</p>
+              <div class="locked-buttons">
+                <button class="locked-btn-primary">
+                  <svg class="ico" style="width:14px;height:14px"><use href="#i-chevron-left"/></svg>
+                  Back to settings
+                </button>
+                <button class="locked-btn-ghost">Ask Jess to change the plan</button>
+              </div>
+            </div>
+
+            <div class="empty-spot">
+              No data shown
+              <span class="empty-strong">The page never renders billing for a member — no crash, no 403.</span>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab"><svg class="ico"><use href="#i-dashboard"/></svg>Home</div>
+          <div class="tab"><svg class="ico"><use href="#i-inbox"/></svg>Inbox</div>
+          <div class="tab"><svg class="ico"><use href="#i-folder"/></svg>Projects</div>
+          <div class="tab"><svg class="ico"><use href="#i-receipt"/></svg>Billing</div>
+          <div class="tab is-on"><svg class="ico"><use href="#i-settings"/></svg>Settings</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label"><span class="frame-strong">Permission state · Member</span> · /settings/billing deep-link · calm Owner-only pane</div>
+  </div>
+
+</div>
+
+</body>
+</html>
