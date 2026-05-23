@@ -2,6 +2,8 @@
 
 *Paste-able context for the next design session. Read the linked docs; don't trust this summary for detail.*
 
+> **▶ START HERE: [`PIPELINE.md`](PIPELINE.md)** — the single source of truth for screen status, lane ownership (Research / OD Driver / Coding), and the session-start protocol. Read it first, and `git pull --rebase`, before doing anything.
+
 ## Mission
 Continuing a screen-by-screen UX overhaul of HeyHenry (Next.js 16 contractor app, Canadian GC/renovation vertical, "Paper" design system). Repo: `/Users/jonathanboettcher/Claude/heyhenry-app`.
 
