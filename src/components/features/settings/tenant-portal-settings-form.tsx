@@ -102,7 +102,7 @@ export function TenantPortalSettingsForm({
     <div className="space-y-6">
       <ToggleRow
         label="Show budget breakdown to customers"
-        description="When on, customers see per-bucket totals and a 'spent so far' progress bar on their portal. They never see individual expenses or vendor names. Per-project override available on each project's Portal tab."
+        description="When on, customers see per-category totals and a 'spent so far' progress bar on their portal. They never see individual expenses or vendor names. Per-project override available on each project's Portal tab."
         value={showBudget}
         pending={budgetPending}
         onToggle={handleBudgetToggle}

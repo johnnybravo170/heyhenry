@@ -41,7 +41,7 @@ export async function updateBudgetCategoryAction(input: {
       return {
         ok: false,
         error:
-          'This bucket has priced cost lines, so the estimate is the sum of those lines. Edit individual line prices to change it.',
+          'This category has priced cost lines, so the estimate is the sum of those lines. Edit individual line prices to change it.',
       };
     }
     updates.estimate_cents = input.estimate_cents;

@@ -378,7 +378,7 @@ export function CostsTab({
   return (
     <div className="space-y-4">
       {/* Spend-owned alert: uncategorized costs awaiting filing. Tapping
-          jumps to the By-category lens where the uncategorized bucket lives. */}
+          jumps to the By-category lens where the uncategorized category lives. */}
       {uncategorizedCount > 0 ? (
         <a
           href={`/projects/${projectId}?tab=costs&view=category`}
