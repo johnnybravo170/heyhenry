@@ -126,17 +126,40 @@ function displayToCents(val: string) {
   return Math.round(parseFloat(val || '0') * 100);
 }
 
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+/** Format a date-only `YYYY-MM-DD` as "Apr 28". Parses the parts directly —
+ *  no Date/tz, so a date-only value never shifts across timezones. */
+function fmtShortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return `${SHORT_MONTHS[Number(m[2]) - 1] ?? m[2]} ${Number(m[3])}`;
+}
+
 const STATUS_LABEL: Record<CostStatusKey, string> = {
   paid_receipt: 'Paid receipt',
-  bill_unpaid: 'Vendor bill • Unpaid',
-  bill_paid: 'Vendor bill • Paid',
+  bill_unpaid: 'Vendor bill · Unpaid',
+  bill_paid: 'Vendor bill · Paid',
 };
 
 function CostStatusBadge({ status }: { status: CostStatusKey }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+        // OD `.pill`: mono, 10px/700, uppercase, 4px radius, soft fill, no border.
+        'inline-flex items-center whitespace-nowrap rounded border-transparent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide',
         statusToneClass[projectCostStatusTone[status]],
       )}
     >
@@ -1006,25 +1029,43 @@ export function ProjectCostsSection({
           .
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
+        <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-3 py-2 text-left font-medium">Date</th>
-                <th className="px-3 py-2 text-left font-medium">Vendor</th>
-                <th className="px-3 py-2 text-left font-medium">Status</th>
-                <th className="px-3 py-2 text-left font-medium">Category</th>
-                <th className="px-3 py-2 text-left font-medium">Description</th>
-                <th className="px-3 py-2 text-right font-medium">Subtotal</th>
-                <th className="px-3 py-2 text-right font-medium">GST</th>
-                <th className="px-3 py-2 text-right font-medium">Total</th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Date
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Vendor
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Status
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Category
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Description
+                </th>
+                <th className="px-3 py-2 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Subtotal
+                </th>
+                <th className="px-3 py-2 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  GST
+                </th>
+                <th className="px-3 py-2 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Total
+                </th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={`${r.kind}:${r.id}`} className="border-b last:border-0">
-                  <td className="px-3 py-2 text-muted-foreground tabular-nums">{r.cost_date}</td>
+                  <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-muted-foreground tabular-nums">
+                    {fmtShortDate(r.cost_date)}
+                  </td>
                   <td className="px-3 py-2 font-medium">
                     <div className="flex items-center gap-1.5">
                       {r.attachment_url && (
@@ -1053,24 +1094,28 @@ export function ProjectCostsSection({
                   <td className="px-3 py-2">
                     <CostStatusBadge status={r.status} />
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">
+                  <td className="px-3 py-2">
                     {r.budget_category_name ? (
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
-                        {r.budget_category_name}
-                      </span>
+                      r.budget_category_name
                     ) : (
-                      '—'
+                      <span className="text-muted-foreground/60">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{r.description || '—'}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {r.description || <span className="text-muted-foreground/60">—</span>}
+                  </td>
                   <td className="px-3 py-2 text-right">
-                    <Money cents={r.subtotal_cents} />
+                    <Money cents={r.subtotal_cents} symbol={false} />
                   </td>
                   <td className="px-3 py-2 text-right text-muted-foreground">
-                    {r.gst_cents > 0 ? <Money cents={r.gst_cents} /> : '—'}
+                    {r.gst_cents > 0 ? (
+                      <Money cents={r.gst_cents} symbol={false} />
+                    ) : (
+                      <span className="italic text-muted-foreground/60">—</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <Money cents={r.total_cents} className="font-medium" />
+                    <Money cents={r.total_cents} className="font-bold" />
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">

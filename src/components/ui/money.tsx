@@ -27,11 +27,18 @@ export function Money({
    * treatment used on change-order diffs.
    */
   signed,
+  /**
+   * Show the currency symbol. Default true. Set false in dense columns where
+   * the symbol is redundant (e.g. an OD cost table where only the Total
+   * carries "$" and subtotal/GST are bare numbers).
+   */
+  symbol: showSymbol = true,
 }: {
   cents: number;
   className?: string;
   emphasis?: boolean;
   signed?: boolean;
+  symbol?: boolean;
 }) {
   const text = formatCurrencyCompact(cents);
   // Pull symbol, integer, fraction out separately so we can style and
@@ -59,7 +66,7 @@ export function Money({
       )}
     >
       {signed && cents > 0 ? '+' : ''}
-      <span className="text-muted-foreground/60">{symbol}</span>
+      {showSymbol ? <span className="text-muted-foreground/60">{symbol}</span> : null}
       {integer}
       {fraction ? (
         <span className="text-[0.7em] text-muted-foreground/70">{fraction}</span>
