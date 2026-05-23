@@ -273,7 +273,10 @@ function PositionRow({ p }: { p: BillingProjectPosition }) {
             ) : (
               <Money
                 cents={v}
-                className={cn('text-sm font-semibold', zero && 'font-normal text-muted-foreground')}
+                className={cn(
+                  'text-sm font-semibold',
+                  zero && 'font-normal text-muted-foreground/60',
+                )}
               />
             )}
           </div>
