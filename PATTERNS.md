@@ -39,10 +39,13 @@ Soft-delete confirmations follow one shape. When you change the wording, button 
 - `src/components/features/customers/delete-customer-button.tsx`
 - `src/components/features/projects/delete-project-button.tsx`
 - `src/components/features/billing/cancel-subscription-button.tsx` — two-step variant. Step 1 shows the prorated refund preview + a non-coercive "pause for 30 days" alternative. Step 2 collects an exit-survey reason (radio list) + optional comment, both appended to `refunds_log.notes`. No discount upsell ("would $X off help?") — that line stays locked.
+- `src/components/features/projects/schedule-clear-button.tsx` — "Clear & start over" (soft-deletes every schedule task). Controlled-open + hideTrigger so the Schedule toolbar ⋯ overflow hosts it.
+- `src/components/features/projects/schedule-regenerate-deps-button.tsx` — "Auto-link dependencies" (wipes + rebuilds dependency edges). Controlled-open + hideTrigger for the same ⋯ overflow; also exposes `variant="inline"` for the non-destructive empty-deps case (runs immediately, no confirm — nothing to lose).
+- `src/components/features/projects/schedule-task-editor.tsx` — the task-editor's Delete (soft-delete) confirm lives as a nested AlertDialog driven by local `confirmDelete` state.
 
-All three use shadcn `AlertDialog`, wrap the action in a transition, and surface errors via toast. Delete variants additionally handle `NEXT_REDIRECT`.
+All use shadcn `AlertDialog`, wrap the action in a transition, and surface errors via toast. Delete variants additionally handle `NEXT_REDIRECT`.
 
-`delete-project-button.tsx` and `clone-project-dialog.tsx` each accept an optional controlled-open mode (`open` / `onOpenChange` / `hideTrigger`) so a parent can drive them trigger-less. The project ⋯ overflow (`project-actions-menu.tsx`) uses this to host Duplicate + Delete behind one labeled menu instead of loose icon buttons. Default (uncontrolled, self-triggered) behaviour is unchanged for the projects-table callers.
+`delete-project-button.tsx`, `clone-project-dialog.tsx`, `schedule-clear-button.tsx`, and `schedule-regenerate-deps-button.tsx` each accept an optional controlled-open mode (`open` / `onOpenChange` / `hideTrigger`) so a parent can drive them trigger-less. The project ⋯ overflow (`project-actions-menu.tsx`) hosts Duplicate + Delete this way; the Schedule toolbar ⋯ overflow (`schedule-interactive.tsx`) hosts Clear + Auto-link the same way. Default (uncontrolled, self-triggered) behaviour is unchanged for the projects-table callers.
 
 ---
 

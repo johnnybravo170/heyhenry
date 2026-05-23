@@ -19,10 +19,12 @@
  *    through to `onTaskClick`.
  */
 
+import { Check, Lock } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { phaseColorFor } from '@/lib/ui/gantt-phase-colors';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 
 const MONTH_FORMAT = new Intl.DateTimeFormat('en-CA', { month: 'short', year: 'numeric' });
 const DAY_FMT = new Intl.DateTimeFormat('en-CA', {
@@ -187,8 +189,11 @@ export function ScheduleGantt({
   tasks,
   phases,
   tradeTypicalPhase,
+  behindTaskIds,
   onTaskClick,
   onTaskUpdate,
+  onMarkDone,
+  onLockDates,
 }: {
   tasks: ProjectScheduleTask[];
   phases?: GanttPhase[];
@@ -196,12 +201,20 @@ export function ScheduleGantt({
    *  fallback when the project's actual phase name doesn't match the
    *  canonical color-map keys. */
   tradeTypicalPhase?: Record<string, string>;
+  /** Task ids that are behind (working-day end < today, not done) — get a
+   *  danger-soft outline + glyph. Shared with the digest + slip source. */
+  behindTaskIds?: string[];
   onTaskClick?: (task: ProjectScheduleTask) => void;
   onTaskUpdate?: (
     taskId: string,
     patch: { planned_start_date?: string; planned_duration_days?: number },
   ) => void;
+  /** Per-bar quick action: mark a task done without opening the modal. */
+  onMarkDone?: (taskId: string) => void;
+  /** Per-bar quick action: lock dates (rough→firm) without the modal. */
+  onLockDates?: (taskId: string) => void;
 }) {
+  const behindSet = new Set(behindTaskIds ?? []);
   // Callback ref so it doesn't fight the union type of BarCell (div or
   // button). The first task row registers itself as the measurement
   // surface for drag-day calculations.
@@ -421,6 +434,8 @@ export function ScheduleGantt({
                 const { colStart, colSpan } = positionFor(task, taskStart);
                 const isFirm = task.confidence === 'firm';
                 const isDone = task.status === 'done';
+                const isInProgress = task.status === 'in_progress';
+                const isBehind = behindSet.has(task.id);
                 const isDragging = drag?.taskId === task.id;
                 const projectPhaseName = task.phase_id ? phaseById.get(task.phase_id)?.name : null;
                 const tradeTypical = task.trade_template_id
@@ -480,10 +495,10 @@ export function ScheduleGantt({
                       </span>
                       {task.client_visible ? null : (
                         <span
-                          className="ml-1.5 text-[10px] text-muted-foreground"
+                          className={`ml-1.5 inline-flex shrink-0 items-center rounded-full border px-1.5 py-px text-[10px] font-medium ${statusToneClass.neutral}`}
                           title="Hidden from customer"
                         >
-                          (internal)
+                          internal
                         </span>
                       )}
                     </NameCell>
@@ -491,13 +506,13 @@ export function ScheduleGantt({
                       {...(interactive ? { type: 'button' as const } : {})}
                       onClick={interactive ? () => onTaskClick?.(task) : undefined}
                       ref={isFirstRow ? setGridRef : undefined}
-                      className={`relative grid min-h-8 ${interactive ? 'cursor-pointer' : ''}`}
+                      className={`group/row relative grid min-h-8 ${interactive ? 'cursor-pointer' : ''}`}
                       style={{ gridTemplateColumns: gridCols }}
                     >
                       <DayBacking meta={dayMeta} />
                       <button
                         type="button"
-                        aria-label={`${tooltip}. Click to edit.`}
+                        aria-label={`${tooltip}${isBehind ? '. Behind schedule' : ''}. Click to edit.`}
                         onPointerDown={
                           draggable ? (e) => handleDragStart(e, task, 'move') : undefined
                         }
@@ -506,6 +521,18 @@ export function ScheduleGantt({
                         onPointerCancel={draggable && isDragging ? handleDragEnd : undefined}
                         onClick={(e) => handleBarClick(e, task)}
                         className={`group relative my-1 h-5 self-center rounded-md border-0 p-0 shadow-sm transition-opacity ${barClasses} ${
+                          // Behind: danger-soft ring + offset so it reads on any
+                          // phase fill (never colour-only — the glyph backs it).
+                          isBehind
+                            ? 'ring-2 ring-destructive/70 ring-offset-1 ring-offset-card'
+                            : ''
+                        } ${
+                          // In-progress: a dashed "live" outline so the active
+                          // task is distinct from plain planned/firm bars.
+                          isInProgress && !isDone
+                            ? 'outline outline-2 outline-offset-[-3px] outline-dashed outline-background/70'
+                            : ''
+                        } ${
                           draggable
                             ? isDragging
                               ? 'cursor-grabbing opacity-90'
@@ -521,6 +548,16 @@ export function ScheduleGantt({
                           touchAction: 'none',
                         }}
                       >
+                        {/* Behind glyph — pinned to the bar's leading edge so
+                            slip is legible without relying on the ring colour. */}
+                        {isBehind ? (
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -left-1 -top-1 z-20 flex size-3.5 items-center justify-center rounded-full bg-destructive text-[9px] font-bold leading-none text-destructive-foreground shadow"
+                          >
+                            !
+                          </span>
+                        ) : null}
                         {/* Receded weekend columns: a continuous bar that
                             de-saturates the Sat/Sun columns it spans so the
                             eye reads "spans a weekend, no work then" without
@@ -562,6 +599,46 @@ export function ScheduleGantt({
                           />
                         ) : null}
                       </button>
+                      {/* Per-bar quick actions — the two highest-frequency
+                          edits without a modal. Revealed on row hover
+                          (desktop) / always-tappable focusable on touch.
+                          Pinned to the right of the row so they never overlap
+                          short bars. */}
+                      {(onMarkDone || onLockDates) && interactive ? (
+                        <span
+                          className="absolute right-1 top-1/2 z-30 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100"
+                          style={{ gridRow: 1 }}
+                        >
+                          {onMarkDone && !isDone ? (
+                            <button
+                              type="button"
+                              aria-label={`Mark "${task.name}" done`}
+                              title="Mark done"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMarkDone(task.id);
+                              }}
+                              className="flex size-6 items-center justify-center rounded-md border bg-card text-emerald-700 shadow-sm hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                            >
+                              <Check className="size-3.5" />
+                            </button>
+                          ) : null}
+                          {onLockDates && !isFirm ? (
+                            <button
+                              type="button"
+                              aria-label={`Lock "${task.name}" dates and share with customer`}
+                              title="Lock dates"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onLockDates(task.id);
+                              }}
+                              className="flex size-6 items-center justify-center rounded-md border bg-card text-foreground shadow-sm hover:bg-muted"
+                            >
+                              <Lock className="size-3.5" />
+                            </button>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </BarCell>
                   </div>
                 );
