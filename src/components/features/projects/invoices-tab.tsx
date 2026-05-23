@@ -8,10 +8,12 @@ import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/features/invoices/record-payment-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Money } from '@/components/ui/money';
 import type { DrawGstMode } from '@/lib/invoices/draw-gst-mode';
 import { invoiceTotalCents } from '@/lib/invoices/totals';
 import { withFrom } from '@/lib/nav/from-link';
-import { formatCurrency } from '@/lib/pricing/calculator';
+import { invoiceStatusTone, statusToneClass } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import {
   createInvoiceFromEstimateAction,
   createMilestoneInvoiceAction,
@@ -31,6 +33,24 @@ type InvoiceSummary = {
   customer_note: string | null;
   created_at: string;
 };
+
+/** Draw / invoice status pill. Maps the lifecycle status to its canonical
+ *  tone (draft→neutral, sent→info, paid→success, void→neutral). The OD's
+ *  overdue=danger state needs a sent-date the live row props don't carry yet
+ *  — deferred until that derived signal exists. */
+function StatusPill({ status }: { status: string }) {
+  const tone = invoiceStatusTone[status as keyof typeof invoiceStatusTone] ?? 'neutral';
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+        statusToneClass[tone],
+      )}
+    >
+      {status}
+    </span>
+  );
+}
 
 function DrawForm({
   projectId,
@@ -195,18 +215,18 @@ function DrawForm({
           {onTop ? (
             <>
               <span className="text-muted-foreground">Subtotal: </span>
-              <span className="font-medium">{formatCurrency(total)}</span>
+              <Money cents={total} className="font-medium" />
               <span className="text-muted-foreground ml-2">
-                + {formatCurrency(gstCents)} GST ={' '}
+                + <Money cents={gstCents} /> GST ={' '}
               </span>
-              <span className="font-medium">{formatCurrency(customerTotal)}</span>
+              <Money cents={customerTotal} className="font-medium" />
             </>
           ) : (
             <>
               <span className="text-muted-foreground">Total: </span>
-              <span className="font-medium">{formatCurrency(customerTotal)}</span>
+              <Money cents={customerTotal} className="font-medium" />
               <span className="text-muted-foreground ml-2">
-                (incl. {formatCurrency(gstCents)} GST)
+                (incl. <Money cents={gstCents} /> GST)
               </span>
             </>
           )}
@@ -344,7 +364,11 @@ export function InvoicesTab({
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
         {!showDrawForm && (
-          <Button size="sm" onClick={() => setShowDrawForm(true)}>
+          <Button
+            size="sm"
+            onClick={() => setShowDrawForm(true)}
+            className="bg-brand text-white hover:bg-brand/90"
+          >
             + New draw
           </Button>
         )}
@@ -394,22 +418,22 @@ export function InvoicesTab({
       {/* Draws section */}
       <section>
         <div className="mb-2 flex items-baseline justify-between gap-3">
-          <h3 className="text-sm font-semibold">
+          <h3 className="text-base font-semibold">
             Draws{' '}
             {drawCount > 0 ? (
-              <span className="text-muted-foreground font-normal">({drawCount})</span>
+              <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                {drawCount}
+              </span>
             ) : null}
           </h3>
           {drawsTotalCents > 0 ? (
-            <span className="text-xs text-muted-foreground tabular-nums">
+            <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground tabular-nums">
               Drawn to date{' '}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(drawsTotalCents)}
-              </span>
+              <Money cents={drawsTotalCents} className="font-semibold text-foreground" />
               {contractRevenueCents > 0 ? (
                 <>
                   {' '}
-                  of {formatCurrency(contractRevenueCents)}
+                  of <Money cents={contractRevenueCents} />
                   {drawsPctOfContract !== null ? ` · ${Math.round(drawsPctOfContract)}%` : null}
                 </>
               ) : null}
@@ -421,15 +445,15 @@ export function InvoicesTab({
             No draws yet. Use "+ New draw" above to bill a milestone.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-md border">
+          <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Label</th>
-                  <th className="px-3 py-2 text-left font-medium">Status</th>
-                  <th className="px-3 py-2 text-right font-medium">% Complete</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
-                  <th className="px-3 py-2 text-right font-medium">% of Contract</th>
+                <tr className="border-b bg-muted/50 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-3 py-2 text-left font-semibold">Label</th>
+                  <th className="px-3 py-2 text-left font-semibold">Status</th>
+                  <th className="px-3 py-2 text-right font-semibold">% Complete</th>
+                  <th className="px-3 py-2 text-right font-semibold">Total</th>
+                  <th className="px-3 py-2 text-right font-semibold">% of Contract</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -457,12 +481,14 @@ export function InvoicesTab({
                           {inv.customer_note || `Draw ${inv.id.slice(0, 8)}`}
                         </Link>
                       </td>
-                      <td className="px-3 py-2 capitalize text-muted-foreground">{inv.status}</td>
+                      <td className="px-3 py-2">
+                        <StatusPill status={inv.status} />
+                      </td>
                       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                         {inv.percent_complete !== null ? `${inv.percent_complete}%` : '—'}
                       </td>
                       <td className="px-3 py-2 text-right font-medium tabular-nums">
-                        {formatCurrency(total)}
+                        <Money cents={total} />
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                         {pctOfContract !== null ? `${pctOfContract}%` : '—'}
@@ -511,16 +537,16 @@ export function InvoicesTab({
           something to show, since most projects ship draws + one final. */}
       {otherInvoices.length > 0 ? (
         <section>
-          <h3 className="mb-2 text-sm font-semibold">Invoices</h3>
-          <div className="overflow-x-auto rounded-md border">
+          <h3 className="mb-2 text-base font-semibold">Invoices</h3>
+          <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Label</th>
-                  <th className="px-3 py-2 text-left font-medium">Status</th>
-                  <th className="px-3 py-2 text-right font-medium">Amount</th>
-                  <th className="px-3 py-2 text-right font-medium">Tax</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
+                <tr className="border-b bg-muted/50 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-3 py-2 text-left font-semibold">Label</th>
+                  <th className="px-3 py-2 text-left font-semibold">Status</th>
+                  <th className="px-3 py-2 text-right font-semibold">Amount</th>
+                  <th className="px-3 py-2 text-right font-semibold">Tax</th>
+                  <th className="px-3 py-2 text-right font-semibold">Total</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -547,12 +573,18 @@ export function InvoicesTab({
                               : `Invoice ${inv.id.slice(0, 8)}`)}
                         </Link>
                       </td>
-                      <td className="px-3 py-2 capitalize text-muted-foreground">{inv.status}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(inv.amount_cents)}</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">
-                        {formatCurrency(inv.tax_cents)}
+                      <td className="px-3 py-2">
+                        <StatusPill status={inv.status} />
                       </td>
-                      <td className="px-3 py-2 text-right font-medium">{formatCurrency(total)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Money cents={inv.amount_cents} />
+                      </td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">
+                        <Money cents={inv.tax_cents} />
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium">
+                        <Money cents={total} />
+                      </td>
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1">
                           {inv.status === 'sent' ? (
