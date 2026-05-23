@@ -58,7 +58,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Projects list | ✅ | ✅ `od-projects-list` | — | ✅ #277 | |
 | Inbox | ✅ | ✅ `od-inbox-triage` | — | 🟡 ? | build state unconfirmed |
 | Billing / AR (cross-project) | ✅ `invoices.md` | ✅ `od-billing` | — | ✅ #288 | |
-| Business Health (owner money cockpit) | ✅ `business-health.md` | ⬜ | — | 🟡 (live, pre-redesign) | restyle to Paper/status-tokens + cockpit hierarchy outstanding; **subscreens: bank-import + bank-review graduate to own renders** |
+| Business Health (owner money cockpit) | ✅ `business-health.md` | ✅ `od-business-health` | 1 (build `ca55937c`) | 🟡 (live, pre-redesign) | render converged (2-round OD loop); Paper restyle + cockpit hierarchy (Henry attention strip · net-cash + AR-aging hero · KPI row · owner-draws ledger · QBO-handoff "Is/Isn't" aside · states); owner-draws reconcile end-to-end ($36,500 = Salary $24k + Dividend $10k + Reimburse $2.5k); **subscreens: bank-import + bank-review graduate to own renders** |
 | Calendar (crew scheduling) | ✅ `calendar.md` | 🟡 (no `od-calendar` dir) | — | ✅ #270–#275 | built ahead of a formal OD render |
 | Estimate (Budget authoring) | ✅ | ✅ (project-hub budget) | — | ✅ #278/#281 | |
 | Quotes (PW sales-quote object) | ✅ `quotes.md` | ⬜ (PW-only) | — | ✅ (PW live) | **PW-vertical** — GC `/quotes`→`/projects`; GC quoting = `estimate.md` + project Budget + `/approve*`. Brief = map + scope boundary; **recommend no GC render**. Open: auto-create-Project-on-approval decision |
