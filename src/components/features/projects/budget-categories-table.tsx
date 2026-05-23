@@ -122,7 +122,7 @@ function MiniBar({
   const s = budgetSegments(estimate, spent, committed);
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#ECE3D0]">
         {s.spentWithin !== '0%' ? (
           <span className="block h-full bg-foreground" style={{ width: s.spentWithin }} />
         ) : null}
@@ -133,7 +133,7 @@ function MiniBar({
           <span className="block h-full bg-[#7A6A4D]" style={{ width: s.committedWithin }} />
         ) : null}
         {s.committedOver !== '0%' ? (
-          <span className="block h-full bg-destructive/50" style={{ width: s.committedOver }} />
+          <span className="block h-full bg-destructive" style={{ width: s.committedOver }} />
         ) : null}
       </div>
       <span
@@ -497,7 +497,7 @@ export function BudgetCategoriesTable({
               return (
                 <SectionDroppable key={section} section={section}>
                   {/* Section row */}
-                  <div className={cn(GRID, 'border-b px-3 py-2.5 hover:bg-muted/30')}>
+                  <div className={cn(GRID, 'border-b px-3 py-2.5 hover:bg-[#FFFCF7]')}>
                     <button
                       type="button"
                       onClick={() => toggleSection(section)}
@@ -548,7 +548,7 @@ export function BudgetCategoriesTable({
                           {section}
                         </button>
                       )}
-                      <span className="font-mono text-[11px] text-muted-foreground">
+                      <span className="text-[11px] font-medium text-muted-foreground">
                         {sectionLines.length} categor{sectionLines.length === 1 ? 'y' : 'ies'}
                       </span>
                       {!isRenaming ? (
@@ -570,7 +570,7 @@ export function BudgetCategoriesTable({
                             <span
                               key={l.budget_category_id}
                               className={cn(
-                                'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
                                 statusToneClass.danger,
                               )}
                             >
@@ -584,7 +584,7 @@ export function BudgetCategoriesTable({
                             <span
                               key={l.budget_category_id}
                               className={cn(
-                                'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
                                 statusToneClass.warning,
                               )}
                             >
@@ -810,7 +810,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
         {...attributes}
         className={cn(
           GRID,
-          'border-b px-3 py-2 transition-colors',
+          'border-b px-3 py-2 transition-colors hover:bg-[#FFFCF7]',
           showHighlight && 'bg-primary/10 ring-2 ring-inset ring-primary/40',
           isDragging && 'relative z-20 bg-background opacity-90 shadow-md',
         )}
@@ -856,11 +856,11 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 <button
                   type="button"
                   onClick={() => toggleExpand(line.budget_category_id)}
-                  className="text-left text-sm hover:text-foreground"
+                  className="text-left text-sm font-semibold hover:text-foreground"
                 >
                   {line.budget_category_name}
                   {categoryLines.length > 0 ? (
-                    <span className="ml-1.5 text-xs text-muted-foreground">
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                       {categoryLines.length} line{categoryLines.length === 1 ? '' : 's'}
                     </span>
                   ) : null}
@@ -885,7 +885,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 )}
                 title={`Touched by CO: ${c.co_title}`}
                 className={cn(
-                  'rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide',
+                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
                   statusToneClass.info,
                 )}
               >
@@ -922,7 +922,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           ) : null}
         </div>
         {/* estimate (editable when no priced lines) */}
-        <span className="text-right text-sm">
+        <span className="text-right text-sm font-semibold">
           {editingThis ? (
             <Input
               type="number"
@@ -955,14 +955,14 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
         {/* spent */}
         <span
           className={cn(
-            'text-right text-sm',
-            line.actual_cents > line.estimate_cents && 'font-medium text-destructive',
+            'text-right text-sm font-semibold',
+            line.actual_cents > line.estimate_cents && 'text-destructive',
           )}
         >
           {line.actual_cents > 0 ? <Money cents={line.actual_cents} /> : '—'}
         </span>
         {/* committed */}
-        <span className="text-right text-sm text-muted-foreground">
+        <span className="text-right text-sm font-semibold text-muted-foreground">
           {line.committed_cents > 0 ? <Money cents={line.committed_cents} /> : '—'}
         </span>
         {/* remaining + bar */}
@@ -1062,7 +1062,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                       )}
                       <span>
                         {cl.label}
-                        <span className="ml-1.5 text-[11px] text-muted-foreground/80">
+                        <span className="ml-1.5 font-mono text-[11px] tracking-[0.02em] text-muted-foreground/80">
                           {Number(cl.qty)} {cl.unit}
                           {cl.unit_price_cents > 0 ? (
                             <>
