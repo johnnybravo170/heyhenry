@@ -21,7 +21,7 @@
  * default until this is verified end-to-end.
  */
 
-import { ChevronDown, ChevronRight, Plus, RotateCcw, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, Plus, RotateCcw, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Fragment, useMemo, useState } from 'react';
@@ -31,12 +31,14 @@ import { Money } from '@/components/ui/money';
 import type { CostLineRow } from '@/lib/db/queries/cost-lines';
 import type { BudgetCategorySummary } from '@/lib/db/queries/projects';
 import { formatCurrency } from '@/lib/pricing/calculator';
+import { changeOrderActionStyle } from '@/lib/ui/change-order-action';
 import { cn } from '@/lib/utils';
 import {
   createChangeOrderV2Action,
   updateChangeOrderV2Action,
 } from '@/server/actions/change-orders';
 import { addBudgetCategoryAction } from '@/server/actions/project-budget-categories';
+import { ChangeOrderActionChip } from './change-order-action-chip';
 
 type LineEdit = {
   qty?: string;
@@ -284,6 +286,35 @@ export function ChangeOrderDiffForm({
     return total;
   }, [editsById, removedIds, added, envelopeEdits, existingLines, localCategories]);
 
+  // Operator-only: total COST delta of the change (qty × unit_cost), so the
+  // margin read can compare cost vs price. NEVER rendered on any
+  // customer-facing surface — added lines have no supplier cost yet (cost 0),
+  // so the read is a directional guide, conservative on adds.
+  const totalCostDelta = useMemo(() => {
+    let total = 0;
+    for (const line of existingLines) {
+      if (removedIds.has(line.id)) {
+        total -= line.line_cost_cents;
+        continue;
+      }
+      const edit = editsById[line.id];
+      if (!edit) continue;
+      const newQty = edit.qty !== undefined ? Number(edit.qty) : Number(line.qty);
+      if (Number.isNaN(newQty)) continue;
+      total += Math.round(newQty * line.unit_cost_cents) - line.line_cost_cents;
+    }
+    // Added lines carry no supplier cost yet → treated as 0 cost (full margin).
+    return total;
+  }, [editsById, removedIds, existingLines]);
+
+  // Margin on the change = (price delta − cost delta) / price delta. Only
+  // meaningful when the price impact is a positive add. Floor is the project
+  // mgmt-fee rate (the target margin the GC priced the job at).
+  const marginPct =
+    totalDelta > 0 ? Math.round(((totalDelta - totalCostDelta) / totalDelta) * 100) : null;
+  const floorPct = Math.round(defaultManagementFeeRate * 100);
+  const marginBelowFloor = marginPct !== null && marginPct < floorPct;
+
   function setEdit(lineId: string, patch: Partial<LineEdit>) {
     setEditsById((prev) => ({
       ...prev,
@@ -503,10 +534,12 @@ export function ChangeOrderDiffForm({
       {/* layout — explicit style is the durable fix. */}
       <div
         style={{ position: 'sticky', top: 0, zIndex: 30 }}
-        className="flex items-baseline justify-between gap-4 rounded-lg border bg-background p-4 shadow-sm"
+        className="flex flex-wrap items-start justify-between gap-4 rounded-lg border bg-background p-4 shadow-sm"
       >
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Total Cost Impact</p>
+          <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+            Total cost impact
+          </p>
           <p
             className={cn(
               'text-2xl font-semibold tabular-nums',
@@ -517,10 +550,53 @@ export function ChangeOrderDiffForm({
             {totalDelta >= 0 ? '+' : ''}
             {formatCurrency(totalDelta)}
           </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Cost of work + {mgmtFeePct}% management fee
+            {parseInt(timelineDays || '0', 10) !== 0 ? (
+              <>
+                {' · '}
+                <span className="font-medium text-foreground">
+                  {parseInt(timelineDays || '0', 10) > 0 ? '+' : ''}
+                  {timelineDays} day
+                  {Math.abs(parseInt(timelineDays || '0', 10)) === 1 ? '' : 's'}
+                </span>{' '}
+                timeline
+              </>
+            ) : null}
+          </p>
         </div>
-        <p className="hidden max-w-xs text-right text-xs text-muted-foreground sm:block">
-          Edit qty or price on any line. Strikethrough to remove. "+ Add line" to add new scope.
-        </p>
+
+        {/* Operator-only margin read — never rendered to the customer. */}
+        {marginPct !== null ? (
+          <div className="min-w-0">
+            <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+              Operator view — not shown to customer
+            </p>
+            <span
+              className={cn(
+                'mt-1 inline-flex items-center gap-2 rounded-md border px-2.5 py-1 font-mono text-[0.7rem] font-semibold uppercase tracking-wide',
+                marginBelowFloor
+                  ? 'border-amber-300 bg-amber-100 text-amber-800'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-800',
+              )}
+            >
+              <Eye aria-hidden className="size-3" />
+              Margin on change · <span className="tabular-nums">{marginPct}%</span>
+              <span className="rounded bg-foreground px-1 py-px text-[0.6rem] text-background">
+                OPS
+              </span>
+            </span>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {marginBelowFloor
+                ? `Below the ${floorPct}% project floor.`
+                : `Holds above the ${floorPct}% project floor.`}
+            </p>
+          </div>
+        ) : (
+          <p className="hidden max-w-xs text-right text-xs text-muted-foreground sm:block">
+            Edit qty or price on any line. Strikethrough to remove. "+ Add line" to add new scope.
+          </p>
+        )}
       </div>
 
       <div className="space-y-4 rounded-lg border p-4">
@@ -864,14 +940,15 @@ export function ChangeOrderDiffForm({
                                 return (
                                   <tr
                                     key={line.id}
-                                    className="border-b bg-rose-50/60 last:border-0"
+                                    className={cn(
+                                      'border-b last:border-0',
+                                      changeOrderActionStyle.remove.rowClass,
+                                    )}
                                   >
                                     <td />
                                     <td className="px-2 py-1.5 align-top">
                                       <div className="flex items-center gap-2">
-                                        <span className="shrink-0 rounded-full bg-rose-200/70 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-rose-900">
-                                          Removed
-                                        </span>
+                                        <ChangeOrderActionChip action="remove" />
                                         <span className="font-medium line-through">
                                           {line.label}
                                         </span>
@@ -912,13 +989,17 @@ export function ChangeOrderDiffForm({
 
                               // Modified line: inputs visible, "was" subtext.
                               return (
-                                <tr key={line.id} className="border-b bg-amber-50/70 last:border-0">
+                                <tr
+                                  key={line.id}
+                                  className={cn(
+                                    'border-b last:border-0',
+                                    changeOrderActionStyle.modify.rowClass,
+                                  )}
+                                >
                                   <td />
                                   <td className="px-2 py-1.5 align-top">
                                     <div className="flex items-center gap-2">
-                                      <span className="shrink-0 rounded-full bg-amber-200/70 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-900">
-                                        Edited
-                                      </span>
+                                      <ChangeOrderActionChip action="modify" />
                                       <span className="font-medium">{line.label}</span>
                                     </div>
                                     <div className="mt-0.5 text-[11px] text-muted-foreground/80 tabular-nums">
@@ -996,14 +1077,15 @@ export function ChangeOrderDiffForm({
                               return (
                                 <tr
                                   key={a.tempId}
-                                  className="border-b bg-emerald-50/50 last:border-0"
+                                  className={cn(
+                                    'border-b last:border-0',
+                                    changeOrderActionStyle.add.rowClass,
+                                  )}
                                 >
                                   <td />
                                   <td className="px-2 py-1.5 align-top">
                                     <div className="flex items-center gap-2">
-                                      <span className="shrink-0 rounded-full bg-emerald-200/70 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-900">
-                                        New
-                                      </span>
+                                      <ChangeOrderActionChip action="add" />
                                       <Input
                                         type="text"
                                         value={a.label}

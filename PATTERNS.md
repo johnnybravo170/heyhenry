@@ -669,8 +669,21 @@ The one branded wrapper every customer-facing money document renders inside — 
 **Adopters:**
 - `src/components/features/projects/estimate-render.tsx` — Estimate (live). Body keeps its section→category→line grouping + approved/declined/draft banners; header/recipient/totals/footer + chip come from the shell.
 - `src/app/(public)/view/invoice/[id]/page.tsx` — Invoice pay surface (live). Draw context + line items in the body; dual-pay zone (`InvoicePayZone`) in the action slot.
-- **Change Order** public `/approve/[code]` page — *intended adopter* (separate build, card 01a46861). The shell is doc-agnostic for exactly this — pass CO Before→After→Δ rows as the body and signed deltas via `CustomerDocTotalsRow.signed`. Don't add estimate-isms.
+- **Change Order** public `/approve/[code]` page — **live** (card 01a46861), via `src/components/features/change-orders/change-order-render.tsx` (the CO analogue of `estimate-render.tsx`, shared by the public page; reuse it for any operator CO preview). Body = "What's changing & why" + price-only impact card + the Before→After→Δ diff (`ChangeOrderDiffView`); totals use `CustomerDocTotalsRow.signed` for the +/- Cost of work → Management fee → province-aware GST/HST → Total impact; `actionZone` holds the typed-name e-sig + decline-with-reason form. Tax via `canadianTax.getCustomerFacingContext` (PST stripped) — never hardcode 5%.
 
 **Dual-pay zone** (`src/components/features/invoices/invoice-pay-zone.tsx`): Stripe card + **Interac e-Transfer at true parity** — Interac is a structured, one-tap-copyable block (recipient · amount · memo), never free text. Mobile gets a sticky 44px+ Pay bar (card only; e-Transfer customers use the copyable block).
 
 **Code-keyed public URLs:** the invoice public route resolves by `invoices.code` first, then falls back to raw `id` (legacy links keep working). New sends generate the code (`generateInvoiceCode` in `src/server/actions/invoices.ts`) and key the visible doc number (`INV-XXXXXXXX`) + pay URL on it — never echo the raw row id on a no-login PII page. Migration `20260523194840_invoices_public_code.sql` (additive column + backfill + partial unique index).
+
+## 29. Change-order diff-action palette (edit-action types ≠ lifecycle status)
+
+A change order carries two **separate** colour systems — don't conflate them:
+
+- **Lifecycle status** (draft / pending / approved / declined / voided) → `status-tokens.ts` `changeOrderStatusTone` (§7). Answers "what state is this CO in".
+- **Diff-action** (add / change / remove / budget) → `src/lib/ui/change-order-action.ts` `changeOrderActionStyle`. Answers "what KIND of edit is this row". A green *add* row is NOT a "success" status; a red *remove* row is NOT a "declined" status.
+
+One intentional tone per action, **label + glyph paired** (never colour-only, WCAG SC 1.4.1): `add` emerald `+`, `modify`→**Change** blue `↔`, `remove` red `−`, `modify_envelope`→**Budget** muted `□`. Maps the `change_order_lines.action` enum.
+
+Render the pill via `<ChangeOrderActionChip action=… [count=…] />` (`src/components/features/change-orders/change-order-action-chip.tsx`) — `count` makes a summary chip ("3 Added"). Row washes + signed-Δ tint come from the same `changeOrderActionStyle[action].rowClass` / `.deltaClass`. Used **identically** in the operator editor (`change-order-diff-form.tsx`) and the customer-facing diff view (`change-order-diff-view.tsx`) so the eye is trained once. Before/After/Δ figures: `changeOrderLineDelta(line)` (handles `modify_envelope` reading `before_snapshot.estimate_cents` and `remove`→0 after).
+
+**Operator margin read** (editor only): the sticky impact bar shows `Margin on change · X%` vs the project mgmt-fee floor, tagged `OPS`. Hard boundary — this and any cost/markup figure **never** render on a customer surface (public `/approve`, send preview, portal); the customer doc is price-only (§28).

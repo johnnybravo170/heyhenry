@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AppliedChangeOrdersBanner } from '@/components/features/change-orders/applied-co-banner';
+import { ProjectChangesSection } from '@/components/features/change-orders/project-changes-section';
 import { BudgetCategoriesTable } from '@/components/features/projects/budget-categories-table';
 import {
   BudgetAlertChips,
@@ -251,6 +252,17 @@ export default async function BudgetTabServer({
         defaultExpanded={defaultExpanded}
         headerActions={showSaveAsTemplate ? <SaveAsTemplateButton projectId={projectId} /> : null}
       />
+
+      {/* Per-project Changes view — all COs on this job + the "+ New change
+       *  order" entry. Lives INSIDE Budget (decision 6790ef2b), shown once
+       *  the scope is signed (execution). The applied-CO chips on the table
+       *  above are the per-category lens; this is the full status list. */}
+      {isExecution ? (
+        <ProjectChangesSection
+          projectId={projectId}
+          timezone={tenant?.timezone ?? 'America/Vancouver'}
+        />
+      ) : null}
 
       {project ? (
         <>

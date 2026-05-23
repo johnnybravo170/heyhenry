@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -254,9 +254,16 @@ export function InvoicesTab({
   projectGstModeOverride,
   tenantDefaultGstMode,
   taxRate,
+  approvedChangeOrderCents = 0,
 }: {
   projectId: string;
   invoices: InvoiceSummary[];
+  /** Sum of approved CO cost impact on this project. Approval updates the
+   *  budget but does NOT auto-bill (locked) — so approved COs can silently
+   *  go unbilled. Surfaced as the peach "now billable" nudge. We can't tell
+   *  from the schema which approved COs are already on a draw (invoices carry
+   *  no CO linkage), so the nudge is informational, not a hard delta. */
+  approvedChangeOrderCents?: number;
   /** Sum of project_cost_lines + mgmt fee. Used to compute "% of contract"
    *  for each draw + the running total. Zero if the project hasn't been
    *  estimated yet. */
@@ -362,6 +369,25 @@ export function InvoicesTab({
 
   return (
     <div className="space-y-6">
+      {/* Now-billable nudge (peach). Approved COs update the budget but don't
+       *  auto-bill; surface the approved total so it doesn't quietly leak.
+       *  Informational — there's no CO→invoice linkage in the schema to net
+       *  out what's already drawn, so the operator decides. */}
+      {approvedChangeOrderCents > 0 ? (
+        <div className="flex items-center gap-3 rounded-lg border-l-2 border-brand bg-brand/5 p-3">
+          <Sparkles className="size-4 shrink-0 text-brand" aria-hidden />
+          <div className="flex-1 text-sm">
+            <span className="mr-2 font-mono text-[0.6rem] font-bold uppercase tracking-wider text-brand">
+              Henry
+            </span>
+            <strong>
+              <Money cents={approvedChangeOrderCents} /> in approved change orders.
+            </strong>{' '}
+            Approval updates the budget but doesn't bill — add it to the next draw?
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {!showDrawForm && (
           <Button
