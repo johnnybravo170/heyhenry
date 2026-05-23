@@ -82,7 +82,7 @@ export function RecentActivity({
                         </span>
                       ) : null}
                     </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="shrink-0 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                       {formatRelativeTime(entry.created_at, { timezone })}
                     </span>
                   </Link>
