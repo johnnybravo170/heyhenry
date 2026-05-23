@@ -16,6 +16,29 @@ import {
   rejectWorkerInvoiceAction,
 } from '@/server/actions/worker-invoices';
 
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+/** Format a date-only `YYYY-MM-DD` as "May 13". Parses the parts directly —
+ *  no Date/Intl, so a date-only value never shifts across timezones (and
+ *  doesn't trip the bare-toLocale lint). */
+function fmtShortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return `${SHORT_MONTHS[Number(m[2]) - 1] ?? m[2]} ${Number(m[3])}`;
+}
+
 export function WorkerInvoicesSection({ invoices }: { invoices: WorkerInvoiceRow[] }) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -88,7 +111,7 @@ export function WorkerInvoicesSection({ invoices }: { invoices: WorkerInvoiceRow
                     ) : null}
                   </td>
                   <td className="px-4 py-3 align-top whitespace-nowrap font-mono text-xs text-muted-foreground">
-                    {inv.period_start} → {inv.period_end}
+                    {fmtShortDate(inv.period_start)} → {fmtShortDate(inv.period_end)}
                   </td>
                   <td className="px-4 py-3 text-right align-top">
                     <Money cents={inv.subtotal_cents} className="text-muted-foreground" />

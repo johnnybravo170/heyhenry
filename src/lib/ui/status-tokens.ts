@@ -121,8 +121,10 @@ export const projectCostStatusTone = {
 /** Worker-facing invoice (time / expense submission from crew). */
 export const workerInvoiceStatusTone = {
   draft: 'neutral',
-  submitted: 'info',
-  approved: 'success',
+  // OD: submitted = the operator's approval queue → warning (amber);
+  // approved = awaiting payment, in-flight → info (blue); paid → success (green).
+  submitted: 'warning',
+  approved: 'info',
   rejected: 'danger',
   paid: 'success',
 } as const satisfies Record<string, StatusTone>;
