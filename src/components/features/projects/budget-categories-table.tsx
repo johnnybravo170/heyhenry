@@ -60,6 +60,7 @@ import type { CostLineRow } from '@/lib/db/queries/cost-lines';
 import type { MaterialsCatalogRow } from '@/lib/db/queries/materials-catalog';
 import type { BudgetLine } from '@/lib/db/queries/project-budget-categories';
 import { withFrom } from '@/lib/nav/from-link';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import {
   addBudgetCategoryAction,
@@ -141,7 +142,7 @@ function MiniBar({
           s.actuallyOver
             ? 'text-destructive'
             : s.projectedOver
-              ? 'text-amber-600'
+              ? 'text-amber-700 dark:text-amber-300'
               : 'text-muted-foreground',
         )}
       >
@@ -513,7 +514,7 @@ export function BudgetCategoriesTable({
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
                       {isRenaming ? (
                         <Input
-                          className="h-7 w-auto min-w-[180px] text-sm font-semibold uppercase tracking-wide"
+                          className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.08em]"
                           value={editSectionValue}
                           onChange={(e) => setEditSectionValue(e.target.value)}
                           onKeyDown={(e) => {
@@ -542,7 +543,7 @@ export function BudgetCategoriesTable({
                         <button
                           type="button"
                           onClick={() => toggleSection(section)}
-                          className="text-left text-sm font-semibold uppercase tracking-wide text-foreground"
+                          className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-foreground"
                         >
                           {section}
                         </button>
@@ -568,7 +569,10 @@ export function BudgetCategoriesTable({
                         ? overCats.map((l) => (
                             <span
                               key={l.budget_category_id}
-                              className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive"
+                              className={cn(
+                                'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                statusToneClass.danger,
+                              )}
                             >
                               {l.budget_category_name} over{' '}
                               <Money cents={l.actual_cents - l.estimate_cents} />
@@ -579,7 +583,10 @@ export function BudgetCategoriesTable({
                         ? projOverCats.map((l) => (
                             <span
                               key={l.budget_category_id}
-                              className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+                              className={cn(
+                                'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                statusToneClass.warning,
+                              )}
                             >
                               {l.budget_category_name} projected over
                             </span>
@@ -877,7 +884,10 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                   'Budget',
                 )}
                 title={`Touched by CO: ${c.co_title}`}
-                className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-800 hover:bg-blue-200"
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide',
+                  statusToneClass.info,
+                )}
               >
                 CO {c.co_short_id}
               </a>
@@ -969,7 +979,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 line.actual_cents > line.estimate_cents
                   ? 'text-destructive'
                   : line.actual_cents + line.committed_cents > line.estimate_cents
-                    ? 'text-amber-600'
+                    ? 'text-amber-700 dark:text-amber-300'
                     : 'text-muted-foreground',
               )}
             >
@@ -1027,7 +1037,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
 
       {/* Cost lines — same grid, value-by-column */}
       {isExpanded && !isDragging ? (
-        <div className="border-b bg-muted/20">
+        <div className="border-b bg-[#FBF6EC]">
           {categoryLines.map((cl) => {
             const a = actualsByLineId[cl.id];
             const spent = a ? a.labour_cents + a.bills_cents + a.expenses_cents : 0;
