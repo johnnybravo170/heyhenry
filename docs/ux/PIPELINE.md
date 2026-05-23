@@ -67,6 +67,8 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Expenses | ✅ | ✅ `od-expenses` | 0 (build `d681c249` ✅) | 🟡 #309 | ledger Paper restyle + `<Money>` + server-side filters/search/pagination; GST remittance restyle (last-closed-quarter default, missing-BN ✦ card); receipt import kept (#309). **Deferred:** wizard internals repaint, ledger CSV endpoint. ✅-gate (live design-critique) pending |
 | Customer Documents | ✅ | ✅ `od-customer-documents` | 0 (build `1f5cd745` ✅) | 🟡 #308 | shared `<CustomerDocument>` shell built (#308: estimate adopts it; reusable for CO `/approve`) + invoice pay surface rebuilt (Stripe + Interac parity, province-aware GST, additive id→code keying). **Deferred:** security card (rate-limit/token on no-login PII pages). ✅-gate (live design-critique) pending |
 | Settings (config hub · 30 sub-pages) | ✅ `settings.md` | ✅ `od-settings` | 1 (build `5aaf0e1d`) | 🟡 (live, pre-redesign) | render converged (2-round OD loop); **role-filter the nav DEMONSTRATED** (Owner + Member + permission "Owner only" frames) · Paper shell + 6-group IA · counts reconcile (owner 26/27 · member 21/27) · Canadian config (GST/HST · WCB · owner-draw GST · e-Transfer); **open: exact per-role visibility matrix — Ops confirm (brief Decision #1)**; heavy sub-flows (Team, Billing, QuickBooks, Import) graduate to own renders |
+| Onboarding (first-run) | ✅ `onboarding.md` | ⬜ | — | ⬜ (no setup step today) | **Code truth: `(auth)/onboarding` doesn't exist** — signup → `/dashboard`, no business-profile step. Brief = a NEW light / skippable / resumable first-run pass (logo · GST/WCB · province · "meet Henry"); flat-rate plan-picker (no per-seat); mobile-first. Lower urgency (no firm launch date). |
+| Referrals (growth) | ✅ `referrals.md` | ⬜ | — | 🟡 (built, pre-Paper) | built/live → repaint + calm-down + `status-tokens`. ⚠ **reward state is vaporware** (`rewards:0` hard-coded; nothing converts) — don't design a V1 earnings state; reward+payout pipeline graduates. `/r/[code]` public landing owned here (deferred from `public-pages.md`). V1.1-candidate. |
 
 ### Project Hub (shell + tabs)
 | Tab | Brief | OD render | Open dev cards | Built (ref) | Notes |
@@ -104,16 +106,16 @@ The redesign-scope surface is briefed; everything else is explicitly classified.
 **Graduated heavy flows — briefed ✅** (sub-flows that earned their own brief out of a screen's Subscreen Inventory):
 `invoice-detail.md` (`/invoices/[id]`) · `bank-reconciliation.md` (import + review) · `home-record.md` (closeout) · `settings-team.md` · `settings-billing.md` · `settings-quickbooks.md` (QBO hub, 4 routes) · `settings-import.md`. Most are built/live (pre-Paper) → OD render + restyle next; bank-recon + home-record carry build deltas flagged in-brief. *(`<CustomerDocument>` shell → `customer-documents.md` + render `od-customer-documents` + card `1f5cd745`.)*
 
-**Genuinely unbriefed GC surfaces — the only open gaps:**
-- **Onboarding** (`(auth)/onboarding` — first-run signup / plan-picker). *Recommend: brief if pre-launch polish matters; lower urgency (no firm launch date; soft-launch posture).*
-- **Referrals** (`(dashboard)/referrals` — growth program). *Recommend: defer to V1.1 — not core run-the-job.*
+**Onboarding + Referrals — now briefed ✅** (2026-05-23, closing the last GC gaps):
+- **Onboarding** → `onboarding.md` — a NEW light first-run setup pass (`(auth)/onboarding` doesn't exist today; signup → `/dashboard`). Lower build urgency (no firm launch date).
+- **Referrals** → `referrals.md` — built/live → repaint; the reward/payout pipeline is vaporware (flagged, graduates). V1.1-candidate.
 
 **Out of redesign scope (intentionally not briefed):**
 - **Bookkeeper portal** (`/bk`) — deferred (see the sweep note above; Role Matrix `03b1ccf4` / Workflow #8).
 - **`admin`** (internal ops UI) · **`social`** (ops marketing drafts) · **`lead-gen` + `leads`** (PW-vertical public lead capture; GC leads = Contacts) · **legacy `jobs` + PW quotes** (`quotes.md` maps the PW→GC boundary; GC uses Projects).
 - **Owner Dashboard** (`dashboard.md`) — owner optimizes on a separate track ("don't touch").
 
-**Net:** every GC-V1 redesign screen + its heavy subscreens is briefed; **onboarding + referrals** are the only deferred GC gaps; the rest is out-of-scope by design.
+**Net:** **every GC-V1 redesign surface is now briefed — zero in-scope gaps.** Remaining work is downstream per screen (OD render → build → the ✅-verify gate) plus the explicitly out-of-scope set above (Bookkeeper `/bk`, `admin`, `social`, `lead-gen`/`leads`, legacy `jobs`/PW quotes, owner Dashboard).
 
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
