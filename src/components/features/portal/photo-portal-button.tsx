@@ -128,9 +128,9 @@ export function PhotoPortalButton({
       <PopoverContent className="w-72" align="end">
         <div className="space-y-3">
           <div>
-            <p className="text-sm font-medium">Show on customer portal</p>
+            <p className="text-sm font-medium">Show on client portal</p>
             <p className="text-xs text-muted-foreground">
-              Tag this photo so it appears on the homeowner&rsquo;s portal grouped by category.
+              Tag this photo so it appears on the client&rsquo;s portal grouped by category.
             </p>
           </div>
 
@@ -177,7 +177,7 @@ export function PhotoPortalButton({
                 ))}
               </select>
               <p className="mt-1 text-[10px] text-muted-foreground">
-                Pinned photos appear inline on the homeowner&rsquo;s timeline.
+                Pinned photos appear inline on the client&rsquo;s timeline.
               </p>
             </div>
           ) : null}
@@ -185,7 +185,7 @@ export function PhotoPortalButton({
           {tags.size > 0 ? (
             <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm">
               <span className="text-muted-foreground">
-                {clientVisible ? 'Visible to homeowner' : 'Hidden from homeowner'}
+                {clientVisible ? 'Visible to client' : 'Hidden from client'}
               </span>
               <Button
                 type="button"
@@ -194,7 +194,7 @@ export function PhotoPortalButton({
                 onClick={toggleVisible}
                 disabled={pending}
               >
-                {clientVisible ? 'Hide' : 'Unhide'}
+                {clientVisible ? 'Hide from client' : 'Show to client'}
               </Button>
             </div>
           ) : null}

@@ -107,7 +107,7 @@ export function DocumentUpload({
       <div>
         <h3 className="text-sm font-semibold">Upload document</h3>
         <p className="text-xs text-muted-foreground">
-          Contracts, permits, warranties, manuals, inspections — your homeowner sees them on their
+          Contracts, permits, warranties, manuals, inspections — your client sees them on their
           portal and they roll into the Home Record.
         </p>
       </div>
@@ -192,8 +192,8 @@ export function DocumentUpload({
             ))}
           </select>
           <p className="mt-1 text-[10px] text-muted-foreground">
-            Linking to a sub-trade adds them to the homeowner&rsquo;s &ldquo;Trade contacts&rdquo;
-            list on the portal.
+            Linking to a sub-trade adds them to the client&rsquo;s &ldquo;Trade contacts&rdquo; list
+            on the portal.
           </p>
         </div>
       ) : null}

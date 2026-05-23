@@ -19,6 +19,8 @@ When you change upload behavior (file size limits, accepted types, drag-drop, op
 
 **Shared expectations:** all four use the `{ ok, error }` server-action discriminant, all show toast errors, all do optimistic preview where the file is visual. Drag-over state uses `border-primary bg-primary/5` — see photo-upload and intake-dropzone for the canonical styling.
 
+**Offline-capture queue (field path):** project photo uploads survive no-signal. When `navigator.onLine` is false (or a send throws mid-flight), `photo-upload.tsx` stashes the resized blob in IndexedDB via `src/lib/storage/capture-queue.ts` instead of failing. `src/components/features/photos/offline-capture-queue.tsx` (rendered in `gallery-tab-server.tsx`) shows the offline banner + per-item status rows (waiting / syncing / failed) and flushes on the `online` event or a manual "Sync now / Retry all", replaying through the same `uploadPhotoAction`. **Scope:** this is a within-tab queue — no Service Worker / Background Sync registration, so a flush only runs while the tab is open. True background sync (uploads complete with the tab closed) is a follow-up. The bridge between the two halves is a `window` `heyhenry:capture-queued` event.
+
 ---
 
 ## 2. Customer picker / pick-or-create
@@ -97,6 +99,13 @@ When you add a new status value to an enum, update the matching `*StatusTone` ma
 - `src/components/features/inbox/worklog-entry-type-badge.tsx`
 - `src/components/features/worker/worker-invoice-status-badge.tsx`
 - `src/components/features/projects/project-costs-section.tsx` — inline `CostStatusBadge` for the unified Costs surface (`paid_receipt` / `bill_unpaid` / `bill_paid`). Uses the shared `projectCostStatusTone` map in `status-tokens.ts`; no standalone badge file because the three values are tightly coupled to a single rendering surface.
+
+### 7a. Client-visibility badge (`VisibilityBadge`)
+
+The "who can see this?" badge for any per-item shared/internal surface (Photos, Documents). **Trust-critical state → label + glyph, NEVER colour-only** (WCAG 2.2 AA, SC 1.4.1): internal renders a lock glyph + `Internal`; client-visible renders a globe glyph + `Client visible`, each with a `title` so the meaning is reachable on hover + AT. Colour reinforces, it doesn't carry meaning.
+
+- `src/components/features/projects/visibility-badge.tsx` — the shared primitive (`<VisibilityBadge clientVisible={boolean} />`). Used by `photos/photo-card.tsx` (overlay + lightbox header) and `portal/document-list.tsx` (row). Locked by `tests/unit/visibility-badge.test.tsx`.
+- Photos default **internal** (`portal_visibility`/`client_visible` false); documents default **client-visible**; COIs are seeded internal ("sub compliance — usually internal"). The toggle lives in `portal/photo-portal-button.tsx` (popover) and `document-list.tsx` (per-row Hide/Show); the badge surfaces the resulting state legibly. Copy says **client**, never "homeowner."
 
 ---
 

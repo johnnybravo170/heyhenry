@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * "Email to homeowner" button for the Home Record. Opens a confirm
+ * "Email to client" button for the Home Record. Opens a confirm
  * dialog so the operator sees which email it's going to and which
  * delivery formats will be linked. Re-running re-sends.
  *
@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { formatDateTime } from '@/lib/date/format';
 import { emailHomeRecordAction } from '@/server/actions/home-records';
 
 type Props = {
@@ -71,12 +72,12 @@ export function HomeRecordEmailButton({
       <DialogTrigger asChild>
         <Button type="button" variant="outline" size="sm">
           {alreadySent ? <CheckCircle2 className="size-4" /> : <Mail className="size-4" />}
-          {alreadySent ? 'Resend email' : 'Email to homeowner'}
+          {alreadySent ? 'Resend email' : 'Email to client'}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Email Home Record to homeowner</DialogTitle>
+          <DialogTitle>Email Home Record to client</DialogTitle>
           <DialogDescription>
             Sends a single email with the permanent web link
             {hasPdf ? ', the PDF download' : ''}
@@ -97,7 +98,7 @@ export function HomeRecordEmailButton({
             />
             {!defaultEmail ? (
               <p className="mt-1 text-xs text-muted-foreground">
-                No email on file for this homeowner — type one to send.
+                No email on file for this client — type one to send.
               </p>
             ) : null}
           </div>
@@ -117,15 +118,7 @@ export function HomeRecordEmailButton({
 
           {alreadySent && emailedTo ? (
             <p className="text-xs text-muted-foreground">
-              Last sent to {emailedTo} on{' '}
-              {new Intl.DateTimeFormat('en-CA', {
-                timeZone: tz,
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              }).format(new Date(emailedAt!))}
-              .
+              Last sent to {emailedTo} on {formatDateTime(emailedAt, { timezone: tz })}.
             </p>
           ) : null}
         </div>

@@ -2,17 +2,33 @@
 
 /**
  * Operator-side document list grouped by type. Each row shows title +
- * size + uploaded date + optional expiry, with Delete and a "Hidden
- * from homeowner" toggle.
+ * size + uploaded date + optional expiry, with a per-doc Hide/Show
+ * (client-visibility) toggle and an AlertDialog-guarded delete.
+ *
+ * Visibility legibility is the #1 trust signal here: every row carries a
+ * label + glyph VisibilityBadge (never colour-only). Docs default to
+ * client-visible; COIs are seeded internal (sub-compliance paperwork). The
+ * data model (`client_visible`) already encodes this — we surface it.
  */
 
-import { Eye, EyeOff, FileText, Loader2, Trash2 } from 'lucide-react';
+import { FileText, Loader2, Trash2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { formatDate } from '@/lib/date/format';
 import type { ProjectDocumentWithUrl } from '@/lib/db/queries/project-documents';
-import { cn } from '@/lib/utils';
 import {
   DOCUMENT_TYPE_DISPLAY_ORDER,
   type DocumentType,
@@ -22,6 +38,7 @@ import {
   deleteProjectDocumentAction,
   setDocumentClientVisibleAction,
 } from '@/server/actions/project-documents';
+import { VisibilityBadge } from '../projects/visibility-badge';
 
 function humanBytes(n: number | null): string {
   if (!n || n <= 0) return '';
@@ -30,6 +47,13 @@ function humanBytes(n: number | null): string {
   if (n < k * k) return `${(n / k).toFixed(1)} KB`;
   return `${(n / k / k).toFixed(1)} MB`;
 }
+
+// COIs (certificates of insurance) are sub-compliance docs — usually held
+// internal. We surface the convention as a one-line group note so the
+// default reads as intentional, not a bug.
+const TYPE_NOTE: Partial<Record<DocumentType, string>> = {
+  coi: 'Sub compliance — usually internal',
+};
 
 export function DocumentList({
   documents,
@@ -42,7 +66,7 @@ export function DocumentList({
     return (
       <p className="text-sm text-muted-foreground">
         No documents yet. Upload contracts, permits, warranties, manuals — they&rsquo;ll appear on
-        the homeowner&rsquo;s portal and in the final Home Record.
+        the client&rsquo;s portal and in the final Home Record.
       </p>
     );
   }
@@ -61,14 +85,15 @@ export function DocumentList({
       {orderedTypes.map((type) => {
         const docs = buckets.get(type) ?? [];
         return (
-          <div key={type} className="rounded-lg border bg-card">
-            <div className="flex items-center justify-between border-b px-4 py-2">
-              <h3 className="text-sm font-semibold">
+          <div key={type} className="overflow-hidden rounded-xl border bg-card">
+            <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
+              <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
                 {documentTypeLabels[type]}
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {docs.length}
-                </span>
               </h3>
+              <span className="font-mono text-[11px] text-muted-foreground">{docs.length}</span>
+              {TYPE_NOTE[type] ? (
+                <span className="text-xs text-muted-foreground">· {TYPE_NOTE[type]}</span>
+              ) : null}
             </div>
             <ul className="divide-y">
               {docs.map((d) => (
@@ -86,19 +111,26 @@ function DocumentRow({ doc, projectId }: { doc: ProjectDocumentWithUrl; projectI
   const tz = useTenantTimezone();
   const [pending, startTransition] = useTransition();
 
+  // Surface an expiry warning for time-bound paperwork (COIs, permits) so a
+  // lapsed certificate is visible at a glance.
+  const expiresSoon =
+    doc.expires_at != null && new Date(doc.expires_at).getTime() < Date.now() + 30 * 86_400_000;
+  const expired = doc.expires_at != null && new Date(doc.expires_at).getTime() < Date.now();
+
   function onToggleVisibility() {
     const next = !doc.client_visible;
     startTransition(async () => {
       const res = await setDocumentClientVisibleAction(doc.id, projectId, next);
       if (!res.ok) toast.error(res.error);
+      else toast.success(next ? 'Now visible to client' : 'Hidden from client');
     });
   }
 
   function onDelete() {
-    if (!confirm(`Delete "${doc.title}"? This can't be undone.`)) return;
     startTransition(async () => {
       const res = await deleteProjectDocumentAction(doc.id, projectId);
       if (!res.ok) toast.error(res.error);
+      else toast.success('Document deleted.');
     });
   }
 
@@ -121,52 +153,63 @@ function DocumentRow({ doc, projectId }: { doc: ProjectDocumentWithUrl; projectI
         )}
         <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           {humanBytes(doc.bytes) ? <span>{humanBytes(doc.bytes)}</span> : null}
-          <span>
-            Added{' '}
-            {new Intl.DateTimeFormat('en-CA', {
-              timeZone: tz,
-              month: 'short',
-              day: 'numeric',
-            }).format(new Date(doc.created_at))}
-          </span>
+          <span>Added {formatDate(doc.created_at, { timezone: tz })}</span>
           {doc.expires_at ? (
-            <span>
-              Expires{' '}
-              {new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date(doc.expires_at))}
+            <span className={expiresSoon ? 'font-semibold text-amber-700 dark:text-amber-400' : ''}>
+              {expired ? 'Expired' : 'Expires'} {formatDate(doc.expires_at, { timezone: tz })}
             </span>
           ) : null}
-          {!doc.client_visible ? <span className="font-medium">Hidden from homeowner</span> : null}
         </div>
       </div>
+      <VisibilityBadge clientVisible={doc.client_visible} className="hidden sm:inline-flex" />
       <div className="flex items-center gap-1">
         <Button
           type="button"
-          size="icon"
+          size="sm"
           variant="ghost"
-          aria-label={doc.client_visible ? 'Hide from homeowner' : 'Show to homeowner'}
-          title={doc.client_visible ? 'Hide from homeowner' : 'Show to homeowner'}
+          aria-label={doc.client_visible ? 'Hide from client' : 'Show to client'}
+          title={doc.client_visible ? 'Hide from client' : 'Show to client'}
           onClick={onToggleVisibility}
           disabled={pending}
-          className={cn(!doc.client_visible && 'text-muted-foreground/60')}
+          className="text-xs"
         >
           {pending ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-3.5 animate-spin" />
           ) : doc.client_visible ? (
-            <Eye className="size-4" />
+            'Hide'
           ) : (
-            <EyeOff className="size-4" />
+            'Show'
           )}
         </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          aria-label="Delete document"
-          onClick={onDelete}
-          disabled={pending}
-        >
-          <Trash2 className="size-4" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              aria-label="Delete document"
+              disabled={pending}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete &ldquo;{doc.title}&rdquo;?</AlertDialogTitle>
+              <AlertDialogDescription>This can&rsquo;t be undone.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onDelete}
+                disabled={pending}
+                className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+              >
+                {pending ? 'Deleting…' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </li>
   );
