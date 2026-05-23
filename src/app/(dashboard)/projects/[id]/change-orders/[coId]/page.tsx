@@ -44,6 +44,20 @@ export default async function ChangeOrderDetailPage({
     }
   }
 
+  // Customer contact for the send-preview dialog (email + SMS recipients).
+  let customerEmail: string | null = null;
+  let customerPhone: string | null = null;
+  if (project.customer_id) {
+    const admin = createAdminClient();
+    const { data: cust } = await admin
+      .from('customers')
+      .select('email, phone')
+      .eq('id', project.customer_id)
+      .maybeSingle();
+    customerEmail = (cust?.email as string | null) ?? null;
+    customerPhone = (cust?.phone as string | null) ?? null;
+  }
+
   return (
     <div className="mx-auto w-full max-w-5xl">
       <div className="mb-4">
@@ -58,6 +72,9 @@ export default async function ChangeOrderDetailPage({
           project.budget_categories.map((b) => [b.id, b.name]),
         )}
         diffLines={diffLines}
+        customerName={project.customer?.name ?? 'Customer'}
+        customerEmail={customerEmail}
+        customerPhone={customerPhone}
       />
     </div>
   );

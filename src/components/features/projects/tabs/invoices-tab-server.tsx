@@ -1,5 +1,6 @@
 import { InvoicesTab } from '@/components/features/projects/invoices-tab';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { getChangeOrderSummaryForProject } from '@/lib/db/queries/change-orders';
 import { getVarianceReport } from '@/lib/db/queries/cost-lines';
 import { type InvoicingPrefs, resolveDrawGstMode } from '@/lib/invoices/draw-gst-mode';
 import { getPrefs } from '@/lib/prefs/tenant-prefs';
@@ -9,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 export default async function InvoicesTabServer({ projectId }: { projectId: string }) {
   const supabase = await createClient();
   const tenant = await getCurrentTenant();
-  const [invoicesRes, variance, projectRes, invoicingPrefs, taxCtx] = await Promise.all([
+  const [invoicesRes, variance, projectRes, invoicingPrefs, taxCtx, coSummary] = await Promise.all([
     supabase
       .from('invoices')
       .select(
@@ -30,6 +31,7 @@ export default async function InvoicesTabServer({ projectId }: { projectId: stri
     tenant
       ? canadianTax.getCustomerFacingContext(tenant.id)
       : Promise.resolve({ totalRate: 0 } as { totalRate: number }),
+    getChangeOrderSummaryForProject(projectId),
   ]);
 
   const estimateStatus = (projectRes.data?.estimate_status as string | null) ?? 'draft';
@@ -45,6 +47,7 @@ export default async function InvoicesTabServer({ projectId }: { projectId: stri
       projectGstModeOverride={projectOverride}
       tenantDefaultGstMode={invoicingPrefs.drawGstMode ?? 'inclusive'}
       taxRate={taxCtx.totalRate ?? 0}
+      approvedChangeOrderCents={coSummary.approved_cost_cents}
       invoices={(invoicesRes.data ?? []).map((inv) => ({
         id: inv.id as string,
         status: inv.status as string,
