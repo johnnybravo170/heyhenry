@@ -109,6 +109,22 @@ Margin → Budget · ready-to-bill/overdue → Billing · unsent changes → sco
 - **Loading:** the existing per-section skeletons (strip / variance / timeline stream independently — keep).
 - **Empty (clean):** "On track — nothing needs you."
 
+## Subscreen inventory
+Overview is an **aggregator that links out** — it spawns almost no modals of its own; its "subscreens" are disclosures + deep-links. (The header's Project Details card `▾` and `⋯` actions menu sit above Overview but belong to the **shell** — inventoried in `project-hub.md`, not here.)
+
+**Expansion / disclosure**
+- **"Needs You" — "+N more / Show all"** — the strip caps at ~4 rows; the tail collapses ("+1 more · 3 missing receipts") and expands to the full ranked list on Show all.
+- **Activity feed** — chronological `project_events` (+ folded-in Notes); "load more" / per-event detail inline.
+
+**Inline / transient**
+- **Each Needs-You row** — icon + Henry label + plain-English body + one CTA; tone via `status-tokens` (fill = meaning). Calm empty: "On track — nothing needs you."
+- **Critical-escalation cue** — a single quiet severity tint on the **header status badge** for a can't-miss item (resolved here); never a banner.
+
+**Link-outs (not modals — but the operator leaves Overview via these)**
+- Each alert CTA → its **owning tab** (margin→Budget · ready-to-bill/overdue→Billing · unsent→scope-diff · slip→Schedule · message→Client · receipts→Spend); Budget & margin card → Budget.
+
+**Nothing graduates.** Overview spawns no standalone subscreen — by design it's the ranked read + the doorway to where work is resolved.
+
 ## Accessibility
 WCAG 2.2 AA. Severity **never colour-only** — each row carries an icon + label (Margin at risk / Ready to bill / Overdue) so tone is redundant. Ranked rows + CTAs are real links, keyboard-operable, focus-ringed, ≥44px on mobile. "+N more / Show all" is a real disclosure button. Money is tabular; the variance card's progress bar has a text equivalent. Strip items announce their count ("Needs you, 5 items").
 

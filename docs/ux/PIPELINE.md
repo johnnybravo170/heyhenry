@@ -68,13 +68,13 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Tab | Brief | OD render | Open dev cards | Built (ref) | Notes |
 |---|---|---|---|---|---|
 | Hub shell (header/nav) | ✅ `project-hub.md` | ✅ `od-project-hub` | — | ✅ #268/#287 | |
-| Overview | ✅ `overview.md` | ✅ `desktop.html` | **1** (badge-consistency pt2) | 🟡 #268/#301 | aggregator engine + Paper restyle built (#301: margin-at-risk + 6 ranked rules, status-tokens + rust ✦); **outstanding:** 3-layer badge consistency (card `890e6f4d` pt2), + `ready_to_bill`/`schedule_slip` rules (sources not yet available) |
+| Overview | ✅ `overview.md` | ✅ `desktop.html` | **1** (badge-consistency pt2) | 🟡 #268/#301 | aggregator engine + Paper restyle built (#301: margin-at-risk + 6 ranked rules, status-tokens + rust ✦); **outstanding:** 3-layer badge consistency (card `890e6f4d` pt2), + `ready_to_bill`/`schedule_slip` rules (sources not yet available) · **subscreens: ✅ (overview.md)** |
 | Budget | ✅ (project-hub) | ✅ `…-budget` | — | ✅ #278/#281 | |
 | Spend | ✅ (project-hub) | ✅ `…-spend` | — | ✅ #290/#291/#298 | |
 | Labour | ✅ (project-hub) | ✅ `…-labour` | — | ✅ #294 | |
 | Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; working-day/slip/Henry deep work outstanding · **subscreens: ✅ specced inline (schedule.md)** |
 | Billing (project) | 🟡 (project-hub §Billing; no standalone) | ✅ `…-billing` | — | ✅ #296 | dedicated brief intentionally skipped |
-| **Client** | ✅ `client.md` | ✅ `…-client` | **2** (wire Pulse + reorg; chip+restyle) | ⬜ | briefed 2026-05-22; **build not started** |
+| **Client** | ✅ `client.md` | ✅ `…-client` | **2** (wire Pulse + reorg; chip+restyle) | ⬜ | briefed 2026-05-22; **build not started** · **subscreens: ✅ (client.md)** |
 | Photos / Documents / Notes | 🟡 (project-hub) | ⬜ | — | ? | secondary tabs; lower priority |
 
 ---

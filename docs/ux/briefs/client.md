@@ -81,6 +81,34 @@ Mostly **N/A** (comms surface), but it owns the **money-exposure levers**: `Cust
 - **Decision pending:** shown in `status-tokens` warning-soft until the client acts; approved/declined/questioned resolve the tone.
 - **Loading:** per-subtab `TabSkeleton` (keep). **Error:** `{ ok, error }` → `toast` (§5).
 
+## Subscreen inventory
+Every surface the Client hub spawns, across its three subtabs. Spec **inline**; the only "graduate" is the customer **Portal** itself (`/portal/[slug]`) — a separate screen on the Untouched menu, not a Client-tab subscreen (the hub only *previews/configures* it).
+
+**Modals / dialogs**
+- **Selection form** (`SelectionFormDialog`) — add/edit a selection: room · item · paint code / spec · notes · **photo picker** (sub-modal `selection-photo-picker`, attach gallery photos). Trigger: "+ Selection" / edit a row.
+- **Portal share** (`portal-share-dialog`) — multi-recipient email picker + personal note; writes a `portal_share_events` audit row per recipient.
+- **Decision form** (`DecisionForm`) — ask the client to approve / decline / question; pins to the top of their Portal.
+- **Portal update — manual** (`PortalUpdateForm`) — type · title · body · optional photo. The "write your own" fallback under the ✦ Pulse draft.
+
+**Sub-flows**
+- **Pulse update (the headline)** — Henry drafts from project activity → **✦ draft** in Updates → operator edits → **Send** (portal + deferred email/SMS, 30s debounce). Inline review-and-send; never auto-sends.
+- **Idea → selection** — promote a client-posted idea-board item to a selection (opens the selection form prefilled; sets `promoted_to_selection_id`).
+- **Enable portal** — toggle on → **Preview** (opens `/portal/[slug]`) → **Share**. Operator must preview before enabling.
+
+**Expansion / disclosure**
+- **Portal-setup accordion** (target reorg) — collapsed once enabled; holds toggle/share, budget-visibility, **view-mode card** + the §25 live "what the client sees" preview, summary editor, **sections manager** (`CustomerSectionsManager`: add/edit/reorder sections, assign categories), phase rail.
+- **Per-decision / per-selection detail** — state (pending / approved / declined / questioned) via `status-tokens`.
+
+**Inline / transient**
+- **Messages composer** (pinned) + optional **✦ "draft a reply"** assist (Henry drafts, operator sends).
+- **✦ Decision suggestions** (`DecisionSuggestions`) — Henry proposes what to ask the client.
+- **Portal-disabled info strip** (Messages) — "notifies but can't be read until enabled" + Enable link (restyle to `status-tokens`).
+- **Idea-board mark-read** — opening Selections clears the unread-ideas badge.
+
+**View-state**
+- **Sub-nav** — Messages · Selections · Portal & Updates (default Messages); per-subhead unread badges. *(Open Q: promote Decisions to a 4th subhead.)*
+- **Portal-status chip** (target) — ● / ○ on the hub header, legible from every subhead.
+
 ## Accessibility
 WCAG 2.2 AA. Sub-nav is real links, keyboard-operable, badges have text equivalents ("Messages, 2 unread"). The thread is a labelled log; composer ≥44px. Decision/selection state never colour-only (label + glyph + `status-tokens`). The Pulse draft is clearly marked AI-generated with an explicit Send (no silent auto-send). Live portal preview is reachable and labelled. Dates in tenant tz (§23).
 
