@@ -60,7 +60,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Billing / AR (cross-project) | ✅ `invoices.md` | ✅ `od-billing` | — | ✅ #288 | |
 | Calendar (crew scheduling) | ✅ `calendar.md` | 🟡 (no `od-calendar` dir) | — | ✅ #270–#275 | built ahead of a formal OD render |
 | Estimate (Budget authoring) | ✅ | ✅ (project-hub budget) | — | ✅ #278/#281 | |
-| Change Order | ✅ | ⬜ ? | "voice/photo drafting" | 🟡 | manual flow built; refinements open |
+| Change Order | ✅ | 🟡 (in progress: od-driver) | "voice/photo drafting" | 🟡 | manual flow built; refinements open |
 | Expenses | ✅ | ⬜ | — | 🟡 ? | |
 | Customer Documents | ✅ | ⬜ | — | 🟡 ? | |
 
@@ -80,6 +80,8 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 ---
 
 ## Untouched screens — menu for the next research pass
+> 🟡 **In progress — `research-0523` (2026-05-23) is sweeping this entire list in one Research pass.** Each screen is promoted into the status tables above (✅ Brief + ref) as its brief lands; bullets are removed from this menu as they complete.
+
 Not yet briefed; **claim one** (mark it in-progress) before starting. Most are subscreen-dense — apply the skill's Subscreen Inventory step.
 - **Settings** (+ sub-pages: Team/invite, Pricebook/materials, Portal defaults, Calendar, Billing/subscription)
 - **Business Health** (the account-level money/AR dashboard in the GC nav)
