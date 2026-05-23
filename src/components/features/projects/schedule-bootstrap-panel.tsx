@@ -65,7 +65,7 @@ export function ScheduleBootstrapPanel({
 
   const loadingCopy =
     pendingSource === 'budget'
-      ? 'Generating your schedule…'
+      ? '✦ Henry is sequencing your budget…'
       : pendingSource === 'template'
         ? 'Applying template…'
         : 'Setting up…';
@@ -77,8 +77,8 @@ export function ScheduleBootstrapPanel({
         <p className="mt-4 text-sm font-medium">{loadingCopy}</p>
         {pendingSource === 'budget' ? (
           <p className="mt-1 max-w-md text-xs text-muted-foreground">
-            We&rsquo;re reading your budget categories and laying out a draft order. This usually
-            takes 3–5 seconds.
+            Henry is reading your budget categories and laying out a draft order. This usually takes
+            3–5 seconds.
           </p>
         ) : null}
       </div>
@@ -114,7 +114,7 @@ export function ScheduleBootstrapPanel({
         >
           <span className="text-sm font-semibold">Build from your budget</span>
           <span className="text-xs text-muted-foreground">
-            Use the trades already in your budget categories.
+            ✦ Henry sequences your budget into a draft schedule — drag anything to adjust.
           </span>
         </button>
 

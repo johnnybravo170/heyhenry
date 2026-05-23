@@ -23,8 +23,40 @@ import { classifyCategoryName } from '@/lib/ai/phase-classifier';
 import { generateAiBootstrap } from '@/lib/ai/schedule-bootstrap';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { addWorkingDays, isWeekend, workingDayEnd } from '@/lib/date/working-days';
-import type { ScheduleDurationBasis } from '@/lib/db/queries/project-schedule';
+import type { ScheduleConfidence, ScheduleDurationBasis } from '@/lib/db/queries/project-schedule';
 import { createClient } from '@/lib/supabase/server';
+
+/**
+ * A downstream task the forward cascade pushed, with the before/after
+ * dates the Henry explainer renders. `clientVisible` + `confidence`
+ * gate whether the "Notify customer" affordance shows (firm + visible
+ * tasks only — never about a still-rough date).
+ */
+export type MovedTask = {
+  id: string;
+  name: string;
+  /** Pre-cascade planned_start_date as `YYYY-MM-DD`. */
+  oldStart: string;
+  /** Post-cascade planned_start_date as `YYYY-MM-DD`. */
+  newStart: string;
+  confidence: ScheduleConfidence;
+  clientVisible: boolean;
+};
+
+/**
+ * Result of a forward cascade — the moved set plus the project's
+ * old/new finish (latest inclusive end) so the client can render the
+ * "New finish: Apr 2 → Apr 8" ripple summary. `count` excludes the
+ * originating task.
+ */
+export type CascadeResult = {
+  count: number;
+  moved: MovedTask[];
+  /** Project finish before the cascade, `YYYY-MM-DD`, or null. */
+  finishBefore: string | null;
+  /** Project finish after the cascade, `YYYY-MM-DD`, or null. */
+  finishAfter: string | null;
+};
 
 export type BootstrapSource =
   | { kind: 'template'; projectTypeTemplateSlug: string }
@@ -558,6 +590,44 @@ export async function cancelScheduleNotifyAction(
   return { ok: true };
 }
 
+/**
+ * Operator-initiated "Notify customer" from the Henry cascade explainer.
+ *
+ * Routes into the EXISTING deferred-notify path: it stamps the same
+ * `schedule_notify_*` triple the auto-notify (`maybeScheduleScheduleNotify`)
+ * writes, so the same cron drainer (/api/cron/portal-schedule-notify) sends
+ * after the 5-minute debounce and the same `pendingNotifyAt` Undo strip +
+ * `cancelScheduleNotifyAction` give the operator the 5-min Undo window — no
+ * new notify system. The difference from auto-notify: this is an explicit
+ * human tap, so it does NOT require the tenant `notify_customer_on_schedule_change`
+ * flag to be on (the operator opted in by tapping). The caller only shows
+ * the affordance when the moved tasks are firm + client-visible, so we never
+ * ping the customer about a still-rough date.
+ *
+ * Idempotent w.r.t. the debounce: re-tapping resets the 5-min timer.
+ */
+export async function notifyCustomerOfScheduleChangeAction(
+  projectId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  const supabase = await createClient();
+
+  const scheduledAt = new Date(Date.now() + SCHEDULE_NOTIFY_DELAY_MINUTES * 60_000).toISOString();
+  const { error } = await supabase
+    .from('projects')
+    .update({
+      schedule_notify_scheduled_at: scheduledAt,
+      schedule_notify_sent_at: null,
+      schedule_notify_cancelled_at: null,
+    })
+    .eq('id', projectId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
+
 export async function clearProjectScheduleAction(
   projectId: string,
 ): Promise<{ ok: true; tasksCleared: number } | { ok: false; error: string }> {
@@ -589,7 +659,9 @@ export async function clearProjectScheduleAction(
 // v1: edit / delete / create individual tasks
 // ---------------------------------------------------------------------------
 
-export type TaskMutationResult = { ok: true; taskId: string } | { ok: false; error: string };
+export type TaskMutationResult =
+  | { ok: true; taskId: string; cascade?: CascadeResult }
+  | { ok: false; error: string };
 
 export type ScheduleTaskPatch = {
   name?: string;
@@ -619,9 +691,11 @@ const SCHEDULE_NOTIFY_DELAY_MINUTES = 5;
  * dependency (start < predecessor_end + lag_days), shift it forward
  * to satisfy the constraint, then recurse on its own successors.
  *
- * Returns the count of successor tasks that were shifted (excluding
- * the originating task itself). Idempotent — running cascade twice on
- * the same state is a no-op the second time.
+ * Returns the moved-task details (id, name, old/new start, confidence,
+ * client_visible) plus the project's old/new finish dates so the
+ * caller can render the Henry cascade-explainer ripple summary. The
+ * originating task itself is excluded from `moved`. Idempotent —
+ * running cascade twice on the same state moves nothing the second time.
  *
  * Forward-only: pulling a task earlier never pulls successors earlier.
  * GCs may have firmed up downstream dates that we shouldn't second-
@@ -637,11 +711,13 @@ async function cascadeForwardFromTask(
   supabase: Awaited<ReturnType<typeof createClient>>,
   projectId: string,
   originatingTaskId: string,
-): Promise<number> {
+): Promise<CascadeResult> {
   const [{ data: tasks }, { data: edges }] = await Promise.all([
     supabase
       .from('project_schedule_tasks')
-      .select('id, planned_start_date, planned_duration_days, duration_basis, works_weekends')
+      .select(
+        'id, name, planned_start_date, planned_duration_days, duration_basis, works_weekends, confidence, client_visible',
+      )
       .eq('project_id', projectId)
       .is('deleted_at', null),
     supabase
@@ -650,25 +726,36 @@ async function cascadeForwardFromTask(
       .eq('project_id', projectId),
   ]);
 
-  if (!tasks || !edges || tasks.length === 0 || edges.length === 0) return 0;
+  if (!tasks || !edges || tasks.length === 0 || edges.length === 0) {
+    return { count: 0, moved: [], finishBefore: null, finishAfter: null };
+  }
 
   type T = {
     id: string;
+    name: string;
     start: Date;
     duration: number;
     basis: ScheduleDurationBasis;
     worksWeekends: boolean;
+    confidence: ScheduleConfidence;
+    clientVisible: boolean;
   };
   const byId = new Map<string, T>();
+  const startBeforeById = new Map<string, Date>();
   for (const row of tasks) {
     const r = row as Record<string, unknown>;
+    const start = new Date(`${r.planned_start_date as string}T00:00:00Z`);
     byId.set(r.id as string, {
       id: r.id as string,
-      start: new Date(`${r.planned_start_date as string}T00:00:00Z`),
+      name: (r.name as string) ?? 'Task',
+      start,
       duration: (r.planned_duration_days as number) ?? 1,
       basis: ((r.duration_basis as string) ?? 'working') as ScheduleDurationBasis,
       worksWeekends: Boolean(r.works_weekends),
+      confidence: ((r.confidence as string) ?? 'rough') as ScheduleConfidence,
+      clientVisible: Boolean(r.client_visible),
     });
+    startBeforeById.set(r.id as string, start);
   }
 
   // Inclusive last work-day of a task, honoring its duration basis. The
@@ -677,6 +764,19 @@ async function cascadeForwardFromTask(
   // successor lands on the next WORKING day when it skips weekends).
   const inclusiveEnd = (t: T): Date =>
     workingDayEnd(t.start, t.duration, { basis: t.basis, worksWeekends: t.worksWeekends });
+
+  // Same end-date math, but for an arbitrary start (used to derive the
+  // project finish from the pre-cascade start snapshot).
+  const endFor = (t: T, start: Date): Date =>
+    workingDayEnd(start, t.duration, { basis: t.basis, worksWeekends: t.worksWeekends });
+
+  // Project finish BEFORE this cascade — the latest inclusive end across
+  // every task using its pre-cascade start.
+  let finishBefore: Date | null = null;
+  for (const t of byId.values()) {
+    const e = endFor(t, startBeforeById.get(t.id) ?? t.start);
+    if (!finishBefore || e.getTime() > finishBefore.getTime()) finishBefore = e;
+  }
 
   // adjacency: predecessor -> [successor edges]
   type Edge = { successor: string; kind: string; lag: number };
@@ -751,25 +851,57 @@ async function cascadeForwardFromTask(
     }
   }
 
-  if (shifted.size === 0) return 0;
+  // Project finish AFTER the (in-memory) shifts — recomputed from the
+  // post-cascade starts so the explainer can show "Apr 2 → Apr 8".
+  let finishAfter: Date | null = null;
+  for (const t of byId.values()) {
+    const e = inclusiveEnd(t);
+    if (!finishAfter || e.getTime() > finishAfter.getTime()) finishAfter = e;
+  }
+
+  const finishBeforeIso = finishBefore ? finishBefore.toISOString().slice(0, 10) : null;
+  const finishAfterIso = finishAfter ? finishAfter.toISOString().slice(0, 10) : null;
+
+  if (shifted.size === 0) {
+    return { count: 0, moved: [], finishBefore: finishBeforeIso, finishAfter: finishAfterIso };
+  }
 
   // Persist the shifted set. One UPDATE per task — small N, fine for
   // the v2 baseline. Could batch via an UPSERT later if profiling shows
   // it matters.
-  const updates = Array.from(shifted)
+  const movedTasks = Array.from(shifted)
     .map((id) => byId.get(id))
-    .filter((t): t is T => Boolean(t))
-    .map((t) =>
-      supabase
-        .from('project_schedule_tasks')
-        .update({
-          planned_start_date: t.start.toISOString().slice(0, 10),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', t.id),
-    );
+    .filter((t): t is T => Boolean(t));
+  const updates = movedTasks.map((t) =>
+    supabase
+      .from('project_schedule_tasks')
+      .update({
+        planned_start_date: t.start.toISOString().slice(0, 10),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', t.id),
+  );
   await Promise.all(updates);
-  return shifted.size;
+
+  // Preserve a sensible display order: by new start, then name. Mirrors
+  // how the Gantt reads top-to-bottom so the summary names line up.
+  const moved: MovedTask[] = movedTasks
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      oldStart: (startBeforeById.get(t.id) ?? t.start).toISOString().slice(0, 10),
+      newStart: t.start.toISOString().slice(0, 10),
+      confidence: t.confidence,
+      clientVisible: t.clientVisible,
+    }))
+    .sort((a, b) => a.newStart.localeCompare(b.newStart) || a.name.localeCompare(b.name));
+
+  return {
+    count: moved.length,
+    moved,
+    finishBefore: finishBeforeIso,
+    finishAfter: finishAfterIso,
+  };
 }
 
 /**
@@ -888,6 +1020,7 @@ export async function updateScheduleTaskAction(
   // Schedule the deferred customer notification when relevant. Date or
   // duration moved → schedule shifted; visibility-only flips, status,
   // confidence, and notes don't fire a customer ping.
+  let cascade: CascadeResult | undefined;
   if (
     patch.planned_start_date !== undefined ||
     patch.planned_duration_days !== undefined ||
@@ -895,8 +1028,9 @@ export async function updateScheduleTaskAction(
   ) {
     // Cascade BEFORE notify/breadcrumb so the persisted state reflects
     // the post-cascade timeline by the time the cron drainer fires (or
-    // the breadcrumb-dedup window opens).
-    await cascadeForwardFromTask(supabase, projectId, taskId);
+    // the breadcrumb-dedup window opens). The moved-task details are
+    // threaded back to the client so Henry can render the ripple summary.
+    cascade = await cascadeForwardFromTask(supabase, projectId, taskId);
 
     await maybeScheduleScheduleNotify(supabase, tenant.id, projectId, taskClientVisible);
     // Also drop a breadcrumb in the customer's Updates feed so the
@@ -906,7 +1040,7 @@ export async function updateScheduleTaskAction(
 
   revalidatePath(`/projects/${projectId}`);
   if (portalSlug) revalidatePath(`/portal/${portalSlug}`);
-  return { ok: true, taskId };
+  return { ok: true, taskId, cascade };
 }
 
 /**
