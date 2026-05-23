@@ -98,6 +98,23 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 **Gaps surfaced during the sweep — all addressed:**
 - **Project → Selections tab** — found un-briefed during the sweep, **now briefed** (`selections.md`, 2026-05-23) and promoted into the Project Hub table above.
 
+## Scope ledger — the honest done-line (2026-05-23)
+The redesign-scope surface is briefed; everything else is explicitly classified.
+
+**Graduated heavy flows — briefed ✅** (sub-flows that earned their own brief out of a screen's Subscreen Inventory):
+`invoice-detail.md` (`/invoices/[id]`) · `bank-reconciliation.md` (import + review) · `home-record.md` (closeout) · `settings-team.md` · `settings-billing.md` · `settings-quickbooks.md` (QBO hub, 4 routes) · `settings-import.md`. Most are built/live (pre-Paper) → OD render + restyle next; bank-recon + home-record carry build deltas flagged in-brief. *(`<CustomerDocument>` shell → `customer-documents.md` + render `od-customer-documents` + card `1f5cd745`.)*
+
+**Genuinely unbriefed GC surfaces — the only open gaps:**
+- **Onboarding** (`(auth)/onboarding` — first-run signup / plan-picker). *Recommend: brief if pre-launch polish matters; lower urgency (no firm launch date; soft-launch posture).*
+- **Referrals** (`(dashboard)/referrals` — growth program). *Recommend: defer to V1.1 — not core run-the-job.*
+
+**Out of redesign scope (intentionally not briefed):**
+- **Bookkeeper portal** (`/bk`) — deferred (see the sweep note above; Role Matrix `03b1ccf4` / Workflow #8).
+- **`admin`** (internal ops UI) · **`social`** (ops marketing drafts) · **`lead-gen` + `leads`** (PW-vertical public lead capture; GC leads = Contacts) · **legacy `jobs` + PW quotes** (`quotes.md` maps the PW→GC boundary; GC uses Projects).
+- **Owner Dashboard** (`dashboard.md`) — owner optimizes on a separate track ("don't touch").
+
+**Net:** every GC-V1 redesign screen + its heavy subscreens is briefed; **onboarding + referrals** are the only deferred GC gaps; the rest is out-of-scope by design.
+
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
 - **OD→build contract:** `docs/ux/HANDOFF-TO-BUILD.md` (tokens + class names + data bindings so builds don't drift from screenshots).
