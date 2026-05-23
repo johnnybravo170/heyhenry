@@ -179,11 +179,12 @@ export default async function ProjectDetailPage({
   // Per-tab attention counts for the nav badges. Kicked off here (not
   // awaited) so it runs in parallel with the rest of the render and
   // streams into each primary-tab label via its own Suspense boundary —
-  // it never blocks the synchronous header paint. Resolves to all-zero
-  // (badges hidden) if the tenant is somehow unavailable.
-  const tabAlertsPromise = tenantId
-    ? getProjectTabAlerts(id, tenantId)
-    : Promise.resolve({ budget: 0, costs: 0, time: 0, schedule: 0, invoices: 0 });
+  // it never blocks the synchronous header paint. Derives from the shared
+  // getProjectInsights set (request-deduped via React cache()), so these
+  // badges, the Overview "Needs You" strip total, and the mobile <select>
+  // per-option counts can't drift. The tenant is resolved inside the
+  // insight engine, so no tenantId arg is threaded through here.
+  const tabAlertsPromise = getProjectTabAlerts(id);
 
   // Crew roster (owner/admin only) — the project-level roster lives in the
   // Project Details card now. `scheduled_date IS NULL` = ongoing crew; dated
@@ -240,6 +241,13 @@ export default async function ProjectDetailPage({
     { key: 'invoices', label: 'Billing' },
     { key: 'overview', label: 'Overview' },
   ];
+  // Client is the documented exception to the unified issue-TYPE badge
+  // model: its badge stays an unread ITEM-count (messages + customer ideas),
+  // because unread badges are conventionally item counts and converting it
+  // would regress the UX. The Overview strip still represents the same thing
+  // as ONE `client_message` row, and getProjectTabAlerts excludes the
+  // `client` owning tab — so the work-tab badges + strip stay congruent
+  // while Client unread remains its own affordance.
   const secondaryTabs: { key: Tab; label: string; badge?: number }[] = [
     { key: 'client', label: 'Client', badge: unreadMessages + unreadIdeas },
     { key: 'gallery', label: 'Photos' },
