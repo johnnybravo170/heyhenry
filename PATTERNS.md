@@ -651,3 +651,26 @@ Use a state strip whenever a tab body has actions whose meaning depends on the *
 **First React port (warn-soft cascade family, embedded Henry):** the Schedule tab's `ScheduleCascadeExplainer` (`src/components/features/projects/schedule-cascade-explainer.tsx`) and `ScheduleSlipPrompt` (`schedule-slip-prompt.tsx`) are the first React implementations of the warn-soft cascade card. Both reuse the Henry chrome convention directly — `rounded-r-lg border border-l-2 border-l-brand p-3` + `statusToneClass.warning` + a mono rust `✦ Henry` eyebrow (the same family as `henry-insight-strip.tsx` and the portal-tab decision-suggestions wrapper). When the `<StateStrip>` extraction happens, fold these two in as the warn-soft variant rather than re-deriving the chrome. Notify routes through the existing deferred-notify path (`notifyCustomerOfScheduleChangeAction` → the mig-0211 cron + 5-min Undo), never a new send system.
 
 **Sibling pattern siblings to retire when porting**: `signed-banner` (= `.is-approved`), the `chip-alert.is-warn` for "unsent scope changes" (becomes `.is-pending`), and any one-off "preview & send" button floating above a card body (always wrap in `.is-pending`).
+
+## 28. Customer-facing money document (`<CustomerDocument>` shell)
+
+The one branded wrapper every customer-facing money document renders inside — **Estimate · Change Order · Invoice/Pay**. It is the GC's letterhead, not HeyHenry operator chrome: signed logo + business name up top, a quiet "Powered by HeyHenry" footer, **Henry invisible**. Hard boundary — **price-only**: never `unit_cost` / `markup_pct` / supplier cost / margin renders through it.
+
+`src/components/features/projects/customer-document.tsx`. Promoted out of the old `estimate-render.tsx` (the only prior reusable customer render). The shell owns, identically across all three docs:
+- **Header** — logo (or text name) + optional business meta · doc eyebrow / number / date · status chip
+- **Recipient grid** — "Prepared for" / "Billed to" {customer} + optional project column
+- **Body slot** (`children`) — the doc's own content (estimate scope tree · CO diff · invoice line items)
+- **Totals block** — `Subtotal → Management fee → province-aware GST/HST → Total`, every row through `<Money>` (de-emph cents, tabular). Pass `totals.rows` in display order; the Total row renders separately + emphasized. `meta` on a row is the small uppercase tax note ("BC · on top").
+- **Footer** — GST# · WCB# · `footerNote` · "Powered by HeyHenry"
+- **Action zone slot** (`actionZone`) — the one thing to do (Approve e-sig / Pay), rendered after the footer.
+
+**Status chip** comes from `status-tokens.ts` (`{ label, tone }`) — no ad-hoc amber (§7). **Dates** are pre-formatted by the caller in the tenant tz (§23); the shell is client-agnostic, no tz logic inside.
+
+**Adopters:**
+- `src/components/features/projects/estimate-render.tsx` — Estimate (live). Body keeps its section→category→line grouping + approved/declined/draft banners; header/recipient/totals/footer + chip come from the shell.
+- `src/app/(public)/view/invoice/[id]/page.tsx` — Invoice pay surface (live). Draw context + line items in the body; dual-pay zone (`InvoicePayZone`) in the action slot.
+- **Change Order** public `/approve/[code]` page — *intended adopter* (separate build, card 01a46861). The shell is doc-agnostic for exactly this — pass CO Before→After→Δ rows as the body and signed deltas via `CustomerDocTotalsRow.signed`. Don't add estimate-isms.
+
+**Dual-pay zone** (`src/components/features/invoices/invoice-pay-zone.tsx`): Stripe card + **Interac e-Transfer at true parity** — Interac is a structured, one-tap-copyable block (recipient · amount · memo), never free text. Mobile gets a sticky 44px+ Pay bar (card only; e-Transfer customers use the copyable block).
+
+**Code-keyed public URLs:** the invoice public route resolves by `invoices.code` first, then falls back to raw `id` (legacy links keep working). New sends generate the code (`generateInvoiceCode` in `src/server/actions/invoices.ts`) and key the visible doc number (`INV-XXXXXXXX`) + pay URL on it — never echo the raw row id on a no-login PII page. Migration `20260523194840_invoices_public_code.sql` (additive column + backfill + partial unique index).
