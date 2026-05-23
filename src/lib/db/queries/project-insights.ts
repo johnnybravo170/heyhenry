@@ -21,8 +21,6 @@
  * Not yet wired (sources not available):
  *   - `ready_to_bill` — needs a "next available draw" signal beyond
  *     `getProjectDrawSummary` (which only sums sent/paid draws).
- *   - `schedule_slip` — needs the Schedule working-day "behind" calc
- *     (that card hasn't landed). Fast-follow once it does.
  */
 
 import { isOverdue } from '@/lib/invoices/ar';
@@ -30,6 +28,7 @@ import { formatCurrency } from '@/lib/pricing/calculator';
 import { createClient } from '@/lib/supabase/server';
 import { getVarianceReport } from './cost-lines';
 import { getBudgetVsActual } from './project-budget-categories';
+import { getScheduleSlip } from './project-schedule-slip';
 import { getUnsentDiff } from './project-scope-diff';
 
 /** Visual + semantic tone. Maps onto `status-tokens.ts` in the strip;
@@ -49,6 +48,7 @@ export type ProjectInsight = {
     | 'section_over_budget'
     | 'client_message'
     | 'unpaid_bills'
+    | 'schedule_slip'
     | 'section_under_budget'
     | 'on_track';
   /** Operator-facing copy, plain English. */
@@ -83,10 +83,14 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 export async function getProjectInsights(projectId: string): Promise<ProjectInsight[]> {
   const supabase = await createClient();
 
-  const [variance, diff, budget, overdueDraws, unpaidBills, unread] = await Promise.all([
+  const [variance, diff, budget, slip, overdueDraws, unpaidBills, unread] = await Promise.all([
     safe(() => getVarianceReport(projectId), null),
     safe(() => getUnsentDiff(projectId), null),
     safe(() => getBudgetVsActual(projectId), null),
+
+    // Schedule slip — working-day "behind" count from the shared source so
+    // this strip, the tab badge, the digest, and the Gantt agree.
+    safe(() => getScheduleSlip(projectId), { behindCount: 0, behindTaskIds: [], behindTasks: [] }),
 
     // Overdue customer draws — sent, unpaid, aged past AR_OVERDUE_DAYS.
     // Mirrors the canonical billing-badge logic in project-tab-alerts.
@@ -206,7 +210,22 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
     }
   }
 
-  // 5. Client message / idea waiting for a reply.
+  // 5. Schedule slip — one or more tasks past their working-day end and
+  //    not done. Shares getScheduleSlip with the tab badge + digest + Gantt
+  //    so the count can't drift.
+  if (slip.behindCount > 0) {
+    candidates.push({
+      kind: 'schedule_slip',
+      message: `${slip.behindCount} ${slip.behindCount === 1 ? 'task' : 'tasks'} behind schedule.`,
+      href: '?tab=schedule',
+      cta: 'Open Schedule',
+      owningTab: 'schedule',
+      priority: 72,
+      tone: 'warning',
+    });
+  }
+
+  // 6. Client message / idea waiting for a reply.
   if (unread > 0) {
     candidates.push({
       kind: 'client_message',
@@ -219,7 +238,7 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
     });
   }
 
-  // 6. Unpaid vendor bills on the Spend tab.
+  // 7. Unpaid vendor bills on the Spend tab.
   if (unpaidBills > 0) {
     candidates.push({
       kind: 'unpaid_bills',
@@ -232,7 +251,7 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
     });
   }
 
-  // 7. Sections substantially under budget and mostly spent — a positive
+  // 8. Sections substantially under budget and mostly spent — a positive
   //    "good time to lock this in" read. Informational (no owning tab).
   if (budget) {
     for (const line of budget.lines) {
@@ -249,7 +268,7 @@ export async function getProjectInsights(projectId: string): Promise<ProjectInsi
     }
   }
 
-  // 8. All-on-track fallback — a single calm line so the strip never
+  // 9. All-on-track fallback — a single calm line so the strip never
   //    looks "missing". Only when nothing actionable surfaced.
   const actionable = candidates.some((c) => c.owningTab);
   if (!actionable) {

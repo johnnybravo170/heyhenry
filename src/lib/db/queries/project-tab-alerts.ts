@@ -19,6 +19,7 @@ import { isOverdue } from '@/lib/invoices/ar';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getVarianceReport } from './cost-lines';
+import { getScheduleSlip } from './project-schedule-slip';
 import { getUnsentDiff } from './project-scope-diff';
 
 /** Count of attention items owned by each primary work tab. Keys match
@@ -31,8 +32,8 @@ export type ProjectTabAlertCounts = {
   costs: number;
   /** Labour = worker invoices submitted but not yet approved. */
   time: number;
-  /** Schedule = crew scheduling conflicts. Deferred until the dispatch
-   *  board lands (Schedule is v0 read-only per Scope Lock). */
+  /** Schedule = tasks behind their working-day end (the shared slip
+   *  source in `project-schedule-slip.ts`). */
   schedule: number;
   /** Billing = overdue customer invoices/draws. */
   invoices: number;
@@ -66,7 +67,7 @@ export async function getProjectTabAlerts(
 ): Promise<ProjectTabAlertCounts> {
   const supabase = await createClient();
 
-  const [budget, costs, time, invoices] = await Promise.all([
+  const [budget, costs, time, schedule, invoices] = await Promise.all([
     // Budget — margin at risk (revenue < actual + committed) + unsent
     // scope changes since the last signed snapshot. Reuses the same
     // variance + diff the Budget tab chips and Overview strip ride, so
@@ -115,6 +116,13 @@ export async function getProjectTabAlerts(
       return count ?? 0;
     }),
 
+    // Schedule — tasks behind their working-day end. Shares getScheduleSlip
+    // with the Overview strip + digest + Gantt so the badge can't drift.
+    safeCount(async () => {
+      const slip = await getScheduleSlip(projectId);
+      return slip.behindCount;
+    }),
+
     // Billing — overdue customer invoices/draws (sent, unpaid, >14d via
     // the canonical AR `isOverdue`). Pre-filter to sent + unpaid in SQL,
     // then apply the age threshold in JS.
@@ -137,6 +145,7 @@ export async function getProjectTabAlerts(
     budget,
     costs,
     time,
+    schedule,
     invoices,
   };
 }
