@@ -74,7 +74,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Labour | ✅ (project-hub) | ✅ `…-labour` | — | ✅ #294 | |
 | Schedule | ✅ `schedule.md` | ✅ `…-schedule` | **3** (working-days; slip+digest+chrome; Henry) | 🟡 #295 | Paper-fidelity built; working-day/slip/Henry deep work outstanding · **subscreens: ✅ specced inline (schedule.md)** |
 | Billing (project) | 🟡 (project-hub §Billing; no standalone) | ✅ `…-billing` | — | ✅ #296 | dedicated brief intentionally skipped |
-| **Client** | ✅ `client.md` | ✅ `…-client` | **2** (wire Pulse + reorg; chip+restyle) | ⬜ | briefed 2026-05-22; **build not started** · **subscreens: ✅ (client.md)** |
+| **Client** | ✅ `client.md` | ✅ `…-client` | **1** (Pulse pt1) | 🟡 #302 | chip + activity/setup reorg + decision ✦ chrome + Paper restyle built (#302); **outstanding:** wire Henry Pulse into Updates (card `b9bb93b7` pt1 — needs project-scoped `pulse_updates`: nullable `job_id` + `project_id` + project draft path; currently job-scoped) |
 | Photos / Documents / Notes | 🟡 (project-hub) | ⬜ | — | ? | secondary tabs; lower priority |
 
 ---
