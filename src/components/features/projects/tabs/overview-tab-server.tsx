@@ -19,9 +19,10 @@ import { getProject } from '@/lib/db/queries/projects';
 export default function OverviewTabServer({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-6">
-      {/* "What needs you" attention strip — the revived getProjectInsights
-          engine ranks the do-this items (unsent changes, over/under budget,
-          on-track). Collapses to a calm on-track line when clean. */}
+      {/* "Needs You" attention strip — getProjectInsights ranks the project's
+          do-this items (margin at risk, unsent changes, overdue draws,
+          over-budget sections, client messages, unpaid bills), capped ~4 +
+          "+N more". Collapses to a calm on-track line when clean. */}
       <Suspense fallback={<InsightStripSkeleton />}>
         <HenryInsightStrip projectId={projectId} />
       </Suspense>
@@ -85,8 +86,10 @@ function VarianceSkeleton() {
 
 function InsightStripSkeleton() {
   return (
-    <div className="animate-pulse space-y-1">
-      <div className="h-9 rounded-md bg-muted/60" />
+    <div className="animate-pulse space-y-1.5">
+      <div className="h-4 w-40 rounded bg-muted/60" />
+      <div className="h-11 rounded-lg bg-muted/60" />
+      <div className="h-11 rounded-lg bg-muted/60" />
     </div>
   );
 }
