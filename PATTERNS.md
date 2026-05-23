@@ -725,3 +725,17 @@ When a screen's main task is one thing but several **config / setup** affordance
 - Built on the shared `Collapsible` primitive (`src/components/ui/collapsible.tsx`); chevron rotates 90° on open.
 
 Reach for this whenever a detail page sprouts a third+ secondary banner — the candidates are "config, not the main task" (terms, defaults, integrations, notification prefs).
+
+## 31. Selection allowance-vs-actual variance (+ dual-authoring tag + over-allowance CO nudge)
+
+Per-room finish selections carry `allowance_cents` (the contractual budget) + `actual_cost_cents` (what the choice cost). Three primitives surface that, shared between the operator Selections tab and the client portal so they can't drift:
+
+- **Variance logic** — `src/lib/selections/variance.ts` (pure, unit-tested in `tests/unit/selections-variance.test.ts`). `selectionVariance(allowance, actual)` returns a `{ tone, label, deltaCents, isOverAllowance }` with a verb-bearing label for every case (over / under / on-allowance / allowance-only "no actual yet" / actual-only). `rollupVariance(items, 'Room'|'Project')` nets only selections with a comparable allowance+actual pair (a TBD actual must NOT read as "under") and reports `overCount`.
+- **Rendering** — `src/components/features/portal/selection-variance-ui.tsx`. `<VarianceDelta tone label />` is the soft-pair pill (over = rose, under = emerald, flat/pending = muted — the §7 status-token palette), glyph + label, **never colour-only**. `<ByTag createdBy promoted selfLabel />` is the dual-authoring tag: Operator-spec (shield) / By client|you (user) / Promoted from idea (sparkles). Promotion wins over `created_by`.
+- **Henry over-allowance nudge** — `src/components/features/portal/over-allowance-nudge.tsx`. Deterministic from allowance vs actual (no model call), labeled `Henry ✦`, dismissible (local), names the over items + overage, links a single prefilled "Draft Change Order". **Operator-only — never on the portal.**
+
+**"Start CO" wiring**: over-allowance rows + the nudge link to the real CO creation route `/projects/[id]/change-orders/new?from=selection&title=…&reason=…`. The page (`new/page.tsx`) reads those params into `mode={{ kind:'create', prefill }}` on `ChangeOrderDiffForm`, which seeds the title + reason. Lines stay empty — the operator authors cost impact + approves. Henry never auto-creates.
+
+**CLIENT BOUNDARY** (enforced in `portal-selections.tsx` + `portal-selections-panel.tsx`): the client sees allowance vs **their** actual + room roll-up, but **never** margin / markup / supplier / SKU, and **no Start-CO**. `project_idea_board_items` and `project_selections` stay **distinct objects** — ideas promote one-way into selections (Object Model `b4d880be`); the promoted tag is derived from `idea.promoted_to_selection_id`, the tables are never merged.
+
+Sibling instances: operator `selection-list.tsx`; portal read-only `portal-selections.tsx`; portal composer `portal-selections-panel.tsx`. OD source: `od-selections/screens/{desktop,mobile}.html`.

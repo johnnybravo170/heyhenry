@@ -75,7 +75,14 @@ export type ChangeOrderFormInitialState = {
 };
 
 export type ChangeOrderFormMode =
-  | { kind: 'create' }
+  | {
+      kind: 'create';
+      /** Optional light prefill — e.g. an over-allowance selection seeds the
+       *  title + reason so the operator starts from context, not a blank
+       *  form. Only the text fields prefill; lines stay empty (the operator
+       *  authors the cost impact). Human-approved; never auto-creates. */
+      prefill?: { title?: string; reason?: string };
+    }
   | { kind: 'edit'; changeOrderId: string; initialState: ChangeOrderFormInitialState };
 
 export function ChangeOrderDiffForm({
@@ -96,6 +103,7 @@ export function ChangeOrderDiffForm({
 }) {
   const isEdit = mode.kind === 'edit';
   const initial = mode.kind === 'edit' ? mode.initialState : null;
+  const createPrefill = mode.kind === 'create' ? mode.prefill : undefined;
 
   // Local copy of the project's categories so newly-created ones from this CO
   // form show up immediately without a full page refresh. Persisted server-
@@ -180,9 +188,9 @@ export function ChangeOrderDiffForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [title, setTitle] = useState(initial?.title ?? '');
+  const [title, setTitle] = useState(initial?.title ?? createPrefill?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
-  const [reason, setReason] = useState(initial?.reason ?? '');
+  const [reason, setReason] = useState(initial?.reason ?? createPrefill?.reason ?? '');
   const [timelineDays, setTimelineDays] = useState(initial?.timelineDays ?? '0');
 
   // Per-CO management fee. Pre-filled with the project default; operator
