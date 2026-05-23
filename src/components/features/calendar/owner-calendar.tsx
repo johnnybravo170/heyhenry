@@ -33,6 +33,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { isWeekend as isWeekendDow } from '@/lib/date/working-days';
 import type {
   CalendarAssignment,
   CalendarProject,
@@ -115,8 +116,9 @@ function parseIso(s: string): Date {
 }
 
 function isWeekend(iso: string): boolean {
-  const day = parseIso(iso).getDay();
-  return day === 0 || day === 6;
+  // Local-tz day-of-week (parseIso builds a runtime-local Date); the shared
+  // helper's day-index overload keeps that semantics identical.
+  return isWeekendDow(parseIso(iso).getDay());
 }
 
 function isToday(iso: string, tz: string): boolean {
@@ -332,8 +334,7 @@ export function OwnerCalendar({
     for (let d = parseIso(lo); isoDate(d) <= hi; d.setDate(d.getDate() + 1)) {
       const iso = isoDate(d);
       if (iso === input.fromDate) continue; // source already booked
-      const day = d.getDay();
-      if (skipWeekends && (day === 0 || day === 6)) continue;
+      if (skipWeekends && isWeekendDow(d.getDay())) continue;
       dates.push(iso);
     }
     if (dates.length === 0) return;

@@ -12,12 +12,18 @@
  * if today falls in range.
  */
 
+import { isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { phaseColorFor } from '@/lib/ui/gantt-phase-colors';
 
 const MONTH_FORMAT = new Intl.DateTimeFormat('en-CA', { month: 'short', year: 'numeric' });
-const DAY_FMT = new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric' });
+const DAY_FMT = new Intl.DateTimeFormat('en-CA', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+});
 const DAY_FMT_WITH_YEAR = new Intl.DateTimeFormat('en-CA', {
+  weekday: 'short',
   month: 'short',
   day: 'numeric',
   year: 'numeric',
@@ -28,19 +34,34 @@ function parseDate(yyyyMmDd: string): Date {
   return new Date(`${yyyyMmDd}T00:00:00Z`);
 }
 
+/** Whether a task counts in working days (skips weekends) for layout/copy. */
+function isWorkingBasis(task: { duration_basis?: string; works_weekends?: boolean }): boolean {
+  return (task.duration_basis ?? 'working') === 'working' && !task.works_weekends;
+}
+
+/** Inclusive last work-day, honoring the task's duration basis. */
+function taskInclusiveEnd(task: {
+  planned_start_date: string;
+  planned_duration_days: number;
+  duration_basis?: string;
+  works_weekends?: boolean;
+}): Date {
+  return workingDayEnd(parseDate(task.planned_start_date), task.planned_duration_days, {
+    basis: (task.duration_basis ?? 'working') === 'calendar' ? 'calendar' : 'working',
+    worksWeekends: Boolean(task.works_weekends),
+  });
+}
+
 /**
- * "Mar 16" / "Mar 16 – Mar 18" / "Dec 28, 2025 – Jan 4, 2026" depending
- * on duration and whether the window crosses a year. Inclusive end —
- * the last day of work, not the day after.
+ * Start → inclusive-end window with weekday prefixes:
+ * "Thu Mar 26 → Wed Apr 1" / "Mon Dec 28, 2025 → ...".
  */
-function formatDateRange(startStr: string, durationDays: number): string {
+function formatDateRange(startStr: string, end: Date): string {
   const start = new Date(`${startStr}T00:00:00Z`);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + Math.max(0, durationDays - 1));
-  if (durationDays <= 1) return DAY_FMT.format(start);
+  if (end.getTime() <= start.getTime()) return DAY_FMT.format(start);
   const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
   const fmt = sameYear ? DAY_FMT : DAY_FMT_WITH_YEAR;
-  return `${fmt.format(start)} – ${fmt.format(end)}`;
+  return `${fmt.format(start)} → ${fmt.format(end)}`;
 }
 
 function diffDays(later: Date, earlier: Date): number {
@@ -133,7 +154,7 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
   if (tasks.length === 0) return null;
 
   const starts = tasks.map((t) => parseDate(t.planned_start_date));
-  const ends = tasks.map((t, i) => addDays(starts[i], t.planned_duration_days));
+  const ends = tasks.map((t) => addDays(taskInclusiveEnd(t), 1));
   const earliest = new Date(Math.min(...starts.map((d) => d.getTime())));
   const latest = new Date(Math.max(...ends.map((d) => d.getTime())));
   const totalDays = Math.max(1, diffDays(latest, earliest));
@@ -187,7 +208,19 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
         {tasks.map((task, i) => {
           const taskStart = starts[i];
           const colStart = diffDays(taskStart, earliest) + 1;
-          const colSpan = task.planned_duration_days;
+          const working = isWorkingBasis(task);
+          const inclusiveEnd = taskInclusiveEnd(task);
+          // Visual span = calendar columns from start → inclusive end, so a
+          // working-day bar reaches across the weekend columns it covers.
+          const colSpan = Math.max(1, diffDays(inclusiveEnd, taskStart) + 1);
+          const dateRange = formatDateRange(task.planned_start_date, inclusiveEnd);
+          const dayWord = `${working ? 'working ' : ''}${task.planned_duration_days === 1 ? 'day' : 'days'}`;
+          const label = `${task.name} · ${task.planned_duration_days} ${dayWord} · ${dateRange}`;
+          // Weekend columns inside the bar, as 0-based offsets, to recede.
+          const weekendOffsets: number[] = [];
+          for (let c = 0; c < colSpan; c++) {
+            if (isWeekend(addDays(taskStart, c))) weekendOffsets.push(c);
+          }
           const isDone = task.status === 'done';
           return (
             <div key={task.id} className="contents">
@@ -205,7 +238,7 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
                 <DayBacking meta={dayMeta} />
                 <div
                   role="img"
-                  aria-label={`${task.name} · ${formatDateRange(task.planned_start_date, task.planned_duration_days)} · ${task.planned_duration_days} ${task.planned_duration_days === 1 ? 'day' : 'days'}`}
+                  aria-label={label}
                   className={`group relative my-1 h-5 self-center rounded-md shadow-sm ${
                     isDone
                       ? 'bg-emerald-500'
@@ -219,13 +252,23 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
                     gridColumnEnd: `span ${colSpan}`,
                   }}
                 >
+                  {/* Receded weekend columns inside the continuous bar. */}
+                  {weekendOffsets.map((offset) => (
+                    <span
+                      key={`we-${offset}`}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 bg-card/55 mix-blend-luminosity"
+                      style={{
+                        left: `${(offset / colSpan) * 100}%`,
+                        width: `${(1 / colSpan) * 100}%`,
+                      }}
+                    />
+                  ))}
                   <span
                     role="tooltip"
                     className="pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
                   >
-                    {task.name} ·{' '}
-                    {formatDateRange(task.planned_start_date, task.planned_duration_days)} ·{' '}
-                    {task.planned_duration_days} {task.planned_duration_days === 1 ? 'day' : 'days'}
+                    {label}
                   </span>
                 </div>
               </div>

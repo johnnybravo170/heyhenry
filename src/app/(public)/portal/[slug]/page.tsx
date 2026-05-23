@@ -639,7 +639,7 @@ export default async function PortalPage({
       admin
         .from('project_schedule_tasks')
         .select(
-          'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes',
+          'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, duration_basis, works_weekends, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes',
         )
         .eq('project_id', projectId)
         .eq('client_visible', true)
