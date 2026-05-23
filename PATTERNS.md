@@ -227,6 +227,20 @@ Spec rule: gated features are **visible but locked**, never hidden. `past_due` a
 
 ---
 
+## 13b. Role-filtered settings nav + owner-only permission pane
+
+The `/settings` sidebar + mobile list filter their destinations by **role and vertical** from one source of truth, and gated routes render a calm refusal pane (never a crash/403/redirect) for the wrong role.
+
+- `src/components/features/settings/settings-nav-items.ts` — single source of truth. `SETTINGS_NAV` (6 groups, 27 destinations), `getSettingsNav({ vertical, role })` filter, `getSettingsNavCounts(...)` (honest tally for the foot), `GRADUATE_HREFS` (heavy sub-flows that link out: Team, Billing, QuickBooks, Import). **The role × destination matrix is the `ROLE_HIDDEN_HREFS` hide-set** — per-role `Set` of hrefs to hide. Owner = empty set; Ops tweaks the matrix in this one place. Admin is a documented default (keeps Security + Team, hides Billing/Data export/Delete account) flagged for Ops to confirm.
+- `src/components/features/settings/settings-sidebar.tsx` — desktop sidebar (sticky, mono uppercase group labels, active = `bg-foreground`, `↗` graduate glyph).
+- `src/components/features/settings/settings-mobile-nav.tsx` — mobile grouped-card list (tap → route, ≥44px rows). **Not a `<select>`** — 27 options is a thumb-hostile wall.
+- `src/components/features/settings/settings-nav-foot.tsx` — "X of Y shown · N hidden for role · M hidden for vertical · K graduate"; zero-count segments dropped.
+- `src/components/features/settings/owner-only-pane.tsx` — `<OwnerOnlyPane title description ownerName />`. One shared lock-glyph pane used by every owner-gated route (`billing`, `data-export`, `team`, `account/delete`). The route still enforces the role server-side — it renders this **in place of** the gated UI instead of throwing. Owner name comes from `getPrimaryOperatorName(tenantId)`.
+
+Nav filter is **defense-in-depth**, not the gate. The matrix is pinned by `tests/unit/settings-nav-role-filter.test.ts` so an Ops tweak shows up as a deliberate diff.
+
+---
+
 ## 14. Per-project team checklist (parallel to tasks)
 
 The `project_checklist_items` table is a deliberately lightweight, collaborative-by-default surface for field-level notes ("need 2 pancake boxes for the electrical panel"). It sits next to the heavier `tasks` table — tasks owns PM-level workflow (statuses, assignees, verification, photo requirements); the checklist owns crew-level "stuff we need" notes.
