@@ -80,13 +80,17 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | **Client** | ✅ `client.md` | ✅ `…-client` | **1** (Pulse pt1) | 🟡 #302 | chip + activity/setup reorg + decision ✦ chrome + Paper restyle built (#302); **outstanding:** wire Henry Pulse into Updates (card `b9bb93b7` pt1 — needs project-scoped `pulse_updates`: nullable `job_id` + `project_id` + project draft path; currently job-scoped) |
 | Photos / Documents / Notes | ✅ `project-secondary-tabs.md` | ⬜ | — | 🟡 (live, pre-redesign) | Paper restyle + client-visibility legibility outstanding; **Home Record generate/email + Photos graduate to own renders**; **gap flagged: Selections tab un-briefed** |
 
+### Worker & public surfaces (separate route groups)
+| Surface | Brief | OD render | Open dev cards | Built (ref) | Notes |
+|---|---|---|---|---|---|
+| Worker app `/w` (mobile field surface) | ✅ `worker-app.md` | ⬜ | — | 🟡 (live, W1–W7 built) | mobile-only; **target: fix 8-item bottom-nav overload, Paper restyle, offline capture**; heavy sub-flows (time/expense/invoice capture) graduate to own renders |
+
 ---
 
 ## Untouched screens — menu for the next research pass
 > 🟡 **In progress — `research-0523` (2026-05-23) is sweeping this entire list in one Research pass.** Each screen is promoted into the status tables above (✅ Brief + ref) as its brief lands; bullets are removed from this menu as they complete.
 
 Not yet briefed; **claim one** (mark it in-progress) before starting. Most are subscreen-dense — apply the skill's Subscreen Inventory step.
-- **Worker app `/w`** (Today · Calendar · Projects · Profile + the worker-invoice queue; plan W1–W7 in `GC_WORKFLOW_PLAN.md`) — its own mobile-first surface, a big pass
 - **Public pages** — estimate / CO / invoice approval (`/approve*`), and the **customer Portal** itself (`/portal/[slug]`, customer-facing; carries the GC's brand)
 - **Bookkeeper portal** — *deferred (out of scope for V1)*; listed so it's not forgotten
 
