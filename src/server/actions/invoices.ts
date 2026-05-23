@@ -10,6 +10,7 @@
  * See PHASE_1_PLAN.md Phase 1C.
  */
 
+import crypto from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { gateway, isAiError } from '@/lib/ai-gateway';
 import { audit } from '@/lib/audit';
@@ -45,6 +46,21 @@ export type InvoiceActionResult =
       fieldErrors?: Record<string, string[]>;
       requiresGstNumber?: boolean;
     };
+
+/**
+ * Unguessable short code for the public pay page (/view/invoice/[code]) —
+ * the right secret for a no-login, PII-bearing page. Matches the
+ * estimate/CO `generateApprovalCode` shape. URL-safe, ~16 chars.
+ */
+function generateInvoiceCode(): string {
+  return crypto.randomBytes(12).toString('base64url').slice(0, 16);
+}
+
+/** Build the customer-facing pay URL. Prefer the code (new); the route also
+ *  resolves by raw id for legacy links a customer may already hold. */
+function invoicePublicUrl(appUrl: string, codeOrId: string): string {
+  return `${appUrl}/view/invoice/${codeOrId}`;
+}
 
 /**
  * Create a draft invoice for a completed job. If the job has a linked quote,
@@ -208,7 +224,7 @@ export async function sendInvoiceAction(input: {
   const { data: invoice, error: invErr } = await supabase
     .from('invoices')
     .select(
-      'id, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, customer_id, payment_instructions_override, terms_override, policies_override',
+      'id, code, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, customer_id, payment_instructions_override, terms_override, policies_override',
     )
     .eq('id', parsed.data.invoice_id)
     .is('deleted_at', null)
@@ -217,6 +233,10 @@ export async function sendInvoiceAction(input: {
   if (invErr || !invoice) {
     return { ok: false, error: invErr?.message ?? 'Invoice not found.' };
   }
+
+  // Assign an unguessable public code on first send (backfilled rows keep
+  // theirs). The visible doc number + pay URL key on this, not the raw id.
+  const publicCode = (invoice.code as string | null) ?? generateInvoiceCode();
 
   if (!canTransition(invoice.status as 'draft', 'sent')) {
     return { ok: false, error: `Cannot send an invoice with status "${invoice.status}".` };
@@ -291,7 +311,7 @@ export async function sendInvoiceAction(input: {
     : invoice.amount_cents + lineItemsTotal + invoice.tax_cents;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const publicViewUrl = `${appUrl}/view/invoice/${invoice.id}`;
+  const publicViewUrl = invoicePublicUrl(appUrl, publicCode);
 
   let paymentUrl: string | undefined;
   let stripeSessionId: string | null = null;
@@ -327,6 +347,7 @@ export async function sendInvoiceAction(input: {
     .from('invoices')
     .update({
       status: 'sent',
+      code: publicCode,
       stripe_invoice_id: stripeSessionId,
       pdf_url: paymentUrl ?? null,
       sent_at: now,
@@ -373,7 +394,7 @@ export async function sendInvoiceAction(input: {
           customerName: customer?.name ?? 'Customer',
           businessName: branding.businessName,
           logoUrl: branding.logoUrl,
-          invoiceNumber: invoice.id.slice(0, 8),
+          invoiceNumber: `INV-${publicCode.slice(0, 8).toUpperCase()}`,
           totalFormatted: formatCurrency(totalCents),
           payUrl: emailLinkUrl,
           customerNote: (invoice.customer_note as string | null) ?? undefined,
@@ -439,7 +460,7 @@ export async function resendInvoiceAction(input: {
   const { data: invoice, error: invErr } = await supabase
     .from('invoices')
     .select(
-      'id, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, customer_id, pdf_url, payment_instructions_override, terms_override, policies_override',
+      'id, code, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, customer_id, pdf_url, payment_instructions_override, terms_override, policies_override',
     )
     .eq('id', input.invoiceId)
     .is('deleted_at', null)
@@ -448,6 +469,12 @@ export async function resendInvoiceAction(input: {
   if (invErr || !invoice) {
     return { ok: false, error: invErr?.message ?? 'Invoice not found.' };
   }
+
+  // Resent invoices were already sent, so a code exists (backfilled or
+  // assigned at first send); guard the rare null anyway.
+  const resendDocNumber = `INV-${String(invoice.code ?? invoice.id)
+    .slice(0, 8)
+    .toUpperCase()}`;
 
   if (invoice.status !== 'sent') {
     return { ok: false, error: `Can only resend invoices with status "sent".` };
@@ -551,7 +578,7 @@ export async function resendInvoiceAction(input: {
           customerName: customer?.name ?? 'Customer',
           businessName: branding.businessName,
           logoUrl: branding.logoUrl,
-          invoiceNumber: invoice.id.slice(0, 8),
+          invoiceNumber: resendDocNumber,
           totalFormatted: formatCurrency(totalCents),
           payUrl: paymentUrl,
           customerNote: (invoice.customer_note as string | null) ?? undefined,
