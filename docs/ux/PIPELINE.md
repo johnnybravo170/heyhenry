@@ -23,6 +23,15 @@ RESEARCH ───briefs──▶ OD DRIVER ───renders+cards──▶ CODI
 
 ## Session-start protocol (do this every time, every session)
 
+**0. Work in your OWN git worktree — never share one checkout.** Multiple agents on a single working copy race on git state — divergent commits, duplicate-SHA history, stash churn, even transient `rev-parse`/ref failures (we hit all of these). Each session gets its own worktree on its own branch:
+```
+git worktree add .claude/worktrees/<session> -b ux/<session> origin/main
+cd .claude/worktrees/<session>
+bash scripts/setup-worktree.sh   # symlinks .env files; idempotent
+pnpm install                     # only if node_modules is empty
+```
+Research / OD Driver / Coding each run in a separate worktree so they never step on each other. See `AGENTS.md` §"Working in a worktree". *(The Coding/Mini lane already works on PR branches — this brings the design lanes in line.)*
+
 1. **`git pull --rebase origin main`** — never work stale. (Most cross-session mixups this arc came from a stale checkout.)
 2. **Read this file** — find your screen's row; confirm the upstream stage is done before you start yours.
 3. **Work only your lane's artifact.**
