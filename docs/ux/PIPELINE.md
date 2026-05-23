@@ -94,6 +94,7 @@ Not yet briefed; **claim one** (mark it in-progress) before starting. Most are s
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
 - **OD→build contract:** `docs/ux/HANDOFF-TO-BUILD.md` (tokens + class names + data bindings so builds don't drift from screenshots).
+- **Subscreen-inventory backfill — ✅ COMPLETE** (2026-05-23) across all 13 briefed screens (Schedule · Client · Overview · Estimate · Change-Order · Invoices · Contacts · Expenses · Calendar · Projects-list · Inbox · Customer-Documents · Project-Hub) — each brief now carries a `## Subscreen inventory`. **Graduated to their own row/brief:** `/invoices/[id]` (invoice detail + customer-view override editor) and the `<CustomerDocument>` shared shell. New screens get their inventory inline via the skill's Subscreen-Inventory step.
 
 ---
 
