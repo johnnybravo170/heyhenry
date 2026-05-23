@@ -109,7 +109,7 @@ async function GcBilling({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
+        <h1 className="text-[28px] font-bold tracking-tight">Billing</h1>
         <p className="text-sm text-muted-foreground">
           What you&rsquo;re owed — and what&rsquo;s ready to bill.
         </p>
@@ -139,7 +139,7 @@ async function GcBilling({
           ) : (
             <>
               <BillingTable positions={positions} />
-              <p className="px-1 text-xs text-muted-foreground tabular-nums">
+              <p className="px-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground tabular-nums">
                 {rangeStart}–{rangeEnd} of {totalProjects} project{totalProjects === 1 ? '' : 's'}
               </p>
               <BillingPager page={page} pageSize={PAGE_SIZE} total={totalProjects} />

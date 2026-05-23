@@ -105,7 +105,10 @@ export function BillingFilterBar({
               size="xs"
               onClick={() => applyStatus(value)}
               aria-pressed={active}
-              className={cn('rounded-full', active && 'ring-1 ring-primary/20')}
+              className={cn(
+                'rounded-full',
+                active && 'border-transparent bg-foreground text-background',
+              )}
             >
               {o.label}
               <span
