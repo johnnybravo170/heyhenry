@@ -815,7 +815,7 @@ function FilterChips({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
             current === f.key
-              ? 'border-primary bg-primary/10 text-primary'
+              ? 'border-primary bg-primary text-primary-foreground'
               : 'border-muted bg-card text-muted-foreground hover:bg-muted/50',
           )}
         >
@@ -957,7 +957,11 @@ export function ProjectCostsSection({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <FilterChips current={filter} counts={counts} hrefForFilter={hrefForFilter} />
         {!showingForm && (
-          <Button size="sm" onClick={() => setShowGate(true)}>
+          <Button
+            size="sm"
+            onClick={() => setShowGate(true)}
+            className="bg-brand text-white hover:bg-brand/90"
+          >
             + Add cost
           </Button>
         )}

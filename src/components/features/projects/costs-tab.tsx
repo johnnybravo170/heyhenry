@@ -397,7 +397,9 @@ export function CostsTab({
       <div className="rounded-xl border bg-card">
         <div className="flex items-baseline justify-between border-b px-4 py-2.5">
           <span className="text-sm font-semibold">Money out</span>
-          <span className="text-xs text-muted-foreground">External · vendors &amp; subs only</span>
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+            External · vendors &amp; subs only
+          </span>
         </div>
         <div className="grid grid-cols-1 gap-x-6 gap-y-3 px-4 py-3 sm:grid-cols-3">
           <div className="flex flex-col gap-0.5">
@@ -406,9 +408,9 @@ export function CostsTab({
             </span>
             <Money cents={committedTotal} className="text-lg font-semibold" />
             {committedQuotes > 0 || committedPos > 0 ? (
-              <span className="text-xs text-muted-foreground">
-                Quotes <Money cents={committedQuotes} className="font-medium text-foreground" /> ·
-                POs <Money cents={committedPos} className="font-medium text-foreground" />
+              <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                Quotes <Money cents={committedQuotes} className="text-foreground" /> · POs{' '}
+                <Money cents={committedPos} className="text-foreground" />
               </span>
             ) : null}
           </div>
@@ -433,7 +435,9 @@ export function CostsTab({
               Paid
             </span>
             <Money cents={paidTotal} className="text-lg font-semibold" />
-            <span className="text-xs text-muted-foreground">Actually paid out</span>
+            <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              Actually paid out
+            </span>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground">
@@ -441,7 +445,10 @@ export function CostsTab({
             <strong className="font-medium text-foreground">Committed</strong> reconciles with the
             Budget tab
           </span>
-          <a href={`/projects/${projectId}?tab=time`} className="hover:text-foreground">
+          <a
+            href={`/projects/${projectId}?tab=time`}
+            className="font-mono text-[11px] uppercase tracking-wide hover:text-foreground"
+          >
             Sub time + worker invoices live on Labour →
           </a>
         </div>
@@ -449,11 +456,11 @@ export function CostsTab({
 
       {/* Scope head — procurement framing + By type / By category lens. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-col">
-          <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Procurement
+        <div className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Procurement{' '}
+          <span className="font-normal text-muted-foreground/60">
+            · external money-out workflow
           </span>
-          <span className="text-xs text-muted-foreground">External money-out workflow</span>
         </div>
         <div className="flex rounded-md border bg-muted/30 p-0.5 text-xs">
           <a
