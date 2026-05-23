@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { InvoiceStatusBadge } from '@/components/features/worker/worker-invoice-status-badge';
@@ -58,7 +58,9 @@ export default async function WorkerInvoicesPage() {
                   {inv.project_name ? ` · ${inv.project_name}` : ''}
                 </p>
                 {inv.rejection_reason ? (
-                  <p className="text-xs text-red-700">Rejected: {inv.rejection_reason}</p>
+                  <p className="mt-1 inline-flex items-center gap-1 text-[12px] text-destructive">
+                    <XCircle className="size-3" /> Rejected: {inv.rejection_reason}
+                  </p>
                 ) : null}
               </div>
             </Link>
