@@ -19,7 +19,7 @@ RESEARCH ───briefs──▶ OD DRIVER ───renders+cards──▶ CODI
 
 **Lane discipline (this prevents the duplicate-work we hit):** one session owns each artifact type. Research writes **only briefs** (+ this tracker). OD Driver owns **prompts, renders, and dev cards**. Coding owns **commits to `src`**. Don't create dev cards from Research; don't write briefs from OD Driver. *(The duplicate Schedule card happened because card-creation wasn't lane-owned.)*
 
-**Verified = the Coding done-gate (no separate QA session).** Before flipping a screen to ✅ Built, Coding runs `heyhenry-design-critique` against the **live built screen** (not the OD render), logs residual design↔code variance as a Notes entry here + a follow-up card if material. Same critique skill, pointed at the app — keeps us to three lanes and off the OD-Driver bottleneck.
+**Verified = the Coding done-gate (no separate QA session) — desktop AND mobile.** Before flipping a screen to ✅ Built, run `heyhenry-design-critique` against the **live built screen at BOTH a desktop and a phone viewport** (not the OD render). A screen isn't ✅ until its **mobile** pass clears against the brief's "Mobile vs desktop" section + the rubric's Mobile/field-viability dimension. Log residual design↔code variance as a Notes entry here + a follow-up card if material. Same critique skill, pointed at the app — keeps us to three lanes and off the OD-Driver bottleneck.
 
 ---
 
@@ -121,6 +121,7 @@ The redesign-scope surface is briefed; everything else is explicitly classified.
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
 - **OD→build contract:** `docs/ux/HANDOFF-TO-BUILD.md` (tokens + class names + data bindings so builds don't drift from screenshots).
 - **Subscreen-inventory backfill — ✅ COMPLETE** (2026-05-23) across all 13 briefed screens (Schedule · Client · Overview · Estimate · Change-Order · Invoices · Contacts · Expenses · Calendar · Projects-list · Inbox · Customer-Documents · Project-Hub) — each brief now carries a `## Subscreen inventory`. **Graduates — both handled:** `/invoices/[id]` now has its own brief + row (`invoice-detail.md`); the `<CustomerDocument>` shared shell is specced in `customer-documents.md` (render `od-customer-documents` + build card `1f5cd745`) — a shared-component (PATTERNS) extraction, not a separate brief. New screens get their inventory inline via the skill's Subscreen-Inventory step.
+- **Mobile audit sweep** (cross-cutting — run per build-batch; **NOT a standing lane**): drive the live app (`app.heyhenry.io`, tenant **Maple Ridge Renos** / `gcdemo@example.com`) at phone widths. Check the **app-wide** mobile patterns once — nav collapse (`<select>`) · worker `/w` bottom-nav · ≥44px tap targets · safe areas · sticky bars · overflow/clipping · capture-first flows — plus each built screen against its brief's "Mobile vs desktop" section; file Dev cards for findings. Emulated-mobile (narrow viewport via the Chrome MCP) catches layout / spec / tap-target / overflow drift; a human on-device spot-check stays for true touch / iOS-Safari / perf.
 
 ---
 
