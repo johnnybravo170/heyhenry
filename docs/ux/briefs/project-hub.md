@@ -169,6 +169,32 @@ Crew **scheduling** (who's on which site which day = `project_assignments` with 
 ## Visual identity
 Deepened **Paper**; white cards on warm paper; solid hairlines; near-black ink. The **header is calm identity chrome** — name + status + quiet customer + one ghost action + an overflow; no metric furniture. **Three type sizes (16/14/12)** + the ink ramp. **Rust is the single accent** (primary CTA + Henry actions); status/over-budget via `status-tokens.ts` soft pairs. **Henry prompts** carry the chrome + fill-reflects-meaning rule. Money right-aligned, tabular, de-emph cents. Mono-uppercase eyebrows for metric labels (on the pages that own them).
 
+## Subscreen inventory
+The Hub shell + the three tabs without a standalone brief (Spend · Labour · project Billing). Budget→`estimate.md`, Schedule→`schedule.md`, Client→`client.md`, Overview→`overview.md` carry their own inventories.
+
+**Shell (on every tab)**
+- **Project Details card** (`▾`, `project-details-card`) — popover (desktop) / sheet (mobile): name · customer↗ · description · dates · billing mode + mgmt-fee (`billing-mode-editor` / `management-fee-editor`) · status · **Crew roster** (`crew-roster` — multi-select workers/subs + per-row pay/charge override). Inline editors (§4).
+- **`⋯` actions menu** (`project-actions-menu`) — Versions · **Duplicate** (`clone-project-dialog`) · **Delete** (`delete-project-button`, §3 AlertDialog + NEXT_REDIRECT).
+- **`✦ Add` intake zone** (`project-intake-zone`) — drop receipts / photos / sub-quote PDFs / texts → Henry files them (cost / gallery / sub-quote / scope). Capture front door.
+- **Alert chips** — per-tab compact chips + tab-label badges (the §Alert-surfacing-model layers).
+
+**Budget tab (execution) — modals**
+- **Scope-diff review** (`scope-diff-review` / `ScopeDiffReviewClient`, `?review=diff`) — per-row Revert-to-signed; footer **Create Change Order** (→ `change-order.md`). **Applied-CO banner** anchors the top. (Authoring-side line editors → `estimate.md`.)
+
+**Spend tab (procurement / AP — no standalone brief)**
+- **Upload quote → Review vendor quote** (`sub-quote-form` + `parseSubQuoteFromFileAction`) — ✦ OCR a sub's PDF → Henry-prefilled dialog → **allocate lines to budget categories** (balanced = emerald) → **Accept** (committed; supersedes prior). The centerpiece sub-flow.
+- **Cost entry** — the **"Did you pay this already?"** gate (receipt vs vendor bill) → `cost-line-form`; GST auto + override; Mark-paid.
+- **PO lifecycle** — draft→sent→acknowledged→received→closed ("Mark {next}"). **By type / By category** subtabs (`costs-subtabs`).
+
+**Labour tab**
+- **Approve-hours** — time-entry visibility/adjust (worker self-edit ≤24h, then owner).
+- **Worker-invoice queue** — a sub builds an invoice from unbilled time + expenses → owner **approve / reject / mark-paid** (cross-project queue at `/invoices?view=worker`). By-worker filter.
+
+**Billing tab (project)**
+- **New draw** (`createMilestoneInvoiceAction`, live GST) · **Invoice full estimate** (gated on approved) · **Generate final**. **Record-payment** (`record-payment-dialog`, §19, Interac parity). Rows → shared `/invoices/[id]` (graduate, `invoices.md`). The peach **"Ready to bill draw N"** Henry prompt.
+
+**Cross-refs (own briefs/inventories):** Budget→`estimate.md` · Schedule→`schedule.md` · Client→`client.md` · Overview→`overview.md` · `/invoices/[id]` detail + customer pay → `invoices.md` / `customer-documents.md`.
+
 ## Accessibility
 WCAG 2.2 AA: near-black ink on white; never colour-only for status/margin/over-budget (label + glyph); the `▾` Details trigger + `⋯` overflow are labeled, focus-ringed, keyboard-operable; the Crew checklist + override disclosures are keyboard-reachable; tab nav + `<select>` operable; attention-strip items are real links/buttons; ≥44px targets on mobile capture + quick actions.
 
