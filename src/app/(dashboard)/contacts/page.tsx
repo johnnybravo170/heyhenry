@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { ContactsDuplicateBanner } from '@/components/features/customers/contacts-duplicate-banner';
 import { ContactsPager } from '@/components/features/customers/contacts-pager';
 import { CustomerEmptyState } from '@/components/features/customers/customer-empty-state';
 import { CustomerSearchBar } from '@/components/features/customers/customer-search-bar';
@@ -10,6 +11,7 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import {
   countCustomers,
   countCustomersByKind,
+  findDuplicateContacts,
   getContactSignals,
   listCustomers,
 } from '@/lib/db/queries/customers';
@@ -59,12 +61,19 @@ export default async function ContactsPage({
   const kind = parseKind(resolvedSearchParams.kind);
   const type = parseType(resolvedSearchParams.type);
   const page = parsePage(resolvedSearchParams.page);
-  const hasFilters = Boolean(query || kind || type);
+  const dupesMode = resolvedSearchParams.dupes === '1';
+  const hasFilters = Boolean(query || kind || type || dupesMode);
+
+  // Scan for likely duplicates (shared name/email/phone). Drives the Henry
+  // banner, and — in `?dupes=1` review mode — narrows the list to the clusters.
+  const dupes = await findDuplicateContacts();
+  const dupeSignature = `${dupes.totalGroups}-${dupes.ids.length}`;
 
   const filters = {
     search: query || undefined,
     kind: kind ?? undefined,
     type: type ?? undefined,
+    ids: dupesMode ? dupes.ids : undefined,
   };
 
   const tenant = await getCurrentTenant();
@@ -119,6 +128,28 @@ export default async function ContactsPage({
           </Link>
         </Button>
       </header>
+
+      {dupesMode ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand/25 bg-[#FEF0E3] px-4 py-2.5 text-sm">
+          <span>
+            Reviewing{' '}
+            <strong className="font-semibold">
+              {dupes.totalGroups} possible duplicate{dupes.totalGroups === 1 ? '' : 's'}
+            </strong>{' '}
+            — open each to merge or correct.
+          </span>
+          <Link href="/contacts" className="font-medium text-brand hover:underline">
+            Clear
+          </Link>
+        </div>
+      ) : dupes.totalGroups > 0 ? (
+        <ContactsDuplicateBanner
+          totalGroups={dupes.totalGroups}
+          sampleName={dupes.groups[0]?.name ?? ''}
+          sampleKinds={dupes.groups[0]?.kinds ?? []}
+          signature={dupeSignature}
+        />
+      ) : null}
 
       {showSearchBar ? (
         <Suspense fallback={null}>
