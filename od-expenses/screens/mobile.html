@@ -1,0 +1,1936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Expenses — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 10px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+
+  /* ───── Reel (5 phones in a row) ───── */
+  .reel {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    width: max-content;
+    margin: 0 auto;
+  }
+  .phone-wrap {
+    display: flex; flex-direction: column;
+    gap: 12px;
+  }
+  .phone-label {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 0 6px;
+    max-width: 390px;
+  }
+  .phone-label .mark {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .phone-label .name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .phone-label .note {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; color: var(--muted); font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── App header (paper) ───── */
+  .app-header {
+    padding: 12px 16px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .app-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .app-back {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    display: grid; place-items: center;
+    color: var(--ink);
+    cursor: pointer;
+    margin-left: -8px;
+  }
+  .app-back svg { width: 18px; height: 18px; }
+  .app-title-center { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .app-title-center.is-centered { text-align: center; }
+  .app-title { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); }
+  .app-title.is-md { font-size: 16px; }
+  .app-sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .app-sub .mono { font-family: var(--mono); color: var(--ink-2); font-weight: 600; }
+  .app-actions { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: grid; place-items: center;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .icon-btn.is-rust {
+    background: var(--rust); border-color: var(--rust); color: #fff;
+  }
+
+  /* ───── Sticky primary CTA strip ───── */
+  .capture-strip {
+    padding: 12px 16px 12px;
+    background: var(--chrome);
+    display: flex; gap: 8px;
+    flex-shrink: 0;
+  }
+  .capture-btn {
+    flex: 1;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+  }
+  .capture-btn svg { width: 18px; height: 18px; }
+  .capture-btn.is-snap { background: var(--rust); }
+  .capture-btn.is-ghost {
+    background: var(--card);
+    color: var(--ink);
+    border-color: var(--hair);
+    flex: 0 0 96px;
+  }
+
+  /* ───── Summary chip row ───── */
+  .summary-row {
+    display: flex; gap: 6px;
+    padding: 4px 16px 14px;
+    background: var(--chrome);
+    flex-shrink: 0;
+  }
+  .summary-chip {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 2px;
+    min-width: 0;
+  }
+  .summary-chip .eb {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .summary-chip .vl {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .summary-chip .vl .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .summary-chip .sub {
+    font-size: 11px; color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* ───── Filter strip (mobile = sheet trigger buttons, no horizontal scroll) ───── */
+  .filter-strip {
+    padding: 0 16px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .filter-strip-btn {
+    flex: 1;
+    height: 36px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .filter-strip-btn svg { width: 13px; height: 13px; }
+  .filter-strip-btn .pill-count {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+    padding: 0 5px;
+    border-radius: 999px;
+    line-height: 1.6;
+  }
+
+  /* ───── Body scroll area ───── */
+  .body-scroll {
+    flex: 1; min-height: 0;
+    overflow-y: auto;
+    background: var(--bg);
+    padding-bottom: 88px;
+  }
+
+  /* ───── Expense card (stacked) ───── */
+  .ex-card {
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 38px 1fr auto;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .ex-card-rcpt {
+    width: 38px; height: 46px;
+    border-radius: 6px;
+    background: #FAF6EE;
+    border: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    padding: 5px 4px;
+    overflow: hidden;
+  }
+  .ex-card-rcpt .rl { display: block; height: 1.4px; background: var(--rule); margin: 1px 0; border-radius: 1px; }
+  .ex-card-rcpt .rl:nth-child(1) { width: 70%; }
+  .ex-card-rcpt .rl:nth-child(2) { width: 90%; }
+  .ex-card-rcpt .rl:nth-child(3) { width: 50%; }
+  .ex-card-rcpt .rl:nth-child(4) { width: 80%; }
+  .ex-card-rcpt .rl:nth-child(5) { width: 40%; }
+  .ex-card-rcpt.is-empty {
+    background: var(--chip-fill);
+    border-style: dashed;
+    display: grid; place-items: center;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 16px;
+  }
+  .ex-card-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .ex-card-top {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .ex-card-date {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ex-card-sep { color: var(--faint); }
+  .ex-card-cat {
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .ex-card-cat .crumb { color: var(--muted); font-weight: 500; }
+  .ex-card-cat .crumb-sep { color: var(--faint); margin: 0 2px; }
+  .ex-card-vendor {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .ex-card-desc {
+    font-size: 14px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ex-card-foot {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 2px;
+  }
+  .ex-card-amt {
+    text-align: right;
+    display: flex; flex-direction: column; gap: 2px;
+    align-items: flex-end;
+  }
+  .ex-card-amt .money {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .ex-card-amt .money .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .ex-card-amt .tax-note {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .ex-card-amt .tax-note.is-empty { color: var(--faint); }
+
+  .ex-card.is-uncat .ex-card-cat { color: var(--warn); }
+  .ex-card.is-uncat .ex-card-cat-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-size: 11px; font-weight: 700;
+    border: 1px solid rgba(180, 83, 9, 0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .ex-card.is-uncat .ex-card-cat-pill svg { width: 9px; height: 9px; }
+
+  /* Payment source mini-pill on card foot */
+  .paid-pill-mini {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 7px 2px 5px;
+    border-radius: 5px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .paid-pill-mini .pp-icon {
+    width: 16px; height: 11px;
+    border-radius: 2px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 7px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .paid-pill-mini .pp-icon.amex { background: #1E40AF; }
+  .paid-pill-mini .pp-icon.cash { background: var(--ok); }
+  .paid-pill-mini .pp-icon.eft { background: var(--ink-2); }
+  .paid-pill-mini .pp-last4 { font-family: var(--mono); color: var(--muted); }
+
+  /* Henry inline drop hint (between cards) */
+  .henry-hint {
+    margin: 10px 16px;
+    padding: 12px 14px;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    border-left: 3px solid var(--rust);
+    border-radius: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .henry-hint-mark {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--card); color: var(--rust);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .henry-hint-mark svg { width: 11px; height: 11px; }
+  .henry-hint-text {
+    flex: 1;
+    font-size: 12px; color: var(--ink-2);
+  }
+  .henry-hint-text strong { color: var(--ink); font-weight: 700; }
+  .henry-hint-text .eb {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1px;
+  }
+
+  /* Date group header */
+  .date-group {
+    padding: 16px 16px 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--bg);
+  }
+  .date-group .total {
+    margin-left: 8px;
+    color: var(--faint);
+    font-weight: 600;
+  }
+
+  /* Bottom tab nav */
+  .tab-nav {
+    height: 78px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 4px 8px 16px;
+    display: flex; align-items: stretch;
+    position: absolute; left: 0; right: 0; bottom: 0;
+  }
+  .tab {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    color: var(--muted);
+    font-size: 11px; font-weight: 600;
+    cursor: pointer;
+  }
+  .tab svg { width: 22px; height: 22px; }
+  .tab.is-active { color: var(--ink); }
+  .tab.is-active .tab-dot {
+    position: absolute; bottom: 12px; width: 4px; height: 4px;
+    border-radius: 999px; background: var(--rust);
+  }
+
+  /* ═════════════════════════════════════ */
+  /*  PHONE 2 — Receipt-snap OCR review   */
+  /* ═════════════════════════════════════ */
+
+  .snap-frame {
+    flex: 1; min-height: 0;
+    background: #1a1816;
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .snap-canvas {
+    flex: 1; min-height: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 30%, rgba(255,255,255,0.06) 0%, transparent 70%),
+      linear-gradient(180deg, #2a2620 0%, #1a1816 100%);
+    display: grid;
+    place-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 28px 20px 12px;
+  }
+  .snap-receipt {
+    width: 240px; max-height: 340px;
+    background: #FAF6EE;
+    border-radius: 4px;
+    padding: 18px 16px;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.1);
+    transform: rotate(-1.5deg);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .snap-receipt-head {
+    text-align: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--rule);
+    margin-bottom: 2px;
+  }
+  .snap-receipt-line {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--ink-2);
+    letter-spacing: 0.02em;
+  }
+  .snap-receipt-line .v { color: var(--ink); font-weight: 700; }
+  .snap-receipt-line.is-tax { padding-top: 4px; border-top: 1px dashed var(--rule); margin-top: 4px; }
+  .snap-receipt-line.is-total { font-size: 12px; font-weight: 700; padding-top: 4px; border-top: 1px solid var(--ink); margin-top: 4px; }
+  .snap-receipt-line.is-total .v { font-size: 14px; }
+
+  .snap-frame-corners {
+    position: absolute; inset: 24px 16px 24px 16px;
+    pointer-events: none;
+  }
+  .snap-corner {
+    position: absolute;
+    width: 26px; height: 26px;
+    border: 2.5px solid var(--rust);
+  }
+  .snap-corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+  .snap-corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; border-top-right-radius: 6px; }
+  .snap-corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; border-bottom-left-radius: 6px; }
+  .snap-corner.br { bottom: 0; right: 0; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
+
+  .snap-shutter-row {
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 10px 28px 14px;
+    background: #1a1816;
+  }
+  .snap-thumb {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    background: #3a352d;
+    border: 1.5px solid #6b5d49;
+  }
+  .snap-shutter {
+    width: 64px; height: 64px;
+    border-radius: 999px;
+    background: var(--rust);
+    border: 4px solid #fff;
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.18);
+    cursor: pointer;
+  }
+  .snap-flip {
+    width: 38px; height: 38px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    display: grid; place-items: center;
+  }
+  .snap-flip svg { width: 18px; height: 18px; }
+
+  .snap-confirm {
+    background: var(--card);
+    border-top: 1px solid var(--hair);
+    padding: 14px 16px 18px;
+    flex-shrink: 0;
+  }
+  .snap-confirm-head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .snap-confirm-mark {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    display: grid; place-items: center;
+  }
+  .snap-confirm-mark svg { width: 13px; height: 13px; }
+  .snap-confirm-eb {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .snap-confirm-title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .snap-field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .snap-field {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    background: var(--card);
+  }
+  .snap-field.is-full { grid-column: 1 / -1; }
+  .snap-field-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .snap-field-value {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .snap-field.is-suggested {
+    border-color: rgba(194, 65, 12, 0.25);
+    background: var(--rust-soft);
+  }
+  .snap-field.is-suggested .snap-field-label {
+    color: var(--rust);
+  }
+  .snap-field .crumb { color: var(--muted); font-weight: 500; }
+  .snap-field .crumb-sep { color: var(--faint); margin: 0 2px; }
+  .snap-field .leaf { color: var(--ink); font-weight: 700; }
+
+  .snap-actions {
+    display: flex; gap: 8px;
+  }
+  .snap-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+  }
+  .snap-btn-primary {
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+  }
+  .snap-btn-ghost {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+  }
+  .snap-btn svg { width: 16px; height: 16px; }
+
+  /* ═════════════════════════════════════ */
+  /*  PHONE 3 — GST mobile                */
+  /* ═════════════════════════════════════ */
+
+  .gst-period-strip {
+    padding: 8px 16px 14px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .gst-period-pill {
+    flex: 1;
+    height: 38px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    border: 1px solid var(--ink);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+  }
+  .gst-period-pill svg { width: 13px; height: 13px; }
+
+  .gst-position-mobile {
+    margin: 16px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 18px 18px 16px;
+  }
+  .gst-mobile-eb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .gst-mobile-net {
+    font-size: 36px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin-top: 4px;
+  }
+  .gst-mobile-net .cents { font-size: 18px; color: var(--muted); font-weight: 500; }
+  .gst-mobile-due {
+    font-size: 14px; color: var(--muted);
+    margin-top: 4px;
+  }
+  .gst-mobile-row {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px dashed var(--rule);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+  }
+  .gst-mobile-row .pair {
+    display: flex; flex-direction: column;
+  }
+  .gst-mobile-row .pair .eb {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .gst-mobile-row .pair .v {
+    font-size: 14px; font-weight: 700; color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .gst-mobile-row .pair .v .cents { color: var(--muted); font-weight: 500; font-size: 0.85em; }
+
+  .gst-mobile-warn {
+    margin: 0 16px 14px;
+    background: var(--warn-soft);
+    border: 1px solid rgba(180, 83, 9, 0.28);
+    border-left: 3px solid var(--rust);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .gst-mobile-warn-head {
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .gst-mobile-warn-mark {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .gst-mobile-warn-mark svg { width: 12px; height: 12px; }
+  .gst-mobile-warn-eb {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1px;
+  }
+  .gst-mobile-warn-title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    line-height: 1.25;
+  }
+  .gst-mobile-warn-help {
+    font-size: 12px; color: var(--ink-2);
+    margin-top: 4px;
+  }
+  .gst-mobile-warn-list {
+    background: var(--card);
+    border-radius: 8px;
+    border: 1px solid rgba(180, 83, 9, 0.15);
+    padding: 4px 0;
+  }
+  .gst-mobile-warn-item {
+    padding: 8px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+    border-top: 1px solid rgba(180, 83, 9, 0.1);
+  }
+  .gst-mobile-warn-item:first-child { border-top: 0; }
+  .gst-mobile-warn-item .vendor { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .gst-mobile-warn-item .where { font-size: 11px; color: var(--muted); }
+  .gst-mobile-warn-item .gst {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px; font-weight: 700; color: var(--warn);
+  }
+  .gst-mobile-warn-item .gst .cents { color: var(--muted); font-weight: 500; font-size: 0.85em; }
+  .gst-mobile-warn-action {
+    width: 100%;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer;
+  }
+  .gst-mobile-warn-action svg { width: 15px; height: 15px; }
+
+  .gst-breakdown-mobile {
+    margin: 0 16px 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .gst-breakdown-mobile-head {
+    padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+    gap: 8px;
+  }
+  .gst-breakdown-mobile-head-l {
+    display: flex; flex-direction: column; gap: 2px;
+    min-width: 0;
+  }
+  .gst-breakdown-mobile-head .eb {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .gst-breakdown-mobile-head .name {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+  }
+  .gst-breakdown-mobile-head .total {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .gst-breakdown-mobile-head .total .cents { color: var(--muted); font-weight: 500; font-size: 0.85em; }
+  .gst-breakdown-mobile-head .total-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .gst-breakdown-mobile-head .chev {
+    width: 18px; height: 18px;
+    color: var(--muted);
+  }
+  .gst-breakdown-mobile-head .chev.is-open { transform: rotate(180deg); }
+
+  .gst-breakdown-mobile-body {
+    border-top: 1px solid var(--hair);
+  }
+  .gst-breakdown-mobile-line {
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--hair);
+  }
+  .gst-breakdown-mobile-line:first-child { border-top: 0; }
+  .gst-breakdown-mobile-line .lbl { font-size: 14px; color: var(--ink-2); }
+  .gst-breakdown-mobile-line .lbl .crumb { color: var(--muted); }
+  .gst-breakdown-mobile-line .v {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .gst-breakdown-mobile-line .v .cents { color: var(--muted); font-weight: 500; font-size: 0.85em; }
+
+  .gst-actions-mobile {
+    margin: 0 16px 22px;
+    display: flex; gap: 8px;
+  }
+  .gst-actions-mobile .btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px; font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .gst-actions-mobile .btn-primary {
+    background: var(--ink); color: #fff; border-color: var(--ink);
+  }
+  .gst-actions-mobile .btn-ghost {
+    background: var(--card); color: var(--ink); border-color: var(--hair);
+  }
+  .gst-actions-mobile .btn svg { width: 15px; height: 15px; }
+
+  .gst-disclaimer-mobile {
+    margin: 0 16px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 10px 12px;
+    background: var(--chip-fill);
+    border-radius: 10px;
+    line-height: 1.45;
+  }
+  .gst-disclaimer-mobile strong { color: var(--ink); font-weight: 700; }
+
+  /* ═════════════════════════════════════ */
+  /*  PHONE 4 — Log expense form          */
+  /* ═════════════════════════════════════ */
+
+  .form-section {
+    padding: 14px 16px;
+    background: var(--bg);
+  }
+  .form-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 6px 0 6px;
+  }
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .form-row {
+    padding: 12px 14px;
+    border-top: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .form-row:first-child { border-top: 0; }
+  .form-row-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .form-row-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    width: 100%;
+  }
+  .form-row-value::placeholder { color: var(--faint); font-weight: 500; }
+  .form-row-value.is-amount { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .form-row-value.is-amount .cents { font-size: 16px; color: var(--muted); font-weight: 500; }
+  .form-row-helper {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .form-row-select {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+    height: 28px;
+  }
+  .form-row-select .chev { width: 16px; height: 16px; color: var(--faint); }
+  .form-row-select .placeholder { color: var(--faint); font-weight: 500; }
+
+  .form-amount-row {
+    padding: 18px 16px;
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .form-amount-row .eb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .form-amount-row .v {
+    font-size: 40px; font-weight: 700; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+  .form-amount-row .v .cents { font-size: 22px; color: var(--muted); font-weight: 500; }
+  .form-amount-row .splits {
+    display: flex; gap: 12px;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .form-amount-row .splits .pair { display: flex; gap: 4px; }
+  .form-amount-row .splits .v { color: var(--ink-2); font-weight: 700; font-size: 11px; }
+  .form-amount-row .gst-split-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    border: 1px solid rgba(194, 65, 12, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .form-amount-row .gst-split-pill svg { width: 9px; height: 9px; }
+
+  .form-receipt-row {
+    margin: 12px 16px;
+    display: flex; gap: 10px;
+  }
+  .form-receipt-thumb {
+    width: 58px; height: 70px;
+    border-radius: 8px;
+    background: #FAF6EE;
+    border: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    padding: 7px 5px;
+    flex-shrink: 0;
+  }
+  .form-receipt-thumb .rl { display: block; height: 1.4px; background: var(--rule); margin: 1.5px 0; border-radius: 1px; }
+  .form-receipt-thumb .rl:nth-child(1) { width: 70%; }
+  .form-receipt-thumb .rl:nth-child(2) { width: 90%; }
+  .form-receipt-thumb .rl:nth-child(3) { width: 50%; }
+  .form-receipt-thumb .rl:nth-child(4) { width: 80%; }
+  .form-receipt-thumb .rl:nth-child(5) { width: 40%; }
+  .form-receipt-thumb .rl:nth-child(6) { width: 60%; }
+  .form-receipt-meta {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 2px;
+    justify-content: center;
+  }
+  .form-receipt-meta .name {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .form-receipt-meta .stamp {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ok);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .form-receipt-meta .stamp svg { width: 11px; height: 11px; }
+  .form-receipt-replace {
+    align-self: center;
+    height: 36px; padding: 0 12px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .form-submit-bar {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 12px 16px 24px;
+    display: flex; gap: 8px;
+  }
+  .form-submit-bar .btn {
+    height: 52px;
+    border-radius: 14px;
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px; font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .form-submit-bar .btn-primary { background: var(--ink); color: #fff; }
+  .form-submit-bar .btn-ghost { background: var(--card); color: var(--ink); border-color: var(--hair); flex: 0 0 96px; }
+
+  /* ═════════════════════════════════════ */
+  /*  PHONE 5 — Filter bottom sheet       */
+  /* ═════════════════════════════════════ */
+
+  .sheet-veil {
+    position: absolute; inset: 0;
+    background: rgba(10,10,10,0.42);
+    z-index: 5;
+    border-bottom-left-radius: 36px;
+    border-bottom-right-radius: 36px;
+  }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--card);
+    border-top: 1px solid var(--hair);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    z-index: 6;
+    padding: 8px 16px 28px;
+    display: flex; flex-direction: column;
+    max-height: 78%;
+  }
+  .sheet-handle {
+    width: 38px; height: 4px;
+    background: var(--rule);
+    border-radius: 999px;
+    margin: 0 auto 14px;
+  }
+  .sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .sheet-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .sheet-close {
+    width: 30px; height: 30px;
+    border-radius: 999px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    color: var(--ink);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .sheet-close svg { width: 13px; height: 13px; }
+
+  .sheet-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .sheet-group-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .sheet-chip-row {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .sheet-chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 14px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .sheet-chip.is-on {
+    background: var(--ink); color: #fff; border-color: var(--ink);
+  }
+  .sheet-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--hair);
+    margin-bottom: 14px;
+  }
+  .sheet-toggle-row .info {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .sheet-toggle-row .lbl { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .sheet-toggle-row .sub { font-size: 12px; color: var(--muted); }
+  .sheet-toggle {
+    width: 44px; height: 26px;
+    background: var(--rust);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+  }
+  .sheet-toggle::after {
+    content: ''; position: absolute;
+    top: 3px; right: 3px;
+    width: 20px; height: 20px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .sheet-toggle.is-off { background: var(--chip-fill); }
+  .sheet-toggle.is-off::after { right: auto; left: 3px; background: var(--card); border: 1px solid var(--hair); }
+
+  .sheet-foot {
+    display: flex; gap: 8px;
+    margin-top: auto;
+    padding-top: 12px;
+  }
+  .sheet-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .sheet-btn-primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .sheet-btn-ghost { background: var(--card); color: var(--ink); border-color: var(--hair); flex: 0 0 96px; }
+
+  /* Blurred ledger behind sheet — same content, dimmed */
+  .behind-ledger { filter: blur(0.5px); }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+    <symbol id="i-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/><path d="M21 17v-6h-6"/><path d="M3 17a9 9 0 0 0 15 6.7"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></symbol>
+  </defs>
+</svg>
+
+<div class="reel">
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!--  PHONE 1 — /expenses · Ledger (capture-first)            -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="mark">Phone 1</span>
+      <span class="name">Ledger · capture-first</span>
+      <span class="note">/expenses</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span>9:42</span>
+          <span class="island"></span>
+          <span class="right">
+            <span style="font-weight:700;">●●●●</span>
+            <span style="font-family:var(--sans);">5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <!-- App header -->
+        <div class="app-header">
+          <div class="app-title-row">
+            <button class="app-back" aria-label="Open menu"><svg><use href="#i-menu"/></svg></button>
+            <div class="app-title-center">
+              <span class="app-title">Expenses</span>
+              <span class="app-sub"><span class="mono">37</span> this quarter <span class="dot">·</span> <span class="mono">$8,420</span> total</span>
+            </div>
+            <div class="app-actions">
+              <button class="icon-btn" aria-label="Search"><svg><use href="#i-search"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky primary CTA -->
+        <div class="capture-strip">
+          <button class="capture-btn is-snap" aria-label="Snap a receipt">
+            <svg><use href="#i-camera"/></svg>
+            Snap a receipt
+          </button>
+          <button class="capture-btn is-ghost" aria-label="Log manually">
+            <svg style="color: var(--ink-2);"><use href="#i-plus"/></svg>
+          </button>
+        </div>
+
+        <!-- Summary chips -->
+        <div class="summary-row">
+          <div class="summary-chip">
+            <span class="eb">GST claimable</span>
+            <span class="vl">$402<span class="cents">.18</span></span>
+            <span class="sub">Q2-to-date</span>
+          </div>
+          <div class="summary-chip">
+            <span class="eb">Uncategorized</span>
+            <span class="vl" style="color: var(--warn);">5</span>
+            <span class="sub">need a category</span>
+          </div>
+          <div class="summary-chip">
+            <span class="eb">No receipt</span>
+            <span class="vl">2</span>
+            <span class="sub">add when you can</span>
+          </div>
+        </div>
+
+        <!-- Filter trigger row -->
+        <div class="filter-strip">
+          <button class="filter-strip-btn"><svg><use href="#i-filter"/></svg>Filters</button>
+          <button class="filter-strip-btn">This quarter <svg><use href="#i-chevron-down"/></svg></button>
+        </div>
+
+        <!-- Scroll body -->
+        <div class="body-scroll">
+
+          <!-- Date group -->
+          <div class="date-group">This week<span class="total">· 3 entries · $387.70</span></div>
+
+          <!-- Card 1 -->
+          <div class="ex-card">
+            <div class="ex-card-rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></div>
+            <div class="ex-card-main">
+              <div class="ex-card-top">
+                <span class="ex-card-date">MAY 21</span>
+                <span class="ex-card-sep">·</span>
+                <span class="ex-card-cat"><span class="crumb">Vehicle</span><span class="crumb-sep">›</span>Fuel</span>
+              </div>
+              <span class="ex-card-vendor">Petro-Canada</span>
+              <span class="ex-card-desc">Truck fill — Abbotsford</span>
+              <div class="ex-card-foot">
+                <span class="paid-pill-mini"><span class="pp-icon">V</span>····4318</span>
+              </div>
+            </div>
+            <div class="ex-card-amt">
+              <span class="money">$85<span class="cents">.10</span></span>
+              <span class="tax-note">+$4.05 GST</span>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="ex-card">
+            <div class="ex-card-rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></div>
+            <div class="ex-card-main">
+              <div class="ex-card-top">
+                <span class="ex-card-date">MAY 19</span>
+                <span class="ex-card-sep">·</span>
+                <span class="ex-card-cat"><span class="crumb">Materials</span><span class="crumb-sep">›</span>Hardware</span>
+              </div>
+              <span class="ex-card-vendor">Home Depot</span>
+              <span class="ex-card-desc">Shop racking + bin sleeves</span>
+              <div class="ex-card-foot">
+                <span class="paid-pill-mini"><span class="pp-icon">V</span>····4318</span>
+              </div>
+            </div>
+            <div class="ex-card-amt">
+              <span class="money">$208<span class="cents">.50</span></span>
+              <span class="tax-note">+$9.93 GST</span>
+            </div>
+          </div>
+
+          <!-- Card 3 (uncategorized) -->
+          <div class="ex-card is-uncat">
+            <div class="ex-card-rcpt is-empty">·</div>
+            <div class="ex-card-main">
+              <div class="ex-card-top">
+                <span class="ex-card-date">MAY 12</span>
+                <span class="ex-card-sep">·</span>
+                <span class="ex-card-cat-pill"><svg><use href="#i-tag"/></svg>UNCATEGORIZED</span>
+              </div>
+              <span class="ex-card-vendor" style="color: var(--ink-2);">Gas station — Chilliwack</span>
+              <span class="ex-card-desc">Cash · add vendor</span>
+              <div class="ex-card-foot">
+                <span class="paid-pill-mini"><span class="pp-icon cash">$</span>Cash</span>
+              </div>
+            </div>
+            <div class="ex-card-amt">
+              <span class="money">$19<span class="cents">.95</span></span>
+              <span class="tax-note">+$0.95 GST</span>
+            </div>
+          </div>
+
+          <!-- Henry hint -->
+          <div class="henry-hint">
+            <div class="henry-hint-mark"><svg><use href="#i-sparkles"/></svg></div>
+            <div class="henry-hint-text">
+              <span class="eb">✦ Henry</span>
+              <span><strong>5 uncategorized</strong> · tap to bulk-categorize.</span>
+            </div>
+            <svg style="color: var(--rust); width: 14px; height: 14px;"><use href="#i-chevron-right"/></svg>
+          </div>
+
+          <!-- Date group -->
+          <div class="date-group">Last week<span class="total">· 4 entries · $1,030.69</span></div>
+
+          <!-- Card 4 -->
+          <div class="ex-card">
+            <div class="ex-card-rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></div>
+            <div class="ex-card-main">
+              <div class="ex-card-top">
+                <span class="ex-card-date">MAY 14</span>
+                <span class="ex-card-sep">·</span>
+                <span class="ex-card-cat"><span class="crumb">Vehicle</span><span class="crumb-sep">›</span>Insurance</span>
+              </div>
+              <span class="ex-card-vendor">ICBC</span>
+              <span class="ex-card-desc">Truck — Apr–May coverage</span>
+              <div class="ex-card-foot">
+                <span class="paid-pill-mini"><span class="pp-icon eft">E</span>pre-auth</span>
+              </div>
+            </div>
+            <div class="ex-card-amt">
+              <span class="money">$382<span class="cents">.00</span></span>
+              <span class="tax-note is-empty">no GST</span>
+            </div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="ex-card">
+            <div class="ex-card-rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></div>
+            <div class="ex-card-main">
+              <div class="ex-card-top">
+                <span class="ex-card-date">MAY 11</span>
+                <span class="ex-card-sep">·</span>
+                <span class="ex-card-cat"><span class="crumb">Office</span><span class="crumb-sep">›</span>Accounting</span>
+              </div>
+              <span class="ex-card-vendor">Wilson M&amp;P CPA</span>
+              <span class="ex-card-desc">Q1 bookkeeping review</span>
+              <div class="ex-card-foot">
+                <span class="paid-pill-mini"><span class="pp-icon eft">E</span>EFT 8821</span>
+              </div>
+            </div>
+            <div class="ex-card-amt">
+              <span class="money">$472<span class="cents">.50</span></span>
+              <span class="tax-note">+$22.50 GST</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-nav">
+          <div class="tab"><svg><use href="#i-home"/></svg>Dashboard</div>
+          <div class="tab"><svg><use href="#i-folder"/></svg>Projects</div>
+          <div class="tab"><svg><use href="#i-receipt"/></svg>Billing</div>
+          <div class="tab is-active"><svg><use href="#i-wallet"/></svg>Expenses<span class="tab-dot"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!--  PHONE 2 — Snap receipt → OCR review                     -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="mark">Phone 2</span>
+      <span class="name">Snap → Henry confirm</span>
+      <span class="note">/expenses/new (camera)</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:43</span>
+          <span class="island"></span>
+          <span class="right">
+            <span style="font-weight:700;">●●●●</span>
+            <span style="font-family:var(--sans);">5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <!-- Camera header -->
+        <div style="background: #1a1816; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+          <button class="app-back" style="color: #fff;" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+          <span style="font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff; letter-spacing: 0.06em; text-transform: uppercase;">Snap receipt · 1 of 1</span>
+          <button class="app-back" style="color: #fff;" aria-label="Help"><svg><use href="#i-info"/></svg></button>
+        </div>
+
+        <!-- Camera viewfinder -->
+        <div class="snap-frame">
+          <div class="snap-canvas">
+            <div class="snap-receipt">
+              <div class="snap-receipt-head">HOME DEPOT</div>
+              <div class="snap-receipt-line"><span>Abbotsford #7034</span><span>5/19/26</span></div>
+              <div class="snap-receipt-line"><span>BN 12345 6789 RT0001</span><span></span></div>
+              <div class="snap-receipt-line"><span>RACKING UNIT 96"</span><span class="v">$179.00</span></div>
+              <div class="snap-receipt-line"><span>BIN SLEEVE 4PK</span><span class="v">$19.57</span></div>
+              <div class="snap-receipt-line is-tax"><span>SUBTOTAL</span><span class="v">$198.57</span></div>
+              <div class="snap-receipt-line"><span>GST 5%</span><span class="v">$9.93</span></div>
+              <div class="snap-receipt-line is-total"><span>TOTAL</span><span class="v">$208.50</span></div>
+              <div class="snap-receipt-line" style="margin-top: 6px; color: var(--muted);"><span>VISA ····4318</span><span>09:32</span></div>
+            </div>
+            <div class="snap-frame-corners">
+              <span class="snap-corner tl"></span>
+              <span class="snap-corner tr"></span>
+              <span class="snap-corner bl"></span>
+              <span class="snap-corner br"></span>
+            </div>
+          </div>
+
+          <div class="snap-shutter-row">
+            <div class="snap-thumb"></div>
+            <div class="snap-shutter"></div>
+            <div class="snap-flip"><svg><use href="#i-flip"/></svg></div>
+          </div>
+        </div>
+
+        <!-- Henry confirm card -->
+        <div class="snap-confirm">
+          <div class="snap-confirm-head">
+            <div class="snap-confirm-mark"><svg><use href="#i-sparkles"/></svg></div>
+            <div>
+              <span class="snap-confirm-eb">✦ Henry read this</span>
+              <span class="snap-confirm-title">Confirm and save · $208.50</span>
+            </div>
+          </div>
+
+          <div class="snap-field-grid">
+            <div class="snap-field">
+              <span class="snap-field-label">Vendor</span>
+              <span class="snap-field-value">Home Depot</span>
+            </div>
+            <div class="snap-field">
+              <span class="snap-field-label">Date</span>
+              <span class="snap-field-value">May 19</span>
+            </div>
+            <div class="snap-field is-suggested is-full">
+              <span class="snap-field-label">Category · suggested</span>
+              <span class="snap-field-value"><span class="crumb">Materials</span><span class="crumb-sep">›</span><span class="leaf">Hardware</span></span>
+            </div>
+            <div class="snap-field">
+              <span class="snap-field-label">GST</span>
+              <span class="snap-field-value">$9.93</span>
+            </div>
+            <div class="snap-field">
+              <span class="snap-field-label">Paid by</span>
+              <span class="snap-field-value"><span style="font-family: var(--mono); color: var(--muted); font-size: 12px;">Visa ····4318</span></span>
+            </div>
+          </div>
+
+          <div class="snap-actions">
+            <button class="snap-btn snap-btn-ghost">Edit</button>
+            <button class="snap-btn snap-btn-primary"><svg><use href="#i-check"/></svg>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!--  PHONE 3 — /expenses/gst · GST mobile                    -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="mark">Phone 3</span>
+      <span class="name">GST · with BN gaps</span>
+      <span class="note">/expenses/gst</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:42</span>
+          <span class="island"></span>
+          <span class="right">
+            <span style="font-weight:700;">●●●●</span>
+            <span style="font-family:var(--sans);">5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <div class="app-header">
+          <div class="app-title-row">
+            <button class="app-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+            <div class="app-title-center">
+              <span class="app-title is-md">GST/HST remittance</span>
+              <span class="app-sub">Bookkeeping aid · not a CRA filing tool</span>
+            </div>
+            <div class="app-actions">
+              <button class="icon-btn" aria-label="Export"><svg><use href="#i-download"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Period -->
+        <div class="gst-period-strip">
+          <button class="gst-period-pill">Last quarter · Q1 2026 · Jan–Mar <svg><use href="#i-chevron-down"/></svg></button>
+        </div>
+
+        <!-- Body scroll -->
+        <div class="body-scroll" style="background: var(--bg);">
+
+          <!-- Position -->
+          <div class="gst-position-mobile">
+            <span class="gst-mobile-eb">Net owed to CRA · Q1 2026 · filing period</span>
+            <div class="gst-mobile-net">$4,800<span class="cents">.00</span></div>
+            <span class="gst-mobile-due">Filing was due <strong style="color: var(--ink); font-weight: 700;">Apr 30</strong> · <strong style="color: var(--warn); font-weight: 700;">overdue</strong></span>
+            <div class="gst-mobile-row">
+              <div class="pair">
+                <span class="eb">Collected</span>
+                <span class="v">$9,720<span class="cents">.00</span></span>
+              </div>
+              <div class="pair">
+                <span class="eb">ITCs</span>
+                <span class="v">$4,920<span class="cents">.00</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Henry warn -->
+          <div class="gst-mobile-warn">
+            <div class="gst-mobile-warn-head">
+              <div class="gst-mobile-warn-mark"><svg><use href="#i-sparkles"/></svg></div>
+              <div style="flex: 1; min-width: 0;">
+                <span class="gst-mobile-warn-eb">✦ Henry · CRA risk</span>
+                <span class="gst-mobile-warn-title">3 ITCs missing vendor BN</span>
+                <div class="gst-mobile-warn-help">$420 GST at risk — CRA can deny these without the vendor&rsquo;s BN.</div>
+              </div>
+            </div>
+            <div class="gst-mobile-warn-list">
+              <div class="gst-mobile-warn-item">
+                <div>
+                  <div class="vendor">Trading Post Café</div>
+                  <div class="where">Overhead · Mar 28</div>
+                </div>
+                <div class="gst">$14<span class="cents">.96</span></div>
+              </div>
+              <div class="gst-mobile-warn-item">
+                <div>
+                  <div class="vendor">Wesco Bins Ltd.</div>
+                  <div class="where">Bill · Hillcrest Kitchen · Mar 14</div>
+                </div>
+                <div class="gst">$135<span class="cents">.71</span></div>
+              </div>
+              <div class="gst-mobile-warn-item">
+                <div>
+                  <div class="vendor">Westcoast Drywall</div>
+                  <div class="where">Expense · Donahue · Feb 22</div>
+                </div>
+                <div class="gst">$269<span class="cents">.36</span></div>
+              </div>
+            </div>
+            <button class="gst-mobile-warn-action">
+              <svg><use href="#i-alert"/></svg>
+              Fix these 3 before filing
+            </button>
+          </div>
+
+          <!-- Overhead breakdown (collapsed) -->
+          <div class="gst-breakdown-mobile">
+            <div class="gst-breakdown-mobile-head">
+              <div class="gst-breakdown-mobile-head-l">
+                <span class="eb">ITC · Overhead</span>
+                <span class="name">8 categories</span>
+              </div>
+              <div class="total-row">
+                <span class="total">$740<span class="cents">.18</span></span>
+                <svg class="chev"><use href="#i-chevron-down"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project breakdown (expanded) -->
+          <div class="gst-breakdown-mobile">
+            <div class="gst-breakdown-mobile-head">
+              <div class="gst-breakdown-mobile-head-l">
+                <span class="eb">ITC · Project work</span>
+                <span class="name">3 projects</span>
+              </div>
+              <div class="total-row">
+                <span class="total">$4,180<span class="cents">.00</span></span>
+                <svg class="chev is-open"><use href="#i-chevron-down"/></svg>
+              </div>
+            </div>
+            <div class="gst-breakdown-mobile-body">
+              <div class="gst-breakdown-mobile-line">
+                <span class="lbl">Hillcrest Kitchen Remodel <span class="crumb" style="display:block; font-size:11px;">Helen Chao · 6 items</span></span>
+                <span class="v">$1,921<span class="cents">.00</span></span>
+              </div>
+              <div class="gst-breakdown-mobile-line">
+                <span class="lbl">Donahue Basement <span class="crumb" style="display:block; font-size:11px;">7 items</span></span>
+                <span class="v">$1,430<span class="cents">.50</span></span>
+              </div>
+              <div class="gst-breakdown-mobile-line">
+                <span class="lbl">Petrov Bathroom Reno <span class="crumb" style="display:block; font-size:11px;">3 items</span></span>
+                <span class="v">$828<span class="cents">.50</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Disclaimer -->
+          <div class="gst-disclaimer-mobile">
+            <strong>Not a CRA filing tool.</strong> HeyHenry doesn&rsquo;t file or remit — these numbers are everything your bookkeeper needs for Form GST34.
+          </div>
+
+          <!-- Action bar -->
+          <div class="gst-actions-mobile">
+            <button class="btn btn-ghost"><svg><use href="#i-download"/></svg>CSV</button>
+            <button class="btn btn-primary"><svg><use href="#i-check"/></svg>Mark as filed</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!--  PHONE 4 — Log expense (manual form)                     -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="mark">Phone 4</span>
+      <span class="name">Log expense · manual</span>
+      <span class="note">/expenses/new</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:42</span>
+          <span class="island"></span>
+          <span class="right">
+            <span style="font-weight:700;">●●●●</span>
+            <span style="font-family:var(--sans);">5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <div class="app-header">
+          <div class="app-title-row">
+            <button class="app-back" aria-label="Cancel"><svg><use href="#i-x"/></svg></button>
+            <div class="app-title-center is-centered">
+              <span class="app-title is-md">Log expense</span>
+              <span class="app-sub">Overhead · not tied to a project</span>
+            </div>
+            <div class="app-actions">
+              <button class="icon-btn is-rust" aria-label="Snap"><svg><use href="#i-camera"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="body-scroll" style="background: var(--bg); padding-bottom: 140px;">
+
+          <!-- Amount + GST split -->
+          <div class="form-amount-row">
+            <div style="display:flex; align-items:center; gap: 8px;">
+              <span class="eb">Total</span>
+              <button class="gst-split-pill"><svg><use href="#i-sparkles"/></svg>5% GST auto-split</button>
+            </div>
+            <span class="v">$208<span class="cents">.50</span></span>
+            <div class="splits">
+              <span class="pair">PRE-TAX <span class="v">$198.57</span></span>
+              <span class="pair">GST <span class="v">$9.93</span></span>
+            </div>
+          </div>
+
+          <!-- Receipt thumb attached -->
+          <div class="form-receipt-row">
+            <div class="form-receipt-thumb">
+              <span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span>
+            </div>
+            <div class="form-receipt-meta">
+              <span class="name">IMG_2426.heic</span>
+              <span class="stamp"><svg><use href="#i-check"/></svg>Henry read this</span>
+            </div>
+            <button class="form-receipt-replace">Replace</button>
+          </div>
+
+          <!-- Form fields -->
+          <div class="form-section">
+            <div class="form-eyebrow">Details</div>
+            <div class="form-card">
+              <div class="form-row">
+                <span class="form-row-label">Vendor</span>
+                <input class="form-row-value" type="text" value="Home Depot" />
+              </div>
+              <div class="form-row">
+                <span class="form-row-label">Category · suggested by vendor</span>
+                <div class="form-row-select">
+                  <span class="form-row-value" style="font-size: 14px;"><span style="color: var(--muted); font-weight: 500;">Materials</span> <span style="color: var(--faint); margin: 0 2px;">›</span> Hardware</span>
+                  <svg class="chev"><use href="#i-chevron-down"/></svg>
+                </div>
+                <span class="form-row-helper">✦ Henry: Home Depot → Materials (last 14 receipts)</span>
+              </div>
+              <div class="form-row">
+                <span class="form-row-label">Date</span>
+                <div class="form-row-select">
+                  <span class="form-row-value" style="font-size: 14px;">May 19, 2026</span>
+                  <svg class="chev"><use href="#i-chevron-down"/></svg>
+                </div>
+              </div>
+              <div class="form-row">
+                <span class="form-row-label">Paid by</span>
+                <div class="form-row-select">
+                  <span class="form-row-value" style="font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span class="paid-pill-mini"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span>
+                    <span style="color: var(--muted); font-weight: 500; font-size: 12px;">default</span>
+                  </span>
+                  <svg class="chev"><use href="#i-chevron-down"/></svg>
+                </div>
+              </div>
+              <div class="form-row">
+                <span class="form-row-label">Vendor BN <span style="color: var(--faint); margin-left: 4px; text-transform: none; font-weight: 500;">— required for ITC ≥ $30</span></span>
+                <input class="form-row-value" style="font-size: 14px; font-family: var(--mono); font-weight: 600;" type="text" value="12345 6789 RT0001" />
+              </div>
+              <div class="form-row">
+                <span class="form-row-label">Description · optional</span>
+                <input class="form-row-value" style="font-size: 14px;" type="text" value="Shop racking + bin sleeves" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Sticky submit -->
+        <div class="form-submit-bar">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary"><svg style="width:15px;height:15px;"><use href="#i-check"/></svg>Save expense</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!--  PHONE 5 — Filter bottom sheet (over the ledger)         -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="mark">Phone 5</span>
+      <span class="name">Filter sheet · bottom-up</span>
+      <span class="note">/expenses (sheet open)</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:42</span>
+          <span class="island"></span>
+          <span class="right">
+            <span style="font-weight:700;">●●●●</span>
+            <span style="font-family:var(--sans);">5G</span>
+            <span class="battery"></span>
+          </span>
+        </div>
+
+        <!-- Behind: dim header -->
+        <div class="behind-ledger" style="background: var(--chrome); padding: 12px 16px; border-bottom: 1px solid var(--hair); flex-shrink: 0;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: -0.025em;">Expenses</div>
+              <div style="font-size: 14px; color: var(--muted); margin-top: 2px;">37 this quarter · $8,420 total</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Behind: scrim -->
+        <div class="behind-ledger" style="flex: 1; min-height: 0; background: var(--bg); position: relative;">
+          <div style="padding: 14px 16px; opacity: 0.55;">
+            <div style="background: var(--card); border: 1px solid var(--hair); border-radius: 10px; padding: 14px; height: 90px;"></div>
+          </div>
+        </div>
+
+        <!-- Veil -->
+        <div class="sheet-veil"></div>
+
+        <!-- Bottom sheet -->
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-head">
+            <span class="sheet-title">Filter expenses</span>
+            <button class="sheet-close" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+          </div>
+
+          <div class="sheet-group">
+            <span class="sheet-group-label">Period</span>
+            <div class="sheet-chip-row">
+              <span class="sheet-chip">This week</span>
+              <span class="sheet-chip">This month</span>
+              <span class="sheet-chip is-on">This quarter</span>
+              <span class="sheet-chip">Last quarter</span>
+              <span class="sheet-chip">Custom…</span>
+            </div>
+          </div>
+
+          <div class="sheet-group">
+            <span class="sheet-group-label">Category</span>
+            <div class="sheet-chip-row">
+              <span class="sheet-chip is-on">All</span>
+              <span class="sheet-chip">Vehicle</span>
+              <span class="sheet-chip">Materials</span>
+              <span class="sheet-chip">Office</span>
+              <span class="sheet-chip">Tools</span>
+              <span class="sheet-chip">Insurance</span>
+              <span class="sheet-chip">Marketing</span>
+            </div>
+          </div>
+
+          <div class="sheet-group">
+            <span class="sheet-group-label">Paid by</span>
+            <div class="sheet-chip-row">
+              <span class="sheet-chip is-on">All</span>
+              <span class="sheet-chip">Visa ····4318</span>
+              <span class="sheet-chip">AmEx ····2001</span>
+              <span class="sheet-chip">Cash</span>
+              <span class="sheet-chip">EFT</span>
+            </div>
+          </div>
+
+          <div class="sheet-toggle-row">
+            <div class="info">
+              <span class="lbl">Uncategorized only</span>
+              <span class="sub">5 expenses need a category</span>
+            </div>
+            <div class="sheet-toggle" role="switch" aria-checked="true"></div>
+          </div>
+
+          <div class="sheet-foot">
+            <button class="sheet-btn sheet-btn-ghost">Reset</button>
+            <button class="sheet-btn sheet-btn-primary">Show 5 expenses</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

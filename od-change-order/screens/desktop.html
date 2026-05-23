@@ -1,0 +1,2476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Change Order — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  /* ───── Frame divider (OD chrome — outside the product) ─────
+     Per-frame eyebrow + title bar so each frame reads as its own
+     deliverable. Sits BETWEEN frames, not inside them. */
+  .frame-divider {
+    max-width: 1440px;
+    margin: 56px auto 12px;
+    padding: 0 28px;
+    display: flex; align-items: baseline; gap: 18px;
+    flex-wrap: wrap;
+  }
+  .frame-divider:first-child { margin-top: 32px; }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* ───── Shell (product chrome) ───── */
+  .shell {
+    display: grid; grid-template-columns: 228px 1fr;
+    max-width: 1440px;
+    width: 100%;
+    margin: 0 auto;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(10,10,10,0.04);
+  }
+
+  /* ───── Sidebar ───── */
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    min-height: 920px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust);
+    color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
+  .org-avatar {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-sm { height: 28px; padding: 0 9px; font-size: 12px; }
+  .btn-xs { height: 24px; padding: 0 8px; font-size: 11px; }
+  .btn-dashed {
+    background: transparent;
+    border: 1px dashed var(--rule);
+    color: var(--muted);
+  }
+  .btn .icon { width: 13px; height: 13px; }
+
+  /* ───── Main content ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 28px 60px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+
+  /* ───── Breadcrumb + page head ───── */
+  .crumbs {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .crumbs .crumb-sep { color: var(--faint); }
+  .crumbs .crumb-here { color: var(--ink); }
+  .page-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .page-title {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+    line-height: 1.15; color: var(--ink);
+  }
+  .page-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* ───── Project sub-tabs (Hub-locked IA, Budget active) ───── */
+  .subtabs {
+    display: flex; align-items: center; gap: 2px;
+    border-bottom: 1px solid var(--hair);
+    overflow: visible;
+  }
+  .subtab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px 11px;
+    font-size: 14px; font-weight: 500;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    position: relative;
+  }
+  .subtab.active {
+    color: var(--ink); font-weight: 600;
+    border-bottom-color: var(--ink);
+  }
+  .subtab .badge {
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+  .subtab.active .badge { background: var(--rust-soft); color: var(--rust); }
+
+  /* ───── Sticky impact bar (the editor hero) ───── */
+  .impact-bar {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: minmax(260px, 1.1fr) minmax(220px, 1fr) auto;
+    gap: 24px;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(10,10,10,0.03);
+  }
+  .impact-block { display: flex; flex-direction: column; gap: 2px; }
+  .impact-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .impact-value {
+    font-size: 28px; font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .impact-value .cents { font-size: 16px; color: var(--muted); font-weight: 500; }
+  .impact-value .sign { color: var(--muted); margin-right: 2px; font-weight: 600; }
+  .impact-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  /* Operator-only margin read — mono whisper, warn-soft when slipping */
+  .margin-read {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--warn-soft);
+    border: 1px solid rgba(180, 83, 9, 0.2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--warn);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    width: max-content;
+  }
+  .margin-read .eye {
+    width: 11px; height: 11px;
+    color: var(--warn);
+  }
+  .margin-read .margin-pct { color: var(--ink); font-weight: 700; }
+  .margin-read .ops-only {
+    background: var(--ink); color: var(--warn-soft);
+    padding: 1px 5px; border-radius: 3px;
+    font-size: 10px;
+  }
+
+  .impact-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ───── Metadata card ───── */
+  .meta-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+  }
+  .meta-field { display: flex; flex-direction: column; gap: 6px; }
+  .meta-field.full { grid-column: 1 / -1; }
+  .meta-field label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .meta-field .req { color: var(--rust); margin-left: 4px; }
+  .input, .textarea, .select-input {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    padding: 8px 10px;
+    font: inherit;
+    color: var(--ink);
+    font-weight: 500;
+    width: 100%;
+  }
+  .input.filled { background: #FBF6EC; }
+  .textarea { min-height: 70px; resize: vertical; }
+  .input-row { display: flex; align-items: center; gap: 8px; }
+  .input-suffix {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  /* ───── Mgmt-fee override (warn-soft) ───── */
+  .mgmt-override {
+    background: var(--warn-soft);
+    border: 1px solid rgba(180, 83, 9, 0.18);
+    border-radius: 10px;
+    padding: 12px 14px;
+    grid-column: 1 / -1;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .mgmt-override-row {
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .mgmt-override-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .mgmt-override input {
+    background: var(--card);
+    border: 1px solid rgba(180, 83, 9, 0.25);
+    border-radius: 7px;
+    padding: 4px 8px;
+    width: 80px;
+    text-align: right;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .mgmt-override .reason-input {
+    width: auto; flex: 1; min-width: 280px;
+    text-align: left;
+  }
+  .mgmt-override-help {
+    font-size: 12px; color: var(--warn);
+  }
+
+  /* ───── Section / category / diff table ───── */
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: baseline; justify-content: space-between;
+    background: var(--chrome);
+  }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-meta {
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .section-meta strong {
+    color: var(--ink); font-weight: 700;
+  }
+
+  /* Column header */
+  .col-head {
+    display: grid;
+    grid-template-columns: 28px minmax(280px, 1.5fr) 110px 110px 130px 130px 32px;
+    gap: 12px;
+    padding: 8px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--chrome);
+    align-items: center;
+  }
+  .col-head > div {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .col-head .num { text-align: right; }
+
+  /* Category row */
+  .cat-row {
+    display: grid;
+    grid-template-columns: 28px minmax(280px, 1.5fr) 110px 110px 130px 130px 32px;
+    gap: 12px;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--hair);
+    align-items: center;
+    background: #FBF6EC;
+  }
+  .cat-row .chev {
+    color: var(--ink-2); width: 14px; height: 14px;
+  }
+  .cat-name {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .cat-desc {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px;
+  }
+  .cat-envelope-cell {
+    text-align: right;
+    grid-column: 5 / 7;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  }
+  .env-input {
+    width: 116px;
+    text-align: right;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 4px 8px;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .env-input[disabled] {
+    color: var(--faint);
+    background: transparent;
+    border-color: transparent;
+    text-align: right;
+  }
+  .env-input-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Note row under category */
+  .cat-note {
+    display: grid;
+    grid-template-columns: 28px 1fr 32px;
+    gap: 12px;
+    padding: 6px 18px 10px;
+    border-bottom: 1px solid var(--hair);
+    align-items: center;
+    background: #FBF6EC;
+  }
+  .cat-note input {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 5px 9px;
+    width: 100%;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+
+  /* Line row */
+  .line-row {
+    display: grid;
+    grid-template-columns: 28px minmax(280px, 1.5fr) 110px 110px 130px 130px 32px;
+    gap: 12px;
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--hair);
+    align-items: center;
+  }
+  .line-row:last-child { border-bottom: 0; }
+  .line-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .line-notes { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+  .line-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .line-cell .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .line-cell.total {
+    font-weight: 600; color: var(--ink);
+  }
+  .line-cell.muted { color: var(--muted); }
+  .line-cell.dim { color: var(--faint); }
+  .line-cell input {
+    width: 90px;
+    text-align: right;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 4px 8px;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .line-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--faint);
+    cursor: pointer;
+    width: 24px; height: 24px;
+    display: inline-grid; place-items: center;
+    border-radius: 5px;
+  }
+  .line-icon-btn:hover { background: var(--chip-fill); color: var(--ink); }
+  .line-icon-btn svg { width: 12px; height: 12px; }
+
+  /* Action chip (the diff-action palette) ─────────────────────────
+     ONE intentional tone per action, label + glyph paired so we are
+     never color-only. Used identically in editor + public diff view. */
+  .act {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+  .act .gly {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 0.8;
+  }
+  .act-add    { background: var(--ok-soft);    color: var(--ok);    border-color: rgba(21, 128, 61, 0.2); }
+  .act-change { background: var(--info-soft);  color: var(--info);  border-color: rgba(30, 64, 175, 0.2); }
+  .act-remove { background: var(--danger-soft);color: var(--danger);border-color: rgba(185, 28, 28, 0.2); }
+  .act-budget { background: var(--chip-fill);  color: var(--muted); border-color: var(--rule); }
+
+  /* Changed-row tints — subtle wash so the diff is legible at a glance */
+  .line-row.is-add    { background: rgba(220, 252, 231, 0.32); }
+  .line-row.is-change { background: rgba(230, 237, 250, 0.32); }
+  .line-row.is-remove { background: rgba(254, 226, 226, 0.32); }
+
+  .line-was {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  .line-was strong {
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .line-label .strike { text-decoration: line-through; text-decoration-color: var(--danger); }
+
+  /* The label+meta cell inside a line row stacks label / chips / was */
+  .line-id {
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  }
+  .line-id-top {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Delta cell — the visible Δ column on every line */
+  .delta {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+  }
+  .delta-plus  { color: var(--ink); }
+  .delta-minus { color: var(--ok); }
+  .delta-zero  { color: var(--faint); font-weight: 500; }
+
+  /* + Add line footer inside a category */
+  .add-line-row {
+    grid-column: 1 / -1;
+    padding: 8px 18px 10px;
+    border-bottom: 1px solid var(--hair);
+  }
+
+  /* ───── Henry chrome ───── */
+  .henry-prompt {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    border-left: 3px solid var(--rust);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .henry-mark {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .henry-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 8px;
+  }
+  .henry-body { flex: 1; font-size: 14px; color: var(--ink-2); }
+  .henry-body strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Frame 2 — Lifecycle states sampler ───── */
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+  .state-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    min-height: 360px;
+  }
+  .state-head {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .state-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .state-title {
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-top: 4px;
+  }
+  .state-sub {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px;
+  }
+  .state-body {
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    flex: 1;
+  }
+
+  /* Lifecycle status badges (separate from diff-action palette) */
+  .lc {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .lc .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .lc-draft   { background: var(--chip-fill);   color: var(--muted); }
+  .lc-draft   .dot { background: var(--muted); }
+  .lc-pending { background: var(--warn-soft);   color: var(--warn); border-color: rgba(180, 83, 9, 0.18); }
+  .lc-pending .dot { background: var(--warn); }
+  .lc-approved{ background: var(--ok-soft);     color: var(--ok); border-color: rgba(21, 128, 61, 0.18); }
+  .lc-approved.dot { background: var(--ok); }
+  .lc-approved .dot { background: var(--ok); }
+  .lc-declined{ background: var(--danger-soft); color: var(--danger); border-color: rgba(185, 28, 28, 0.18); }
+  .lc-declined .dot { background: var(--danger); }
+  .lc-voided  { background: var(--chip-fill);   color: var(--faint); }
+  .lc-voided  .dot { background: var(--faint); }
+  .lc-offline { background: var(--chip-fill);   color: var(--ink-2); border-color: var(--rule); }
+  .lc-offline .dot { background: var(--ink-2); }
+  .lc-loading { background: var(--chip-fill);   color: var(--muted); }
+  .lc-loading .dot {
+    background: var(--muted);
+    animation: skel-pulse 1.4s ease-in-out infinite;
+  }
+
+  /* Skeleton bars (loading state) */
+  .skel {
+    background: linear-gradient(90deg,
+      var(--chip-fill) 0%,
+      #F5EBD2 50%,
+      var(--chip-fill) 100%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    height: 12px;
+    animation: skel-shimmer 1.6s ease-in-out infinite;
+  }
+  .skel.tall    { height: 20px; border-radius: 7px; }
+  .skel.title   { height: 16px; width: 70%; }
+  .skel.sub     { height: 11px; width: 50%; }
+  .skel.row     { height: 12px; width: 100%; }
+  .skel.row-sm  { height: 12px; width: 60%; }
+  .skel.btn     { height: 28px; width: 110px; border-radius: 9px; }
+  @keyframes skel-shimmer {
+    0%   { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
+  @keyframes skel-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
+  }
+
+  /* State-specific banners */
+  .banner {
+    border: 1px solid;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .banner-ok      { background: var(--ok-soft);     border-color: rgba(21, 128, 61, 0.2);   color: var(--ok); }
+  .banner-warn    { background: var(--warn-soft);   border-color: rgba(180, 83, 9, 0.2);    color: var(--warn); }
+  .banner-danger  { background: var(--danger-soft); border-color: rgba(185, 28, 28, 0.2);   color: var(--danger); }
+  .banner-info    { background: var(--info-soft);   border-color: rgba(30, 64, 175, 0.2);   color: var(--info); }
+  .banner strong { color: inherit; font-weight: 700; }
+  .banner-icon { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  .state-meta-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--muted);
+  }
+  .state-meta-row strong { color: var(--ink); font-weight: 600; }
+
+  .state-money {
+    font-size: 20px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+  .state-money .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  .state-actions {
+    margin-top: auto;
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding-top: 8px;
+  }
+
+  .state-empty {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    text-align: center;
+    padding: 24px 16px;
+  }
+  .empty-mark {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .empty-mark svg { width: 16px; height: 16px; }
+  .empty-text {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 220px;
+    line-height: 1.5;
+  }
+
+  /* ───── Frame 3 — Send preview ───── */
+  .send-frame {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: 1fr 540px;
+    gap: 20px;
+    align-items: start;
+  }
+  .send-doc {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .send-doc-head {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--chrome);
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .send-doc-head .doc-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .send-doc-head .doc-title {
+    font-size: 18px; font-weight: 700;
+    color: var(--ink);
+    margin-top: 4px;
+    letter-spacing: -0.015em;
+  }
+  .send-doc-body {
+    padding: 22px 24px;
+    display: flex; flex-direction: column; gap: 18px;
+    background: #FBF6EC;
+  }
+  .preview-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .preview-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .preview-business {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .preview-title {
+    font-size: 18px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin-top: 4px;
+  }
+  .preview-why {
+    background: var(--rust-soft);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px;
+    margin-top: 12px;
+  }
+  .preview-why .why-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .preview-why .why-body {
+    margin-top: 4px;
+    font-size: 14px; color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .preview-impact {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--hair);
+  }
+  .preview-impact-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .preview-impact-value {
+    font-size: 22px; font-weight: 700;
+    color: var(--ink);
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+  .preview-impact-value .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .preview-impact-sub {
+    font-size: 12px; color: var(--muted); margin-top: 4px;
+  }
+  .preview-impact-sub strong { color: var(--ink); font-weight: 600; }
+
+  .send-controls {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 20px 22px;
+    display: flex; flex-direction: column; gap: 18px;
+    position: sticky;
+    top: 16px;
+  }
+  .send-controls h3 {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .control-group { display: flex; flex-direction: column; gap: 8px; }
+  .control-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .recipient-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    background: #FBF6EC;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .recipient-row.is-primary {
+    background: var(--card);
+  }
+  .recipient-row input[type="checkbox"] {
+    width: 14px; height: 14px;
+    accent-color: var(--rust);
+  }
+  .recipient-row .role {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .channels-row {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--info-soft);
+    border: 1px solid rgba(30, 64, 175, 0.18);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--info);
+  }
+  .channels-row strong { color: var(--info); font-weight: 700; }
+  .channels-row svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .copy-link-row {
+    display: flex; align-items: stretch;
+    background: #FBF6EC;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .copy-link-text {
+    flex: 1;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    background: transparent;
+    border: none;
+    outline: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .copy-link-btn {
+    border: none; border-left: 1px solid var(--hair);
+    background: var(--card);
+    padding: 0 14px;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .send-cta {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 18px;
+    background: var(--rust);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+  }
+  .send-cta svg { width: 14px; height: 14px; }
+  .send-note {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.45;
+  }
+
+  /* ───── Frame 4 — Public approval (browser chrome) ───── */
+  .browser {
+    max-width: 920px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 30px rgba(10,10,10,0.06);
+  }
+  .browser-chrome {
+    background: #ECE3D0;
+    border-bottom: 1px solid var(--hair);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .traffic {
+    display: flex; gap: 6px;
+  }
+  .traffic .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+  }
+  .traffic .red    { background: #ED6A5F; }
+  .traffic .yellow { background: #F5BD4F; }
+  .traffic .green  { background: #61C554; }
+  .browser-url {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    display: flex; align-items: center; gap: 8px;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+  .browser-url .lock { width: 11px; height: 11px; color: var(--ok); }
+  .browser-url .url-host { color: var(--faint); }
+  .browser-url .url-path { color: var(--ink); font-weight: 600; }
+  .browser-body {
+    background: var(--bg);
+    padding: 36px 56px 56px;
+  }
+  .pub-doc {
+    max-width: 680px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 40px 48px 36px;
+  }
+  .pub-head {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .pub-business {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+  .pub-title {
+    font-size: 28px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.025em;
+    margin-top: 6px;
+    line-height: 1.15;
+  }
+  .pub-project {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .pub-section { margin-top: 24px; }
+  .pub-section + .pub-section { margin-top: 22px; }
+
+  .pub-h2 {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+  .pub-prose {
+    font-size: 14px; line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .pub-why-card {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.18);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .pub-why-card .pub-h2 {
+    color: var(--ink);
+  }
+  .pub-impact-card {
+    background: #FBF6EC;
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .pub-impact-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 18px;
+  }
+  .pub-impact-main .pub-impact-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .pub-impact-main .pub-impact-value {
+    font-size: 30px; font-weight: 700;
+    color: var(--ink);
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+  .pub-impact-main .pub-impact-value .cents {
+    font-size: 16px; color: var(--muted); font-weight: 500;
+  }
+  .pub-impact-main .pub-impact-sub {
+    font-size: 14px; color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .pub-impact-main .pub-impact-sub strong {
+    color: var(--ink); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .pub-impact-main .pub-impact-sub .was {
+    color: var(--muted);
+    font-weight: 500;
+    text-decoration: line-through;
+    text-decoration-color: rgba(87, 83, 75, 0.5);
+  }
+  .pub-fee-table {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 14px;
+  }
+  .pub-fee-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+    color: var(--ink-2);
+  }
+  .pub-fee-row .lbl { color: var(--muted); }
+  .pub-fee-row .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .pub-fee-row.is-total {
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--hair);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .pub-fee-row.is-total .val {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  /* Public diff table — same act-* chips as the editor */
+  .pub-diff {
+    overflow: hidden;
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+  }
+  .pub-diff-head {
+    display: grid;
+    grid-template-columns: 92px 1fr 96px 96px 96px;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #FBF6EC;
+    border-bottom: 1px solid var(--hair);
+  }
+  .pub-diff-head > div {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .pub-diff-head .num { text-align: right; }
+  .pub-diff-row {
+    display: grid;
+    grid-template-columns: 92px 1fr 96px 96px 96px;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hair);
+    align-items: start;
+    background: var(--card);
+  }
+  .pub-diff-row:last-child { border-bottom: 0; }
+  .pub-diff-row .pub-line-label {
+    font-size: 14px; font-weight: 500; color: var(--ink);
+  }
+  .pub-diff-row .pub-line-note {
+    font-size: 12px; color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+  .pub-diff-row .pub-cat {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .pub-diff-row .pub-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .pub-diff-row .pub-num.muted { color: var(--muted); }
+  .pub-diff-row .pub-num.dim   { color: var(--faint); }
+  .pub-diff-row .pub-num.delta { color: var(--ink); font-weight: 700; }
+  .pub-diff-row .pub-num.delta-minus { color: var(--ok); }
+
+  /* Notes by category (collapsible-style block on public) */
+  .pub-cat-notes {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    margin-top: 12px;
+  }
+  .pub-cat-note-row {
+    font-size: 14px; color: var(--ink-2);
+    display: flex; gap: 10px;
+  }
+  .pub-cat-note-row .cat {
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .pub-cat-note-row .body { color: var(--muted); font-style: italic; }
+
+  /* Approval form */
+  .pub-form {
+    background: #FBF6EC;
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-top: 24px;
+  }
+  .pub-form-h {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .pub-form-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .pub-form-actions {
+    display: flex; gap: 10px;
+    margin-top: 14px;
+  }
+  .pub-approve {
+    flex: 1;
+    height: 48px;
+    background: var(--rust);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .pub-decline {
+    flex: 1;
+    height: 48px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    font-size: 16px; font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .pub-form-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    padding: 10px 14px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    margin-top: 12px;
+  }
+  .pub-esig-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 14px;
+    font-size: 12px; color: var(--muted);
+  }
+  .pub-esig-row .sig-icon {
+    width: 14px; height: 14px;
+    color: var(--muted);
+  }
+
+  /* Three sub-state stacks for the public form pass */
+  .pub-mini-states {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .pub-mini-state {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .pub-mini-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .pub-mini-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .pub-mini-body { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .pub-mini-state.done {
+    background: var(--ok-soft);
+    border-color: rgba(21, 128, 61, 0.2);
+  }
+  .pub-mini-state.done .pub-mini-eyebrow { color: var(--ok); }
+  .pub-mini-state.done .pub-mini-title { color: var(--ok); }
+
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  </defs>
+</svg>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FRAME 1 — CO DIFF EDITOR (v2) — the hero
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 01</span>
+  <span class="label">CO Diff Editor &mdash; v2</span>
+  <span class="sub">Draft change order on a live project &middot; inside Budget tab &middot; sticky impact + operator margin read</span>
+</div>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices&hellip;</span>
+        <span class="chip-kbd">&#8984; K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <!-- Breadcrumb -->
+      <div class="crumbs">
+        <span>Projects</span>
+        <svg style="width:9px;height:9px;color:var(--faint);"><use href="#i-chevron-right"/></svg>
+        <span>Hillcrest Kitchen Remodel</span>
+        <svg style="width:9px;height:9px;color:var(--faint);"><use href="#i-chevron-right"/></svg>
+        <span>Budget</span>
+        <svg style="width:9px;height:9px;color:var(--faint);"><use href="#i-chevron-right"/></svg>
+        <span class="crumb-here">New change order</span>
+      </div>
+
+      <!-- Page head -->
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">Rotten subfloor + island pendant upgrade</h1>
+          <div class="page-sub">
+            <span class="lc lc-draft"><span class="dot"></span>Draft</span>
+            <span style="margin: 0 8px; color: var(--faint);">&middot;</span>
+            CO-3 &middot; Helen Chao &middot; Hillcrest Kitchen Remodel
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost"><svg class="icon"><use href="#i-trash"/></svg>Delete</button>
+          <button class="btn btn-ghost">Save as draft</button>
+          <button class="btn btn-primary">Save &amp; preview &rarr;</button>
+        </div>
+      </section>
+
+      <!-- Sub-tabs (Hub locked IA — Budget active, no top-level Changes tab) -->
+      <div class="subtabs" role="tablist" aria-label="Project sections">
+        <div class="subtab" role="tab">Overview</div>
+        <div class="subtab active" role="tab">
+          Budget
+          <span class="badge">CO &middot; draft</span>
+        </div>
+        <div class="subtab" role="tab">Spend</div>
+        <div class="subtab" role="tab">Labour</div>
+        <div class="subtab" role="tab">Schedule</div>
+        <div class="subtab" role="tab">Billing</div>
+        <div class="subtab" role="tab">Client</div>
+        <div class="subtab" role="tab">Photos</div>
+        <div class="subtab" role="tab">Documents</div>
+      </div>
+
+      <!-- Sticky impact bar -->
+      <section class="impact-bar" aria-label="Total cost impact">
+        <div class="impact-block">
+          <span class="impact-label">Total Cost Impact</span>
+          <span class="impact-value">
+            <span class="sign">+</span>$3,182<span class="cents">.50</span>
+          </span>
+          <span class="impact-sub">
+            Cost of work + 12% management fee &middot; <strong style="color:var(--ink);">+0.5 days</strong> timeline impact
+          </span>
+        </div>
+        <div class="impact-block">
+          <span class="impact-label">Operator view &mdash; not shown to customer</span>
+          <span class="margin-read">
+            <svg class="eye"><use href="#i-eye"/></svg>
+            <span>Margin on change &middot; <span class="margin-pct">22.4%</span></span>
+            <span class="ops-only">OPS</span>
+          </span>
+          <span class="impact-sub">Holds above the 18% project floor.</span>
+        </div>
+        <div class="impact-actions">
+          <button class="btn btn-ghost btn-sm">Discard edits</button>
+          <button class="btn btn-rust"><svg class="icon"><use href="#i-send"/></svg>Save &amp; preview</button>
+        </div>
+      </section>
+
+      <!-- Metadata card -->
+      <section class="meta-card" aria-label="Change-order metadata">
+        <div class="meta-field full">
+          <label for="co-title">Title</label>
+          <input id="co-title" class="input filled" type="text" value="Rotten subfloor + island pendant upgrade" />
+        </div>
+        <div class="meta-field full">
+          <label for="co-desc">Description <span style="font-weight:500; color:var(--muted); text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 11px;">(plain English &mdash; customer reads this)</span></label>
+          <textarea id="co-desc" class="textarea input filled">When we pulled the existing sink cabinet on Tuesday we found rot in two of the subfloor sheets behind it. Sound on the rest. We&rsquo;ll cut out and replace those two sheets before the new cabinets land Thursday. You also asked about swapping the four flush ceiling lights over the island for the brushed-nickel pendants you sent &mdash; that swap and the new wiring are in here too.</textarea>
+        </div>
+        <div class="meta-field">
+          <label for="co-reason">Reason <span style="font-weight:500; color:var(--muted); text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 11px;">(optional &mdash; internal)</span></label>
+          <input id="co-reason" class="input" type="text" value="Concealed condition + client selection upgrade" />
+        </div>
+        <div class="meta-field">
+          <label for="co-timeline">Timeline Impact (days)</label>
+          <div class="input-row">
+            <input id="co-timeline" class="input filled" type="number" value="0.5" step="0.5" style="max-width:120px;" />
+            <span class="input-suffix">days &middot; pushes substantial-completion to <strong style="color:var(--ink);">Jun&nbsp;14</strong></span>
+          </div>
+        </div>
+
+        <div class="mgmt-override">
+          <div class="mgmt-override-row">
+            <span class="mgmt-override-label">Management fee &middot; this CO</span>
+            <input type="number" value="12" step="0.5" />
+            <span class="input-suffix">%</span>
+            <span class="input-suffix" style="color:var(--ink-2);">
+              &equiv; <span class="tabular">$311.61</span> on this CO
+              <span style="color:var(--muted); margin-left:8px;">&middot; project default 15%</span>
+            </span>
+          </div>
+          <div class="mgmt-override-row">
+            <span class="mgmt-override-label">Reason <span class="req">required</span></span>
+            <input class="reason-input" type="text" value="Scaling back &mdash; concealed-condition CO; not a margin-padding moment with the customer." />
+          </div>
+          <div class="mgmt-override-help">
+            Recorded on the project audit trail. Admins see this; the customer never does.
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Section: Kitchen (existing categories, with diffs) ── -->
+      <section class="section-card" aria-label="Kitchen section">
+        <div class="section-header">
+          <span class="section-title">Kitchen</span>
+          <span class="section-meta">
+            Section total: <strong>$94,150.00</strong>
+            &middot; this CO: <strong style="color:var(--ink);">+$2,870.89</strong>
+          </span>
+        </div>
+
+        <div class="col-head">
+          <div></div>
+          <div>Category / line</div>
+          <div class="num">Qty</div>
+          <div class="num">Unit price</div>
+          <div class="num">Was</div>
+          <div class="num">Total / &Delta;</div>
+          <div></div>
+        </div>
+
+        <!-- Category 1: Flooring & subfloor (expanded — has an add) -->
+        <div class="cat-row">
+          <svg class="chev"><use href="#i-chevron-down"/></svg>
+          <div>
+            <div class="cat-name">Flooring &amp; subfloor</div>
+            <div class="cat-desc">Subfloor repair, underlayment, finish flooring &middot; <span class="tabular">v1 baseline 4 lines</span></div>
+          </div>
+          <div></div>
+          <div></div>
+          <div class="cat-envelope-cell">
+            <input class="env-input tabular" value="14,800.00" disabled />
+            <span class="env-input-hint">Implied by lines</span>
+          </div>
+          <div class="line-cell" style="text-align:right;">&nbsp;</div>
+          <div></div>
+        </div>
+        <div class="cat-note">
+          <div></div>
+          <input type="text" value="Concealed rot, found on demo. Client notified in person by the site lead (Dane)." placeholder="Note for this category (optional — shown to the customer)" />
+          <div></div>
+        </div>
+
+        <!-- ADD line — new -->
+        <div class="line-row is-add">
+          <div></div>
+          <div class="line-id">
+            <div class="line-id-top">
+              <span class="act act-add"><span class="gly">+</span>ADD</span>
+              <span class="line-label">Replace rotten subfloor &mdash; 2 sheets 3/4&Prime; T&amp;G</span>
+            </div>
+            <div class="line-notes">Behind sink cabinet &middot; tear-out, blocking, glue&amp;screw, level to existing.</div>
+          </div>
+          <div class="line-cell"><input value="2" /></div>
+          <div class="line-cell"><input value="285.00" /></div>
+          <div class="line-cell dim">&mdash;</div>
+          <div class="line-cell delta delta-plus">+$570<span class="cents">.00</span></div>
+          <div><button class="line-icon-btn" aria-label="Cancel add"><svg><use href="#i-x"/></svg></button></div>
+        </div>
+
+        <!-- ADD line — labour for subfloor -->
+        <div class="line-row is-add">
+          <div></div>
+          <div class="line-id">
+            <div class="line-id-top">
+              <span class="act act-add"><span class="gly">+</span>ADD</span>
+              <span class="line-label">Carpentry labour &mdash; subfloor repair</span>
+            </div>
+            <div class="line-notes">Half-day, 2 carpenters &middot; pushes cabinet drop to Thursday afternoon.</div>
+          </div>
+          <div class="line-cell"><input value="8" /></div>
+          <div class="line-cell"><input value="95.00" /></div>
+          <div class="line-cell dim">&mdash;</div>
+          <div class="line-cell delta delta-plus">+$760<span class="cents">.00</span></div>
+          <div><button class="line-icon-btn" aria-label="Cancel add"><svg><use href="#i-x"/></svg></button></div>
+        </div>
+
+        <!-- Unchanged context line (compact) -->
+        <div class="line-row">
+          <div></div>
+          <div class="line-id">
+            <div class="line-label">Engineered hardwood &mdash; white oak 5&Prime;</div>
+            <div class="line-notes">Mirage &middot; supply only.</div>
+          </div>
+          <div class="line-cell muted tabular">450 sqft</div>
+          <div class="line-cell muted">$11.20</div>
+          <div class="line-cell muted">&nbsp;</div>
+          <div class="line-cell total">$5,040<span class="cents">.00</span></div>
+          <div><button class="line-icon-btn" aria-label="Remove line"><svg><use href="#i-x"/></svg></button></div>
+        </div>
+
+        <div class="add-line-row">
+          <button class="btn btn-dashed btn-xs"><svg class="icon"><use href="#i-plus"/></svg>Add line to Flooring &amp; subfloor</button>
+        </div>
+
+        <!-- Category 2: Lighting (with a CHANGE + a REMOVE — the upgrade story) -->
+        <div class="cat-row">
+          <svg class="chev"><use href="#i-chevron-down"/></svg>
+          <div>
+            <div class="cat-name">Lighting</div>
+            <div class="cat-desc">Fixtures, drivers, install labour &middot; <span class="tabular">v1 baseline 6 lines</span></div>
+          </div>
+          <div></div>
+          <div></div>
+          <div class="cat-envelope-cell">
+            <input class="env-input tabular" value="3,820.00" disabled />
+            <span class="env-input-hint">Implied by lines</span>
+          </div>
+          <div></div>
+          <div></div>
+        </div>
+        <div class="cat-note">
+          <div></div>
+          <input type="text" value="Island fixtures swapped to client-selected pendants — pulled from her Pinterest board." placeholder="Note for this category (optional — shown to the customer)" />
+          <div></div>
+        </div>
+
+        <!-- REMOVE: 4 flush mounts being struck -->
+        <div class="line-row is-remove">
+          <div></div>
+          <div class="line-id">
+            <div class="line-id-top">
+              <span class="act act-remove"><span class="gly">&minus;</span>REMOVE</span>
+              <span class="line-label strike">Recessed ceiling light &mdash; 4&Prime; flush mount</span>
+            </div>
+            <div class="line-was">
+              <span class="mono" style="color:var(--muted);">was</span> <strong>4 ea</strong> &middot; <strong>$78.00</strong> ea &middot; <strong>$312.00</strong>
+            </div>
+            <div class="line-notes" style="margin-top: 6px;">Strike. Replaced by pendant run below.</div>
+          </div>
+          <div class="line-cell muted tabular" style="text-decoration:line-through;">4 ea</div>
+          <div class="line-cell muted" style="text-decoration:line-through;">$78.00</div>
+          <div class="line-cell muted tabular">$312.00</div>
+          <div class="line-cell delta delta-minus">&minus;$312<span class="cents">.00</span></div>
+          <div><button class="line-icon-btn" aria-label="Restore"><svg><use href="#i-undo"/></svg></button></div>
+        </div>
+
+        <!-- ADD: 3 pendants -->
+        <div class="line-row is-add">
+          <div></div>
+          <div class="line-id">
+            <div class="line-id-top">
+              <span class="act act-add"><span class="gly">+</span>ADD</span>
+              <span class="line-label">Brushed-nickel pendant &mdash; over island (Schoolhouse 8&Prime;)</span>
+            </div>
+            <div class="line-notes">Linked from Helen&rsquo;s Pinterest. Lead time confirmed.</div>
+          </div>
+          <div class="line-cell"><input value="3" /></div>
+          <div class="line-cell"><input value="220.00" /></div>
+          <div class="line-cell dim">&mdash;</div>
+          <div class="line-cell delta delta-plus">+$660<span class="cents">.00</span></div>
+          <div><button class="line-icon-btn" aria-label="Cancel add"><svg><use href="#i-x"/></svg></button></div>
+        </div>
+
+        <!-- CHANGE: electrical labour bumped to add pendant box + dimmer run -->
+        <div class="line-row is-change">
+          <div></div>
+          <div class="line-id">
+            <div class="line-id-top">
+              <span class="act act-change"><span class="gly">&harr;</span>CHANGE</span>
+              <span class="line-label">Electrician labour &mdash; rough &amp; trim</span>
+            </div>
+            <div class="line-was">
+              <span class="mono" style="color:var(--muted);">was</span> <strong>14 hr</strong> &middot; <strong>$110.00</strong>/hr &middot; <strong>$1,540.00</strong>
+            </div>
+            <div class="line-notes" style="margin-top: 6px;">+3 hr for pendant boxes + dedicated dimmer run.</div>
+          </div>
+          <div class="line-cell"><input value="17" /></div>
+          <div class="line-cell"><input value="110.00" /></div>
+          <div class="line-cell muted tabular">$1,540.00</div>
+          <div class="line-cell delta delta-plus">+$330<span class="cents">.00</span></div>
+          <div><button class="line-icon-btn" aria-label="Discard edit"><svg><use href="#i-x"/></svg></button></div>
+        </div>
+
+        <!-- BUDGET (modify_envelope): contingency cushion bumped -->
+        <div class="line-row">
+          <div></div>
+          <div class="line-id">
+            <div class="line-id-top">
+              <span class="act act-budget"><span class="gly">&#9633;</span>BUDGET</span>
+              <span class="line-label">Lighting contingency cushion</span>
+            </div>
+            <div class="line-was">
+              <span class="mono" style="color:var(--muted);">envelope was</span> <strong>$400.00</strong>
+            </div>
+          </div>
+          <div class="line-cell muted">&mdash;</div>
+          <div class="line-cell muted">&mdash;</div>
+          <div class="line-cell muted tabular">$400.00</div>
+          <div class="line-cell delta delta-plus">+$262<span class="cents">.89</span></div>
+          <div><button class="line-icon-btn" aria-label="Discard envelope edit"><svg><use href="#i-x"/></svg></button></div>
+        </div>
+
+        <div class="add-line-row">
+          <button class="btn btn-dashed btn-xs"><svg class="icon"><use href="#i-plus"/></svg>Add line to Lighting</button>
+        </div>
+
+        <!-- Category 3: Cabinetry (no edits in this CO — collapsed) -->
+        <div class="cat-row">
+          <svg class="chev"><use href="#i-chevron-right"/></svg>
+          <div>
+            <div class="cat-name">Cabinetry &amp; counters</div>
+            <div class="cat-desc">8 lines &middot; no edits on this CO</div>
+          </div>
+          <div></div>
+          <div></div>
+          <div class="cat-envelope-cell">
+            <input class="env-input tabular" value="42,300.00" />
+            <span class="env-input-hint">Editable envelope</span>
+          </div>
+          <div class="line-cell muted">&nbsp;</div>
+          <div></div>
+        </div>
+
+      </section>
+
+      <!-- ── Section: Plumbing (one ADD only) ── -->
+      <section class="section-card" aria-label="Plumbing section">
+        <div class="section-header">
+          <span class="section-title">Plumbing</span>
+          <span class="section-meta">
+            Section total: <strong>$18,600.00</strong>
+            &middot; this CO: <strong style="color:var(--ink);">+$311.61</strong>
+          </span>
+        </div>
+
+        <div class="col-head">
+          <div></div>
+          <div>Category / line</div>
+          <div class="num">Qty</div>
+          <div class="num">Unit price</div>
+          <div class="num">Was</div>
+          <div class="num">Total / &Delta;</div>
+          <div></div>
+        </div>
+
+        <div class="cat-row">
+          <svg class="chev"><use href="#i-chevron-down"/></svg>
+          <div>
+            <div class="cat-name">Rough plumbing</div>
+            <div class="cat-desc">Lines visible behind sink &middot; opportunistic.</div>
+          </div>
+          <div></div>
+          <div></div>
+          <div class="cat-envelope-cell">
+            <input class="env-input tabular" value="9,800.00" disabled />
+            <span class="env-input-hint">Implied by lines</span>
+          </div>
+          <div></div>
+          <div></div>
+        </div>
+        <div class="cat-note">
+          <div></div>
+          <input type="text" value="While the wall is open — added shutoff valve to dishwasher branch. Saves an emergency call in five years." placeholder="Note for this category (optional — shown to the customer)" />
+          <div></div>
+        </div>
+
+        <div class="line-row is-add">
+          <div></div>
+          <div class="line-id">
+            <div class="line-id-top">
+              <span class="act act-add"><span class="gly">+</span>ADD</span>
+              <span class="line-label">1/4-turn shutoff valve &mdash; dishwasher branch</span>
+            </div>
+            <div class="line-notes">Brass, installed &middot; counts against the rough-in envelope, not the appliances envelope.</div>
+          </div>
+          <div class="line-cell"><input value="1" /></div>
+          <div class="line-cell"><input value="311.61" /></div>
+          <div class="line-cell dim">&mdash;</div>
+          <div class="line-cell delta delta-plus">+$311<span class="cents">.61</span></div>
+          <div><button class="line-icon-btn" aria-label="Cancel add"><svg><use href="#i-x"/></svg></button></div>
+        </div>
+
+        <div class="add-line-row">
+          <button class="btn btn-dashed btn-xs"><svg class="icon"><use href="#i-plus"/></svg>Add line to Rough plumbing</button>
+        </div>
+      </section>
+
+      <button class="btn btn-dashed" style="align-self:flex-start;"><svg class="icon"><use href="#i-plus"/></svg>New section</button>
+
+      <p style="font-size:12px; color:var(--muted); margin-top:8px; max-width:62ch;">
+        Preview shows exactly what Helen will see. Nothing is sent until you click <strong style="color:var(--ink);">Send for Approval</strong> on the next screen.
+      </p>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FRAME 2 — LIFECYCLE STATES (sampler)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 02</span>
+  <span class="label">Lifecycle states</span>
+  <span class="sub">Draft &middot; Pending &middot; Approved (applied + now-billable nudge) &middot; Declined &middot; Empty &middot; Loading &middot; Offline</span>
+</div>
+
+<div class="states-grid">
+
+  <!-- DRAFT -->
+  <div class="state-card">
+    <div class="state-head">
+      <div class="state-eyebrow">CO-3 &middot; Hillcrest Kitchen</div>
+      <div class="state-title">Rotten subfloor + pendants</div>
+      <div class="state-sub">Helen Chao &middot; saved 9 min ago</div>
+    </div>
+    <div class="state-body">
+      <span class="lc lc-draft"><span class="dot"></span>Draft</span>
+      <div class="state-meta-row"><span>Total impact</span><strong>+$3,182.50</strong></div>
+      <div class="state-meta-row"><span>Timeline</span><strong>+0.5 days</strong></div>
+      <div class="state-meta-row"><span>Lines changed</span><strong>5 (3 add, 1 change, 1 remove)</strong></div>
+      <div class="state-actions">
+        <button class="btn btn-rust btn-sm"><svg class="icon"><use href="#i-send"/></svg>Send for approval</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-pencil"/></svg>Edit</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-trash"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PENDING APPROVAL -->
+  <div class="state-card">
+    <div class="state-head">
+      <div class="state-eyebrow">CO-3 &middot; Hillcrest Kitchen</div>
+      <div class="state-title">Rotten subfloor + pendants</div>
+      <div class="state-sub">Sent to Helen Chao &middot; 1h 14m ago</div>
+    </div>
+    <div class="state-body">
+      <span class="lc lc-pending"><span class="dot"></span>Pending approval</span>
+      <div class="banner banner-info">
+        <svg class="banner-icon"><use href="#i-mail"/></svg>
+        <div><strong>Email + SMS sent.</strong> Helen opened the link 23 min ago. Realtime &mdash; you&rsquo;ll see her reply here.</div>
+      </div>
+      <div class="state-meta-row"><span>Total impact</span><strong>+$3,182.50</strong></div>
+      <div class="state-meta-row"><span>Approval link</span><span class="mono tabular" style="color:var(--ink); font-size:11px;">/approve/r7q4&hellip;</span></div>
+      <div class="state-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-refresh"/></svg>Resend</button>
+        <button class="btn btn-ghost btn-sm">Mark approved</button>
+        <button class="btn btn-ghost btn-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLIED / APPROVED -->
+  <div class="state-card">
+    <div class="state-head">
+      <div class="state-eyebrow">CO-2 &middot; Hillcrest Kitchen</div>
+      <div class="state-title">Tile upgrade to porcelain</div>
+      <div class="state-sub">Approved by Helen Chao &middot; May 18</div>
+    </div>
+    <div class="state-body">
+      <span class="lc lc-approved"><span class="dot"></span>Approved</span>
+      <div class="banner banner-ok">
+        <svg class="banner-icon"><use href="#i-check"/></svg>
+        <div><strong>Applied to estimate.</strong> Budget updated &middot; contract baseline now <span class="mono" style="color:var(--ok);">v3</span>.</div>
+      </div>
+      <div class="state-meta-row"><span>Total impact</span><strong>+$1,420.00</strong></div>
+      <div class="state-meta-row"><span>e-signed</span><span style="color:var(--ink-2);">Helen Chao, May 18 10:42</span></div>
+      <!-- Henry: now-billable nudge (peach, ready-to-bill family) -->
+      <div class="henry-prompt" style="padding: 10px 12px;">
+        <div class="henry-mark" style="width:22px;height:22px;font-size:11px;">&#10026;</div>
+        <div class="henry-body" style="font-size:14px;">
+          <span class="henry-label">HENRY</span>
+          <strong>$1,420 now billable.</strong> Roll into draw 3?
+        </div>
+      </div>
+      <div class="state-actions">
+        <button class="btn btn-rust btn-sm">Add to draw 3</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECLINED -->
+  <div class="state-card">
+    <div class="state-head">
+      <div class="state-eyebrow">CO-1 &middot; Donahue Basement</div>
+      <div class="state-title">Mini-split heat-pump add</div>
+      <div class="state-sub">Declined by Lisa Donahue &middot; May 9</div>
+    </div>
+    <div class="state-body">
+      <span class="lc lc-declined"><span class="dot"></span>Declined</span>
+      <div class="banner banner-danger">
+        <svg class="banner-icon"><use href="#i-alert"/></svg>
+        <div>
+          <strong>Reason from Lisa:</strong> <span style="color:var(--ink-2);">&ldquo;Going to stick with the baseboards for now. Will revisit next year.&rdquo;</span>
+        </div>
+      </div>
+      <div class="state-meta-row"><span>Proposed impact</span><strong style="color:var(--muted); text-decoration: line-through; text-decoration-color: rgba(87,83,75,0.4);">+$4,200.00</strong></div>
+      <div class="state-meta-row"><span>Budget effect</span><strong>None</strong></div>
+      <div class="state-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-copy"/></svg>Clone to new draft</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPTY -->
+  <div class="state-card">
+    <div class="state-head">
+      <div class="state-eyebrow">Bandsma Cedar Deck</div>
+      <div class="state-title">No change orders yet</div>
+      <div class="state-sub">Contract baseline <span class="mono">v1</span></div>
+    </div>
+    <div class="state-body">
+      <div class="state-empty">
+        <div class="empty-mark"><svg><use href="#i-file"/></svg></div>
+        <div class="empty-text">
+          When the scope changes &mdash; rot, a client upgrade, an extra outlet &mdash; capture it here so it gets priced, agreed, and billed.
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:6px;"><svg class="icon"><use href="#i-plus"/></svg>New change order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING (skeleton) -->
+  <div class="state-card" aria-busy="true" aria-label="Loading change order">
+    <div class="state-head">
+      <div class="state-eyebrow">Loading&hellip;</div>
+      <div class="skel title" style="margin-top:6px;"></div>
+      <div class="skel sub" style="margin-top:6px;"></div>
+    </div>
+    <div class="state-body">
+      <span class="lc lc-loading"><span class="dot"></span>Fetching</span>
+      <div class="skel tall" style="margin-top:4px;"></div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+        <div class="skel row"></div>
+        <div class="skel row-sm"></div>
+        <div class="skel row"></div>
+      </div>
+      <div class="state-actions">
+        <div class="skel btn"></div>
+        <div class="skel btn" style="width:84px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR / OFFLINE — CO capture happens on site, no reception -->
+  <div class="state-card">
+    <div class="state-head">
+      <div class="state-eyebrow">CO-4 &middot; Hillcrest Kitchen</div>
+      <div class="state-title">Working offline</div>
+      <div class="state-sub">Drafted at the site &middot; no signal in the basement</div>
+    </div>
+    <div class="state-body">
+      <span class="lc lc-offline"><span class="dot"></span>Offline &mdash; saved locally</span>
+      <div class="banner banner-warn">
+        <svg class="banner-icon"><use href="#i-alert"/></svg>
+        <div><strong>No connection.</strong> Edits are saved on this device and will sync the moment you&rsquo;re back in range.</div>
+      </div>
+      <div class="state-meta-row"><span>Last sync</span><strong>4 min ago</strong></div>
+      <div class="state-meta-row"><span>Pending</span><strong>2 line edits, 1 photo</strong></div>
+      <div class="state-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-refresh"/></svg>Retry now</button>
+        <button class="btn btn-ghost btn-sm">Keep editing</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FRAME 3 — SEND PREVIEW (reuses the estimate send-bar pattern)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 03</span>
+  <span class="label">Send preview</span>
+  <span class="sub">What Helen will see, plus a copyable approval link &middot; email + SMS both go out</span>
+</div>
+
+<div class="send-frame">
+
+  <!-- LEFT: rendered customer doc preview -->
+  <div class="send-doc">
+    <div class="send-doc-head">
+      <div>
+        <div class="doc-eyebrow">Customer-facing preview &middot; this is what Helen will see</div>
+        <div class="doc-title">Change order &middot; Rotten subfloor + pendants</div>
+      </div>
+      <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-eye"/></svg>Open in new tab</button>
+    </div>
+    <div class="send-doc-body">
+      <div class="preview-card">
+        <div class="preview-title-row">
+          <div>
+            <div class="preview-business">Northbeam Build Co. &middot; Abbotsford, BC</div>
+            <div class="preview-title">Rotten subfloor + pendants</div>
+          </div>
+          <div class="lc lc-pending" style="background:var(--chip-fill); color:var(--muted); border-color:var(--rule);">Hillcrest Kitchen &middot; CO-3</div>
+        </div>
+
+        <!-- The new target piece: plain-English why -->
+        <div class="preview-why">
+          <div class="why-label">What&rsquo;s changing &amp; why</div>
+          <div class="why-body">
+            When we pulled the existing sink cabinet on Tuesday we found rot in two of the subfloor sheets behind it. The rest is sound. We&rsquo;ll cut and replace those two sheets before your new cabinets land Thursday. You also asked about swapping the four flush ceiling lights over the island for the brushed-nickel pendants you sent &mdash; that swap and the new wiring are in here too.
+          </div>
+        </div>
+
+        <div class="preview-impact">
+          <div>
+            <div class="preview-impact-label">Total cost impact</div>
+            <div class="preview-impact-value">+$3,182<span class="cents">.50</span></div>
+            <div class="preview-impact-sub">
+              New project total <strong>$167,182.50</strong> <span class="was">($164,000.00)</span>
+            </div>
+          </div>
+          <div>
+            <div class="preview-impact-label">Timeline impact</div>
+            <div class="preview-impact-value" style="color:var(--ink);">+0.5 days</div>
+            <div class="preview-impact-sub">Substantial completion <strong>Jun&nbsp;14</strong>.</div>
+          </div>
+        </div>
+
+        <!-- Fee breakdown (customer-visible — no cost/markup) -->
+        <div class="pub-fee-table" style="margin-top:14px;">
+          <div class="pub-fee-row"><span class="lbl">Cost of work</span><span class="val tabular">+$2,841.51</span></div>
+          <div class="pub-fee-row"><span class="lbl">Management fee (12.00%)</span><span class="val tabular">+$340.99</span></div>
+          <div class="pub-fee-row"><span class="lbl">GST (5% &middot; BC)</span><span class="val tabular">+$159.13</span></div>
+          <div class="pub-fee-row is-total"><span>Total</span><span class="val tabular">+$3,341.63</span></div>
+        </div>
+      </div>
+
+      <!-- Mini diff preview teaser — the full Before/After/Δ lives on the public page -->
+      <div class="preview-card" style="padding: 14px 18px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap: wrap;">
+          <span class="act act-add"><span class="gly">+</span>3 ADDED</span>
+          <span class="act act-change"><span class="gly">&harr;</span>1 CHANGED</span>
+          <span class="act act-remove"><span class="gly">&minus;</span>1 REMOVED</span>
+          <span class="act act-budget"><span class="gly">&#9633;</span>1 BUDGET</span>
+          <span style="margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:0.04em;">SEE FULL DIFF &rarr;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: send controls -->
+  <div class="send-controls">
+    <div>
+      <h3>Send change order</h3>
+      <div style="color:var(--muted); font-size:14px; margin-top:4px;">to Helen Chao, Hillcrest Kitchen Remodel</div>
+    </div>
+
+    <!-- Channels -->
+    <div class="channels-row">
+      <svg><use href="#i-mail"/></svg>
+      <svg><use href="#i-msg"/></svg>
+      <span><strong>Email + SMS</strong> &middot; both go out the moment you send. Same approval link in both.</span>
+    </div>
+
+    <!-- Recipients -->
+    <div class="control-group">
+      <span class="control-label">Recipients</span>
+      <div class="recipient-row is-primary">
+        <input type="checkbox" checked />
+        <span>helen.chao@example.com</span>
+        <span class="role">Primary</span>
+      </div>
+      <div class="recipient-row">
+        <input type="checkbox" checked />
+        <span>marcus.chao@example.com</span>
+        <span class="role">CC &middot; spouse</span>
+      </div>
+      <div class="recipient-row" style="padding:6px 10px;">
+        <input type="text" class="input" style="border:none; background:transparent; padding:0;" placeholder="Also CC (this send only)&hellip;" />
+      </div>
+      <div style="font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:0.04em;">
+        SMS &rarr; <span class="mono" style="color:var(--ink-2);">(604) 555&middot;0142</span> &middot; from Helen&rsquo;s contact
+      </div>
+    </div>
+
+    <!-- Personal note -->
+    <div class="control-group">
+      <span class="control-label">Personal note <span style="font-family:var(--sans); text-transform: none; letter-spacing:0; font-weight:500;">(optional)</span></span>
+      <textarea class="textarea input" rows="3" placeholder="e.g. Quick heads up — pulled the cabinet today and found something we should price properly. No surprise charges later this way.">Quick heads-up — pulled the cabinet today and found something we should price properly. No surprise charges later. The pendants you picked are in here too.</textarea>
+    </div>
+
+    <!-- Approval link -->
+    <div class="control-group">
+      <span class="control-label">Approval link <span style="font-family:var(--sans); text-transform: none; letter-spacing:0; font-weight:500;">(copy + text it yourself if you want)</span></span>
+      <div class="copy-link-row">
+        <input class="copy-link-text" value="heyhenry.app/approve/r7q4-x9w2-mbnq" readonly />
+        <button class="copy-link-btn"><svg style="width:11px;height:11px;"><use href="#i-copy"/></svg>Copy</button>
+      </div>
+    </div>
+
+    <!-- CTAs -->
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn btn-ghost" style="flex:1;">Back to edit</button>
+      <button class="send-cta" style="flex:2;"><svg><use href="#i-send"/></svg>Send to Helen</button>
+    </div>
+
+    <div class="send-note">
+      Realtime &mdash; the moment Helen approves, this CO&rsquo;s status flips here and the budget updates. Nothing bills automatically; you&rsquo;ll get a peach <strong>&#10026; Now billable</strong> nudge on the next draw.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FRAME 4 — PUBLIC APPROVAL PAGE (customer-facing)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 04</span>
+  <span class="label">Public approval page &mdash; /approve/[code]</span>
+  <span class="sub">Customer-facing &middot; price-only &middot; typed-name e-signature</span>
+</div>
+
+<div class="browser">
+  <div class="browser-chrome">
+    <div class="traffic">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+    </div>
+    <div class="browser-url">
+      <svg class="lock"><use href="#i-lock"/></svg>
+      <span class="url-host">heyhenry.app</span><span class="url-path">/approve/r7q4-x9w2-mbnq</span>
+    </div>
+    <span style="width:54px;"></span>
+  </div>
+  <div class="browser-body">
+    <article class="pub-doc">
+
+      <!-- Header -->
+      <header class="pub-head">
+        <div class="pub-business">Northbeam Build Co. &middot; Abbotsford, BC</div>
+        <h1 class="pub-title">Change order</h1>
+        <div class="pub-project">Hillcrest Kitchen Remodel</div>
+      </header>
+
+      <!-- Title -->
+      <div>
+        <h2 style="margin:0; font-size:22px; font-weight:700; color:var(--ink); letter-spacing:-0.02em;">Rotten subfloor + pendants</h2>
+        <div style="color:var(--muted); font-size:14px; margin-top:6px;">From <strong style="color:var(--ink-2);">Northbeam Build Co.</strong> &middot; sent May 22, 2026</div>
+      </div>
+
+      <!-- The new target piece: What's changing & why -->
+      <section class="pub-section pub-why-card">
+        <h3 class="pub-h2">What&rsquo;s changing &amp; why</h3>
+        <p class="pub-prose" style="margin: 6px 0 0; color: var(--ink-2);">
+          When we pulled the existing sink cabinet on Tuesday we found rot in two of the subfloor sheets behind it. The rest is sound. We&rsquo;ll cut and replace those two sheets before your new cabinets land Thursday. You also asked about swapping the four flush ceiling lights over the island for the brushed-nickel pendants you sent &mdash; that swap and the new wiring are in here too.
+        </p>
+      </section>
+
+      <!-- Price-only impact card -->
+      <section class="pub-section pub-impact-card">
+        <div class="pub-impact-grid">
+          <div class="pub-impact-main">
+            <div class="pub-impact-label">Total cost impact</div>
+            <div class="pub-impact-value">+$3,182<span class="cents">.50</span></div>
+            <div class="pub-impact-sub">
+              New project total <strong>$167,182.50</strong>
+              <br/>
+              <span class="was">was $164,000.00</span>
+            </div>
+          </div>
+          <div>
+            <div class="pub-impact-label">Timeline impact</div>
+            <div class="pub-impact-value" style="font-size: 22px; line-height: 1.15; margin-top: 6px;">+0.5 days</div>
+            <div class="pub-impact-sub">
+              Substantial completion <strong>Jun&nbsp;14, 2026</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="pub-fee-table" style="margin-top:16px;">
+          <div class="pub-fee-row"><span class="lbl">Cost of work</span><span class="val tabular">+$2,841.51</span></div>
+          <div class="pub-fee-row"><span class="lbl">Management fee (12.00%)</span><span class="val tabular">+$340.99</span></div>
+          <div class="pub-fee-row"><span class="lbl">GST (5% &middot; BC)</span><span class="val tabular">+$159.13</span></div>
+          <div class="pub-fee-row is-total"><span>Total</span><span class="val tabular">+$3,341.63</span></div>
+        </div>
+      </section>
+
+      <!-- Before / After / Δ diff -->
+      <section class="pub-section">
+        <h3 class="pub-h2" style="margin-bottom:10px;">Line-level changes</h3>
+        <div class="pub-diff">
+          <div class="pub-diff-head">
+            <div>Action</div>
+            <div>Line</div>
+            <div class="num">Before</div>
+            <div class="num">After</div>
+            <div class="num">Change</div>
+          </div>
+
+          <div class="pub-diff-row">
+            <div><span class="act act-add"><span class="gly">+</span>ADD</span></div>
+            <div>
+              <div class="pub-line-label">Replace rotten subfloor &mdash; 2 sheets 3/4&Prime; T&amp;G</div>
+              <div class="pub-line-note">Behind sink cabinet &middot; concealed condition.</div>
+              <div class="pub-cat">Flooring &amp; subfloor</div>
+            </div>
+            <div class="pub-num dim">&mdash;</div>
+            <div class="pub-num">$570.00</div>
+            <div class="pub-num delta">+$570.00</div>
+          </div>
+
+          <div class="pub-diff-row">
+            <div><span class="act act-add"><span class="gly">+</span>ADD</span></div>
+            <div>
+              <div class="pub-line-label">Carpentry labour &mdash; subfloor repair</div>
+              <div class="pub-line-note">Half-day, 2 carpenters.</div>
+              <div class="pub-cat">Flooring &amp; subfloor</div>
+            </div>
+            <div class="pub-num dim">&mdash;</div>
+            <div class="pub-num">$760.00</div>
+            <div class="pub-num delta">+$760.00</div>
+          </div>
+
+          <div class="pub-diff-row">
+            <div><span class="act act-remove"><span class="gly">&minus;</span>REMOVE</span></div>
+            <div>
+              <div class="pub-line-label" style="text-decoration: line-through; text-decoration-color: var(--danger);">Recessed ceiling light &mdash; 4&Prime; flush mount (&times;4)</div>
+              <div class="pub-line-note">Replaced by pendants below.</div>
+              <div class="pub-cat">Lighting</div>
+            </div>
+            <div class="pub-num muted">$312.00</div>
+            <div class="pub-num dim">&mdash;</div>
+            <div class="pub-num delta delta-minus">&minus;$312.00</div>
+          </div>
+
+          <div class="pub-diff-row">
+            <div><span class="act act-add"><span class="gly">+</span>ADD</span></div>
+            <div>
+              <div class="pub-line-label">Brushed-nickel pendant &mdash; over island (Schoolhouse 8&Prime;)</div>
+              <div class="pub-line-note">From your Pinterest link.</div>
+              <div class="pub-cat">Lighting</div>
+            </div>
+            <div class="pub-num dim">&mdash;</div>
+            <div class="pub-num">$660.00</div>
+            <div class="pub-num delta">+$660.00</div>
+          </div>
+
+          <div class="pub-diff-row">
+            <div><span class="act act-change"><span class="gly">&harr;</span>CHANGE</span></div>
+            <div>
+              <div class="pub-line-label">Electrician labour &mdash; rough &amp; trim</div>
+              <div class="pub-line-note">+3 hr for pendant boxes + dedicated dimmer.</div>
+              <div class="pub-cat">Lighting</div>
+            </div>
+            <div class="pub-num muted">$1,540.00</div>
+            <div class="pub-num">$1,870.00</div>
+            <div class="pub-num delta">+$330.00</div>
+          </div>
+
+          <div class="pub-diff-row">
+            <div><span class="act act-add"><span class="gly">+</span>ADD</span></div>
+            <div>
+              <div class="pub-line-label">1/4-turn shutoff valve &mdash; dishwasher branch</div>
+              <div class="pub-line-note">While the wall is open &mdash; saves an emergency call in five years.</div>
+              <div class="pub-cat">Rough plumbing</div>
+            </div>
+            <div class="pub-num dim">&mdash;</div>
+            <div class="pub-num">$311.61</div>
+            <div class="pub-num delta">+$311.61</div>
+          </div>
+
+          <div class="pub-diff-row">
+            <div><span class="act act-budget"><span class="gly">&#9633;</span>BUDGET</span></div>
+            <div>
+              <div class="pub-line-label">Lighting contingency cushion</div>
+              <div class="pub-line-note">Bumped to cover the extra wiring path.</div>
+              <div class="pub-cat">Lighting</div>
+            </div>
+            <div class="pub-num muted">$400.00</div>
+            <div class="pub-num">$662.89</div>
+            <div class="pub-num delta">+$262.89</div>
+          </div>
+        </div>
+
+        <!-- Per-category notes -->
+        <div class="pub-cat-notes">
+          <div class="pub-cat-note-row">
+            <span class="cat">Flooring &amp; subfloor</span>
+            <span class="body">Concealed rot, found on demo. Client notified in person by the site lead (Dane).</span>
+          </div>
+          <div class="pub-cat-note-row">
+            <span class="cat">Lighting</span>
+            <span class="body">Island fixtures swapped to client-selected pendants &mdash; pulled from her Pinterest board.</span>
+          </div>
+          <div class="pub-cat-note-row">
+            <span class="cat">Rough plumbing</span>
+            <span class="body">While the wall is open &mdash; added shutoff valve to dishwasher branch. Saves an emergency call in five years.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3-state form (pending → approve / decline → done) -->
+      <section class="pub-form">
+        <div class="pub-form-h">Approve this change order</div>
+        <div class="pub-form-sub">Type your name to sign &mdash; same as you would on paper. We&rsquo;ll email you a copy.</div>
+        <input class="pub-form-input" type="text" placeholder="Type your full name to sign" />
+        <div class="pub-form-actions">
+          <button class="pub-approve">Approve &mdash; +$3,341.63</button>
+          <button class="pub-decline">Decline&hellip;</button>
+        </div>
+        <div class="pub-esig-row">
+          <svg class="sig-icon"><use href="#i-lock"/></svg>
+          Your typed name is your e-signature. Encrypted &middot; timestamped &middot; logged to the project record.
+        </div>
+      </section>
+
+      <!-- Mini state preview (showing the 3-state flow) -->
+      <div class="pub-mini-states">
+        <div class="pub-mini-state">
+          <div class="pub-mini-eyebrow">State 1 &middot; Pending</div>
+          <div class="pub-mini-title">Approve or decline</div>
+          <div class="pub-mini-body">The form above &mdash; price, change list, sign or decline.</div>
+        </div>
+        <div class="pub-mini-state">
+          <div class="pub-mini-eyebrow">State 2 &middot; Decline</div>
+          <div class="pub-mini-title">Optional reason</div>
+          <div class="pub-mini-body">A textarea + Confirm decline. Northbeam is notified instantly.</div>
+        </div>
+        <div class="pub-mini-state done">
+          <div class="pub-mini-eyebrow">State 3 &middot; Done</div>
+          <div class="pub-mini-title">&check; Approved</div>
+          <div class="pub-mini-body">&ldquo;Northbeam has been notified.&rdquo; A copy is in your inbox.</div>
+        </div>
+      </div>
+
+      <footer style="margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--hair); text-align:center; font-size:12px; color:var(--muted);">
+        Northbeam Build Co. &middot; GST 802 314 559 RT0001 &middot; (604) 555&middot;0188 &middot; Abbotsford, BC
+      </footer>
+
+    </article>
+  </div>
+</div>
+
+
+</body>
+</html>
