@@ -37,9 +37,9 @@ export function NavLink({
       data-active={isActive ? 'true' : undefined}
       title={collapsed ? (label ?? undefined) : undefined}
       className={cn(
-        'flex items-center rounded-md text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+        'flex items-center rounded-md text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
         collapsed ? 'justify-center px-2 py-1.5' : 'gap-2.5 px-3 py-1.5',
-        isActive && 'bg-muted text-foreground',
+        isActive && 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground',
         className,
       )}
     >

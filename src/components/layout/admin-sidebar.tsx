@@ -18,7 +18,7 @@ export function AdminSidebar() {
   return (
     <aside
       aria-label="Admin sidebar"
-      className="hidden w-64 shrink-0 border-r bg-background md:flex md:flex-col"
+      className="hidden w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground md:flex md:flex-col"
     >
       <div className="flex h-14 items-center gap-2 border-b px-4">
         <span className="text-sm font-semibold">HeyHenry</span>
