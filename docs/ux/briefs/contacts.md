@@ -73,6 +73,22 @@ Today `customer-type-badge.tsx` paints **8 raw Tailwind hues** (blue / amber / e
 ## Visual identity
 Deepened **"Paper"** palette: warm paper field, white card table that floats, **solid warm hairlines** between rows (no zebra), ink text, mono-uppercase column heads. **Rust is the single accent** — the New-contact CTA only. Kind labels neutral; the one reserved tone (Lead → warning-soft) and danger (none here) via `status-tokens.ts`. **Three type sizes max.** Make whole rows navigate to the detail (not just the name), with a visible focus ring — fix today's misleading `cursor-pointer` on a non-clickable row.
 
+## Subscreen inventory
+Subscreens spec inline; the contact detail is a light route, not a graduate.
+
+**Modals / dialogs**
+- **Contact form** (`customer-form`) — create/edit: name · phone · email (+ additional emails) · kind (lead / customer / vendor / sub) · CASL consent. Phone normalized on entry (#276).
+- **Pick-or-create** (`customer-picker-with-create` / `customer-picker`, §2) — the reusable contact selector used wherever a contact is attached (new project, estimate…).
+- **Contact intake form** (`contact-intake-form`) — quick capture of a new lead/contact.
+- **Duplicate-detection dialog** (§15) — flags a likely duplicate on create (the Contacts duplicates banner, #293) → merge / keep both.
+
+**Inline / transient**
+- **do-not-auto-message toggle** — suppresses AI sends only (never operator-typed); per contact.
+- **Filter chips / search** — kind + CASL facets; row → detail.
+
+**Sub-routes**
+- **`/contacts/[id]`** — contact detail: their projects, AR signal, reach (phone-first), history. Light — spec inline, not a graduate.
+
 ## Accessibility
 WCAG 2.2 AA: near-black ink on white (~16:1); never rely on color alone for kind/CASL (pair with a label/glyph); row is a real link/button with focus order; ≥44px hit targets on mobile; search + chips keyboard-operable (they are today).
 

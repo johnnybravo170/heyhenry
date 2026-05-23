@@ -64,6 +64,18 @@ The manual **Log expense** form must be excellent on its own (vendor, category, 
 ## Visual identity
 Deepened **Paper**: white card table on warm paper, solid hairlines, ink text, mono-uppercase column heads + metric eyebrows. **`Money` everywhere** (tabular, de-emph cents, right-aligned). Status/uncategorized via **`status-tokens.ts`** soft pairs (no ad-hoc amber). **Rust is the single accent** — the primary Log/Import action + Henry action buttons; the GST net-owed figure is data, not an alarm (neutral unless a real CRA risk → warn-soft). **Three type sizes.** Date formatting via the `formatDate` helper (tenant tz), not inline `Intl`.
 
+## Subscreen inventory
+The standalone **overhead / G&A expenses** surface (distinct from a project's Spend tab). Subscreens spec inline; nothing graduates.
+
+**Modals / dialogs**
+- **Overhead-expense form** (`overhead-expense-form`) — amount · category · date · vendor · **receipt upload** (§1) · **GST tax-split chip** (§22 — auto-splits net/tax on Total blur, override).
+- **Duplicate-expense dialog** (`duplicate-expense-dialog`, §15) — flags a likely duplicate on save → keep / discard.
+
+**Inline / transient**
+- **Receipt thumbnail preview** (§21) in rows; **filters** (All / category / period); pagination; the GST net-owed + period summary.
+
+**No graduate** — overhead expenses are a single list + form surface.
+
 ## Accessibility
 WCAG 2.2 AA: near-black ink on white; never colour-only for uncategorized/BN-risk (label + glyph); filters/search keyboard-operable; receipt-thumb has alt; the GST net-owed + period are announced; ≥44px targets on mobile capture; bulk-select is keyboard-reachable with clear focus.
 

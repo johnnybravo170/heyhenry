@@ -78,6 +78,25 @@ No customer money on this surface, but **labour rates** flow from here: each sch
 - **Error:** non-fatal — assignment writes use the `{ ok, error }` shape + toast; a failed move snaps the chip back (optimistic-then-revert).
 - **Offline:** desktop planning surface — not offline-first; sends require connection (queue/disable, don't silently drop).
 
+## Subscreen inventory
+The crew-scheduling board. Subscreens spec inline; the three pivots are view-state, not separate screens.
+
+**Modals / dialogs / popovers**
+- **Assign-workers dialog** (`assign-workers-dialog`) — bulk date-range assign workers to a project (`bulkAssignDatesAction`); pre-scoped to a worker when entered from a by-worker row.
+- **Cell popover** — the assignment(s) on a day: job link · rate (inherited vs override) · notes · **logged-vs-scheduled** (from the time-entries map) · Move / Remove.
+- **Rate-override** disclosure (`updateAssignmentRatesAction`) — pay/charge override + note; same contract as the roster.
+
+**Sub-flows**
+- **Drag** a chip — cell-to-cell (same worker, new day) or onto another worker's row (reassign) → `moveAssignmentToAction` / `moveAssignmentsAction`; optimistic-then-revert on failure.
+
+**Expansion / disclosure / view-state**
+- **Pivot toggle** — `?view=month | two-week | by-worker`; same data + actions, grouping changes. Row-end "N days booked" tally.
+
+**Inline / transient**
+- **Conflict cell** — same worker on two projects a day → stacked chips + danger ring + glyph (the board's core value). **Unavailability** chip (🏖 vacation / 🤕 WCB / sick). **Skip-weekends** toggle.
+
+**No graduate** — the by-worker board IS the headline screen (`calendar.md`); these are its in-surface subscreens.
+
 ## Accessibility
 WCAG 2.2 AA: conflict + unavailability never colour-only (glyph + label); project-color chips carry text, not just hue; the pivot toggle, drag targets, and cell popovers are keyboard-operable; grid is a real table semantically (row = worker, header = day); ≥44px touch targets on mobile; focus rings on cells/chips.
 
