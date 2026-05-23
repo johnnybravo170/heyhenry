@@ -2,7 +2,10 @@
  * Currency cell renderer used across budget / change-order tables.
  *
  * Three jobs:
- *   1. Mute the currency symbol — it's redundant in a $-only column.
+ *   1. Render the currency symbol full-ink, inline with the integer —
+ *      matching the OD renders, where only the cents recede (the earlier
+ *      "mute the $" treatment was superseded by Open Design). The `symbol`
+ *      prop still drops it entirely in dense columns where it's redundant.
  *   2. Render cents smaller + dimmer, like a superscript, so the
  *      integer dominates and whole-dollar values still line up with
  *      mixed-cent values column-to-column.
@@ -66,7 +69,7 @@ export function Money({
       )}
     >
       {signed && cents > 0 ? '+' : ''}
-      {showSymbol ? <span className="text-muted-foreground/60">{symbol}</span> : null}
+      {showSymbol ? symbol : null}
       {integer}
       {fraction ? (
         <span className="text-[0.7em] text-muted-foreground/70">{fraction}</span>
