@@ -16,8 +16,8 @@
 import { ChevronRight, Eye, Mail, Send } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Money } from '@/components/ui/money';
 import type { AwaitingApprovalProject } from '@/lib/db/queries/awaiting-approval';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import { cn } from '@/lib/utils';
 
 function relativeTime(iso: string): string {
@@ -87,7 +87,9 @@ function Row({ project }: { project: AwaitingApprovalProject }) {
         </div>
       </div>
       <div className="flex items-center gap-2 text-right">
-        <span className="font-medium tabular-nums">{formatCurrency(project.total_cents)}</span>
+        <span className="font-medium tabular-nums">
+          <Money cents={project.total_cents} />
+        </span>
         <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
