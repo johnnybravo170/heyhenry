@@ -34,44 +34,44 @@ const NEUTRAL: GanttPhaseColors = {
  */
 const PHASE_COLOR_MAP: Record<string, GanttPhaseColors> = {
   'planning & selections': {
-    firm: 'bg-slate-500',
-    rough: 'border border-dashed border-slate-500 bg-slate-500/10',
+    firm: 'bg-slate-600',
+    rough: 'border border-dashed border-slate-600 bg-slate-600/10',
   },
   demo: {
-    firm: 'bg-orange-500',
-    rough: 'border border-dashed border-orange-500 bg-orange-500/10',
+    firm: 'bg-[#C2410C]',
+    rough: 'border border-dashed border-[#C2410C] bg-[#C2410C]/10',
   },
   framing: {
-    firm: 'bg-blue-500',
-    rough: 'border border-dashed border-blue-500 bg-blue-500/10',
+    firm: 'bg-[#1E40AF]',
+    rough: 'border border-dashed border-[#1E40AF] bg-[#1E40AF]/10',
   },
   'rough-in': {
-    firm: 'bg-teal-500',
-    rough: 'border border-dashed border-teal-500 bg-teal-500/10',
+    firm: 'bg-[#0F766E]',
+    rough: 'border border-dashed border-[#0F766E] bg-[#0F766E]/10',
   },
   inspection: {
-    firm: 'bg-cyan-500',
-    rough: 'border border-dashed border-cyan-500 bg-cyan-500/10',
+    firm: 'bg-[#0E7490]',
+    rough: 'border border-dashed border-[#0E7490] bg-[#0E7490]/10',
   },
   drywall: {
-    firm: 'bg-purple-500',
-    rough: 'border border-dashed border-purple-500 bg-purple-500/10',
+    firm: 'bg-[#6D28D9]',
+    rough: 'border border-dashed border-[#6D28D9] bg-[#6D28D9]/10',
   },
   'cabinets & fixtures': {
-    firm: 'bg-amber-500',
-    rough: 'border border-dashed border-amber-500 bg-amber-500/10',
+    firm: 'bg-[#B45309]',
+    rough: 'border border-dashed border-[#B45309] bg-[#B45309]/10',
   },
   finishes: {
-    firm: 'bg-green-500',
-    rough: 'border border-dashed border-green-500 bg-green-500/10',
+    firm: 'bg-[#15803D]',
+    rough: 'border border-dashed border-[#15803D] bg-[#15803D]/10',
   },
   'punch list': {
-    firm: 'bg-rose-500',
-    rough: 'border border-dashed border-rose-500 bg-rose-500/10',
+    firm: 'bg-[#BE123C]',
+    rough: 'border border-dashed border-[#BE123C] bg-[#BE123C]/10',
   },
   'final walkthrough': {
-    firm: 'bg-emerald-500',
-    rough: 'border border-dashed border-emerald-500 bg-emerald-500/10',
+    firm: 'bg-emerald-600',
+    rough: 'border border-dashed border-emerald-600 bg-emerald-600/10',
   },
 };
 

@@ -74,10 +74,12 @@ export async function ProjectCrewSlice({ projectId }: { projectId: string }) {
   };
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="rounded-xl border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold">Crew this week</h3>
+          <h3 className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+            Crew this week
+          </h3>
           <p className="text-xs text-muted-foreground">
             Scheduled days on this job — manage on the crew calendar.
           </p>
