@@ -142,12 +142,26 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Paper typographic baseline (DESIGN.md §Typography): Inter at a 500
+       default weight reads more substantial on screen, tight tracking on
+       body, and Inter's cv11/ss01 stylistic sets. Without these the whole
+       app rendered Inter 400 with loose default tracking — visibly "off"
+       from the design system. */
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    font-feature-settings: 'cv11', 'ss01';
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: none;
     width: 100%;
     max-width: 100%;
     height: 100%;
+  }
+  /* Headings tighten further (DESIGN.md: −0.02–0.025em ≥20px). */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
   }
 }
 
