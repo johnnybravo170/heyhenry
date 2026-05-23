@@ -162,10 +162,13 @@ function MessagingOff() {
 export function CustomerTable({
   customers,
   nowMs,
+  footer,
 }: {
   customers: ContactRow[];
   /** Server-stable timestamp for relative-time rendering (avoids hydration drift). */
   nowMs: number;
+  /** Pagination footer rendered inside the table card (desktop) / below cards (mobile). */
+  footer?: React.ReactNode;
 }) {
   return (
     <>
@@ -217,6 +220,7 @@ export function CustomerTable({
             ))}
           </TableBody>
         </Table>
+        {footer}
       </div>
 
       {/* Mobile cards, grouped by kind */}
@@ -267,6 +271,7 @@ export function CustomerTable({
             </section>
           );
         })}
+        {footer ? <div className="overflow-hidden rounded-xl border bg-card">{footer}</div> : null}
       </div>
     </>
   );

@@ -39,7 +39,7 @@ export default async function NewContactPage({
           <ArrowLeft className="size-3.5" />
           Back to contacts
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Add a contact</h1>
+        <h1 className="text-[28px] font-bold tracking-tight">Add a contact</h1>
         <p className="text-sm text-muted-foreground">
           Drop a business card, screenshot, PDF, or paste contact info. Henry extracts what it can —
           or fill it in by hand below.
