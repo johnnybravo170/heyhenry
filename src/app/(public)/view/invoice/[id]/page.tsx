@@ -10,6 +10,7 @@ import {
 } from '@/components/features/projects/customer-document';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { formatDate } from '@/lib/date/format';
+import { invoiceDocNumber } from '@/lib/invoices/totals';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -171,9 +172,7 @@ export default async function PublicInvoiceViewPage({
   const docLabel = isDraw ? 'Draw · invoice' : 'Invoice';
   const percentComplete = (invoice.percent_complete as number | null) ?? null;
   // Friendly, non-id doc number: short uppercased code (not the raw UUID).
-  const docNumber = `INV-${String(invoice.code ?? invoice.id)
-    .slice(0, 8)
-    .toUpperCase()}`;
+  const docNumber = invoiceDocNumber({ code: invoice.code as string | null, id: invoice.id });
 
   const status: CustomerDocStatus = isPaid
     ? { label: 'Paid', tone: 'success' }

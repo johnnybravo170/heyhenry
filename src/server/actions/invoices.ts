@@ -25,6 +25,7 @@ import {
   isDrawGstMode,
   resolveDrawGstMode,
 } from '@/lib/invoices/draw-gst-mode';
+import { invoiceDocNumber } from '@/lib/invoices/totals';
 import { getPrefs, updatePrefs } from '@/lib/prefs/tenant-prefs';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { getPaymentProvider } from '@/lib/providers/factory';
@@ -471,10 +472,11 @@ export async function resendInvoiceAction(input: {
   }
 
   // Resent invoices were already sent, so a code exists (backfilled or
-  // assigned at first send); guard the rare null anyway.
-  const resendDocNumber = `INV-${String(invoice.code ?? invoice.id)
-    .slice(0, 8)
-    .toUpperCase()}`;
+  // assigned at first send); the helper guards the rare null anyway.
+  const resendDocNumber = invoiceDocNumber({
+    code: invoice.code as string | null,
+    id: invoice.id as string,
+  });
 
   if (invoice.status !== 'sent') {
     return { ok: false, error: `Can only resend invoices with status "sent".` };

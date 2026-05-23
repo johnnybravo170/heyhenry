@@ -19,6 +19,7 @@ import {
   type InvoiceDocFields,
   SUGGESTED_INVOICE_DEFAULTS,
 } from '@/lib/invoices/default-doc-fields';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 import { updateInvoiceDefaultsAction } from '@/server/actions/settings';
 
 type FieldKey = keyof InvoiceDocFields;
@@ -100,28 +101,27 @@ export function InvoiceDefaultsSetupBanner({ current }: { current: InvoiceDocFie
 
   return (
     <>
-      <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300" />
-          <div className="flex-1 space-y-2">
-            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-              Your customer won't know how to pay yet — {summary} blank.
-            </p>
-            <p className="text-xs text-amber-800 dark:text-amber-200">
-              Set your defaults once and they'll appear on every invoice and draw you send.
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setOpen(true)}
-              className="border-amber-300 bg-white hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/40 dark:hover:bg-amber-900/60"
-            >
-              Set this up now
-            </Button>
-          </div>
+      <div
+        className={`flex items-start gap-3 rounded-r-lg border border-l-2 border-l-brand p-3 ${statusToneClass.warning}`}
+      >
+        <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <div className="flex-1 space-y-2 text-sm leading-snug">
+          <p>
+            <span className="font-semibold">Your customer won&rsquo;t know how to pay yet</span> —{' '}
+            {summary} blank. Set your defaults once and they&rsquo;ll appear on every invoice and
+            draw you send.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setOpen(true)}
+            className="bg-background"
+          >
+            Set this up now
+          </Button>
         </div>
-      </section>
+      </div>
 
       <Dialog open={open} onOpenChange={(o) => !pending && setOpen(o)}>
         <DialogContent className="sm:max-w-lg">
