@@ -32,8 +32,14 @@ export default async function GstRemittancePage({
   const resolved = await searchParams;
   const presets = gstPeriodPresets();
 
-  // Default to "this quarter" — the most common filing cadence.
-  const defaultPeriod = presets.find((p) => p.key === 'this_quarter')?.period ?? presets[0].period;
+  // Default to the LAST CLOSED quarter — the one you'd actually be filing.
+  // "This quarter" is still open (nothing's due yet), so opening straight to
+  // it understates the position and hides an overdue prior quarter. Land on
+  // the most recent complete quarter; honest framing of what's owed/overdue.
+  const defaultPeriod =
+    presets.find((p) => p.key === 'last_quarter')?.period ??
+    presets.find((p) => p.key === 'this_quarter')?.period ??
+    presets[0].period;
   const from = parseDate(resolved.from) ?? defaultPeriod.from;
   const to = parseDate(resolved.to) ?? defaultPeriod.to;
   const period: RemittancePeriod = { from, to };
