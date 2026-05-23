@@ -130,6 +130,11 @@ export async function importBankStatementAction(
 ): Promise<ImportBankStatementResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
+  // Owner+admin only — import feeds the paid-state review queue.
+  // (FLAG FOR OPS to allow members.)
+  if (tenant.member.role !== 'owner' && tenant.member.role !== 'admin') {
+    return { ok: false, error: 'Only an owner or admin can import bank statements.' };
+  }
   const user = await getCurrentUser();
 
   const meta = importSchema.safeParse({

@@ -101,6 +101,7 @@ When you add a new status value to an enum, update the matching `*StatusTone` ma
 - `src/components/features/inbox/worklog-entry-type-badge.tsx`
 - `src/components/features/worker/worker-invoice-status-badge.tsx`
 - `src/components/features/projects/project-costs-section.tsx` — inline `CostStatusBadge` for the unified Costs surface (`paid_receipt` / `bill_unpaid` / `bill_paid`). Uses the shared `projectCostStatusTone` map in `status-tokens.ts`; no standalone badge file because the three values are tightly coupled to a single rendering surface.
+- `src/components/features/bank-review/bank-review-queue.tsx` — inline `ConfidenceBand` badge for the bank-match review queue (`high` / `medium` / `low` confidence). The band→tone map (`high→success`, `medium→warning`, `low→hold`) lives in `src/lib/bank-recon/confidence-band.ts` (`confidenceTone` / `confidenceLabel`), pulled into the `statusToneClass` + `statusToneIcon` render here. UI copy uses **"confidence band"**, never "bucket" (the matcher's internal `bucket()` stays internal). The CSV preset-detection pill in `bank-import-flow.tsx` reuses the same tones via a local `DETECTION_TONE` map but carries **no ✦** — it's deterministic parser plumbing, not the Henry matcher.
 
 ### 7a. Client-visibility badge (`VisibilityBadge`)
 
