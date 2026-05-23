@@ -5,9 +5,11 @@ import { ChangePlanCard } from '@/components/features/billing/change-plan-card';
 import { InvoicesTable } from '@/components/features/billing/invoices-table';
 import { PaymentMethodCard } from '@/components/features/billing/payment-method-card';
 import { ResumeSubscriptionButton } from '@/components/features/billing/resume-subscription-button';
+import { OwnerOnlyPane } from '@/components/features/settings/owner-only-pane';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { requireTenant } from '@/lib/auth/helpers';
 import { PLAN_CATALOG } from '@/lib/billing/plans';
+import { getPrimaryOperatorName } from '@/lib/db/queries/profile';
 import { getBillingOverviewAction } from '@/server/actions/billing-management';
 
 /**
@@ -21,6 +23,22 @@ import { getBillingOverviewAction } from '@/server/actions/billing-management';
  */
 export default async function BillingPage() {
   const { tenant } = await requireTenant();
+
+  // Owner-only. Members + admins who deep-link here get the calm refusal
+  // pane instead of plan-management UI they can't act on. (The nav already
+  // hides this destination for both roles — this is defense-in-depth.)
+  if (tenant.member.role !== 'owner') {
+    const owner = await getPrimaryOperatorName(tenant.id);
+    const ownerName = [owner.firstName, owner.lastName].filter(Boolean).join(' ') || null;
+    return (
+      <OwnerOnlyPane
+        title="Billing & subscription"
+        description={`Billing is managed by the account owner — the plan, payment method, and invoices for ${tenant.name}.`}
+        ownerName={ownerName}
+      />
+    );
+  }
+
   const overview = await getBillingOverviewAction();
   const tz = tenant.timezone;
 

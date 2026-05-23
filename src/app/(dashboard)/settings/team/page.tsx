@@ -6,20 +6,35 @@
 
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { OwnerOnlyPane } from '@/components/features/settings/owner-only-pane';
 import { InviteBookkeeperCard } from '@/components/features/team/invite-bookkeeper-card';
 import { InviteWorkerCard } from '@/components/features/team/invite-worker-card';
 import { InvitesTable } from '@/components/features/team/invites-table';
 import { TeamMembersTable } from '@/components/features/team/team-members-table';
 import { WorkerDefaultsCard } from '@/components/features/team/worker-defaults-card';
 import { requireTenant } from '@/lib/auth/helpers';
-import { requireRole } from '@/lib/auth/role-guard';
+import { getPrimaryOperatorName } from '@/lib/db/queries/profile';
 import { listTeamMembers } from '@/lib/db/queries/team';
 import { listInvitesByTenantId } from '@/lib/db/queries/worker-invites';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export default async function TeamPage() {
   const { tenant } = await requireTenant();
-  requireRole(tenant, ['owner', 'admin']);
+
+  // Owner + admin manage the team; a member who deep-links here gets the
+  // calm refusal pane instead of a redirect to /dashboard. (The nav hides
+  // Team & workers for members — this is defense-in-depth.)
+  if (tenant.member.role !== 'owner' && tenant.member.role !== 'admin') {
+    const owner = await getPrimaryOperatorName(tenant.id);
+    const ownerName = [owner.firstName, owner.lastName].filter(Boolean).join(' ') || null;
+    return (
+      <OwnerOnlyPane
+        title="Team & workers"
+        description={`Team membership, invites, and worker profiles for ${tenant.name} are managed by the owner and admins.`}
+        ownerName={ownerName}
+      />
+    );
+  }
 
   const admin = createAdminClient();
   const [membersResult, invites, tenantRow] = await Promise.all([
