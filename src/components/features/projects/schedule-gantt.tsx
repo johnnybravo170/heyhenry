@@ -20,12 +20,18 @@
  */
 
 import { useRef, useState } from 'react';
+import { isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { phaseColorFor } from '@/lib/ui/gantt-phase-colors';
 
 const MONTH_FORMAT = new Intl.DateTimeFormat('en-CA', { month: 'short', year: 'numeric' });
-const DAY_FMT = new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric' });
+const DAY_FMT = new Intl.DateTimeFormat('en-CA', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+});
 const DAY_FMT_WITH_YEAR = new Intl.DateTimeFormat('en-CA', {
+  weekday: 'short',
   month: 'short',
   day: 'numeric',
   year: 'numeric',
@@ -36,23 +42,38 @@ function parseDate(yyyyMmDd: string): Date {
   return new Date(`${yyyyMmDd}T00:00:00Z`);
 }
 
+/** Whether a task counts in working days (skips weekends) for layout/copy. */
+function isWorkingBasis(task: { duration_basis?: string; works_weekends?: boolean }): boolean {
+  return (task.duration_basis ?? 'working') === 'working' && !task.works_weekends;
+}
+
 /**
- * Format a task's start/end window as readable copy for tooltips.
- * Inclusive end date — i.e. the last day of work, not the day after.
- *
- *   1 day:                "Mar 16"
- *   Same month:           "Mar 16 – Mar 18"
- *   Crosses month:        "Mar 30 – Apr 2"
- *   Crosses year:         "Dec 28, 2025 – Jan 4, 2026"
+ * Inclusive last work-day of a task, honoring its duration basis. For
+ * 'working' tasks this skips weekends; for 'calendar' / works-weekends it
+ * counts straight through.
  */
-function formatDateRange(startStr: string, durationDays: number): string {
+function taskInclusiveEnd(task: {
+  planned_start_date: string;
+  planned_duration_days: number;
+  duration_basis?: string;
+  works_weekends?: boolean;
+}): Date {
+  return workingDayEnd(parseDate(task.planned_start_date), task.planned_duration_days, {
+    basis: (task.duration_basis ?? 'working') === 'calendar' ? 'calendar' : 'working',
+    worksWeekends: Boolean(task.works_weekends),
+  });
+}
+
+/**
+ * Format a task's start → inclusive-end window for tooltips. With weekday
+ * prefixes so working-day spans read naturally: "Thu Mar 26 → Wed Apr 1".
+ */
+function formatDateRange(startStr: string, end: Date): string {
   const start = new Date(`${startStr}T00:00:00Z`);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + Math.max(0, durationDays - 1));
-  if (durationDays <= 1) return DAY_FMT.format(start);
+  if (end.getTime() <= start.getTime()) return DAY_FMT.format(start);
   const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
   const fmt = sameYear ? DAY_FMT : DAY_FMT_WITH_YEAR;
-  return `${fmt.format(start)} – ${fmt.format(end)}`;
+  return `${fmt.format(start)} → ${fmt.format(end)}`;
 }
 
 function diffDays(later: Date, earlier: Date): number {
@@ -193,10 +214,12 @@ export function ScheduleGantt({
 
   if (tasks.length === 0) return null;
 
-  // Earliest start + latest end across all tasks. Latest end = start +
-  // duration (exclusive); the bar ends ON the last day of work.
+  // Earliest start + latest end across all tasks. Latest end = the
+  // exclusive day after each task's inclusive (working-day-aware) last
+  // work-day, so the timeline always covers the full span of every bar
+  // including the weekend columns a working-day task spans.
   const starts = tasks.map((t) => parseDate(t.planned_start_date));
-  const ends = tasks.map((t, i) => addDays(starts[i], t.planned_duration_days));
+  const ends = tasks.map((t) => addDays(taskInclusiveEnd(t), 1));
   const earliest = new Date(Math.min(...starts.map((d) => d.getTime())));
   const latest = new Date(Math.max(...ends.map((d) => d.getTime())));
   const totalDays = Math.max(1, diffDays(latest, earliest));
@@ -273,14 +296,23 @@ export function ScheduleGantt({
     onTaskClick?.(task);
   };
 
-  // Compute optimistic position for the currently-dragging task.
+  // Compute optimistic position for the currently-dragging task. colSpan
+  // is the VISUAL calendar-column span (start → inclusive working-day
+  // end), so a working-day bar reaches across the weekend columns it
+  // covers; the weekend columns inside it are receded, not removed.
   const positionFor = (task: ProjectScheduleTask, taskStart: Date) => {
-    let colStart = diffDays(taskStart, earliest) + 1;
-    let colSpan = task.planned_duration_days;
+    let previewStart = taskStart;
+    let previewDuration = task.planned_duration_days;
     if (drag && drag.taskId === task.id && drag.deltaDays !== 0) {
-      if (drag.kind === 'move') colStart += drag.deltaDays;
-      else colSpan = Math.max(1, colSpan + drag.deltaDays);
+      if (drag.kind === 'move') previewStart = addDays(taskStart, drag.deltaDays);
+      else previewDuration = Math.max(1, previewDuration + drag.deltaDays);
     }
+    let colStart = diffDays(previewStart, earliest) + 1;
+    const inclusiveEnd = workingDayEnd(previewStart, previewDuration, {
+      basis: (task.duration_basis ?? 'working') === 'calendar' ? 'calendar' : 'working',
+      worksWeekends: Boolean(task.works_weekends),
+    });
+    let colSpan = Math.max(1, diffDays(inclusiveEnd, previewStart) + 1);
     // Clamp into the visible timeline so the bar never paints into
     // negative columns. Drag-end persists the unclamped value, which
     // widens the timeline on the next render.
@@ -418,9 +450,20 @@ export function ScheduleGantt({
                     displayDuration = Math.max(1, displayDuration + drag.deltaDays);
                   }
                 }
-                const dateRange = formatDateRange(displayStart, displayDuration);
-                const dayWord = displayDuration === 1 ? 'day' : 'days';
-                const tooltip = `${task.name} · ${dateRange} · ${displayDuration} ${dayWord} (${task.confidence})`;
+                const working = isWorkingBasis(task);
+                const displayEnd = workingDayEnd(parseDate(displayStart), displayDuration, {
+                  basis: working ? 'working' : 'calendar',
+                  worksWeekends: Boolean(task.works_weekends),
+                });
+                const dateRange = formatDateRange(displayStart, displayEnd);
+                const dayWord = `${working ? 'working ' : ''}${displayDuration === 1 ? 'day' : 'days'}`;
+                const tooltip = `${task.name} · ${displayDuration} ${dayWord} · ${dateRange} (${task.confidence})`;
+                // Weekend columns the bar spans, as 0-based offsets from the
+                // bar's first column — used to recede them inside the bar.
+                const weekendOffsets: number[] = [];
+                for (let c = 0; c < colSpan; c++) {
+                  if (isWeekend(addDays(parseDate(displayStart), c))) weekendOffsets.push(c);
+                }
                 // First row carries the gridRef so we can measure column width
                 // for drag-day calculations.
                 return (
@@ -478,6 +521,22 @@ export function ScheduleGantt({
                           touchAction: 'none',
                         }}
                       >
+                        {/* Receded weekend columns: a continuous bar that
+                            de-saturates the Sat/Sun columns it spans so the
+                            eye reads "spans a weekend, no work then" without
+                            fragmenting the bar. Day-count math already
+                            excludes these (working-day duration). */}
+                        {weekendOffsets.map((offset) => (
+                          <span
+                            key={`we-${offset}`}
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-y-0 bg-card/55 mix-blend-luminosity"
+                            style={{
+                              left: `${(offset / colSpan) * 100}%`,
+                              width: `${(1 / colSpan) * 100}%`,
+                            }}
+                          />
+                        ))}
                         {/* Hover/focus tooltip — instant (no native-title delay).
                             Hides during active drag so it doesn't follow the
                             cursor and obscure the bar. */}

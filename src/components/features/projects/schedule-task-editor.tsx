@@ -55,6 +55,7 @@ export function ScheduleTaskEditor({
           status: mode.task.status,
           confidence: mode.task.confidence,
           client_visible: mode.task.client_visible,
+          works_weekends: mode.task.works_weekends,
           notes: mode.task.notes ?? '',
         }
       : {
@@ -64,6 +65,7 @@ export function ScheduleTaskEditor({
           status: 'planned' as const,
           confidence: 'rough' as const,
           client_visible: true,
+          works_weekends: false,
           notes: '',
         };
 
@@ -73,6 +75,7 @@ export function ScheduleTaskEditor({
   const [status, setStatus] = useState(initial.status);
   const [confidence, setConfidence] = useState(initial.confidence);
   const [clientVisible, setClientVisible] = useState(initial.client_visible);
+  const [worksWeekends, setWorksWeekends] = useState(initial.works_weekends);
   const [notes, setNotes] = useState(initial.notes);
   // "Depends on" picker — predecessors are stored as a Set so toggling
   // is O(1). Default-populated from the auto-bootstrapped phase edges.
@@ -109,6 +112,7 @@ export function ScheduleTaskEditor({
               name: name.trim(),
               planned_start_date: startDate,
               planned_duration_days: duration,
+              works_weekends: worksWeekends,
               status,
               confidence,
               client_visible: clientVisible,
@@ -118,6 +122,7 @@ export function ScheduleTaskEditor({
               name: name.trim(),
               planned_start_date: startDate,
               planned_duration_days: duration,
+              works_weekends: worksWeekends,
               client_visible: clientVisible,
               notes: notes.trim() || null,
             });
@@ -210,7 +215,7 @@ export function ScheduleTaskEditor({
               />
             </label>
             <label className="block text-xs font-medium">
-              <span className="block text-muted-foreground">Duration (days)</span>
+              <span className="block text-muted-foreground">Duration (working days)</span>
               <input
                 type="number"
                 min={1}
@@ -220,6 +225,23 @@ export function ScheduleTaskEditor({
               />
             </label>
           </div>
+
+          <label className="flex items-start gap-2 text-xs font-medium">
+            <input
+              type="checkbox"
+              checked={worksWeekends}
+              onChange={(e) => setWorksWeekends(e.target.checked)}
+              className="mt-0.5 rounded"
+            />
+            <span>
+              Works weekends
+              <span className="block font-normal text-muted-foreground">
+                {worksWeekends
+                  ? 'Counts Sat/Sun — duration runs straight through weekends.'
+                  : 'Skips Sat/Sun — the duration counts working days only.'}
+              </span>
+            </span>
+          </label>
 
           {mode.kind === 'edit' ? (
             <div className="grid grid-cols-2 gap-3">

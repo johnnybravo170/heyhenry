@@ -22,6 +22,8 @@ import { revalidatePath } from 'next/cache';
 import { classifyCategoryName } from '@/lib/ai/phase-classifier';
 import { generateAiBootstrap } from '@/lib/ai/schedule-bootstrap';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { addWorkingDays, isWeekend, workingDayEnd } from '@/lib/date/working-days';
+import type { ScheduleDurationBasis } from '@/lib/db/queries/project-schedule';
 import { createClient } from '@/lib/supabase/server';
 
 export type BootstrapSource =
@@ -148,14 +150,21 @@ function buildPhaseAwareEdges(input: {
 }
 
 function layoutTasksSerial(trades: ResolvedTrade[], startDate: Date): LaidOutTask[] {
-  let cursor = 0;
+  // Tasks are authored as duration_basis='working' (the bootstrap default),
+  // so the serial walk advances in WORKING days: each task starts the
+  // working day after the previous one's inclusive working-day end. The
+  // first task rolls to a working day if the project start is a weekend.
+  let cursorStart = isWeekend(startDate) ? addWorkingDays(startDate, 1) : new Date(startDate);
   return trades.map((trade, idx) => {
-    const taskDate = new Date(startDate);
-    taskDate.setUTCDate(taskDate.getUTCDate() + cursor);
-    cursor += trade.duration_days;
+    const taskStart = new Date(cursorStart);
+    const end = workingDayEnd(taskStart, trade.duration_days, {
+      basis: 'working',
+      worksWeekends: false,
+    });
+    cursorStart = addWorkingDays(end, 1);
     return {
       trade,
-      planned_start_date: taskDate.toISOString().slice(0, 10),
+      planned_start_date: taskStart.toISOString().slice(0, 10),
       display_order: idx,
     };
   });
@@ -280,6 +289,8 @@ export async function bootstrapProjectScheduleAction(
       : null,
     planned_start_date,
     planned_duration_days: trade.duration_days,
+    duration_basis: 'working' as const,
+    works_weekends: false,
     status: 'planned' as const,
     confidence: 'rough' as const,
     client_visible: true,
@@ -584,6 +595,7 @@ export type ScheduleTaskPatch = {
   name?: string;
   planned_start_date?: string;
   planned_duration_days?: number;
+  works_weekends?: boolean;
   status?: 'planned' | 'scheduled' | 'in_progress' | 'done';
   confidence?: 'rough' | 'firm';
   client_visible?: boolean;
@@ -629,7 +641,7 @@ async function cascadeForwardFromTask(
   const [{ data: tasks }, { data: edges }] = await Promise.all([
     supabase
       .from('project_schedule_tasks')
-      .select('id, planned_start_date, planned_duration_days')
+      .select('id, planned_start_date, planned_duration_days, duration_basis, works_weekends')
       .eq('project_id', projectId)
       .is('deleted_at', null),
     supabase
@@ -640,7 +652,13 @@ async function cascadeForwardFromTask(
 
   if (!tasks || !edges || tasks.length === 0 || edges.length === 0) return 0;
 
-  type T = { id: string; start: Date; duration: number };
+  type T = {
+    id: string;
+    start: Date;
+    duration: number;
+    basis: ScheduleDurationBasis;
+    worksWeekends: boolean;
+  };
   const byId = new Map<string, T>();
   for (const row of tasks) {
     const r = row as Record<string, unknown>;
@@ -648,8 +666,17 @@ async function cascadeForwardFromTask(
       id: r.id as string,
       start: new Date(`${r.planned_start_date as string}T00:00:00Z`),
       duration: (r.planned_duration_days as number) ?? 1,
+      basis: ((r.duration_basis as string) ?? 'working') as ScheduleDurationBasis,
+      worksWeekends: Boolean(r.works_weekends),
     });
   }
+
+  // Inclusive last work-day of a task, honoring its duration basis. The
+  // exclusive "day after" used for finish_to_start math is end + 1 day
+  // (working or calendar depending on the successor's appetite — but the
+  // successor lands on the next WORKING day when it skips weekends).
+  const inclusiveEnd = (t: T): Date =>
+    workingDayEnd(t.start, t.duration, { basis: t.basis, worksWeekends: t.worksWeekends });
 
   // adjacency: predecessor -> [successor edges]
   type Edge = { successor: string; kind: string; lag: number };
@@ -687,20 +714,33 @@ async function cascadeForwardFromTask(
     for (const edge of adj.get(predId) ?? []) {
       const succ = byId.get(edge.successor);
       if (!succ) continue;
+      // Whether the SUCCESSOR counts in working days. The predecessor's
+      // own basis already shaped its inclusive end via workingDayEnd; the
+      // gap to the successor (the lag + the +1 day landing) is measured in
+      // the successor's units so a Mon–Fri trade never starts on a weekend.
+      const succWorking = succ.basis === 'working' && !succ.worksWeekends;
       // earliest start permitted by this edge:
-      //   finish_to_start: predecessor.end + lag
+      //   finish_to_start: (working day after predecessor.end) + lag
       //   start_to_start:  predecessor.start + lag
       //   finish_to_finish: predecessor.end + lag - successor.duration
       let minStart: Date;
       if (edge.kind === 'start_to_start') {
-        minStart = new Date(pred.start.getTime() + edge.lag * dayMs);
+        minStart = succWorking
+          ? addWorkingDays(pred.start, edge.lag)
+          : new Date(pred.start.getTime() + edge.lag * dayMs);
       } else if (edge.kind === 'finish_to_finish') {
-        const predEnd = new Date(pred.start.getTime() + pred.duration * dayMs);
+        const predEnd = new Date(inclusiveEnd(pred).getTime() + dayMs);
         minStart = new Date(predEnd.getTime() + edge.lag * dayMs - succ.duration * dayMs);
       } else {
-        // finish_to_start (default)
-        const predEnd = new Date(pred.start.getTime() + pred.duration * dayMs);
-        minStart = new Date(predEnd.getTime() + edge.lag * dayMs);
+        // finish_to_start (default). predEnd = the day work resumes
+        // immediately after the predecessor's inclusive last work-day.
+        const predLast = inclusiveEnd(pred);
+        if (succWorking) {
+          // Land on the next working day, then push out by lag working days.
+          minStart = addWorkingDays(addWorkingDays(predLast, 1), edge.lag);
+        } else {
+          minStart = new Date(predLast.getTime() + dayMs + edge.lag * dayMs);
+        }
       }
       if (succ.start < minStart) {
         succ.start = minStart;
@@ -848,7 +888,11 @@ export async function updateScheduleTaskAction(
   // Schedule the deferred customer notification when relevant. Date or
   // duration moved → schedule shifted; visibility-only flips, status,
   // confidence, and notes don't fire a customer ping.
-  if (patch.planned_start_date !== undefined || patch.planned_duration_days !== undefined) {
+  if (
+    patch.planned_start_date !== undefined ||
+    patch.planned_duration_days !== undefined ||
+    patch.works_weekends !== undefined
+  ) {
     // Cascade BEFORE notify/breadcrumb so the persisted state reflects
     // the post-cascade timeline by the time the cron drainer fires (or
     // the breadcrumb-dedup window opens).
@@ -899,6 +943,7 @@ export type CreateScheduleTaskInput = {
   name: string;
   planned_start_date: string;
   planned_duration_days: number;
+  works_weekends?: boolean;
   client_visible?: boolean;
   notes?: string | null;
 };
@@ -942,6 +987,8 @@ export async function createScheduleTaskAction(
       name: input.name,
       planned_start_date: input.planned_start_date,
       planned_duration_days: input.planned_duration_days,
+      duration_basis: 'working',
+      works_weekends: input.works_weekends ?? false,
       status: 'planned',
       confidence: 'rough',
       client_visible: input.client_visible ?? true,

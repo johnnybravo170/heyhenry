@@ -13,6 +13,8 @@ import { createClient } from '@/lib/supabase/server';
 
 export type ScheduleConfidence = 'rough' | 'firm';
 export type ScheduleStatus = 'planned' | 'scheduled' | 'in_progress' | 'done';
+/** How planned_duration_days is interpreted — see migration schedule_working_days. */
+export type ScheduleDurationBasis = 'working' | 'calendar';
 
 export type ProjectScheduleTask = {
   id: string;
@@ -23,6 +25,10 @@ export type ProjectScheduleTask = {
   phase_id: string | null;
   planned_start_date: string;
   planned_duration_days: number;
+  /** 'working' (default for new rows) skips Sat/Sun; 'calendar' counts raw days. */
+  duration_basis: ScheduleDurationBasis;
+  /** Per-task override — span weekends like calendar days even under 'working'. */
+  works_weekends: boolean;
   actual_start_date: string | null;
   actual_end_date: string | null;
   status: ScheduleStatus;
@@ -33,7 +39,7 @@ export type ProjectScheduleTask = {
 };
 
 const TASK_COLUMNS =
-  'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes';
+  'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, duration_basis, works_weekends, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes';
 
 /** RLS-aware list of active tasks for the operator-side Gantt view. */
 export const listScheduleTasksForProject = cache(

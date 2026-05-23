@@ -1,3 +1,4 @@
+import { workingDayEnd } from '@/lib/date/working-days';
 import { listScheduleTasksForProject } from '@/lib/db/queries/project-schedule';
 import { formatDate } from '../format';
 import type { AiTool } from '../types';
@@ -37,10 +38,17 @@ export const scheduleTaskTools: AiTool[] = [
         }
         let out = `Found ${filtered.length} task(s):\n\n`;
         for (const t of filtered) {
-          const start = new Date(`${t.planned_start_date}T00:00:00Z`);
-          const end = new Date(start);
-          end.setUTCDate(end.getUTCDate() + Math.max(0, t.planned_duration_days - 1));
-          out += `- ${t.name} · ${formatDate(t.planned_start_date)} – ${formatDate(end.toISOString().slice(0, 10))} · ${t.planned_duration_days}d · ${t.confidence} · ${t.status}\n`;
+          const working = t.duration_basis === 'working' && !t.works_weekends;
+          const end = workingDayEnd(
+            new Date(`${t.planned_start_date}T00:00:00Z`),
+            t.planned_duration_days,
+            {
+              basis: working ? 'working' : 'calendar',
+              worksWeekends: t.works_weekends,
+            },
+          );
+          const dayLabel = `${t.planned_duration_days}${working ? ' working d' : 'd'}`;
+          out += `- ${t.name} · ${formatDate(t.planned_start_date)} – ${formatDate(end.toISOString().slice(0, 10))} · ${dayLabel} · ${t.confidence} · ${t.status}\n`;
           out += `  ID: ${t.id}\n`;
         }
         return out;
