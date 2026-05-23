@@ -80,6 +80,8 @@ export type CustomerListFilters = {
   type?: 'residential' | 'commercial' | 'agent';
   /** New kind-first filter. Takes precedence over `type` when both are set. */
   kind?: 'lead' | 'customer' | 'vendor' | 'sub' | 'agent' | 'inspector' | 'referral' | 'other';
+  /** Restrict to a specific set of contact ids (drives the dedupe `?dupes` review). */
+  ids?: string[];
   limit?: number;
   offset?: number;
 };
@@ -124,10 +126,15 @@ function applyListFilters<
   T extends {
     is: (col: string, value: null) => T;
     eq: (col: string, value: string) => T;
+    in: (col: string, values: readonly string[]) => T;
     or: (expr: string) => T;
   },
 >(query: T, filters: CustomerListFilters): T {
   let q = query.is('deleted_at', null);
+  if (filters.ids) {
+    // Empty set → match nothing (don't silently return the whole list).
+    q = q.in('id', filters.ids.length > 0 ? filters.ids : ['00000000-0000-0000-0000-000000000000']);
+  }
   if (filters.kind) {
     // Kind-first filter (Slice C). May be combined with a customer subtype
     // via `type` when `kind === 'customer'`.
@@ -184,6 +191,113 @@ export async function listCustomers(filters: CustomerListFilters = {}): Promise<
     ...(row as unknown as CustomerRow),
     type: synthesizeLegacyType(row as { kind?: string | null; type?: string | null }),
   })) as CustomerRow[];
+}
+
+/** One cluster of likely-duplicate contacts (shared name, email, or phone). */
+export type DuplicateContactGroup = {
+  /** Representative display name for the cluster. */
+  name: string;
+  /** Distinct kinds present in the cluster, e.g. ['lead','vendor']. */
+  kinds: string[];
+  ids: string[];
+};
+
+export type DuplicateContactsResult = {
+  groups: DuplicateContactGroup[];
+  totalGroups: number;
+  /** Every contact id across all clusters — drives the `?dupes` review filter. */
+  ids: string[];
+};
+
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Detect likely-duplicate contacts for the current tenant: contacts that share
+ * a normalized name, email, or phone are clustered (union-find over the three
+ * signals, transitive). Returns clusters of size ≥ 2, biggest first. Powers the
+ * Henry "possible duplicates" banner + the `?dupes` review view on /contacts.
+ *
+ * Bounded by the tenant's contact count (one lightweight read). RLS scopes it.
+ */
+export async function findDuplicateContacts(): Promise<DuplicateContactsResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('customers')
+    .select('id, kind, name, email, phone')
+    .is('deleted_at', null);
+  if (error) throw new Error(`Failed to scan contacts for duplicates: ${error.message}`);
+
+  type Row = {
+    id: string;
+    kind: string | null;
+    name: string;
+    email: string | null;
+    phone: string | null;
+  };
+  const rows = (data ?? []) as Row[];
+
+  // Union-find over contact indices.
+  const parent = rows.map((_, i) => i);
+  const find = (i: number): number => {
+    let r = i;
+    while (parent[r] !== r) r = parent[r];
+    while (parent[i] !== r) {
+      const next = parent[i];
+      parent[i] = r;
+      i = next;
+    }
+    return r;
+  };
+  const union = (a: number, b: number) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent[ra] = rb;
+  };
+
+  // Link contacts sharing each signal value.
+  const linkBy = (keyOf: (r: Row) => string | null) => {
+    const firstSeen = new Map<string, number>();
+    rows.forEach((r, i) => {
+      const key = keyOf(r);
+      if (!key) return;
+      const seen = firstSeen.get(key);
+      if (seen === undefined) firstSeen.set(key, i);
+      else union(seen, i);
+    });
+  };
+  linkBy((r) => (r.name ? normalizeName(r.name) : null));
+  linkBy((r) => (r.email ? r.email.trim().toLowerCase() || null : null));
+  linkBy((r) => {
+    const d = r.phone ? phoneDigits(r.phone) : '';
+    return d.length >= 7 ? d : null; // ignore too-short fragments
+  });
+
+  // Gather clusters.
+  const clusters = new Map<number, number[]>();
+  rows.forEach((_, i) => {
+    const root = find(i);
+    const arr = clusters.get(root);
+    if (arr) arr.push(i);
+    else clusters.set(root, [i]);
+  });
+
+  const groups: DuplicateContactGroup[] = [];
+  for (const members of clusters.values()) {
+    if (members.length < 2) continue;
+    const memberRows = members.map((i) => rows[i]);
+    const kinds = Array.from(new Set(memberRows.map((r) => r.kind ?? 'other')));
+    const name = memberRows.find((r) => r.name?.trim())?.name ?? 'Unnamed';
+    groups.push({ name, kinds, ids: memberRows.map((r) => r.id) });
+  }
+  groups.sort((a, b) => b.ids.length - a.ids.length);
+
+  return {
+    groups,
+    totalGroups: groups.length,
+    ids: groups.flatMap((g) => g.ids),
+  };
 }
 
 export async function countCustomers(filters: CustomerListFilters = {}): Promise<number> {
