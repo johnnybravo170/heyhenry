@@ -68,7 +68,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Tab | Brief | OD render | Open dev cards | Built (ref) | Notes |
 |---|---|---|---|---|---|
 | Hub shell (header/nav) | ✅ `project-hub.md` | ✅ `od-project-hub` | — | ✅ #268/#287 | |
-| Overview | ✅ `overview.md` | ✅ `desktop.html` | **2** (aggregator engine; restyle+badges) | 🟡 #268 | cockpit shell built; **aggregator engine outstanding** (design ahead of code) |
+| Overview | ✅ `overview.md` | ✅ `desktop.html` | **1** (badge-consistency pt2) | 🟡 #268/#301 | aggregator engine + Paper restyle built (#301: margin-at-risk + 6 ranked rules, status-tokens + rust ✦); **outstanding:** 3-layer badge consistency (card `890e6f4d` pt2), + `ready_to_bill`/`schedule_slip` rules (sources not yet available) |
 | Budget | ✅ (project-hub) | ✅ `…-budget` | — | ✅ #278/#281 | |
 | Spend | ✅ (project-hub) | ✅ `…-spend` | — | ✅ #290/#291/#298 | |
 | Labour | ✅ (project-hub) | ✅ `…-labour` | — | ✅ #294 | |
