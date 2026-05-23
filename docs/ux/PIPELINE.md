@@ -61,6 +61,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Business Health (owner money cockpit) | ✅ `business-health.md` | ⬜ | — | 🟡 (live, pre-redesign) | restyle to Paper/status-tokens + cockpit hierarchy outstanding; **subscreens: bank-import + bank-review graduate to own renders** |
 | Calendar (crew scheduling) | ✅ `calendar.md` | 🟡 (no `od-calendar` dir) | — | ✅ #270–#275 | built ahead of a formal OD render |
 | Estimate (Budget authoring) | ✅ | ✅ (project-hub budget) | — | ✅ #278/#281 | |
+| Quotes (PW sales-quote object) | ✅ `quotes.md` | ⬜ (PW-only) | — | ✅ (PW live) | **PW-vertical** — GC `/quotes`→`/projects`; GC quoting = `estimate.md` + project Budget + `/approve*`. Brief = map + scope boundary; **recommend no GC render**. Open: auto-create-Project-on-approval decision |
 | Change Order | ✅ | 🟡 (in progress: od-driver) | "voice/photo drafting" | 🟡 | manual flow built; refinements open |
 | Expenses | ✅ | ⬜ | — | 🟡 ? | |
 | Customer Documents | ✅ | ⬜ | — | 🟡 ? | |
@@ -85,7 +86,6 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 
 Not yet briefed; **claim one** (mark it in-progress) before starting. Most are subscreen-dense — apply the skill's Subscreen Inventory step.
 - **Settings** (+ sub-pages: Team/invite, Pricebook/materials, Portal defaults, Calendar, Billing/subscription)
-- **Quotes** (legacy quote object — parallel entry path to projects)
 - **Worker app `/w`** (Today · Calendar · Projects · Profile + the worker-invoice queue; plan W1–W7 in `GC_WORKFLOW_PLAN.md`) — its own mobile-first surface, a big pass
 - **Public pages** — estimate / CO / invoice approval (`/approve*`), and the **customer Portal** itself (`/portal/[slug]`, customer-facing; carries the GC's brand)
 - **Project secondary tabs** — Photos · Documents · Notes (currently 🟡 in the Hub matrix)
