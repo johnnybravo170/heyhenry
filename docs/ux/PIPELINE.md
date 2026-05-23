@@ -84,15 +84,17 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Surface | Brief | OD render | Open dev cards | Built (ref) | Notes |
 |---|---|---|---|---|---|
 | Worker app `/w` (mobile field surface) | ✅ `worker-app.md` | ⬜ | — | 🟡 (live, W1–W7 built) | mobile-only; **target: fix 8-item bottom-nav overload, Paper restyle, offline capture**; heavy sub-flows (time/expense/invoice capture) graduate to own renders |
+| Public pages (`/portal`, `/estimate`, `/approve`, `/decide`, `/view`, `/pulse`, `/home-record`) | ✅ `public-pages.md` | ⬜ | — | 🟡 (live, pre-redesign) | client-facing, no-login, brand-carrying family; **target: one unified branded Paper template + the absolute client boundary**; approval family + Portal + Home Record + Pulse graduate to own renders |
 
 ---
 
 ## Untouched screens — menu for the next research pass
-> 🟡 **In progress — `research-0523` (2026-05-23) is sweeping this entire list in one Research pass.** Each screen is promoted into the status tables above (✅ Brief + ref) as its brief lands; bullets are removed from this menu as they complete.
+> ✅ **Sweep complete — `research-0523` (2026-05-23) briefed every actionable screen on this menu.** Promoted into the tables above with briefs: **Business Health** (`business-health.md`), **Quotes** (`quotes.md`), **Settings** (`settings.md`), **Project secondary tabs / Photos·Documents·Notes** (`project-secondary-tabs.md`), **Worker app `/w`** (`worker-app.md`), **Public pages** (`public-pages.md`). The only remaining item is intentionally deferred:
 
-Not yet briefed; **claim one** (mark it in-progress) before starting. Most are subscreen-dense — apply the skill's Subscreen Inventory step.
-- **Public pages** — estimate / CO / invoice approval (`/approve*`), and the **customer Portal** itself (`/portal/[slug]`, customer-facing; carries the GC's brand)
-- **Bookkeeper portal** — *deferred (out of scope for V1)*; listed so it's not forgotten
+- **Bookkeeper portal** (`/bk`) — **deferred, out of redesign scope for V1 — confirmed by the sweep.** Real + shipped, but scoped out by Role × Object Matrix `03b1ccf4` (`/bk` financial-only, "out of redesign scope"), Object Model `b4d880be` (Bookkeeper-domain tables out of scope), and Workflow Library `e0263cc3` (#8 Bookkeeper Review — deferred, separate portal). Revisit only if it re-enters scope.
+
+**Gaps surfaced during the sweep (a future pass — not part of this menu):**
+- **Project → Selections tab** (`selections-tab-server`, `project_selections`) — a real secondary Hub tab with no brief; flagged in `project-secondary-tabs.md`.
 
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
