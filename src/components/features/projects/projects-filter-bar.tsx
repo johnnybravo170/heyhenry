@@ -124,7 +124,10 @@ export function ProjectsFilterBar({
             >
               {lifecycleStageLabels[stage]}
               <span
-                className={cn('tabular-nums', on ? 'text-background/70' : 'text-foreground/50')}
+                className={cn(
+                  'font-mono text-[11px] tabular-nums',
+                  on ? 'text-background/70' : 'text-foreground/50',
+                )}
               >
                 {stageCounts[stage]}
               </span>
@@ -151,7 +154,7 @@ export function ProjectsFilterBar({
           Needs attention
           <span
             className={cn(
-              'tabular-nums',
+              'font-mono text-[11px] tabular-nums',
               overBudgetActive ? 'text-white/70' : 'text-amber-700/60 dark:text-amber-400/60',
             )}
           >

@@ -1,4 +1,3 @@
-import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import {
   type ContactKind,
@@ -45,14 +44,16 @@ export function CustomerTypeBadge({
         data-slot="customer-type-badge"
         data-kind={resolvedKind}
         className={cn(
-          'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
-          isLead ? statusToneClass.warning : 'bg-muted text-muted-foreground ring-transparent',
+          'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold',
+          isLead
+            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+            : 'bg-muted text-muted-foreground',
         )}
       >
         {contactKindLabels[resolvedKind]}
       </span>
       {showSubtype ? (
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {customerTypeLabels[type]}
         </span>
       ) : null}

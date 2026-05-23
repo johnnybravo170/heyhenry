@@ -9,7 +9,7 @@
  * only). One progress number + an "over budget" flag — no second burn metric.
  */
 
-import { ChevronDown, ChevronsUpDown, ChevronUp, MapPin, TriangleAlert } from 'lucide-react';
+import { ChevronDown, ChevronsUpDown, ChevronUp, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type ReactNode, useTransition } from 'react';
@@ -18,7 +18,6 @@ import { ProjectNameEditor } from '@/components/features/projects/project-name-e
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { ProjectListSort } from '@/lib/db/queries/projects';
-import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import type { LifecycleStage } from '@/lib/validators/project';
 
@@ -46,27 +45,41 @@ function daysSince(iso: string, nowMs: number): number {
 /** Progress cell: one % complete + a mini bar; over-budget rows lead with the flag. */
 function Progress({ pct, overBudget }: { pct: number; overBudget: boolean }) {
   const width = `${Math.min(100, Math.max(0, pct))}%`;
+  const isZero = pct === 0;
   return (
     <span className="inline-flex flex-col items-end gap-1">
       {overBudget ? (
-        <span
-          className={cn(
-            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-            statusToneClass.danger,
-          )}
-        >
-          <TriangleAlert className="size-3" aria-hidden />
+        // Text-only flag (no leading icon, no border) — OD `.over-flag`:
+        // soft red fill, ink red text, semibold.
+        <span className="inline-flex items-center rounded-full bg-[#FEE2E2] px-2 py-0.5 text-xs font-semibold text-[#B91C1C]">
           Over budget
         </span>
       ) : null}
       <span
-        className={cn('tabular-nums', overBudget ? 'text-xs text-muted-foreground' : undefined)}
+        className={cn(
+          'tabular-nums',
+          // Over-budget demotes the % to a secondary cue; zero reads faintest.
+          overBudget ? 'text-xs font-semibold text-muted-foreground' : 'text-base font-bold',
+          isZero && !overBudget && 'text-muted-foreground/60',
+        )}
       >
-        {pct}%
-      </span>
-      <span className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+        {pct}
         <span
-          className={cn('block h-full rounded-full', overBudget ? 'bg-[#B91C1C]' : 'bg-foreground')}
+          className={cn(
+            'text-xs',
+            overBudget
+              ? 'font-semibold text-muted-foreground'
+              : isZero
+                ? 'text-muted-foreground/60'
+                : 'text-muted-foreground',
+          )}
+        >
+          %
+        </span>
+      </span>
+      <span className="h-1 w-16 overflow-hidden rounded-full bg-[#ECE3D0]">
+        <span
+          className={cn('block h-full rounded-full', overBudget ? 'bg-[#B91C1C]' : 'bg-[#3A3A3A]')}
           style={{ width }}
         />
       </span>
@@ -192,7 +205,9 @@ export function ProjectsTable({
                         {cue ? <span className="text-xs text-muted-foreground">{cue}</span> : null}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{startLabel(p.start_date)}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      {startLabel(p.start_date)}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <Progress pct={p.work_status_pct} overBudget={p.over_budget} />
                     </td>
