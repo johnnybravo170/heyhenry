@@ -13,9 +13,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Money } from '@/components/ui/money';
 import { Textarea } from '@/components/ui/textarea';
 import type { BudgetCategorySummary } from '@/lib/db/queries/projects';
-import { formatCurrency } from '@/lib/pricing/calculator';
+import { statusToneClass } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import {
   deleteExpenseAction,
   logExpenseWithReceiptAction,
@@ -592,11 +594,16 @@ export function TimeExpenseTab({
   return (
     <div className="space-y-8">
       {focusCategoryId && focusCategoryName ? (
-        <div className="flex items-center justify-between rounded-md border border-amber-300/60 bg-amber-50/50 px-3 py-2 text-xs">
+        <div
+          className={cn(
+            'flex items-center justify-between rounded-md border px-3 py-2 text-xs',
+            statusToneClass.info,
+          )}
+        >
           <span>
             Filtered to <span className="font-semibold">{focusCategoryName}</span>
           </span>
-          <a href={`/projects/${projectId}?tab=time`} className="text-primary hover:underline">
+          <a href={`/projects/${projectId}?tab=time`} className="font-medium hover:underline">
             Clear filter
           </a>
         </div>
@@ -604,17 +611,29 @@ export function TimeExpenseTab({
 
       {/* Time */}
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">
-            Time Entries{' '}
-            {totalHours > 0 && (
-              <span className="ml-1 font-normal text-muted-foreground">
-                ({totalHours}h
-                {totalBilledCents > 0 ? ` · ${formatCurrency(totalBilledCents)} billed` : ''})
-              </span>
-            )}
-          </h3>
-          <div className="flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h3 className="text-base font-semibold">Time entries</h3>
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+            {filteredTime.length} total
+            {totalHours > 0 ? (
+              <>
+                {' · '}
+                <span className="font-semibold normal-case tracking-normal text-foreground tabular-nums">
+                  {totalHours}h
+                </span>
+              </>
+            ) : null}
+            {totalBilledCents > 0 ? (
+              <>
+                {' · '}
+                <span className="text-foreground">
+                  <Money cents={totalBilledCents} />
+                </span>{' '}
+                billed
+              </>
+            ) : null}
+          </span>
+          <div className="ml-auto flex items-center gap-2">
             {workerOptions.length > 0 ? (
               <select
                 value={workerFilter}
@@ -631,7 +650,11 @@ export function TimeExpenseTab({
               </select>
             ) : null}
             {!showTimeForm && (
-              <Button size="sm" onClick={() => setShowTimeForm(true)}>
+              <Button
+                size="sm"
+                className="bg-brand text-white hover:bg-brand/90"
+                onClick={() => setShowTimeForm(true)}
+              >
                 + Log time
               </Button>
             )}
@@ -659,14 +682,14 @@ export function TimeExpenseTab({
           <div className="overflow-x-auto rounded-md border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Date</th>
-                  <th className="px-3 py-2 text-left font-medium">Worker</th>
-                  <th className="px-3 py-2 text-left font-medium">Allocation</th>
-                  <th className="px-3 py-2 text-right font-medium">Hours</th>
-                  <th className="px-3 py-2 text-right font-medium">Rate</th>
-                  <th className="px-3 py-2 text-right font-medium">Billed</th>
-                  <th className="px-3 py-2 text-left font-medium">Notes</th>
+                <tr className="border-b bg-muted/40 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-3 py-2 text-left font-semibold">Date</th>
+                  <th className="px-3 py-2 text-left font-semibold">Worker</th>
+                  <th className="px-3 py-2 text-left font-semibold">Allocation</th>
+                  <th className="px-3 py-2 text-right font-semibold">Hours</th>
+                  <th className="px-3 py-2 text-right font-semibold">Rate</th>
+                  <th className="px-3 py-2 text-right font-semibold">Billed</th>
+                  <th className="px-3 py-2 text-left font-semibold">Notes</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -686,12 +709,12 @@ export function TimeExpenseTab({
                       <td className="px-3 py-2 text-muted-foreground">
                         {allocation ?? <span className="italic">unallocated</span>}
                       </td>
-                      <td className="px-3 py-2 text-right">{Number(entry.hours)}h</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{Number(entry.hours)}h</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">
-                        {rateCents != null ? formatCurrency(rateCents) : '—'}
+                        {rateCents != null ? <Money cents={rateCents} /> : '—'}
                       </td>
                       <td className="px-3 py-2 text-right">
-                        {billedCents > 0 ? formatCurrency(billedCents) : '—'}
+                        {billedCents > 0 ? <Money cents={billedCents} emphasis /> : '—'}
                       </td>
                       <td className="px-3 py-2 whitespace-pre-wrap text-muted-foreground">
                         {entry.notes || '—'}
@@ -735,7 +758,7 @@ export function TimeExpenseTab({
               Expenses{' '}
               {totalExpenses > 0 && (
                 <span className="ml-1 text-muted-foreground font-normal">
-                  ({formatCurrency(totalExpenses)})
+                  (<Money cents={totalExpenses} />)
                 </span>
               )}
             </h3>
@@ -775,7 +798,9 @@ export function TimeExpenseTab({
                     <tr key={exp.id} className="border-b last:border-0">
                       <td className="px-3 py-2">{exp.expense_date}</td>
                       <td className="px-3 py-2">{exp.worker_name ?? 'Owner/admin'}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(exp.amount_cents)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Money cents={exp.amount_cents} />
+                      </td>
                       <td className="px-3 py-2">{exp.vendor || '—'}</td>
                       <td className="px-3 py-2 text-muted-foreground">{exp.description || '—'}</td>
                       <td className="px-3 py-2">
