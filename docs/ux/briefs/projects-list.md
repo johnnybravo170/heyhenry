@@ -37,5 +37,18 @@ The 7-stage `lifecycle_stage` renders as a status badge in the single table (no 
 ## Visual identity
 Deepened **"Paper"** palette (approved): warm paper, white cards that float, solid warm borders, ink text. Over-budget flag in danger red; rust as the single accent per screen. Status badges via the existing status-token tones.
 
+## Subscreen inventory
+A list surface. Subscreens spec inline; rows link to the Project Hub (its own brief).
+
+**Modals / dialogs**
+- **New-project form** (`project-form`) — name · **customer (pick-or-create, §2)** · project type · dates · billing mode (cost-plus vs fixed) · mgmt-fee.
+- **Clone-project dialog** (`clone-project-dialog`) — scaffold a new project from an existing one.
+
+**Inline / transient / view-state**
+- **Filter bar** — status/stage facets + search; pagination (the list can be long).
+- **Per-row** — the one metric + over-budget flag; whole row → `/projects/[id]` (the Hub).
+
+**No graduate** — rows open the Project Hub (separately briefed).
+
 ## Open questions
 - Should the over-budget flag also power a one-click "needs attention" filter/sort? (Minor — can decide off the OD output.)

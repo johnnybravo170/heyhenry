@@ -80,6 +80,28 @@ On the **customer** side Henry is **invisible** — the homeowner just sees a cl
 ## Visual identity
 **The GC's document, not HeyHenry's app.** A clean, professional, trustworthy letterhead: the GC **logo** + name up top, generous type, an unambiguous totals block, a single clear action. Carry HeyHenry's *quality* (Inter, tabular money, de-emph cents, calm hairlines, three type sizes) and a restrained warmth — but **the brand on the page is the contractor's**; HeyHenry is a quiet footer. One clear accent for the action button. No operator chrome, no Henry sparkle. Print-friendly (these get saved/printed).
 
+## Subscreen inventory
+This brief already treats the **three public docs** (`/estimate/[code]` · `/approve/[code]` · `/view/invoice/[id]`) as its surfaces; the subscreens are the **action zones + states + the shared shell**. Customer-facing — GC brand, no operator chrome, no Henry sparkle.
+
+**Shared component (graduate → a PATTERNS-worthy extraction)**
+- **`<CustomerDocument>` shell** — promote `estimate-render.tsx` to the one branded wrapper (header logo/business + doc# / customer · body · totals block · GST/WCB footer · action zone) all three docs adopt. The system this brief exists to create.
+
+**Action zones (modals / inline)**
+- **Approve** (estimate/CO) — typed-name e-signature confirm.
+- **Pay** (invoice) — **two equal options**: **card** (Stripe pre-created checkout link) + **Interac e-Transfer** (first-class structured block: GC's e-Transfer email/instructions, **copyable**, "we'll mark it received").
+- **Decline / feedback** — estimate = feedback; CO = decline (open Q: parity).
+
+**States**
+- Estimate/CO: pending → approve / decline-feedback → confirmed card · **Expired** → "contact {GC}."
+- Invoice: sent → pay → **paid** (date · method · receipt) | **void** (neutral) | draft/missing → "not available."
+
+**Inline / transient**
+- **Sticky mobile pay/approve bar** (≥44px, thumb-reachable, no scroll-past).
+- **Read-receipt** — first view silently notifies the operator (customer-invisible).
+
+**Sub-routes (the surfaces + the separate aggregate)**
+- `/estimate/[code]` · `/approve/[code]` · `/view/invoice/[id]` — the three docs (code-keyed target). **`/portal/[slug]`** — the separate project portal (its own brief; research-0523's Public-pages sweep).
+
 ## Accessibility
 WCAG 2.2 AA: high-contrast text; the action button is a real, labeled, focus-ringed control; typed-name e-sig labeled + required; never colour-only for status (label the paid/void/expired states); ≥44px targets; the doc is readable zoomed to 200%; Stripe/Interac actions keyboard-operable; logo has alt = business name.
 

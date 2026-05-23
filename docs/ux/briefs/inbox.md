@@ -46,6 +46,24 @@ Receipts/bills carry GST (`gst_cents`) → the vendor-bill Apply dialog pre-fill
 - **Empty:** "Nothing waiting on you. Forward bills, quotes, photos, or emails to henry@inbound.heyhenry.io and they'll land here." (calm, with the forward affordance).
 - **Loading:** skeleton cards. **Error:** a draft in `error` disposition → "Henry couldn't read this — open to classify manually." **Offline:** cached list.
 
+## Subscreen inventory
+The intake triage queue (`intake_drafts`). The per-type **review dialogs** are the heart of it.
+
+**Modals / dialogs (review-and-file, one per draft type)**
+- **Staged bill** (`staged-bill-confirm-dialog`) — review a Henry-extracted vendor bill → confirm into a project **cost** (category, GST) / PO.
+- **Staged document** (`staged-document-dialog`) — file an inbound doc to a project.
+- **Staged photo** (`staged-photo-dialog`) — file a photo to a project gallery (+ tag).
+- **Staged message** (`staged-message-dialog`) — route an inbound message into a project thread.
+- **Add-note** (`add-note-dialog`) + **Todo form** (`todo-form`) — capture a note/todo from a draft.
+
+**Sub-flows**
+- **Classify → review → file/convert** — Henry classifies each `intake_draft` by type; the operator reviews (the dialogs above) and files to the right object. Capture-now / clean-up-later; never blocks capture.
+
+**Inline / transient / view-state**
+- **Tabs** — Intake · Todos · Work log (open Q: split Work log to a global surface); per-type badge; per-type empty states.
+
+**No graduate** — the review dialogs are the subscreens; their targets (cost / photo / message / doc) live on their own screens.
+
 ## Open questions
 1. Keep Intake / Todos / Work log as three tabs, or split Work log into a global activity surface? (Current: 3 tabs.)
 2. Batch-apply for same-kind drafts (a stack of receipts → one project)?
