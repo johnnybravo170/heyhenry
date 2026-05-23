@@ -22,9 +22,17 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { PortalScheduleGantt } from '@/components/features/portal/portal-schedule-gantt';
+import {
+  type CascadeExplainerState,
+  ScheduleCascadeExplainer,
+} from '@/components/features/projects/schedule-cascade-explainer';
 import { ScheduleClearButton } from '@/components/features/projects/schedule-clear-button';
 import { ScheduleGantt } from '@/components/features/projects/schedule-gantt';
 import { ScheduleRegenerateDepsButton } from '@/components/features/projects/schedule-regenerate-deps-button';
+import {
+  bumpedStartIso,
+  ScheduleSlipPrompt,
+} from '@/components/features/projects/schedule-slip-prompt';
 import { ScheduleTaskEditor } from '@/components/features/projects/schedule-task-editor';
 import {
   computeWeekDigest,
@@ -39,10 +47,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { workingDaysBetween } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { statusToneClass } from '@/lib/ui/status-tokens';
 import {
   cancelScheduleNotifyAction,
+  notifyCustomerOfScheduleChangeAction,
   updateScheduleTaskAction,
 } from '@/server/actions/project-schedule';
 
@@ -81,6 +91,12 @@ export function ScheduleInteractive({
   const [clearOpen, setClearOpen] = useState(false);
   const [autoLinkOpen, setAutoLinkOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // The active Henry cascade explainer (transient, dismissible). Set when
+  // a date/duration edit ripples ≥1 downstream task; cleared on Undo,
+  // Dismiss, or the next edit. `notifyQueued` tracks whether the operator
+  // already tapped "Notify customer" for this cascade.
+  const [cascadeState, setCascadeState] = useState<CascadeExplainerState | null>(null);
+  const [cascadeNotifyQueued, setCascadeNotifyQueued] = useState(false);
   // Mobile List/Timeline toggle — List (the digest) is the default. Desktop
   // shows both stacked regardless (the toggle is mobile-only via CSS).
   const [mobileView, setMobileView] = useState<MobileView>('list');
@@ -149,11 +165,16 @@ export function ScheduleInteractive({
   // optimistic drags) with the shared working-day predicate.
   const digest = computeWeekDigest(visibleTasks, timezone);
   const behindTaskIds = digest.behindIds;
+  const behindIdSet = new Set(behindTaskIds);
+  const behindTasks = visibleTasks.filter((t) => behindIdSet.has(t.id));
 
   const handleTaskUpdate = (
     taskId: string,
     patch: { planned_start_date?: string; planned_duration_days?: number },
   ) => {
+    // Snapshot the origin task's pre-edit state so the cascade explainer
+    // can label the move ("+3 working days") and Undo can restore it.
+    const before = tasks.find((t) => t.id === taskId);
     setPendingPatches((prev) => {
       const next = new Map(prev);
       next.set(taskId, { ...(prev.get(taskId) ?? {}), ...patch });
@@ -171,6 +192,76 @@ export function ScheduleInteractive({
         toast.error(`Could not save: ${res.error}`);
         return;
       }
+      // Surface the Henry cascade explainer when ≥1 downstream task moved.
+      if (before && res.cascade && res.cascade.count > 0) {
+        // Signed working-day delta the operator applied to the origin: a
+        // start move is measured in working days; a pure resize uses the
+        // duration delta. (Both can move in one edit — start dominates the
+        // headline since that's what the operator dragged.)
+        let delta = 0;
+        if (patch.planned_start_date !== undefined) {
+          delta = workingDaysBetween(
+            new Date(`${before.planned_start_date}T00:00:00Z`),
+            new Date(`${patch.planned_start_date}T00:00:00Z`),
+          );
+        } else if (patch.planned_duration_days !== undefined) {
+          delta = patch.planned_duration_days - before.planned_duration_days;
+        }
+        setCascadeState({
+          originId: before.id,
+          originName: before.name,
+          originUndo: {
+            planned_start_date: before.planned_start_date,
+            planned_duration_days: before.planned_duration_days,
+          },
+          workingDayDelta: delta,
+          cascade: res.cascade,
+        });
+        setCascadeNotifyQueued(false);
+      }
+      router.refresh();
+    });
+  };
+
+  // Slip-prompt "Bump 1 day": push the task's planned_start by one working
+  // day via the same update action (which cascades downstream as usual).
+  const handleBump = (taskId: string) => {
+    const task = visibleTasks.find((t) => t.id === taskId);
+    if (!task) return;
+    handleTaskUpdate(taskId, { planned_start_date: bumpedStartIso(task) });
+  };
+
+  // Re-apply the origin task's pre-cascade start + duration to unwind the
+  // ripple (the forward cascade re-runs on the restored state — a no-op
+  // since nothing's now violated), then clear the explainer.
+  const handleCascadeUndo = () => {
+    if (!cascadeState) return;
+    const { originId, originUndo } = cascadeState;
+    setCascadeState(null);
+    startTransition(async () => {
+      const res = await updateScheduleTaskAction(originId, originUndo);
+      if (!res.ok) {
+        toast.error(`Could not undo: ${res.error}`);
+        return;
+      }
+      toast.success('Undone.');
+      router.refresh();
+    });
+  };
+
+  // "Notify customer" from the explainer — routes into the EXISTING
+  // deferred-notify path (cron + 5-min Undo). Caller already gated this
+  // to firm + client-visible moved tasks.
+  const handleCascadeNotify = () => {
+    if (!cascadeState) return;
+    startTransition(async () => {
+      const res = await notifyCustomerOfScheduleChangeAction(projectId);
+      if (!res.ok) {
+        toast.error(`Could not queue notice: ${res.error}`);
+        return;
+      }
+      setCascadeNotifyQueued(true);
+      toast.success('Customer notice queued — Undo within 5 minutes.');
       router.refresh();
     });
   };
@@ -256,6 +347,28 @@ export function ScheduleInteractive({
           <span className="size-2.5 rounded-sm bg-muted ring-2 ring-destructive/70" /> Behind
         </span>
       </div>
+
+      {/* Henry ✦ cascade explainer — the transient ripple summary after a
+          drag/resize moves downstream tasks. Undoable; Notify customer
+          only when the moved set is firm + client-visible. */}
+      {cascadeState ? (
+        <ScheduleCascadeExplainer
+          state={cascadeState}
+          timezone={timezone}
+          notifyQueued={cascadeNotifyQueued}
+          onUndo={handleCascadeUndo}
+          onNotify={handleCascadeNotify}
+          onDismiss={() => setCascadeState(null)}
+        />
+      ) : null}
+
+      {/* Henry ✦ slip prompt — one-tap Bump / Mark done for behind tasks. */}
+      <ScheduleSlipPrompt
+        behindTasks={behindTasks}
+        timezone={timezone}
+        onBump={handleBump}
+        onMarkDone={handleMarkDone}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
