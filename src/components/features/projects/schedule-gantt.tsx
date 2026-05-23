@@ -142,7 +142,7 @@ function DayBacking({ meta }: { meta: DayMeta[] }) {
           className={`pointer-events-none ${
             m.isWeekend ? 'bg-muted/40' : ''
           } ${m.isMonday ? 'border-l border-border/60' : ''} ${
-            m.isToday ? 'border-l-2 border-amber-500/80' : ''
+            m.isToday ? 'border-l-2 border-brand' : ''
           }`}
           style={{ gridColumnStart: i + 1 }}
         />
@@ -333,7 +333,7 @@ export function ScheduleGantt({
   const showGroupHeaders = groups.length > 1 || (groups[0]?.phaseId ?? null) !== null;
 
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
+    <div className="overflow-x-auto rounded-xl border bg-card">
       <div className="grid grid-cols-[140px_1fr] gap-x-3 px-3 py-2 text-xs sm:grid-cols-[180px_1fr]">
         {/* Two header rows: months above, day-of-month markers below.
             Top-left corner is sticky so it covers the timeline header
