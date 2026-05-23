@@ -58,6 +58,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 | Projects list | ✅ | ✅ `od-projects-list` | — | ✅ #277 | |
 | Inbox | ✅ | ✅ `od-inbox-triage` | — | 🟡 ? | build state unconfirmed |
 | Billing / AR (cross-project) | ✅ `invoices.md` | ✅ `od-billing` | — | ✅ #288 | |
+| Invoice detail (`/invoices/[id]`) | ✅ `invoice-detail.md` | ⬜ | — | 🟡 (built, pre-Paper) | graduated from `invoices.md`; customer-view live-preview §25 shipped (#207–#215). Redesign = **Paper/status-tokens restyle + code-key the invoice # + calm the stacked banners** (restyle-only, no new behavior). Customer counterpart `/view/invoice/[id]` → `customer-documents.md`. **subscreens: ✅ (invoice-detail.md)** |
 | Business Health (owner money cockpit) | ✅ `business-health.md` | ✅ `od-business-health` | 1 (build `ca55937c`) | 🟡 (live, pre-redesign) | render converged (2-round OD loop); Paper restyle + cockpit hierarchy (Henry attention strip · net-cash + AR-aging hero · KPI row · owner-draws ledger · QBO-handoff "Is/Isn't" aside · states); owner-draws reconcile end-to-end ($36,500 = Salary $24k + Dividend $10k + Reimburse $2.5k); **subscreens: bank-import + bank-review graduate to own renders** |
 | Calendar (crew scheduling) | ✅ `calendar.md` | 🟡 (no `od-calendar` dir) | — | ✅ #270–#275 | built ahead of a formal OD render |
 | Estimate (Budget authoring) | ✅ | ✅ (project-hub budget) | — | ✅ #278/#281 | |
@@ -100,7 +101,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
 - **OD→build contract:** `docs/ux/HANDOFF-TO-BUILD.md` (tokens + class names + data bindings so builds don't drift from screenshots).
-- **Subscreen-inventory backfill — ✅ COMPLETE** (2026-05-23) across all 13 briefed screens (Schedule · Client · Overview · Estimate · Change-Order · Invoices · Contacts · Expenses · Calendar · Projects-list · Inbox · Customer-Documents · Project-Hub) — each brief now carries a `## Subscreen inventory`. **Graduated to their own row/brief:** `/invoices/[id]` (invoice detail + customer-view override editor) and the `<CustomerDocument>` shared shell. New screens get their inventory inline via the skill's Subscreen-Inventory step.
+- **Subscreen-inventory backfill — ✅ COMPLETE** (2026-05-23) across all 13 briefed screens (Schedule · Client · Overview · Estimate · Change-Order · Invoices · Contacts · Expenses · Calendar · Projects-list · Inbox · Customer-Documents · Project-Hub) — each brief now carries a `## Subscreen inventory`. **Graduates — both handled:** `/invoices/[id]` now has its own brief + row (`invoice-detail.md`); the `<CustomerDocument>` shared shell is specced in `customer-documents.md` (render `od-customer-documents` + build card `1f5cd745`) — a shared-component (PATTERNS) extraction, not a separate brief. New screens get their inventory inline via the skill's Subscreen-Inventory step.
 
 ---
 
