@@ -132,7 +132,7 @@ export default async function ProjectsPage({
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
+          <h1 className="text-[28px] font-bold tracking-tight">Projects</h1>
           <p className="text-sm text-muted-foreground">
             {directoryEmpty
               ? 'No projects yet.'
@@ -187,19 +187,22 @@ export default async function ProjectsPage({
               </Button>
             </div>
           ) : (
-            <>
-              <ProjectsTable
-                projects={rows}
-                sort={sort}
-                dir={dir}
-                nowMs={nowMs}
-                customerOptions={customerOptions}
-              />
-              <p className="px-1 text-xs text-muted-foreground tabular-nums">
-                {rangeStart}–{rangeEnd} of {grandTotal}
-              </p>
-              <ProjectsPager page={page} pageSize={PAGE_SIZE} total={grandTotal} />
-            </>
+            <ProjectsTable
+              projects={rows}
+              sort={sort}
+              dir={dir}
+              nowMs={nowMs}
+              customerOptions={customerOptions}
+              footer={
+                <ProjectsPager
+                  page={page}
+                  pageSize={PAGE_SIZE}
+                  total={grandTotal}
+                  rangeStart={rangeStart}
+                  rangeEnd={rangeEnd}
+                />
+              }
+            />
           )}
         </>
       )}

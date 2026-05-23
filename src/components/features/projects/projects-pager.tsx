@@ -7,20 +7,25 @@ import { Button } from '@/components/ui/button';
 
 /**
  * Server-paginated footer for the projects list. Page lives in the URL
- * (`?page=`) alongside the active filters. Renders nothing on a single page.
+ * (`?page=`) alongside the active filters. Renders as the table card's
+ * bottom row: mono range count on the left, page nav on the right. Always
+ * present (page nav is disabled on a single page) so the card has a footer.
  */
 export function ProjectsPager({
   page,
   pageSize,
   total,
+  rangeStart,
+  rangeEnd,
 }: {
   page: number;
   pageSize: number;
   total: number;
+  rangeStart: number;
+  rangeEnd: number;
 }) {
   const searchParams = useSearchParams();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (totalPages <= 1) return null;
 
   function href(nextPage: number): string {
     const params = new URLSearchParams(searchParams?.toString());
@@ -34,9 +39,9 @@ export function ProjectsPager({
   const hasNext = page < totalPages;
 
   return (
-    <div className="flex items-center justify-between px-1">
+    <div className="flex items-center justify-between border-t px-4 py-3">
       <p className="font-mono text-xs text-muted-foreground tabular-nums">
-        Page {page} / {totalPages}
+        Showing {rangeStart}–{rangeEnd} of {total}
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -56,6 +61,9 @@ export function ProjectsPager({
             </span>
           )}
         </Button>
+        <span className="px-1 font-mono text-xs text-muted-foreground tabular-nums">
+          {page} / {totalPages}
+        </span>
         <Button
           asChild={hasNext}
           variant="outline"

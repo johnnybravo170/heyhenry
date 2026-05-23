@@ -102,51 +102,7 @@ export function ProjectsFilterBar({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex items-center sm:max-w-sm sm:flex-1">
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
-          />
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search projects or customers…"
-            className="h-9 w-full pl-9 pr-9"
-            aria-label="Search projects"
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="absolute right-2 inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="Clear search"
-            >
-              <X className="size-3.5" />
-            </button>
-          ) : null}
-        </div>
-        <label className="flex items-center gap-2 text-sm sm:ml-auto">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Sort
-          </span>
-          <select
-            aria-label="Sort projects"
-            value={currentSortPreset}
-            onChange={(e) => applySort(e.target.value)}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
-          >
-            {SORT_PRESETS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
+    <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Status
@@ -202,6 +158,50 @@ export function ProjectsFilterBar({
             {overBudgetCount}
           </span>
         </button>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center md:flex-shrink-0">
+        <div className="relative flex items-center sm:max-w-sm sm:flex-1">
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
+          />
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search projects or customers…"
+            className="h-9 w-full pl-9 pr-9"
+            aria-label="Search projects"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="absolute right-2 inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="size-3.5" />
+            </button>
+          ) : null}
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Sort
+          </span>
+          <select
+            aria-label="Sort projects"
+            value={currentSortPreset}
+            onChange={(e) => applySort(e.target.value)}
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            {SORT_PRESETS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
     </div>
   );
