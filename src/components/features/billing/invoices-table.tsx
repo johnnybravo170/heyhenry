@@ -1,8 +1,10 @@
 'use client';
 
-import { Download, ExternalLink, Receipt } from 'lucide-react';
+import { Download, ExternalLink, Info } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -14,9 +16,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { type StatusTone, statusToneClass, statusToneIcon } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import { type InvoiceRow, listInvoicesAction } from '@/server/actions/billing-management';
 
 const PAGE_SIZE = 12;
+
+/** HeyHenry receipt status → status-tokens tone (paid is the common case). */
+function receiptTone(status: string): StatusTone {
+  switch (status) {
+    case 'paid':
+      return 'success';
+    case 'open':
+    case 'draft':
+      return 'info';
+    case 'uncollectible':
+    case 'void':
+      return 'neutral';
+    default:
+      return 'neutral';
+  }
+}
 
 export function InvoicesTable() {
   const tz = useTenantTimezone();
@@ -55,15 +75,12 @@ export function InvoicesTable() {
   }
 
   return (
-    <Card>
+    <Card className="shadow-none">
       <CardHeader>
-        <div className="flex items-start gap-2">
-          <Receipt className="size-5 mt-0.5" />
-          <div>
-            <CardTitle>Invoice history</CardTitle>
-            <CardDescription>Receipts for every charge, including GST.</CardDescription>
-          </div>
-        </div>
+        <CardTitle>Invoice history</CardTitle>
+        <CardDescription>
+          Receipts for every charge, including GST. CRA-acceptable for your input tax credit.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {!loaded && pending ? (
@@ -92,28 +109,42 @@ export function InvoicesTable() {
                     <TableCell className="text-right text-muted-foreground">
                       {inv.taxCents > 0 ? formatCents(inv.taxCents, inv.currency) : '—'}
                     </TableCell>
-                    <TableCell className="capitalize">{inv.status.replace('_', ' ')}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const tone = receiptTone(inv.status);
+                        const Icon = statusToneIcon[tone];
+                        return (
+                          <Badge
+                            variant="secondary"
+                            className={cn('gap-1 font-medium capitalize', statusToneClass[tone])}
+                          >
+                            <Icon aria-hidden className="size-3" />
+                            {inv.status.replace('_', ' ')}
+                          </Badge>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex gap-1">
                         {inv.hostedUrl ? (
-                          <Button asChild variant="ghost" size="sm">
+                          <Button asChild variant="ghost" size="icon" className="size-11 sm:size-9">
                             <a
                               href={inv.hostedUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              aria-label="View invoice"
+                              aria-label="View invoice on Stripe"
                             >
                               <ExternalLink className="size-4" />
                             </a>
                           </Button>
                         ) : null}
                         {inv.pdfUrl ? (
-                          <Button asChild variant="ghost" size="sm">
+                          <Button asChild variant="ghost" size="icon" className="size-11 sm:size-9">
                             <a
                               href={inv.pdfUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              aria-label="Download PDF"
+                              aria-label="Download PDF receipt"
                             >
                               <Download className="size-4" />
                             </a>
@@ -140,6 +171,24 @@ export function InvoicesTable() {
             ) : null}
           </>
         )}
+
+        {/* Disambiguate the three money surfaces. This screen is the GC's OWN
+            HeyHenry subscription — NOT the receipts they send clients, and NOT
+            the Stripe Connect payouts they collect from clients. One cross-link
+            line so the operator never updates the wrong card. */}
+        <p className="mt-4 flex items-start gap-2 border-t pt-4 text-xs leading-relaxed text-muted-foreground">
+          <Info className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" aria-hidden />
+          <span>
+            Paying your subcontractors or receiving client payments? That's{' '}
+            <Link
+              href="/settings/stripe"
+              className="font-semibold text-foreground underline underline-offset-2"
+            >
+              Stripe Connect →
+            </Link>{' '}
+            a different money surface from your HeyHenry subscription.
+          </span>
+        </p>
       </CardContent>
     </Card>
   );

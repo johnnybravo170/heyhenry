@@ -153,6 +153,49 @@ export const projectStageTone = {
   cancelled: 'neutral',
 } as const satisfies Record<string, StatusTone>;
 
+/**
+ * The tenant's HeyHenry subscription cockpit state (Settings ▸ Billing).
+ *
+ * This is NOT the raw Stripe `subscription_status` — it's the *derived*
+ * cockpit state the operator reads at a glance, layering `cancelAtPeriodEnd`
+ * and `pausedUntil` on top of the status. One tone + one glyph + one headline
+ * per state so the cockpit pill reads as a state machine, not a generic
+ * `status.replace('_',' ')` pill.
+ *
+ *   trialing             — info blue, in-flight (card not yet charged)
+ *   active               — success green, healthy + paid
+ *   cancel_at_period_end — hold slate, winding down (access until period end)
+ *   paused               — hold slate, billing paused (resumes_at)
+ *   past_due             — warning amber, NEEDS ACTION (card declined)
+ *   canceled             — neutral gray, access ended / data preserved
+ */
+export type SubscriptionCockpitState =
+  | 'trialing'
+  | 'active'
+  | 'cancel_at_period_end'
+  | 'paused'
+  | 'past_due'
+  | 'canceled';
+
+export const subscriptionStateTone = {
+  trialing: 'info',
+  active: 'success',
+  cancel_at_period_end: 'hold',
+  paused: 'hold',
+  past_due: 'warning',
+  canceled: 'neutral',
+} as const satisfies Record<SubscriptionCockpitState, StatusTone>;
+
+/** Short pill label per cockpit state (text never colour-only). */
+export const subscriptionStateLabel: Record<SubscriptionCockpitState, string> = {
+  trialing: 'Trial',
+  active: 'Active',
+  cancel_at_period_end: 'Cancelling',
+  paused: 'Paused',
+  past_due: 'Needs attention',
+  canceled: 'Canceled',
+};
+
 /** Change order lifecycle. */
 export const changeOrderStatusTone = {
   draft: 'neutral',
