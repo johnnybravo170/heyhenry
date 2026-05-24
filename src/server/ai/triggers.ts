@@ -118,27 +118,6 @@ export async function onEstimateApproved(projectId: string): Promise<void> {
   }
 }
 
-/** Fired when a change order is approved by the customer. */
-export async function onChangeOrderApproved(coId: string): Promise<void> {
-  try {
-    const admin = createAdminClient();
-    const { data: co } = await admin
-      .from('change_orders')
-      .select('id, tenant_id, project_id, title')
-      .eq('id', coId)
-      .maybeSingle();
-    if (!co) return;
-
-    await writeHenrySuggestion({
-      tenantId: co.tenant_id as string,
-      title: 'Change order approved — create tasks?',
-      body: `Change order "${co.title}" was accepted. Want me to create tasks for the new scope items?`,
-    });
-  } catch (e) {
-    console.error('[henry-trigger] onChangeOrderApproved failed:', e);
-  }
-}
-
 /**
  * Fired when a photo is uploaded against a job. If the job has any task
  * with required_photos=true currently in 'done' (waiting for verify),

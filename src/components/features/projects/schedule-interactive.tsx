@@ -27,6 +27,10 @@ import {
   ScheduleCascadeExplainer,
 } from '@/components/features/projects/schedule-cascade-explainer';
 import { ScheduleClearButton } from '@/components/features/projects/schedule-clear-button';
+import {
+  type AcceptedCoItem,
+  ScheduleCoSuggestion,
+} from '@/components/features/projects/schedule-co-suggestion';
 import { ScheduleGantt } from '@/components/features/projects/schedule-gantt';
 import { ScheduleRegenerateDepsButton } from '@/components/features/projects/schedule-regenerate-deps-button';
 import {
@@ -47,11 +51,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
-import { workingDaysBetween } from '@/lib/date/working-days';
-import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
+import { addWorkingDays, workingDayEnd, workingDaysBetween } from '@/lib/date/working-days';
+import type { CoScheduleSuggestion, ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { statusToneClass } from '@/lib/ui/status-tokens';
 import {
+  acceptCoScheduleSuggestionAction,
   cancelScheduleNotifyAction,
+  dismissCoScheduleSuggestionAction,
   notifyCustomerOfScheduleChangeAction,
   updateScheduleTaskAction,
 } from '@/server/actions/project-schedule';
@@ -67,6 +73,7 @@ export function ScheduleInteractive({
   tradeTypicalPhase,
   pendingNotifyAt,
   predecessorsByTaskId,
+  coSuggestions,
 }: {
   projectId: string;
   tasks: ProjectScheduleTask[];
@@ -82,6 +89,9 @@ export function ScheduleInteractive({
   /** successor task id → list of predecessor task ids. Threaded into
    *  the editor's "Depends on" picker. */
   predecessorsByTaskId: Record<string, string[]>;
+  /** Approved, not-yet-dismissed change orders awaiting scheduling —
+   *  the CO→schedule Henry prompt (brief touchpoint #3). */
+  coSuggestions: CoScheduleSuggestion[];
 }) {
   const router = useRouter();
   const timezone = useTenantTimezone();
@@ -309,6 +319,58 @@ export function ScheduleInteractive({
   // non-destructive auto-link affordance in the empty-deps case.
   const hasAnyDependency = Object.values(predecessorsByTaskId).some((p) => p.length > 0);
 
+  // CO → schedule prompt: existing tasks for the "Add after" picker.
+  const coTaskOptions = visibleTasks.map((t) => ({ id: t.id, name: t.name }));
+
+  // Accept a CO→schedule draft. Compute the drafted task's start from the
+  // chosen predecessor's working-day end (next working day), else fall to
+  // the end-of-schedule default; the server wires the predecessor edge,
+  // whose cascade keeps the start honest if it still violates.
+  const handleCoAccept = (coId: string, predecessorId: string | null, items: AcceptedCoItem[]) => {
+    let start = defaultStartDate;
+    if (predecessorId) {
+      const pred = visibleTasks.find((t) => t.id === predecessorId);
+      if (pred) {
+        const end = workingDayEnd(
+          new Date(`${pred.planned_start_date}T00:00:00Z`),
+          pred.planned_duration_days,
+          {
+            basis: pred.duration_basis === 'calendar' ? 'calendar' : 'working',
+            worksWeekends: Boolean(pred.works_weekends),
+          },
+        );
+        start = addWorkingDays(end, 1).toISOString().slice(0, 10);
+      }
+    }
+    startTransition(async () => {
+      const res = await acceptCoScheduleSuggestionAction({
+        coId,
+        projectId,
+        predecessorId,
+        items: items.map((it) => ({ name: it.name, planned_start_date: start })),
+      });
+      if (!res.ok) {
+        toast.error(`Could not add to schedule: ${res.error}`);
+        return;
+      }
+      toast.success(
+        `${res.created} ${res.created === 1 ? 'task' : 'tasks'} added to the schedule.`,
+      );
+      router.refresh();
+    });
+  };
+
+  const handleCoDismiss = (coId: string) => {
+    startTransition(async () => {
+      const res = await dismissCoScheduleSuggestionAction({ coId, projectId });
+      if (!res.ok) {
+        toast.error(`Could not dismiss: ${res.error}`);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
   // Firm + client-visible tasks for the Preview-as-customer drawer (the
   // portal renders firm bars only). Mapped to the portal view shape.
   const previewTasks = visibleTasks
@@ -368,6 +430,15 @@ export function ScheduleInteractive({
         timezone={timezone}
         onBump={handleBump}
         onMarkDone={handleMarkDone}
+      />
+
+      {/* Henry ✦ CO → schedule prompt — draft tasks for an approved change
+          order's added scope; closes the unlinked-CO gap (#13). */}
+      <ScheduleCoSuggestion
+        suggestions={coSuggestions}
+        taskOptions={coTaskOptions}
+        onAccept={handleCoAccept}
+        onDismiss={handleCoDismiss}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
