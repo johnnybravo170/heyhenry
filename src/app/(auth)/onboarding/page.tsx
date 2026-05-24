@@ -16,8 +16,8 @@ import { redirect } from 'next/navigation';
 import { OnboardingFlow } from '@/components/features/onboarding/onboarding-flow';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getBusinessProfile } from '@/lib/db/queries/profile';
+import { isSelectableVertical } from '@/lib/onboarding/verticals';
 import { createClient } from '@/lib/supabase/server';
-import { isSelectableVertical } from '@/server/actions/onboarding';
 
 export const dynamic = 'force-dynamic';
 

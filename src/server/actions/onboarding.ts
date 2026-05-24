@@ -17,19 +17,16 @@
 
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { isSelectableVertical } from '@/lib/onboarding/verticals';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 export type OnboardingActionResult = { ok: true } | { ok: false; error: string };
 
-// The verticals an owner can self-select during first run. Mirrors the
-// pricebook-seeds catalog; kept narrow on purpose — tile/decks land later.
-const SELECTABLE_VERTICALS = ['renovation', 'pressure_washing'] as const;
-export type SelectableVertical = (typeof SELECTABLE_VERTICALS)[number];
-
-export function isSelectableVertical(v: string): v is SelectableVertical {
-  return (SELECTABLE_VERTICALS as readonly string[]).includes(v);
-}
+// Re-export the vertical type so existing `@/server/actions/onboarding`
+// type-importers keep working. The runtime helpers live in the plain module
+// (a `'use server'` file may only export async server actions).
+export type { SelectableVertical } from '@/lib/onboarding/verticals';
 
 /**
  * Persist the chosen vertical (step 1). If it differs from the tenant's
