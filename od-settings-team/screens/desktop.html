@@ -1,0 +1,2635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Settings · Team — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --neutral-soft: #E8DEC9;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3, h4 { margin: 0; }
+
+  /* ───── Frame stack ───── */
+  .frame-stack { display: flex; flex-direction: column; gap: 36px; padding: 32px; }
+  .frame { display: flex; flex-direction: column; gap: 10px; }
+  .frame-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 4px;
+  }
+  .frame-label .frame-num  { color: var(--ink); }
+  .frame-label .frame-role { color: var(--ink); }
+  .frame-label .frame-sep  { color: var(--faint); margin: 0 6px; }
+  .frame-body {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    box-shadow: 0 20px 40px -22px rgba(10,10,10,.22);
+    position: relative;
+  }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 960px; background: var(--bg); }
+  .shell.shell-short { min-height: 760px; }
+
+  /* ── Primary sidebar ── */
+  .sidebar { background: var(--chrome); border-right: 1px solid var(--hair); display: flex; flex-direction: column; }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active { background: var(--nav-active); color: var(--ink); font-weight: 600; }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .org-avatar {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--rust); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 12px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub  { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ── Top bar ── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  .user-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 34px; padding: 0 12px 0 6px;
+    border-radius: var(--radius-input);
+    border: 1px solid var(--hair);
+    background: var(--card);
+    cursor: pointer; font: inherit; color: var(--ink);
+  }
+  .user-chip:hover { background: var(--chip-fill); }
+  .user-avatar {
+    width: 22px; height: 22px; border-radius: 999px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .user-name { font-size: 14px; font-weight: 600; }
+  .user-role {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-left: 8px;
+    border-left: 1px solid var(--hair);
+    margin-left: 2px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-primary[disabled] { background: var(--chip-fill); color: var(--faint); cursor: default; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn-text { background: transparent; border: 0; color: var(--muted); padding: 0 8px; }
+  .btn-text:hover { color: var(--ink); background: var(--chip-fill); }
+  .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn-danger:hover { background: #991B1B; border-color: #991B1B; }
+  .btn .icon { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 9px; font-size: 12px; }
+  .btn-lg { height: 38px; padding: 0 14px; font-size: 14px; }
+
+  /* ── Main column ── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 80px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+
+  /* ── Page header ── */
+  .page-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); }
+  .page-sub   { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* ── Settings layout (sub-nav + pane) ── */
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 244px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* Sub-nav */
+  .settings-nav { align-self: start; }
+  .settings-search {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    padding: 0 10px;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .settings-search svg.icon { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+  .settings-search input {
+    border: 0; outline: 0; background: transparent;
+    font: inherit; color: var(--ink); font-weight: 500;
+    flex: 1; min-width: 0;
+  }
+  .settings-search input::placeholder { color: var(--muted); font-weight: 500; }
+  .settings-search .kbd {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); background: var(--chip-fill);
+    padding: 2px 6px; border-radius: 4px;
+    letter-spacing: 0.04em; flex-shrink: 0;
+  }
+
+  .settings-group { margin-bottom: 14px; }
+  .group-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 8px 6px;
+  }
+  .group-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+  .settings-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .settings-item:hover { background: rgba(232, 222, 201, .55); }
+  .settings-item.is-active { background: var(--ink); color: #fff; font-weight: 600; }
+  .item-icon { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+  .settings-item:hover .item-icon { color: var(--ink-2); }
+  .settings-item.is-active .item-icon { color: #fff; }
+  .item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .settings-item.is-active .item-pill { color: rgba(255,255,255,.75); background: rgba(255,255,255,.12); }
+  .item-arrow { width: 11px; height: 11px; color: var(--faint); flex-shrink: 0; }
+  .settings-item.is-active .item-arrow { color: rgba(255,255,255,.6); }
+  .item-count {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .settings-item.is-active .item-count { color: rgba(255,255,255,.75); }
+
+  .settings-foot {
+    margin-top: 14px;
+    padding: 10px 10px 0;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+  }
+  .settings-foot .foot-line   { margin-bottom: 4px; }
+  .settings-foot .foot-strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ── Pane ── */
+  .settings-pane {
+    display: flex; flex-direction: column; gap: 18px;
+    min-width: 0;
+    max-width: 760px;  /* max-w-3xl-ish */
+  }
+
+  /* Back link + H1 */
+  .pane-head {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 4px 2px 0;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--muted);
+    font-size: 14px; font-weight: 500;
+    padding: 4px 0;
+    width: max-content;
+  }
+  .back-link:hover { color: var(--ink); }
+  .back-link svg { width: 14px; height: 14px; }
+  .pane-title { font-size: 24px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; line-height: 1.15; }
+  .pane-sub   { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Henry insight strip — read-only roster gaps ── */
+  .henry-strip {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.20);
+    border-left: 3px solid var(--rust);
+    border-radius: 12px;
+    padding: 12px 14px 12px 16px;
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .henry-mark {
+    width: 24px; height: 24px; border-radius: 7px;
+    background: var(--card); color: var(--rust);
+    display: grid; place-items: center;
+    margin-top: 1px;
+  }
+  .henry-mark svg { width: 13px; height: 13px; }
+  .henry-body { min-width: 0; }
+  .henry-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 4px;
+  }
+  .henry-eyebrow::after {
+    content: 'noticed';
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .henry-eyebrow::before { content: '✦'; font-size: 12px; line-height: 1; }
+  .henry-line { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+  .henry-line strong { color: var(--ink); font-weight: 600; }
+  .henry-line .sep { color: var(--faint); margin: 0 6px; }
+  .henry-dismiss { display: flex; align-items: flex-start; }
+
+  /* ── Region card ── */
+  .region {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .region.region-quiet {
+    background: rgba(255,255,255,.6);
+  }
+
+  .region-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px;
+  }
+  .region-meta { min-width: 0; }
+  .region-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em; line-height: 1.25;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .region-count {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .region-sub {
+    font-size: 14px; color: var(--muted);
+    margin-top: 4px; line-height: 1.45;
+  }
+  .region-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* ── Roster table ── */
+  .roster {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column;
+  }
+  .roster-head {
+    display: grid;
+    grid-template-columns: 1.8fr 0.9fr 1.3fr 0.7fr 56px;
+    gap: 14px;
+    padding: 10px 22px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .roster-row {
+    display: grid;
+    grid-template-columns: 1.8fr 0.9fr 1.3fr 0.7fr 56px;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--hair);
+    cursor: pointer;
+    position: relative;
+  }
+  .roster-row:last-of-type { border-bottom: 0; }
+  .roster-row:hover { background: rgba(232, 222, 201, .28); }
+  .roster-row.is-expanded { background: rgba(232, 222, 201, .35); cursor: default; }
+  .roster-row.is-owner { background: rgba(232, 222, 201, .14); cursor: default; }
+  .roster-row.is-owner:hover { background: rgba(232, 222, 201, .22); }
+
+  .person { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .person-avatar {
+    width: 32px; height: 32px; border-radius: 999px;
+    background: var(--chip-fill); color: var(--ink-2);
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700; letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+  .person-avatar.is-owner { background: var(--ink); color: #fff; }
+  .person-meta { min-width: 0; display: flex; flex-direction: column; }
+  .person-name {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .person-email {
+    font-size: 12px; color: var(--muted); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .owner-lock {
+    width: 12px; height: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* Role badge (label + glyph, never colour-only, never rust) */
+  .role-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 24px;
+    padding: 0 8px 0 7px;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1;
+    border: 1px solid transparent;
+    cursor: pointer;
+    user-select: none;
+  }
+  .role-badge svg.glyph { width: 12px; height: 12px; flex-shrink: 0; }
+  .role-badge svg.chev  { width: 11px; height: 11px; opacity: .55; margin-left: 1px; }
+  .role-owner { background: var(--neutral-soft); color: var(--ink); border-color: var(--rule); cursor: not-allowed; }
+  .role-admin { background: var(--info-soft); color: var(--info); border-color: rgba(30,64,175,.18); }
+  .role-member { background: var(--chip-fill); color: var(--ink-2); border-color: var(--hair); }
+  .role-worker { background: #EEF6F1; color: #166534; border-color: #CFE7D8; }
+  .role-sub    { background: #F0EEF8; color: #4338CA; border-color: #D8D3EE; }
+  .role-bookkeeper { background: var(--warn-soft); color: var(--warn); border-color: rgba(180,83,9,.18); }
+  .role-badge:not(.role-owner):hover { filter: brightness(.97); }
+
+  /* Capability / rate summary chip */
+  .cap-summary {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+    font-weight: 500;
+  }
+  .cap-summary .cap-dot { color: var(--faint); }
+  .cap-summary .cap-icon { width: 11px; height: 11px; color: var(--muted); }
+  .cap-summary .cap-good { color: var(--ink-2); }
+  .cap-summary .cap-blocked { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .cap-summary .cap-gst {
+    display: inline-flex; align-items: center; gap: 3px;
+    color: var(--ok);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .cap-summary .cap-gst svg { width: 11px; height: 11px; }
+  .cap-summary .cap-flag {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--warn);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.02em;
+    background: var(--warn-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(180,83,9,.18);
+  }
+  .cap-summary .cap-flag svg { width: 11px; height: 11px; }
+
+  .joined-cell {
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Row meta column (dotted ⋯) */
+  .row-meta { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .row-chevron {
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+  .row-chevron:hover { background: var(--chip-fill); color: var(--ink); }
+  .row-chevron svg { width: 14px; height: 14px; transition: transform 120ms; }
+  .roster-row.is-expanded .row-chevron svg { transform: rotate(180deg); }
+  .row-more {
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    border-radius: 6px;
+    color: var(--muted);
+    background: transparent; border: 0;
+    cursor: pointer;
+  }
+  .row-more:hover { background: var(--chip-fill); color: var(--ink); }
+  .row-more svg { width: 16px; height: 16px; }
+  .row-more[disabled] { opacity: .35; cursor: not-allowed; }
+
+  /* ── Expanded worker editor ── */
+  .row-editor {
+    grid-column: 1 / -1;
+    background: var(--bg);
+    border-top: 1px solid var(--hair);
+    margin: 12px -22px -14px;
+    padding: 18px 22px 18px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .editor-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .editor-eyebrow .gate-pill {
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .editor-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    line-height: 1.3;
+  }
+  .field-label .field-hint { color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .field-c3 { grid-column: span 3; }
+  .field-c2 { grid-column: span 2; }
+  .field-c4 { grid-column: span 4; }
+  .field-c6 { grid-column: span 6; }
+  .field-c12 { grid-column: 1 / -1; }
+  .field-actions { grid-column: span 1; display: flex; align-items: flex-end; }
+
+  .ipt {
+    appearance: none;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 36px;
+    padding: 0 10px;
+    font: inherit; font-weight: 500;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+  }
+  .ipt:focus { border-color: var(--ink); }
+  .ipt.is-empty::placeholder { color: var(--faint); }
+  select.ipt {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 26px;
+  }
+  .ipt-money {
+    display: flex; align-items: stretch;
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    background: var(--card);
+    overflow: hidden;
+    height: 36px;
+  }
+  .ipt-money:focus-within { border-color: var(--ink); }
+  .ipt-money .prefix {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 0 9px;
+    border-right: 1px solid var(--hair);
+    display: grid; place-items: center;
+    letter-spacing: 0.04em;
+  }
+  .ipt-money .suffix {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 0 9px;
+    border-left: 1px solid var(--hair);
+    display: grid; place-items: center;
+    letter-spacing: 0.04em;
+  }
+  .ipt-money input {
+    border: 0; outline: 0; background: transparent;
+    flex: 1; min-width: 0;
+    font: inherit; font-weight: 600;
+    color: var(--ink);
+    padding: 0 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ipt-money input.dim { color: var(--ink-2); font-weight: 500; }
+
+  .editor-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    padding-top: 4px;
+  }
+  .editor-foot-meta {
+    font-size: 12px; color: var(--muted);
+  }
+  .editor-foot-meta strong { color: var(--ink-2); font-weight: 600; }
+  .editor-foot-actions { display: flex; gap: 6px; }
+
+  .margin-cue {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    padding: 3px 7px;
+    background: var(--chip-fill);
+    border-radius: 4px;
+  }
+  .margin-cue .owner-only {
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .margin-cue svg { width: 11px; height: 11px; color: var(--muted); }
+
+  /* ── Pending invites subsection ── */
+  .pending-fold {
+    border-top: 1px solid var(--hair);
+  }
+  .pending-summary {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 22px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink-2);
+  }
+  .pending-summary:hover { background: rgba(232, 222, 201, .25); }
+  .pending-chev { width: 14px; height: 14px; color: var(--muted); transition: transform 120ms; }
+  .pending-fold.is-open .pending-chev { transform: rotate(90deg); }
+  .pending-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .pending-count {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .pending-tail { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .pending-list { display: flex; flex-direction: column; }
+  .pending-row {
+    display: grid;
+    grid-template-columns: 1.8fr 0.9fr 1fr 1.2fr;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 22px;
+    border-top: 1px solid var(--hair);
+  }
+  .invite-info { display: flex; flex-direction: column; min-width: 0; }
+  .invite-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .invite-email { font-size: 12px; color: var(--muted); }
+  .invite-code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 2px 6px;
+    border-radius: 4px;
+    width: max-content;
+  }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 22px;
+    padding: 0 8px 0 7px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.005em;
+    border: 1px solid transparent;
+    width: max-content;
+  }
+  .status-badge svg { width: 11px; height: 11px; flex-shrink: 0; }
+  .st-active  { background: var(--ok-soft); color: var(--ok); border-color: rgba(21,128,61,.18); }
+  .st-expired { background: var(--warn-soft); color: var(--warn); border-color: rgba(180,83,9,.18); }
+  .st-used    { background: var(--neutral-soft); color: var(--ink-2); border-color: var(--rule); }
+  .st-revoked { background: var(--danger-soft); color: var(--danger); border-color: rgba(185,28,28,.18); }
+
+  .invite-created { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .invite-actions {
+    display: flex; gap: 4px; justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .invite-actions .btn { height: 26px; padding: 0 8px; font-size: 12px; }
+  .invite-actions .btn .icon { width: 12px; height: 12px; }
+  .btn-icon-only {
+    width: 26px; height: 26px;
+    padding: 0;
+    display: grid; place-items: center;
+    border-radius: 7px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .btn-icon-only:hover { color: var(--ink); border-color: var(--rule); }
+  .btn-icon-only svg { width: 13px; height: 13px; }
+
+  /* ── Region B — Crew defaults ── */
+  .defaults-body {
+    padding: 16px 22px 18px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .pref-row {
+    display: grid;
+    grid-template-columns: 22px 1fr 44px;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--hair);
+  }
+  .pref-row:last-of-type { border-bottom: 0; padding-bottom: 4px; }
+  .pref-text { min-width: 0; }
+  .pref-main { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+  .pref-sub  { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .check {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid var(--rule);
+    background: var(--card);
+    display: grid; place-items: center;
+    color: transparent;
+    margin-top: 2px;
+  }
+  .check svg { width: 12px; height: 12px; }
+  .check.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  .toggle {
+    width: 36px; height: 22px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    position: relative;
+    cursor: pointer;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  }
+  .toggle.is-on { background: var(--ink); border-color: var(--ink); }
+  .toggle.is-on::after { left: 16px; }
+
+  .defaults-foot {
+    padding: 12px 22px;
+    border-top: 1px solid var(--hair);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .defaults-foot-meta { font-size: 12px; color: var(--muted); }
+  .defaults-foot-meta strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ── Action menu (popover preview) ── */
+  .row-menu {
+    position: absolute;
+    top: 44px; right: 22px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    box-shadow: 0 18px 36px -16px rgba(10,10,10,.32);
+    width: 196px;
+    padding: 4px;
+    z-index: 4;
+  }
+  .row-menu .menu-section {
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .row-menu-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    font-size: 14px; font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .row-menu-item:hover { background: var(--bg); color: var(--ink); }
+  .row-menu-item svg { width: 13px; height: 13px; color: var(--muted); }
+  .row-menu-item:hover svg { color: var(--ink); }
+  .row-menu-item.is-danger { color: var(--danger); }
+  .row-menu-item.is-danger svg { color: var(--danger); }
+  .row-menu-item.is-danger:hover { background: var(--danger-soft); color: var(--danger); }
+  .row-menu-sep { height: 1px; background: var(--hair); margin: 4px 4px; }
+  .row-menu-tail {
+    padding: 6px 8px 4px;
+    font-size: 12px; color: var(--muted);
+    line-height: 1.45;
+  }
+
+  /* ── Modal (dialog) overlay ── */
+  .scrim {
+    position: absolute; inset: 0;
+    background: rgba(20, 14, 6, .42);
+    backdrop-filter: blur(2px);
+    display: grid; place-items: center;
+    z-index: 5;
+    padding: 32px;
+  }
+  .dialog {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    box-shadow: 0 32px 64px -24px rgba(10,10,10,.36);
+    width: 100%;
+    max-width: 560px;
+    display: flex; flex-direction: column;
+    max-height: 88vh;
+    overflow: hidden;
+  }
+  .dialog-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 14px;
+  }
+  .dialog-meta { min-width: 0; }
+  .dialog-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .dialog-sub   { font-size: 14px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+  .dialog-close {
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    border-radius: 7px;
+    background: transparent; border: 0;
+    color: var(--muted); cursor: pointer;
+  }
+  .dialog-close:hover { background: var(--chip-fill); color: var(--ink); }
+  .dialog-close svg { width: 14px; height: 14px; }
+
+  .dialog-body {
+    padding: 18px 22px;
+    display: flex; flex-direction: column; gap: 16px;
+    overflow-y: auto;
+  }
+  .dialog-foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--hair);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .dialog-foot-meta { font-size: 12px; color: var(--muted); }
+  .dialog-foot-actions { display: flex; gap: 8px; }
+
+  /* Role picker (invite dialog step 1) */
+  .role-picker {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .role-card {
+    padding: 12px 12px 11px;
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    background: var(--card);
+    cursor: pointer;
+    display: flex; flex-direction: column; gap: 4px;
+    position: relative;
+  }
+  .role-card:hover { border-color: var(--rule); background: var(--bg); }
+  .role-card.is-on { border-color: var(--ink); background: var(--bg); box-shadow: 0 0 0 1px var(--ink); }
+  .role-card.is-disabled {
+    opacity: .55; cursor: not-allowed;
+    background: rgba(243, 235, 219, .5);
+  }
+  .role-card-head { display: flex; align-items: center; gap: 8px; }
+  .role-card-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .role-card-sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .role-card .role-badge { margin-left: auto; cursor: inherit; }
+  .role-card .gate {
+    position: absolute; top: 8px; right: 10px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .role-card .gate svg { width: 11px; height: 11px; }
+
+  /* Form rows inside dialog */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-col { display: flex; flex-direction: column; gap: 5px; }
+  .form-col.full { grid-column: 1 / -1; }
+  .form-col label {
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+  }
+  .form-col label .opt { color: var(--muted); font-weight: 500; margin-left: 4px; }
+
+  .henry-draft {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194,65,12,.20);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .henry-draft .mini-mark {
+    width: 20px; height: 20px; border-radius: 6px;
+    background: var(--card); color: var(--rust);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .henry-draft .mini-mark svg { width: 12px; height: 12px; }
+  .henry-draft .draft-body { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+  .henry-draft .draft-body strong { color: var(--ink); font-weight: 600; }
+  .henry-draft .draft-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .henry-draft .draft-actions .btn { height: 24px; font-size: 12px; padding: 0 8px; }
+
+  /* Disclosed worker prefs in dialog */
+  .prefs-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--muted);
+    background: transparent; border: 0;
+    cursor: pointer;
+    padding: 4px 0;
+    width: max-content;
+    font-weight: 600;
+  }
+  .prefs-toggle svg { width: 11px; height: 11px; }
+  .prefs-toggle:hover { color: var(--ink); }
+  .prefs-block {
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    background: var(--bg);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .prefs-tri {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .prefs-rates {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .bk-scope {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .bk-scope-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--ink); text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--mono);
+  }
+  .bk-scope-list { display: flex; flex-direction: column; gap: 6px; }
+  .bk-scope-list li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--ink-2);
+  }
+  .bk-scope-list li svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .bk-scope-list li.is-yes { color: var(--ink-2); }
+  .bk-scope-list li.is-yes svg { color: var(--ok); }
+  .bk-scope-list li.is-no  { color: var(--muted); }
+  .bk-scope-list li.is-no svg  { color: var(--danger); }
+
+  /* Deactivate confirm content */
+  .confirm-person {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+  }
+  .confirm-text { font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+  .confirm-text strong { color: var(--ink); font-weight: 600; }
+  .confirm-list {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .confirm-list li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--ink-2);
+  }
+  .confirm-list li svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--ok); }
+  .confirm-list li.danger svg { color: var(--danger); }
+  .delete-fallback {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.5;
+  }
+  .delete-fallback strong { color: var(--ink-2); font-weight: 600; }
+  .delete-fallback a { color: var(--danger); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+  /* Empty state */
+  .empty-hero {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 36px 32px 32px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    gap: 14px;
+  }
+  .empty-hero .empty-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: var(--bg);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .empty-hero .empty-icon svg { width: 26px; height: 26px; }
+  .empty-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .empty-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .empty-sub   { font-size: 14px; color: var(--muted); max-width: 420px; line-height: 1.5; }
+  .empty-actions { display: flex; gap: 8px; margin-top: 6px; }
+  .empty-foot {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+  }
+  .empty-foot strong { color: var(--ink-2); }
+
+  /* Audit deep-link */
+  .audit-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 0;
+    font-size: 12px; color: var(--muted);
+    cursor: pointer;
+    width: max-content;
+  }
+  .audit-link:hover { color: var(--ink); }
+  .audit-link svg { width: 12px; height: 12px; }
+
+  /* Saved toast (faux) */
+  .toast {
+    position: absolute;
+    bottom: 24px; right: 24px;
+    background: var(--ink); color: #fff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 18px 36px -18px rgba(10,10,10,.45);
+    z-index: 6;
+  }
+  .toast svg { width: 14px; height: 14px; color: #4ADE80; }
+
+  .mono { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+    <symbol id="i-ruler" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a1 1 0 0 1-1.4 0L2.7 16.7a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4z"/></symbol>
+    <symbol id="i-hardhat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a10 10 0 0 1 20 0"/><path d="M8 18V8"/><path d="M16 18V8"/><path d="M2 18h20"/><path d="M2 21h20"/><path d="M12 4v4"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 14h.01"/><path d="M2 9V5a2 2 0 0 1 2-2h12"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+    <symbol id="i-chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15A9 9 0 0 1 5.64 18.36L1 14"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+  </defs>
+</svg>
+
+<div class="frame-stack">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 1 · Owner view · settings/team — default state            -->
+<!-- Two-region layout · Crew + Crew defaults · pending folded       -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 1</span>
+    <span class="frame-sep">·</span>
+    settings / team
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    two-region · collapsed roster · pending folded · Henry roster-gap chip
+  </div>
+  <div class="frame-body">
+
+<div class="shell">
+
+  <!-- ═════ Primary sidebar (mounted, unchanged) ═════ -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═════ Main column ═════ -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip" aria-label="Account menu">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">Settings</h1>
+          <div class="page-sub">Defaults that ride along into every quote, invoice, and customer portal.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+
+        <!-- ── Sub-nav (role-filtered IA spine) ── -->
+        <nav class="settings-nav" aria-label="Settings sections">
+
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Search settings…" />
+            <span class="kbd">/</span>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-building"/></svg><span class="item-name">Business profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-user"/></svg><span class="item-name">Your profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-shield"/></svg><span class="item-name">Security</span><span class="item-pill">Owner</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-history"/></svg><span class="item-name">Audit log</span></li>
+              <li class="settings-item is-active">
+                <svg class="item-icon"><use href="#i-users"/></svg>
+                <span class="item-name">Team &amp; workers</span>
+                <span class="item-count">4</span>
+              </li>
+              <li class="settings-item is-danger"><svg class="item-icon"><use href="#i-trash"/></svg><span class="item-name">Delete account</span><span class="item-pill">Owner</span></li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Billing &amp; plan</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-credit-card"/></svg><span class="item-name">Billing &amp; subscription</span><span class="item-pill">Owner</span></li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Estimating &amp; quotes</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-trending"/></svg><span class="item-name">Project defaults</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-ruler"/></svg><span class="item-name">Estimating detail</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-hardhat"/></svg><span class="item-name">Cost catalog</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-layers"/></svg><span class="item-name">Budget templates</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-file"/></svg><span class="item-name">Estimate snippets</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-file"/></svg><span class="item-name">Quotes</span></li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Money &amp; integrations</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-wallet"/></svg><span class="item-name">Stripe</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-receipt"/></svg><span class="item-name">QuickBooks</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-credit-card"/></svg><span class="item-name">Payment sources</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-file"/></svg><span class="item-name">Invoicing</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-tag"/></svg><span class="item-name">Expense categories</span></li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Operations</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-bot"/></svg><span class="item-name">Automations</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-bell"/></svg><span class="item-name">Reminders</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-layers"/></svg><span class="item-name">Checklist</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-eye"/></svg><span class="item-name">Customer portal</span></li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Data &amp; tools</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-calendar"/></svg><span class="item-name">Calendar feed</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-database"/></svg><span class="item-name">Data export</span><span class="item-pill">Owner</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-upload"/></svg><span class="item-name">Import data</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-mic"/></svg><span class="item-name">Voice</span></li>
+            </ul>
+          </div>
+
+          <div class="settings-foot">
+            <div class="foot-line"><span class="foot-strong">26 of 27</span> settings shown.</div>
+            <div class="foot-line">1 hidden for renovation vertical.</div>
+          </div>
+        </nav>
+
+        <!-- ── Active pane: TEAM ── -->
+        <div class="settings-pane">
+
+          <div class="pane-head">
+            <a class="back-link"><svg><use href="#i-arrow-left"/></svg>Settings</a>
+            <h1 class="pane-title">Team</h1>
+            <div class="pane-sub">Invite workers, admins, and your bookkeeper. Set what each can do.</div>
+          </div>
+
+          <!-- Henry insight strip — read-only roster gaps -->
+          <div class="henry-strip" role="note">
+            <div class="henry-mark"><svg><use href="#i-sparkles"/></svg></div>
+            <div class="henry-body">
+              <div class="henry-eyebrow">Henry&nbsp;</div>
+              <div class="henry-line">
+                <strong>Devraj Singh</strong> is set up as a subcontractor but has no <strong>GST&nbsp;#</strong> on file — year-end T5018 will need it.
+                <span class="sep">·</span>
+                <strong>Mateo Alvarez</strong> has no pay rate yet — his time costs Labour at <strong>$0/hr</strong>.
+                <span class="sep">·</span>
+                <strong>1 invite</strong> expires in 2 days.
+              </div>
+            </div>
+            <div class="henry-dismiss">
+              <button class="btn btn-text btn-sm" title="Dismiss"><svg class="icon"><use href="#i-x"/></svg></button>
+            </div>
+          </div>
+
+          <!-- ═════ Region A — Crew ═════ -->
+          <section class="region" aria-labelledby="region-crew">
+            <header class="region-head">
+              <div class="region-meta">
+                <h2 class="region-title" id="region-crew">
+                  Crew
+                  <span class="region-count">4 people</span>
+                </h2>
+                <div class="region-sub">The people on Northbeam — owner, admins, workers, bookkeeper.</div>
+              </div>
+              <div class="region-actions">
+                <button class="btn btn-rust">
+                  <svg class="icon"><use href="#i-plus"/></svg>
+                  Add to crew
+                </button>
+              </div>
+            </header>
+
+            <!-- Roster table -->
+            <ul class="roster" role="table">
+              <li class="roster-head" role="row">
+                <div>Person</div>
+                <div>Role</div>
+                <div>What they do</div>
+                <div>Joined</div>
+                <div></div>
+              </li>
+
+              <!-- Owner row — locked, no actions -->
+              <li class="roster-row is-owner" role="row">
+                <div class="person">
+                  <div class="person-avatar is-owner">JD</div>
+                  <div class="person-meta">
+                    <span class="person-name">Jess Donahue
+                      <svg class="owner-lock" title="The account owner can't be changed here"><use href="#i-lock"/></svg>
+                    </span>
+                    <span class="person-email">jess@northbeam.ca</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="role-badge role-owner" title="The account owner can't be changed here">
+                    <svg class="glyph"><use href="#i-key"/></svg>
+                    Owner
+                  </span>
+                </div>
+                <div class="cap-summary">
+                  Account owner · billing &amp; security
+                </div>
+                <div class="joined-cell">14 Mar 2024</div>
+                <div class="row-meta">
+                  <button class="row-more" disabled title="Owner row locked">
+                    <svg><use href="#i-more"/></svg>
+                  </button>
+                </div>
+              </li>
+
+              <!-- Admin row -->
+              <li class="roster-row" role="row">
+                <div class="person">
+                  <div class="person-avatar">MR</div>
+                  <div class="person-meta">
+                    <span class="person-name">Marcus Reyes</span>
+                    <span class="person-email">marcus@northbeam.ca</span>
+                  </div>
+                </div>
+                <div>
+                  <button class="role-badge role-admin" title="Change role">
+                    <svg class="glyph"><use href="#i-shield"/></svg>
+                    Admin
+                    <svg class="chev"><use href="#i-chev-down"/></svg>
+                  </button>
+                </div>
+                <div class="cap-summary">
+                  Everything operational · no billing
+                </div>
+                <div class="joined-cell">02 Jul 2024</div>
+                <div class="row-meta">
+                  <button class="row-more"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </li>
+
+              <!-- Worker / Employee — collapsed, summary chip visible -->
+              <li class="roster-row" role="row">
+                <div class="person">
+                  <div class="person-avatar">CT</div>
+                  <div class="person-meta">
+                    <span class="person-name">Cory Tran</span>
+                    <span class="person-email">cory@northbeam.ca</span>
+                  </div>
+                </div>
+                <div>
+                  <button class="role-badge role-worker" title="Change role">
+                    <svg class="glyph"><use href="#i-briefcase"/></svg>
+                    Employee
+                    <svg class="chev"><use href="#i-chev-down"/></svg>
+                  </button>
+                </div>
+                <div class="cap-summary">
+                  <span class="cap-good">Logs expenses</span>
+                  <span class="cap-dot">·</span>
+                  <span class="cap-blocked">Submit invoices</span>
+                </div>
+                <div class="joined-cell">11 Sep 2024</div>
+                <div class="row-meta">
+                  <button class="row-chevron" title="Show rate &amp; capability"><svg><use href="#i-chev-down"/></svg></button>
+                  <button class="row-more"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </li>
+
+              <!-- Worker / Sub — GST on file -->
+              <li class="roster-row" role="row">
+                <div class="person">
+                  <div class="person-avatar">DS</div>
+                  <div class="person-meta">
+                    <span class="person-name">Devraj Singh</span>
+                    <span class="person-email">devraj@singhflooring.ca · Singh Flooring Inc.</span>
+                  </div>
+                </div>
+                <div>
+                  <button class="role-badge role-sub" title="Change role">
+                    <svg class="glyph"><use href="#i-hardhat"/></svg>
+                    Subcontractor
+                    <svg class="chev"><use href="#i-chev-down"/></svg>
+                  </button>
+                </div>
+                <div class="cap-summary">
+                  <span class="cap-good">Submits invoices</span>
+                  <span class="cap-dot">·</span>
+                  <span class="cap-flag" title="Missing GST # — needed for T5018">
+                    <svg><use href="#i-alert"/></svg>
+                    GST # missing
+                  </span>
+                </div>
+                <div class="joined-cell">28 Jan 2025</div>
+                <div class="row-meta">
+                  <button class="row-chevron" title="Show rate &amp; capability"><svg><use href="#i-chev-down"/></svg></button>
+                  <button class="row-more"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </li>
+
+              <!-- Bookkeeper row -->
+              <li class="roster-row" role="row">
+                <div class="person">
+                  <div class="person-avatar">SM</div>
+                  <div class="person-meta">
+                    <span class="person-name">Sarah Mendoza</span>
+                    <span class="person-email">sarah@mendozabooks.ca</span>
+                  </div>
+                </div>
+                <div>
+                  <button class="role-badge role-bookkeeper" title="Change role">
+                    <svg class="glyph"><use href="#i-database"/></svg>
+                    Bookkeeper
+                    <svg class="chev"><use href="#i-chev-down"/></svg>
+                  </button>
+                </div>
+                <div class="cap-summary">
+                  Expenses, bills, GST/HST, year-end
+                </div>
+                <div class="joined-cell">04 Mar 2025</div>
+                <div class="row-meta">
+                  <button class="row-more"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </li>
+            </ul>
+
+            <!-- Pending invites — folded "Pending (2)" disclosure -->
+            <div class="pending-fold is-open">
+              <button class="pending-summary" aria-expanded="true">
+                <svg class="pending-chev"><use href="#i-chev-right"/></svg>
+                <span class="pending-label">Pending invites</span>
+                <span class="pending-count">2</span>
+                <span class="pending-tail">Links expire 7 days after sending.</span>
+              </button>
+
+              <div class="pending-list">
+                <div class="pending-row">
+                  <div class="invite-info">
+                    <span class="invite-name">Mateo Alvarez</span>
+                    <span class="invite-email">mateo@gmail.com</span>
+                  </div>
+                  <div>
+                    <span class="status-badge st-active">
+                      <svg><use href="#i-clock"/></svg>
+                      Active · 6 days left
+                    </span>
+                  </div>
+                  <div class="invite-created">Sent 17 May, 9:41 AM</div>
+                  <div class="invite-actions">
+                    <button class="btn btn-ghost"><svg class="icon"><use href="#i-copy"/></svg>Copy link</button>
+                    <button class="btn btn-ghost"><svg class="icon"><use href="#i-refresh"/></svg>Resend</button>
+                    <button class="btn-icon-only" title="Revoke"><svg><use href="#i-x-circle"/></svg></button>
+                    <button class="btn-icon-only" title="Delete"><svg><use href="#i-trash"/></svg></button>
+                  </div>
+                </div>
+
+                <div class="pending-row">
+                  <div class="invite-info">
+                    <span class="invite-name">Priya Nair</span>
+                    <span class="invite-email">priya.nair@accountedge.ca</span>
+                  </div>
+                  <div>
+                    <span class="status-badge st-expired">
+                      <svg><use href="#i-alert"/></svg>
+                      Expires in 2 days
+                    </span>
+                  </div>
+                  <div class="invite-created">Sent 14 May, 4:18 PM</div>
+                  <div class="invite-actions">
+                    <button class="btn btn-ghost"><svg class="icon"><use href="#i-copy"/></svg>Copy link</button>
+                    <button class="btn btn-ghost"><svg class="icon"><use href="#i-refresh"/></svg>Resend</button>
+                    <button class="btn-icon-only" title="Revoke"><svg><use href="#i-x-circle"/></svg></button>
+                    <button class="btn-icon-only" title="Delete"><svg><use href="#i-trash"/></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ═════ Region B — Crew defaults (quieter) ═════ -->
+          <section class="region region-quiet" aria-labelledby="region-defaults">
+            <header class="region-head">
+              <div class="region-meta">
+                <h2 class="region-title" id="region-defaults">Crew defaults</h2>
+                <div class="region-sub">Applies to everyone — override per person above.</div>
+              </div>
+            </header>
+
+            <div class="defaults-body">
+              <div class="pref-row">
+                <div class="check is-on"><svg><use href="#i-check"/></svg></div>
+                <div class="pref-text">
+                  <div class="pref-main">Workers can log expenses</div>
+                  <div class="pref-sub">Field crew can capture receipts from the truck. Subs and employees both, unless blocked per-person.</div>
+                </div>
+                <div><div class="toggle is-on" role="switch" aria-checked="true"></div></div>
+              </div>
+
+              <div class="pref-row">
+                <div class="check"><svg><use href="#i-check"/></svg></div>
+                <div class="pref-text">
+                  <div class="pref-main">Workers can submit invoices</div>
+                  <div class="pref-sub">Typical for subcontractors. Off by default for employees.</div>
+                </div>
+                <div><div class="toggle" role="switch" aria-checked="false"></div></div>
+              </div>
+
+              <div class="pref-row">
+                <div class="check"><svg><use href="#i-check"/></svg></div>
+                <div class="pref-text">
+                  <div class="pref-main">Workers can edit time entries older than 48 hours</div>
+                  <div class="pref-sub">Entries within 48 hours of logging are always editable by the worker. Turn this on to let them backfill or correct older entries too.</div>
+                </div>
+                <div><div class="toggle" role="switch" aria-checked="false"></div></div>
+              </div>
+
+              <div class="pref-row">
+                <div class="check is-on"><svg><use href="#i-check"/></svg></div>
+                <div class="pref-text">
+                  <div class="pref-main">Auto-assign crew to new projects</div>
+                  <div class="pref-sub">Every active worker is added to a project when it's created. You can still remove individuals after the fact.</div>
+                </div>
+                <div><div class="toggle is-on" role="switch" aria-checked="true"></div></div>
+              </div>
+            </div>
+
+            <div class="defaults-foot">
+              <div class="defaults-foot-meta">
+                <strong>Saved 3 min ago.</strong>
+                &nbsp;Defaults apply to new and existing workers.
+              </div>
+              <button class="btn btn-primary btn-sm" disabled>No changes</button>
+            </div>
+          </section>
+
+          <a class="audit-link">
+            <svg><use href="#i-history"/></svg>
+            View invite &amp; member changes in the audit log
+          </a>
+
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 2 · Owner view · Worker row expanded                       -->
+<!-- Rate pair revealed only via deliberate click                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 2</span>
+    <span class="frame-sep">·</span>
+    settings / team
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    Cory Tran expanded · capability + pay/charge editor · margin = owner-only
+  </div>
+  <div class="frame-body">
+
+<div class="shell shell-short">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip" aria-label="Account menu">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">Settings</h1>
+          <div class="page-sub">Defaults that ride along into every quote, invoice, and customer portal.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+
+        <!-- Sub-nav (collapsed view, just headings for context) -->
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Search settings…" />
+            <span class="kbd">/</span>
+          </div>
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-building"/></svg><span class="item-name">Business profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-user"/></svg><span class="item-name">Your profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-shield"/></svg><span class="item-name">Security</span><span class="item-pill">Owner</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-history"/></svg><span class="item-name">Audit log</span></li>
+              <li class="settings-item is-active"><svg class="item-icon"><use href="#i-users"/></svg><span class="item-name">Team &amp; workers</span><span class="item-count">4</span></li>
+              <li class="settings-item is-danger"><svg class="item-icon"><use href="#i-trash"/></svg><span class="item-name">Delete account</span><span class="item-pill">Owner</span></li>
+            </ul>
+          </div>
+          <div class="settings-group">
+            <div class="group-label">Billing &amp; plan</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-credit-card"/></svg><span class="item-name">Billing &amp; subscription</span><span class="item-pill">Owner</span></li>
+            </ul>
+          </div>
+          <div class="settings-group">
+            <div class="group-label">Estimating &amp; quotes</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-trending"/></svg><span class="item-name">Project defaults</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-hardhat"/></svg><span class="item-name">Cost catalog</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-layers"/></svg><span class="item-name">Budget templates</span></li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+          <div class="pane-head">
+            <a class="back-link"><svg><use href="#i-arrow-left"/></svg>Settings</a>
+            <h1 class="pane-title">Team</h1>
+            <div class="pane-sub">Invite workers, admins, and your bookkeeper. Set what each can do.</div>
+          </div>
+
+          <section class="region" aria-labelledby="region-crew-2">
+            <header class="region-head">
+              <div class="region-meta">
+                <h2 class="region-title" id="region-crew-2">
+                  Crew
+                  <span class="region-count">4 people</span>
+                </h2>
+                <div class="region-sub">The people on Northbeam — owner, admins, workers, bookkeeper.</div>
+              </div>
+              <div class="region-actions">
+                <button class="btn btn-rust"><svg class="icon"><use href="#i-plus"/></svg>Add to crew</button>
+              </div>
+            </header>
+
+            <ul class="roster" role="table">
+              <li class="roster-head" role="row">
+                <div>Person</div>
+                <div>Role</div>
+                <div>What they do</div>
+                <div>Joined</div>
+                <div></div>
+              </li>
+
+              <li class="roster-row is-owner" role="row">
+                <div class="person">
+                  <div class="person-avatar is-owner">JD</div>
+                  <div class="person-meta">
+                    <span class="person-name">Jess Donahue
+                      <svg class="owner-lock"><use href="#i-lock"/></svg>
+                    </span>
+                    <span class="person-email">jess@northbeam.ca</span>
+                  </div>
+                </div>
+                <div><span class="role-badge role-owner"><svg class="glyph"><use href="#i-key"/></svg>Owner</span></div>
+                <div class="cap-summary">Account owner · billing &amp; security</div>
+                <div class="joined-cell">14 Mar 2024</div>
+                <div class="row-meta">
+                  <button class="row-more" disabled><svg><use href="#i-more"/></svg></button>
+                </div>
+              </li>
+
+              <li class="roster-row" role="row">
+                <div class="person">
+                  <div class="person-avatar">MR</div>
+                  <div class="person-meta">
+                    <span class="person-name">Marcus Reyes</span>
+                    <span class="person-email">marcus@northbeam.ca</span>
+                  </div>
+                </div>
+                <div><button class="role-badge role-admin"><svg class="glyph"><use href="#i-shield"/></svg>Admin<svg class="chev"><use href="#i-chev-down"/></svg></button></div>
+                <div class="cap-summary">Everything operational · no billing</div>
+                <div class="joined-cell">02 Jul 2024</div>
+                <div class="row-meta"><button class="row-more"><svg><use href="#i-more"/></svg></button></div>
+              </li>
+
+              <!-- ▼ EXPANDED — Cory Tran -->
+              <li class="roster-row is-expanded" role="row">
+                <div class="person">
+                  <div class="person-avatar">CT</div>
+                  <div class="person-meta">
+                    <span class="person-name">Cory Tran</span>
+                    <span class="person-email">cory@northbeam.ca</span>
+                  </div>
+                </div>
+                <div><button class="role-badge role-worker"><svg class="glyph"><use href="#i-briefcase"/></svg>Employee<svg class="chev"><use href="#i-chev-down"/></svg></button></div>
+                <div class="cap-summary">
+                  <span class="cap-good">Logs expenses</span>
+                  <span class="cap-dot">·</span>
+                  <span class="cap-blocked">Submit invoices</span>
+                </div>
+                <div class="joined-cell">11 Sep 2024</div>
+                <div class="row-meta">
+                  <button class="row-chevron"><svg><use href="#i-chev-down"/></svg></button>
+                  <button class="row-more"><svg><use href="#i-more"/></svg></button>
+                </div>
+
+                <!-- The deliberate disclosure: capability + pay/charge editor -->
+                <div class="row-editor">
+                  <div class="editor-eyebrow">
+                    Rate &amp; capability
+                    <span class="gate-pill">Owner / Admin · not visible to Cory</span>
+                  </div>
+
+                  <div class="editor-grid">
+                    <div class="field field-c3">
+                      <div class="field-label">Type</div>
+                      <select class="ipt">
+                        <option>Employee</option>
+                        <option>Subcontractor</option>
+                      </select>
+                    </div>
+
+                    <div class="field field-c2">
+                      <div class="field-label">Log expenses</div>
+                      <select class="ipt">
+                        <option>Allow</option>
+                        <option selected>Default (Allow)</option>
+                        <option>Block</option>
+                      </select>
+                    </div>
+
+                    <div class="field field-c2">
+                      <div class="field-label">Submit invoices</div>
+                      <select class="ipt">
+                        <option>Block</option>
+                        <option>Default (Block)</option>
+                        <option selected>— Block —</option>
+                      </select>
+                    </div>
+
+                    <div class="field field-c2">
+                      <div class="field-label">Pay rate <span class="field-hint">what you pay Cory</span></div>
+                      <div class="ipt-money">
+                        <span class="prefix">CAD</span>
+                        <input type="text" value="38.00" />
+                        <span class="suffix">/ hr</span>
+                      </div>
+                    </div>
+
+                    <div class="field field-c2">
+                      <div class="field-label">Charge rate <span class="field-hint">what you bill the client</span></div>
+                      <div class="ipt-money">
+                        <span class="prefix">CAD</span>
+                        <input type="text" value="85.00" />
+                        <span class="suffix">/ hr</span>
+                      </div>
+                    </div>
+
+                    <div class="field field-actions field-c1">
+                      <button class="btn btn-primary btn-sm">Save</button>
+                    </div>
+                  </div>
+
+                  <div class="editor-foot">
+                    <div class="editor-foot-meta">
+                      <span class="margin-cue">
+                        <span class="owner-only">Owner</span>
+                        Labour margin <strong style="color:var(--ink)">$47.00 / hr</strong>
+                        <span style="color:var(--faint)">·</span>
+                        <span>55%</span>
+                      </span>
+                    </div>
+                    <div class="editor-foot-actions">
+                      <button class="btn btn-text btn-sm">Close</button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+
+              <li class="roster-row" role="row">
+                <div class="person">
+                  <div class="person-avatar">DS</div>
+                  <div class="person-meta">
+                    <span class="person-name">Devraj Singh</span>
+                    <span class="person-email">devraj@singhflooring.ca · Singh Flooring Inc.</span>
+                  </div>
+                </div>
+                <div><button class="role-badge role-sub"><svg class="glyph"><use href="#i-hardhat"/></svg>Subcontractor<svg class="chev"><use href="#i-chev-down"/></svg></button></div>
+                <div class="cap-summary">
+                  <span class="cap-good">Submits invoices</span>
+                  <span class="cap-dot">·</span>
+                  <span class="cap-flag"><svg><use href="#i-alert"/></svg>GST # missing</span>
+                </div>
+                <div class="joined-cell">28 Jan 2025</div>
+                <div class="row-meta">
+                  <button class="row-chevron"><svg><use href="#i-chev-down"/></svg></button>
+                  <button class="row-more"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 3 · Add to crew — role-led invite dialog                  -->
+<!-- Replaces the two separate invite cards                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 3</span>
+    <span class="frame-sep">·</span>
+    settings / team — dialog
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    role picker first · worker prefs disclosed · Henry drafts the human line · Admin gated to owner
+  </div>
+  <div class="frame-body">
+
+<div class="shell shell-short" style="position:relative;">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">Settings</h1>
+          <div class="page-sub">Defaults that ride along into every quote, invoice, and customer portal.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-building"/></svg><span class="item-name">Business profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-user"/></svg><span class="item-name">Your profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-shield"/></svg><span class="item-name">Security</span><span class="item-pill">Owner</span></li>
+              <li class="settings-item is-active"><svg class="item-icon"><use href="#i-users"/></svg><span class="item-name">Team &amp; workers</span><span class="item-count">4</span></li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+          <div class="pane-head">
+            <a class="back-link"><svg><use href="#i-arrow-left"/></svg>Settings</a>
+            <h1 class="pane-title">Team</h1>
+            <div class="pane-sub">Invite workers, admins, and your bookkeeper. Set what each can do.</div>
+          </div>
+
+          <section class="region">
+            <header class="region-head">
+              <div class="region-meta">
+                <h2 class="region-title">Crew <span class="region-count">4 people</span></h2>
+                <div class="region-sub">The people on Northbeam — owner, admins, workers, bookkeeper.</div>
+              </div>
+              <div class="region-actions">
+                <button class="btn btn-rust"><svg class="icon"><use href="#i-plus"/></svg>Add to crew</button>
+              </div>
+            </header>
+            <ul class="roster" role="table">
+              <li class="roster-head" role="row">
+                <div>Person</div><div>Role</div><div>What they do</div><div>Joined</div><div></div>
+              </li>
+              <li class="roster-row is-owner">
+                <div class="person">
+                  <div class="person-avatar is-owner">JD</div>
+                  <div class="person-meta"><span class="person-name">Jess Donahue<svg class="owner-lock"><use href="#i-lock"/></svg></span><span class="person-email">jess@northbeam.ca</span></div>
+                </div>
+                <div><span class="role-badge role-owner"><svg class="glyph"><use href="#i-key"/></svg>Owner</span></div>
+                <div class="cap-summary">Account owner · billing &amp; security</div>
+                <div class="joined-cell">14 Mar 2024</div>
+                <div class="row-meta"><button class="row-more" disabled><svg><use href="#i-more"/></svg></button></div>
+              </li>
+              <li class="roster-row">
+                <div class="person">
+                  <div class="person-avatar">MR</div>
+                  <div class="person-meta"><span class="person-name">Marcus Reyes</span><span class="person-email">marcus@northbeam.ca</span></div>
+                </div>
+                <div><button class="role-badge role-admin"><svg class="glyph"><use href="#i-shield"/></svg>Admin<svg class="chev"><use href="#i-chev-down"/></svg></button></div>
+                <div class="cap-summary">Everything operational · no billing</div>
+                <div class="joined-cell">02 Jul 2024</div>
+                <div class="row-meta"><button class="row-more"><svg><use href="#i-more"/></svg></button></div>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ═══ The dialog ═══ -->
+  <div class="scrim">
+    <div class="dialog">
+      <div class="dialog-head">
+        <div class="dialog-meta">
+          <div class="dialog-title">Add to crew</div>
+          <div class="dialog-sub">Generate an invite link (or send it now). Links expire after 7 days.</div>
+        </div>
+        <button class="dialog-close"><svg><use href="#i-x"/></svg></button>
+      </div>
+
+      <div class="dialog-body">
+
+        <!-- Step 1: role picker -->
+        <div class="form-col">
+          <label>Role</label>
+          <div class="role-picker">
+            <div class="role-card is-on">
+              <div class="role-card-head">
+                <span class="role-badge role-worker"><svg class="glyph"><use href="#i-briefcase"/></svg>Worker</span>
+              </div>
+              <div class="role-card-sub">Employees &amp; subs. Logs time. Lands on the field app.</div>
+            </div>
+            <div class="role-card is-disabled">
+              <span class="gate"><svg><use href="#i-lock"/></svg>Owner only</span>
+              <div class="role-card-head">
+                <span class="role-badge role-admin"><svg class="glyph"><use href="#i-shield"/></svg>Admin</span>
+              </div>
+              <div class="role-card-sub">Everything operational. No billing or security.</div>
+            </div>
+            <div class="role-card">
+              <div class="role-card-head">
+                <span class="role-badge role-member"><svg class="glyph"><use href="#i-user"/></svg>Member</span>
+              </div>
+              <div class="role-card-sub">Office staff. Reads &amp; light edits. No team or billing.</div>
+            </div>
+            <div class="role-card">
+              <div class="role-card-head">
+                <span class="role-badge role-bookkeeper"><svg class="glyph"><use href="#i-database"/></svg>Bookkeeper</span>
+              </div>
+              <div class="role-card-sub">Books-only access. Lands on /bk.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: name + email -->
+        <div class="form-grid">
+          <div class="form-col">
+            <label>Name <span class="opt">optional</span></label>
+            <input class="ipt" value="Mateo Alvarez" />
+          </div>
+          <div class="form-col">
+            <label>Email <span class="opt">sends invite automatically</span></label>
+            <input class="ipt" value="mateo@gmail.com" />
+          </div>
+        </div>
+
+        <!-- Henry drafts the human line -->
+        <div class="henry-draft">
+          <div class="mini-mark"><svg><use href="#i-sparkles"/></svg></div>
+          <div>
+            <div class="draft-body">
+              <strong>Henry can personalize the invite.</strong>&nbsp;Standard transactional email goes out either way — Henry only drafts the human line on top.
+              <div style="margin-top:6px;font-style:italic;color:var(--muted);">
+                "Hey Mateo — Jess from Northbeam. We're getting you set up on HeyHenry so you can log hours and submit invoices from your phone. Tap the link below when you're free."
+              </div>
+            </div>
+            <div class="draft-actions">
+              <button class="btn btn-ghost">Use Henry's line</button>
+              <button class="btn btn-text">Skip</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Worker prefs (disclosed, since Worker is selected) -->
+        <button class="prefs-toggle">
+          <svg><use href="#i-chev-down"/></svg>
+          Worker setup
+          <span style="color:var(--faint);font-weight:500;">(type, capabilities, rates — applied when Mateo accepts)</span>
+        </button>
+
+        <div class="prefs-block">
+          <div class="form-grid">
+            <div class="form-col">
+              <label>Worker type</label>
+              <select class="ipt">
+                <option>Employee</option>
+                <option selected>Subcontractor</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label>Business name <span class="opt">subs only</span></label>
+              <input class="ipt" placeholder="e.g. Alvarez Drywall Ltd." />
+            </div>
+          </div>
+
+          <div class="prefs-tri">
+            <div class="form-col">
+              <label>Log expenses</label>
+              <select class="ipt"><option selected>Default (Allow)</option><option>Allow</option><option>Block</option></select>
+            </div>
+            <div class="form-col">
+              <label>Submit invoices</label>
+              <select class="ipt"><option>Default (Block)</option><option selected>Allow</option><option>Block</option></select>
+            </div>
+            <div class="form-col">
+              <label>GST # <span class="opt">subs</span></label>
+              <input class="ipt mono" placeholder="123 456 789 RT0001" />
+            </div>
+          </div>
+
+          <div class="prefs-rates">
+            <div class="form-col">
+              <label>Pay rate <span class="opt">what you pay Mateo</span></label>
+              <div class="ipt-money">
+                <span class="prefix">CAD</span>
+                <input type="text" placeholder="0.00" class="dim" />
+                <span class="suffix">/ hr</span>
+              </div>
+            </div>
+            <div class="form-col">
+              <label>Charge rate <span class="opt">what you bill the client</span></label>
+              <div class="ipt-money">
+                <span class="prefix">CAD</span>
+                <input type="text" placeholder="0.00" class="dim" />
+                <span class="suffix">/ hr</span>
+              </div>
+            </div>
+            <div class="form-col" style="align-self:flex-end;">
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.04em;padding-bottom:8px;">
+                Not visible to Mateo
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-foot">
+        <div class="dialog-foot-meta">Link will expire <strong style="color:var(--ink-2);font-weight:600;">30 May, 4:18 PM</strong></div>
+        <div class="dialog-foot-actions">
+          <button class="btn btn-ghost"><svg class="icon"><use href="#i-copy"/></svg>Create link</button>
+          <button class="btn btn-primary"><svg class="icon"><use href="#i-send"/></svg>Create &amp; send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 4 · Deactivate confirm (target — replaces hard delete)    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 4</span>
+    <span class="frame-sep">·</span>
+    settings / team — dialog
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    deactivate-not-delete · history preserved · hard delete demoted to a stronger separate confirm
+  </div>
+  <div class="frame-body">
+
+<div class="shell shell-short" style="position:relative;min-height:680px;">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">Settings</h1>
+          <div class="page-sub">Defaults that ride along into every quote, invoice, and customer portal.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+        <nav class="settings-nav">
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-building"/></svg><span class="item-name">Business profile</span></li>
+              <li class="settings-item is-active"><svg class="item-icon"><use href="#i-users"/></svg><span class="item-name">Team &amp; workers</span><span class="item-count">4</span></li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+          <div class="pane-head">
+            <a class="back-link"><svg><use href="#i-arrow-left"/></svg>Settings</a>
+            <h1 class="pane-title">Team</h1>
+            <div class="pane-sub">Invite workers, admins, and your bookkeeper. Set what each can do.</div>
+          </div>
+
+          <section class="region">
+            <header class="region-head">
+              <div class="region-meta">
+                <h2 class="region-title">Crew <span class="region-count">4 people</span></h2>
+                <div class="region-sub">The people on Northbeam — owner, admins, workers, bookkeeper.</div>
+              </div>
+              <div class="region-actions">
+                <button class="btn btn-rust"><svg class="icon"><use href="#i-plus"/></svg>Add to crew</button>
+              </div>
+            </header>
+            <ul class="roster">
+              <li class="roster-head"><div>Person</div><div>Role</div><div>What they do</div><div>Joined</div><div></div></li>
+              <li class="roster-row is-owner">
+                <div class="person"><div class="person-avatar is-owner">JD</div><div class="person-meta"><span class="person-name">Jess Donahue<svg class="owner-lock"><use href="#i-lock"/></svg></span><span class="person-email">jess@northbeam.ca</span></div></div>
+                <div><span class="role-badge role-owner"><svg class="glyph"><use href="#i-key"/></svg>Owner</span></div>
+                <div class="cap-summary">Account owner · billing &amp; security</div>
+                <div class="joined-cell">14 Mar 2024</div>
+                <div class="row-meta"><button class="row-more" disabled><svg><use href="#i-more"/></svg></button></div>
+              </li>
+              <li class="roster-row" style="position:relative;">
+                <div class="person"><div class="person-avatar">CT</div><div class="person-meta"><span class="person-name">Cory Tran</span><span class="person-email">cory@northbeam.ca</span></div></div>
+                <div><button class="role-badge role-worker"><svg class="glyph"><use href="#i-briefcase"/></svg>Employee<svg class="chev"><use href="#i-chev-down"/></svg></button></div>
+                <div class="cap-summary"><span class="cap-good">Logs expenses</span><span class="cap-dot">·</span><span class="cap-blocked">Submit invoices</span></div>
+                <div class="joined-cell">11 Sep 2024</div>
+                <div class="row-meta">
+                  <button class="row-chevron"><svg><use href="#i-chev-down"/></svg></button>
+                  <button class="row-more" style="background:var(--chip-fill);color:var(--ink);"><svg><use href="#i-more"/></svg></button>
+                </div>
+
+                <!-- The ⋯ menu sits open under Cory's row -->
+                <div class="row-menu" style="top:50px;">
+                  <div class="row-menu-item">
+                    <svg><use href="#i-pencil"/></svg>
+                    Edit rate &amp; capability
+                  </div>
+                  <div class="row-menu-item">
+                    <svg><use href="#i-refresh"/></svg>
+                    Change role…
+                  </div>
+                  <div class="row-menu-sep"></div>
+                  <div class="row-menu-item is-danger">
+                    <svg><use href="#i-power"/></svg>
+                    Deactivate
+                  </div>
+                  <div class="row-menu-tail">
+                    Keeps Cory's time, invoices, and history. Revokes access.
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ═══ Deactivate confirm dialog ═══ -->
+  <div class="scrim">
+    <div class="dialog" style="max-width: 460px;">
+      <div class="dialog-head">
+        <div class="dialog-meta">
+          <div class="dialog-title">Deactivate Cory Tran?</div>
+          <div class="dialog-sub">They'll lose access to Northbeam immediately. Their history stays intact.</div>
+        </div>
+        <button class="dialog-close"><svg><use href="#i-x"/></svg></button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="confirm-person">
+          <div class="person-avatar" style="width:36px;height:36px;font-size:12px;">CT</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink);">Cory Tran</div>
+            <div style="font-size:12px;color:var(--muted);">cory@northbeam.ca · Employee · joined 11 Sep 2024</div>
+          </div>
+        </div>
+
+        <ul class="confirm-list">
+          <li><svg><use href="#i-check"/></svg>156 logged time entries stay on every project</li>
+          <li><svg><use href="#i-check"/></svg>3 worker-submitted invoices stay on the books</li>
+          <li><svg><use href="#i-check"/></svg>Reactivate anytime in this same panel — settings restored</li>
+          <li class="danger"><svg><use href="#i-x-circle"/></svg>Sign-in blocked, calendar dispatches stop</li>
+        </ul>
+
+        <div class="delete-fallback">
+          <strong>Need to permanently delete instead?</strong> That removes Cory's auth account too — irreversible, and shouldn't be your first move. <a>Delete permanently…</a>
+        </div>
+      </div>
+
+      <div class="dialog-foot">
+        <div class="dialog-foot-meta">Action is reversible.</div>
+        <div class="dialog-foot-actions">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-danger"><svg class="icon"><use href="#i-power"/></svg>Deactivate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 5 · Empty state — owner alone · "Build your crew"         -->
+<!-- NEVER "0 of N seats."                                            -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 5</span>
+    <span class="frame-sep">·</span>
+    settings / team
+    <span class="frame-sep">·</span>
+    <span class="frame-role">New owner — only the owner row exists</span>
+    <span class="frame-sep">·</span>
+    plain count "Just you for now" · invite prompt as hero · no seat language
+  </div>
+  <div class="frame-body">
+
+<div class="shell shell-short">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">B</div>
+        <div class="org-meta">
+          <span class="org-name">Brook &amp; Iron Co.</span>
+          <span class="org-sub">Calgary, AB</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">BH</span>
+          <span class="user-name">Brook Hadley</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">Settings</h1>
+          <div class="page-sub">Defaults that ride along into every quote, invoice, and customer portal.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+        <nav class="settings-nav">
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-building"/></svg><span class="item-name">Business profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-user"/></svg><span class="item-name">Your profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-shield"/></svg><span class="item-name">Security</span><span class="item-pill">Owner</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-history"/></svg><span class="item-name">Audit log</span></li>
+              <li class="settings-item is-active"><svg class="item-icon"><use href="#i-users"/></svg><span class="item-name">Team &amp; workers</span><span class="item-count">1</span></li>
+              <li class="settings-item is-danger"><svg class="item-icon"><use href="#i-trash"/></svg><span class="item-name">Delete account</span><span class="item-pill">Owner</span></li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+          <div class="pane-head">
+            <a class="back-link"><svg><use href="#i-arrow-left"/></svg>Settings</a>
+            <h1 class="pane-title">Team</h1>
+            <div class="pane-sub">Invite workers, admins, and your bookkeeper. Set what each can do.</div>
+          </div>
+
+          <section class="region">
+            <header class="region-head">
+              <div class="region-meta">
+                <h2 class="region-title">
+                  Crew
+                  <span class="region-count">Just you for now</span>
+                </h2>
+                <div class="region-sub">Once you invite someone, they show up here with the role you set.</div>
+              </div>
+              <div class="region-actions">
+                <button class="btn btn-rust btn-lg"><svg class="icon"><use href="#i-plus"/></svg>Add to crew</button>
+              </div>
+            </header>
+
+            <ul class="roster">
+              <li class="roster-head"><div>Person</div><div>Role</div><div>What they do</div><div>Joined</div><div></div></li>
+              <li class="roster-row is-owner">
+                <div class="person">
+                  <div class="person-avatar is-owner">BH</div>
+                  <div class="person-meta">
+                    <span class="person-name">Brook Hadley<svg class="owner-lock"><use href="#i-lock"/></svg></span>
+                    <span class="person-email">brook@brookandiron.ca</span>
+                  </div>
+                </div>
+                <div><span class="role-badge role-owner"><svg class="glyph"><use href="#i-key"/></svg>Owner</span></div>
+                <div class="cap-summary">Account owner · billing &amp; security</div>
+                <div class="joined-cell">22 May 2026</div>
+                <div class="row-meta"><button class="row-more" disabled><svg><use href="#i-more"/></svg></button></div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Build-your-crew hero (the empty-state target) -->
+          <div class="empty-hero">
+            <div class="empty-icon"><svg><use href="#i-users"/></svg></div>
+            <div class="empty-eyebrow">Next step</div>
+            <div class="empty-title">Build your crew</div>
+            <div class="empty-sub">
+              Invite the people you work with — your foreman, subs you trust, the bookkeeper who closes your year-end. They'll get a link to join.
+            </div>
+            <div class="empty-actions">
+              <button class="btn btn-rust"><svg class="icon"><use href="#i-plus"/></svg>Add to crew</button>
+              <button class="btn btn-ghost"><svg class="icon"><use href="#i-upload"/></svg>Import from QuickBooks</button>
+            </div>
+            <div class="empty-foot">
+              <strong>3 invite paths:</strong> WORKER · ADMIN · BOOKKEEPER. Admins can do everything operational; bookkeepers see only the books.
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+  </div>
+</div>
+
+
+</div><!-- /.frame-stack -->
+
+</body>
+</html>
