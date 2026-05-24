@@ -1084,6 +1084,104 @@ export async function createScheduleTaskAction(
   return { ok: true, taskId: (data as Record<string, unknown>).id as string };
 }
 
+// ---------------------------------------------------------------------------
+// CO → schedule (brief touchpoint #3 / vault gotcha #13: change orders
+// are not linked to the Gantt). When a CO is approved, Henry offers an
+// inline prompt to draft schedule task(s) for the added scope. These two
+// actions back the prompt's accept / dismiss. The "needs scheduling"
+// signal is derived from change_orders state (approved + dismissed_at
+// null — see listCoScheduleSuggestions), so dismissing or accepting both
+// stamp `schedule_suggestion_dismissed_at` to stop the re-nag.
+// ---------------------------------------------------------------------------
+
+/** Default duration (working days) for a CO-drafted task, mirroring the
+ *  bootstrap's unmapped-category default — a visible placeholder the GC
+ *  firms up. Exported shape kept inline; the client passes it through. */
+const CO_TASK_DEFAULT_DURATION_DAYS = 3;
+
+export type AcceptCoScheduleResult = { ok: true; created: number } | { ok: false; error: string };
+
+/**
+ * Accept the CO→schedule draft: create one rough, internal (client-hidden)
+ * task per chosen scope item, optionally wire each to a predecessor task,
+ * then mark the CO's suggestion dismissed so it stops surfacing.
+ *
+ * Tasks are created via `createScheduleTaskAction` (so they pick up the
+ * same defaults + revalidation) and edges via `setTaskPredecessorsAction`
+ * (which also runs the forward cascade, keeping the new task honest if its
+ * start violates the predecessor). Per the product decision, CO-drafted
+ * tasks default to confidence=rough + client_visible=false — a fresh draft
+ * date the operator firms + shares deliberately, never auto-promised.
+ */
+export async function acceptCoScheduleSuggestionAction(input: {
+  coId: string;
+  projectId: string;
+  predecessorId: string | null;
+  items: Array<{ name: string; planned_start_date: string; planned_duration_days?: number }>;
+}): Promise<AcceptCoScheduleResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  const supabase = await createClient();
+
+  let created = 0;
+  for (const item of input.items) {
+    const name = item.name.trim();
+    if (!name) continue;
+    const res = await createScheduleTaskAction(input.projectId, {
+      name,
+      planned_start_date: item.planned_start_date,
+      planned_duration_days: item.planned_duration_days ?? CO_TASK_DEFAULT_DURATION_DAYS,
+      client_visible: false,
+    });
+    if (!res.ok) return { ok: false, error: res.error };
+    created++;
+    if (input.predecessorId) {
+      const edge = await setTaskPredecessorsAction({
+        taskId: res.taskId,
+        predecessorIds: [input.predecessorId],
+      });
+      // A bad edge (cycle/etc.) shouldn't orphan the created task — the
+      // task still landed; surface the edge failure but keep going.
+      if (!edge.ok) {
+        console.error('[co-schedule] predecessor wire failed:', edge.error);
+      }
+    }
+  }
+
+  // Stamp dismissed so the prompt doesn't re-nag on the next tab load.
+  const { error: dismissErr } = await supabase
+    .from('change_orders')
+    .update({ schedule_suggestion_dismissed_at: new Date().toISOString() })
+    .eq('id', input.coId);
+  if (dismissErr) return { ok: false, error: dismissErr.message };
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { ok: true, created };
+}
+
+/**
+ * Dismiss the CO→schedule prompt without drafting anything. Stamps the
+ * same `schedule_suggestion_dismissed_at` so the approved CO stops
+ * surfacing its prompt. Idempotent.
+ */
+export async function dismissCoScheduleSuggestionAction(input: {
+  coId: string;
+  projectId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('change_orders')
+    .update({ schedule_suggestion_dismissed_at: new Date().toISOString() })
+    .eq('id', input.coId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { ok: true };
+}
+
 /**
  * Resolve the trade list for a non-blank bootstrap source. Pure-ish
  * (just hits the DB twice in the worst case) — extracted so the call

@@ -1049,9 +1049,10 @@ export async function approveChangeOrderAction(
     byName: nameParsed.data.approved_by_name,
   }).catch((err) => console.error('[change-order] notification dispatch failed:', err));
 
-  // Henry suggestion: create tasks for the new scope items.
-  const { onChangeOrderApproved } = await import('@/server/ai/triggers');
-  await onChangeOrderApproved(coData.id as string);
+  // Henry surfaces the "draft tasks for the new scope?" offer inline on
+  // the Schedule tab (derived from this CO's approved + not-dismissed
+  // state — see listCoScheduleSuggestions), so no generic chat/briefing
+  // suggestion is written here.
 
   return { ok: true, id: coData.id as string };
 }
