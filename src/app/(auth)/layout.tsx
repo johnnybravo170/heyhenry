@@ -11,7 +11,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted/30 p-4">
       <HeyHenryWordmark />
-      <div className="w-full max-w-sm">{children}</div>
+      {/* max-w-md (was max-w-sm) so the onboarding business-profile step has
+          room for its labelled fields; login/signup sit comfortably here too. */}
+      <div className="w-full max-w-md">{children}</div>
       <p className="text-xs text-muted-foreground">Built for contractors. Made in Canada.</p>
     </div>
   );

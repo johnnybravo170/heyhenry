@@ -85,7 +85,10 @@ function SignupForm() {
         toast.error(result.error);
         return;
       }
-      router.push('/dashboard');
+      // signupAction redirects server-side (→ /onboarding, or /onboarding/plan
+      // on the paid path). This push is only a fallback if that redirect ever
+      // doesn't propagate; keep it pointed at the first-run setup pass.
+      router.push('/onboarding');
     });
   }
 

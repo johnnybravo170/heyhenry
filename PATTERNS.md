@@ -780,3 +780,15 @@ When a server-rendered surface (the owner dashboard) needs user-reorderable bloc
 - Persistence: `tenant_members.dashboard_section_order text[]` (per-user, per-tenant; `NULL` = default). Self-update RLS already covered by `tenant_members_update_self` (mig 0152). Read via `getDashboardSectionOrder(userId)` in `src/lib/db/queries/dashboard.ts`.
 
 **Shared expectations for this family:** server blocks stay server components (passed as children/props — Suspense boundaries move *inside* the map values); the wrapper is the only client component; order is the only client-owned state; saves are optimistic with revert-on-failure; the stored value is always normalized to the current key set on both read and write. Reuse this shape for any future "let the user arrange these blocks" surface rather than lifting the blocks into client land.
+
+## 34. Resumable step shell + selection tiles (first-run onboarding)
+
+A **skippable, resumable** one-step-per-screen flow inside the `(auth)` shell, where *value is never gated on completeness* — every step has Skip + Back and the final hand-off always reaches the destination.
+
+**Canonical instance** — the first-run setup pass (`/onboarding`):
+- `src/components/features/onboarding/onboarding-flow.tsx` — the client shell. Owns step index + an ink (not rust) segmented progress bar (`role="progressbar"` + `aria-valuenow/min/max`). `goTo()` fire-and-forgets `setOnboardingStepAction(step)` so the **resume marker never blocks the UI**; the marker is monotonic (advance-only via a `.lt('onboarding_step', step)` guard) so Back-then-leave doesn't lose progress. Exports a shared `StepActions` footer (ink primary CTA + low-emphasis "Skip for now").
+- Step bodies: `vertical-step.tsx` (selection tiles), `profile-step.tsx` (reuses `LogoUploader` + the shared `updateBusinessProfileAction`, passing through Settings-managed fields so they aren't clobbered), `meet-henry-step.tsx` (orientation card, **not** a chat box).
+- `src/server/actions/onboarding.ts` — `{ ok, error }` actions; `completeOnboardingAction` stamps `tenants.onboarding_completed_at` (idempotent via `.is(..., null)`); a failed save **never** stops the hand-off (the shell still routes to `/dashboard`).
+- Route guard: `src/app/(auth)/onboarding/page.tsx` reads the marker — `onboarding_completed_at` set → `redirect('/dashboard')` (loop-safe); else resume to the clamped furthest step. Marker columns added in `20260524040346_onboarding_progress_marker.sql` with existing tenants backfilled to "complete" so they never re-onboard.
+
+**Selection tile** (the `vertical-step` tiles): a keyboard-accessible `<button aria-pressed>` card (mobile ≥44px target) carrying the screen's **one rust accent** on the selected state only — `border-brand ring-3 ring-brand/15` + a `bg-brand` radio check. The CTA stays ink. Pattern mirrors `plan-picker.tsx`'s `PlanCard` (`role="button"`-style card) but uses a real `<button>` + `aria-pressed` for a single-select radio group. Reuse this for any "pick one of N options" tile group; reuse the step-shell shape for any future skippable multi-step setup.
