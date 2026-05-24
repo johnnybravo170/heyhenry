@@ -52,6 +52,11 @@ export type BillingOverview =
       currentPeriodEnd: string; // ISO
       trialEndsAt: string | null;
       promoCode: string | null;
+      // Grandfathered/founding member: locked sign-up rate that never moves
+      // while they stay. Either the admin-set DB flag OR an active promo
+      // (FOUNDER) signals it — we surface the reassurance on the looser test
+      // (either ⇒ grandfathered) since the safe direction is to honour it.
+      foundingMember: boolean;
       defaultCard: { brand: string; last4: string; expMonth: number; expYear: number } | null;
     };
 
@@ -60,12 +65,13 @@ export async function getBillingOverviewAction(): Promise<BillingOverview> {
   const admin = createAdminClient();
   const { data } = await admin
     .from('tenants')
-    .select('stripe_customer_id, stripe_subscription_id')
+    .select('stripe_customer_id, stripe_subscription_id, founding_member')
     .eq('id', tenant.id)
     .single();
 
   const customerId = (data?.stripe_customer_id as string | null) ?? null;
   const subId = (data?.stripe_subscription_id as string | null) ?? null;
+  const foundingMemberFlag = Boolean(data?.founding_member);
 
   if (!subId || !customerId) {
     return { ok: true, hasSubscription: false, hasCustomer: Boolean(customerId) };
@@ -105,6 +111,8 @@ export async function getBillingOverviewAction(): Promise<BillingOverview> {
     currentPeriodEnd: periodEndSec ? new Date(periodEndSec * 1000).toISOString() : '',
     trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
     promoCode,
+    // Grandfathered if the admin-set flag is on OR a founding promo is active.
+    foundingMember: foundingMemberFlag || promoCode === 'FOUNDER',
     defaultCard: card,
   };
 }

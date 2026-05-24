@@ -133,6 +133,9 @@ export function CancelSubscriptionButton() {
         {step === 'intro' ? (
           <>
             <AlertDialogHeader>
+              <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Step 1 of 2 · Refund preview
+              </div>
               <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-2 text-sm">
@@ -199,9 +202,12 @@ export function CancelSubscriptionButton() {
         ) : (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>One quick question</AlertDialogTitle>
+              <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Step 2 of 2 · One quick question
+              </div>
+              <AlertDialogTitle>What's driving the cancellation?</AlertDialogTitle>
               <AlertDialogDescription>
-                What's driving the cancellation? Helps us figure out what to fix next.
+                Helps us figure out what to fix next. Skipping is fine.
               </AlertDialogDescription>
             </AlertDialogHeader>
 
