@@ -1,0 +1,1476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Settings ▸ Billing &amp; subscription — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 10px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 0;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 32px;
+  }
+
+  .stage {
+    display: flex; gap: 28px;
+    flex-wrap: wrap; justify-content: center;
+    max-width: 1480px;
+    padding: 0 24px;
+  }
+
+  .frame-label {
+    text-align: center;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    max-width: 390px;
+    margin-left: auto; margin-right: auto;
+    line-height: 1.5;
+  }
+  .frame-label .frame-strong { color: var(--ink); }
+
+  /* ───── Phone frame (390 × 844) ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── Detail header (with back button) ───── */
+  .detail-header {
+    padding: 14px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .back-btn {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    display: grid; place-items: center;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .back-btn .ico { width: 18px; height: 18px; }
+  .detail-titles { flex: 1; min-width: 0; }
+  .detail-title {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .detail-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 1px;
+    line-height: 1.35;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .role-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Scroll area ───── */
+  .scroll-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg);
+    padding: 14px 14px 80px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* ───── Pane card (mobile) ───── */
+  .pane-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .card-head {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .card-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em; line-height: 1.3;
+    margin: 0;
+  }
+  .card-sub {
+    font-size: 12px; color: var(--muted);
+    margin: 4px 0 0; line-height: 1.5;
+  }
+  .card-body {
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .card-foot {
+    border-top: 1px solid var(--hair);
+    padding: 12px 16px;
+    background: var(--bg);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ───── Buttons (mobile · ≥44px) ───── */
+  .btn-mob {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; padding: 0 14px;
+    border-radius: 10px;
+    font: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    width: 100%;
+  }
+  .btn-mob-primary { background: var(--ink); color: #fff; }
+  .btn-mob-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-mob-rust { background: var(--rust); color: #fff; }
+  .btn-mob-destructive { background: var(--danger-soft); color: var(--danger); }
+  .btn-mob-danger-outline { background: var(--card); border-color: var(--hair); color: var(--danger); }
+  .btn-mob-text { background: transparent; border: 0; color: var(--muted); padding: 0 12px; height: 44px; font-size: 14px; font-weight: 600; }
+  .btn-mob .ico { width: 16px; height: 16px; }
+  .btn-mob.inline-w { width: auto; padding: 0 16px; }
+
+  /* ───── Status pills ───── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .pill svg { width: 11px; height: 11px; }
+  .pill-ok      { background: var(--ok-soft);    color: var(--ok);     border-color: rgba(21,128,61,.18); }
+  .pill-warn    { background: var(--warn-soft);  color: var(--warn);   border-color: rgba(180,83,9,.18); }
+  .pill-neutral { background: var(--chip-fill);  color: var(--muted);  border-color: var(--hair); }
+
+  /* ───── Cockpit (mobile) ───── */
+  .cockpit-head {
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .cockpit-meta-row {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .cockpit-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cockpit-eyebrow .eyebrow-strong { color: var(--ink-2); }
+  .cockpit-eyebrow .eyebrow-sep { color: var(--faint); }
+  .cockpit-headline {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em; line-height: 1.35;
+    margin: 2px 0 0;
+  }
+  .cockpit-sub {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  .cockpit-sub .ink { color: var(--ink); font-weight: 600; }
+
+  .grandfather-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    border: 1px solid rgba(194,65,12,.22);
+    font-size: 12px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .grandfather-chip svg { width: 11px; height: 11px; }
+  .grandfather-chip .gf-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .cockpit-foot {
+    padding: 12px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--hair);
+    font-size: 12px; color: var(--ink-2); line-height: 1.5;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .cockpit-foot .foot-strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ───── Payment-method (mobile) ───── */
+  .pm-display {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px;
+  }
+  .pm-brand-mark {
+    width: 38px; height: 25px;
+    border-radius: 5px;
+    background: linear-gradient(135deg, #1A1F71 0%, #2B3A8F 100%);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    font-style: italic;
+    flex-shrink: 0;
+  }
+  .pm-brand-name { font-weight: 600; color: var(--ink); }
+  .pm-meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .card-helper {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+    line-height: 1.4;
+  }
+  .card-helper svg { width: 12px; height: 12px; flex-shrink: 0; color: var(--faint); }
+
+  /* ───── Change-plan (mobile) ───── */
+  .field-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .input {
+    appearance: none;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 44px;
+    padding: 0 12px;
+    font: inherit; font-weight: 500;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  select.input {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+  }
+
+  /* ───── Henry guard (mobile) ───── */
+  .henry-guard {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    border-left: 3px solid var(--rust);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .henry-mark {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .henry-mark svg { width: 13px; height: 13px; }
+  .henry-body {
+    flex: 1;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .henry-body .henry-label {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 6px;
+  }
+  .henry-body strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Preview panel (mobile) */
+  .preview-panel {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  .preview-panel .preview-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .preview-panel .preview-strong { color: var(--ink); font-weight: 600; }
+  .preview-panel .preview-meta { color: var(--muted); }
+
+  /* ───── Invoice list (mobile · stacked rows, no horizontal scroll) ───── */
+  .invoice-list { display: flex; flex-direction: column; }
+  .invoice-row {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .invoice-row:last-child { border-bottom: 0; }
+  .invoice-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .invoice-date {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .invoice-line2 {
+    font-size: 12px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .invoice-line2 .sep { color: var(--faint); }
+  .invoice-line2 .gst-zero { color: var(--faint); }
+  .invoice-line2 .ink-strong { color: var(--ink); font-weight: 600; }
+  .receipt-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
+  .icon-link-mob {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .icon-link-mob svg { width: 16px; height: 16px; }
+
+  /* ───── Dialog / bottom sheet ───── */
+  .sheet-screen {
+    background: rgba(10,10,10,.45);
+    display: flex; flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .sheet-dim-fill { flex: 1; }
+  .sheet {
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -20px 40px -10px rgba(0,0,0,.25);
+    padding: 14px 16px 20px;
+    display: flex; flex-direction: column; gap: 14px;
+    max-height: 720px;
+    overflow-y: auto;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--rule);
+    border-radius: 999px;
+    margin: 0 auto;
+  }
+  .sheet-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .sheet-title {
+    font-size: 20px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1.2;
+  }
+  .sheet-desc {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .sheet-body {
+    display: flex; flex-direction: column; gap: 12px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .sheet-body p { margin: 0; }
+  .sheet-body strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .sheet-actions {
+    display: flex; flex-direction: column; gap: 8px;
+    padding-top: 4px;
+  }
+
+  /* Pause panel (mobile dialog) */
+  .pause-panel {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .pause-panel .pause-title {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    line-height: 1.4;
+  }
+  .pause-panel .pause-sub {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Reason radios (mobile) */
+  .reason-stack { display: flex; flex-direction: column; gap: 4px; }
+  .reason-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.4;
+    min-height: 44px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+  }
+  .reason-row.is-on {
+    background: var(--bg);
+    border-color: var(--ink);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .reason-row .radio-glyph {
+    width: 18px; height: 18px;
+    border-radius: 999px;
+    border: 1.5px solid var(--faint);
+    background: var(--card);
+    margin-top: 1px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .reason-row.is-on .radio-glyph {
+    border-color: var(--ink);
+    background: var(--ink);
+  }
+  .reason-row.is-on .radio-glyph::after {
+    content: ''; position: absolute;
+    inset: 3px;
+    border-radius: 999px;
+    background: var(--card);
+  }
+  .textarea {
+    width: 100%; min-height: 80px;
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    background: var(--card);
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--ink);
+    outline: none;
+    resize: none;
+    font-size: 14px;
+  }
+  .textarea-label {
+    font-size: 12px; color: var(--muted); font-weight: 600;
+    margin-bottom: 5px;
+    display: block;
+  }
+  .textarea-helper {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  /* ───── Stripe PaymentElement (mobile dialog) — kept un-clipped at 360px ───── */
+  .stripe-element {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .stripe-tabs {
+    display: flex; gap: 4px;
+    padding: 3px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+  }
+  .stripe-tab {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .stripe-tab.is-on { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .stripe-tab svg { width: 13px; height: 13px; }
+  .stripe-field {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .stripe-field-label {
+    font-size: 12px; font-weight: 500;
+    color: var(--ink-2);
+  }
+  .stripe-input {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    height: 40px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: var(--ink);
+    display: flex; align-items: center;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .stripe-input.placeholder { color: var(--faint); }
+  .stripe-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stripe-foot {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    padding-top: 4px;
+  }
+  .stripe-foot svg { width: 12px; height: 12px; color: var(--muted); }
+
+  /* ───── Cross-link (mobile) ───── */
+  .cross-link {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--hair);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .cross-link svg { width: 14px; height: 14px; color: var(--faint); flex-shrink: 0; margin-top: 1px; }
+  .cross-link a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+
+  /* ───── States row (small phones below the main lineup) ───── */
+  .states-grid { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+
+  /* Empty state (mobile) */
+  .empty-pad {
+    padding: 20px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .empty-mark {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .empty-mark svg { width: 18px; height: 18px; }
+  .empty-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .empty-text { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+  /* Locked / permission state */
+  .pane-locked {
+    background: var(--card);
+    padding: 22px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--hair);
+  }
+  .locked-mark {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .locked-mark svg { width: 18px; height: 18px; }
+  .locked-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .locked-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .locked-text { font-size: 14px; color: var(--muted); line-height: 1.5; }
+  .locked-text strong { color: var(--ink-2); font-weight: 600; }
+
+  /* Past-due cockpit emphasis */
+  .pastdue-card {
+    border-color: rgba(180,83,9,.4);
+    box-shadow: inset 0 0 0 1px rgba(180,83,9,.18);
+  }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="10" x2="21" y2="10"/><line x1="6" y1="14" x2="6" y2="18"/><line x1="10" y1="14" x2="10" y2="18"/><line x1="14" y1="14" x2="14" y2="18"/><line x1="18" y1="14" x2="18" y2="18"/><polygon points="12 3 21 10 3 10 12 3"/><line x1="3" y1="21" x2="21" y2="21"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 1 — Active subscription · scroll top                -->
+  <!-- Cockpit (state-first · founding-rate chip) + Payment      -->
+  <!-- method + Change-plan (collapsed selects).                 -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to settings"><svg class="ico"><use href="#i-chevron-left"/></svg></button>
+          <div class="detail-titles">
+            <div class="detail-title">Billing</div>
+            <div class="detail-sub">
+              <span>Owner-only</span>
+              <span style="color:var(--faint)">·</span>
+              <span class="role-pill">Owner</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="scroll-area">
+
+          <!-- 1. Cockpit (state-first) -->
+          <section class="pane-card">
+            <header class="cockpit-head">
+              <div class="cockpit-eyebrow">
+                <span class="eyebrow-strong">Growth</span>
+                <span class="eyebrow-sep">·</span>
+                <span>Monthly</span>
+              </div>
+              <h2 class="cockpit-headline">Next renewal Mon Jun 8, 2026 for $208.95.</h2>
+              <div class="cockpit-sub">
+                Auto-renews to <span class="ink">Visa •••• 4242</span>.
+              </div>
+              <div class="cockpit-meta-row">
+                <span class="pill pill-ok"><svg><use href="#i-check"/></svg>Active</span>
+                <span class="grandfather-chip">
+                  <svg><use href="#i-lock"/></svg>
+                  <span class="gf-label">Founding</span>
+                  <span style="font-variant-numeric:tabular-nums">· $199/mo locked</span>
+                </span>
+              </div>
+            </header>
+            <div class="cockpit-foot">
+              <span>
+                List price for Growth today is <span class="foot-strong">$399/mo</span>.
+                Your rate doesn't move while you stay on Growth.
+              </span>
+            </div>
+          </section>
+
+          <!-- 2. Payment method -->
+          <section class="pane-card">
+            <header class="card-head">
+              <h2 class="card-title">Payment method</h2>
+              <p class="card-sub">Used for renewals and any plan changes.</p>
+            </header>
+            <div class="card-body">
+              <div class="pm-display">
+                <div class="pm-brand-mark">VISA</div>
+                <div>
+                  <span class="pm-brand-name">Visa</span>
+                  <span class="pm-meta"> •••• 4242 · exp 11/27</span>
+                </div>
+              </div>
+              <button class="btn-mob btn-mob-ghost"><svg class="ico"><use href="#i-credit-card"/></svg>Update card</button>
+              <div class="card-helper">
+                <svg><use href="#i-lock"/></svg>
+                Card details go to Stripe — HeyHenry never sees them.
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. Change plan (collapsed) -->
+          <section class="pane-card">
+            <header class="card-head">
+              <h2 class="card-title">Change plan</h2>
+              <p class="card-sub">Switch tier or billing cycle. Upgrades prorate now; downgrades credit the next invoice.</p>
+            </header>
+            <div class="card-body">
+              <div>
+                <label class="field-label" for="plan-sel">Plan</label>
+                <select class="input" id="plan-sel">
+                  <option>Growth — $399/mo</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="cycle-sel">Billing cycle</label>
+                <select class="input" id="cycle-sel">
+                  <option>Monthly</option>
+                  <option>Yearly (20% off)</option>
+                </select>
+              </div>
+              <button class="btn-mob btn-mob-ghost" disabled style="opacity:.55">Preview change</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">Phone 1</span> · Active · scroll top<br>
+      cockpit (state-first) · payment · change-plan
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 2 — Active subscription · scroll bottom             -->
+  <!-- Invoice history (stacked rows · no horizontal scroll · GST -->
+  <!-- per row · 44px receipt icon-links) + Cancel card + cross-  -->
+  <!-- link to Stripe Connect (distinct money surface).          -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to settings"><svg class="ico"><use href="#i-chevron-left"/></svg></button>
+          <div class="detail-titles">
+            <div class="detail-title">Billing</div>
+            <div class="detail-sub">
+              <span>Owner-only</span>
+              <span style="color:var(--faint)">·</span>
+              <span class="role-pill">Owner</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="scroll-area">
+
+          <!-- 4. Invoice history -->
+          <section class="pane-card">
+            <header class="card-head">
+              <h2 class="card-title">Invoice history</h2>
+              <p class="card-sub">Receipts including GST. CRA-acceptable for your input tax credit.</p>
+            </header>
+            <div class="invoice-list">
+              <div class="invoice-row">
+                <div class="invoice-meta">
+                  <div class="invoice-date">May 8, 2026</div>
+                  <div class="invoice-line2">
+                    <span class="ink-strong">$208.95</span>
+                    <span class="sep">·</span>
+                    <span>GST $9.95</span>
+                    <span class="sep">·</span>
+                    <span class="pill pill-ok" style="padding:1px 7px 1px 5px"><svg><use href="#i-check"/></svg>Paid</span>
+                  </div>
+                </div>
+                <div class="receipt-actions">
+                  <a class="icon-link-mob" href="#" aria-label="View on Stripe"><svg><use href="#i-external"/></svg></a>
+                  <a class="icon-link-mob" href="#" aria-label="Download PDF receipt"><svg><use href="#i-download"/></svg></a>
+                </div>
+              </div>
+              <div class="invoice-row">
+                <div class="invoice-meta">
+                  <div class="invoice-date">Apr 8, 2026</div>
+                  <div class="invoice-line2">
+                    <span class="ink-strong">$208.95</span>
+                    <span class="sep">·</span>
+                    <span>GST $9.95</span>
+                    <span class="sep">·</span>
+                    <span class="pill pill-ok" style="padding:1px 7px 1px 5px"><svg><use href="#i-check"/></svg>Paid</span>
+                  </div>
+                </div>
+                <div class="receipt-actions">
+                  <a class="icon-link-mob" href="#" aria-label="View on Stripe"><svg><use href="#i-external"/></svg></a>
+                  <a class="icon-link-mob" href="#" aria-label="Download PDF receipt"><svg><use href="#i-download"/></svg></a>
+                </div>
+              </div>
+              <div class="invoice-row">
+                <div class="invoice-meta">
+                  <div class="invoice-date">Mar 8, 2026</div>
+                  <div class="invoice-line2">
+                    <span class="ink-strong">$208.95</span>
+                    <span class="sep">·</span>
+                    <span>GST $9.95</span>
+                    <span class="sep">·</span>
+                    <span class="pill pill-ok" style="padding:1px 7px 1px 5px"><svg><use href="#i-check"/></svg>Paid</span>
+                  </div>
+                </div>
+                <div class="receipt-actions">
+                  <a class="icon-link-mob" href="#" aria-label="View on Stripe"><svg><use href="#i-external"/></svg></a>
+                  <a class="icon-link-mob" href="#" aria-label="Download PDF receipt"><svg><use href="#i-download"/></svg></a>
+                </div>
+              </div>
+              <div class="invoice-row">
+                <div class="invoice-meta">
+                  <div class="invoice-date">Jan 8, 2026</div>
+                  <div class="invoice-line2">
+                    <span class="ink-strong">$199.00</span>
+                    <span class="sep">·</span>
+                    <span class="gst-zero">GST —</span>
+                    <span class="sep">·</span>
+                    <span class="pill pill-neutral">Trial → paid</span>
+                  </div>
+                </div>
+                <div class="receipt-actions">
+                  <a class="icon-link-mob" href="#" aria-label="View on Stripe"><svg><use href="#i-external"/></svg></a>
+                  <a class="icon-link-mob" href="#" aria-label="Download PDF receipt"><svg><use href="#i-download"/></svg></a>
+                </div>
+              </div>
+            </div>
+            <div class="card-foot" style="display:flex;align-items:center;justify-content:center;gap:10px">
+              <button class="btn-mob btn-mob-ghost inline-w" style="width:auto">Load more</button>
+            </div>
+          </section>
+
+          <!-- 5. Cancel subscription -->
+          <section class="pane-card">
+            <header class="card-head">
+              <h2 class="card-title">Cancel subscription</h2>
+              <p class="card-sub">
+                Stops auto-renewal and refunds the unused portion of your current period to your
+                original card. Access continues until the period ends.
+              </p>
+            </header>
+            <div class="card-body">
+              <button class="btn-mob btn-mob-danger-outline">Cancel subscription</button>
+              <div class="card-helper">
+                No phone call required. See the <a href="#" style="color:var(--ink);text-decoration:underline;text-underline-offset:3px">refund policy</a>.
+              </div>
+            </div>
+          </section>
+
+          <!-- Cross-link — disambiguate three money surfaces -->
+          <section class="pane-card" style="padding: 0">
+            <div class="cross-link" style="border-top: 0">
+              <svg><use href="#i-info"/></svg>
+              <span>
+                Receipts you send to <em>your</em> clients live under <a href="#">Billing</a>.
+                Stripe payouts you collect from clients are under <a href="#">Settings ▸ Stripe</a>.
+              </span>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">Phone 2</span> · Active · scroll bottom<br>
+      invoices (stacked · 44px receipt links) · cancel · cross-link
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 3 — Change plan expanded · ✦ Henry grandfather guard -->
+  <!-- + proration preview                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to billing"><svg class="ico"><use href="#i-chevron-left"/></svg></button>
+          <div class="detail-titles">
+            <div class="detail-title">Change plan</div>
+            <div class="detail-sub">
+              <span>Pro · monthly</span>
+              <span style="color:var(--faint)">·</span>
+              <span>preview ready</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="scroll-area">
+
+          <section class="pane-card">
+            <div class="card-body">
+              <div>
+                <label class="field-label" for="plan-sel-2">Plan</label>
+                <select class="input" id="plan-sel-2">
+                  <option selected>Pro — $699/mo</option>
+                  <option>Growth — $399/mo</option>
+                  <option>Starter — $169/mo</option>
+                  <option>Scale — $1,299/mo</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="cycle-sel-2">Billing cycle</label>
+                <select class="input" id="cycle-sel-2">
+                  <option selected>Monthly</option>
+                  <option>Yearly (20% off)</option>
+                </select>
+              </div>
+
+              <!-- ✦ Henry grandfather guard -->
+              <div class="henry-guard" role="note">
+                <div class="henry-mark"><svg><use href="#i-sparkles"/></svg></div>
+                <div class="henry-body">
+                  <span class="henry-label">Henry</span>
+                  You're on your <strong>founding rate $199/mo</strong>, locked.
+                  Switching to <strong>Pro</strong> moves you to today's pricing — exact number below.
+                  Hit <em>Back</em> any time and your founding rate stays put.
+                </div>
+              </div>
+
+              <!-- Proration preview -->
+              <div class="preview-panel">
+                <div class="preview-eyebrow">Proration preview</div>
+                <div>
+                  <span class="preview-strong">Charging $324.16 now</span>
+                  <span class="preview-meta">— prorated difference for 18 days of Pro left in this period.</span>
+                </div>
+                <div class="preview-meta">
+                  Next renewal <span class="preview-strong">Jul 8, 2026</span> for
+                  <span class="preview-strong">$733.95</span> ($699.00 + $34.95 GST).
+                </div>
+              </div>
+
+              <button class="btn-mob btn-mob-primary">Confirm change</button>
+              <button class="btn-mob btn-mob-ghost">Back</button>
+
+              <div class="card-helper">
+                <svg><use href="#i-info"/></svg>
+                Plan updates after Stripe acks the change.
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">Phone 3</span> · Change plan · preview<br>
+      ✦ grandfather guard · proration · seat-silent
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 4 — Cancel · step 1 (bottom sheet)                  -->
+  <!-- Refund preview + non-coercive Pause for 30 days.          -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <div class="sheet-screen">
+          <div class="sheet-dim-fill"></div>
+          <div class="sheet">
+            <div class="sheet-handle"></div>
+            <div>
+              <div class="sheet-eyebrow">Step 1 of 2 · Refund preview</div>
+              <h3 class="sheet-title" style="margin-top:4px">Cancel subscription?</h3>
+              <p class="sheet-desc" style="margin-top:4px">Here's what happens if you continue.</p>
+            </div>
+
+            <div class="sheet-body">
+              <p>
+                Cancelling will refund <strong>$125.37</strong>
+                (18 days unused of <strong>$208.95</strong>) to your original Visa <strong>•••• 4242</strong>.
+              </p>
+              <p>
+                Your access continues until <strong>Mon Jun 8, 2026</strong>.
+                Your data is preserved for 30 days after access ends.
+              </p>
+
+              <div class="pause-panel">
+                <div class="pause-title">Just need a break?</div>
+                <div class="pause-sub">
+                  Pause billing for 30 days. Access pauses too — your data stays put. Resume anytime.
+                  Nothing else changes; you stay on your founding rate.
+                </div>
+                <button class="btn-mob btn-mob-ghost" style="margin-top:8px">
+                  <svg class="ico"><use href="#i-pause"/></svg>Pause for 30 days
+                </button>
+              </div>
+            </div>
+
+            <div class="sheet-actions">
+              <button class="btn-mob btn-mob-danger-outline">Continue cancelling</button>
+              <button class="btn-mob btn-mob-ghost">Never mind</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">Phone 4</span> · Cancel · step 1<br>
+      refund preview · non-coercive pause · no upsell
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 5 — Cancel · step 2 (exit survey)                   -->
+  <!-- Radios + optional textarea → refunds_log.notes.           -->
+  <!-- No third step. No retention offers.                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <div class="sheet-screen">
+          <div class="sheet-dim-fill" style="flex:0 0 56px"></div>
+          <div class="sheet">
+            <div class="sheet-handle"></div>
+            <div>
+              <div class="sheet-eyebrow">Step 2 of 2 · One quick question</div>
+              <h3 class="sheet-title" style="margin-top:4px">What's driving the cancellation?</h3>
+              <p class="sheet-desc" style="margin-top:4px">Helps us figure out what to fix next. Skipping is fine.</p>
+            </div>
+
+            <div class="sheet-body">
+              <div class="reason-stack" role="radiogroup" aria-label="Cancellation reason">
+                <label class="reason-row">
+                  <span class="radio-glyph"></span>
+                  <input type="radio" name="r" hidden />
+                  <span>Too expensive</span>
+                </label>
+                <label class="reason-row is-on">
+                  <span class="radio-glyph"></span>
+                  <input type="radio" name="r" hidden checked />
+                  <span>Missing features I need</span>
+                </label>
+                <label class="reason-row">
+                  <span class="radio-glyph"></span>
+                  <input type="radio" name="r" hidden />
+                  <span>Switching to another tool</span>
+                </label>
+                <label class="reason-row">
+                  <span class="radio-glyph"></span>
+                  <input type="radio" name="r" hidden />
+                  <span>Business changed</span>
+                </label>
+                <label class="reason-row">
+                  <span class="radio-glyph"></span>
+                  <input type="radio" name="r" hidden />
+                  <span>Just need a break</span>
+                </label>
+              </div>
+
+              <div>
+                <label class="textarea-label" for="comment-m">Anything else? (optional)</label>
+                <textarea
+                  class="textarea"
+                  id="comment-m"
+                  maxlength="500"
+                  placeholder="A sentence or two helps a lot."
+                ></textarea>
+                <div class="textarea-helper">0 / 500</div>
+              </div>
+            </div>
+
+            <div class="sheet-actions">
+              <button class="btn-mob btn-mob-destructive">Cancel subscription</button>
+              <button class="btn-mob btn-mob-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg>Back</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">Phone 5</span> · Cancel · step 2<br>
+      exit survey · optional comment · destructive confirm
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- Phone 6 — Update card · Stripe PaymentElement dialog      -->
+  <!-- Verified un-clipped at 360-equivalent width (the dialog   -->
+  <!-- fills the phone minus 14px gutters · the Stripe iframe    -->
+  <!-- stays touch-fine; fields don't wrap or get cut off).      -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <div class="sheet-screen">
+          <div class="sheet-dim-fill" style="flex:0 0 80px"></div>
+          <div class="sheet">
+            <div class="sheet-handle"></div>
+            <div>
+              <div class="sheet-eyebrow">Update payment method</div>
+              <h3 class="sheet-title" style="margin-top:4px">New card</h3>
+              <p class="sheet-desc" style="margin-top:4px">
+                Card details go to Stripe — HeyHenry never sees them.
+              </p>
+            </div>
+
+            <!-- Stripe iframe placeholder. In the real app the PaymentElement
+                 renders here; the dialog gutters guarantee it never clips. -->
+            <div class="stripe-element">
+              <div class="stripe-tabs">
+                <div class="stripe-tab is-on"><svg><use href="#i-credit-card"/></svg>Card</div>
+                <div class="stripe-tab"><svg><use href="#i-bank"/></svg>Apple&nbsp;Pay</div>
+              </div>
+
+              <div class="stripe-field">
+                <span class="stripe-field-label">Card number</span>
+                <div class="stripe-input placeholder">1234 1234 1234 1234</div>
+              </div>
+
+              <div class="stripe-row-2">
+                <div class="stripe-field">
+                  <span class="stripe-field-label">Expiry</span>
+                  <div class="stripe-input placeholder">MM / YY</div>
+                </div>
+                <div class="stripe-field">
+                  <span class="stripe-field-label">CVC</span>
+                  <div class="stripe-input placeholder">CVC</div>
+                </div>
+              </div>
+
+              <div class="stripe-field">
+                <span class="stripe-field-label">Postal code</span>
+                <div class="stripe-input placeholder">V2T 1V2</div>
+              </div>
+
+              <div class="stripe-foot">
+                <svg><use href="#i-lock"/></svg>
+                <span>POWERED BY STRIPE · PCI HANDLED OUTSIDE HEYHENRY</span>
+              </div>
+            </div>
+
+            <div class="sheet-actions">
+              <button class="btn-mob btn-mob-primary">Save card</button>
+              <button class="btn-mob btn-mob-ghost">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">Phone 6</span> · Update card · Stripe dialog<br>
+      PaymentElement uncramped at 360px · PCI off-platform
+    </div>
+  </div>
+
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<!-- States row · three small variants                           -->
+<!-- A: no subscription · B: past-due cockpit · C: owner-only    -->
+<!-- ─────────────────────────────────────────────────────────── -->
+<div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;text-align:center;padding-top:8px">
+  States — no-subscription · past-due · member direct-hit
+</div>
+
+<div class="stage states-grid">
+
+  <!-- State A — No subscription (trial expired / never picked) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to settings"><svg class="ico"><use href="#i-chevron-left"/></svg></button>
+          <div class="detail-titles">
+            <div class="detail-title">Billing</div>
+            <div class="detail-sub">
+              <span>Owner-only</span>
+              <span style="color:var(--faint)">·</span>
+              <span class="role-pill">Owner</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="scroll-area">
+          <section class="pane-card">
+            <div class="empty-pad">
+              <div class="empty-mark"><svg><use href="#i-credit-card"/></svg></div>
+              <div class="empty-title">No active subscription</div>
+              <div class="empty-text">
+                Pick a plan to unlock the full HeyHenry feature set — your data, projects, and
+                customers are all preserved.
+              </div>
+              <button class="btn-mob btn-mob-primary">Choose a plan</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">State A</span> · No subscription
+    </div>
+  </div>
+
+
+  <!-- State B — Past-due cockpit (PastDueBanner deep-links here) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to settings"><svg class="ico"><use href="#i-chevron-left"/></svg></button>
+          <div class="detail-titles">
+            <div class="detail-title">Billing</div>
+            <div class="detail-sub">
+              <span>Payment failed</span>
+              <span style="color:var(--faint)">·</span>
+              <span class="role-pill">Owner</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="scroll-area">
+
+          <section class="pane-card pastdue-card">
+            <header class="cockpit-head">
+              <div class="cockpit-eyebrow">
+                <span class="eyebrow-strong">Growth</span>
+                <span class="eyebrow-sep">·</span>
+                <span>Monthly</span>
+              </div>
+              <h2 class="cockpit-headline">Payment failed — update card to restore Growth features.</h2>
+              <div class="cockpit-sub">
+                Last attempt <span class="ink">May 8, 2026</span> on Visa <span class="ink">•••• 4242</span>.
+                Stripe retries in 3 days.
+              </div>
+              <div class="cockpit-meta-row">
+                <span class="pill pill-warn"><svg><use href="#i-alert"/></svg>Needs attention</span>
+                <span class="grandfather-chip">
+                  <svg><use href="#i-lock"/></svg>
+                  <span class="gf-label">Founding</span>
+                  <span style="font-variant-numeric:tabular-nums">· still locked</span>
+                </span>
+              </div>
+            </header>
+            <div class="cockpit-foot">
+              <span>Features fall back to Starter until the card succeeds.</span>
+            </div>
+          </section>
+
+          <!-- Payment method · highlighted, since the past-due landing target is here -->
+          <section class="pane-card" style="border-color:rgba(180,83,9,.4);box-shadow:inset 0 0 0 1px rgba(180,83,9,.18)">
+            <header class="card-head">
+              <h2 class="card-title">Payment method</h2>
+              <p class="card-sub">Update the card to clear the past-due state.</p>
+            </header>
+            <div class="card-body">
+              <div class="pm-display">
+                <div class="pm-brand-mark">VISA</div>
+                <div>
+                  <span class="pm-brand-name">Visa</span>
+                  <span class="pm-meta"> •••• 4242 · exp 11/27</span>
+                </div>
+              </div>
+              <button class="btn-mob btn-mob-primary"><svg class="ico"><use href="#i-credit-card"/></svg>Update card</button>
+              <div class="card-helper">
+                <svg><use href="#i-lock"/></svg>
+                Card details go to Stripe — HeyHenry never sees them.
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">State B</span> · Past-due cockpit · card highlighted
+    </div>
+  </div>
+
+
+  <!-- State C — Member direct-hit (owner-only permission) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+
+        <header class="detail-header">
+          <button class="back-btn" aria-label="Back to settings"><svg class="ico"><use href="#i-chevron-left"/></svg></button>
+          <div class="detail-titles">
+            <div class="detail-title">Billing</div>
+            <div class="detail-sub">
+              <span>Marcus Reyes</span>
+              <span style="color:var(--faint)">·</span>
+              <span class="role-pill">Member</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="scroll-area">
+          <div class="pane-locked">
+            <div class="locked-mark"><svg><use href="#i-lock"/></svg></div>
+            <div class="locked-eyebrow">Owner only</div>
+            <div class="locked-title">Billing &amp; subscription</div>
+            <div class="locked-text">
+              Billing is managed by the account owner — the plan, payment method, and invoices
+              for Northbeam Build Co. Reach out to <strong>Jess Donahue</strong> to make changes here.
+            </div>
+            <button class="btn-mob btn-mob-primary">
+              <svg class="ico"><use href="#i-arrow-left"/></svg>Back to settings
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-strong">State C</span> · Member direct-hit · owner-only refusal
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
