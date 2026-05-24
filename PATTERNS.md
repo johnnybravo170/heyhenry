@@ -758,3 +758,15 @@ The brand-chrome counterpart to `<CustomerDocument>` (§28) for the **non-money*
 - `src/app/(public)/decide/[code]/page.tsx` — Tap-to-decide. Brand header → `DecisionPanel` artifact → one-question boundary note. Terminal/decided/dismissed states render in the same branded `Shell`.
 
 OD source: `od-public-pages/screens/{desktop,mobile}.html` (`gc-bar` recipe). Mobile is primary.
+
+## 33. Drag-to-reorder server sections with per-user persisted order
+
+When a server-rendered surface (the owner dashboard) needs user-reorderable blocks **without** turning the blocks themselves into client components: render each block server-side, pass them to a thin `'use client'` sortable wrapper as a `key → node` map, and let the wrapper own only the *order*.
+
+**Canonical instance** — owner dashboard sections:
+- `src/components/features/dashboard/dashboard-sections.tsx` — dnd-kit `DndContext` + `SortableContext` (`verticalListSortingStrategy`), `PointerSensor` (6px activation) + `KeyboardSensor`. Optimistic local order; reverts + toasts on failed save. Drag handle is a hover-revealed grip (`opacity-0 group-hover:opacity-100`, `focus-visible:opacity-100` for keyboard) pinned `absolute right-2 top-2`.
+- `src/lib/dashboard/sections.ts` — **stable string keys** + `normalizeSectionOrder()`: filters unknown/stale keys and appends missing ones in default order, so a saved order never breaks when sections are added/removed. Keys are permanent — renaming one orphans saved orders.
+- `src/server/actions/dashboard-preferences.ts` — `{ ok, error }` discriminant; re-normalizes the client payload server-side before persisting (never trust the client to send the full/clean key set).
+- Persistence: `tenant_members.dashboard_section_order text[]` (per-user, per-tenant; `NULL` = default). Self-update RLS already covered by `tenant_members_update_self` (mig 0152). Read via `getDashboardSectionOrder(userId)` in `src/lib/db/queries/dashboard.ts`.
+
+**Shared expectations for this family:** server blocks stay server components (passed as children/props — Suspense boundaries move *inside* the map values); the wrapper is the only client component; order is the only client-owned state; saves are optimistic with revert-on-failure; the stored value is always normalized to the current key set on both read and write. Reuse this shape for any future "let the user arrange these blocks" surface rather than lifting the blocks into client land.

@@ -5,9 +5,26 @@
  * filter on `tenant_id` in application code.
  */
 
+import { type DashboardSectionKey, normalizeSectionOrder } from '@/lib/dashboard/sections';
 import { AR_OVERDUE_DAYS, arOutstanding } from '@/lib/invoices/ar';
 import { createClient } from '@/lib/supabase/server';
 import { invoiceTotalCents } from './invoices';
+
+/**
+ * The current user's saved owner-dashboard section order for their active
+ * tenant, normalized to the full current key set. Returns the default order
+ * when the user has never customized it. RLS scopes the row to the caller.
+ */
+export async function getDashboardSectionOrder(userId: string): Promise<DashboardSectionKey[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('tenant_members')
+    .select('dashboard_section_order')
+    .eq('user_id', userId)
+    .eq('is_active_for_user', true)
+    .maybeSingle();
+  return normalizeSectionOrder((data?.dashboard_section_order as string[] | null) ?? null);
+}
 
 type InvoiceTotalRow = {
   amount_cents: number | null;
