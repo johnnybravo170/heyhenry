@@ -190,7 +190,11 @@ export async function signupAction(input: {
 
   // If the customer arrived from a paid-plan CTA on the marketing site,
   // route them through the plan picker → Stripe Checkout. Otherwise drop
-  // them straight into the dashboard — zero-friction trial.
+  // them into the first-run setup pass — zero-friction trial.
+  //
+  // Either way they land in /onboarding afterward (the paid path via the
+  // plan/success poller). /onboarding is skippable + resumable and is
+  // backfill-guarded so it never traps the user before the dashboard.
   const wantsCheckout = Boolean(input.plan && input.billing);
   if (wantsCheckout) {
     const qs = new URLSearchParams();
@@ -199,7 +203,7 @@ export async function signupAction(input: {
     if (input.promo) qs.set('promo', input.promo);
     redirect(`/onboarding/plan?${qs.toString()}`);
   }
-  redirect('/dashboard');
+  redirect('/onboarding');
 }
 
 export async function loginAction(input: {
