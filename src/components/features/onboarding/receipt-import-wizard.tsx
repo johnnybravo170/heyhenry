@@ -29,6 +29,7 @@ import {
 import { PaymentSourcePill } from '@/components/features/payment-sources/payment-source-pill';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DecisionToggle } from '@/components/ui/decision-toggle';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Money } from '@/components/ui/money';
@@ -625,6 +626,11 @@ function PreviewStage({
                     value={r.decision}
                     hasMatch={r.match.tier !== null}
                     disabled={pending || !!r.parseError}
+                    label={r.vendor ?? r.filename}
+                    mergeHint={{
+                      matched: 'Skip the insert; receipt already exists.',
+                      none: 'No probable duplicate found',
+                    }}
                     onChange={(v) => updateRow(r.rowKey, (row) => ({ ...row, decision: v }))}
                   />
                 </td>
@@ -813,56 +819,6 @@ function SourceCell({
           <option value={ADD_NEW_SOURCE_SENTINEL}>+ Label ····{row.cardLast4}…</option>
         ) : null}
       </select>
-    </div>
-  );
-}
-
-function DecisionToggle({
-  value,
-  hasMatch,
-  disabled,
-  onChange,
-}: {
-  value: 'create' | 'merge' | 'skip';
-  hasMatch: boolean;
-  disabled: boolean;
-  onChange: (v: 'create' | 'merge' | 'skip') => void;
-}) {
-  return (
-    <div className="inline-flex overflow-hidden rounded-md border text-xs">
-      <button
-        type="button"
-        onClick={() => onChange('create')}
-        disabled={disabled}
-        className={`px-2 py-1 ${value === 'create' ? 'bg-primary text-primary-foreground' : 'bg-transparent hover:bg-muted'}`}
-      >
-        Create
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('merge')}
-        disabled={disabled || !hasMatch}
-        title={
-          hasMatch ? 'Skip the insert; receipt already exists.' : 'No probable duplicate found'
-        }
-        className={`border-l px-2 py-1 ${
-          value === 'merge'
-            ? 'bg-primary text-primary-foreground'
-            : hasMatch
-              ? 'bg-transparent hover:bg-muted'
-              : 'cursor-not-allowed bg-muted/30 text-muted-foreground'
-        }`}
-      >
-        Merge
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('skip')}
-        disabled={disabled}
-        className={`border-l px-2 py-1 ${value === 'skip' ? 'bg-muted text-foreground' : 'bg-transparent hover:bg-muted'}`}
-      >
-        Skip
-      </button>
     </div>
   );
 }
