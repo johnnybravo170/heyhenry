@@ -47,10 +47,8 @@ export function WorkerDefaultsCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Worker defaults</CardTitle>
-        <CardDescription>
-          Applies to every worker unless overridden on their row below.
-        </CardDescription>
+        <CardTitle className="text-base">Crew defaults</CardTitle>
+        <CardDescription>Applies to everyone — override per person above.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2 text-sm">
