@@ -124,15 +124,22 @@ export default async function ImportHubPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Sparkles className="size-4" />
-          Day-1 onboarding
+        <div className="inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <span className="grid size-3.5 place-items-center rounded bg-foreground text-background">
+            <Sparkles className="size-2.5" aria-hidden />
+          </span>
+          <span className="text-foreground">Day-1 onboarding</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">Bring your data in</h1>
         <p className="text-sm text-muted-foreground">
           Henry handles whatever shape your data is in — exports from QuickBooks/Jobber, spreadsheet
           rows, plain-text lists, scanned receipts. Pick what you want to bring in; you can always
           come back and add more.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">No column mapping.</span> A CSV with mixed
+          headers, a half-formatted spreadsheet, a pasted list — Henry reads it and shows you a
+          preview to confirm. You never line up columns by hand.
         </p>
       </header>
 
@@ -148,11 +155,11 @@ export default async function ImportHubPage() {
                       <t.Icon className="size-5 text-muted-foreground" />
                       <CardTitle className="text-base">{t.title}</CardTitle>
                       {isRecommended ? (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                        <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-brand">
                           Start here
                         </span>
                       ) : t.populated ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-900">
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300">
                           Already added
                         </span>
                       ) : null}
