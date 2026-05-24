@@ -20,7 +20,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { classifyCategoryName } from '@/lib/ai/phase-classifier';
-import { generateAiBootstrap } from '@/lib/ai/schedule-bootstrap';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { addWorkingDays, isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ScheduleConfidence, ScheduleDurationBasis } from '@/lib/db/queries/project-schedule';
@@ -84,27 +83,6 @@ type ResolvedTrade = {
 const UNMAPPED_TASK_DURATION_DAYS = 3;
 /** Mid-timeline default for unmapped tasks so mapped trades sort first. */
 const UNMAPPED_SEQUENCE_POSITION = 50;
-
-/**
- * Canonical residential-reno phase order, lower-cased to match
- * trade_templates.typical_phase normalization. Used by the bootstrap
- * to wire phase-aware dependency edges: Demo → Framing → Rough-in →
- * Drywall → … so extending Framing pulls every Rough-in task forward.
- *
- * "Planning & selections" is operator-side bookkeeping that doesn't
- * appear in trade_templates so it's omitted; the chain starts at Demo.
- */
-const CANONICAL_PHASE_ORDER = [
-  'demo',
-  'framing',
-  'rough-in',
-  'inspection',
-  'drywall',
-  'cabinets & fixtures',
-  'finishes',
-  'punch list',
-  'final walkthrough',
-];
 
 type LaidOutTask = {
   trade: ResolvedTrade;
@@ -197,38 +175,6 @@ function layoutTasksSerial(trades: ResolvedTrade[], startDate: Date): LaidOutTas
     return {
       trade,
       planned_start_date: taskStart.toISOString().slice(0, 10),
-      display_order: idx,
-    };
-  });
-}
-
-/**
- * Parallel-aware layout — each task uses the AI-provided offset from
- * project start, and AI-provided duration overrides the trade default.
- * Multiple tasks may share an offset (true parallel tracks).
- */
-function layoutTasksFromOffsets(
-  trades: ResolvedTrade[],
-  startDate: Date,
-  offsetMap: Map<string, { offset: number; duration: number }>,
-): LaidOutTask[] {
-  const enriched = trades.map((trade) => {
-    const ai = trade.budget_category_id ? offsetMap.get(trade.budget_category_id) : undefined;
-    const duration = ai?.duration ?? trade.duration_days;
-    const offset = ai?.offset ?? 0;
-    return { trade: { ...trade, duration_days: duration }, offset };
-  });
-  // Sort by offset; trade's canonical sequence_position breaks ties so
-  // parallel-track rows render in a sensible top-to-bottom order.
-  enriched.sort(
-    (a, b) => a.offset - b.offset || a.trade.sequence_position - b.trade.sequence_position,
-  );
-  return enriched.map(({ trade, offset }, idx) => {
-    const start = new Date(startDate);
-    start.setUTCDate(start.getUTCDate() + offset);
-    return {
-      trade,
-      planned_start_date: start.toISOString().slice(0, 10),
       display_order: idx,
     };
   });
