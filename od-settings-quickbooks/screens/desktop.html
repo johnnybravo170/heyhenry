@@ -1,0 +1,2498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Settings ▸ QuickBooks — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    /* The one licensed non-rust brand color: Intuit "Connect to QuickBooks" green.
+       Brand contract — only on the Intuit OAuth CTA. */
+    --intuit:       #2CA01C;
+    --intuit-2:     #1F8418;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Frame stack (multi-state preview) ───── */
+  .frame-stack {
+    display: flex; flex-direction: column;
+    gap: 36px;
+    padding: 32px;
+  }
+  .frame { display: flex; flex-direction: column; gap: 10px; }
+  .frame-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 4px;
+  }
+  .frame-label .frame-num { color: var(--ink); }
+  .frame-label .frame-role { color: var(--ink); }
+  .frame-label .frame-sep { color: var(--faint); margin: 0 6px; }
+  .frame-body {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    box-shadow: 0 20px 40px -22px rgba(10,10,10,.22);
+  }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 880px; background: var(--bg); }
+  .shell.shell-tall { min-height: 980px; }
+
+  /* ───── Sidebar (primary nav) ───── */
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 120ms;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .org-switcher:hover { background: rgba(232,222,201,.5); }
+  .org-avatar {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 12px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  .user-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 34px;
+    padding: 0 12px 0 6px;
+    border-radius: var(--radius-input);
+    border: 1px solid var(--hair);
+    background: var(--card);
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink);
+  }
+  .user-chip:hover { background: var(--chip-fill); }
+  .user-avatar {
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .user-name { font-size: 14px; font-weight: 600; }
+  .user-role {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-left: 8px;
+    border-left: 1px solid var(--hair);
+    margin-left: 2px;
+  }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 120ms, border-color 120ms, color 120ms;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn-danger-ghost { background: var(--card); border-color: var(--hair); color: var(--danger); }
+  .btn-danger-ghost:hover { background: var(--danger-soft); border-color: rgba(185,28,28,.25); }
+  .btn-text { background: transparent; border: 0; color: var(--muted); padding: 0 8px; }
+  .btn-text:hover { color: var(--ink); background: var(--chip-fill); }
+  .btn .icon { width: 14px; height: 14px; }
+  .btn-sm { height: 28px; padding: 0 9px; font-size: 12px; }
+  .btn-sm .icon { width: 12px; height: 12px; }
+  .btn-lg { height: 40px; padding: 0 16px; font-size: 14px; }
+
+  /* Intuit brand CTA — the one licensed non-rust accent.
+     Intuit's "Connect to QuickBooks" button guidelines:
+     #2CA01C fill, white wordmark, 4-bar QB glyph. */
+  .btn-intuit {
+    display: inline-flex; align-items: center; gap: 10px;
+    height: 44px; padding: 0 20px 0 14px;
+    border-radius: var(--radius-input);
+    background: var(--intuit);
+    color: #fff;
+    font-family: var(--sans);
+    font-weight: 600; font-size: 14px;
+    letter-spacing: -0.005em;
+    border: 1px solid var(--intuit);
+    cursor: pointer;
+    transition: background 120ms;
+  }
+  .btn-intuit:hover { background: var(--intuit-2); border-color: var(--intuit-2); }
+  .btn-intuit .qb-glyph {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--intuit);
+    font-family: var(--sans);
+    font-weight: 800; font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+    letter-spacing: -0.04em;
+  }
+  .btn-intuit .btn-intuit-text { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.1; gap: 1px; }
+  .btn-intuit .btn-intuit-text .lbl-top {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    opacity: .85;
+  }
+  .btn-intuit .btn-intuit-text .lbl-main { font-size: 14px; font-weight: 700; }
+
+  /* ───── Main column ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 80px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+
+  /* ───── Page header ───── */
+  .page-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); margin: 0; }
+  .page-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .page-crumb {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .page-crumb a { color: var(--muted); }
+  .page-crumb a:hover { color: var(--ink); }
+  .page-crumb .crumb-sep { color: var(--faint); }
+  .page-crumb .crumb-here { color: var(--ink); }
+
+  /* ───── Settings layout ───── */
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 244px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .settings-nav { align-self: start; }
+  .settings-search {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    padding: 0 10px;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .settings-search svg.icon { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+  .settings-search input {
+    border: 0; outline: 0; background: transparent;
+    font: inherit; color: var(--ink); font-weight: 500;
+    flex: 1; min-width: 0;
+  }
+  .settings-search input::placeholder { color: var(--muted); font-weight: 500; }
+  .settings-search .kbd {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); background: var(--chip-fill);
+    padding: 2px 6px; border-radius: 4px;
+    letter-spacing: 0.04em; flex-shrink: 0;
+  }
+  .settings-group { margin-bottom: 14px; }
+  .group-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 8px 6px;
+  }
+  .group-items {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .settings-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.3;
+    transition: background 120ms;
+  }
+  .settings-item:hover { background: rgba(232, 222, 201, .55); }
+  .settings-item.is-active {
+    background: var(--ink); color: #fff; font-weight: 600;
+  }
+  .item-icon { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+  .settings-item:hover .item-icon { color: var(--ink-2); }
+  .settings-item.is-active .item-icon { color: #fff; }
+  .item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .settings-item.is-active .item-pill {
+    color: rgba(255,255,255,.75);
+    background: rgba(255,255,255,.12);
+  }
+  .item-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok); flex-shrink: 0;
+  }
+  .item-dot-warn { background: var(--warn); }
+
+  /* ───── Pane ───── */
+  .settings-pane {
+    display: flex; flex-direction: column; gap: 14px;
+    min-width: 0;
+    max-width: 920px;
+  }
+
+  /* ───── Boundary aside (sticky truth) ───── */
+  .boundary {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--ink);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .boundary .boundary-mark {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 1px 7px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+  .boundary strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Connection cockpit (the missing piece) ───── */
+  .cockpit {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .cockpit-head {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .cockpit-mark {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    display: grid; place-items: center;
+    border: 1px solid rgba(21,128,61,.22);
+  }
+  .cockpit-mark svg { width: 22px; height: 22px; }
+  .cockpit-mark.is-disconnected {
+    background: var(--chip-fill);
+    color: var(--muted);
+    border-color: var(--hair);
+  }
+  .cockpit-mark.is-failed {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: rgba(185,28,28,.22);
+  }
+  .cockpit-mark.is-running {
+    background: var(--info-soft);
+    color: var(--info);
+    border-color: rgba(30,64,175,.22);
+  }
+  .cockpit-id {
+    display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  }
+  .cockpit-line-1 {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .cockpit-line-2 {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 12px; color: var(--muted);
+  }
+  .cockpit-line-2 .realm {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .cockpit-line-2 .sep { color: var(--faint); }
+  .cockpit-actions {
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Status pills — soft pair + glyph (status-tokens discipline) */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .pill svg { width: 11px; height: 11px; }
+  .pill-success { background: var(--ok-soft); color: var(--ok); border-color: rgba(21,128,61,.20); }
+  .pill-warning { background: var(--warn-soft); color: var(--warn); border-color: rgba(180,83,9,.22); }
+  .pill-danger  { background: var(--danger-soft); color: var(--danger); border-color: rgba(185,28,28,.22); }
+  .pill-info    { background: var(--info-soft); color: var(--info); border-color: rgba(30,64,175,.20); }
+  .pill-neutral { background: var(--chip-fill); color: var(--muted); border-color: var(--hair); }
+  .pill-mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* "Needs you" line — single strip, not stacked banners */
+  .needs-you {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 22px;
+    background: var(--warn-soft);
+    border-top: 1px solid rgba(180,83,9,.18);
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .needs-you .needs-icon {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--warn);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .needs-you .needs-icon svg { width: 12px; height: 12px; }
+  .needs-you strong { color: var(--ink); font-weight: 600; }
+  .needs-you .needs-mid { flex: 1; }
+  .needs-you .needs-mid .sep { color: var(--warn); margin: 0 8px; opacity: .6; }
+  .needs-you .needs-link {
+    color: var(--warn);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .needs-you .needs-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .needs-you.is-danger {
+    background: var(--danger-soft);
+    border-color: rgba(185,28,28,.18);
+  }
+  .needs-you.is-danger .needs-icon { color: var(--danger); }
+  .needs-you.is-danger .needs-link { color: var(--danger); }
+  .needs-you.is-danger .needs-mid .sep { color: var(--danger); }
+
+  /* ───── Import action zone (promoted to primary) ───── */
+  .import-zone {
+    padding: 18px 22px 20px;
+    background: var(--bg);
+    border-top: 1px solid var(--hair);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .import-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+  .import-copy .import-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .import-copy .import-headline {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .import-copy .import-meta {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px;
+  }
+  .import-copy .import-meta .mono { font-family: var(--mono); color: var(--ink-2); }
+  .import-actions {
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* ───── Live job panel ───── */
+  .job-panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .job-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .job-head .job-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .job-head .job-meter {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .job-head .job-meter .meter-val { color: var(--ink-2); font-weight: 600; }
+  .job-head .job-meter .meter-bar {
+    width: 120px; height: 4px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .job-head .job-meter .meter-bar-fill {
+    height: 100%;
+    background: var(--info);
+    border-radius: 999px;
+  }
+
+  /* Spinner */
+  .spin {
+    width: 14px; height: 14px;
+    border: 1.6px solid var(--hair);
+    border-top-color: var(--info);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    display: inline-block;
+  }
+  .spin.spin-rust { border-top-color: var(--rust); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Entity counter rows */
+  .job-body { padding: 4px 0; }
+  .entity-head {
+    display: grid;
+    grid-template-columns: 1fr 64px 64px 64px 64px;
+    gap: 8px;
+    padding: 8px 20px 6px;
+    align-items: end;
+  }
+  .entity-head > div {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: right;
+  }
+  .entity-head > div:first-child { text-align: left; }
+  .entity-row {
+    display: grid;
+    grid-template-columns: 1fr 64px 64px 64px 64px;
+    gap: 8px;
+    padding: 9px 20px;
+    align-items: center;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    border-top: 1px solid var(--hair);
+  }
+  .entity-row .entity-label {
+    font-weight: 600; color: var(--ink);
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px;
+  }
+  .entity-row .entity-label .lbl-state {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok);
+  }
+  .entity-row .entity-label .lbl-state.is-running {
+    background: var(--info);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .entity-row .entity-label .lbl-state.is-queued { background: var(--faint); }
+  @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+  .entity-row .cell {
+    text-align: right;
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+  .entity-row .cell.cell-zero { color: var(--faint); }
+  .entity-row .cell.cell-imported { color: var(--ink); font-weight: 600; }
+  .entity-row .cell-warn { color: var(--warn); font-weight: 600; }
+  .entity-row .cell-danger { color: var(--danger); font-weight: 600; }
+
+  /* Inline review-nudge strip inside job panel */
+  .job-strip {
+    margin: 8px 16px 14px;
+    padding: 9px 14px;
+    border-radius: 9px;
+    font-size: 12px;
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid transparent;
+  }
+  .job-strip-warning {
+    background: var(--warn-soft);
+    color: var(--warn);
+    border-color: rgba(180,83,9,.22);
+  }
+  .job-strip-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: rgba(185,28,28,.22);
+  }
+  .job-strip-info {
+    background: var(--info-soft);
+    color: var(--info);
+    border-color: rgba(30,64,175,.22);
+  }
+  .job-strip svg.icon { width: 13px; height: 13px; flex-shrink: 0; }
+  .job-strip strong { font-weight: 700; }
+  .job-strip a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* qbo_sync_log failure row (surfaced when run failed) */
+  .syslog-row {
+    margin: 0 16px 14px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--danger);
+    border-radius: 9px;
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12px;
+  }
+  .syslog-row .syslog-tag {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--danger);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+  .syslog-row .syslog-body { flex: 1; min-width: 0; }
+  .syslog-row .syslog-body .syslog-entity {
+    font-weight: 600; color: var(--ink);
+    font-size: 12px;
+  }
+  .syslog-row .syslog-body .syslog-msg {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    margin-top: 4px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  /* ───── Sub-route cards (live counts) ───── */
+  .subroutes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .sr-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: background 120ms, border-color 120ms;
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 138px;
+  }
+  .sr-card:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .sr-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  }
+  .sr-head .sr-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .sr-head .sr-title svg { width: 14px; height: 14px; color: var(--muted); }
+  .sr-head .sr-badge { flex-shrink: 0; }
+  .sr-body { flex: 1; }
+  .sr-num {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .sr-num.is-zero { color: var(--faint); font-weight: 500; }
+  .sr-sub { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+  .sr-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding-top: 6px;
+    border-top: 1px solid var(--hair);
+  }
+  .sr-foot .sr-arrow { color: var(--ink-2); }
+
+  /* ───── Idle "last import" summary tile (when no job present) ───── */
+  .last-import {
+    margin-top: 12px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .last-import .li-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+  .last-import strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Class-mapping table ───── */
+  .cm-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .cm-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .cm-head .cm-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    margin: 0; letter-spacing: -0.01em;
+  }
+  .cm-head .cm-desc {
+    font-size: 12px; color: var(--muted); margin: 6px 0 0;
+    max-width: 560px; line-height: 1.5;
+  }
+  .cm-head .cm-desc strong { color: var(--ink); font-weight: 600; }
+
+  /* Overwrite control — labelled, consequence-clear */
+  .overwrite {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--hair);
+    background: var(--bg);
+    border-radius: 10px;
+    cursor: pointer;
+    max-width: 320px;
+  }
+  .overwrite .cb {
+    width: 16px; height: 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+  }
+  .overwrite.is-on .cb {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+  .overwrite.is-on .cb::after {
+    content: '';
+    position: absolute;
+    left: 4px; top: 1px;
+    width: 5px; height: 9px;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(45deg);
+  }
+  .overwrite .ow-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .overwrite .ow-main {
+    font-size: 12px; font-weight: 600; color: var(--ink);
+  }
+  .overwrite .ow-sub {
+    font-size: 12px; color: var(--muted); line-height: 1.45;
+  }
+
+  /* Class row */
+  .cm-body { padding: 8px 0 12px; }
+  .cm-col-head {
+    display: grid;
+    grid-template-columns: 1fr 240px 92px;
+    gap: 14px;
+    padding: 8px 22px 6px;
+  }
+  .cm-col-head > div {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cm-row {
+    display: grid;
+    grid-template-columns: 1fr 240px 92px;
+    gap: 14px;
+    padding: 14px 22px;
+    align-items: center;
+    border-top: 1px solid var(--hair);
+  }
+  .cm-row.is-suggested {
+    background: var(--rust-soft);
+  }
+  .cm-row .cm-class { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .cm-row .cm-class-name {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .cm-row .cm-class-meta {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .cm-row .cm-class-meta .meta-spend {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .cm-row .cm-class-meta .meta-spend .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .cm-row .cm-class-meta .sep { color: var(--faint); }
+  .cm-row .cm-class-meta .meta-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .cm-row .cm-class-meta .meta-chip .arrow { color: var(--faint); }
+
+  /* Henry suggestion chip on class row */
+  .cm-suggest {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cm-suggest .sparkle { font-size: 12px; line-height: 1; }
+
+  /* Select control */
+  .cm-select {
+    appearance: none;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 36px;
+    padding: 0 30px 0 12px;
+    font: inherit; font-weight: 500;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .cm-select.is-suggested {
+    border-color: var(--rust);
+    background-color: var(--card);
+  }
+  .cm-select:focus { border-color: var(--ink); }
+
+  .cm-apply {
+    justify-self: end;
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 36px; padding: 0 14px;
+    border-radius: var(--radius-input);
+    background: var(--ink);
+    color: #fff;
+    font: inherit;
+    font-size: 14px; font-weight: 600;
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    transition: background 120ms;
+  }
+  .cm-apply:hover { background: #222; }
+  .cm-apply svg { width: 12px; height: 12px; }
+
+  /* ───── Disconnected hero (Intuit CTA) ───── */
+  .hero-disco {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 36px 36px 32px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 36px;
+    align-items: center;
+  }
+  .hero-disco .hd-left { display: flex; flex-direction: column; gap: 12px; }
+  .hero-disco .hd-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hero-disco h2 {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+    color: var(--ink); margin: 0; line-height: 1.1;
+  }
+  .hero-disco p {
+    font-size: 14px; color: var(--ink-2);
+    line-height: 1.55;
+    max-width: 540px;
+    margin: 0;
+  }
+  .hero-disco .hd-list {
+    list-style: none; padding: 0; margin: 6px 0 0;
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .hero-disco .hd-list li {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-disco .hd-list svg { width: 12px; height: 12px; color: var(--ok); }
+  .hero-disco .hd-cta {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  }
+  .hero-disco .hd-reconnect {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .hero-disco .hd-reconnect a { color: var(--ink-2); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+  .hd-right {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .hd-right .hd-r-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .hd-right .hd-r-line {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--ink-2);
+  }
+  .hd-right .hd-r-line .arrow {
+    font-family: var(--mono);
+    color: var(--faint);
+    font-size: 12px;
+    width: 14px; text-align: center;
+  }
+  .hd-right .hd-r-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    padding: 1px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Reserved / coming-soon stub ───── */
+  .reserved {
+    background: var(--bg);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .reserved .res-tag {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-top: 1px;
+    flex-shrink: 0;
+  }
+
+  /* ───── Misc ───── */
+  .mono { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  /* Pre-flight dialog (inline-spec, shown floating on the same canvas) */
+  .modal-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,10,.42);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+    border-radius: 18px;
+  }
+  .modal-dialog {
+    width: 100%; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-card);
+    box-shadow: 0 24px 60px -20px rgba(10,10,10,.4);
+    overflow: hidden;
+  }
+  .modal-head { padding: 20px 24px 4px; }
+  .modal-head h3 { font-size: 16px; font-weight: 700; color: var(--ink); margin: 0; letter-spacing: -0.01em; }
+  .modal-head p { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.55; }
+  .modal-body { padding: 12px 24px 16px; }
+  .modal-body .mb-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .modal-body ul {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .modal-body ul li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .modal-body ul li svg { width: 12px; height: 12px; color: var(--ok); flex-shrink: 0; }
+  .modal-body .mb-safe {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--ok-soft);
+    border: 1px solid rgba(21,128,61,.18);
+    padding: 8px 12px;
+    border-radius: 8px;
+    line-height: 1.5;
+  }
+  .modal-body .mb-safe strong { color: var(--ok); font-weight: 700; }
+  .modal-foot {
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    padding: 14px 24px;
+    border-top: 1px solid var(--hair);
+    background: var(--bg);
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.34a4 4 0 0 0-1.17-2.83L12 11l-3.83 3.83A4 4 0 0 0 7 17.66V22"/><path d="M7 2v4.34a4 4 0 0 0 1.17 2.83L12 13l3.83-3.83A4 4 0 0 0 17 6.34V2"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-unplug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 5 3-3"/><path d="m2 22 3-3"/><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
+    <symbol id="i-folder-tree" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M3 5a2 2 0 0 0 2 2h3"/><path d="M3 3v13a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-list-checks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 14h.01"/><path d="M2 9V5a2 2 0 0 1 2-2h12"/></symbol>
+    <symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 10h.01"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></symbol>
+    <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+  </defs>
+</svg>
+
+<div class="frame-stack">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 1 — Hub · Connected · Needs-review (the happy operating state) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 1</span>
+    <span class="frame-sep">·</span>
+    settings / quickbooks
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    connected · sandbox · 3 need review (the hub at rest, with one thing pulling the eye)
+  </div>
+  <div class="frame-body">
+<div class="shell">
+
+  <!-- ═════ Sidebar ═════ -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═════ Main column ═════ -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip" aria-label="Account menu">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">QuickBooks</h1>
+          <div class="page-sub">The accounting bridge — connect, import, map, and review your books in one place.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+
+        <!-- ── Sub-nav (Settings IA — QuickBooks active) ── -->
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Search settings…" />
+            <span class="kbd">/</span>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-building"/></svg>
+                <span class="item-name">Business profile</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-user"/></svg>
+                <span class="item-name">Your profile</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-shield"/></svg>
+                <span class="item-name">Security</span>
+                <span class="item-pill">Owner</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-users"/></svg>
+                <span class="item-name">Team &amp; workers</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Money &amp; integrations</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-wallet"/></svg>
+                <span class="item-name">Stripe</span>
+                <span class="item-dot" title="Connected"></span>
+              </li>
+              <li class="settings-item is-active">
+                <svg class="item-icon"><use href="#i-receipt"/></svg>
+                <span class="item-name">QuickBooks</span>
+                <span class="item-pill">3</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-credit-card"/></svg>
+                <span class="item-name">Payment sources</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-file"/></svg>
+                <span class="item-name">Invoicing</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-tag"/></svg>
+                <span class="item-name">Expense categories</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Data &amp; tools</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-database"/></svg>
+                <span class="item-name">Data export</span>
+                <span class="item-pill">Owner</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-sparkles"/></svg>
+                <span class="item-name">Import data</span>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+        <!-- ── Pane ── -->
+        <div class="settings-pane">
+
+          <!-- Boundary aside (the truth that governs the surface) -->
+          <div class="boundary">
+            <span class="boundary-mark">Boundary</span>
+            <span><strong>QuickBooks is your books.</strong> HeyHenry reads from it today — every byte flows QBO → HeyHenry. Pushing invoices &amp; costs out is coming. Nothing here writes back to your QuickBooks file.</span>
+          </div>
+
+          <!-- ════ Connection cockpit ════ -->
+          <section class="cockpit" aria-labelledby="cockpit-title-1">
+            <div class="cockpit-head">
+              <div class="cockpit-mark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 2 2 4-4"/></svg>
+              </div>
+              <div class="cockpit-id">
+                <div class="cockpit-line-1" id="cockpit-title-1">
+                  <span>Northbeam Build Co.</span>
+                  <span class="pill pill-success"><svg><use href="#i-check"/></svg>Connected</span>
+                  <span class="pill pill-warning"><svg><use href="#i-alert-triangle"/></svg>Sandbox — not your real books</span>
+                </div>
+                <div class="cockpit-line-2">
+                  <span class="realm">realm 9341 4531 7723 6088</span>
+                  <span class="sep">·</span>
+                  <span>Last import <strong>2 hours ago</strong> · today, 11:42 PT</span>
+                </div>
+              </div>
+              <div class="cockpit-actions">
+                <button class="btn btn-ghost btn-sm">
+                  <svg class="icon"><use href="#i-link"/></svg>
+                  Open in QuickBooks
+                  <svg class="icon"><use href="#i-arrow-up-right"/></svg>
+                </button>
+                <button class="btn btn-danger-ghost btn-sm">
+                  <svg class="icon"><use href="#i-unplug"/></svg>
+                  Disconnect
+                </button>
+              </div>
+            </div>
+
+            <!-- Needs-you strip (the single eye-pull) -->
+            <div class="needs-you">
+              <div class="needs-icon"><svg><use href="#i-hourglass"/></svg></div>
+              <div class="needs-mid">
+                <strong>3 customers</strong> need your review from this morning's import.
+                <span class="sep">·</span>
+                Resolve the queue, then re-run to chain 12 skipped invoices.
+              </div>
+              <a class="needs-link" href="#">Resolve now <svg style="width:11px;height:11px;vertical-align:-1px"><use href="#i-arrow-right"/></svg></a>
+            </div>
+
+            <!-- Import primary action zone -->
+            <div class="import-zone">
+              <div class="import-copy">
+                <span class="import-eyebrow">Primary action</span>
+                <span class="import-headline">Import from QuickBooks</span>
+                <span class="import-meta">Pull customers, vendors, items, invoices, estimates, payments, bills, and purchases. <span class="mono">Re-running is safe</span> — every record is keyed on its QBO id.</span>
+              </div>
+              <div class="import-actions">
+                <button class="btn btn-ghost"><svg class="icon"><use href="#i-history"/></svg>View history</button>
+                <button class="btn btn-rust btn-lg"><svg class="icon"><use href="#i-play"/></svg>Import from QuickBooks</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ════ Idle job summary (one-line when no live job) ════ -->
+          <div class="last-import">
+            <span class="li-dot"></span>
+            <span><strong>Last import:</strong> 312 records · 6 customers, 4 vendors, 18 invoices, 47 bills, 8 payments, 229 purchases · <span class="mono">28 API calls</span> · <a href="#" style="color:var(--ink-2);text-decoration:underline;text-underline-offset:3px">view run →</a></span>
+          </div>
+
+          <!-- ════ Sub-route cards (live counts, shared header above) ════ -->
+          <section class="subroutes" aria-label="QuickBooks sub-routes">
+
+            <a class="sr-card" href="#">
+              <div class="sr-head">
+                <div class="sr-title"><svg><use href="#i-list-checks"/></svg>Review queue</div>
+                <span class="sr-badge pill pill-warning"><svg><use href="#i-hourglass"/></svg>3 pending</span>
+              </div>
+              <div class="sr-body">
+                <div class="sr-num">3</div>
+                <div class="sr-sub">customers Henry couldn't match strongly — pick merge, create, or skip.</div>
+              </div>
+              <div class="sr-foot">
+                <span>QBO-Review</span>
+                <span class="sr-arrow">→</span>
+              </div>
+            </a>
+
+            <a class="sr-card" href="#">
+              <div class="sr-head">
+                <div class="sr-title"><svg><use href="#i-folder-tree"/></svg>Class mapping</div>
+                <span class="sr-badge pill pill-warning"><svg><use href="#i-hourglass"/></svg>4 unmapped</span>
+              </div>
+              <div class="sr-body">
+                <div class="sr-num">4 <span style="font-size:14px;color:var(--muted);font-weight:500">of 9 classes</span></div>
+                <div class="sr-sub">point each QuickBooks Class at the HeyHenry project it belongs to.</div>
+              </div>
+              <div class="sr-foot">
+                <span>QBO-Class-Mapping</span>
+                <span class="sr-arrow">→</span>
+              </div>
+            </a>
+
+            <a class="sr-card" href="#">
+              <div class="sr-head">
+                <div class="sr-title"><svg><use href="#i-history"/></svg>Import history</div>
+                <span class="sr-badge pill pill-success"><svg><use href="#i-check"/></svg>completed</span>
+              </div>
+              <div class="sr-body">
+                <div class="sr-num">14 <span style="font-size:14px;color:var(--muted);font-weight:500">runs</span></div>
+                <div class="sr-sub">Last run today, 11:42 PT — 312 records · <span class="mono" style="font-size:11px">28 API calls</span> · rollback available.</div>
+              </div>
+              <div class="sr-foot">
+                <span>QBO-History</span>
+                <span class="sr-arrow">→</span>
+              </div>
+            </a>
+
+          </section>
+
+          <!-- Reserved (future push epic — name only) -->
+          <div class="reserved">
+            <span class="res-tag">Reserved</span>
+            <span>The full <span class="mono" style="color:var(--ink-2);font-weight:600">qbo_sync_log</span> view and per-row sync badges land when the push epic ships — every new invoice / cost will mirror back to your QuickBooks file. The schema is ready; no UI yet.</span>
+          </div>
+
+        </div><!-- /pane -->
+      </section>
+    </main>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 2 — Hub · Disconnected (Intuit Connect CTA + value prop)   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 2</span>
+    <span class="frame-sep">·</span>
+    settings / quickbooks
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    disconnected · Intuit-brand CTA (the one licensed non-rust accent) · quiet reconnect line
+  </div>
+  <div class="frame-body">
+<div class="shell">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">QuickBooks</h1>
+          <div class="page-sub">The accounting bridge — connect once, then pull your history in cleanly.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Search settings…" />
+            <span class="kbd">/</span>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Money &amp; integrations</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-wallet"/></svg>
+                <span class="item-name">Stripe</span>
+                <span class="item-dot"></span>
+              </li>
+              <li class="settings-item is-active">
+                <svg class="item-icon"><use href="#i-receipt"/></svg>
+                <span class="item-name">QuickBooks</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-credit-card"/></svg>
+                <span class="item-name">Payment sources</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-file"/></svg>
+                <span class="item-name">Invoicing</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-tag"/></svg>
+                <span class="item-name">Expense categories</span>
+              </li>
+            </ul>
+          </div>
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-building"/></svg>
+                <span class="item-name">Business profile</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-user"/></svg>
+                <span class="item-name">Your profile</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-shield"/></svg>
+                <span class="item-name">Security</span>
+                <span class="item-pill">Owner</span>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+
+          <div class="boundary">
+            <span class="boundary-mark">Boundary</span>
+            <span><strong>QuickBooks is your books.</strong> HeyHenry reads from it today; pushing invoices &amp; costs out is coming. The connection is read-only — nothing here will modify your QuickBooks file.</span>
+          </div>
+
+          <!-- Disconnected hero -->
+          <section class="hero-disco">
+            <div class="hd-left">
+              <span class="hd-eyebrow">Not connected</span>
+              <h2>Connect your QuickBooks Online file.</h2>
+              <p>One handshake on Intuit. We pull your customers, vendors, items, invoices, estimates, payments, bills, and purchases — so the historical books you've already kept show up in HeyHenry from day one.</p>
+              <ul class="hd-list">
+                <li><svg><use href="#i-check"/></svg>Strong matches auto-merge — Henry only asks about the ambiguous few.</li>
+                <li><svg><use href="#i-check"/></svg>Tax stays QBO's job. Imported invoices freeze their historical tax.</li>
+                <li><svg><use href="#i-check"/></svg>Re-running is safe. Every record is keyed on its QBO id.</li>
+              </ul>
+
+              <div class="hd-cta" style="margin-top: 4px;">
+                <button class="btn-intuit" aria-label="Connect to QuickBooks">
+                  <span class="qb-glyph">qb</span>
+                  <span class="btn-intuit-text">
+                    <span class="lbl-top">Connect to</span>
+                    <span class="lbl-main">QuickBooks</span>
+                  </span>
+                </button>
+                <div class="hd-reconnect">
+                  Previously connected to <strong style="color:var(--ink-2)">Northbeam Build Co.</strong> — last disconnected May 11, 2026. <a href="#">Reconnect to the same file →</a>
+                </div>
+              </div>
+            </div>
+
+            <aside class="hd-right" aria-label="What gets imported">
+              <div class="hd-r-eyebrow">What gets imported</div>
+              <div class="hd-r-line"><span class="arrow">→</span><span>Customers &amp; Vendors</span><span class="hd-r-pill">name · email · phone</span></div>
+              <div class="hd-r-line"><span class="arrow">→</span><span>Items</span><span class="hd-r-pill">pricebook</span></div>
+              <div class="hd-r-line"><span class="arrow">→</span><span>Invoices &amp; Estimates</span><span class="hd-r-pill">frozen tax</span></div>
+              <div class="hd-r-line"><span class="arrow">→</span><span>Payments</span><span class="hd-r-pill">linked</span></div>
+              <div class="hd-r-line"><span class="arrow">→</span><span>Bills &amp; Purchases</span><span class="hd-r-pill">costs</span></div>
+              <div style="border-top:1px solid var(--hair);margin-top:4px;padding-top:10px;font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Read-only · pull · QBO → HeyHenry</div>
+            </aside>
+          </section>
+
+          <!-- OAuth-error reflection line (when ?qbo=error|invalid) -->
+          <div class="needs-you is-danger" style="border-radius:10px;border:1px solid rgba(185,28,28,.18);border-top:1px solid rgba(185,28,28,.18)">
+            <div class="needs-icon"><svg><use href="#i-x-circle"/></svg></div>
+            <div class="needs-mid">
+              <strong>Last connection attempt didn't complete.</strong>
+              <span class="sep">·</span>
+              The Intuit consent link expired before it was clicked. Try again — it's a fresh handshake.
+            </div>
+            <a class="needs-link" href="#">Try again <svg style="width:11px;height:11px;vertical-align:-1px"><use href="#i-arrow-right"/></svg></a>
+          </div>
+
+        </div><!-- /pane -->
+      </section>
+    </main>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 3 — Hub · Importing live (job panel streaming + pre-flight)  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 3</span>
+    <span class="frame-sep">·</span>
+    settings / quickbooks
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    importing live · per-entity counters streaming · API meter · Cancel · pre-flight dialog inset
+  </div>
+  <div class="frame-body">
+<div class="shell shell-tall">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">QuickBooks</h1>
+          <div class="page-sub">Importing now — leave the tab; the job continues in the background if it hits its time budget.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Search settings…" />
+            <span class="kbd">/</span>
+          </div>
+          <div class="settings-group">
+            <div class="group-label">Money &amp; integrations</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-wallet"/></svg>
+                <span class="item-name">Stripe</span>
+                <span class="item-dot"></span>
+              </li>
+              <li class="settings-item is-active">
+                <svg class="item-icon"><use href="#i-receipt"/></svg>
+                <span class="item-name">QuickBooks</span>
+                <span class="item-pill">live</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-credit-card"/></svg>
+                <span class="item-name">Payment sources</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-file"/></svg>
+                <span class="item-name">Invoicing</span>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+
+          <div class="boundary">
+            <span class="boundary-mark">Boundary</span>
+            <span>Pull only. We're reading from QuickBooks — your QBO file is unchanged by this import.</span>
+          </div>
+
+          <!-- Cockpit (running variant) -->
+          <section class="cockpit">
+            <div class="cockpit-head">
+              <div class="cockpit-mark is-running">
+                <span class="spin" style="width:22px;height:22px;border-width:2px"></span>
+              </div>
+              <div class="cockpit-id">
+                <div class="cockpit-line-1">
+                  <span>Northbeam Build Co.</span>
+                  <span class="pill pill-info"><svg><use href="#i-hourglass"/></svg>Importing</span>
+                </div>
+                <div class="cockpit-line-2">
+                  <span class="realm">realm 9341 4531 7723 6088</span>
+                  <span class="sep">·</span>
+                  <span>Started 1 min ago · running on the worker</span>
+                </div>
+              </div>
+              <div class="cockpit-actions">
+                <button class="btn btn-ghost btn-sm">
+                  <svg class="icon"><use href="#i-link"/></svg>
+                  Open in QuickBooks
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Live job panel -->
+          <section class="job-panel">
+            <div class="job-head">
+              <div class="job-title">
+                <span class="spin spin-rust"></span>
+                Import running — pulling Invoices
+              </div>
+              <div class="job-meter">
+                <span>API calls</span>
+                <span class="meter-val">186 / 500k</span>
+                <span class="meter-bar"><span class="meter-bar-fill" style="width: 22%"></span></span>
+                <button class="btn btn-ghost btn-sm" style="margin-left: 8px">
+                  <svg class="icon"><use href="#i-x"/></svg>Cancel
+                </button>
+              </div>
+            </div>
+
+            <div class="job-body">
+              <div class="entity-head">
+                <div>Entity</div>
+                <div>Fetched</div>
+                <div>Imported</div>
+                <div>Skipped</div>
+                <div>Failed</div>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state"></span>Customers</span>
+                <span class="cell tabular">120</span>
+                <span class="cell tabular cell-imported">118</span>
+                <span class="cell tabular cell-warn">2</span>
+                <span class="cell tabular cell-zero">0</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state"></span>Vendors</span>
+                <span class="cell tabular">34</span>
+                <span class="cell tabular cell-imported">34</span>
+                <span class="cell tabular cell-zero">0</span>
+                <span class="cell tabular cell-zero">0</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state"></span>Items</span>
+                <span class="cell tabular">62</span>
+                <span class="cell tabular cell-imported">62</span>
+                <span class="cell tabular cell-zero">0</span>
+                <span class="cell tabular cell-zero">0</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state is-running"></span>Invoices</span>
+                <span class="cell tabular">98</span>
+                <span class="cell tabular cell-imported">74</span>
+                <span class="cell tabular cell-warn">12</span>
+                <span class="cell tabular cell-zero">0</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state is-queued"></span>Estimates</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state is-queued"></span>Payments</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state is-queued"></span>Bills</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state is-queued"></span>Purchases</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+                <span class="cell tabular cell-zero">—</span>
+              </div>
+            </div>
+
+            <!-- Inline review nudge (warning tone) -->
+            <div class="job-strip job-strip-warning">
+              <svg class="icon"><use href="#i-hourglass"/></svg>
+              <span><strong>14 records</strong> skipped — their parent customer or vendor hasn't been imported yet. Resolve the queue after the run, then re-import to chain them.</span>
+            </div>
+          </section>
+
+        </div><!-- /pane -->
+      </section>
+    </main>
+
+    <!-- Pre-flight dialog (inline-spec on top of frame) — shows the "re-running is safe" assurance -->
+    <div class="modal-scrim" aria-hidden="true" style="display:none">
+      <div class="modal-dialog">
+        <div class="modal-head">
+          <h3>Import from QuickBooks</h3>
+          <p>We'll pull from your Northbeam Build Co. QuickBooks file (sandbox). Henry handles the dedup automatically; only ambiguous customers need your eye.</p>
+        </div>
+        <div class="modal-body">
+          <div class="mb-label">What gets imported</div>
+          <ul>
+            <li><svg><use href="#i-check"/></svg>Customers &amp; Vendors (name, email, phone, billing address)</li>
+            <li><svg><use href="#i-check"/></svg>Items (pricebook services + parts)</li>
+            <li><svg><use href="#i-check"/></svg>Invoices &amp; Estimates (header + lines, frozen tax)</li>
+            <li><svg><use href="#i-check"/></svg>Payments (linked to invoices)</li>
+            <li><svg><use href="#i-check"/></svg>Bills (vendor AP)</li>
+            <li><svg><use href="#i-check"/></svg>Purchases (one-off receipts &amp; costs)</li>
+          </ul>
+          <div class="mb-safe"><strong>Re-running is safe.</strong> Every record is keyed on its QBO id — duplicates can't happen.</div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-rust"><svg class="icon"><use href="#i-play"/></svg>Start import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 4 — Hub · Run failed (qbo_sync_log failure surfaced)        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 4</span>
+    <span class="frame-sep">·</span>
+    settings / quickbooks
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    last run failed · qbo_sync_log failure row inline · "Needs you" in danger tone · re-run is safe
+  </div>
+  <div class="frame-body">
+<div class="shell">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <div>
+          <h1 class="page-title">QuickBooks</h1>
+          <div class="page-sub">Last import didn't complete — the partial run is rolled back; re-running is safe.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Search settings…" />
+            <span class="kbd">/</span>
+          </div>
+          <div class="settings-group">
+            <div class="group-label">Money &amp; integrations</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-wallet"/></svg>
+                <span class="item-name">Stripe</span>
+                <span class="item-dot"></span>
+              </li>
+              <li class="settings-item is-active">
+                <svg class="item-icon"><use href="#i-receipt"/></svg>
+                <span class="item-name">QuickBooks</span>
+                <span class="item-pill">!</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-credit-card"/></svg>
+                <span class="item-name">Payment sources</span>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+
+          <div class="boundary">
+            <span class="boundary-mark">Boundary</span>
+            <span><strong>QuickBooks is your books.</strong> A failed import never wrote partial state to your QBO file — we're reading only.</span>
+          </div>
+
+          <!-- Cockpit (failed variant) -->
+          <section class="cockpit">
+            <div class="cockpit-head">
+              <div class="cockpit-mark is-failed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              </div>
+              <div class="cockpit-id">
+                <div class="cockpit-line-1">
+                  <span>Northbeam Build Co.</span>
+                  <span class="pill pill-success"><svg><use href="#i-check"/></svg>Connected</span>
+                  <span class="pill pill-danger"><svg><use href="#i-x"/></svg>Last import failed</span>
+                </div>
+                <div class="cockpit-line-2">
+                  <span class="realm">realm 9341 4531 7723 6088</span>
+                  <span class="sep">·</span>
+                  <span>Attempt at <strong>10:14 PT</strong>, 38 min ago · partial run rolled back</span>
+                </div>
+              </div>
+              <div class="cockpit-actions">
+                <button class="btn btn-ghost btn-sm">
+                  <svg class="icon"><use href="#i-link"/></svg>
+                  Open in QuickBooks
+                </button>
+                <button class="btn btn-danger-ghost btn-sm">
+                  <svg class="icon"><use href="#i-unplug"/></svg>
+                  Disconnect
+                </button>
+              </div>
+            </div>
+
+            <div class="needs-you is-danger">
+              <div class="needs-icon"><svg><use href="#i-x-circle"/></svg></div>
+              <div class="needs-mid">
+                <strong>Last import failed at Bills.</strong>
+                <span class="sep">·</span>
+                Intuit rate-limited us mid-batch. Wait ~5 minutes and re-run — the worker will pick up from where it stopped.
+              </div>
+              <a class="needs-link" href="#">View failure <svg style="width:11px;height:11px;vertical-align:-1px"><use href="#i-arrow-right"/></svg></a>
+            </div>
+
+            <div class="import-zone">
+              <div class="import-copy">
+                <span class="import-eyebrow">Primary action</span>
+                <span class="import-headline">Re-run import</span>
+                <span class="import-meta"><span class="mono">Re-running is safe</span> — already-imported records are skipped by QBO id; the bills batch will be retried from the cursor.</span>
+              </div>
+              <div class="import-actions">
+                <button class="btn btn-ghost"><svg class="icon"><use href="#i-history"/></svg>View history</button>
+                <button class="btn btn-rust btn-lg"><svg class="icon"><use href="#i-play"/></svg>Re-run import</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Failure detail card (qbo_sync_log surfaced) -->
+          <section class="job-panel" aria-label="Failed run detail">
+            <div class="job-head">
+              <div class="job-title">
+                <span class="pill pill-danger"><svg><use href="#i-x"/></svg>Failed</span>
+                Run #14 · today 10:14 PT
+              </div>
+              <div class="job-meter">
+                <span>API calls</span>
+                <span class="meter-val">412 / 500k</span>
+              </div>
+            </div>
+
+            <div class="job-body">
+              <div class="entity-head">
+                <div>Entity</div>
+                <div>Fetched</div>
+                <div>Imported</div>
+                <div>Skipped</div>
+                <div>Failed</div>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state"></span>Customers</span>
+                <span class="cell tabular">120</span>
+                <span class="cell tabular cell-imported">120</span>
+                <span class="cell tabular cell-zero">0</span>
+                <span class="cell tabular cell-zero">0</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state"></span>Vendors</span>
+                <span class="cell tabular">34</span>
+                <span class="cell tabular cell-imported">34</span>
+                <span class="cell tabular cell-zero">0</span>
+                <span class="cell tabular cell-zero">0</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state"></span>Invoices</span>
+                <span class="cell tabular">98</span>
+                <span class="cell tabular cell-imported">98</span>
+                <span class="cell tabular cell-zero">0</span>
+                <span class="cell tabular cell-zero">0</span>
+              </div>
+              <div class="entity-row">
+                <span class="entity-label"><span class="lbl-state" style="background:var(--danger)"></span>Bills</span>
+                <span class="cell tabular">52</span>
+                <span class="cell tabular">28</span>
+                <span class="cell tabular cell-zero">0</span>
+                <span class="cell tabular cell-danger">24</span>
+              </div>
+            </div>
+
+            <!-- qbo_sync_log failure row — diagnosability, not a dead end -->
+            <div class="syslog-row">
+              <span class="syslog-tag">qbo_sync_log</span>
+              <div class="syslog-body">
+                <div class="syslog-entity">Bill · qbo_id 4017 · attempt 3 of 3</div>
+                <div class="syslog-msg">429 Too Many Requests — Intuit throttling per-minute window. Worker scheduled retry at 10:21 PT; retry exhausted. Resume cursor saved: entity=Bill, cursor=4040.</div>
+              </div>
+            </div>
+
+            <div class="job-strip job-strip-info" style="margin-top:0">
+              <svg class="icon"><use href="#i-zap"/></svg>
+              <span>Henry tip: Intuit's per-minute API ceiling resets every 60 seconds. Wait ~5 min before re-running so the burst rate-budget refills.</span>
+            </div>
+          </section>
+
+        </div><!-- /pane -->
+      </section>
+    </main>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 5 — Class mapping sub-route (the richest sub-page)          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 5</span>
+    <span class="frame-sep">·</span>
+    settings / qbo-class-mapping
+    <span class="frame-sep">·</span>
+    <span class="frame-role">Owner view</span>
+    <span class="frame-sep">·</span>
+    QuickBooks Class → HeyHenry Project · Overwrite control (consequence-clear) · ✦ suggestion (operator confirms)
+  </div>
+  <div class="frame-body">
+<div class="shell shell-tall">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <div>
+          <div class="page-crumb">
+            <a href="#"><svg style="width:11px;height:11px;vertical-align:-1px;margin-right:2px"><use href="#i-arrow-left"/></svg>Settings</a>
+            <span class="crumb-sep">/</span>
+            <a href="#">QuickBooks</a>
+            <span class="crumb-sep">/</span>
+            <span class="crumb-here">Class mapping</span>
+          </div>
+          <h1 class="page-title">Class mapping</h1>
+          <div class="page-sub">QuickBooks <strong style="color:var(--ink)">Class</strong> → HeyHenry <strong style="color:var(--ink)">Project</strong>. Vendor spend rolls up under the project once classes are pointed at it.</div>
+        </div>
+      </section>
+
+      <section class="settings-layout">
+
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Search settings…" />
+            <span class="kbd">/</span>
+          </div>
+          <div class="settings-group">
+            <div class="group-label">Money &amp; integrations</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-wallet"/></svg>
+                <span class="item-name">Stripe</span>
+                <span class="item-dot"></span>
+              </li>
+              <li class="settings-item is-active">
+                <svg class="item-icon"><use href="#i-receipt"/></svg>
+                <span class="item-name">QuickBooks</span>
+                <span class="item-pill">4</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-credit-card"/></svg>
+                <span class="item-name">Payment sources</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-file"/></svg>
+                <span class="item-name">Invoicing</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-tag"/></svg>
+                <span class="item-name">Expense categories</span>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+
+          <!-- Shared connection header (compact form on sub-routes) -->
+          <section class="cockpit">
+            <div class="cockpit-head" style="padding: 12px 22px">
+              <div class="cockpit-mark" style="width:34px;height:34px;border-radius:9px">
+                <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 2 2 4-4"/></svg>
+              </div>
+              <div class="cockpit-id">
+                <div class="cockpit-line-1" style="font-size:14px">
+                  <span>Northbeam Build Co.</span>
+                  <span class="pill pill-success"><svg><use href="#i-check"/></svg>Connected</span>
+                </div>
+                <div class="cockpit-line-2">
+                  <span class="realm">realm 9341 4531 7723 6088</span>
+                  <span class="sep">·</span>
+                  <span>9 classes seen across 47 bills · 229 receipts</span>
+                </div>
+              </div>
+              <div class="cockpit-actions">
+                <a href="#" class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg>Back to hub</a>
+              </div>
+            </div>
+          </section>
+
+          <!-- Class-mapping table -->
+          <section class="cm-card">
+            <div class="cm-head">
+              <div>
+                <h2 class="cm-title">Map QuickBooks Classes to projects</h2>
+                <p class="cm-desc"><strong>QuickBooks Class</strong> is the job-cost tag your bookkeeper sets on each bill or receipt. Point each one at the HeyHenry project it belongs to — bills and receipts get tagged in bulk so spend rolls up under the right job.</p>
+              </div>
+              <label class="overwrite is-on" id="ow-1" aria-pressed="true">
+                <span class="cb"></span>
+                <span class="ow-text">
+                  <span class="ow-main">Overwrite existing</span>
+                  <span class="ow-sub">Re-tag rows already assigned to a different project. Default off — keeps manual classifications safe.</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="cm-body">
+
+              <div class="cm-col-head">
+                <div>Class · spend</div>
+                <div>Project</div>
+                <div></div>
+              </div>
+
+              <!-- Row 1 — ✦ Henry suggestion (highest spend, obvious match) -->
+              <div class="cm-row is-suggested">
+                <div class="cm-class">
+                  <span class="cm-class-name">Smith Kitchen Reno</span>
+                  <span class="cm-class-meta">
+                    <span class="meta-spend">$84,210<span class="cents">.00</span></span>
+                    <span class="sep">·</span>
+                    <span>18 bills · 32 receipts</span>
+                    <span class="cm-suggest"><span class="sparkle">✦</span>Suggested · 96% match</span>
+                  </span>
+                </div>
+                <select class="cm-select is-suggested" aria-label="Project for Smith Kitchen Reno">
+                  <option>Smith Kitchen — Burnaby</option>
+                  <option>— No project —</option>
+                  <option>Donahue Basement Suite</option>
+                  <option>Mercer Deck Build</option>
+                  <option>Park Bath Remodel</option>
+                  <option>Whitlock Whole-home</option>
+                </select>
+                <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+
+              <!-- Row 2 — already mapped -->
+              <div class="cm-row">
+                <div class="cm-class">
+                  <span class="cm-class-name">Donahue Basement</span>
+                  <span class="cm-class-meta">
+                    <span class="meta-spend">$41,680<span class="cents">.00</span></span>
+                    <span class="sep">·</span>
+                    <span>12 bills · 24 receipts</span>
+                    <span class="meta-chip">currently <span class="arrow">→</span> Donahue Basement Suite</span>
+                  </span>
+                </div>
+                <select class="cm-select" aria-label="Project for Donahue Basement">
+                  <option>Donahue Basement Suite</option>
+                  <option>— No project —</option>
+                  <option>Smith Kitchen — Burnaby</option>
+                  <option>Mercer Deck Build</option>
+                  <option>Park Bath Remodel</option>
+                </select>
+                <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+
+              <!-- Row 3 — unmapped, ambiguous name -->
+              <div class="cm-row">
+                <div class="cm-class">
+                  <span class="cm-class-name">2024 — Overhead</span>
+                  <span class="cm-class-meta">
+                    <span class="meta-spend">$22,140<span class="cents">.00</span></span>
+                    <span class="sep">·</span>
+                    <span>8 bills · 71 receipts</span>
+                  </span>
+                </div>
+                <select class="cm-select" aria-label="Project for 2024 — Overhead">
+                  <option>— No project —</option>
+                  <option>Smith Kitchen — Burnaby</option>
+                  <option>Donahue Basement Suite</option>
+                  <option>Mercer Deck Build</option>
+                  <option>Park Bath Remodel</option>
+                  <option>Whitlock Whole-home</option>
+                </select>
+                <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+
+              <!-- Row 4 — ✦ suggestion -->
+              <div class="cm-row is-suggested">
+                <div class="cm-class">
+                  <span class="cm-class-name">Mercer Deck</span>
+                  <span class="cm-class-meta">
+                    <span class="meta-spend">$18,360<span class="cents">.00</span></span>
+                    <span class="sep">·</span>
+                    <span>5 bills · 42 receipts</span>
+                    <span class="cm-suggest"><span class="sparkle">✦</span>Suggested · 89% match</span>
+                  </span>
+                </div>
+                <select class="cm-select is-suggested" aria-label="Project for Mercer Deck">
+                  <option>Mercer Deck Build</option>
+                  <option>— No project —</option>
+                  <option>Smith Kitchen — Burnaby</option>
+                  <option>Donahue Basement Suite</option>
+                  <option>Park Bath Remodel</option>
+                </select>
+                <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+
+              <!-- Row 5 — unmapped, smaller -->
+              <div class="cm-row">
+                <div class="cm-class">
+                  <span class="cm-class-name">Park · Bathroom</span>
+                  <span class="cm-class-meta">
+                    <span class="meta-spend">$12,890<span class="cents">.00</span></span>
+                    <span class="sep">·</span>
+                    <span>4 bills · 18 receipts</span>
+                  </span>
+                </div>
+                <select class="cm-select" aria-label="Project for Park · Bathroom">
+                  <option>— No project —</option>
+                  <option>Park Bath Remodel</option>
+                  <option>Smith Kitchen — Burnaby</option>
+                  <option>Donahue Basement Suite</option>
+                  <option>Mercer Deck Build</option>
+                </select>
+                <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+
+              <!-- Row 6 — already mapped, smaller spend -->
+              <div class="cm-row">
+                <div class="cm-class">
+                  <span class="cm-class-name">Whitlock — Phase 1</span>
+                  <span class="cm-class-meta">
+                    <span class="meta-spend">$9,420<span class="cents">.00</span></span>
+                    <span class="sep">·</span>
+                    <span>3 bills · 14 receipts</span>
+                    <span class="meta-chip">currently <span class="arrow">→</span> Whitlock Whole-home</span>
+                  </span>
+                </div>
+                <select class="cm-select" aria-label="Project for Whitlock — Phase 1">
+                  <option>Whitlock Whole-home</option>
+                  <option>— No project —</option>
+                  <option>Smith Kitchen — Burnaby</option>
+                  <option>Donahue Basement Suite</option>
+                </select>
+                <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+
+              <!-- Row 7 — unmapped, very small -->
+              <div class="cm-row">
+                <div class="cm-class">
+                  <span class="cm-class-name">Tools &amp; Vehicle</span>
+                  <span class="cm-class-meta">
+                    <span class="meta-spend">$3,210<span class="cents">.00</span></span>
+                    <span class="sep">·</span>
+                    <span>2 bills · 18 receipts</span>
+                  </span>
+                </div>
+                <select class="cm-select" aria-label="Project for Tools &amp; Vehicle">
+                  <option>— No project —</option>
+                  <option>Smith Kitchen — Burnaby</option>
+                  <option>Donahue Basement Suite</option>
+                  <option>Mercer Deck Build</option>
+                </select>
+                <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- Henry credit line (honest, narrow) -->
+          <div class="reserved" style="border-style:solid;border-color:rgba(194,65,12,.18);background:var(--rust-soft);color:var(--ink-2)">
+            <span class="res-tag" style="color:var(--rust)">✦ Henry</span>
+            <span>Matched <strong style="color:var(--ink);font-weight:600">2 of 9 classes</strong> to projects by name — pre-staged your Select, operator confirms on Apply. <em style="color:var(--muted);font-style:normal">Never auto-applies.</em></span>
+          </div>
+
+        </div><!-- /pane -->
+      </section>
+    </main>
+  </div>
+</div>
+</div>
+</div>
+
+</div><!-- /frame-stack -->
+</body>
+</html>
