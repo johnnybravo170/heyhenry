@@ -139,7 +139,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
     .order('room', { ascending: true })
     .order('display_order', { ascending: true });
 
-  // Photos — homeowner-visible AND either tagged for the gallery or
+  // Photos — client-visible AND either tagged for the gallery or
   // pinned to a phase. Phase-only photos still need to ride along so
   // the Home Record timeline can render them.
   //
@@ -165,7 +165,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
     .is('deleted_at', null)
     .order('created_at', { ascending: true });
 
-  // Decisions — only the ones the homeowner answered. Pending /
+  // Decisions — only the ones the client answered. Pending /
   // dismissed don't belong in a permanent record.
   const { data: decisionRows } = await supabase
     .from('project_decisions')
@@ -265,9 +265,18 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
   // Upsert keyed by project_id — preserves slug across regenerations.
   const { data: existing } = await supabase
     .from('home_records')
-    .select('id, slug')
+    .select('id, slug, henry_summary, henry_summary_approved')
     .eq('project_id', projectId)
     .maybeSingle();
+
+  // Carry the operator-approved Henry summary forward across a regenerate —
+  // the JSONB is rebuilt from live tables, so without this the edited prose
+  // would be lost. Only an *approved* summary enters the snapshot the client
+  // reads (a draft-in-progress never auto-publishes).
+  const ex = (existing ?? {}) as Record<string, unknown>;
+  if (ex.henry_summary_approved && typeof ex.henry_summary === 'string') {
+    snapshot.summary = ex.henry_summary as string;
+  }
 
   if (existing) {
     const { error: updErr } = await supabase
@@ -297,6 +306,86 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
 
   revalidatePath(`/projects/${projectId}`);
   return { ok: true, slug };
+}
+
+/**
+ * ✦ Henry closeout-summary draft. Asks Henry to write a warm one-paragraph
+ * project narrative from the frozen snapshot. Does NOT persist — the
+ * operator reviews / edits the returned text in the preview drawer and
+ * approves it via keepHomeRecordSummaryAction. Henry never auto-publishes.
+ */
+export type HomeRecordSummaryDraftResult =
+  | { ok: true; summary: string }
+  | { ok: false; error: string };
+
+export async function draftHomeRecordSummaryAction(
+  projectId: string,
+): Promise<HomeRecordSummaryDraftResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from('home_records')
+    .select('snapshot')
+    .eq('project_id', projectId)
+    .maybeSingle();
+  if (!row) return { ok: false, error: 'Generate the Home Record first.' };
+
+  const snapshot = (row as Record<string, unknown>).snapshot as HomeRecordSnapshotV1;
+  const { draftCloseoutSummary } = await import('@/lib/ai/closeout-summary');
+  const summary = await draftCloseoutSummary(snapshot);
+  if (!summary) {
+    return {
+      ok: false,
+      error: "Henry couldn't draft a summary from this project yet — write one by hand.",
+    };
+  }
+  return { ok: true, summary };
+}
+
+/**
+ * Approve the closeout summary ("Keep"). Persists the operator's final text
+ * to the home_records row (durable across regeneration) AND copies it into
+ * the current snapshot's `summary` field so the public artifact renders it
+ * immediately. The operator may edit the Henry draft freely before keeping;
+ * this is the only path that makes a summary client-visible.
+ */
+export type HomeRecordSummaryKeepResult = { ok: true } | { ok: false; error: string };
+
+export async function keepHomeRecordSummaryAction(
+  projectId: string,
+  summary: string,
+): Promise<HomeRecordSummaryKeepResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  const trimmed = summary.trim();
+  if (!trimmed) return { ok: false, error: 'Write a summary before keeping it.' };
+
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from('home_records')
+    .select('id, snapshot')
+    .eq('project_id', projectId)
+    .maybeSingle();
+  if (!row) return { ok: false, error: 'Generate the Home Record first.' };
+
+  const r = row as Record<string, unknown>;
+  const snapshot = { ...(r.snapshot as HomeRecordSnapshotV1), summary: trimmed };
+
+  const { error } = await supabase
+    .from('home_records')
+    .update({
+      henry_summary: trimmed,
+      henry_summary_approved: true,
+      snapshot,
+    })
+    .eq('id', r.id as string);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
 }
 
 /**
@@ -425,7 +514,7 @@ export async function generateHomeRecordPdfAction(
  * with a README.txt, and uploads to the `home-record-zips` bucket.
  *
  * Unlike the PDF, the ZIP is durably permanent — file copies inside
- * the archive don't depend on Storage signed URLs, so the homeowner
+ * the archive don't depend on Storage signed URLs, so the client
  * can save the ZIP forever and never lose access.
  *
  * Latency: this can be the slowest action in the pipeline (one fetch
@@ -509,7 +598,7 @@ export async function generateHomeRecordZipAction(
         if (!docMeta) continue;
         // Use the document title as the filename (with the extension
         // off the storage path) — friendlier than the random storage
-        // basename when the homeowner extracts the ZIP.
+        // basename when the client extracts the ZIP.
         const ext = entry.path.split('.').pop() ?? 'pdf';
         const filenameBase = docMeta.title.replace(/[^A-Za-z0-9 _.-]/g, '').trim() || 'document';
         const filename = `${filenameBase}.${ext}`;
@@ -575,7 +664,7 @@ export async function generateHomeRecordZipAction(
 }
 
 /**
- * Email the Home Record to the homeowner. Slice 6d.
+ * Email the Home Record to the client. Slice 6d.
  *
  * Sends a single branded email containing whichever of the three
  * delivery formats are ready: the permanent web link (always),
@@ -618,7 +707,7 @@ export async function emailHomeRecordAction(
     return {
       ok: false,
       error:
-        'No homeowner email on file. Add one to the contact record (or pass an override) and try again.',
+        'No email on file for this client. Add one to the contact record (or pass an override) and try again.',
     };
   }
 
@@ -633,58 +722,45 @@ export async function emailHomeRecordAction(
 
   const subject = `Your Home Record for ${projectName}`;
 
-  // Plain HTML — minimal styling, deliverability-friendly. Renders
-  // cleanly in Gmail / Apple Mail / Outlook without extra dependencies.
-  const linkBlocks: string[] = [];
-  linkBlocks.push(
-    `<p><a href="${webUrl}" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Open your Home Record</a></p>`,
-  );
+  // Through the shared email shell (Paper accent via COLOR_ACCENT, GC logo +
+  // "Sent via HeyHenry" footer, CASL footer key) — replaces the old hand-
+  // rolled HTML with its hardcoded #2563eb blue button.
+  const { brandingLogoHtml, getEmailBrandingForTenant } = await import('@/lib/email/branding');
+  const { renderEmailShell } = await import('@/lib/email/layout');
+  const branding = await getEmailBrandingForTenant(tenant.id);
+
+  // Secondary download links live below the primary "Open" CTA. Built as a
+  // small block of <p><a> — same email-safe styling the shell uses.
+  const extraLinks: string[] = [];
   if (hasPdf) {
-    linkBlocks.push(
-      `<p style="margin:6px 0;"><a href="${pdfUrl}" style="color:#2563eb;text-decoration:underline;">Download the PDF version →</a></p>`,
+    extraLinks.push(
+      `<p style="margin:8px 0 0;"><a href="${pdfUrl}" style="color:#0a0a0a;text-decoration:underline;">Download the PDF version &rarr;</a></p>`,
     );
   }
   if (hasZip) {
-    linkBlocks.push(
-      `<p style="margin:6px 0;"><a href="${zipUrl}" style="color:#2563eb;text-decoration:underline;">Download everything as a ZIP archive →</a></p>`,
+    extraLinks.push(
+      `<p style="margin:8px 0 0;"><a href="${zipUrl}" style="color:#0a0a0a;text-decoration:underline;">Download everything as a ZIP archive &rarr;</a></p>`,
     );
   }
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#222;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-          <tr>
-            <td style="padding:28px 28px 20px;">
-              <p style="margin:0 0 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#888;">Home Record</p>
-              <h1 style="margin:0 0 8px;font-size:22px;line-height:1.25;color:#111;">${escapeHtml(projectName)}</h1>
-              <p style="margin:0;color:#666;font-size:14px;">From ${escapeHtml(contractor)}</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 28px 24px;">
-              <p style="margin:0 0 14px;font-size:15px;line-height:1.5;color:#222;">Hi ${escapeHtml(customerFirstName)},</p>
-              <p style="margin:0 0 14px;font-size:15px;line-height:1.5;color:#222;">Your Home Record is ready — a permanent record of your project. Phases, photos (including everything we photographed behind the walls), paint codes, fixtures, warranties, and the change orders we worked through together.</p>
-              <p style="margin:0 0 18px;font-size:15px;line-height:1.5;color:#222;">Save it somewhere safe — you'll want it for repairs, insurance, future renovations, or whenever you sell.</p>
-              ${linkBlocks.join('\n')}
-              <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#888;">The web link works forever and stays current. The PDF and ZIP are dated snapshots — feel free to download them now and tuck them somewhere offline.</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:18px 28px 24px;border-top:1px solid #eee;">
-              <p style="margin:0;font-size:12px;color:#888;">Thanks again — ${escapeHtml(contractor)}</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`.trim();
+  const bodyHtml = [
+    `<p style="margin: 0 0 14px;">Hi ${escapeHtml(customerFirstName)},</p>`,
+    `<p style="margin: 0 0 14px;">Your Home Record is ready — a permanent record of your project. Phases, photos (including everything we photographed behind the walls), paint codes, fixtures, warranties, and the change orders we worked through together.</p>`,
+    `<p style="margin: 0 0 4px;">Save it somewhere safe — you'll want it for repairs, insurance, future renovations, or whenever you sell.</p>`,
+    extraLinks.join('\n'),
+    `<p style="margin: 16px 0 0; font-size: 13px; color: #666;">The web link works forever and stays current. The PDF and ZIP are dated snapshots — feel free to download them now and tuck them somewhere offline.</p>`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const html = renderEmailShell({
+    heading: `Your Home Record — ${projectName}`,
+    body: bodyHtml,
+    cta: { label: 'Open your Home Record', href: webUrl },
+    signoff: `Thanks again — ${contractor}`,
+    brandingLogoHtml: brandingLogoHtml(branding.logoUrl, branding.businessName),
+    footerKey: 'home_record',
+  });
 
   const { sendEmail } = await import('@/lib/email/send');
   const result = await sendEmail({

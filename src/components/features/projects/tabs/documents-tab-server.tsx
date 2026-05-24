@@ -1,11 +1,10 @@
 import { Sparkles } from 'lucide-react';
 import { DocumentList } from '@/components/features/portal/document-list';
 import { DocumentUpload } from '@/components/features/portal/document-upload';
-import { HomeRecordButton } from '@/components/features/portal/home-record-button';
-import { HomeRecordEmailButton } from '@/components/features/portal/home-record-email-button';
+import { HomeRecordFlow } from '@/components/features/portal/home-record-flow';
 import { TradeContactsList } from '@/components/features/portal/trade-contacts-list';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { formatDate, formatDateTime } from '@/lib/date/format';
+import { formatDateTime } from '@/lib/date/format';
 import { getHomeRecordForProject } from '@/lib/db/queries/home-records';
 import {
   listDocumentsForProject,
@@ -33,52 +32,45 @@ export default async function DocumentsTabServer({ projectId }: { projectId: str
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div>
-            <p className="mb-1 flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-brand">
-              <Sparkles className="size-3" aria-hidden />
-              Closeout
-            </p>
-            <h3 className="text-base font-semibold">Home Record</h3>
-            <p className="mt-0.5 max-w-xl text-xs text-muted-foreground">
-              The permanent handoff package — phases, photos, selections, decisions, COs, warranties
-              — frozen and shareable. Regenerate anytime; the link stays the same.
-            </p>
-            {homeRecord ? (
-              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                Last generated {formatDateTime(homeRecord.generated_at, { timezone: tz })}
+      <div className="space-y-4 rounded-xl border bg-card p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
+              <Sparkles className="size-4" aria-hidden />
+            </div>
+            <div>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-brand">
+                Closeout · Home Record
               </p>
-            ) : null}
+              <h3 className="text-base font-semibold">The permanent handoff package</h3>
+              <p className="mt-0.5 max-w-xl text-xs text-muted-foreground">
+                Phases, photos, selections, decisions, change orders, warranties — frozen and
+                shareable. Regenerate anytime; the link stays the same.
+              </p>
+            </div>
           </div>
-          <HomeRecordButton
-            projectId={projectId}
-            existingSlug={homeRecord?.slug ?? null}
-            hasPdf={Boolean(homeRecord?.pdf_path)}
-            hasZip={Boolean(homeRecord?.zip_path)}
-          />
+          {homeRecord ? (
+            <div className="text-right">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                Last generated
+              </p>
+              <p className="font-mono text-xs tabular-nums text-foreground">
+                {formatDateTime(homeRecord.generated_at, { timezone: tz })}
+              </p>
+            </div>
+          ) : null}
         </div>
 
-        {homeRecord ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
-            <span>
-              {homeRecord.emailed_at
-                ? `Emailed to ${homeRecord.emailed_to ?? 'client'} on ${formatDate(
-                    homeRecord.emailed_at,
-                    { timezone: tz, style: 'long' },
-                  )}`
-                : 'Not yet emailed to the client.'}
-            </span>
-            <HomeRecordEmailButton
-              projectId={projectId}
-              defaultEmail={homeRecord.snapshot.customer.email ?? null}
-              hasPdf={Boolean(homeRecord.pdf_path)}
-              hasZip={Boolean(homeRecord.zip_path)}
-              emailedAt={homeRecord.emailed_at}
-              emailedTo={homeRecord.emailed_to}
-            />
-          </div>
-        ) : null}
+        <HomeRecordFlow
+          projectId={projectId}
+          existingSlug={homeRecord?.slug ?? null}
+          hasPdf={Boolean(homeRecord?.pdf_path)}
+          hasZip={Boolean(homeRecord?.zip_path)}
+          emailedAt={homeRecord?.emailed_at ?? null}
+          emailedTo={homeRecord?.emailed_to ?? null}
+          defaultEmail={homeRecord?.snapshot.customer.email ?? null}
+          summary={homeRecord?.henry_summary ?? homeRecord?.snapshot.summary ?? null}
+        />
       </div>
 
       <DocumentUpload projectId={projectId} suppliers={suppliers} />

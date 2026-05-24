@@ -28,6 +28,7 @@ export type EmailTemplateKey =
   | 'quote_response'
   | 'invoice'
   | 'estimate'
+  | 'home_record'
   | 'portal_invite'
   | 'job_booking'
   | 'lead_notification'
