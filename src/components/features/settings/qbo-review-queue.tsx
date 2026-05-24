@@ -14,21 +14,25 @@
  * skipped on the first pass will chain-import correctly now.
  */
 
-import { Check, Loader2, UserPlus, X } from 'lucide-react';
+import { Check, Loader2, Sparkles, UserPlus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDateTime } from '@/lib/date/format';
 import type { ReviewQueueEntry } from '@/lib/qbo/import/job';
+import { statusToneClass } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import { type ReviewJobSummary, resolveReviewEntryAction } from '@/server/actions/qbo-review-queue';
 
 type Props = {
   jobs: ReviewJobSummary[];
+  timezone: string;
 };
 
-export function QboReviewQueueList({ jobs }: Props) {
+export function QboReviewQueueList({ jobs, timezone }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -91,9 +95,9 @@ export function QboReviewQueueList({ jobs }: Props) {
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               Import from{' '}
               <span className="text-muted-foreground">
-                {new Date(job.created_at).toLocaleString()}
+                {formatDateTime(job.created_at, { timezone })}
               </span>
-              <Badge variant="secondary" className="font-normal">
+              <Badge variant="secondary" className={cn('font-medium', statusToneClass.warning)}>
                 {job.queue.length} pending
               </Badge>
             </CardTitle>
@@ -131,12 +135,15 @@ export function QboReviewQueueList({ jobs }: Props) {
                         >
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-medium">{cand.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">
+                            <p className="flex flex-wrap items-center gap-1 truncate text-xs text-muted-foreground">
                               {cand.email || <span className="italic">no email</span>} ·{' '}
-                              {cand.phone || <span className="italic">no phone</span>} ·{' '}
-                              <Badge variant="outline" className="font-normal">
-                                {cand.tier === 'name+city' ? 'name + city' : 'name only'}
-                              </Badge>
+                              {cand.phone || <span className="italic">no phone</span>}
+                              {/* ✦ Henry dedup match-confidence — a labelled
+                                  judgement, operator still decides Merge/Create/Skip. */}
+                              <span className="inline-flex items-center gap-1 font-medium text-brand">
+                                <Sparkles className="size-3" aria-hidden="true" />
+                                {cand.tier === 'name+city' ? 'name + city match' : 'name match'}
+                              </span>
                             </p>
                           </div>
                           <Button

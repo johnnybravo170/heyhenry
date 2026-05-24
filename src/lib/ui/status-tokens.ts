@@ -195,6 +195,44 @@ export const subscriptionStateLabel: Record<SubscriptionCockpitState, string> = 
   past_due: 'Needs attention',
   canceled: 'Canceled',
 };
+/**
+ * QuickBooks per-row sync status (`qbo_sync_status` on customers /
+ * invoices / quotes / project_costs / payments / bills).
+ *
+ *   synced   — landed in QBO (or read in from it): success
+ *   pending  — queued for the future push worker: info (in-flight)
+ *   failed   — last sync attempt errored: danger
+ *   disabled — row excluded from sync: neutral
+ *
+ * Import-only today — these get *stamped* by the future push epic. The
+ * map is defined now so the per-row badge surface is consistent the day
+ * push lands; no push UI ships against it yet (see settings-quickbooks brief).
+ */
+export const qboSyncStatusTone = {
+  synced: 'success',
+  pending: 'info',
+  failed: 'danger',
+  disabled: 'neutral',
+} as const satisfies Record<string, StatusTone>;
+
+/**
+ * QuickBooks import-run lifecycle (`qbo_import_jobs.status`). Drives the
+ * run-status pill in import history and the connection-cockpit "needs you"
+ * read. Replaces the raw secondary/destructive/outline mapping.
+ *
+ *   completed — success
+ *   failed    — danger
+ *   running   — info (in-flight)
+ *   queued    — info (in-flight / cron will resume)
+ *   cancelled — neutral
+ */
+export const qboRunStatusTone = {
+  completed: 'success',
+  failed: 'danger',
+  running: 'info',
+  queued: 'info',
+  cancelled: 'neutral',
+} as const satisfies Record<string, StatusTone>;
 
 /** Change order lifecycle. */
 export const changeOrderStatusTone = {

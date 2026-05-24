@@ -11,11 +11,12 @@
  * for live progress while it's running.
  */
 
-import { Loader2, PlayCircle, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, PlayCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { statusToneClass, statusToneIcon } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import {
   cancelQboImportAction,
   fetchImportJobAction,
@@ -187,60 +190,81 @@ export function QuickBooksImportLauncher() {
   const reviewCount = job?.review_queue?.length ?? 0;
 
   return (
-    <div className="space-y-3">
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          if (!isRunning) setDialogOpen(open);
-        }}
-      >
-        <DialogTrigger asChild>
-          <Button size="sm" variant="default" disabled={isPending}>
-            <PlayCircle className="size-3.5" />
-            Import from QuickBooks
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import from QuickBooks</DialogTitle>
-            <DialogDescription>
-              We&rsquo;ll pull customers, pricebook items, and invoices from your QuickBooks
-              company. Strong customer matches (same email or phone) auto-merge with your existing
-              HH contacts; weaker matches go to a review queue. Item and invoice de-dup is keyed on
-              the QBO id, so re-running is safe.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-2 text-sm">
-            <Label className="font-medium">What gets imported</Label>
-            <ul className="space-y-1 pl-4 text-muted-foreground">
-              <li>• Customers + Vendors (name, email, phone, billing address)</li>
-              <li>• Pricebook items (services, parts, T&amp;M placeholders)</li>
-              <li>• Invoices + Estimates (header + line items, frozen money math)</li>
-              <li>• Payments (linked to invoices)</li>
-              <li>• Bills + Bill line items (read-only AP from QBO)</li>
-              <li>• Purchases (one-off expenses)</li>
-              <li className="text-xs">Re-running is safe — every record is keyed on its QBO id.</li>
-            </ul>
-          </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={isPending}>
-              Cancel
-            </Button>
+    <Card className="space-y-3 p-4">
+      {/* Import is the hub's primary (rust) action — promoted out of the
+          buried connected-card dialog. The job logic below is untouched. */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <p className="text-sm font-semibold">Import from QuickBooks</p>
+          <p className="text-xs text-muted-foreground">
+            Pull your customers, invoices, payments, and costs. Re-running is safe — every record is
+            keyed on its QBO id.
+          </p>
+        </div>
+        <Dialog
+          open={dialogOpen}
+          onOpenChange={(open) => {
+            if (!isRunning) setDialogOpen(open);
+          }}
+        >
+          <DialogTrigger asChild>
             <Button
-              onClick={() => {
-                setDialogOpen(false);
-                handleStart();
-              }}
-              disabled={isPending}
+              variant="default"
+              disabled={isPending || isRunning}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
             >
-              {isPending && <Loader2 className="size-3.5 animate-spin" />}
-              Start import
+              {isPending ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <PlayCircle className="size-3.5" />
+              )}
+              Import from QuickBooks
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import from QuickBooks</DialogTitle>
+              <DialogDescription>
+                We&rsquo;ll pull customers, pricebook items, and invoices from your QuickBooks
+                company. Strong customer matches (same email or phone) auto-merge with your existing
+                HH contacts; weaker matches go to a review queue. Item and invoice de-dup is keyed
+                on the QBO id, so re-running is safe.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-2 text-sm">
+              <Label className="font-medium">What gets imported</Label>
+              <ul className="space-y-1 pl-4 text-muted-foreground">
+                <li>• Customers + Vendors (name, email, phone, billing address)</li>
+                <li>• Pricebook items (services, parts, T&amp;M placeholders)</li>
+                <li>• Invoices + Estimates (header + line items, frozen money math)</li>
+                <li>• Payments (linked to invoices)</li>
+                <li>• Bills + Bill line items (read-only AP from QBO)</li>
+                <li>• Purchases (one-off expenses)</li>
+                <li className="text-xs">
+                  Re-running is safe — every record is keyed on its QBO id.
+                </li>
+              </ul>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={isPending}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setDialogOpen(false);
+                  handleStart();
+                }}
+                disabled={isPending}
+              >
+                {isPending && <Loader2 className="size-3.5 animate-spin" />}
+                Start import
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {job && (
         <div className="rounded-lg border bg-muted/30 p-3 text-sm">
@@ -257,9 +281,15 @@ export function QuickBooksImportLauncher() {
                   Continuing in background&hellip;
                 </span>
               ) : job.status === 'completed' ? (
-                'Import complete'
+                <span className="inline-flex items-center gap-1">
+                  <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Import complete
+                </span>
               ) : job.status === 'failed' ? (
-                <span className="text-destructive">Import failed</span>
+                <span className="inline-flex items-center gap-1">
+                  <statusToneIcon.danger className="size-3.5 text-destructive" />
+                  Import failed
+                </span>
               ) : (
                 'Cancelled'
               )}
@@ -299,12 +329,21 @@ export function QuickBooksImportLauncher() {
             })}
           </div>
           {reviewCount > 0 && job.status === 'completed' && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+            <div
+              className={cn(
+                'mt-2 flex flex-wrap items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs',
+                statusToneClass.warning,
+              )}
+            >
+              <statusToneIcon.warning aria-hidden="true" className="size-3.5 shrink-0" />
               <span>
                 {reviewCount} customer{reviewCount === 1 ? '' : 's'} need
                 {reviewCount === 1 ? 's' : ''} your review.
               </span>
-              <Link href="/settings/qbo-review" className="font-medium underline">
+              <Link
+                href="/settings/qbo-review"
+                className="font-medium underline underline-offset-2"
+              >
                 Resolve now →
               </Link>
             </div>
@@ -319,20 +358,34 @@ export function QuickBooksImportLauncher() {
               (counters.Bill?.skipped ?? 0);
             if (fkSkipped === 0 || job.status !== 'completed') return null;
             return (
-              <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-                {fkSkipped} record{fkSkipped === 1 ? '' : 's'} skipped — a parent (customer or
-                vendor) wasn&rsquo;t imported. Resolve the review queue, then re-run.
+              <p
+                className={cn(
+                  'mt-2 flex items-start gap-2 rounded-md border px-2.5 py-1.5 text-xs',
+                  statusToneClass.warning,
+                )}
+              >
+                <statusToneIcon.warning aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                <span>
+                  {fkSkipped} record{fkSkipped === 1 ? '' : 's'} skipped — a parent (customer or
+                  vendor) wasn&rsquo;t imported. Resolve the review queue, then re-run.
+                </span>
               </p>
             );
           })()}
           {job.error_message && (
-            <p className="mt-2 break-words font-mono text-xs text-destructive">
+            <p
+              className={cn(
+                'mt-2 flex items-start gap-2 rounded-md border px-2.5 py-1.5 font-mono text-xs break-words',
+                statusToneClass.danger,
+              )}
+            >
+              <statusToneIcon.danger aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
               {job.error_message}
             </p>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -347,13 +400,23 @@ function EntityRow({ label, counts }: { label: string; counts: EntityCounters })
         {counts.imported}
       </span>
       <span
-        className={`text-right ${counts.skipped > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+        className={cn(
+          'text-right',
+          counts.skipped > 0
+            ? 'font-semibold text-amber-700 dark:text-amber-400'
+            : 'text-muted-foreground',
+        )}
         title="Skipped / needs review"
       >
         {counts.skipped}
       </span>
       <span
-        className={`text-right ${counts.failed > 0 ? 'text-destructive' : 'text-muted-foreground'}`}
+        className={cn(
+          'text-right',
+          counts.failed > 0
+            ? 'font-semibold text-red-700 dark:text-red-400'
+            : 'text-muted-foreground',
+        )}
         title="Failed"
       >
         {counts.failed}
