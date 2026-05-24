@@ -48,6 +48,15 @@ export type HomeRecordSnapshotV1 = {
     start_date: string | null;
     target_end_date: string | null;
   };
+  /**
+   * The operator-approved ✦ Henry closeout summary — a warm one-paragraph
+   * project narrative that renders at the top of the public artifact as
+   * plain prose (Henry is invisible client-side). NULL until the operator
+   * approves a draft ("Keep"); persisted on the home_records row so it
+   * survives regeneration (see migration 20260524015042). Optional for
+   * backwards compatibility with snapshots written before that migration.
+   */
+  summary?: string | null;
   phases: Array<{
     /** Stable id from project_phases — lets photos.phase_id resolve to
      *  a snapshot phase row even though the rest of the snapshot is
@@ -116,6 +125,10 @@ export type HomeRecordRow = {
   zip_path: string | null;
   emailed_at: string | null;
   emailed_to: string | null;
+  /** Operator-approved Henry closeout summary (durable across regen). */
+  henry_summary: string | null;
+  /** TRUE once the operator approves the Henry draft ("Keep"). */
+  henry_summary_approved: boolean;
 };
 
 /**
@@ -128,7 +141,7 @@ export const getHomeRecordForProject = cache(
     const { data } = await supabase
       .from('home_records')
       .select(
-        'id, project_id, slug, snapshot, generated_at, pdf_path, zip_path, emailed_at, emailed_to',
+        'id, project_id, slug, snapshot, generated_at, pdf_path, zip_path, emailed_at, emailed_to, henry_summary, henry_summary_approved',
       )
       .eq('project_id', projectId)
       .maybeSingle();
