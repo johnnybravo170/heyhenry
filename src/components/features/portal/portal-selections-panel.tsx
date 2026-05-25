@@ -71,7 +71,7 @@ export function PortalSelectionsPanel({
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Record what you&rsquo;ve actually chosen — paint chips, tile, fixture model numbers.
-          Survives into your final Home Record.
+          Survives into your final Property Record.
         </p>
       </div>
 

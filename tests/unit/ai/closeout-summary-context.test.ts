@@ -1,7 +1,7 @@
 /**
  * Client-boundary coverage for the ✦ Henry closeout-summary prompt.
  *
- * The Home Record artifact is a no-login public page that a client may
+ * The Property Record artifact is a no-login public page that a client may
  * forward to a competitor. The summary is generated from snapshot data, so
  * the prompt context MUST NOT carry margin / markup / supplier cost / SKU /
  * allowance / actual-cost — only client-safe narrative material. This locks
@@ -10,9 +10,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildCloseoutSummaryContext } from '@/lib/ai/closeout-summary';
-import type { HomeRecordSnapshotV1 } from '@/lib/db/queries/home-records';
+import type { PropertyRecordSnapshotV1 } from '@/lib/db/queries/property-records';
 
-const snapshot: HomeRecordSnapshotV1 = {
+const snapshot: PropertyRecordSnapshotV1 = {
   version: 1,
   generated_at: '2026-05-15T00:00:00Z',
   timezone: 'America/Vancouver',

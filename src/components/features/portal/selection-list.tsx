@@ -59,7 +59,7 @@ export function SelectionList({
     return (
       <p className="text-sm text-muted-foreground">
         No selections yet — catalog the paint codes, tile SKUs, and fixtures going in each room.
-        They&rsquo;ll appear in the client&rsquo;s portal and the final Home Record.
+        They&rsquo;ll appear in the client&rsquo;s portal and the final Property Record.
       </p>
     );
   }

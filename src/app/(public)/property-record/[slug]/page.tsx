@@ -1,8 +1,8 @@
 /**
- * Permanent Home Record share page. Slice 6a of the Customer Portal &
- * Home Record build.
+ * Permanent Property Record share page. Slice 6a of the Customer Portal &
+ * Property Record build.
  *
- * Reads the frozen JSONB snapshot from `home_records` keyed on slug and
+ * Reads the frozen JSONB snapshot from `property_records` keyed on slug and
  * renders the full handoff document — header / phases / decisions /
  * change orders / selections / photos / documents. Server component
  * end-to-end (no JS) — clients, spouses, realtors, insurers,
@@ -17,7 +17,7 @@
 import { Archive, Download, ExternalLink, FileText, Layers } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
-import type { HomeRecordSnapshotV1 } from '@/lib/db/queries/home-records';
+import type { PropertyRecordSnapshotV1 } from '@/lib/db/queries/property-records';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { cn } from '@/lib/utils';
 import {
@@ -36,7 +36,7 @@ import {
 } from '@/lib/validators/project-selection';
 
 export const metadata = {
-  title: 'Home Record — HeyHenry',
+  title: 'Property Record — HeyHenry',
 };
 
 const cadFormat = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
@@ -49,24 +49,28 @@ function formatDate(iso: string | null | undefined, tz: string | undefined): str
   }).format(new Date(iso));
 }
 
-export default async function HomeRecordPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PropertyRecordPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   const admin = createAdminClient();
 
   const { data: record } = await admin
-    .from('home_records')
+    .from('property_records')
     .select('snapshot, generated_at, project_id, pdf_path, zip_path')
     .eq('slug', slug)
     .single();
   if (!record) notFound();
 
-  const snapshot = (record as Record<string, unknown>).snapshot as HomeRecordSnapshotV1;
+  const snapshot = (record as Record<string, unknown>).snapshot as PropertyRecordSnapshotV1;
   const hasPdf = Boolean((record as Record<string, unknown>).pdf_path);
   const hasZip = Boolean((record as Record<string, unknown>).zip_path);
 
   // Snapshots written 2026-05-08+ carry their tenant's tz at generation
   // time. Older snapshots side-query the live tenant tz; if even that
-  // misses, fall back to Vancouver. Frozen-tz preferred — the Home Record
+  // misses, fall back to Vancouver. Frozen-tz preferred — the Property Record
   // is permanent, so dates should reflect when the contractor was
   // actually doing the work, not where the business is now.
   let tenantTz: string | undefined = snapshot.timezone;
@@ -169,7 +173,7 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-        <PublicViewLogger resourceType="home-record" identifier={slug} />
+        <PublicViewLogger resourceType="property-record" identifier={slug} />
 
         <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-10">
           {/* Letterhead — the GC's brand, rust the single accent */}
@@ -190,7 +194,7 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
                 )}
               </div>
               <p className="mt-6 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand">
-                Home Record
+                Property Record
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
                 {snapshot.project.name}
@@ -215,7 +219,7 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
                 <div className="flex flex-col gap-2 sm:min-w-[230px]">
                   {hasPdf ? (
                     <a
-                      href={`/home-record/${slug}/download`}
+                      href={`/property-record/${slug}/download`}
                       className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:opacity-90"
                     >
                       <Download className="size-4" aria-hidden />
@@ -224,7 +228,7 @@ export default async function HomeRecordPage({ params }: { params: Promise<{ slu
                   ) : null}
                   {hasZip ? (
                     <a
-                      href={`/home-record/${slug}/download-zip`}
+                      href={`/property-record/${slug}/download-zip`}
                       className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-brand bg-card px-4 text-sm font-semibold text-brand hover:bg-paper-soft"
                     >
                       <Archive className="size-4" aria-hidden />

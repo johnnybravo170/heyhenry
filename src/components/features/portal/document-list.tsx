@@ -66,7 +66,7 @@ export function DocumentList({
     return (
       <p className="text-sm text-muted-foreground">
         No documents yet. Upload contracts, permits, warranties, manuals — they&rsquo;ll appear on
-        the client&rsquo;s portal and in the final Home Record.
+        the client&rsquo;s portal and in the final Property Record.
       </p>
     );
   }

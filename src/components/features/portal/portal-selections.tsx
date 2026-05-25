@@ -31,7 +31,7 @@ export function PortalSelections({
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           What we used in your home — paint codes, tile, fixtures. You&rsquo;ll get this in your
-          final Home Record at the end of the job.
+          final Property Record at the end of the job.
         </p>
       </div>
 

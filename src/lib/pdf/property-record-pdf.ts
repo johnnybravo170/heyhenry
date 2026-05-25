@@ -1,8 +1,8 @@
 /**
- * Server-side Home Record PDF generator. Slice 6b of the Customer
- * Portal & Home Record build.
+ * Server-side Property Record PDF generator. Slice 6b of the Customer
+ * Portal & Property Record build.
  *
- * Mirrors the structure of the public /home-record/<slug> web page —
+ * Mirrors the structure of the public /property-record/<slug> web page —
  * cover + phases + selections-by-room + photos-by-tag (with
  * behind-the-wall as a labelled section) + decisions + COs +
  * documents-by-type. Photos are embedded as JPEG/PNG bytes (resolved
@@ -16,7 +16,7 @@
 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { HomeRecordSnapshotV1 } from '@/lib/db/queries/home-records';
+import type { PropertyRecordSnapshotV1 } from '@/lib/db/queries/property-records';
 import {
   PORTAL_PHOTO_TAG_DISPLAY_ORDER,
   type PortalPhotoTag,
@@ -66,8 +66,8 @@ const PAGE_WIDTH_MM = 210;
 const PAGE_HEIGHT_MM = 297;
 const MARGIN = 18;
 
-export function generateHomeRecordPdf(
-  snapshot: HomeRecordSnapshotV1,
+export function generatePropertyRecordPdf(
+  snapshot: PropertyRecordSnapshotV1,
   embeddedPhotos: EmbeddablePhoto[],
   embeddedDocs: EmbeddableDoc[],
 ): Buffer {
@@ -108,7 +108,7 @@ export function generateHomeRecordPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(120);
-  doc.text('HOME RECORD', PAGE_WIDTH_MM / 2, MARGIN + 4, { align: 'center' });
+  doc.text('PROPERTY RECORD', PAGE_WIDTH_MM / 2, MARGIN + 4, { align: 'center' });
 
   doc.setFontSize(22);
   doc.setTextColor(15);

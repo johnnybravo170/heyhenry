@@ -1,11 +1,11 @@
 'use server';
 
 /**
- * Server actions for Home Record snapshot generation. Slice 6a of the
- * Customer Portal & Home Record build.
+ * Server actions for Property Record snapshot generation. Slice 6a of the
+ * Customer Portal & Property Record build.
  *
- * generateHomeRecordAction reads every relevant table for a project,
- * builds a frozen JSONB snapshot, and upserts a `home_records` row
+ * generatePropertyRecordAction reads every relevant table for a project,
+ * builds a frozen JSONB snapshot, and upserts a `property_records` row
  * keyed by project_id (so regeneration is idempotent — same slug,
  * fresher data).
  *
@@ -15,27 +15,31 @@
 import { randomBytes } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import type { HomeRecordSnapshotV1 } from '@/lib/db/queries/home-records';
+import type { PropertyRecordSnapshotV1 } from '@/lib/db/queries/property-records';
 import {
   type EmbeddableDoc,
   type EmbeddablePhoto,
-  generateHomeRecordPdf,
-} from '@/lib/pdf/home-record-pdf';
+  generatePropertyRecordPdf,
+} from '@/lib/pdf/property-record-pdf';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { PortalPhotoTag } from '@/lib/validators/portal-photo';
 import type { DocumentType } from '@/lib/validators/project-document';
 import type { SelectionCategory } from '@/lib/validators/project-selection';
-import { generateHomeRecordZip, type ZipDoc, type ZipPhoto } from '@/lib/zip/home-record-zip';
+import {
+  generatePropertyRecordZip,
+  type ZipDoc,
+  type ZipPhoto,
+} from '@/lib/zip/property-record-zip';
 
-export type HomeRecordActionResult = { ok: true; slug: string } | { ok: false; error: string };
+export type PropertyRecordActionResult = { ok: true; slug: string } | { ok: false; error: string };
 
 function generateSlug(): string {
   return randomBytes(12).toString('base64url');
 }
 
 /**
- * AI cluster #3 — auto-curate "best photos" for the Home Record.
+ * AI cluster #3 — auto-curate "best photos" for the Property Record.
  *
  * Caps each portal_tag bucket to CURATION_LIMIT_PER_TAG by
  * ai_showcase_score (descending, with taken_at as a stable tie-break).
@@ -48,7 +52,7 @@ function generateSlug(): string {
  */
 const CURATION_LIMIT_PER_TAG = 12;
 
-type PhotoCuration = HomeRecordSnapshotV1['photos'][number];
+type PhotoCuration = PropertyRecordSnapshotV1['photos'][number];
 type RawPhotoRow = Record<string, unknown>;
 
 function curatePhotos(rows: RawPhotoRow[]): PhotoCuration[] {
@@ -96,7 +100,9 @@ function curatePhotos(rows: RawPhotoRow[]): PhotoCuration[] {
   return normalized.filter((p) => survivingIds.has(p.id)).map(({ _score, ...rest }) => rest);
 }
 
-export async function generateHomeRecordAction(projectId: string): Promise<HomeRecordActionResult> {
+export async function generatePropertyRecordAction(
+  projectId: string,
+): Promise<PropertyRecordActionResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
@@ -141,7 +147,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
 
   // Photos — client-visible AND either tagged for the gallery or
   // pinned to a phase. Phase-only photos still need to ride along so
-  // the Home Record timeline can render them.
+  // the Property Record timeline can render them.
   //
   // Auto-curate: pull ai_showcase_score so we can rank within each
   // portal_tag bucket and cap to CURATION_LIMIT_PER_TAG below. Keeps
@@ -184,7 +190,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
     .eq('status', 'approved')
     .order('approved_at', { ascending: true });
 
-  const snapshot: HomeRecordSnapshotV1 = {
+  const snapshot: PropertyRecordSnapshotV1 = {
     version: 1,
     generated_at: new Date().toISOString(),
     timezone: tenant.timezone,
@@ -264,7 +270,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
 
   // Upsert keyed by project_id — preserves slug across regenerations.
   const { data: existing } = await supabase
-    .from('home_records')
+    .from('property_records')
     .select('id, slug, henry_summary, henry_summary_approved')
     .eq('project_id', projectId)
     .maybeSingle();
@@ -280,7 +286,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
 
   if (existing) {
     const { error: updErr } = await supabase
-      .from('home_records')
+      .from('property_records')
       .update({
         snapshot,
         generated_at: new Date().toISOString(),
@@ -296,7 +302,7 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
   }
 
   const slug = generateSlug();
-  const { error: insErr } = await supabase.from('home_records').insert({
+  const { error: insErr } = await supabase.from('property_records').insert({
     tenant_id: tenant.id,
     project_id: projectId,
     slug,
@@ -312,27 +318,27 @@ export async function generateHomeRecordAction(projectId: string): Promise<HomeR
  * ✦ Henry closeout-summary draft. Asks Henry to write a warm one-paragraph
  * project narrative from the frozen snapshot. Does NOT persist — the
  * operator reviews / edits the returned text in the preview drawer and
- * approves it via keepHomeRecordSummaryAction. Henry never auto-publishes.
+ * approves it via keepPropertyRecordSummaryAction. Henry never auto-publishes.
  */
-export type HomeRecordSummaryDraftResult =
+export type PropertyRecordSummaryDraftResult =
   | { ok: true; summary: string }
   | { ok: false; error: string };
 
-export async function draftHomeRecordSummaryAction(
+export async function draftPropertyRecordSummaryAction(
   projectId: string,
-): Promise<HomeRecordSummaryDraftResult> {
+): Promise<PropertyRecordSummaryDraftResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
   const supabase = await createClient();
   const { data: row } = await supabase
-    .from('home_records')
+    .from('property_records')
     .select('snapshot')
     .eq('project_id', projectId)
     .maybeSingle();
-  if (!row) return { ok: false, error: 'Generate the Home Record first.' };
+  if (!row) return { ok: false, error: 'Generate the Property Record first.' };
 
-  const snapshot = (row as Record<string, unknown>).snapshot as HomeRecordSnapshotV1;
+  const snapshot = (row as Record<string, unknown>).snapshot as PropertyRecordSnapshotV1;
   const { draftCloseoutSummary } = await import('@/lib/ai/closeout-summary');
   const summary = await draftCloseoutSummary(snapshot);
   if (!summary) {
@@ -346,17 +352,17 @@ export async function draftHomeRecordSummaryAction(
 
 /**
  * Approve the closeout summary ("Keep"). Persists the operator's final text
- * to the home_records row (durable across regeneration) AND copies it into
+ * to the property_records row (durable across regeneration) AND copies it into
  * the current snapshot's `summary` field so the public artifact renders it
  * immediately. The operator may edit the Henry draft freely before keeping;
  * this is the only path that makes a summary client-visible.
  */
-export type HomeRecordSummaryKeepResult = { ok: true } | { ok: false; error: string };
+export type PropertyRecordSummaryKeepResult = { ok: true } | { ok: false; error: string };
 
-export async function keepHomeRecordSummaryAction(
+export async function keepPropertyRecordSummaryAction(
   projectId: string,
   summary: string,
-): Promise<HomeRecordSummaryKeepResult> {
+): Promise<PropertyRecordSummaryKeepResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
@@ -365,17 +371,17 @@ export async function keepHomeRecordSummaryAction(
 
   const supabase = await createClient();
   const { data: row } = await supabase
-    .from('home_records')
+    .from('property_records')
     .select('id, snapshot')
     .eq('project_id', projectId)
     .maybeSingle();
-  if (!row) return { ok: false, error: 'Generate the Home Record first.' };
+  if (!row) return { ok: false, error: 'Generate the Property Record first.' };
 
   const r = row as Record<string, unknown>;
-  const snapshot = { ...(r.snapshot as HomeRecordSnapshotV1), summary: trimmed };
+  const snapshot = { ...(r.snapshot as PropertyRecordSnapshotV1), summary: trimmed };
 
   const { error } = await supabase
-    .from('home_records')
+    .from('property_records')
     .update({
       henry_summary: trimmed,
       henry_summary_approved: true,
@@ -389,10 +395,10 @@ export async function keepHomeRecordSummaryAction(
 }
 
 /**
- * Generate the branded PDF version of a home record. Reads the existing
- * snapshot from `home_records`, embeds photos as JPEG/PNG bytes,
- * builds the PDF via jsPDF, uploads to the `home-record-pdfs` bucket,
- * and writes back to `home_records.pdf_path`.
+ * Generate the branded PDF version of a property record. Reads the existing
+ * snapshot from `property_records`, embeds photos as JPEG/PNG bytes,
+ * builds the PDF via jsPDF, uploads to the `property-record-pdfs` bucket,
+ * and writes back to `property_records.pdf_path`.
  *
  * Photos are fetched via signed URLs from the admin client and converted
  * to base64. Embedding makes the PDF permanent — even if the operator
@@ -403,30 +409,30 @@ export async function keepHomeRecordSummaryAction(
  * if you want to re-share with fresh links. Slice 6c (ZIP) durably
  * solves this by including actual file copies.
  */
-export type HomeRecordPdfActionResult =
+export type PropertyRecordPdfActionResult =
   | { ok: true; signedUrl: string }
   | { ok: false; error: string };
 
-export async function generateHomeRecordPdfAction(
+export async function generatePropertyRecordPdfAction(
   projectId: string,
-): Promise<HomeRecordPdfActionResult> {
+): Promise<PropertyRecordPdfActionResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
   const supabase = await createClient();
   const { data: row } = await supabase
-    .from('home_records')
+    .from('property_records')
     .select('id, slug, snapshot')
     .eq('project_id', projectId)
     .maybeSingle();
   if (!row) {
-    return { ok: false, error: 'Generate the Home Record first.' };
+    return { ok: false, error: 'Generate the Property Record first.' };
   }
 
   const r = row as Record<string, unknown>;
-  const snapshot = r.snapshot as HomeRecordSnapshotV1;
+  const snapshot = r.snapshot as PropertyRecordSnapshotV1;
   const slug = r.slug as string;
-  const homeRecordId = r.id as string;
+  const propertyRecordId = r.id as string;
 
   // Resolve and fetch photo bytes. Use the admin client because the
   // photos bucket is RLS-protected and we want to bypass that for the
@@ -472,7 +478,7 @@ export async function generateHomeRecordPdfAction(
 
   let pdfBuffer: Buffer;
   try {
-    pdfBuffer = generateHomeRecordPdf(snapshot, embeddedPhotos, embeddedDocs);
+    pdfBuffer = generatePropertyRecordPdf(snapshot, embeddedPhotos, embeddedDocs);
   } catch (e) {
     return {
       ok: false,
@@ -480,10 +486,10 @@ export async function generateHomeRecordPdfAction(
     };
   }
 
-  // Upload to the home-record-pdfs bucket. Path: <tenant>/<project>/<slug>.pdf
+  // Upload to the property-record-pdfs bucket. Path: <tenant>/<project>/<slug>.pdf
   const storagePath = `${tenant.id}/${projectId}/${slug}.pdf`;
   const { error: upErr } = await supabase.storage
-    .from('home-record-pdfs')
+    .from('property-record-pdfs')
     .upload(storagePath, pdfBuffer, {
       contentType: 'application/pdf',
       upsert: true,
@@ -492,15 +498,15 @@ export async function generateHomeRecordPdfAction(
 
   // Write back the path so the operator UI knows it's ready.
   const { error: updErr } = await supabase
-    .from('home_records')
+    .from('property_records')
     .update({ pdf_path: storagePath })
-    .eq('id', homeRecordId);
+    .eq('id', propertyRecordId);
   if (updErr) return { ok: false, error: updErr.message };
 
   // Mint a signed URL the caller can hand back to the browser to trigger
   // an immediate download.
   const { data: signed } = await supabase.storage
-    .from('home-record-pdfs')
+    .from('property-record-pdfs')
     .createSignedUrl(storagePath, 3600);
 
   revalidatePath(`/projects/${projectId}`);
@@ -508,10 +514,10 @@ export async function generateHomeRecordPdfAction(
 }
 
 /**
- * Generate the ZIP archive version of a home record. Reads the snapshot,
+ * Generate the ZIP archive version of a property record. Reads the snapshot,
  * fetches every client-visible photo + document by signed URL, includes
  * the existing PDF (if generated), wraps everything in a folder layout
- * with a README.txt, and uploads to the `home-record-zips` bucket.
+ * with a README.txt, and uploads to the `property-record-zips` bucket.
  *
  * Unlike the PDF, the ZIP is durably permanent — file copies inside
  * the archive don't depend on Storage signed URLs, so the client
@@ -523,28 +529,28 @@ export async function generateHomeRecordPdfAction(
  * typical residential reno (≤ 100 photos, ≤ 50 docs at 1-3 MB each).
  * Larger projects may need a background-job approach in Slice 6d.
  */
-export type HomeRecordZipActionResult =
+export type PropertyRecordZipActionResult =
   | { ok: true; signedUrl: string }
   | { ok: false; error: string };
 
-export async function generateHomeRecordZipAction(
+export async function generatePropertyRecordZipAction(
   projectId: string,
-): Promise<HomeRecordZipActionResult> {
+): Promise<PropertyRecordZipActionResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
   const supabase = await createClient();
   const { data: row } = await supabase
-    .from('home_records')
+    .from('property_records')
     .select('id, slug, snapshot, pdf_path')
     .eq('project_id', projectId)
     .maybeSingle();
-  if (!row) return { ok: false, error: 'Generate the Home Record first.' };
+  if (!row) return { ok: false, error: 'Generate the Property Record first.' };
 
   const r = row as Record<string, unknown>;
-  const snapshot = r.snapshot as HomeRecordSnapshotV1;
+  const snapshot = r.snapshot as PropertyRecordSnapshotV1;
   const slug = r.slug as string;
-  const homeRecordId = r.id as string;
+  const propertyRecordId = r.id as string;
   const pdfPath = (r.pdf_path as string | null) ?? null;
 
   const admin = createAdminClient();
@@ -618,7 +624,7 @@ export async function generateHomeRecordZipAction(
   let pdfBytes: Buffer | null = null;
   if (pdfPath) {
     const { data: signed } = await admin.storage
-      .from('home-record-pdfs')
+      .from('property-record-pdfs')
       .createSignedUrl(pdfPath, 600);
     if (signed?.signedUrl) {
       try {
@@ -632,7 +638,7 @@ export async function generateHomeRecordZipAction(
 
   let zipBytes: Buffer;
   try {
-    zipBytes = await generateHomeRecordZip(snapshot, photoBundle, docBundle, pdfBytes);
+    zipBytes = await generatePropertyRecordZip(snapshot, photoBundle, docBundle, pdfBytes);
   } catch (e) {
     return {
       ok: false,
@@ -642,7 +648,7 @@ export async function generateHomeRecordZipAction(
 
   const storagePath = `${tenant.id}/${projectId}/${slug}.zip`;
   const { error: upErr } = await supabase.storage
-    .from('home-record-zips')
+    .from('property-record-zips')
     .upload(storagePath, zipBytes, {
       contentType: 'application/zip',
       upsert: true,
@@ -650,13 +656,13 @@ export async function generateHomeRecordZipAction(
   if (upErr) return { ok: false, error: `Upload failed: ${upErr.message}` };
 
   const { error: updErr } = await supabase
-    .from('home_records')
+    .from('property_records')
     .update({ zip_path: storagePath })
-    .eq('id', homeRecordId);
+    .eq('id', propertyRecordId);
   if (updErr) return { ok: false, error: updErr.message };
 
   const { data: signed } = await supabase.storage
-    .from('home-record-zips')
+    .from('property-record-zips')
     .createSignedUrl(storagePath, 3600);
 
   revalidatePath(`/projects/${projectId}`);
@@ -664,41 +670,41 @@ export async function generateHomeRecordZipAction(
 }
 
 /**
- * Email the Home Record to the client. Slice 6d.
+ * Email the Property Record to the client. Slice 6d.
  *
  * Sends a single branded email containing whichever of the three
  * delivery formats are ready: the permanent web link (always),
  * Download PDF (if pdf_path is set), Download ZIP (if zip_path is
- * set). Updates `home_records.emailed_at` and `emailed_to` on
+ * set). Updates `property_records.emailed_at` and `emailed_to` on
  * success. Re-running re-sends and re-stamps.
  *
  * The email goes "From: <Business Name> via HeyHenry <noreply@…>"
  * with Reply-To set to the tenant's contact email — same envelope as
  * quote/CO emails (sendEmail handles it via tenantId).
  */
-export type HomeRecordEmailActionResult =
+export type PropertyRecordEmailActionResult =
   | { ok: true; emailedTo: string }
   | { ok: false; error: string };
 
-export async function emailHomeRecordAction(
+export async function emailPropertyRecordAction(
   projectId: string,
   options?: { overrideEmail?: string },
-): Promise<HomeRecordEmailActionResult> {
+): Promise<PropertyRecordEmailActionResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
   const supabase = await createClient();
   const { data: row } = await supabase
-    .from('home_records')
+    .from('property_records')
     .select('id, slug, snapshot, pdf_path, zip_path')
     .eq('project_id', projectId)
     .maybeSingle();
-  if (!row) return { ok: false, error: 'Generate the Home Record first.' };
+  if (!row) return { ok: false, error: 'Generate the Property Record first.' };
 
   const r = row as Record<string, unknown>;
-  const snapshot = r.snapshot as HomeRecordSnapshotV1;
+  const snapshot = r.snapshot as PropertyRecordSnapshotV1;
   const slug = r.slug as string;
-  const homeRecordId = r.id as string;
+  const propertyRecordId = r.id as string;
   const hasPdf = Boolean(r.pdf_path);
   const hasZip = Boolean(r.zip_path);
 
@@ -712,15 +718,15 @@ export async function emailHomeRecordAction(
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.heyhenry.io';
-  const webUrl = `${baseUrl}/home-record/${slug}`;
-  const pdfUrl = `${baseUrl}/home-record/${slug}/download`;
-  const zipUrl = `${baseUrl}/home-record/${slug}/download-zip`;
+  const webUrl = `${baseUrl}/property-record/${slug}`;
+  const pdfUrl = `${baseUrl}/property-record/${slug}/download`;
+  const zipUrl = `${baseUrl}/property-record/${slug}/download-zip`;
 
   const customerFirstName = (snapshot.customer.name ?? '').split(/\s+/)[0] || 'there';
   const projectName = snapshot.project.name;
   const contractor = snapshot.contractor.name;
 
-  const subject = `Your Home Record for ${projectName}`;
+  const subject = `Your Property Record for ${projectName}`;
 
   // Through the shared email shell (Paper accent via COLOR_ACCENT, GC logo +
   // "Sent via HeyHenry" footer, CASL footer key) — replaces the old hand-
@@ -745,7 +751,7 @@ export async function emailHomeRecordAction(
 
   const bodyHtml = [
     `<p style="margin: 0 0 14px;">Hi ${escapeHtml(customerFirstName)},</p>`,
-    `<p style="margin: 0 0 14px;">Your Home Record is ready — a permanent record of your project. Phases, photos (including everything we photographed behind the walls), paint codes, fixtures, warranties, and the change orders we worked through together.</p>`,
+    `<p style="margin: 0 0 14px;">Your Property Record is ready — a permanent record of your project. Phases, photos (including everything we photographed behind the walls), paint codes, fixtures, warranties, and the change orders we worked through together.</p>`,
     `<p style="margin: 0 0 4px;">Save it somewhere safe — you'll want it for repairs, insurance, future renovations, or whenever you sell.</p>`,
     extraLinks.join('\n'),
     `<p style="margin: 16px 0 0; font-size: 13px; color: #666;">The web link works forever and stays current. The PDF and ZIP are dated snapshots — feel free to download them now and tuck them somewhere offline.</p>`,
@@ -754,12 +760,12 @@ export async function emailHomeRecordAction(
     .join('\n');
 
   const html = renderEmailShell({
-    heading: `Your Home Record — ${projectName}`,
+    heading: `Your Property Record — ${projectName}`,
     body: bodyHtml,
-    cta: { label: 'Open your Home Record', href: webUrl },
+    cta: { label: 'Open your Property Record', href: webUrl },
     signoff: `Thanks again — ${contractor}`,
     brandingLogoHtml: brandingLogoHtml(branding.logoUrl, branding.businessName),
-    footerKey: 'home_record',
+    footerKey: 'property_record',
   });
 
   const { sendEmail } = await import('@/lib/email/send');
@@ -769,18 +775,18 @@ export async function emailHomeRecordAction(
     html,
     tenantId: tenant.id,
     caslCategory: 'transactional',
-    relatedType: 'home_record',
-    relatedId: homeRecordId,
-    caslEvidence: { kind: 'home_record_share', homeRecordId },
+    relatedType: 'property_record',
+    relatedId: propertyRecordId,
+    caslEvidence: { kind: 'property_record_share', propertyRecordId },
   });
   if (!result.ok) {
     return { ok: false, error: result.error ?? 'Email send failed.' };
   }
 
   await supabase
-    .from('home_records')
+    .from('property_records')
     .update({ emailed_at: new Date().toISOString(), emailed_to: to })
-    .eq('id', homeRecordId);
+    .eq('id', propertyRecordId);
 
   revalidatePath(`/projects/${projectId}`);
   return { ok: true, emailedTo: to };

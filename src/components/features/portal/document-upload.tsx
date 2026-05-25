@@ -108,7 +108,7 @@ export function DocumentUpload({
         <h3 className="text-sm font-semibold">Upload document</h3>
         <p className="text-xs text-muted-foreground">
           Contracts, permits, warranties, manuals, inspections — your client sees them on their
-          portal and they roll into the Home Record.
+          portal and they roll into the Property Record.
         </p>
       </div>
 
