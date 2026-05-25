@@ -67,16 +67,17 @@ import type { AppliedChangeOrderContribution } from '@/lib/db/queries/change-ord
 import type { CostLineActualsSummary } from '@/lib/db/queries/cost-line-actuals';
 import type { CostLineRow } from '@/lib/db/queries/cost-lines';
 import type { MaterialsCatalogRow } from '@/lib/db/queries/materials-catalog';
-import type { BudgetLine } from '@/lib/db/queries/project-budget-categories';
+import type { BudgetLine, BudgetSection } from '@/lib/db/queries/project-budget-categories';
 import { withFrom } from '@/lib/nav/from-link';
 import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import {
   addBudgetCategoryAction,
+  createBudgetSectionAction,
   removeBudgetCategoryAction,
-  renameSectionAction,
   reorderBudgetCategoriesAction,
   updateBudgetCategoryAction,
+  updateBudgetSectionAction,
 } from '@/server/actions/project-budget-categories';
 import { deleteCostLineAction } from '@/server/actions/project-cost-control';
 import { CostLineForm } from './cost-line-form';
@@ -94,6 +95,20 @@ type BudgetCategoriesTableProps = {
   /** Authoring posture (planning) → expanded; execution (active+) → collapsed. */
   defaultExpanded?: boolean;
   headerActions?: React.ReactNode;
+  /**
+   * All sections for the project in render order (incl. EMPTY ones). When
+   * provided, drives section order + lets newly-created empty sections render
+   * before any category lands in them. When omitted, section order is derived
+   * from the lines' own `section_entity` (empty sections won't show until a
+   * reload that includes them).
+   */
+  sections?: BudgetSection[];
+};
+
+/** A section header descriptor the table renders, with its member lines. */
+type SectionGroup = {
+  entity: BudgetSection;
+  lines: BudgetLine[];
 };
 
 /** spent/committed/over segments on a basis of max(estimate, spent+committed). */
@@ -170,6 +185,7 @@ export function BudgetCategoriesTable({
   actualsByLineId = {},
   defaultExpanded = true,
   headerActions,
+  sections: sectionsProp,
 }: BudgetCategoriesTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -180,7 +196,22 @@ export function BudgetCategoriesTable({
   const [expanded, setExpanded] = useState<Set<string>>(() =>
     defaultExpanded ? new Set(lines.map((l) => l.budget_category_id)) : new Set(),
   );
-  const allSections = useMemo(() => Array.from(new Set(lines.map((l) => l.section))), [lines]);
+  // Section render order. Prefer the explicit `sections` prop (includes empty
+  // sections); otherwise derive from the lines' section entities, ordered by
+  // sort_order with "Other" (sort_order Infinity) last.
+  const orderedSectionEntities = useMemo<BudgetSection[]>(() => {
+    if (sectionsProp) return sectionsProp;
+    const byKey = new Map<string, BudgetSection>();
+    for (const l of lines) {
+      const key = l.section_entity.id ?? '__other__';
+      if (!byKey.has(key)) byKey.set(key, l.section_entity);
+    }
+    return Array.from(byKey.values()).sort((a, b) => a.sort_order - b.sort_order);
+  }, [sectionsProp, lines]);
+  const allSections = useMemo(
+    () => orderedSectionEntities.map((s) => s.name),
+    [orderedSectionEntities],
+  );
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() =>
     defaultExpanded ? new Set() : new Set(allSections),
   );
@@ -194,6 +225,10 @@ export function BudgetCategoriesTable({
   const [addCategoryForSection, setAddCategoryForSection] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState<string | null>(null);
   const [editSectionValue, setEditSectionValue] = useState('');
+  // Inline section-description editing, keyed by section id. "Other" (id null)
+  // is synthetic and has no description.
+  const [editingSectionDescId, setEditingSectionDescId] = useState<string | null>(null);
+  const [editSectionDescValue, setEditSectionDescValue] = useState('');
   const [isPending, startTransition] = useTransition();
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
   const router = useRouter();
@@ -217,7 +252,7 @@ export function BudgetCategoriesTable({
     if (focusLine) {
       setCollapsedSections((prev) => {
         const next = new Set(prev);
-        next.delete(focusLine.section);
+        next.delete(focusLine.section_entity.name);
         return next;
       });
       setExpanded((prev) => new Set(prev).add(focusCategoryId));
@@ -234,22 +269,46 @@ export function BudgetCategoriesTable({
     setLocalOrder(null);
   }, [lines]);
 
+  // Section entity lookup by name, so an optimistic drag (which carries only
+  // the target section NAME) can re-point a line's section_entity for grouping.
+  const sectionEntityByName = useMemo(() => {
+    const m = new Map<string, BudgetSection>();
+    for (const s of orderedSectionEntities) m.set(s.name, s);
+    return m;
+  }, [orderedSectionEntities]);
+
   const orderedLines = useMemo(() => {
     if (!localOrder) return lines;
     const byId = new Map(lines.map((l) => [l.budget_category_id, l]));
     return localOrder
       .map((o) => {
         const orig = byId.get(o.id);
-        return orig ? { ...orig, section: o.section } : null;
+        if (!orig) return null;
+        const entity = sectionEntityByName.get(o.section) ?? orig.section_entity;
+        return { ...orig, section: o.section, section_entity: entity };
       })
       .filter((x): x is BudgetLine => x !== null);
-  }, [lines, localOrder]);
+  }, [lines, localOrder, sectionEntityByName]);
 
-  const sections = new Map<string, BudgetLine[]>();
+  // Group lines by section entity, then emit groups in render order. Empty
+  // sections (from the `sections` prop) still get a group so they render.
+  const linesBySectionName = new Map<string, BudgetLine[]>();
   for (const line of orderedLines) {
-    const arr = sections.get(line.section) ?? [];
+    const key = line.section_entity.name;
+    const arr = linesBySectionName.get(key) ?? [];
     arr.push(line);
-    sections.set(line.section, arr);
+    linesBySectionName.set(key, arr);
+  }
+  const sectionGroups: SectionGroup[] = orderedSectionEntities.map((entity) => ({
+    entity,
+    lines: linesBySectionName.get(entity.name) ?? [],
+  }));
+  // Defensive: any section name present on a line but missing from the
+  // ordered-entity list (shouldn't happen, but keeps lines from vanishing).
+  for (const [name, groupLines] of linesBySectionName) {
+    if (!orderedSectionEntities.some((s) => s.name === name)) {
+      sectionGroups.push({ entity: groupLines[0].section_entity, lines: groupLines });
+    }
   }
 
   const dndSensors = useSensors(
@@ -264,7 +323,10 @@ export function BudgetCategoriesTable({
     const overId = String(over.id);
     if (activeId === overId) return;
 
-    const flat = orderedLines.map((l) => ({ id: l.budget_category_id, section: l.section }));
+    const flat = orderedLines.map((l) => ({
+      id: l.budget_category_id,
+      section: l.section_entity.name,
+    }));
     const fromIdx = flat.findIndex((r) => r.id === activeId);
     if (fromIdx === -1) return;
 
@@ -449,7 +511,7 @@ export function BudgetCategoriesTable({
     });
   }
 
-  const sectionEntries = Array.from(sections.entries());
+  const sectionEntries = sectionGroups;
   const categoryCount = lines.length;
   // State-aware expand/collapse: if every section is collapsed (and nothing is
   // expanded), the only useful action is "Expand all"; otherwise "Collapse all".
@@ -511,7 +573,8 @@ export function BudgetCategoriesTable({
               <span className="text-right">Remaining</span>
             </div>
 
-            {sectionEntries.map(([section, sectionLines]) => {
+            {sectionEntries.map(({ entity, lines: sectionLines }) => {
+              const section = entity.name;
               const collapsed = collapsedSections.has(section);
               const estimate = sectionLines.reduce((s, l) => s + l.estimate_cents, 0);
               const spent = sectionLines.reduce((s, l) => s + l.actual_cents, 0);
@@ -525,9 +588,12 @@ export function BudgetCategoriesTable({
                   l.actual_cents + l.committed_cents > l.estimate_cents,
               );
               const isRenaming = editingSectionName === section;
+              // "Other" (id null) is synthetic — no entity to rename/describe.
+              const isRealSection = entity.id !== null;
+              const isEditingDesc = isRealSection && editingSectionDescId === entity.id;
 
               return (
-                <SectionDroppable key={section} section={section}>
+                <SectionDroppable key={entity.id ?? '__other__'} section={section}>
                   {/* Section row */}
                   <div className={cn(GRID, 'border-b px-3 py-2.5 hover:bg-[#FFFCF7]')}>
                     <button
@@ -543,87 +609,157 @@ export function BudgetCategoriesTable({
                         <ChevronDown className="size-4" />
                       )}
                     </button>
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      {isRenaming ? (
-                        <Input
-                          className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.08em]"
-                          value={editSectionValue}
-                          onChange={(e) => setEditSectionValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === 'Escape') {
-                              if (e.key === 'Enter') {
-                                const t = editSectionValue.trim();
-                                if (t && t !== section) {
-                                  startTransition(async () => {
-                                    const r = await renameSectionAction({
-                                      project_id: projectId,
-                                      old_name: section,
-                                      new_name: t,
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        {isRenaming ? (
+                          <Input
+                            className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.08em]"
+                            value={editSectionValue}
+                            onChange={(e) => setEditSectionValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === 'Escape') {
+                                if (e.key === 'Enter') {
+                                  const t = editSectionValue.trim();
+                                  if (t && t !== section && entity.id) {
+                                    startTransition(async () => {
+                                      const r = await updateBudgetSectionAction({
+                                        id: entity.id as string,
+                                        project_id: projectId,
+                                        name: t,
+                                      });
+                                      if (!r.ok) toast.error(r.error);
                                     });
-                                    if (!r.ok) toast.error(r.error);
-                                  });
+                                  }
                                 }
+                                setEditingSectionName(null);
                               }
-                              setEditingSectionName(null);
-                            }
-                          }}
-                          onBlur={() => setEditingSectionName(null)}
-                          autoFocus
-                          disabled={isPending}
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => toggleSection(section)}
-                          className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-foreground"
-                        >
-                          {section}
-                        </button>
-                      )}
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        {sectionLines.length} categor{sectionLines.length === 1 ? 'y' : 'ies'}
-                      </span>
-                      {!isRenaming ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditSectionValue(section);
-                            setEditingSectionName(section);
-                          }}
-                          aria-label={`Rename ${section}`}
-                          className="rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground"
-                        >
-                          <Pencil className="size-3" />
-                        </button>
+                            }}
+                            onBlur={() => setEditingSectionName(null)}
+                            autoFocus
+                            disabled={isPending}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => toggleSection(section)}
+                            className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-foreground"
+                          >
+                            {section}
+                          </button>
+                        )}
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          {sectionLines.length} categor{sectionLines.length === 1 ? 'y' : 'ies'}
+                        </span>
+                        {!isRenaming && isRealSection ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditSectionValue(section);
+                              setEditingSectionName(section);
+                            }}
+                            aria-label={`Rename ${section}`}
+                            className="rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground"
+                          >
+                            <Pencil className="size-3" />
+                          </button>
+                        ) : null}
+                        {/* Collapsed summary chips */}
+                        {collapsed
+                          ? overCats.map((l) => (
+                              <span
+                                key={l.budget_category_id}
+                                className={cn(
+                                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                                  statusToneClass.danger,
+                                )}
+                              >
+                                {l.budget_category_name} over{' '}
+                                <Money cents={l.actual_cents - l.estimate_cents} />
+                              </span>
+                            ))
+                          : null}
+                        {collapsed
+                          ? projOverCats.map((l) => (
+                              <span
+                                key={l.budget_category_id}
+                                className={cn(
+                                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                                  statusToneClass.warning,
+                                )}
+                              >
+                                {l.budget_category_name} projected over
+                              </span>
+                            ))
+                          : null}
+                      </div>
+                      {/* Inline section description — same pattern as the category
+                        description. Stored as plain text/markdown in
+                        description_md. Only real sections (not "Other"). */}
+                      {isRealSection ? (
+                        isEditingDesc ? (
+                          <Textarea
+                            className="min-h-[3.5rem] resize-y text-xs"
+                            rows={2}
+                            value={editSectionDescValue}
+                            onChange={(e) => setEditSectionDescValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                const id = entity.id as string;
+                                startTransition(async () => {
+                                  const r = await updateBudgetSectionAction({
+                                    id,
+                                    project_id: projectId,
+                                    description_md: editSectionDescValue.trim(),
+                                  });
+                                  if (r.ok) {
+                                    toast.success('Section description updated');
+                                    setEditingSectionDescId(null);
+                                  } else toast.error(r.error);
+                                });
+                              }
+                              if (e.key === 'Escape') setEditingSectionDescId(null);
+                            }}
+                            onBlur={() => {
+                              const id = entity.id as string;
+                              startTransition(async () => {
+                                const r = await updateBudgetSectionAction({
+                                  id,
+                                  project_id: projectId,
+                                  description_md: editSectionDescValue.trim(),
+                                });
+                                if (r.ok) setEditingSectionDescId(null);
+                                else toast.error(r.error);
+                              });
+                            }}
+                            placeholder="Section description. Enter to save, Shift+Enter for new line."
+                            autoFocus
+                          />
+                        ) : entity.description_md ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditSectionDescValue(entity.description_md ?? '');
+                              setEditingSectionDescId(entity.id);
+                            }}
+                            title={entity.description_md}
+                            className="line-clamp-1 text-left text-[11px] text-muted-foreground/80 hover:text-foreground"
+                          >
+                            {entity.description_md}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditSectionDescValue('');
+                              setEditingSectionDescId(entity.id);
+                            }}
+                            className="w-fit text-left text-[11px] text-muted-foreground/50 hover:text-foreground"
+                          >
+                            + Add description
+                          </button>
+                        )
                       ) : null}
-                      {/* Collapsed summary chips */}
-                      {collapsed
-                        ? overCats.map((l) => (
-                            <span
-                              key={l.budget_category_id}
-                              className={cn(
-                                'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
-                                statusToneClass.danger,
-                              )}
-                            >
-                              {l.budget_category_name} over{' '}
-                              <Money cents={l.actual_cents - l.estimate_cents} />
-                            </span>
-                          ))
-                        : null}
-                      {collapsed
-                        ? projOverCats.map((l) => (
-                            <span
-                              key={l.budget_category_id}
-                              className={cn(
-                                'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
-                                statusToneClass.warning,
-                              )}
-                            >
-                              {l.budget_category_name} projected over
-                            </span>
-                          ))
-                        : null}
                     </div>
                     <span className="text-right text-sm font-medium">
                       <Money cents={estimate} />
@@ -1291,19 +1427,12 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
  * Inline add form — Paper card. Two kinds, never ambiguous (header bar +
  * kind badge):
  *
- *   - `section`: name the new section + its first category (a section can't
- *     exist empty in today's model — see DATA-MODEL NOTE).
+ *   - `section`: a true minimal form — Name + Description only. Sections are a
+ *     real entity (project_budget_sections) now, so an empty section persists;
+ *     categories get added inside it afterward.
  *   - `category`: Name + Section (pick existing / new) + Estimate +
  *     Description. With `lockedSection` (the contextual foot-of-section
  *     variant) the Section picker is hidden and pre-filled.
- *
- * DATA-MODEL NOTE: there is no sections table yet — `section` is a free-text
- * field on each category, so a section with zero categories cannot persist.
- * "Add section" therefore collects the section name AND its first (operator-
- * named) category, creating both in one write — no phantom placeholder rows.
- * A dedicated `project_budget_sections` entity (mirroring the existing
- * `project_customer_sections`) is the planned clean fix; once it lands this
- * form becomes a true section-only minimal form.
  */
 function AddBudgetCategoryForm({
   projectId,
@@ -1324,9 +1453,6 @@ function AddBudgetCategoryForm({
 }) {
   const isSection = kind === 'section';
   const [name, setName] = useState('');
-  // Section mode: the new section's first category (no empty sections in the
-  // current model — see DATA-MODEL NOTE).
-  const [firstCategory, setFirstCategory] = useState('');
   const initialIsCustom = !lockedSection && (isSection || existingSections.length === 0);
   const [section, setSection] = useState(
     lockedSection ?? (initialIsCustom ? '' : (existingSections[0] ?? '')),
@@ -1344,22 +1470,14 @@ function AddBudgetCategoryForm({
     }
 
     if (isSection) {
-      // A section can't exist without a category in today's model, so create
-      // the section by writing its first (operator-named) category — no
-      // phantom placeholder.
-      const cat = firstCategory.trim();
-      if (!cat) {
-        toast.error('Add a first category to create the section.');
-        return;
-      }
-      const estimate_cents = Math.round(parseFloat(estimate || '0') * 100);
+      // Sections are a real entity now — create an EMPTY one (Name +
+      // Description). No first-category requirement; categories get added
+      // inside it after.
       startTransition(async () => {
-        const r = await addBudgetCategoryAction({
+        const r = await createBudgetSectionAction({
           project_id: projectId,
-          name: cat,
-          section: name.trim(),
-          estimate_cents,
-          description: description.trim() || undefined,
+          name: name.trim(),
+          description_md: description.trim() || undefined,
         });
         if (r.ok) {
           toast.success('Section created');
@@ -1405,7 +1523,7 @@ function AddBudgetCategoryForm({
         </span>
         <span className="ml-auto font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
           {isSection ? (
-            'Name it + its first category'
+            'Name + description'
           ) : lockedSection ? (
             <>
               In <strong className="font-bold text-foreground/80">{lockedSection}</strong>
@@ -1418,7 +1536,13 @@ function AddBudgetCategoryForm({
 
       {/* Fields */}
       <div className="px-4 pt-4 pb-1">
-        <div className={cn('grid grid-cols-1 gap-3.5 sm:grid-cols-[2fr_1.4fr_1.1fr]')}>
+        <div
+          className={cn(
+            'grid grid-cols-1 gap-3.5',
+            // Section mode: just a name. Category mode: name + section + estimate.
+            !isSection && 'sm:grid-cols-[2fr_1.4fr_1.1fr]',
+          )}
+        >
           <div className="flex min-w-0 flex-col gap-1.5">
             <label
               htmlFor="add-cat-name"
@@ -1436,43 +1560,7 @@ function AddBudgetCategoryForm({
             />
           </div>
 
-          {isSection ? (
-            <>
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <label
-                  htmlFor="add-section-first-cat"
-                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
-                >
-                  First category <span className="text-brand">*</span>
-                </label>
-                <Input
-                  id="add-section-first-cat"
-                  value={firstCategory}
-                  onChange={(e) => setFirstCategory(e.target.value)}
-                  placeholder="e.g. Furnace & ductwork"
-                  required
-                />
-              </div>
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <label
-                  htmlFor="add-section-estimate"
-                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
-                >
-                  Estimate{' '}
-                  <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
-                </label>
-                <Input
-                  id="add-section-estimate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={estimate}
-                  onChange={(e) => setEstimate(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-            </>
-          ) : (
+          {isSection ? null : (
             <>
               <div className="flex min-w-0 flex-col gap-1.5">
                 <label
@@ -1578,7 +1666,7 @@ function AddBudgetCategoryForm({
       <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-dashed bg-[#FCFAF4] px-4 py-3">
         <span className="text-xs text-muted-foreground">
           {isSection
-            ? 'A section groups related categories. It needs a first category to start — add more inside it after.'
+            ? 'A section groups related categories. Create it empty, then add categories inside it.'
             : 'A category is a budget line item under a section. GST applied at the project level.'}
         </span>
         <span className="flex-1" />
