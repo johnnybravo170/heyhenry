@@ -15,19 +15,51 @@ export type BudgetCategoryRow = {
   tenant_id: string;
   name: string;
   section: string;
+  /**
+   * FK to project_budget_sections — the authoritative grouping key on the
+   * budget page. Nullable: categories not yet linked group under "Other".
+   * The legacy `section` string is kept in sync by a DB trigger for readers
+   * not yet migrated off it.
+   */
+  section_id: string | null;
   description: string | null;
   estimate_cents: number;
   display_order: number;
   is_visible_in_report: boolean;
   created_at: string;
   updated_at: string;
+  /** Joined section entity (null when section_id is null). */
+  section_row: {
+    id: string;
+    name: string;
+    sort_order: number;
+    description_md: string | null;
+  } | null;
+};
+
+/** The section entity carried alongside each budget line for grouping. */
+export type BudgetSection = {
+  /** null id = the synthetic "Other" bucket for unlinked categories. */
+  id: string | null;
+  name: string;
+  sort_order: number;
+  description_md: string | null;
 };
 
 export type BudgetLine = {
   budget_category_id: string;
   budget_category_name: string;
   budget_category_description: string | null;
+  /**
+   * Legacy denormalized section name. Still present for any consumer keying
+   * on the string; the budget page groups by the `section_entity` below.
+   */
   section: string;
+  /**
+   * Authoritative section grouping for the budget page. id is null for
+   * categories with no section_id (rendered under "Other").
+   */
+  section_entity: BudgetSection;
   estimate_cents: number;
   labor_cents: number;
   expense_cents: number;
@@ -61,6 +93,12 @@ export type BudgetLine = {
 
 export type BudgetSummary = {
   lines: BudgetLine[];
+  /**
+   * Sections in render order (project_budget_sections.sort_order), with the
+   * synthetic "Other" bucket (id null) last when any unlinked category
+   * exists. Empty sections (no categories) ARE included so they render.
+   */
+  sections: BudgetSection[];
   total_estimate_cents: number;
   total_actual_cents: number;
   total_committed_cents: number;
@@ -72,7 +110,9 @@ export const listBudgetCategoriesForProject = cache(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('project_budget_categories')
-      .select('*')
+      .select(
+        '*, section_row:project_budget_sections!section_id(id, name, sort_order, description_md)',
+      )
       .eq('project_id', projectId)
       .order('display_order', { ascending: true })
       .order('name', { ascending: true });
@@ -84,11 +124,44 @@ export const listBudgetCategoriesForProject = cache(
   },
 );
 
+/**
+ * All sections for a project in render order. Includes EMPTY sections (no
+ * categories) so they still render on the budget page now that sections are
+ * a real entity.
+ */
+export const listBudgetSectionsForProject = cache(
+  async (projectId: string): Promise<BudgetSection[]> => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('project_budget_sections')
+      .select('id, name, sort_order, description_md')
+      .eq('project_id', projectId)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to list sections: ${error.message}`);
+    }
+    return (data ?? []) as BudgetSection[];
+  },
+);
+
 export async function getBudgetVsActual(projectId: string): Promise<BudgetSummary> {
   const supabase = await createClient();
 
-  // 1. Load all categories for this project
-  const categories = await listBudgetCategoriesForProject(projectId);
+  // 1. Load all categories + all sections (incl. empty) for this project.
+  const [categories, allSections] = await Promise.all([
+    listBudgetCategoriesForProject(projectId),
+    listBudgetSectionsForProject(projectId),
+  ]);
+
+  // Synthetic bucket for categories with no section_id.
+  const OTHER: BudgetSection = {
+    id: null,
+    name: 'Other',
+    sort_order: Infinity,
+    description_md: null,
+  };
 
   // 2. Load time entries for this project, grouped by budget_category_id
   const { data: timeData, error: timeErr } = await supabase
@@ -261,11 +334,20 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
     // where envelope and lines could disagree on the same screen.
     const lines_total_cents = linesByBudgetCategory.get(b.id) ?? 0;
     const estimate_cents = lines_total_cents > 0 ? lines_total_cents : b.estimate_cents;
+    const section_entity: BudgetSection = b.section_row
+      ? {
+          id: b.section_row.id,
+          name: b.section_row.name,
+          sort_order: b.section_row.sort_order,
+          description_md: b.section_row.description_md,
+        }
+      : OTHER;
     return {
       budget_category_id: b.id,
       budget_category_name: b.name,
       budget_category_description: b.description,
       section: b.section,
+      section_entity,
       estimate_cents,
       labor_cents,
       expense_cents,
@@ -285,8 +367,21 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
   const total_actual_cents = lines.reduce((sum, l) => sum + l.actual_cents, 0);
   const total_committed_cents = lines.reduce((sum, l) => sum + l.committed_cents, 0);
 
+  // Section render order: real sections by sort_order (incl. empty ones),
+  // then the synthetic "Other" bucket last iff any unlinked category exists.
+  const sections: BudgetSection[] = allSections.map((s) => ({
+    id: s.id,
+    name: s.name,
+    sort_order: s.sort_order,
+    description_md: s.description_md,
+  }));
+  if (lines.some((l) => l.section_entity.id === null)) {
+    sections.push(OTHER);
+  }
+
   return {
     lines,
+    sections,
     total_estimate_cents,
     total_actual_cents,
     total_committed_cents,
