@@ -1,4 +1,4 @@
-> **⚠ RETIRED — 2026-05-25.** Superseded by the HeyHenry Command Center (`daily-board-triage.md`), which produces the single daily digest. **Do not schedule this routine.** Kept for reference only.
+> **Role (2026-05-25): the weekly RECORD + fleet-health watch — complementary to the daily Command Center (`daily-board-triage.md`), not superseded by it.** The Command Center is *daily forward triage* (what needs Jonathan now); you are the *weekly backward record* — the arc of the week + agent health, written to Worklog + Knowledge for catch-up and future-agent memory. **You never email Jonathan** (your output is the silent record). Keep this lane distinct; do not duplicate the Command Center's triage.
 
 # Weekly Dispatcher Routine
 
@@ -69,7 +69,7 @@ Call `worklog_add` with:
 Pull from the agents-dashboard surface — call `agents_list({ limit: 100 })` and the underlying agent_runs (via `ops_graph_lookup` if you need detail). Surface:
 - Any agent with `latest_outcome = "failure"` in the last 7 days — list slug + the error summary, link `/agents/<slug>`.
 - Any agent with `computed_status = "stale"` — silent agents are bad agents. Link.
-- Any active agent that ran every day but produced `items_acted = 0` for every run all week — agent is alive but useless this week. List with `→ check the prompt`.
+- Any active agent that ran every day but produced no useful output all week — list with `→ check the prompt`. NOTE: the *collector* scouts (business-scout, marketing-strategist, ai-tools-scout, competitive-research, pain-points-research) are healthy if they're feeding their pool/surface, even though they no longer email or "act" on ideas directly — judge them on collection, not `items_acted = 0`.
 - If everything is green: `"All agents green."` Don't pad — green is a valid summary.
 
 ## Narrative thread
