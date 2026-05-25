@@ -7,6 +7,7 @@
  * `tools/list`.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { registerAdminSqlTools } from './admin_sql';
 import { registerAgentTools } from './agents';
 import { registerCompetitorTools } from './competitors';
 import type { McpToolCtx } from './context';
@@ -82,6 +83,9 @@ export function registerScopedTools(server: McpServer, ctx: McpToolCtx) {
   }
   if (any(ctx.scopes, 'read:message_lab', 'write:message_lab')) {
     registerMessageLabTools(server, ctx);
+  }
+  if (any(ctx.scopes, 'read:db')) {
+    registerAdminSqlTools(server, ctx);
   }
 
   // Meta tools (memory guide + cross-surface lookup + activity digest).
