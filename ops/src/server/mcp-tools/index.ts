@@ -10,6 +10,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerAgentTools } from './agents';
 import { registerCompetitorTools } from './competitors';
 import type { McpToolCtx } from './context';
+import { registerDecisionBundleTools } from './decision_bundles';
 import { registerDecisionTools } from './decisions';
 import { registerDocsTools } from './docs';
 import { registerEmailTools } from './email';
@@ -63,6 +64,9 @@ export function registerScopedTools(server: McpServer, ctx: McpToolCtx) {
   }
   if (any(ctx.scopes, 'read:decisions', 'write:decisions')) {
     registerDecisionTools(server, ctx);
+  }
+  if (any(ctx.scopes, 'read:decision_bundles', 'write:decision_bundles')) {
+    registerDecisionBundleTools(server, ctx);
   }
   if (any(ctx.scopes, 'read:review_queue')) {
     registerReviewQueueTools(server, ctx);
