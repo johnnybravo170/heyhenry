@@ -1291,18 +1291,19 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
  * Inline add form — Paper card. Two kinds, never ambiguous (header bar +
  * kind badge):
  *
- *   - `section`: minimal — a section is a CONTAINER (no estimate, no parent
- *     picker). Name + optional Description only.
- *   - `category`: fuller — Name + Section (pick existing / new) + Estimate +
+ *   - `section`: name the new section + its first category (a section can't
+ *     exist empty in today's model — see DATA-MODEL NOTE).
+ *   - `category`: Name + Section (pick existing / new) + Estimate +
  *     Description. With `lockedSection` (the contextual foot-of-section
  *     variant) the Section picker is hidden and pre-filled.
  *
- * DATA-MODEL NOTE: there is no sections table — `section` is a free-text
- * field on each category. A section with zero categories cannot persist.
- * So "Add section" creates the section by seeding ONE starter category
- * ("General") in it; the operator renames/adds from there. This is the
- * minimal honest UX against the existing `addBudgetCategoryAction` — no
- * backend/schema change.
+ * DATA-MODEL NOTE: there is no sections table yet — `section` is a free-text
+ * field on each category, so a section with zero categories cannot persist.
+ * "Add section" therefore collects the section name AND its first (operator-
+ * named) category, creating both in one write — no phantom placeholder rows.
+ * A dedicated `project_budget_sections` entity (mirroring the existing
+ * `project_customer_sections`) is the planned clean fix; once it lands this
+ * form becomes a true section-only minimal form.
  */
 function AddBudgetCategoryForm({
   projectId,
@@ -1323,6 +1324,9 @@ function AddBudgetCategoryForm({
 }) {
   const isSection = kind === 'section';
   const [name, setName] = useState('');
+  // Section mode: the new section's first category (no empty sections in the
+  // current model — see DATA-MODEL NOTE).
+  const [firstCategory, setFirstCategory] = useState('');
   const initialIsCustom = !lockedSection && (isSection || existingSections.length === 0);
   const [section, setSection] = useState(
     lockedSection ?? (initialIsCustom ? '' : (existingSections[0] ?? '')),
@@ -1335,23 +1339,30 @@ function AddBudgetCategoryForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error('Name is required');
+      toast.error(isSection ? 'Section name is required' : 'Name is required');
       return;
     }
 
     if (isSection) {
-      // No standalone section entity — seed a starter category so the
-      // section materializes (see DATA-MODEL NOTE above).
+      // A section can't exist without a category in today's model, so create
+      // the section by writing its first (operator-named) category — no
+      // phantom placeholder.
+      const cat = firstCategory.trim();
+      if (!cat) {
+        toast.error('Add a first category to create the section.');
+        return;
+      }
+      const estimate_cents = Math.round(parseFloat(estimate || '0') * 100);
       startTransition(async () => {
         const r = await addBudgetCategoryAction({
           project_id: projectId,
-          name: 'General',
+          name: cat,
           section: name.trim(),
-          estimate_cents: 0,
+          estimate_cents,
           description: description.trim() || undefined,
         });
         if (r.ok) {
-          toast.success('Section added');
+          toast.success('Section created');
           onDone();
         } else toast.error(r.error);
       });
@@ -1394,7 +1405,7 @@ function AddBudgetCategoryForm({
         </span>
         <span className="ml-auto font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
           {isSection ? (
-            'Rolls up its categories'
+            'Name it + its first category'
           ) : lockedSection ? (
             <>
               In <strong className="font-bold text-foreground/80">{lockedSection}</strong>
@@ -1407,18 +1418,13 @@ function AddBudgetCategoryForm({
 
       {/* Fields */}
       <div className="px-4 pt-4 pb-1">
-        <div
-          className={cn(
-            'grid grid-cols-1 gap-3.5',
-            isSection ? 'sm:grid-cols-2' : 'sm:grid-cols-[2fr_1.4fr_1.1fr]',
-          )}
-        >
+        <div className={cn('grid grid-cols-1 gap-3.5 sm:grid-cols-[2fr_1.4fr_1.1fr]')}>
           <div className="flex min-w-0 flex-col gap-1.5">
             <label
               htmlFor="add-cat-name"
               className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              Name <span className="text-brand">*</span>
+              {isSection ? 'Section name' : 'Name'} <span className="text-brand">*</span>
             </label>
             <Input
               id="add-cat-name"
@@ -1431,11 +1437,41 @@ function AddBudgetCategoryForm({
           </div>
 
           {isSection ? (
-            <div className="flex min-w-0 flex-col justify-end gap-1.5">
-              <span className="text-xs text-muted-foreground">
-                No estimate here — categories you add inside this section will roll up.
-              </span>
-            </div>
+            <>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <label
+                  htmlFor="add-section-first-cat"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  First category <span className="text-brand">*</span>
+                </label>
+                <Input
+                  id="add-section-first-cat"
+                  value={firstCategory}
+                  onChange={(e) => setFirstCategory(e.target.value)}
+                  placeholder="e.g. Furnace & ductwork"
+                  required
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <label
+                  htmlFor="add-section-estimate"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Estimate{' '}
+                  <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
+                </label>
+                <Input
+                  id="add-section-estimate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={estimate}
+                  onChange={(e) => setEstimate(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+            </>
           ) : (
             <>
               <div className="flex min-w-0 flex-col gap-1.5">
@@ -1542,7 +1578,7 @@ function AddBudgetCategoryForm({
       <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-dashed bg-[#FCFAF4] px-4 py-3">
         <span className="text-xs text-muted-foreground">
           {isSection
-            ? "Sections group related categories — they don't have an estimate of their own."
+            ? 'A section groups related categories. It needs a first category to start — add more inside it after.'
             : 'A category is a budget line item under a section. GST applied at the project level.'}
         </span>
         <span className="flex-1" />
