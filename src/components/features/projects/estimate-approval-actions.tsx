@@ -31,6 +31,7 @@ import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import {
   type ManualApprovalMethod,
@@ -126,14 +127,17 @@ export function EstimateApprovalActions({
         : status === 'declined'
           ? 'Declined'
           : 'Draft';
+  // Tokenized status tones (not raw hex) so the pill matches every other
+  // status pill in the app: Draft→neutral, Sent→info, Approved→success,
+  // Declined→danger.
   const statusToneCls =
     status === 'approved'
-      ? 'bg-[#DCFCE7] text-[#15803D]'
+      ? statusToneClass.success
       : status === 'pending_approval'
-        ? 'bg-[#E6EDFA] text-[#1E40AF]'
+        ? statusToneClass.info
         : status === 'declined'
-          ? 'bg-[#FEE2E2] text-[#B91C1C]'
-          : 'bg-[#ECE3D0] text-muted-foreground';
+          ? statusToneClass.danger
+          : statusToneClass.neutral;
   // Before approval you PREVIEW & SEND (primary); you bill AFTER approval, so
   // "Create invoice" is quiet/disabled until then. Once approved the primary
   // flips to "Create invoice from estimate".
