@@ -203,6 +203,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
         initialMode={
           ((p.customer_view_mode as CustomerViewMode | null) ?? 'detailed') as CustomerViewMode
         }
+        initialSummaryMd={(p.customer_summary_md as string | null) ?? null}
       />
 
       <div className="rounded-lg border bg-card p-6 shadow-sm">
