@@ -1,0 +1,141 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { createServiceClient } from '@/lib/supabase';
+import { jsonResult, type McpToolCtx, withAudit } from './context';
+
+const BUCKETS = ['decision', 'research', 'go_nogo', 'grooming'] as const;
+
+export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) {
+  server.tool(
+    'decision_bundles_list',
+    [
+      'List Command Center queue bundles (the /admin/queue backing store).',
+      'Use to dedup before drafting (is this card/idea already queued?) and to',
+      'find parked bundles whose resurface_trigger now matches the current stage.',
+      "Defaults to status='open'.",
+    ].join('\n'),
+    {
+      status: z.enum(['open', 'resolved', 'parked', 'archived']).default('open'),
+      bucket: z.enum(BUCKETS).optional(),
+      resurface_trigger: z.string().max(100).optional(),
+      limit: z.number().int().min(1).max(500).default(200),
+    },
+    withAudit(
+      ctx,
+      'decision_bundles_list',
+      'read:decision_bundles',
+      async ({ status, bucket, resurface_trigger, limit }) => {
+        const service = createServiceClient();
+        let q = service
+          .schema('ops')
+          .from('decision_bundles')
+          .select(
+            'id, dedup_key, card_id, related_type, bucket, question, options, recommendation, why_today, links, status, resurface_trigger, choice, rating, decision_id, surfaced_at, resolved_at',
+          )
+          .eq('status', status)
+          .order('surfaced_at', { ascending: false })
+          .limit(limit);
+        if (bucket) q = q.eq('bucket', bucket);
+        if (resurface_trigger) q = q.eq('resurface_trigger', resurface_trigger);
+        const { data, error } = await q;
+        if (error) throw new Error(error.message);
+        return jsonResult({ bundles: data ?? [] });
+      },
+    ),
+  );
+
+  server.tool(
+    'decision_bundles_upsert',
+    [
+      'Draft (or update) ONE Command Center queue item — your best thinking on a',
+      'thing that needs judgment, surfaced at /admin/queue for Jonathan to resolve.',
+      'READ + DRAFT only: never resolve on his behalf.',
+      '',
+      'Idempotent on `dedup_key` (use card:<uuid> | idea:<uuid> | theme:<slug>):',
+      '  • settled bundles (resolved/archived) are left untouched — never resurrect a',
+      '    decision Jonathan already made.',
+      '  • open/parked bundles are updated in place.',
+      '',
+      'bucket: decision | research | go_nogo | grooming.',
+      'options (decision/go_nogo): [{ key, label, blast_radius?, unblocks? }].',
+      'Set status=parked + resurface_trigger for good-but-premature research.',
+    ].join('\n'),
+    {
+      dedup_key: z.string().min(1).max(200),
+      bucket: z.enum(BUCKETS),
+      question: z.string().min(1).max(2000),
+      recommendation: z.string().max(20000).optional().nullable(),
+      why_today: z.string().max(2000).optional().nullable(),
+      options: z.array(z.record(z.string(), z.unknown())).max(10).optional().nullable(),
+      links: z.array(z.record(z.string(), z.unknown())).max(20).optional().nullable(),
+      card_id: z.string().uuid().optional().nullable(),
+      related_type: z.enum(['kanban', 'idea']).optional().nullable(),
+      status: z.enum(['open', 'parked']).default('open'),
+      resurface_trigger: z.string().max(100).optional().nullable(),
+    },
+    withAudit(ctx, 'decision_bundles_upsert', 'write:decision_bundles', async (input) => {
+      const service = createServiceClient();
+
+      const fields = {
+        bucket: input.bucket,
+        question: input.question,
+        recommendation: input.recommendation ?? null,
+        why_today: input.why_today ?? null,
+        options: input.options ?? null,
+        links: input.links ?? null,
+        card_id: input.card_id ?? null,
+        related_type: input.related_type ?? null,
+        status: input.status,
+        resurface_trigger: input.resurface_trigger ?? null,
+      };
+
+      const { data: existing } = await service
+        .schema('ops')
+        .from('decision_bundles')
+        .select('id, status')
+        .eq('dedup_key', input.dedup_key)
+        .maybeSingle();
+
+      if (existing && (existing.status === 'resolved' || existing.status === 'archived')) {
+        return jsonResult({ ok: true, id: existing.id, skipped: 'already settled' });
+      }
+
+      if (existing) {
+        const { data, error } = await service
+          .schema('ops')
+          .from('decision_bundles')
+          .update(fields)
+          .eq('id', existing.id)
+          .select('id')
+          .single();
+        if (error || !data) throw new Error(error?.message ?? 'Update failed');
+        return jsonResult({
+          ok: true,
+          id: data.id,
+          updated: true,
+          url: 'https://ops.heyhenry.io/admin/queue',
+        });
+      }
+
+      const { data, error } = await service
+        .schema('ops')
+        .from('decision_bundles')
+        .insert({
+          actor_type: 'agent',
+          actor_name: ctx.actorName,
+          key_id: ctx.keyId,
+          dedup_key: input.dedup_key,
+          ...fields,
+        })
+        .select('id')
+        .single();
+      if (error || !data) throw new Error(error?.message ?? 'Insert failed');
+      return jsonResult({
+        ok: true,
+        id: data.id,
+        created: true,
+        url: 'https://ops.heyhenry.io/admin/queue',
+      });
+    }),
+  );
+}

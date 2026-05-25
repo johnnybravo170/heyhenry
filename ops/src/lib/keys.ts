@@ -110,6 +110,8 @@ export type Scope =
   | 'write:ideas'
   | 'read:decisions'
   | 'write:decisions'
+  | 'read:decision_bundles'
+  | 'write:decision_bundles'
   | 'read:knowledge'
   | 'write:knowledge'
   | 'read:help_docs'
