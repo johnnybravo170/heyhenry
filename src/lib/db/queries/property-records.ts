@@ -1,10 +1,10 @@
 /**
- * Home Record queries + the canonical snapshot shape. Slice 6a of the
- * Customer Portal & Home Record build.
+ * Property Record queries + the canonical snapshot shape. Slice 6a of the
+ * Customer Portal & Property Record build.
  *
  * The snapshot is a denormalized copy of the project at close-out time,
  * plus contractor / customer / project header info. It powers the
- * permanent `/home-record/<slug>` page and (in Slice 6b/c) the PDF and
+ * permanent `/property-record/<slug>` page and (in Slice 6b/c) the PDF and
  * ZIP exports.
  *
  * Storage paths are stored as-is; URLs are re-signed at render time.
@@ -17,12 +17,12 @@ import type { PortalPhotoTag } from '@/lib/validators/portal-photo';
 import type { DocumentType } from '@/lib/validators/project-document';
 import type { SelectionCategory } from '@/lib/validators/project-selection';
 
-export type HomeRecordSnapshotV1 = {
+export type PropertyRecordSnapshotV1 = {
   version: 1;
   generated_at: string;
   /**
    * IANA timezone the contractor's tenant was set to at generation time.
-   * The Home Record is a permanent artifact — dates are rendered in the
+   * The Property Record is a permanent artifact — dates are rendered in the
    * tz that was active when the snapshot was frozen, so the document
    * doesn't shift if the contractor later relocates the business.
    *
@@ -52,7 +52,7 @@ export type HomeRecordSnapshotV1 = {
    * The operator-approved ✦ Henry closeout summary — a warm one-paragraph
    * project narrative that renders at the top of the public artifact as
    * plain prose (Henry is invisible client-side). NULL until the operator
-   * approves a draft ("Keep"); persisted on the home_records row so it
+   * approves a draft ("Keep"); persisted on the property_records row so it
    * survives regeneration (see migration 20260524015042). Optional for
    * backwards compatibility with snapshots written before that migration.
    */
@@ -115,11 +115,11 @@ export type HomeRecordSnapshotV1 = {
   }>;
 };
 
-export type HomeRecordRow = {
+export type PropertyRecordRow = {
   id: string;
   project_id: string;
   slug: string;
-  snapshot: HomeRecordSnapshotV1;
+  snapshot: PropertyRecordSnapshotV1;
   generated_at: string;
   pdf_path: string | null;
   zip_path: string | null;
@@ -135,16 +135,16 @@ export type HomeRecordRow = {
  * RLS-aware fetch — used by the operator's project detail page to know
  * whether a record exists yet ("Generate" vs "View / Regenerate").
  */
-export const getHomeRecordForProject = cache(
-  async (projectId: string): Promise<HomeRecordRow | null> => {
+export const getPropertyRecordForProject = cache(
+  async (projectId: string): Promise<PropertyRecordRow | null> => {
     const supabase = await createClient();
     const { data } = await supabase
-      .from('home_records')
+      .from('property_records')
       .select(
         'id, project_id, slug, snapshot, generated_at, pdf_path, zip_path, emailed_at, emailed_to, henry_summary, henry_summary_approved',
       )
       .eq('project_id', projectId)
       .maybeSingle();
-    return (data as unknown as HomeRecordRow) ?? null;
+    return (data as unknown as PropertyRecordRow) ?? null;
   },
 );

@@ -1,12 +1,12 @@
 /**
- * Server-side Home Record ZIP archive builder. Slice 6c of the Customer
- * Portal & Home Record build.
+ * Server-side Property Record ZIP archive builder. Slice 6c of the Customer
+ * Portal & Property Record build.
  *
  * Folder layout the homeowner unzips:
  *
  *   <Project name>/
  *     README.txt                — plain-text project summary + folder map
- *     home-record.pdf           — the branded PDF (if generated)
+ *     property-record.pdf           — the branded PDF (if generated)
  *     photos/
  *       before/
  *       progress/
@@ -34,7 +34,7 @@
 
 import { PassThrough } from 'node:stream';
 import archiver from 'archiver';
-import type { HomeRecordSnapshotV1 } from '@/lib/db/queries/home-records';
+import type { PropertyRecordSnapshotV1 } from '@/lib/db/queries/property-records';
 import { type PortalPhotoTag, portalPhotoTagLabels } from '@/lib/validators/portal-photo';
 import { type DocumentType, documentTypeLabels } from '@/lib/validators/project-document';
 import { selectionCategoryLabels } from '@/lib/validators/project-selection';
@@ -93,13 +93,13 @@ function formatDate(iso: string | null | undefined, tz: string): string {
   }).format(new Date(iso));
 }
 
-export function buildHomeRecordReadme(snapshot: HomeRecordSnapshotV1): string {
+export function buildPropertyRecordReadme(snapshot: PropertyRecordSnapshotV1): string {
   // Snapshots written before 2026-05-08 don't carry a timezone; default to
   // Vancouver. New snapshots always set it.
   const tz = snapshot.timezone ?? 'America/Vancouver';
   const fmt = (iso: string | null | undefined) => formatDate(iso, tz);
   const lines: string[] = [];
-  lines.push(`HOME RECORD — ${snapshot.project.name}`);
+  lines.push(`PROPERTY RECORD — ${snapshot.project.name}`);
   lines.push('='.repeat(Math.min(60, snapshot.project.name.length + 14)));
   lines.push('');
   lines.push(`Prepared by: ${snapshot.contractor.name}`);
@@ -158,7 +158,7 @@ export function buildHomeRecordReadme(snapshot: HomeRecordSnapshotV1): string {
 
   lines.push('Folder map');
   lines.push('----------');
-  lines.push('  home-record.pdf      — the branded handoff document');
+  lines.push('  property-record.pdf      — the branded handoff document');
   lines.push('  photos/              — every photo, organized by category');
   lines.push('    before/            — what your home looked like before');
   lines.push('    progress/          — work in progress');
@@ -174,8 +174,8 @@ export function buildHomeRecordReadme(snapshot: HomeRecordSnapshotV1): string {
   return lines.join('\n');
 }
 
-export async function generateHomeRecordZip(
-  snapshot: HomeRecordSnapshotV1,
+export async function generatePropertyRecordZip(
+  snapshot: PropertyRecordSnapshotV1,
   photos: ZipPhoto[],
   docs: ZipDoc[],
   pdfBytes: Buffer | null,
@@ -192,11 +192,11 @@ export async function generateHomeRecordZip(
     archive.pipe(passthrough);
 
     // README at the root.
-    archive.append(buildHomeRecordReadme(snapshot), { name: 'README.txt' });
+    archive.append(buildPropertyRecordReadme(snapshot), { name: 'README.txt' });
 
     // PDF if available.
     if (pdfBytes) {
-      archive.append(pdfBytes, { name: 'home-record.pdf' });
+      archive.append(pdfBytes, { name: 'property-record.pdf' });
     }
 
     // Photos by tag folder. A photo with multiple tags appears in each

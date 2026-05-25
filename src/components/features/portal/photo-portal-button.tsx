@@ -5,7 +5,7 @@
  * overlay (operator surfaces only). Opens a popover with multi-select
  * portal tag chips and a client-visible toggle.
  *
- * Slice 2 of the Customer Portal & Home Record build. Bulk-tag UI is
+ * Slice 2 of the Customer Portal & Property Record build. Bulk-tag UI is
  * out of scope for V1 — operator tags one photo at a time. The "On
  * portal" indicator dot on the trigger button shows at a glance which
  * photos are published.

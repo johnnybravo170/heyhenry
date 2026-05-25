@@ -55,7 +55,7 @@ export function PortalDocuments({
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Permanent files for your home — keep them somewhere safe. They&rsquo;ll all be in your
-          final Home Record at the end of the job too.
+          final Property Record at the end of the job too.
         </p>
       </div>
 

@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * Operator-side Home Record flow on the project Documents tab.
+ * Operator-side Property Record flow on the project Documents tab.
  *
  * Replaces the old six-button card with a 3-step generate → preview → send
  * state strip (PATTERNS §27) + a readiness line (Web link · PDF · ZIP). One
  * primary action per state:
- *   No record  → Generate Home Record (empty-state shape, PATTERNS §6)
+ *   No record  → Generate Property Record (empty-state shape, PATTERNS §6)
  *   Snapshot   → Preview & finish   (opens the preview drawer where formats build)
  *   Ready      → Email to client    (opens the send dialog)
  *   Sent       → Resend             (calm success strip)
@@ -62,13 +62,13 @@ import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import { formatDateTime } from '@/lib/date/format';
 import { cn } from '@/lib/utils';
 import {
-  draftHomeRecordSummaryAction,
-  emailHomeRecordAction,
-  generateHomeRecordAction,
-  generateHomeRecordPdfAction,
-  generateHomeRecordZipAction,
-  keepHomeRecordSummaryAction,
-} from '@/server/actions/home-records';
+  draftPropertyRecordSummaryAction,
+  emailPropertyRecordAction,
+  generatePropertyRecordAction,
+  generatePropertyRecordPdfAction,
+  generatePropertyRecordZipAction,
+  keepPropertyRecordSummaryAction,
+} from '@/server/actions/property-records';
 
 type Props = {
   projectId: string;
@@ -127,7 +127,7 @@ function ReadinessChip({
   );
 }
 
-export function HomeRecordFlow({
+export function PropertyRecordFlow({
   projectId,
   existingSlug,
   hasPdf,
@@ -157,19 +157,19 @@ export function HomeRecordFlow({
 
   function generate() {
     startGen(async () => {
-      const res = await generateHomeRecordAction(projectId);
+      const res = await generatePropertyRecordAction(projectId);
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
-      toast.success(existingSlug ? 'Home Record refreshed.' : 'Home Record generated.');
+      toast.success(existingSlug ? 'Property Record refreshed.' : 'Property Record generated.');
       setRegenOpen(false);
     });
   }
 
-  const viewUrl = existingSlug ? `/home-record/${existingSlug}` : '#';
-  const pdfUrl = existingSlug ? `/home-record/${existingSlug}/download` : '#';
-  const zipUrl = existingSlug ? `/home-record/${existingSlug}/download-zip` : '#';
+  const viewUrl = existingSlug ? `/property-record/${existingSlug}` : '#';
+  const pdfUrl = existingSlug ? `/property-record/${existingSlug}/download` : '#';
+  const zipUrl = existingSlug ? `/property-record/${existingSlug}/download-zip` : '#';
 
   // ── EMPTY ────────────────────────────────────────────────────────────
   if (state === 'empty') {
@@ -179,7 +179,7 @@ export function HomeRecordFlow({
           <FileText className="size-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">No Home Record yet.</p>
+          <p className="font-semibold">No Property Record yet.</p>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Assemble the finished job into one permanent package for your client — they keep the
             link forever for repairs, insurance, or the next reno.
@@ -191,7 +191,7 @@ export function HomeRecordFlow({
           ) : (
             <FileText className="size-4" />
           )}
-          Generate Home Record
+          Generate Property Record
         </Button>
       </div>
     );
@@ -201,7 +201,7 @@ export function HomeRecordFlow({
     <div className="space-y-3">
       {/* State strip — one lifecycle row, current step emphasized */}
       <section
-        aria-label="Home Record state"
+        aria-label="Property Record state"
         className={cn(
           'flex flex-col gap-3 rounded-lg border border-l-[3px] p-3 sm:flex-row sm:items-center sm:gap-4',
           state === 'snapshot' && 'border-l-brand bg-[var(--rust-soft)]',
@@ -349,7 +349,7 @@ export function HomeRecordFlow({
       <AlertDialog open={regenOpen} onOpenChange={setRegenOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Refresh this Home Record with the latest data?</AlertDialogTitle>
+            <AlertDialogTitle>Refresh this Property Record with the latest data?</AlertDialogTitle>
             <AlertDialogDescription>
               Pulls in photos, selections, decisions, and change orders added since the last
               generate. The link stays the same — anything already shared keeps working. You&apos;ll
@@ -370,7 +370,7 @@ export function HomeRecordFlow({
               ) : (
                 <RotateCw className="size-4" />
               )}
-              Refresh Home Record
+              Refresh Property Record
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -407,7 +407,7 @@ function PreviewDrawer({
 
   function buildPdf() {
     startPdf(async () => {
-      const res = await generateHomeRecordPdfAction(projectId);
+      const res = await generatePropertyRecordPdfAction(projectId);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -417,7 +417,7 @@ function PreviewDrawer({
   }
   function buildZip() {
     startZip(async () => {
-      const res = await generateHomeRecordZipAction(projectId);
+      const res = await generatePropertyRecordZipAction(projectId);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -427,7 +427,7 @@ function PreviewDrawer({
   }
   function regenSummary() {
     startDraft(async () => {
-      const res = await draftHomeRecordSummaryAction(projectId);
+      const res = await draftPropertyRecordSummaryAction(projectId);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -438,7 +438,7 @@ function PreviewDrawer({
   }
   function keepSummary() {
     startKeep(async () => {
-      const res = await keepHomeRecordSummaryAction(projectId, text);
+      const res = await keepPropertyRecordSummaryAction(projectId, text);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -664,7 +664,7 @@ function EmailDialog({
 
   function send() {
     startTransition(async () => {
-      const res = await emailHomeRecordAction(projectId, {
+      const res = await emailPropertyRecordAction(projectId, {
         overrideEmail: email !== defaultEmail ? email : undefined,
       });
       if (!res.ok) {
@@ -680,7 +680,7 @@ function EmailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Email Home Record to client</DialogTitle>
+          <DialogTitle>Email Property Record to client</DialogTitle>
           <DialogDescription>
             Sends a single email with the permanent web link
             {hasPdf ? ', the PDF download' : ''}

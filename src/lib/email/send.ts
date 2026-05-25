@@ -24,7 +24,7 @@ export type SendEmailRelatedType =
   | 'change_order'
   | 'invoice'
   | 'job'
-  | 'home_record'
+  | 'property_record'
   | 'billing'
   | 'auth'
   | 'team'

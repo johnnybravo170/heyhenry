@@ -5,6 +5,19 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [new URL('https://*.supabase.co/storage/**')],
   },
+  // The Property Record was formerly the "Home Record". Its public share
+  // links are a permanent contract — every record already emailed to a
+  // customer points at /home-record/<slug> (and /download, /download-zip).
+  // Permanently redirect the whole old subtree so no shared link ever 404s.
+  async redirects() {
+    return [
+      {
+        source: '/home-record/:path*',
+        destination: '/property-record/:path*',
+        permanent: true,
+      },
+    ];
+  },
   // The single `src/pages/api/henry/gemini-proxy.ts` route triggers Next's
   // pages-compat type augmentation in next-env.d.ts, which flips
   // useSearchParams/useParams/usePathname return types to nullable across

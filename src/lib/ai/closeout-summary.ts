@@ -18,9 +18,9 @@
  */
 
 import { gateway } from '@/lib/ai-gateway';
-import type { HomeRecordSnapshotV1 } from '@/lib/db/queries/home-records';
+import type { PropertyRecordSnapshotV1 } from '@/lib/db/queries/property-records';
 
-const CLOSEOUT_SUMMARY_SYSTEM_PROMPT = `You are Henry, an AI assistant writing on behalf of a residential renovation contractor. You're drafting the opening paragraph of a permanent "Home Record" — the closeout handoff document the client keeps forever.
+const CLOSEOUT_SUMMARY_SYSTEM_PROMPT = `You are Henry, an AI assistant writing on behalf of a residential renovation contractor. You're drafting the opening paragraph of a permanent "Property Record" — the closeout handoff document the client keeps forever.
 
 Write ONE warm, plain-language paragraph (3-6 sentences) that a homeowner reads as the first thing on the document. It should:
 - Tell the story of the project: what was done, the rooms/scope, a few notable materials or finishes by name.
@@ -44,7 +44,7 @@ const SUMMARY_MODEL = process.env.PHOTO_CLASSIFIER_MODEL ?? 'claude-haiku-4-5-20
  * Exported for the client-boundary unit test — the prompt must never carry
  * margin / markup / supplier / SKU / allowance / actual-cost.
  */
-export function buildCloseoutSummaryContext(snapshot: HomeRecordSnapshotV1): string {
+export function buildCloseoutSummaryContext(snapshot: PropertyRecordSnapshotV1): string {
   const blocks: string[] = [];
   blocks.push(`Project: ${snapshot.project.name}`);
   if (snapshot.project.description) {
@@ -81,11 +81,13 @@ export function buildCloseoutSummaryContext(snapshot: HomeRecordSnapshotV1): str
       .join('\n');
     blocks.push(`Approved change orders (all approved by the client):\n${lines}`);
   }
-  blocks.push('Write the opening paragraph for this Home Record.');
+  blocks.push('Write the opening paragraph for this Property Record.');
   return blocks.join('\n\n');
 }
 
-export async function draftCloseoutSummary(snapshot: HomeRecordSnapshotV1): Promise<string | null> {
+export async function draftCloseoutSummary(
+  snapshot: PropertyRecordSnapshotV1,
+): Promise<string | null> {
   // Need at least *some* substance — a bare project name yields a hollow
   // paragraph. Let the operator write it by hand in that case.
   const hasSubstance =

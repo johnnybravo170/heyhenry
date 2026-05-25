@@ -8,7 +8,13 @@ import {
   logQuoteViewAction,
 } from '@/server/actions/public-views';
 
-type ResourceType = 'change_order' | 'portal' | 'invoice' | 'quote' | 'decision' | 'home-record';
+type ResourceType =
+  | 'change_order'
+  | 'portal'
+  | 'invoice'
+  | 'quote'
+  | 'decision'
+  | 'property-record';
 
 export function PublicViewLogger({
   resourceType,
@@ -35,7 +41,7 @@ export function PublicViewLogger({
           return logInvoiceViewAction(identifier, input);
         case 'quote':
           return logQuoteViewAction(identifier, input);
-        // 'decision' and 'home-record' don't have logger actions yet —
+        // 'decision' and 'property-record' don't have logger actions yet —
         // their public routes still embed the component for forward-
         // compat once we want analytics on tap-through rates.
         default:

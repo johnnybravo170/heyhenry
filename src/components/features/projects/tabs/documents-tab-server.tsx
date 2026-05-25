@@ -1,21 +1,21 @@
 import { Sparkles } from 'lucide-react';
 import { DocumentList } from '@/components/features/portal/document-list';
 import { DocumentUpload } from '@/components/features/portal/document-upload';
-import { HomeRecordFlow } from '@/components/features/portal/home-record-flow';
+import { PropertyRecordFlow } from '@/components/features/portal/property-record-flow';
 import { TradeContactsList } from '@/components/features/portal/trade-contacts-list';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDateTime } from '@/lib/date/format';
-import { getHomeRecordForProject } from '@/lib/db/queries/home-records';
 import {
   listDocumentsForProject,
   listSubAndVendorContactsForTenant,
   listSubcontractorsForProject,
 } from '@/lib/db/queries/project-documents';
+import { getPropertyRecordForProject } from '@/lib/db/queries/property-records';
 
 export default async function DocumentsTabServer({ projectId }: { projectId: string }) {
-  const [documents, homeRecord, suppliers, projectSubs, tenant] = await Promise.all([
+  const [documents, propertyRecord, suppliers, projectSubs, tenant] = await Promise.all([
     listDocumentsForProject(projectId),
-    getHomeRecordForProject(projectId),
+    getPropertyRecordForProject(projectId),
     listSubAndVendorContactsForTenant(),
     listSubcontractorsForProject(projectId),
     getCurrentTenant(),
@@ -28,7 +28,7 @@ export default async function DocumentsTabServer({ projectId }: { projectId: str
         <h2 className="text-base font-semibold">Documents & warranties</h2>
         <p className="text-sm text-muted-foreground">
           Per-project file store — contracts, permits, warranties, manuals, inspections. Visible to
-          the client unless you hide them, and rolled into the final Home Record.
+          the client unless you hide them, and rolled into the final Property Record.
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export default async function DocumentsTabServer({ projectId }: { projectId: str
             </div>
             <div>
               <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-brand">
-                Closeout · Home Record
+                Closeout · Property Record
               </p>
               <h3 className="text-base font-semibold">The permanent handoff package</h3>
               <p className="mt-0.5 max-w-xl text-xs text-muted-foreground">
@@ -49,27 +49,27 @@ export default async function DocumentsTabServer({ projectId }: { projectId: str
               </p>
             </div>
           </div>
-          {homeRecord ? (
+          {propertyRecord ? (
             <div className="text-right">
               <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
                 Last generated
               </p>
               <p className="font-mono text-xs tabular-nums text-foreground">
-                {formatDateTime(homeRecord.generated_at, { timezone: tz })}
+                {formatDateTime(propertyRecord.generated_at, { timezone: tz })}
               </p>
             </div>
           ) : null}
         </div>
 
-        <HomeRecordFlow
+        <PropertyRecordFlow
           projectId={projectId}
-          existingSlug={homeRecord?.slug ?? null}
-          hasPdf={Boolean(homeRecord?.pdf_path)}
-          hasZip={Boolean(homeRecord?.zip_path)}
-          emailedAt={homeRecord?.emailed_at ?? null}
-          emailedTo={homeRecord?.emailed_to ?? null}
-          defaultEmail={homeRecord?.snapshot.customer.email ?? null}
-          summary={homeRecord?.henry_summary ?? homeRecord?.snapshot.summary ?? null}
+          existingSlug={propertyRecord?.slug ?? null}
+          hasPdf={Boolean(propertyRecord?.pdf_path)}
+          hasZip={Boolean(propertyRecord?.zip_path)}
+          emailedAt={propertyRecord?.emailed_at ?? null}
+          emailedTo={propertyRecord?.emailed_to ?? null}
+          defaultEmail={propertyRecord?.snapshot.customer.email ?? null}
+          summary={propertyRecord?.henry_summary ?? propertyRecord?.snapshot.summary ?? null}
         />
       </div>
 

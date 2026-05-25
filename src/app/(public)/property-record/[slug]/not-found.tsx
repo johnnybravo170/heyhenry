@@ -1,5 +1,5 @@
 /**
- * Home Record 404 / expired link. Server-rendered, no client JS — a calm
+ * Property Record 404 / expired link. Server-rendered, no client JS — a calm
  * branded message on the same Paper field as the artifact, with the quiet
  * "Powered by HeyHenry" mark. Links don't expire on their own, but a fresh
  * slug is minted whenever the record is reset — so we point the reader back
@@ -8,14 +8,14 @@
 
 import { Unlink } from 'lucide-react';
 
-export default function HomeRecordNotFound() {
+export default function PropertyRecordNotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-16 text-center">
       <div className="grid size-20 place-items-center rounded-2xl border bg-card text-muted-foreground">
         <Unlink className="size-9" aria-hidden />
       </div>
       <p className="mt-6 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand">
-        Home Record
+        Property Record
       </p>
       <h1 className="mt-2.5 text-2xl font-bold tracking-tight sm:text-3xl">
         We can&apos;t find this record.
@@ -30,8 +30,8 @@ export default function HomeRecordNotFound() {
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">
           Check the most recent email or text from your contractor for an updated link, or reply to
-          ask them for a fresh one. Home Record links don&apos;t expire on their own — but a new one
-          is issued whenever the record is regenerated.
+          ask them for a fresh one. Property Record links don&apos;t expire on their own — but a new
+          one is issued whenever the record is regenerated.
         </p>
       </div>
       <p className="mt-10 font-mono text-[11px] uppercase tracking-wide text-muted-foreground/70">
