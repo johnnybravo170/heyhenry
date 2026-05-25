@@ -102,11 +102,12 @@ function formatDate(iso: string | null | undefined, tz: string | null | undefine
  * Customer view layout:
  *   - Section header: prominent (sm-base text, bold, distinct bar) so
  *     the operator's chosen divisions are obvious at a glance.
- *   - Category: native <details>, collapsed by default. The summary
- *     row shows the category name + the sum of its line prices —
- *     enough info that a customer can scan the full estimate without
- *     opening anything. Click to expand for individual line items,
- *     descriptions, and photos.
+ *   - Category (Detailed mode): native <details>, open by default so
+ *     every cost line is visible — that's the point of the "Detailed"
+ *     rung. The summary row shows the category name + the sum of its
+ *     line prices; a customer can collapse a category to scan, and the
+ *     expanded body carries individual line items, descriptions, and
+ *     photos. (The terser "Categories" rung shows name + total only.)
  *   - Print stylesheet at the bottom forces every <details> open
  *     when the page is printed/saved-as-PDF, so the printed
  *     estimate is always complete.
@@ -239,14 +240,10 @@ function renderCategories(lines: EstimateRenderLine[]) {
                 key={g.key}
                 className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-b px-4 py-3 last:border-0"
               >
-                <div>
-                  <p className="font-medium">{g.categoryName}</p>
-                  {g.description?.trim() ? (
-                    <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
-                      {g.description.trim()}
-                    </p>
-                  ) : null}
-                </div>
+                {/* One row per category — name + total only. Descriptions and
+                 *  cost lines live in the "Detailed" mode so this stays the
+                 *  terser rung on the ladder (Categories < Detailed). */}
+                <span className="font-medium">{g.categoryName}</span>
                 <span className="font-medium tabular-nums">{formatCurrency(categoryTotal)}</span>
               </div>
             );
@@ -294,8 +291,12 @@ function renderDetailed(lines: EstimateRenderLine[]) {
             {sec.categories.map((g) => {
               const categoryTotal = g.lines.reduce((s, l) => s + l.line_price_cents, 0);
               return (
+                // Open by default so "Detailed" actually shows every cost line
+                // (the rung's whole point). Operators/clients can still collapse
+                // a category; print forces all open via the stylesheet above.
                 <details
                   key={g.key}
+                  open
                   className="group border-b last:border-0 [&_summary]:list-none [&_summary::-webkit-details-marker]:hidden"
                 >
                   <summary className="grid cursor-pointer grid-cols-[1fr_auto] items-baseline gap-x-3 px-4 py-3 hover:bg-muted/30">
