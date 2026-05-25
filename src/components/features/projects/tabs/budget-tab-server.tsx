@@ -251,6 +251,7 @@ export default async function BudgetTabServer({
         actualsByLineId={Object.fromEntries(actualsByLineId)}
         defaultExpanded={defaultExpanded}
         headerActions={showSaveAsTemplate ? <SaveAsTemplateButton projectId={projectId} /> : null}
+        sections={budget.sections}
       />
 
       {/* Per-project Changes view — all COs on this job + the "+ New change
