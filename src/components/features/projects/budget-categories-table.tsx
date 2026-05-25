@@ -33,7 +33,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronDown, ChevronRight, GripVertical, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  GripVertical,
+  Maximize2,
+  Minimize2,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
@@ -180,6 +189,9 @@ export function BudgetCategoriesTable({
   const [addCategoryMode, setAddCategoryMode] = useState<'closed' | 'category' | 'section'>(
     'closed',
   );
+  // Contextual "+ Add category to {section}" target. When set, the inline form
+  // renders nested under that section with the Section picker pre-filled/hidden.
+  const [addCategoryForSection, setAddCategoryForSection] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState<string | null>(null);
   const [editSectionValue, setEditSectionValue] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -314,6 +326,10 @@ export function BudgetCategoriesTable({
     setCollapsedSections(new Set(allSections));
     setExpanded(new Set());
   }
+  function expandAll() {
+    setCollapsedSections(new Set());
+    setExpanded(new Set(lines.map((l) => l.budget_category_id)));
+  }
 
   function startEdit(line: BudgetLine) {
     setEditingId(line.budget_category_id);
@@ -435,6 +451,12 @@ export function BudgetCategoriesTable({
 
   const sectionEntries = Array.from(sections.entries());
   const categoryCount = lines.length;
+  // State-aware expand/collapse: if every section is collapsed (and nothing is
+  // expanded), the only useful action is "Expand all"; otherwise "Collapse all".
+  const allCollapsed =
+    allSections.length > 0 &&
+    allSections.every((s) => collapsedSections.has(s)) &&
+    expanded.size === 0;
 
   return (
     <DndContext sensors={dndSensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
@@ -447,8 +469,18 @@ export function BudgetCategoriesTable({
           </span>
           <div className="ml-auto flex items-center gap-2">
             {headerActions}
-            <Button size="sm" variant="ghost" onClick={collapseAll}>
-              Collapse all
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={allCollapsed ? expandAll : collapseAll}
+              aria-pressed={!allCollapsed}
+            >
+              {allCollapsed ? (
+                <Maximize2 className="size-3.5" />
+              ) : (
+                <Minimize2 className="size-3.5" />
+              )}
+              {allCollapsed ? 'Expand all' : 'Collapse all'}
             </Button>
           </div>
         </div>
@@ -456,8 +488,8 @@ export function BudgetCategoriesTable({
         {addCategoryMode !== 'closed' && (
           <AddBudgetCategoryForm
             projectId={projectId}
+            kind={addCategoryMode === 'section' ? 'section' : 'category'}
             existingSections={allSections.filter(Boolean)}
-            defaultNewSection={addCategoryMode === 'section'}
             onDone={() => setAddCategoryMode('closed')}
           />
         )}
@@ -662,18 +694,54 @@ export function BudgetCategoriesTable({
                       ))}
                     </SortableContext>
                   ) : null}
+
+                  {/* Contextual "+ Add category to {section}" — parent section is
+                      known, so the inline form drops the Section picker. */}
+                  {!collapsed ? (
+                    addCategoryForSection === section ? (
+                      <div className="border-b bg-[#FBF6EC] py-1 pl-[50px] pr-3">
+                        <AddBudgetCategoryForm
+                          projectId={projectId}
+                          kind="category"
+                          existingSections={allSections.filter(Boolean)}
+                          lockedSection={section}
+                          nested
+                          onDone={() => setAddCategoryForSection(null)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="border-b bg-[#FBF6EC] py-2 pl-[50px] pr-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddCategoryForSection(section);
+                            setAddCategoryMode('closed');
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
+                        >
+                          <Plus className="size-3" />
+                          Add category to {section}
+                          <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground/60">
+                            Name · estimate · description
+                          </span>
+                        </button>
+                      </div>
+                    )
+                  ) : null}
                 </SectionDroppable>
               );
             })}
 
-            {/* Add row footer */}
-            <div className="flex items-center gap-2 px-3 py-2.5">
+            {/* Catch-all bottom add-row — "+ Add category" (with section picker)
+                and "+ Add section". */}
+            <div className="flex items-center gap-2 border-t bg-muted/40 px-3 py-2.5">
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() =>
-                  setAddCategoryMode((m) => (m === 'category' ? 'closed' : 'category'))
-                }
+                onClick={() => {
+                  setAddCategoryForSection(null);
+                  setAddCategoryMode((m) => (m === 'category' ? 'closed' : 'category'));
+                }}
               >
                 <Plus className="size-3.5" />
                 {addCategoryMode === 'category' ? 'Cancel' : 'Add category'}
@@ -681,7 +749,10 @@ export function BudgetCategoriesTable({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'))}
+                onClick={() => {
+                  setAddCategoryForSection(null);
+                  setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
+                }}
               >
                 <Plus className="size-3.5" />
                 {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
@@ -801,16 +872,25 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
   const style = { transform: CSS.Transform.toString(transform), transition };
 
   const editingThis = editingId === line.budget_category_id;
+  // Contained well: an open category + its lines read as ONE soft warm-neutral
+  // group with a tonal left accent rule (NOT rust) — "you're working in here".
+  const wellOpen = isExpanded && !isDragging;
 
   return (
-    <>
+    <div
+      className={cn(
+        wellOpen &&
+          'relative border-t border-b border-[#D8CBB0] bg-[#F7EFDB] shadow-[inset_3px_0_0_0_#B89968]',
+      )}
+    >
       <div
         ref={rowRef}
         style={style}
         {...attributes}
         className={cn(
           GRID,
-          'border-b px-3 py-2 transition-colors hover:bg-[#FFFCF7]',
+          'group border-b px-3 py-2 transition-colors',
+          wellOpen ? 'border-b-0 bg-[#F2E9D4]' : 'hover:bg-[#FFFCF7]',
           showHighlight && 'bg-primary/10 ring-2 ring-inset ring-primary/40',
           isDragging && 'relative z-20 bg-background opacity-90 shadow-md',
         )}
@@ -833,7 +913,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
               type="button"
               {...listeners}
               aria-label={`Reorder ${line.budget_category_name}`}
-              className="cursor-grab touch-none text-muted-foreground/40 hover:text-foreground active:cursor-grabbing"
+              className="cursor-grab touch-none text-muted-foreground/50 opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 active:cursor-grabbing group-hover:opacity-100"
             >
               <GripVertical className="size-3.5" />
             </button>
@@ -1035,9 +1115,11 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
         </span>
       </div>
 
-      {/* Cost lines — same grid, value-by-column */}
-      {isExpanded && !isDragging ? (
-        <div className="border-b bg-[#FBF6EC]">
+      {/* Cost lines — same grid, value-by-column. Inside the contained well:
+          a left guide rail runs down under the category name with subtle
+          elbow connectors into each line. */}
+      {wellOpen ? (
+        <div className="relative bg-[#F7EFDB] pb-1.5 before:pointer-events-none before:absolute before:bottom-[22px] before:left-[50px] before:top-0 before:w-px before:bg-[#C8B68C]/70 before:content-['']">
           {categoryLines.map((cl) => {
             const a = actualsByLineId[cl.id];
             const spent = a ? a.labour_cents + a.bills_cents + a.expenses_cents : 0;
@@ -1046,13 +1128,16 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
             const lineExpanded = expandedLineIds.has(cl.id);
             return (
               <div key={cl.id}>
-                <div className={cn(GRID, 'px-3 py-1.5 hover:bg-muted/30')}>
+                <div className={cn(GRID, 'px-3 py-1.5 hover:bg-[#FFFCF7]/60')}>
                   <span />
-                  <div className="flex min-w-0 flex-col">
+                  {/* Deeper indent + elbow connector off the left guide rail —
+                      LINE clearly sits under the CATEGORY. Lighter weight than
+                      the category row above. */}
+                  <div className="relative flex min-w-0 flex-col pl-4 before:pointer-events-none before:absolute before:left-0 before:top-1/2 before:h-px before:w-2.5 before:bg-[#C8B68C]/70 before:content-['']">
                     <button
                       type="button"
                       onClick={() => toggleLineSpend(cl.id)}
-                      className="flex items-start gap-1 text-left text-sm hover:text-foreground"
+                      className="flex items-start gap-1 text-left text-sm font-normal hover:text-foreground"
                       aria-expanded={lineExpanded}
                     >
                       {lineExpanded ? (
@@ -1080,18 +1165,18 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                       setEditingLine(cl);
                       setAddingLineFor(null);
                     }}
-                    className="text-right text-sm hover:underline"
+                    className="text-right text-sm font-normal hover:underline"
                     title="Edit this line"
                   >
-                    <Money cents={cl.line_price_cents} emphasis />
+                    <Money cents={cl.line_price_cents} />
                   </button>
-                  <span className="text-right text-sm text-muted-foreground">
+                  <span className="text-right text-sm font-normal text-muted-foreground">
                     {spent > 0 ? <Money cents={spent} /> : '—'}
                   </span>
-                  <span className="text-right text-sm text-muted-foreground">
+                  <span className="text-right text-sm font-normal text-muted-foreground">
                     {committed > 0 ? <Money cents={committed} /> : '—'}
                   </span>
-                  <span className="flex items-center justify-end gap-1 text-right text-sm text-muted-foreground">
+                  <span className="flex items-center justify-end gap-1 text-right text-sm font-normal text-muted-foreground">
                     {remaining !== 0 ? (
                       <span className={cn(remaining < 0 && 'text-destructive')}>
                         <Money cents={Math.abs(remaining)} />
@@ -1110,7 +1195,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                   </span>
                 </div>
                 {lineExpanded ? (
-                  <div className="bg-muted/30 px-3 py-2 pl-9">
+                  <div className="bg-muted/30 py-2 pl-[50px] pr-3">
                     <CostLineActualsInline
                       projectId={projectId}
                       costLineId={cl.id}
@@ -1120,7 +1205,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                   </div>
                 ) : null}
                 {editingLine?.id === cl.id ? (
-                  <div className="bg-muted/40 px-3 py-3 pl-9">
+                  <div className="bg-muted/40 py-3 pl-[50px] pr-3">
                     <CostLineForm
                       projectId={projectId}
                       initial={editingLine}
@@ -1134,8 +1219,8 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
             );
           })}
 
-          {/* cl-actions: add line + spent-by-source */}
-          <div className="flex flex-wrap items-center gap-3 px-3 py-2 pl-9">
+          {/* cl-actions: add line + spent-by-source. Indented to line-name start. */}
+          <div className="flex flex-wrap items-center gap-3 py-2 pl-[50px] pr-3">
             {addingLineFor === line.budget_category_id ? (
               <div className="w-full">
                 <CostLineForm
@@ -1198,24 +1283,54 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 
+/**
+ * Inline add form — Paper card. Two kinds, never ambiguous (header bar +
+ * kind badge):
+ *
+ *   - `section`: name the new section + its first category (a section can't
+ *     exist empty in today's model — see DATA-MODEL NOTE).
+ *   - `category`: Name + Section (pick existing / new) + Estimate +
+ *     Description. With `lockedSection` (the contextual foot-of-section
+ *     variant) the Section picker is hidden and pre-filled.
+ *
+ * DATA-MODEL NOTE: there is no sections table yet — `section` is a free-text
+ * field on each category, so a section with zero categories cannot persist.
+ * "Add section" therefore collects the section name AND its first (operator-
+ * named) category, creating both in one write — no phantom placeholder rows.
+ * A dedicated `project_budget_sections` entity (mirroring the existing
+ * `project_customer_sections`) is the planned clean fix; once it lands this
+ * form becomes a true section-only minimal form.
+ */
 function AddBudgetCategoryForm({
   projectId,
+  kind,
   existingSections,
+  lockedSection,
+  nested = false,
   onDone,
-  defaultNewSection = false,
 }: {
   projectId: string;
+  kind: 'section' | 'category';
   existingSections: string[];
+  /** Contextual variant: parent section known → hide + pre-fill the picker. */
+  lockedSection?: string;
+  /** Render nested under a section (tighter, no outer margin). */
+  nested?: boolean;
   onDone: () => void;
-  defaultNewSection?: boolean;
 }) {
+  const isSection = kind === 'section';
   const [name, setName] = useState('');
-  const initialIsCustom = defaultNewSection || existingSections.length === 0;
-  const [section, setSection] = useState(initialIsCustom ? '' : (existingSections[0] ?? ''));
+  // Section mode: the new section's first category (no empty sections in the
+  // current model — see DATA-MODEL NOTE).
+  const [firstCategory, setFirstCategory] = useState('');
+  const initialIsCustom = !lockedSection && (isSection || existingSections.length === 0);
+  const [section, setSection] = useState(
+    lockedSection ?? (initialIsCustom ? '' : (existingSections[0] ?? '')),
+  );
   const [isCustomSection, setIsCustomSection] = useState(initialIsCustom);
   const [estimate, setEstimate] = useState('');
   const [description, setDescription] = useState('');
@@ -1224,9 +1339,36 @@ function AddBudgetCategoryForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error('Name is required');
+      toast.error(isSection ? 'Section name is required' : 'Name is required');
       return;
     }
+
+    if (isSection) {
+      // A section can't exist without a category in today's model, so create
+      // the section by writing its first (operator-named) category — no
+      // phantom placeholder.
+      const cat = firstCategory.trim();
+      if (!cat) {
+        toast.error('Add a first category to create the section.');
+        return;
+      }
+      const estimate_cents = Math.round(parseFloat(estimate || '0') * 100);
+      startTransition(async () => {
+        const r = await addBudgetCategoryAction({
+          project_id: projectId,
+          name: cat,
+          section: name.trim(),
+          estimate_cents,
+          description: description.trim() || undefined,
+        });
+        if (r.ok) {
+          toast.success('Section created');
+          onDone();
+        } else toast.error(r.error);
+      });
+      return;
+    }
+
     const sectionTrimmed = section.trim();
     if (!sectionTrimmed) {
       toast.error('Section is required');
@@ -1249,102 +1391,203 @@ function AddBudgetCategoryForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-lg border bg-muted/30 p-3">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
-        <div className="sm:col-span-2">
-          <label htmlFor="add-category-name" className="mb-1 block text-xs font-medium">
-            Name
-          </label>
-          <Input
-            id="add-category-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Kitchen"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="add-category-section" className="mb-1 block text-xs font-medium">
-            Section
-          </label>
-          {isCustomSection ? (
-            <div className="flex items-center gap-2">
-              <Input
-                id="add-category-section"
-                value={section}
-                onChange={(e) => setSection(e.target.value)}
-                placeholder="New section name"
-                autoFocus
-              />
-              {existingSections.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCustomSection(false);
-                    setSection(existingSections[0] ?? '');
-                  }}
-                  className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  ← Pick existing
-                </button>
-              ) : null}
-            </div>
+    <form
+      onSubmit={handleSubmit}
+      className={cn('overflow-hidden rounded-xl border bg-card shadow-sm', nested && 'shadow-none')}
+    >
+      {/* Header bar — kind badge + title, so the form is never ambiguous. */}
+      <div className="flex flex-wrap items-center gap-2.5 border-b bg-muted/40 px-4 py-2.5">
+        <span className="rounded bg-[#ECE3D0] px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          {isSection ? 'New section' : 'New category'}
+        </span>
+        <span className="font-bold text-base text-foreground">
+          {isSection ? 'Add a budget section' : 'Add a budget category'}
+        </span>
+        <span className="ml-auto font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          {isSection ? (
+            'Name it + its first category'
+          ) : lockedSection ? (
+            <>
+              In <strong className="font-bold text-foreground/80">{lockedSection}</strong>
+            </>
           ) : (
-            <select
-              id="add-category-section"
-              value={section}
-              onChange={(e) => {
-                if (e.target.value === '__new__') {
-                  setIsCustomSection(true);
-                  setSection('');
-                } else setSection(e.target.value);
-              }}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            'Catch-all · pick its section'
+          )}
+        </span>
+      </div>
+
+      {/* Fields */}
+      <div className="px-4 pt-4 pb-1">
+        <div className={cn('grid grid-cols-1 gap-3.5 sm:grid-cols-[2fr_1.4fr_1.1fr]')}>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label
+              htmlFor="add-cat-name"
+              className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              {existingSections.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-              <option value="__new__">+ New section…</option>
-            </select>
+              {isSection ? 'Section name' : 'Name'} <span className="text-brand">*</span>
+            </label>
+            <Input
+              id="add-cat-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={isSection ? 'e.g. Mechanical & HVAC' : 'e.g. Cabinets & millwork'}
+              required
+              autoFocus
+            />
+          </div>
+
+          {isSection ? (
+            <>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <label
+                  htmlFor="add-section-first-cat"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  First category <span className="text-brand">*</span>
+                </label>
+                <Input
+                  id="add-section-first-cat"
+                  value={firstCategory}
+                  onChange={(e) => setFirstCategory(e.target.value)}
+                  placeholder="e.g. Furnace & ductwork"
+                  required
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <label
+                  htmlFor="add-section-estimate"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Estimate{' '}
+                  <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
+                </label>
+                <Input
+                  id="add-section-estimate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={estimate}
+                  onChange={(e) => setEstimate(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <label
+                  htmlFor="add-cat-section"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Section <span className="text-brand">*</span>
+                </label>
+                {lockedSection ? (
+                  <div className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm text-foreground">
+                    {lockedSection}
+                  </div>
+                ) : isCustomSection ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="add-cat-section"
+                      value={section}
+                      onChange={(e) => setSection(e.target.value)}
+                      placeholder="New section name"
+                    />
+                    {existingSections.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomSection(false);
+                          setSection(existingSections[0] ?? '');
+                        }}
+                        className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground hover:underline"
+                      >
+                        ← Pick existing
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <select
+                    id="add-cat-section"
+                    value={section}
+                    onChange={(e) => {
+                      if (e.target.value === '__new__') {
+                        setIsCustomSection(true);
+                        setSection('');
+                      } else setSection(e.target.value);
+                    }}
+                    className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  >
+                    {existingSections.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                    <option value="__new__">+ New section…</option>
+                  </select>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <label
+                  htmlFor="add-cat-estimate"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  Estimate{' '}
+                  <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
+                </label>
+                <Input
+                  id="add-cat-estimate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={estimate}
+                  onChange={(e) => setEstimate(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+            </>
           )}
         </div>
-        <div>
-          <label htmlFor="add-category-estimate" className="mb-1 block text-xs font-medium">
-            Estimate ($)
-          </label>
-          <Input
-            id="add-category-estimate"
-            type="number"
-            step="0.01"
-            min="0"
-            value={estimate}
-            onChange={(e) => setEstimate(e.target.value)}
-            placeholder="0.00"
-          />
-        </div>
-        <div className="sm:col-span-4">
-          <label htmlFor="add-category-description" className="mb-1 block text-xs font-medium">
+
+        <div className="mt-3.5 flex flex-col gap-1.5">
+          <label
+            htmlFor="add-cat-desc"
+            className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             Description{' '}
-            <span className="text-muted-foreground">(optional — shown on estimate)</span>
+            <span className="font-normal text-muted-foreground/70 normal-case tracking-normal">
+              optional
+            </span>
           </label>
           <Textarea
-            id="add-category-description"
+            id="add-cat-desc"
             rows={3}
             className="min-h-[4.5rem] resize-y"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="e.g. Demo existing tile, prep subfloor, install LVP"
+            placeholder={
+              isSection
+                ? "What's in this section? e.g. furnace replacement, ductwork relocation, suite air handling."
+                : 'e.g. Demo existing tile, prep subfloor, install LVP'
+            }
           />
         </div>
       </div>
-      <div className="mt-3 flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
-          {isPending ? 'Adding…' : 'Add category'}
-        </Button>
+
+      {/* Footer — hint + quiet Cancel + primary Add */}
+      <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-dashed bg-[#FCFAF4] px-4 py-3">
+        <span className="text-xs text-muted-foreground">
+          {isSection
+            ? 'A section groups related categories. It needs a first category to start — add more inside it after.'
+            : 'A category is a budget line item under a section. GST applied at the project level.'}
+        </span>
+        <span className="flex-1" />
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>
           Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={isPending}>
+          <Plus className="size-3.5" />
+          {isPending ? 'Adding…' : isSection ? 'Add section' : 'Add category'}
         </Button>
       </div>
     </form>
