@@ -30,7 +30,7 @@ export default async function LaunchPage() {
       {/* Row 1: hero */}
       <section className="text-center">
         <div className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
-          HeyHenry V1
+          HeyHenry — private beta readiness
         </div>
         <div className="mt-1 text-7xl font-bold tracking-tight tabular-nums">
           {rollup.percentDone}% ready
@@ -38,7 +38,7 @@ export default async function LaunchPage() {
         <div className="mt-2 text-sm text-[var(--muted-foreground)]">
           {eta ? (
             <>
-              ETA: ~{eta.weeks} weeks · ships around {eta.date}
+              ~{eta.weeks} weeks of must-do work left at recent pace · not a launch date
               {velocity.source === 'git-seed' ? (
                 <span className="ml-1 text-xs">(estimated from recent code activity)</span>
               ) : velocity.source === 'blended' ? (
