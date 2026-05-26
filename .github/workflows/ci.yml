@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Manual escape hatch: re-run the prod migration push without a code change
+  # (e.g. to reconcile drift). Only the deploy-migrations job acts on this.
+  workflow_dispatch:
 
 jobs:
   quality:
@@ -144,3 +147,54 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  deploy-migrations:
+    name: Deploy migrations to prod
+    runs-on: ubuntu-latest
+    # The fix for the silent migration-drift class of bugs: prod migrations
+    # used to land ONLY via a manual `supabase db push` (the /ship step). When
+    # a merge skipped it, schema never applied — code shipped live with no DB
+    # behind it and surfaced later as "column not found in schema cache". This
+    # job makes the push automatic on every merge to main.
+    #
+    # Runs only on a direct push to main (post-merge) or a manual dispatch from
+    # main — never on PRs. Gated behind the full suite: if main is red, schema
+    # does not ship.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [quality, e2e]
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      # Prod project ref is not a secret — it's embedded in the app's public
+      # NEXT_PUBLIC_SUPABASE_URL. Inlining it keeps the secret surface to two.
+      SUPABASE_PROJECT_ID: ygirnurpjqsthggfboer
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link prod project
+        # SUPABASE_DB_PASSWORD in env makes this non-interactive.
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Push migrations to prod
+        # Applies every migration under supabase/migrations/ whose version is
+        # not yet in the remote supabase_migrations.schema_migrations ledger,
+        # in lexical order. Idempotent — a no-op when the ledger is in sync.
+        # Fails the job loudly (red main) if any migration errors: that signal
+        # is the whole point of this job.
+        #
+        # ORDERING NOTE: Vercel deploys code via its own native Git
+        # integration, independently of and in parallel with this job — so
+        # this does NOT strictly apply schema before the code goes live. New
+        # migrations must therefore stay backward-compatible with the
+        # currently-live code (expand → migrate → contract across separate
+        # ships). A breaking change (e.g. a table rename) must ship in the
+        # SAME merge as the code that depends on it and tolerate a few seconds'
+        # apply window. See AGENTS.md "Database migrations".
+        run: supabase db push
