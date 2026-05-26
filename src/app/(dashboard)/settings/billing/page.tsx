@@ -74,30 +74,36 @@ export default async function BillingPage({
       </div>
 
       {!overview.hasSubscription ? (
-        <Card className="shadow-none">
-          <CardHeader>
-            <div className="flex items-start gap-3">
-              <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
-                <CreditCard className="size-5" aria-hidden />
+        <>
+          <Card className="shadow-none">
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                  <CreditCard className="size-5" aria-hidden />
+                </div>
+                <div>
+                  <CardTitle>No active subscription</CardTitle>
+                  <CardDescription>
+                    Pick a plan to unlock the full HeyHenry feature set — your data, projects, and
+                    customers are all preserved.
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle>No active subscription</CardTitle>
-                <CardDescription>
-                  Pick a plan to unlock the full HeyHenry feature set — your data, projects, and
-                  customers are all preserved.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/onboarding/plan"
-              className="text-sm font-semibold underline underline-offset-2"
-            >
-              Choose a plan →
-            </Link>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <Link
+                href="/onboarding/plan"
+                className="text-sm font-semibold underline underline-offset-2"
+              >
+                Choose a plan →
+              </Link>
+            </CardContent>
+          </Card>
+          {/* Past invoices/receipts live on the Stripe customer, not the
+              subscription — so keep them visible after a cancel. A churned
+              customer still needs their receipts for bookkeeping. */}
+          {overview.hasCustomer ? <InvoicesTable /> : null}
+        </>
       ) : (
         <>
           <PlanStatusCockpit overview={overview} tz={tz} />
