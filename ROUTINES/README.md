@@ -28,6 +28,7 @@ Each routine's prompt explicitly hands off out-of-scope candidates to the siblin
 | `ai-tools-scout.md` | `ai-tools-scout` | Remote | Daily 7 AM | **Collector** — AI/ML tooling scan → `ops.ideas` (no email) |
 | `business-scout.md` | `business-scout` | Remote | Daily 6 AM | **Collector** — strategic moves synthesis → `ops.ideas` (`biz-scout`, no email) |
 | `helpdesk-triage.md` | `helpdesk-triage` | Remote | Daily 9 AM | Codebase-grounded diagnosis on `triage:claude` kanban cards |
+| `visual-qa-fixer.md` | `visual-qa-fixer` | Remote | Daily (after detector) | Stage-4 of the Visual-QA Loop — claims `fix:claude` cards, gates, surfaces or auto-PRs render fixes w/ before/after (propose-mode default; **never merges**). Detector is the Hermes profile in `hermes/`. |
 | `security-probe.md` | `security-probe` | Remote | Daily 4 AM | Reviews production surfaces for security regressions → opens incidents |
 | `competitive-research.md` | `competitive-research` | Remote | Daily 6 AM | **Collector** — refreshes `ops.competitors` corpus with structured findings |
 | `pain-points-research.md` | `pain-points-research` | Remote | Daily 7 AM | **Collector** — mines contractor-community pain points → `ops.social_drafts` |
