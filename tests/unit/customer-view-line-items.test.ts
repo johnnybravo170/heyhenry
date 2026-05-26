@@ -13,9 +13,10 @@ import {
 
 // ─── Fixtures ───────────────────────────────────────────────────────────────
 
-// Section labels live as a text col on project_budget_categories.section.
-// "Bathroom" and "Kitchen" are the operator's section headers (the Budget
-// tab groups categories under these labels).
+// Section labels come from the project_budget_sections entity (the helper
+// receives the resolved name on CustomerViewCategory.section). "Bathroom" and
+// "Kitchen" are the operator's section headers (the Budget tab groups
+// categories under these labels).
 // estimate_cents mirrors each category's line sum (the invariant the
 // upsert/delete actions maintain once a category is itemized).
 const CAT_PLUMBING = {
