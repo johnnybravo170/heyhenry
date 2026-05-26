@@ -255,7 +255,9 @@ async function getProjectUncached(id: string): Promise<ProjectWithRelations | nu
   // Load budget categories
   const { data: categoryData, error: categoryErr } = await supabase
     .from('project_budget_categories')
-    .select('id, name, section, description, estimate_cents, display_order, is_visible_in_report')
+    .select(
+      'id, name, section_row:project_budget_sections!section_id(name), description, estimate_cents, display_order, is_visible_in_report',
+    )
     .eq('project_id', id)
     .order('display_order', { ascending: true })
     .order('name', { ascending: true });
@@ -267,7 +269,15 @@ async function getProjectUncached(id: string): Promise<ProjectWithRelations | nu
   return {
     ...base,
     customer: extractCustomer(customerRaw),
-    budget_categories: (categoryData ?? []) as BudgetCategorySummary[],
+    budget_categories: (categoryData ?? []).map((c) => ({
+      id: c.id as string,
+      name: c.name as string,
+      section: (c.section_row as unknown as { name: string } | null)?.name ?? '',
+      description: (c.description as string | null) ?? null,
+      estimate_cents: (c.estimate_cents as number) ?? 0,
+      display_order: (c.display_order as number) ?? 0,
+      is_visible_in_report: (c.is_visible_in_report as boolean) ?? true,
+    })) satisfies BudgetCategorySummary[],
   };
 }
 

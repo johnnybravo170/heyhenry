@@ -67,12 +67,26 @@ const categories =[
   { name: 'Exterior siding + finish', section: 'Sauna', est: 320000, order: 15 },
 ];
 
+// Sections are a real entity — insert distinct sections first, then reference
+// section_id (the legacy `section` string column no longer exists).
+const sectionIds = {};
+for (const b of categories) {
+  if (!b.section || sectionIds[b.section]) continue;
+  const [srow] = await sql`
+    INSERT INTO public.project_budget_sections (project_id, tenant_id, name, sort_order)
+    VALUES (${project.id}, ${TENANT_ID}, ${b.section}, ${Object.keys(sectionIds).length})
+    ON CONFLICT (project_id, name) DO UPDATE SET name = EXCLUDED.name
+    RETURNING id
+  `;
+  sectionIds[b.section] = srow.id;
+}
+
 const categoryIds = {};
 for (const b of categories) {
   const [row] = await sql`
     INSERT INTO public.project_budget_categories
-      (project_id, tenant_id, name, section, estimate_cents, display_order, is_visible_in_report)
-    VALUES (${project.id}, ${TENANT_ID}, ${b.name}, ${b.section}, ${b.est}, ${b.order}, true)
+      (project_id, tenant_id, name, section_id, estimate_cents, display_order, is_visible_in_report)
+    VALUES (${project.id}, ${TENANT_ID}, ${b.name}, ${b.section ? sectionIds[b.section] : null}, ${b.est}, ${b.order}, true)
     RETURNING id
   `;
   categoryIds[b.name] = row.id;

@@ -302,7 +302,7 @@ export default async function ProjectDetailPage({
             categories={projectCategories.map((b) => ({
               id: b.id,
               name: b.name,
-              section: (b.section as 'interior' | 'exterior' | 'general') ?? 'general',
+              section: b.section_row?.name ?? '',
             }))}
           />
           <Suspense fallback={null}>
