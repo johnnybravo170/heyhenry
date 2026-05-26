@@ -555,6 +555,36 @@ const RLS_TABLE_CASES: RlsCase[] = [
       notes: `pibi-inject-${stamp}`,
     }),
   },
+  {
+    // Append-only ledger: SELECT/INSERT policies only (no UPDATE/DELETE), so
+    // the tamper-UPDATE assertion passes by affecting zero rows (no policy =
+    // no access), and the WITH-CHECK insert is rejected by the tenant+self
+    // predicate.
+    table: 'agreement_acceptances',
+    seed: async ({ admin, tenant, stamp }) => {
+      const { data, error } = await admin
+        .from('agreement_acceptances')
+        .insert({
+          tenant_id: tenant.tenantId,
+          user_id: tenant.userId,
+          agreement_type: 'founding_member',
+          agreement_version: `v-${stamp}`,
+          signature_name: `signer-${stamp}`,
+        })
+        .select('id')
+        .single();
+      if (error || !data) throw new Error(error?.message ?? 'agreement_acceptances seed failed');
+      return data.id as string;
+    },
+    updatePayload: { signature_name: 'cross-tenant tamper' },
+    insertAcrossTenants: ({ tenant, stamp }) => ({
+      tenant_id: tenant.tenantId,
+      user_id: tenant.userId,
+      agreement_type: 'founding_member',
+      agreement_version: `v-inject-${stamp}`,
+      signature_name: `inject-${stamp}`,
+    }),
+  },
 ];
 
 async function provisionTenant(
