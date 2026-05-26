@@ -1,20 +1,24 @@
 'use client';
 
 /**
- * Client wrapper for /projects/new — owns the parsed-intake state so
- * the IntakeAccelerator (drop a quote / voice memo / paste a blurb)
- * can pre-fill the ProjectForm fields below it. Both surfaces live on
- * one page; either path produces the same project create.
+ * Client wrapper for /projects/new. Two ways to start a project on one
+ * page:
+ *   - Drop a quote / photo / voice memo / pasted blurb into the
+ *     IntakeAccelerator → Henry parses it into a draft, and we hand off
+ *     to the guided scope-review surface (?intake=full&draft=<id>) which
+ *     reviews + APPLIES the extracted categories. (Previously the parse
+ *     pre-filled only name/description and silently dropped the scope.)
+ *   - Type it manually in the ProjectForm below (no document) →
+ *     plain createProjectAction, build the budget on the next screen.
  */
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { IntakeAccelerator } from '@/components/features/projects/intake-accelerator';
 import {
   ProjectForm,
   type ProjectFormCustomerOption,
   type ProjectFormDefaults,
-  type ProjectFormSuggestions,
 } from '@/components/features/projects/project-form';
 import type { ParsedIntake } from '@/lib/ai/intake-prompt';
 import type { ProjectInput } from '@/lib/validators/project';
@@ -29,40 +33,21 @@ export function NewProjectFormSurface({
   action: (input: ProjectInput & { id?: string }) => Promise<ProjectActionResult>;
   defaults?: ProjectFormDefaults;
 }) {
-  const [suggestions, setSuggestions] = useState<ProjectFormSuggestions | undefined>(undefined);
+  const router = useRouter();
 
-  function handleParsed(parsed: ParsedIntake) {
-    // Translate ParsedIntake → ProjectFormSuggestions. We pull the
-    // customer name (fuzzy-matched downstream against existing
-    // contacts), project name, and description. Categories / scope /
-    // reply draft are intentionally not surfaced here — the operator
-    // can build scope on the budget tab post-creation. If they need
-    // the deeper guided flow (scope review, reply drafting), the
-    // /projects/new?intake=full route still serves it.
-    setSuggestions({
-      customer_name: parsed.customer.name,
-      name: parsed.project.name,
-      description: parsed.project.description,
-    });
-  }
-
-  function handleUnmatchedCustomer(name: string) {
-    toast(`Customer "${name}" doesn't exist yet`, {
-      description: 'Pick from the dropdown below or click "+ New customer" to create them.',
-    });
+  function handleParsed(_parsed: ParsedIntake, draftId: string) {
+    // Hand off to the guided review, hydrated from the persisted draft.
+    // That surface lets the operator confirm the customer, trim/edit the
+    // extracted categories + lines, and apply them to a new project in
+    // one step — instead of dropping the scope on the floor here.
+    toast.success('Henry read it — opening scope review…');
+    router.push(`/projects/new?intake=full&draft=${draftId}`);
   }
 
   return (
     <div className="space-y-6">
       <IntakeAccelerator onParsed={handleParsed} />
-      <ProjectForm
-        mode="create"
-        customers={customers}
-        defaults={defaults}
-        action={action}
-        suggestions={suggestions}
-        onUnmatchedCustomer={handleUnmatchedCustomer}
-      />
+      <ProjectForm mode="create" customers={customers} defaults={defaults} action={action} />
     </div>
   );
 }

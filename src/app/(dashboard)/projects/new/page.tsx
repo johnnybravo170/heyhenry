@@ -137,7 +137,8 @@ export default async function NewProjectPage({
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">New project</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Pick a customer, give the project a name, save. Build the budget on the next screen. Got a
-          quote or voice memo? Drop it in the accelerator below to pre-fill the fields.
+          quote or voice memo? Drop it in the accelerator below and Henry will pull the scope for
+          you to review.
         </p>
       </div>
 

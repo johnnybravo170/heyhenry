@@ -1,15 +1,14 @@
 'use client';
 
 /**
- * Slim AI-accelerator surface for the new-project page. Drop a quote
- * PDF, photo, or voice memo (or paste a text blob), click parse, and
- * the form fields below pre-fill from the AI extraction.
+ * AI-accelerator surface for the new-project page. Drop a quote PDF,
+ * photo, or voice memo (or paste a text blob), click parse, and Henry
+ * extracts the scope into a persisted intake draft.
  *
- * Single-shot: no multi-step state machine, no draft retry UI, no
- * scope-review screen — those live in the deeper LeadIntakeForm
- * (still reachable via /projects/new?intake=full when an inbound lead
- * needs the full guided experience). This component is just the
- * "drop something to skip the typing" optimisation.
+ * On success the parent hands off to the guided scope-review surface
+ * (LeadIntakeForm, at /projects/new?intake=full&draft=<id>) so the
+ * operator can review + apply the extracted categories — rather than
+ * silently dropping them. This component owns only the drop+parse step.
  */
 
 import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
@@ -27,9 +26,9 @@ export function IntakeAccelerator({
   onParsed,
   defaultOpen = false,
 }: {
-  /** Called when the AI parse succeeds. Parent decides which fields
-   * to surface. */
-  onParsed: (parsed: ParsedIntake) => void;
+  /** Called when the AI parse succeeds, with the persisted draft id so
+   * the parent can hand off to the scope-review surface. */
+  onParsed: (parsed: ParsedIntake, draftId: string) => void;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -64,12 +63,9 @@ export function IntakeAccelerator({
           toast.error(res.error);
           return;
         }
-        onParsed(res.draft);
-        toast.success('Filled in from your file. Review and edit below.');
-        // Clear local state so the operator can drop another artifact
-        // if they want to layer in more context.
         setFiles([]);
         setPastedText('');
+        onParsed(res.draft, res.draftId);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Parse failed.');
       }
