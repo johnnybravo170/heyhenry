@@ -282,13 +282,17 @@ max_frequency = "5s"
 # confirmation, invite, email change, reauthentication) to the HeyHenry app
 # so they render through renderEmailShell + Postmark instead of Supabase's
 # default "powered by Supabase" templates. Handler: src/app/api/auth/email-hook.
-# Local: Supabase auth runs in Docker, so reach the host dev server via
-# host.docker.internal. Prod is configured in the Supabase dashboard
-# (Auth → Hooks) pointing at https://app.heyhenry.io/api/auth/email-hook.
-[auth.hook.send_email]
-enabled = true
-uri = "http://host.docker.internal:3000/api/auth/email-hook"
-secrets = "env(AUTH_EMAIL_HOOK_SECRET)"
+#
+# Prod is configured in the Supabase dashboard (Auth → Hooks) / Management API,
+# NOT here — so this stays commented. Enabling it in the committed config would
+# force every `supabase start` (CI + every dev) to define AUTH_EMAIL_HOOK_SECRET
+# (a valid `v1,whsec_<base64>`, min 32 chars) and run the endpoint + Postmark.
+# To exercise the hook locally: export AUTH_EMAIL_HOOK_SECRET, run `pnpm dev`,
+# then uncomment the block below (Docker reaches the host via host.docker.internal).
+# [auth.hook.send_email]
+# enabled = true
+# uri = "http://host.docker.internal:3000/api/auth/email-hook"
+# secrets = "env(AUTH_EMAIL_HOOK_SECRET)"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]

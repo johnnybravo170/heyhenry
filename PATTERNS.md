@@ -241,9 +241,12 @@ signature (`src/lib/webhooks/standard-webhook.ts`, secret
 (`src/lib/email/templates/auth.ts` → `renderEmailShell`), and ships through the
 same `sendEmail` wrapper (`caslCategory: 'transactional'`, `relatedType: 'auth'`).
 This is the single chokepoint for every auth email — never add a Supabase
-default template or custom-SMTP path that bypasses it. Enabled locally in
-`supabase/config.toml` `[auth.hook.send_email]`; prod is wired in the Supabase
-dashboard (Auth → Hooks) pointing at `https://app.heyhenry.io/api/auth/email-hook`.
+default template or custom-SMTP path that bypasses it. Prod is wired in the
+Supabase dashboard / Management API (Auth → Hooks) pointing at
+`https://app.heyhenry.io/api/auth/email-hook`; the `[auth.hook.send_email]`
+block in `supabase/config.toml` stays **commented** (enabling it would force
+every `supabase start` to define `AUTH_EMAIL_HOOK_SECRET` — uncomment only to
+test the hook locally).
 
 ---
 
