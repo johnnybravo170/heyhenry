@@ -112,7 +112,11 @@ export async function startCheckoutAction(input: {
     plan: input.plan,
     cycle: input.billing as BillingCycle,
     successUrl: `${origin}/onboarding/plan/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${origin}/onboarding/plan?canceled=1`,
+    // Preserve the promo on cancel so the picker fallback keeps the founding
+    // price (and doesn't re-trigger the founder auto-checkout: canceled=1).
+    cancelUrl: `${origin}/onboarding/plan?canceled=1${
+      input.promo ? `&promo=${encodeURIComponent(input.promo)}` : ''
+    }`,
     promotionCode: promo.promotionCodeId,
     skipTrial: promo.skipTrial,
   });

@@ -4,7 +4,7 @@ import { requireTenant } from '@/lib/auth/helpers';
 import { isBillingCycle, isPlan } from '@/lib/billing/plans';
 import { hasAcceptedCurrentAgreement } from '@/lib/db/queries/agreements';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolvePromoEffects } from '@/server/actions/billing';
+import { resolvePromoEffects, startCheckoutAction } from '@/server/actions/billing';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Pick your plan — HeyHenry' };
@@ -45,6 +45,25 @@ export default async function OnboardingPlanPage({ searchParams }: { searchParam
     if (params.promo) qs.set('promo', params.promo);
     redirect(`/onboarding/agreement${qs.toString() ? `?${qs.toString()}` : ''}`);
   }
+
+  // Founding members have exactly one plan (Growth) at the locked $199 rate,
+  // and they've just signed — so the single-option picker is a dead click.
+  // Send them straight into checkout. `canceled` (bounced back from Stripe)
+  // falls through to the picker so they aren't trapped in a redirect loop.
+  const canceled = params.canceled === '1' || params.canceled === 'true';
+  if (row?.founding_member && !canceled) {
+    const res = await startCheckoutAction({
+      plan: 'growth',
+      billing: 'monthly',
+      promo: initialPromo ?? 'FOUNDER',
+    });
+    // Reached only if checkout couldn't start (redirect throws on success).
+    // Fall through to render the picker so the founder is never stuck.
+    if (res && 'error' in res) {
+      console.error('[onboarding/plan] founding auto-checkout failed:', res.error);
+    }
+  }
+
   // Resolve promo server-side so we can show the right copy ("card charged
   // today" vs "14-day free trial") before the user clicks Continue. The
   // skip-trial flag is encoded in Stripe metadata on the promo code.
