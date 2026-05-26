@@ -22,6 +22,7 @@ import {
 } from '@/lib/ai/sub-quote-parse-prompt';
 import { gateway, isAiError } from '@/lib/ai-gateway';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -504,16 +505,26 @@ export async function createProjectCategoryAction(input: {
     .limit(1);
   const nextOrder = ((existing?.[0]?.display_order as number | undefined) ?? 0) + 10;
 
+  // Resolve the section name → section row id; set section_id and let the DB
+  // trigger mirror the legacy `section` string.
+  const resolvedSection = await resolveBudgetSectionId(
+    supabase,
+    tenant.id,
+    parsed.data.projectId,
+    parsed.data.section,
+  );
+  if ('error' in resolvedSection) return { ok: false, error: resolvedSection.error };
+
   const { data, error } = await supabase
     .from('project_budget_categories')
     .insert({
       tenant_id: tenant.id,
       project_id: parsed.data.projectId,
       name: parsed.data.name.trim(),
-      section: parsed.data.section,
+      section_id: resolvedSection.id,
       display_order: nextOrder,
     })
-    .select('id, name, section')
+    .select('id, name')
     .single();
   if (error || !data) return { ok: false, error: error?.message ?? 'Failed to create category.' };
 
@@ -523,7 +534,7 @@ export async function createProjectCategoryAction(input: {
     category: {
       id: data.id as string,
       name: data.name as string,
-      section: data.section as 'interior' | 'exterior' | 'general',
+      section: parsed.data.section,
     },
   };
 }
@@ -599,7 +610,7 @@ export async function parseSubQuoteFromFileAction(
 
   const { data: categoryRows } = await supabase
     .from('project_budget_categories')
-    .select('id, name, section')
+    .select('id, name, section_row:project_budget_sections!section_id(name)')
     .eq('project_id', projectId)
     .order('display_order');
 
@@ -609,7 +620,7 @@ export async function parseSubQuoteFromFileAction(
     const entry = {
       id: b.id as string,
       name: b.name as string,
-      section: (b.section as string | null) ?? null,
+      section: (b.section_row as unknown as { name: string } | null)?.name ?? null,
     };
     categoriesById.set(entry.id, entry);
     // Case-preserving key; the prompt tells the model to match exactly.
