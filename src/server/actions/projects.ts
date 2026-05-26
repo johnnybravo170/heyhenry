@@ -11,6 +11,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { audit } from '@/lib/audit';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createClient } from '@/lib/supabase/server';
 import {
   emptyToNull,
@@ -527,22 +528,37 @@ export async function cloneProjectAction(input: {
   if (input.clone_budget_categories) {
     const { data: srcCategories } = await supabase
       .from('project_budget_categories')
-      .select('id, name, section, description, estimate_cents, display_order, is_visible_in_report')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), description, estimate_cents, display_order, is_visible_in_report',
+      )
       .eq('project_id', input.source_id);
 
     // Pre-generate new category UUIDs so we can remap cost-line category ids
     // without a second round-trip to read back inserted rows.
     const categoryIdMap = new Map<string, string>();
     if (srcCategories && srcCategories.length > 0) {
+      // Clone sections into the NEW project: resolve each distinct source
+      // section *name* to a section row on the cloned project — section_id
+      // can't be copied (it points at the source project's sections). The DB
+      // trigger mirrors the name into the legacy `section` string.
+      const sectionIdByName = new Map<string, string>();
+      for (const b of srcCategories) {
+        const name = (b.section_row as unknown as { name: string } | null)?.name?.trim();
+        if (!name || sectionIdByName.has(name)) continue;
+        const resolved = await resolveBudgetSectionId(supabase, tenant.id, created.id, name);
+        if ('error' in resolved) continue;
+        sectionIdByName.set(name, resolved.id);
+      }
       const rows = srcCategories.map((b) => {
         const newId = crypto.randomUUID();
         categoryIdMap.set(b.id, newId);
+        const sectionName = (b.section_row as unknown as { name: string } | null)?.name?.trim();
         return {
           id: newId,
           tenant_id: tenant.id,
           project_id: created.id,
           name: b.name,
-          section: b.section,
+          section_id: sectionName ? (sectionIdByName.get(sectionName) ?? null) : null,
           description: b.description,
           estimate_cents: b.estimate_cents,
           display_order: b.display_order,

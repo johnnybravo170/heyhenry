@@ -206,7 +206,7 @@ export async function listActiveProjectsAction(): Promise<ActiveProjectsResult> 
     supabase
       .from('projects')
       .select(
-        'id, name, project_budget_categories(id, name, section, display_order, is_visible_in_report)',
+        'id, name, project_budget_categories(id, name, section_row:project_budget_sections!section_id(name), display_order, is_visible_in_report)',
       )
       .is('deleted_at', null)
       .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
@@ -242,14 +242,14 @@ export async function listActiveProjectsAction(): Promise<ActiveProjectsResult> 
   }
 
   const projects = (
-    (projectsRes.data ?? []) as Array<{
+    (projectsRes.data ?? []) as unknown as Array<{
       id: string;
       name: string;
       project_budget_categories:
         | {
             id: string;
             name: string;
-            section: string;
+            section_row: { name: string } | null;
             display_order: number;
             is_visible_in_report: boolean;
           }[]
@@ -262,9 +262,10 @@ export async function listActiveProjectsAction(): Promise<ActiveProjectsResult> 
       .filter((c) => c.is_visible_in_report !== false)
       .sort(
         (a, b) =>
-          (a.section ?? '').localeCompare(b.section ?? '') || a.display_order - b.display_order,
+          (a.section_row?.name ?? '').localeCompare(b.section_row?.name ?? '') ||
+          a.display_order - b.display_order,
       )
-      .map((c) => ({ id: c.id, name: c.name, section: c.section })),
+      .map((c) => ({ id: c.id, name: c.name, section: c.section_row?.name ?? '' })),
     costLines: linesByProject.get(p.id) ?? [],
   }));
 

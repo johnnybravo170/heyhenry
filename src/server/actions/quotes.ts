@@ -15,6 +15,7 @@ import { emitArEvent } from '@/lib/ar/event-bus';
 import { ensureQuoteFollowupSequence, shouldEnrollQuoteFollowup } from '@/lib/ar/system-sequences';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { listMapQuoteCatalog, mapQuoteCatalogByType } from '@/lib/db/queries/catalog-items';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import {
   calculateQuoteTotal,
   calculateSurfacePrice,
@@ -708,12 +709,21 @@ export async function convertQuoteToProjectAction(input: {
     { name: 'Contingency', section: 'general' },
   ];
 
+  // Resolve distinct section names → section row ids; set section_id and let
+  // the DB trigger mirror the legacy `section` string.
+  const sectionIdByName = new Map<string, string>();
+  for (const b of DEFAULT_CATEGORIES) {
+    if (sectionIdByName.has(b.section)) continue;
+    const resolved = await resolveBudgetSectionId(supabase, tenant.id, projectData.id, b.section);
+    if ('error' in resolved) return { ok: false, error: resolved.error };
+    sectionIdByName.set(b.section, resolved.id);
+  }
   await supabase.from('project_budget_categories').insert(
     DEFAULT_CATEGORIES.map((b, i) => ({
       project_id: projectData.id,
       tenant_id: tenant.id,
       name: b.name,
-      section: b.section,
+      section_id: sectionIdByName.get(b.section) ?? null,
       display_order: i,
     })),
   );
