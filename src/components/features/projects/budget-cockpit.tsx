@@ -150,7 +150,7 @@ export function BudgetSummaryPanel({
               <strong className="font-bold tabular-nums text-foreground">{consumedPct}%</strong> of
               budget consumed
             </span>
-            <span className="ml-auto font-mono text-[11px] uppercase tracking-wide tabular-nums">
+            <span className="ml-auto font-mono text-eyebrow uppercase tracking-wide tabular-nums">
               <Money cents={used} /> of <Money cents={estimateCents} />
             </span>
           </div>
