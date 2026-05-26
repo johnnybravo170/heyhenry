@@ -135,6 +135,19 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
   }
   const projectId = project.id as string;
 
+  // Section is a real entity now — create the section row first, then point
+  // categories at it via section_id (the legacy `section` string is gone).
+  const { data: section, error: sectionErr } = await admin
+    .from('project_budget_sections')
+    .insert({ tenant_id: tenantId, project_id: projectId, name: 'interior', sort_order: 0 })
+    .select('id')
+    .single();
+  if (sectionErr || !section) {
+    await tearDownDemo({ admin, userId, tenantId });
+    throw new Error(`seedDemo: insert section failed: ${sectionErr?.message}`);
+  }
+  const sectionId = section.id as string;
+
   // Two budget categories with realistic envelopes.
   const { data: cats, error: catErr } = await admin
     .from('project_budget_categories')
@@ -143,7 +156,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
         tenant_id: tenantId,
         project_id: projectId,
         name: 'Cabinets',
-        section: 'interior',
+        section_id: sectionId,
         estimate_cents: 1500000,
         display_order: 1,
         is_visible_in_report: true,
@@ -152,7 +165,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
         tenant_id: tenantId,
         project_id: projectId,
         name: 'Plumbing',
-        section: 'interior',
+        section_id: sectionId,
         estimate_cents: 800000,
         display_order: 2,
         is_visible_in_report: true,
