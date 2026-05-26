@@ -257,7 +257,7 @@ export function CostsTab({
   categories: Array<{
     id: string;
     name: string;
-    section: 'interior' | 'exterior' | 'general';
+    section: string;
     cost_lines: Array<{ id: string; label: string }>;
   }>;
 }) {

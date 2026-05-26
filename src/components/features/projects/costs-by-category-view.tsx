@@ -25,7 +25,7 @@ import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import type { ExpenseItem } from './project-costs-section';
 
-type Category = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+type Category = { id: string; name: string; section: string };
 
 type Row = {
   kind: 'quote' | 'po' | 'bill' | 'expense';

@@ -28,7 +28,7 @@ import { formatCurrency } from '@/lib/pricing/calculator';
 import { parseSubQuoteFromFileAction } from '@/server/actions/sub-quotes';
 import { SubQuoteForm, type SubQuoteInitialValues } from './sub-quote-form';
 
-type Category = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+type Category = { id: string; name: string; section: string };
 
 export function SubQuoteUploadButton({
   projectId,
