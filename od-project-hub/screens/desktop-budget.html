@@ -28,16 +28,18 @@
     --danger:       #B91C1C;  --danger-soft:#FEE2E2;
     --info:         #1E40AF;  --info-soft:  #E6EDFA;
 
-    /* Tonal warm-neutrals for the contained well — NOT a new colour */
-    --well-head:    #F2E9D4;   /* parent row when its category is open (slightly stronger) */
-    --well-body:    #F7EFDB;   /* the lines tray (slightly lighter than head) */
-    --well-rail:    #C8B68C;   /* left guide rail — warm hairline */
-    --well-accent:  #B89968;   /* the well's tonal left accent (still warm-neutral, NOT rust) */
+    /* Tonal warm-neutrals for the contained well (NOT a new colour) */
+    --well-head:    #F2E9D4;
+    --well-body:    #F7EFDB;
+    --well-rail:    #C8B68C;
+    --well-accent:  #B89968;
+    --well-deep:    #FBF6EC;   /* the spend-detail mini-well sits inside the well */
 
     --radius-card:  14px;
     --radius-input: 9px;
     --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
     --shadow-form:  0 1px 0 rgba(10,10,10,0.02), 0 8px 24px -16px rgba(10,10,10,0.10);
+    --track:        0.06em;   /* one uppercase track, everywhere */
     --sans: 'Inter', system-ui, -apple-system, sans-serif;
     --mono: 'JetBrains Mono', ui-monospace, monospace;
   }
@@ -56,6 +58,19 @@
   }
   button { font-family: inherit; }
   a { color: inherit; text-decoration: none; }
+
+  /* ───── Mono helpers — one place, one tracking, one tone ───── */
+  .label-mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .cents { color: var(--muted); font-weight: 400; }    /* same-size mute (at 12) */
+  .num-lg .cents { font-size: 12px; font-weight: 500; } /* downscale when main ≥ 14 */
 
   /* ───── Shell ───── */
   .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
@@ -85,7 +100,7 @@
     font-size: 11px; font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track);
     padding: 14px 10px 6px;
   }
   .nav-item {
@@ -109,11 +124,12 @@
     font-family: var(--mono);
     font-size: 11px; font-weight: 700;
     padding: 1px 6px; border-radius: 999px;
+    letter-spacing: var(--track);
   }
   .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
   .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
   .org-switcher:hover { background: rgba(232,222,201,.5); }
-  .org-avatar { width: 24px; height: 24px; border-radius: 6px; background: var(--rust); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+  .org-avatar { width: 24px; height: 24px; border-radius: 6px; background: var(--rust); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
   .org-meta { display: flex; flex-direction: column; min-width: 0; }
   .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
   .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
@@ -146,7 +162,7 @@
     font-size: 11px; font-weight: 600;
     padding: 2px 6px;
     border-radius: 4px;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--track);
   }
   .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
 
@@ -192,6 +208,18 @@
   }
   .icon-btn:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
   .icon-btn svg { width: 16px; height: 16px; }
+  .icon-btn-sm {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: transparent;
+    border: 0;
+    color: var(--faint);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn-sm:hover { background: var(--chip-fill); color: var(--ink-2); }
+  .icon-btn-sm.is-danger:hover { background: var(--danger-soft); color: var(--danger); }
+  .icon-btn-sm svg { width: 12px; height: 12px; }
 
   /* Main */
   .main { display: flex; flex-direction: column; min-width: 0; }
@@ -236,7 +264,7 @@
     font-family: var(--mono);
     font-size: 11px; font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--track);
     padding: 4px 10px;
     border-radius: 999px;
   }
@@ -246,6 +274,7 @@
   .status-draft { background: var(--chip-fill); color: var(--muted); }
   .status-sent { background: var(--info-soft); color: var(--info); }
   .status-approved { background: var(--ok-soft); color: var(--ok); }
+  .status-declined { background: var(--danger-soft); color: var(--danger); }
   .customer-line {
     margin-top: 4px;
     display: flex; align-items: center; gap: 6px;
@@ -308,6 +337,7 @@
     color: #fff; background: var(--rust);
     padding: 0 6px; height: 16px;
     border-radius: 999px;
+    letter-spacing: var(--track);
   }
   .tab-count-soft {
     display: inline-flex; align-items: center;
@@ -317,139 +347,15 @@
     background: var(--warn-soft);
     padding: 0 6px; height: 16px;
     border-radius: 999px;
+    letter-spacing: var(--track);
   }
 
   /* Budget body */
-  .budget { margin-top: 22px; display: flex; flex-direction: column; gap: 18px; }
+  .budget { margin-top: 22px; display: flex; flex-direction: column; gap: 16px; }
 
-  /* Alert chips */
-  .alert-chips { display: flex; gap: 10px; flex-wrap: wrap; }
-  .chip-alert {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 12px 8px 11px;
-    border-radius: 999px;
-    font-size: 14px;
-    background: var(--card);
-    border: 1px solid var(--hair);
-    line-height: 1;
-    cursor: pointer;
-    font-family: var(--sans);
-  }
-  .chip-alert .mark {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    display: grid; place-items: center;
-    flex-shrink: 0;
-  }
-  .chip-alert .mark svg { width: 11px; height: 11px; }
-  .chip-alert .body { color: var(--ink); font-weight: 500; }
-  .chip-alert .body strong { font-weight: 700; }
-  .chip-alert .body .amt { font-variant-numeric: tabular-nums; }
-  .chip-alert .body .sep { color: var(--faint); margin: 0 2px; }
-  .chip-alert .arrow { width: 12px; height: 12px; color: var(--muted); margin-left: 2px; }
-  .chip-alert.is-danger {
-    background: var(--danger-soft);
-    border-color: rgba(185,28,28,0.22);
-  }
-  .chip-alert.is-danger .mark { background: var(--danger); color: #fff; }
-  .chip-alert.is-warn {
-    background: var(--warn-soft);
-    border-color: rgba(180,83,9,0.22);
-  }
-  .chip-alert.is-warn .mark { background: var(--warn); color: #fff; }
-  .chip-alert.is-warn .arrow, .chip-alert.is-danger .arrow { color: var(--ink-2); }
-
-  /* State strip */
-  .state-strip {
-    display: flex; align-items: center; gap: 12px;
-    padding: 11px 14px 11px 16px;
-    border-radius: 10px;
-    border: 1px solid var(--hair);
-    font-size: 14px;
-    color: var(--ink-2);
-  }
-  .state-strip .ss-mark {
-    width: 22px; height: 22px; border-radius: 999px;
-    display: grid; place-items: center;
-    flex-shrink: 0;
-    font-family: var(--mono);
-    font-size: 12px; font-weight: 700;
-  }
-  .state-strip .ss-mark svg { width: 11px; height: 11px; }
-  .state-strip .ss-body { min-width: 0; flex: 1; }
-  .state-strip .ss-body strong { color: var(--ink); font-weight: 600; }
-  .state-strip .ss-body .sep { color: var(--faint); margin: 0 4px; }
-  .state-strip .ss-body .amt {
-    font-variant-numeric: tabular-nums;
-    color: var(--ink); font-weight: 600;
-  }
-  .state-strip .ss-actions {
-    display: flex; align-items: center; gap: 6px;
-    flex-shrink: 0;
-  }
-  .state-strip .ss-actions .btn { height: 30px; padding: 0 11px; font-size: 12px; }
-  .state-strip .ss-actions .btn.btn-rust .icon { color: #fff; }
-  .state-strip .ss-divider {
-    width: 1px; height: 18px;
-    background: var(--hair);
-    margin: 0 2px;
-  }
-  .state-strip.is-pending {
-    background: var(--rust-soft);
-    border-color: rgba(194,65,12,0.22);
-    border-left: 3px solid var(--rust);
-    padding-left: 13px;
-  }
-  .state-strip.is-pending .ss-mark { background: var(--rust); color: #fff; }
-  .state-strip.is-pending .ss-actions .btn-ghost {
-    background: transparent;
-    border-color: rgba(194,65,12,0.25);
-    color: var(--ink);
-  }
-  .state-strip.is-pending .ss-actions .btn-ghost:hover {
-    background: rgba(255,255,255,0.6);
-    border-color: rgba(194,65,12,0.4);
-  }
-
-  /* Signed banner */
-  .signed-banner {
-    display: flex; align-items: center; gap: 12px;
-    padding: 11px 16px;
-    background: var(--card);
-    border: 1px solid var(--hair);
-    border-left: 3px solid var(--ok);
-    border-radius: 10px;
-    font-size: 14px;
-    color: var(--ink-2);
-  }
-  .signed-banner .signed-mark {
-    width: 18px; height: 18px; border-radius: 50%;
-    background: var(--ok-soft); color: var(--ok);
-    display: grid; place-items: center;
-  }
-  .signed-banner .signed-mark svg { width: 11px; height: 11px; }
-  .signed-banner strong { color: var(--ink); font-weight: 600; }
-  .signed-banner .sep { color: var(--faint); margin: 0 3px; }
-  .signed-banner .ver {
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 700;
-    color: var(--ink-2);
-    background: var(--chip-fill);
-    padding: 2px 7px;
-    border-radius: 4px;
-    letter-spacing: 0.04em;
-  }
-  .signed-banner .view-link {
-    margin-left: auto;
-    color: var(--ink-2);
-    font-weight: 600;
-    font-family: var(--mono);
-    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
-    display: inline-flex; align-items: center; gap: 4px;
-  }
-  .signed-banner .view-link svg { width: 11px; height: 11px; color: var(--muted); }
-
-  /* Budget summary panel */
+  /* ──────────────────────────────────────────────────────────
+     BUDGET SUMMARY PANEL
+     ────────────────────────────────────────────────────────── */
   .panel {
     background: var(--card);
     border: 1px solid var(--hair);
@@ -472,7 +378,7 @@
     font-family: var(--mono);
     font-size: 11px; font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track);
     padding: 4px 8px;
     border-radius: 6px;
     background: transparent; border: 0;
@@ -495,11 +401,11 @@
     font-size: 11px; font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track);
   }
   /* Display-size scope summary numbers (allowed exception to 16/14/12) */
   .var-value {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.015em;
@@ -511,7 +417,7 @@
     font-family: var(--mono);
     font-size: 11px; font-weight: 500;
     color: var(--muted);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--track);
     text-transform: uppercase;
   }
 
@@ -528,7 +434,15 @@
   }
   .progress-meta strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
   .progress-meta .sep { color: var(--faint); }
-  .progress-meta .right { margin-left: auto; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .progress-meta .right {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+    color: var(--muted);
+  }
   .seg-bar {
     display: flex;
     height: 8px;
@@ -555,11 +469,74 @@
   .seg-legend strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
   /* ──────────────────────────────────────────────────────────
+     CLIENT ESTIMATE FOOTER — what the *customer* sees.
+     Status-aware. DRAFT shows "Mark approved / Mark declined /
+     Create invoice from estimate / Preview & send".
+     ────────────────────────────────────────────────────────── */
+  .client-estimate {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .ce-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .ce-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .ce-eyebrow strong { color: var(--ink); font-weight: 700; }
+  .ce-eyebrow .sep { color: var(--faint); }
+  .ce-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+    padding: 3px 8px;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+  .ce-status.is-draft { background: var(--chip-fill); color: var(--muted); }
+  .ce-status.is-sent { background: var(--info-soft); color: var(--info); }
+  .ce-status.is-approved { background: var(--ok-soft); color: var(--ok); }
+  .ce-status.is-declined { background: var(--danger-soft); color: var(--danger); }
+  .ce-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: var(--track);
+    text-transform: uppercase;
+  }
+  .ce-meta strong { color: var(--ink-2); font-weight: 700; }
+
+  .ce-body {
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .ce-actions-left { display: flex; align-items: center; gap: 8px; }
+  .ce-spacer { flex: 1; }
+  .ce-actions-right { display: flex; align-items: center; gap: 8px; }
+  .ce-actions-right .ce-rule {
+    width: 1px; height: 22px;
+    background: var(--hair);
+  }
+
+  /* ──────────────────────────────────────────────────────────
      SCOPE TABLE — Section → Category → Line, with contained well
      ────────────────────────────────────────────────────────── */
   .scope-head {
     display: flex; align-items: center; gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     padding: 0 4px;
   }
   .scope-eyebrow {
@@ -567,17 +544,10 @@
     font-size: 11px; font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--track);
   }
-  .scope-meta {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 500;
-    color: var(--faint);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .scope-actions { display: flex; gap: 4px; align-items: center; }
+  .scope-eyebrow .sep { color: var(--faint); margin: 0 4px; }
+  .scope-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
   .scope-toggle {
     display: inline-flex; align-items: center; gap: 5px;
     height: 28px; padding: 0 10px;
@@ -588,7 +558,7 @@
     font-family: var(--mono);
     font-size: 11px; font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track);
     cursor: pointer;
   }
   .scope-toggle:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--rule); }
@@ -602,7 +572,7 @@
   /* Shared row grid — section, category, AND line all share so columns align */
   .row-grid {
     display: grid;
-    grid-template-columns: 24px 1fr 110px 110px 110px 160px;
+    grid-template-columns: 24px 1fr 110px 110px 110px 180px;
     gap: 12px;
     align-items: center;
   }
@@ -616,19 +586,20 @@
     font-size: 11px; font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track);
     position: sticky;
     top: 56px;
     z-index: 5;
   }
   .table-col-head .right { text-align: right; }
 
-  /* ─── SECTION row (eyebrow weight, container — rolls up its categories) ─── */
+  /* ─── SECTION row ─── */
   .section-row {
     padding: 13px 18px 13px 14px;
     border-top: 1px solid var(--hair);
     cursor: pointer;
     background: var(--card);
+    position: relative;
   }
   .section-row:first-of-type { border-top: 0; }
   .section-row:hover { background: #FFFCF7; }
@@ -644,7 +615,7 @@
     font-size: 11px; font-weight: 700;
     color: var(--ink);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--track);
     display: flex; align-items: center; gap: 8px;
     flex-wrap: wrap;
   }
@@ -652,16 +623,18 @@
     color: var(--muted);
     font-weight: 500;
   }
-  .section-num {
+  .num-r {
     text-align: right;
     font-variant-numeric: tabular-nums;
     color: var(--ink);
-    font-weight: 600;
-    font-size: 14px;
+    white-space: nowrap;
   }
+  /* Section numerics: 14px, semibold, with de-emph cents */
+  .section-num { font-size: 14px; font-weight: 600; color: var(--ink); }
   .section-num .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
   .section-num.is-over { color: var(--danger); }
   .section-num.is-muted { color: var(--muted); font-weight: 500; }
+
   .section-prog {
     display: flex; align-items: center; gap: 10px;
   }
@@ -681,19 +654,19 @@
     font-size: 11px; font-weight: 600;
     color: var(--muted);
     width: 38px; text-align: right;
-    letter-spacing: 0.02em;
+    letter-spacing: var(--track);
   }
+  .section-prog .pct.is-over { color: var(--danger); }
+  .section-prog .pct.is-warn { color: var(--warn); }
 
-  /* ─── SECTION BODY — the indented well that holds categories of an open section.
-         Categories sit in here at a deeper indent so the "in section" cue is unmistakable. */
+  /* ─── SECTION BODY — holds open + closed categories of an expanded section. */
   .section-body {
     padding: 4px 0 6px;
     background: var(--card);
     border-top: 1px solid var(--hair);
   }
 
-  /* ─── CATEGORY row (16px semibold + description + progress bar). Three weights:
-         SECTION (uppercase mono eyebrow) > CATEGORY (16px) > LINE (14px). */
+  /* ─── CATEGORY row (16px semibold + description + progress + $left + trash) */
   .cat-row {
     padding: 12px 18px 12px 14px;
     background: transparent;
@@ -717,23 +690,34 @@
     line-height: 1.3;
     letter-spacing: -0.005em;
   }
+  .cat-name .line-count {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0;
+    text-transform: none;
+  }
   .cat-desc {
     font-size: 12px;
     color: var(--muted);
     line-height: 1.4;
     margin-top: 2px;
   }
+  /* Category numerics: 14px, with de-emph cents (one consistent treatment) */
   .cat-num {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
     text-align: right;
     font-variant-numeric: tabular-nums;
-    color: var(--ink); font-weight: 500;
-    font-size: 14px;
   }
   .cat-num .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
-  .cat-num.is-zero { color: var(--faint); }
-  .cat-num.is-over { color: var(--danger); font-weight: 600; }
+  .cat-num.is-zero { color: var(--faint); font-weight: 500; }
+  .cat-num.is-muted { color: var(--muted); font-weight: 500; }
+  .cat-num.is-over { color: var(--danger); }
 
-  /* HOVER-REVEAL drag handle — hidden at rest, fades in on row hover */
+  /* HOVER-REVEAL drag handle */
   .grip {
     position: absolute;
     left: 0;
@@ -751,13 +735,13 @@
   .section-row:hover .grip { opacity: 1; }
   .section-row .grip { left: -2px; }
 
-  /* Status chips */
+  /* Status chips — one tracking, one mono, status tones only */
   .cat-chip {
     display: inline-flex; align-items: center; gap: 4px;
     font-family: var(--mono);
     font-size: 11px; font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track);
     padding: 2px 7px;
     border-radius: 4px;
     line-height: 1.4;
@@ -767,9 +751,27 @@
   .cat-chip.info { color: var(--info); background: var(--info-soft); }
   .cat-chip.ok { color: var(--ok); background: var(--ok-soft); }
 
-  /* ─── CONTAINED WELL — open category + its lines = ONE soft warm-neutral group.
-         Tonal only (warm-neutrals), NOT rust. Stronger tint on the category-row head,
-         lighter on the lines tray. Subtle tonal left accent rule = "you're in this." */
+  /* Remaining-column composite: bar + "$X left" + trash */
+  .cat-remain {
+    display: flex; flex-direction: column; gap: 4px;
+    align-items: stretch;
+  }
+  .cat-remain .left-row {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 6px;
+  }
+  .cat-remain .left-amt {
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .cat-remain .left-amt.is-over { color: var(--danger); }
+  .cat-remain .left-amt.is-warn { color: var(--warn); }
+  .cat-remain .left-amt strong { color: var(--ink); font-weight: 600; }
+  .cat-remain .left-amt .cents { color: var(--muted); }
+
+  /* ─── CONTAINED WELL — open category + lines */
   .cat-group.is-open {
     background: var(--well-body);
     border-top: 1px solid var(--rule);
@@ -791,48 +793,56 @@
 
   /* Lines tray — sits inside the well */
   .lines-tray {
-    padding: 2px 0 12px;
+    padding: 4px 0 4px;
     position: relative;
   }
-  /* Left guide rail — 1px hairline running down, indented under the CATEGORY NAME
-     (inboard of where the grip would be). Tree-spine the eye can follow. */
   .lines-tray::before {
     content: "";
     position: absolute;
-    left: 50px;          /* 14 padding + 24 col + 12 gap = 50; aligns with category name start */
+    left: 50px;
     top: 0;
-    bottom: 22px;        /* stop above the actions block so it reads as "scope of lines" */
+    bottom: 10px;
     width: 1px;
     background: var(--well-rail);
     pointer-events: none;
     opacity: 0.7;
   }
 
-  /* LINE rows — lighter, smaller, no progress bar, no description */
+  /* LINE rows — chevron + name + meta + 4 cols + edit/trash */
   .line-row {
-    padding: 7px 18px 7px 14px;
+    padding: 8px 18px 8px 14px;
     color: var(--ink-2);
     position: relative;
   }
   .line-name-wrap {
-    padding-left: 16px;  /* deepen the child indent — step is unmistakable */
+    padding-left: 16px;
     min-width: 0;
-    display: flex; align-items: baseline; gap: 8px;
+    display: flex; align-items: baseline; gap: 6px;
     flex-wrap: wrap;
     position: relative;
   }
-  /* Subtle elbow into each line off the left guide rail */
+  /* Elbow connector off the left guide rail */
   .line-name-wrap::before {
     content: "";
     position: absolute;
     left: 0;
-    top: 50%;
+    top: 11px;
     width: 10px;
     height: 1px;
     background: var(--well-rail);
     opacity: 0.7;
     pointer-events: none;
   }
+  .line-chev {
+    display: inline-grid; place-items: center;
+    width: 14px; height: 14px;
+    color: var(--muted);
+    flex-shrink: 0;
+    cursor: pointer;
+    transform: translateY(2px);
+  }
+  .line-chev svg { width: 11px; height: 11px; transition: transform 120ms; }
+  .line-row.is-open .line-chev svg { transform: rotate(90deg); }
   .line-name {
     color: var(--ink);
     font-weight: 500;
@@ -845,32 +855,135 @@
     color: var(--muted);
     letter-spacing: 0.02em;
   }
+  /* Line numerics: 14px regular, de-emph cents (lighter than categories) */
   .line-num {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink);
     text-align: right;
     font-variant-numeric: tabular-nums;
-    font-size: 14px;
-    font-weight: 400;        /* lighter than category 500 — leaves don't read twice */
-    color: var(--ink);
     white-space: nowrap;
   }
   .line-num .cents { color: var(--muted); font-size: 12px; font-weight: 400; }
-  .line-num.is-zero { color: var(--faint); }
+  .line-num.is-zero { color: var(--faint); font-weight: 400; }
   .line-num.is-muted { color: var(--muted); }
+  /* Remaining + actions cell on the line */
+  .line-remain {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* ─── PER-LINE SPEND-DETAIL WELL (BILL / EXPENSE / LABOUR) ─── */
+  .line-detail {
+    margin: 2px 18px 8px 80px;     /* indent under the line name */
+    padding: 10px 12px 10px 12px;
+    background: var(--well-deep);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .ld-row {
+    display: grid;
+    grid-template-columns: 64px 80px 1fr 92px;
+    align-items: center;
+    gap: 12px;
+  }
+  .ld-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 2px 0;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .ld-pill.is-bill { background: var(--info-soft); color: var(--info); }
+  .ld-pill.is-expense { background: #F1E6CC; color: var(--ink-2); }
+  .ld-pill.is-labour { background: #ECE3D0; color: var(--muted); }
+  .ld-date {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .ld-label {
+    font-size: 12px;
+    color: var(--ink-2);
+    min-width: 0;
+    line-height: 1.4;
+  }
+  .ld-label .who {
+    color: var(--muted);
+    margin-left: 4px;
+  }
+  .ld-amt {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ld-amt .cents { color: var(--muted); font-weight: 400; }
+  .ld-foot {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--rule);
+  }
+  .ld-total {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+  }
+  .ld-total .v {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 6px;
+  }
+  .ld-total .v .cents { color: var(--muted); font-weight: 400; }
+  .ld-link {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+    color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 4px;
+    cursor: pointer;
+  }
+  .ld-link:hover { color: var(--ink); }
+  .ld-link svg { width: 11px; height: 11px; }
+  .ld-empty {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding: 2px 0;
+  }
 
   /* Actions block at the bottom of a category's lines tray */
   .line-actions {
-    padding: 10px 18px 0 64px;  /* aligns with line-name start (14+24+12+16=66, near 64) */
-    display: flex; flex-direction: column;
-    gap: 12px;
+    padding: 8px 18px 4px 64px;
+    display: flex; align-items: center;
+    gap: 14px; flex-wrap: wrap;
   }
   .add-line-btn {
-    align-self: flex-start;
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 10px;
+    padding: 6px 10px;
     border: 1px dashed var(--rule);
     border-radius: 7px;
     color: var(--muted);
-    font-size: 14px; font-weight: 500;
+    font-size: 12px; font-weight: 600;
     background: transparent;
     cursor: pointer;
     font-family: var(--sans);
@@ -878,44 +991,43 @@
   .add-line-btn:hover { color: var(--ink); border-color: var(--ink-2); background: rgba(255,255,255,0.6); }
   .add-line-btn svg { width: 11px; height: 11px; }
 
-  /* Spent-by-source strip */
+  /* Spent-by-source — same mono label discipline as the rest */
   .source-strip {
-    padding: 10px 14px;
-    background: var(--card);
-    border: 1px solid var(--hair);
-    border-radius: 9px;
-    display: flex; align-items: center; gap: 16px;
-    font-size: 14px;
+    display: inline-flex; align-items: center;
+    gap: 12px; flex-wrap: wrap;
   }
   .source-strip .src-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+  }
+  .source-strip .src-item {
+    display: inline-flex; align-items: baseline; gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .source-strip .src-item .src-name {
     font-family: var(--mono);
     font-size: 11px; font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track);
   }
-  .source-strip .src-item {
-    display: inline-flex; align-items: baseline; gap: 4px;
-    color: var(--ink-2);
-  }
-  .source-strip .src-item strong {
+  .source-strip .src-item .amt {
     color: var(--ink);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
-  .source-strip .src-item.is-link {
-    color: var(--ink-2);
-    border-bottom: 1px solid transparent;
-    cursor: pointer;
-  }
-  .source-strip .src-item.is-link:hover { border-bottom-color: var(--rule); color: var(--ink); }
+  .source-strip .src-item .amt .cents { color: var(--muted); font-weight: 400; }
+  .source-strip .src-item.is-link { cursor: pointer; }
+  .source-strip .src-item.is-link:hover .amt { color: var(--rust); }
   .source-strip .sep { color: var(--faint); }
-  .source-strip .src-arrow { width: 11px; height: 11px; color: var(--muted); }
 
-  /* Contextual "+ Add category" at the foot of an expanded section.
-     Parent section is known → DROPS the section picker. */
+  /* Contextual "+ Add category" at the foot of an expanded section. */
   .section-add {
-    padding: 8px 14px 12px 50px;  /* aligns under category name */
+    padding: 8px 14px 12px 50px;
   }
   .section-add .btn-context {
     display: inline-flex; align-items: center; gap: 6px;
@@ -935,11 +1047,11 @@
     font-family: var(--mono);
     font-size: 11px; font-weight: 500;
     color: var(--faint);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--track);
     text-transform: uppercase;
   }
 
-  /* Catch-all bottom add-row — "+ Add category" (with section picker) and "+ Add section" */
+  /* Catch-all bottom add-row — "+ Add category" / "+ Add section" */
   .add-row {
     display: flex; align-items: center; gap: 10px;
     padding: 12px 18px 13px 14px;
@@ -954,7 +1066,7 @@
     border: 1px dashed var(--rule);
     border-radius: 7px;
     color: var(--muted);
-    font-size: 14px; font-weight: 600;
+    font-size: 12px; font-weight: 600;
     background: transparent;
     cursor: pointer;
     font-family: var(--sans);
@@ -962,240 +1074,6 @@
   .add-row .btn-add-line:hover { color: var(--ink); border-color: var(--ink-2); background: var(--card); }
   .add-row .btn-add-line svg { width: 11px; height: 11px; }
   .add-row .add-spacer { flex: 1; }
-
-  /* ─── INLINE ADD FORM — Paper card.
-         Header lives at top so it's never ambiguous which you're creating. */
-  .inline-form {
-    background: var(--card);
-    border: 1px solid var(--hair);
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow-form);
-    overflow: hidden;
-    margin: 14px 14px 14px;
-  }
-  .inline-form.context-inline {
-    margin: 6px 14px 14px 50px;     /* contextual: nested under its section */
-  }
-  .inline-form-head {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 18px 11px;
-    background: var(--chrome);
-    border-bottom: 1px solid var(--hair);
-  }
-  .inline-form-title {
-    font-size: 16px; font-weight: 700;
-    color: var(--ink);
-    letter-spacing: -0.01em;
-  }
-  .inline-form-kind {
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    background: var(--chip-fill);
-    padding: 2px 7px;
-    border-radius: 4px;
-  }
-  .inline-form-scope {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 500;
-    color: var(--muted);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .inline-form-scope strong { color: var(--ink-2); font-weight: 700; }
-  .inline-form-body { padding: 16px 18px 4px; }
-  .form-grid {
-    display: grid; gap: 14px;
-  }
-  .form-grid.cols-3 { grid-template-columns: 2fr 1.4fr 1.1fr; }
-  .form-grid.cols-2 { grid-template-columns: 2fr 1fr; }
-  .form-grid.cols-1 { grid-template-columns: 1fr; }
-  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .field label {
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-  .field label .req { color: var(--rust); font-weight: 700; }
-  .field label .opt {
-    color: var(--faint);
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
-  }
-  .field-input {
-    height: 38px;
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-input);
-    padding: 0 11px;
-    font-family: var(--sans);
-    font-size: 14px;
-    color: var(--ink);
-    line-height: 1.4;
-    display: flex; align-items: center;
-  }
-  .field-input.is-placeholder { color: var(--faint); }
-  .field-input:focus-within { border-color: var(--ink-2); outline: 2px solid var(--rust-soft); }
-  .field-input .lead {
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--muted);
-    margin-right: 4px;
-  }
-  .field-textarea {
-    min-height: 68px;
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-input);
-    padding: 9px 11px;
-    font-family: var(--sans);
-    font-size: 14px;
-    color: var(--ink);
-    line-height: 1.5;
-    resize: vertical;
-  }
-  .field-textarea.is-placeholder { color: var(--faint); }
-  .field-select {
-    height: 38px;
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-input);
-    padding: 0 11px;
-    display: flex; align-items: center; gap: 6px;
-    color: var(--ink);
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .field-select .chev { margin-left: auto; color: var(--muted); display: grid; place-items: center; }
-  .field-select .chev svg { width: 12px; height: 12px; }
-  .field-help {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.4;
-  }
-  .inline-form-foot {
-    display: flex; align-items: center; gap: 8px;
-    padding: 14px 18px;
-    border-top: 1px dashed var(--rule);
-    margin-top: 14px;
-    background: #FCFAF4;
-  }
-  .inline-form-foot .ff-spacer { flex: 1; }
-  .inline-form-foot .ff-hint {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  /* ──────────────────────────────────────────────────────────
-     CLIENT ESTIMATE FOOTER — what the *customer* sees.
-     Status-aware primary. Groups: client-facing | workflow.
-     ────────────────────────────────────────────────────────── */
-  .client-estimate {
-    background: var(--card);
-    border: 1px solid var(--hair);
-    border-radius: var(--radius-card);
-    overflow: hidden;
-  }
-  .ce-head {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 18px 12px;
-    border-bottom: 1px solid var(--hair);
-  }
-  .ce-eyebrow {
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    display: inline-flex; align-items: center; gap: 8px;
-  }
-  .ce-eyebrow strong { color: var(--ink); font-weight: 700; }
-  .ce-eyebrow .sep { color: var(--faint); margin: 0 2px; }
-  .ce-status {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 3px 8px;
-    border-radius: 4px;
-    line-height: 1.4;
-  }
-  .ce-status.is-draft { background: var(--chip-fill); color: var(--muted); }
-  .ce-status.is-sent { background: var(--info-soft); color: var(--info); }
-  .ce-status.is-approved { background: var(--ok-soft); color: var(--ok); }
-  .ce-meta {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 500;
-    color: var(--faint);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .ce-meta strong { color: var(--ink-2); font-weight: 700; }
-
-  .ce-body {
-    padding: 14px 18px 14px;
-    display: flex; align-items: center; gap: 14px;
-  }
-  .ce-body .ce-summary {
-    color: var(--ink-2);
-    font-size: 14px;
-    line-height: 1.45;
-    min-width: 0; flex: 1;
-  }
-  .ce-body .ce-summary strong { color: var(--ink); font-weight: 600; }
-  .ce-body .ce-summary .sep { color: var(--faint); margin: 0 4px; }
-  .ce-body .ce-summary .amt {
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    color: var(--ink);
-  }
-
-  /* Action groups: client-facing on the left | workflow on the right */
-  .ce-actions {
-    display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-  }
-  .ce-group {
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-  .ce-group-rule {
-    width: 1px; height: 22px;
-    background: var(--hair);
-  }
-  .ce-actions .btn { font-size: 14px; }
-
-  /* OD frame label — separates supplementary state previews below the fold */
-  .od-frame-label {
-    display: flex; align-items: center; gap: 10px;
-    margin: 28px 4px 10px;
-    padding-bottom: 6px;
-    border-bottom: 1px dashed var(--rule);
-  }
-  .od-frame-label .od-tag {
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 700;
-    color: var(--ink);
-    background: var(--chip-fill);
-    padding: 3px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .od-frame-label .od-text {
-    font-size: 14px;
-    color: var(--muted);
-    font-weight: 500;
-  }
-  .od-frame-label .od-text strong { color: var(--ink); font-weight: 600; }
 
   ::selection { background: var(--rust-soft); color: var(--ink); }
 </style>
@@ -1220,18 +1098,16 @@
     <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
     <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
     <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
     <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
-    <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
     <symbol id="i-grip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="0.6" fill="currentColor"/><circle cx="9" cy="12" r="0.6" fill="currentColor"/><circle cx="9" cy="18" r="0.6" fill="currentColor"/><circle cx="15" cy="6" r="0.6" fill="currentColor"/><circle cx="15" cy="12" r="0.6" fill="currentColor"/><circle cx="15" cy="18" r="0.6" fill="currentColor"/></symbol>
-    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
     <symbol id="i-collapse-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
-    <symbol id="i-expand-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
     <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
-    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
-    <symbol id="i-rotate-ccw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
-    <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
     <symbol id="i-receipt-money" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M15 9.5a2.5 2.5 0 0 0-2.5-2.5h-1a2 2 0 0 0 0 4h1a2 2 0 0 1 0 4h-1A2.5 2.5 0 0 1 9 12.5"/></symbol>
   </defs>
 </svg>
@@ -1311,7 +1187,7 @@
 
       <!-- Tabs -->
       <nav class="tab-strip" aria-label="Project sections">
-        <button class="tab is-on">Budget <span class="tab-count-soft" title="2 alerts">2</span></button>
+        <button class="tab is-on">Budget</button>
         <button class="tab">Spend</button>
         <button class="tab">Labour</button>
         <button class="tab">Schedule</button>
@@ -1325,43 +1201,7 @@
 
       <section class="budget" aria-label="Budget">
 
-        <!-- Margin alert -->
-        <div class="alert-chips" role="region" aria-label="Budget alerts">
-          <button class="chip-alert is-danger" type="button">
-            <span class="mark"><svg><use href="#i-alert-triangle"/></svg></span>
-            <span class="body"><strong>Margin at risk</strong> <span class="sep">&middot;</span> <strong>6%</strong> vs <strong>18%</strong></span>
-            <svg class="arrow"><use href="#i-arrow-right"/></svg>
-          </button>
-        </div>
-
-        <!-- Pending re-approval state strip -->
-        <div class="state-strip is-pending" role="region" aria-label="Budget approval state">
-          <span class="ss-mark" aria-hidden="true">&#10022;</span>
-          <span class="ss-body">
-            <strong>2 unsent changes</strong> since v3 <span class="sep">&middot;</span>
-            <span class="amt">+$3,200</span> <span class="sep">&middot;</span>
-            send revised baseline to Daniel &amp; Priya for re-approval
-          </span>
-          <span class="ss-actions">
-            <button class="btn btn-ghost btn-sm" type="button" title="Daniel verbally agreed">Mark approved</button>
-            <button class="btn btn-ghost btn-sm" type="button" title="Customer pushed back">Mark declined</button>
-            <span class="ss-divider" aria-hidden="true"></span>
-            <button class="btn btn-rust btn-sm" type="button">
-              <svg class="icon"><use href="#i-send"/></svg>
-              Preview &amp; send
-            </button>
-          </span>
-        </div>
-
-        <!-- Signed baseline -->
-        <div class="signed-banner">
-          <span class="signed-mark"><svg><use href="#i-check"/></svg></span>
-          <span><strong>Estimate signed</strong> by Daniel &amp; Priya Mohan, Mar 1 <span class="sep">&middot;</span> 2 applied change orders <span class="sep">&middot;</span> contract baseline</span>
-          <span class="ver">v3</span>
-          <a class="view-link" href="#">View signed PDF <svg><use href="#i-arrow-right"/></svg></a>
-        </div>
-
-        <!-- Budget summary -->
+        <!-- ───── Budget summary ───── -->
         <div class="panel">
           <div class="panel-head">
             <span class="panel-title">Budget summary</span>
@@ -1374,7 +1214,7 @@
               <div class="var-cell">
                 <span class="var-label">Estimate</span>
                 <span class="var-value">$142,000<span class="cents">.00</span></span>
-                <span class="var-sub">Contract baseline &middot; v3</span>
+                <span class="var-sub">Contract baseline</span>
               </div>
               <div class="var-cell">
                 <span class="var-label">Spent</span>
@@ -1395,10 +1235,10 @@
 
             <div class="progress-stack">
               <div class="progress-meta">
-                <span><strong>53% complete</strong></span>
+                <span><strong>53%</strong> complete</span>
                 <span class="sep">&middot;</span>
                 <span><strong>61%</strong> of budget consumed</span>
-                <span class="right">$86,100 of $142,000</span>
+                <span class="right">$86,100 / $142,000</span>
               </div>
               <div class="seg-bar" aria-hidden="true">
                 <i class="seg-spent" style="width:43.2%;"></i>
@@ -1413,13 +1253,45 @@
           </div>
         </div>
 
-        <!-- ───── SCOPE TABLE ───── -->
+        <!-- ───── Estimate action footer (DRAFT) ───── -->
+        <div class="client-estimate" role="region" aria-label="Client estimate">
+          <div class="ce-head">
+            <span class="ce-eyebrow">
+              <strong>Client estimate</strong>
+              <span class="sep">&middot;</span>
+              <span class="ce-status is-draft">Draft</span>
+            </span>
+            <span class="ce-meta">Client can't see this yet</span>
+          </div>
+          <div class="ce-body">
+            <div class="ce-actions-left">
+              <button class="btn btn-ghost btn-sm" type="button">Mark approved</button>
+              <button class="btn btn-ghost btn-sm" type="button">Mark declined</button>
+            </div>
+            <span class="ce-spacer"></span>
+            <div class="ce-actions-right">
+              <button class="btn btn-rust btn-sm" type="button">
+                <svg class="icon"><use href="#i-send"/></svg>
+                Preview &amp; send to customer
+              </button>
+              <span class="ce-rule" aria-hidden="true"></span>
+              <button class="btn btn-disabled btn-sm" type="button" disabled title="Available after the customer approves">
+                <svg class="icon"><use href="#i-receipt-money"/></svg>
+                Create invoice from estimate
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───── Scope table ───── -->
         <section aria-label="Scope">
           <div class="scope-head">
-            <span class="scope-eyebrow">Scope &middot; 3 sections &middot; 10 categories</span>
-            <span class="scope-meta">Sections roll up their categories</span>
+            <span class="scope-eyebrow">Scope <span class="sep">&middot;</span> 3 sections <span class="sep">&middot;</span> 10 categories</span>
             <div class="scope-actions">
-              <button class="icon-btn" aria-label="Filter"><svg><use href="#i-filter"/></svg></button>
+              <button class="scope-toggle" type="button" title="Save current scope as a starter template">
+                <svg><use href="#i-bookmark"/></svg>
+                Save as template
+              </button>
               <button class="scope-toggle" type="button" aria-pressed="false" title="Collapse every section">
                 <svg><use href="#i-collapse-all"/></svg>
                 Collapse all
@@ -1439,20 +1311,20 @@
               <span class="right">Remaining</span>
             </div>
 
-            <!-- ─── Section 1: Site & Structure (collapsed) ─── -->
+            <!-- ─── Section 1: Site &amp; structure (collapsed) ─── -->
             <div class="section-row row-grid" role="row" aria-expanded="false">
               <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
               <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
               <span class="section-name">Site &amp; structure <span class="count">3 categories</span> <span class="cat-chip danger">Framing over $4,800</span></span>
-              <span class="section-num">$31,900<span class="cents">.00</span></span>
-              <span class="section-num is-over">$36,700<span class="cents">.00</span></span>
-              <span class="section-num is-muted">&mdash;</span>
+              <span class="num-r section-num">$31,900<span class="cents">.00</span></span>
+              <span class="num-r section-num is-over">$36,700<span class="cents">.00</span></span>
+              <span class="num-r section-num is-muted">&mdash;</span>
               <span class="section-prog">
                 <span class="mini-bar">
                   <i class="s" style="width:100%;"></i>
                   <i class="over" style="width:15%;"></i>
                 </span>
-                <span class="pct" style="color:var(--danger);">115%</span>
+                <span class="pct is-over">115%</span>
               </span>
             </div>
 
@@ -1461,9 +1333,9 @@
               <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
               <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
               <span class="section-name">Trades <span class="count">3 categories</span></span>
-              <span class="section-num">$46,700<span class="cents">.00</span></span>
-              <span class="section-num">$11,400<span class="cents">.00</span></span>
-              <span class="section-num">$17,200<span class="cents">.00</span></span>
+              <span class="num-r section-num">$46,700<span class="cents">.00</span></span>
+              <span class="num-r section-num">$11,400<span class="cents">.00</span></span>
+              <span class="num-r section-num">$17,200<span class="cents">.00</span></span>
               <span class="section-prog">
                 <span class="mini-bar">
                   <i class="s" style="width:24.4%;"></i>
@@ -1473,7 +1345,7 @@
               </span>
             </div>
 
-            <!-- Section body (the well that holds open + closed categories) -->
+            <!-- Section body — open + closed categories of "Trades" -->
             <div class="section-body">
 
               <!-- Trades / Electrical (closed) -->
@@ -1482,137 +1354,233 @@
                   <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
                   <span class="cat-twist"><svg><use href="#i-chevron-right"/></svg></span>
                   <span class="cat-name-wrap">
-                    <span class="cat-name">Electrical <span class="cat-chip info">CO 2</span></span>
+                    <span class="cat-name">
+                      Electrical
+                      <span class="line-count">4 lines</span>
+                      <span class="cat-chip info">CO 2</span>
+                    </span>
                     <span class="cat-desc">Panel upgrade, suite rough-in &amp; finish, low-voltage runs</span>
                   </span>
-                  <span class="cat-num">$14,500<span class="cents">.00</span></span>
-                  <span class="cat-num">$8,200<span class="cents">.00</span></span>
-                  <span class="cat-num">$2,800<span class="cents">.00</span></span>
-                  <span class="section-prog">
-                    <span class="mini-bar">
-                      <i class="s" style="width:56.6%;"></i>
-                      <i class="c" style="width:19.3%;"></i>
+                  <span class="num-r cat-num">$14,500<span class="cents">.00</span></span>
+                  <span class="num-r cat-num">$8,200<span class="cents">.00</span></span>
+                  <span class="num-r cat-num is-muted">$2,800<span class="cents">.00</span></span>
+                  <div class="cat-remain">
+                    <span class="section-prog">
+                      <span class="mini-bar">
+                        <i class="s" style="width:56.6%;"></i>
+                        <i class="c" style="width:19.3%;"></i>
+                      </span>
+                      <span class="pct">76%</span>
                     </span>
-                    <span class="pct">76%</span>
-                  </span>
+                    <span class="left-row">
+                      <span class="left-amt"><strong>$3,500<span class="cents">.00</span></strong> left</span>
+                      <button class="icon-btn-sm is-danger" aria-label="Remove Electrical"><svg><use href="#i-trash"/></svg></button>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Trades / Plumbing (OPEN — contained well + left rail + lines) -->
+              <!-- Trades / Plumbing (OPEN — contained well + lines + spend-detail) -->
               <div class="cat-group is-open">
                 <div class="cat-row row-grid" role="row" aria-expanded="true">
                   <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
                   <span class="cat-twist"><svg><use href="#i-chevron-right"/></svg></span>
                   <span class="cat-name-wrap">
-                    <span class="cat-name">Plumbing</span>
+                    <span class="cat-name">
+                      Plumbing
+                      <span class="line-count">5 lines</span>
+                    </span>
                     <span class="cat-desc">Ensuite rough-in, fixture supply, drain &amp; vent stack to attic</span>
                   </span>
-                  <span class="cat-num">$18,200<span class="cents">.00</span></span>
-                  <span class="cat-num">$3,200<span class="cents">.00</span></span>
-                  <span class="cat-num">$6,000<span class="cents">.00</span></span>
-                  <span class="section-prog">
-                    <span class="mini-bar">
-                      <i class="s" style="width:17.6%;"></i>
-                      <i class="c" style="width:33.0%;"></i>
+                  <span class="num-r cat-num">$18,200<span class="cents">.00</span></span>
+                  <span class="num-r cat-num">$3,200<span class="cents">.00</span></span>
+                  <span class="num-r cat-num is-muted">$6,000<span class="cents">.00</span></span>
+                  <div class="cat-remain">
+                    <span class="section-prog">
+                      <span class="mini-bar">
+                        <i class="s" style="width:17.6%;"></i>
+                        <i class="c" style="width:33.0%;"></i>
+                      </span>
+                      <span class="pct">51%</span>
                     </span>
-                    <span class="pct">51%</span>
-                  </span>
+                    <span class="left-row">
+                      <span class="left-amt"><strong>$9,000<span class="cents">.00</span></strong> left</span>
+                      <button class="icon-btn-sm is-danger" aria-label="Remove Plumbing"><svg><use href="#i-trash"/></svg></button>
+                    </span>
+                  </div>
                 </div>
 
-                <!-- Lines tray with left guide rail -->
+                <!-- Lines tray -->
                 <div class="lines-tray">
-                  <div class="line-row row-grid">
+
+                  <!-- Line 1 — Rough-in labour (EXPANDED, shows LABOUR spend detail) -->
+                  <div class="line-row row-grid is-open">
                     <span></span><span></span>
                     <span class="line-name-wrap" style="grid-column: 2 / 3;">
+                      <span class="line-chev"><svg><use href="#i-chevron-right"/></svg></span>
                       <span class="line-name">Rough-in labour</span>
-                      <span class="line-meta">32 hrs &times; $80/hr</span>
+                      <span class="line-meta">32 hrs @ $80.00</span>
                     </span>
-                    <span class="line-num">$2,560<span class="cents">.00</span></span>
-                    <span class="line-num">$2,560<span class="cents">.00</span></span>
-                    <span class="line-num is-zero">&mdash;</span>
-                    <span class="line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num">$2,560<span class="cents">.00</span></span>
+                    <span class="num-r line-num">$2,560<span class="cents">.00</span></span>
+                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="line-remain">
+                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
+                      <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
+                    </span>
                   </div>
+                  <div class="line-detail" aria-label="Rough-in labour — spend detail">
+                    <div class="ld-row">
+                      <span class="ld-pill is-labour">Labour</span>
+                      <span class="ld-date">Mar 04</span>
+                      <span class="ld-label">Demir Tomic <span class="who">&middot; 12 hrs</span></span>
+                      <span class="num ld-amt">$960<span class="cents">.00</span></span>
+                    </div>
+                    <div class="ld-row">
+                      <span class="ld-pill is-labour">Labour</span>
+                      <span class="ld-date">Mar 06</span>
+                      <span class="ld-label">Demir Tomic <span class="who">&middot; 10 hrs</span></span>
+                      <span class="num ld-amt">$800<span class="cents">.00</span></span>
+                    </div>
+                    <div class="ld-row">
+                      <span class="ld-pill is-labour">Labour</span>
+                      <span class="ld-date">Mar 08</span>
+                      <span class="ld-label">Riley Park <span class="who">&middot; 10 hrs</span></span>
+                      <span class="num ld-amt">$800<span class="cents">.00</span></span>
+                    </div>
+                    <div class="ld-foot">
+                      <span class="ld-total">Total <span class="v num">$2,560<span class="cents">.00</span></span></span>
+                      <a class="ld-link" href="#">Open in Spend tab <svg><use href="#i-arrow-up-right"/></svg></a>
+                    </div>
+                  </div>
+
+                  <!-- Line 2 — Rough-in materials -->
                   <div class="line-row row-grid">
                     <span></span><span></span>
                     <span class="line-name-wrap" style="grid-column: 2 / 3;">
+                      <span class="line-chev"><svg><use href="#i-chevron-right"/></svg></span>
                       <span class="line-name">Rough-in materials</span>
                       <span class="line-meta">PEX, fittings, hangers</span>
                     </span>
-                    <span class="line-num">$640<span class="cents">.00</span></span>
-                    <span class="line-num">$640<span class="cents">.00</span></span>
-                    <span class="line-num is-zero">&mdash;</span>
-                    <span class="line-num is-zero">&mdash;</span>
-                  </div>
-                  <div class="line-row row-grid">
-                    <span></span><span></span>
-                    <span class="line-name-wrap" style="grid-column: 2 / 3;">
-                      <span class="line-name">Fixtures</span>
-                      <span class="line-meta">Kohler &middot; PO #4218</span>
+                    <span class="num-r line-num">$640<span class="cents">.00</span></span>
+                    <span class="num-r line-num">$640<span class="cents">.00</span></span>
+                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="line-remain">
+                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
+                      <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
                     </span>
-                    <span class="line-num">$4,800<span class="cents">.00</span></span>
-                    <span class="line-num is-zero">&mdash;</span>
-                    <span class="line-num">$4,800<span class="cents">.00</span></span>
-                    <span class="line-num is-zero">&mdash;</span>
-                  </div>
-                  <div class="line-row row-grid">
-                    <span></span><span></span>
-                    <span class="line-name-wrap" style="grid-column: 2 / 3;">
-                      <span class="line-name">Drain assembly</span>
-                      <span class="line-meta">D. Tomic &middot; sub-line</span>
-                    </span>
-                    <span class="line-num">$1,200<span class="cents">.00</span></span>
-                    <span class="line-num is-zero">&mdash;</span>
-                    <span class="line-num">$1,200<span class="cents">.00</span></span>
-                    <span class="line-num is-zero">&mdash;</span>
-                  </div>
-                  <div class="line-row row-grid">
-                    <span></span><span></span>
-                    <span class="line-name-wrap" style="grid-column: 2 / 3;">
-                      <span class="line-name">Connection &amp; finishing labour</span>
-                      <span class="line-meta">~112 hrs &times; $80/hr</span>
-                    </span>
-                    <span class="line-num">$9,000<span class="cents">.00</span></span>
-                    <span class="line-num is-zero">&mdash;</span>
-                    <span class="line-num is-zero">&mdash;</span>
-                    <span class="line-num">$9,000<span class="cents">.00</span></span>
                   </div>
 
+                  <!-- Line 3 — Fixtures (committed via PO) -->
+                  <div class="line-row row-grid">
+                    <span></span><span></span>
+                    <span class="line-name-wrap" style="grid-column: 2 / 3;">
+                      <span class="line-chev"><svg><use href="#i-chevron-right"/></svg></span>
+                      <span class="line-name">Fixtures &amp; faucets</span>
+                      <span class="line-meta">Kohler &middot; PO 4218</span>
+                    </span>
+                    <span class="num-r line-num">$4,800<span class="cents">.00</span></span>
+                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num">$4,800<span class="cents">.00</span></span>
+                    <span class="line-remain">
+                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
+                      <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
+                    </span>
+                  </div>
+
+                  <!-- Line 4 — Drain assembly (committed sub) -->
+                  <div class="line-row row-grid">
+                    <span></span><span></span>
+                    <span class="line-name-wrap" style="grid-column: 2 / 3;">
+                      <span class="line-chev"><svg><use href="#i-chevron-right"/></svg></span>
+                      <span class="line-name">Drain &amp; vent assembly</span>
+                      <span class="line-meta">D. Tomic &middot; accepted sub-quote</span>
+                    </span>
+                    <span class="num-r line-num">$1,200<span class="cents">.00</span></span>
+                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num">$1,200<span class="cents">.00</span></span>
+                    <span class="line-remain">
+                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
+                      <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
+                    </span>
+                  </div>
+
+                  <!-- Line 5 — Finishing labour (EXPANDED, empty spend state) -->
+                  <div class="line-row row-grid is-open">
+                    <span></span><span></span>
+                    <span class="line-name-wrap" style="grid-column: 2 / 3;">
+                      <span class="line-chev"><svg><use href="#i-chevron-right"/></svg></span>
+                      <span class="line-name">Connection &amp; finishing labour</span>
+                      <span class="line-meta">112 hrs @ $80.00</span>
+                    </span>
+                    <span class="num-r line-num">$9,000<span class="cents">.00</span></span>
+                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="line-remain">
+                      <span class="num-r line-num">$9,000<span class="cents">.00</span></span>
+                      <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
+                      <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
+                    </span>
+                  </div>
+                  <div class="line-detail" aria-label="Connection &amp; finishing labour — spend detail">
+                    <span class="ld-empty">Nothing has been spent against this line yet. Time entries and bills assigned to it will roll up here.</span>
+                    <div class="ld-foot">
+                      <span class="ld-total">Total <span class="v num">$0<span class="cents">.00</span></span></span>
+                      <a class="ld-link" href="#">Open in Spend tab <svg><use href="#i-arrow-up-right"/></svg></a>
+                    </div>
+                  </div>
+
+                  <!-- Add line + Spent by source -->
                   <div class="line-actions">
                     <button class="add-line-btn"><svg><use href="#i-plus"/></svg>Add line</button>
                     <div class="source-strip">
                       <span class="src-label">Spent by source</span>
-                      <span class="src-item is-link">Labour <strong>$3,200</strong> <svg class="src-arrow"><use href="#i-arrow-right"/></svg></span>
+                      <span class="src-item is-link"><span class="src-name">Labour</span><span class="amt">$3,200<span class="cents">.00</span></span></span>
                       <span class="sep">&middot;</span>
-                      <span class="src-item">Bills <strong style="color:var(--faint);">$0</strong></span>
+                      <span class="src-item"><span class="src-name">Bills</span><span class="amt" style="color:var(--faint);">$0<span class="cents">.00</span></span></span>
                       <span class="sep">&middot;</span>
-                      <span class="src-item is-link">Sub commits <strong>$6,000</strong> <svg class="src-arrow"><use href="#i-arrow-right"/></svg></span>
+                      <span class="src-item is-link"><span class="src-name">Expenses</span><span class="amt" style="color:var(--faint);">$0<span class="cents">.00</span></span></span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Trades / Insulation & Drywall (closed) -->
+              <!-- Trades / Insulation &amp; drywall (closed) -->
               <div class="cat-group">
                 <div class="cat-row row-grid" role="row">
                   <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
                   <span class="cat-twist"><svg><use href="#i-chevron-right"/></svg></span>
                   <span class="cat-name-wrap">
-                    <span class="cat-name">Insulation &amp; drywall <span class="cat-chip ok">Sub accepted</span></span>
-                    <span class="cat-desc">R-22 batts in exterior walls, R-50 attic, 5/8" drywall throughout</span>
-                  </span>
-                  <span class="cat-num">$14,000<span class="cents">.00</span></span>
-                  <span class="cat-num is-zero">$0</span>
-                  <span class="cat-num">$8,400<span class="cents">.00</span></span>
-                  <span class="section-prog">
-                    <span class="mini-bar">
-                      <i class="c" style="width:60.0%;"></i>
+                    <span class="cat-name">
+                      Insulation &amp; drywall
+                      <span class="line-count">3 lines</span>
+                      <span class="cat-chip ok">Sub accepted</span>
                     </span>
-                    <span class="pct">60%</span>
+                    <span class="cat-desc">R-22 batts in exterior walls, R-50 attic, 5/8&Prime; drywall throughout</span>
                   </span>
+                  <span class="num-r cat-num">$14,000<span class="cents">.00</span></span>
+                  <span class="num-r cat-num is-zero">$0<span class="cents">.00</span></span>
+                  <span class="num-r cat-num is-muted">$8,400<span class="cents">.00</span></span>
+                  <div class="cat-remain">
+                    <span class="section-prog">
+                      <span class="mini-bar">
+                        <i class="c" style="width:60.0%;"></i>
+                      </span>
+                      <span class="pct">60%</span>
+                    </span>
+                    <span class="left-row">
+                      <span class="left-amt"><strong>$5,600<span class="cents">.00</span></strong> left</span>
+                      <button class="icon-btn-sm is-danger" aria-label="Remove Insulation &amp; drywall"><svg><use href="#i-trash"/></svg></button>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Contextual "+ Add category to Trades" (parent known → no picker) -->
+              <!-- Contextual "+ Add category to Trades" -->
               <div class="section-add">
                 <button class="btn-context" type="button">
                   <svg><use href="#i-plus"/></svg>
@@ -1623,14 +1591,14 @@
 
             </div>
 
-            <!-- ─── Section 3: Envelope & Finishes (collapsed) ─── -->
+            <!-- ─── Section 3: Envelope &amp; finishes (collapsed) ─── -->
             <div class="section-row row-grid" role="row" aria-expanded="false">
               <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
               <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
               <span class="section-name">Envelope &amp; finishes <span class="count">4 categories</span> <span class="cat-chip danger">Windows over $900</span> <span class="cat-chip warn">Flooring projected over</span></span>
-              <span class="section-num">$63,400<span class="cents">.00</span></span>
-              <span class="section-num">$13,200<span class="cents">.00</span></span>
-              <span class="section-num">$7,600<span class="cents">.00</span></span>
+              <span class="num-r section-num">$63,400<span class="cents">.00</span></span>
+              <span class="num-r section-num">$13,200<span class="cents">.00</span></span>
+              <span class="num-r section-num">$7,600<span class="cents">.00</span></span>
               <span class="section-prog">
                 <span class="mini-bar">
                   <i class="s" style="width:20.8%;"></i>
@@ -1640,7 +1608,7 @@
               </span>
             </div>
 
-            <!-- Catch-all bottom add-row — picker version + new section -->
+            <!-- Catch-all bottom add-row -->
             <div class="add-row">
               <button class="btn-add-line" type="button">
                 <svg><use href="#i-plus"/></svg>
@@ -1655,174 +1623,6 @@
 
           </div>
         </section>
-
-        <!-- ───── CLIENT ESTIMATE FOOTER (DRAFT — unsent state, primary view) ───── -->
-        <div class="client-estimate" role="region" aria-label="Client estimate">
-          <div class="ce-head">
-            <span class="ce-eyebrow">
-              <strong>Client estimate</strong>
-              <span class="sep">&middot;</span>
-              <span class="ce-status is-draft">Draft</span>
-            </span>
-            <span class="ce-meta">Daniel &amp; Priya can't see this yet</span>
-          </div>
-          <div class="ce-body">
-            <span class="ce-summary">
-              <strong>v4 working draft</strong> &middot; 10 categories &middot;
-              <span class="amt">$145,200.00</span>
-              <span class="sep">&middot;</span> +$3,200 since v3 (signed)
-            </span>
-            <span class="ce-actions">
-              <span class="ce-group">
-                <button class="btn btn-rust" type="button">
-                  <svg class="icon"><use href="#i-send"/></svg>
-                  Preview &amp; send
-                </button>
-              </span>
-              <span class="ce-group-rule" aria-hidden="true"></span>
-              <span class="ce-group">
-                <button class="btn btn-disabled" type="button" disabled title="Available after the customer approves">
-                  <svg class="icon"><use href="#i-receipt-money"/></svg>
-                  Create invoice from estimate
-                </button>
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <!-- ─── Frame: Inline add — New category form (catch-all bottom variant w/ picker) -->
-        <div class="od-frame-label" aria-hidden="true">
-          <span class="od-tag">State</span>
-          <span class="od-text"><strong>Inline add &middot; new category</strong> — bottom add-row, includes section picker. Name + Section + Estimate + Description.</span>
-        </div>
-
-        <div class="inline-form" role="region" aria-label="New category form">
-          <div class="inline-form-head">
-            <span class="inline-form-kind">New category</span>
-            <span class="inline-form-title">Add a budget category</span>
-            <span class="inline-form-scope">Catch-all &middot; pick its section</span>
-          </div>
-          <div class="inline-form-body">
-            <div class="form-grid cols-3">
-              <div class="field">
-                <label>Name <span class="req">*</span></label>
-                <div class="field-input"><span>Cabinets &amp; millwork</span></div>
-              </div>
-              <div class="field">
-                <label>Section <span class="req">*</span></label>
-                <div class="field-select">
-                  <span>Envelope &amp; finishes</span>
-                  <span class="chev"><svg><use href="#i-chevron-down"/></svg></span>
-                </div>
-              </div>
-              <div class="field">
-                <label>Estimate <span class="opt">CAD</span></label>
-                <div class="field-input">
-                  <span class="lead">$</span>
-                  <span>22,500.00</span>
-                </div>
-              </div>
-            </div>
-            <div class="form-grid cols-1" style="margin-top:14px;">
-              <div class="field">
-                <label>Description <span class="opt">optional</span></label>
-                <div class="field-textarea">Custom shaker uppers/lowers in walnut veneer. Includes hardware allowance and on-site install — see Trent's quote in Documents.</div>
-              </div>
-            </div>
-          </div>
-          <div class="inline-form-foot">
-            <span class="ff-hint">A category is a budget line item under a section. GST applied at the project level.</span>
-            <span class="ff-spacer"></span>
-            <button class="btn btn-quiet" type="button">Cancel</button>
-            <button class="btn btn-rust" type="button">
-              <svg class="icon"><use href="#i-plus"/></svg>
-              Add category
-            </button>
-          </div>
-        </div>
-
-        <!-- ─── Frame: Inline add — New section form (minimal, no parent / no estimate) -->
-        <div class="od-frame-label" aria-hidden="true">
-          <span class="od-tag">State</span>
-          <span class="od-text"><strong>Inline add &middot; new section</strong> — a section is a container (no estimate of its own — it rolls up). Name + optional Description only.</span>
-        </div>
-
-        <div class="inline-form" role="region" aria-label="New section form">
-          <div class="inline-form-head">
-            <span class="inline-form-kind">New section</span>
-            <span class="inline-form-title">Add a budget section</span>
-            <span class="inline-form-scope">A container that rolls up its categories</span>
-          </div>
-          <div class="inline-form-body">
-            <div class="form-grid cols-2">
-              <div class="field">
-                <label>Name <span class="req">*</span></label>
-                <div class="field-input"><span>Mechanical &amp; HVAC</span></div>
-              </div>
-              <div class="field">
-                <label>&nbsp;</label>
-                <div class="field-help">No estimate here — categories you add inside this section will roll up.</div>
-              </div>
-            </div>
-            <div class="form-grid cols-1" style="margin-top:14px;">
-              <div class="field">
-                <label>Description <span class="opt">optional</span></label>
-                <div class="field-textarea is-placeholder">What's in this section? e.g. furnace replacement, ductwork relocation, suite air handling.</div>
-              </div>
-            </div>
-          </div>
-          <div class="inline-form-foot">
-            <span class="ff-hint">Sections group related categories &mdash; they don't have an estimate of their own.</span>
-            <span class="ff-spacer"></span>
-            <button class="btn btn-quiet" type="button">Cancel</button>
-            <button class="btn btn-rust" type="button">
-              <svg class="icon"><use href="#i-plus"/></svg>
-              Add section
-            </button>
-          </div>
-        </div>
-
-        <!-- ─── Frame: Client estimate footer — APPROVED state (status-aware primary flips) -->
-        <div class="od-frame-label" aria-hidden="true">
-          <span class="od-tag">State</span>
-          <span class="od-text"><strong>Client estimate &middot; approved</strong> — primary flips to "Create invoice from estimate". "Reset to draft" appears only once sent.</span>
-        </div>
-
-        <div class="client-estimate" role="region" aria-label="Client estimate (approved)">
-          <div class="ce-head">
-            <span class="ce-eyebrow">
-              <strong>Client estimate</strong>
-              <span class="sep">&middot;</span>
-              <span class="ce-status is-approved">Approved</span>
-            </span>
-            <span class="ce-meta">Signed by <strong>Daniel Mohan</strong> &middot; Mar 1</span>
-          </div>
-          <div class="ce-body">
-            <span class="ce-summary">
-              <strong>v3 contract baseline</strong> &middot; signed estimate, 2 applied change orders &middot;
-              <span class="amt">$142,000.00</span>
-            </span>
-            <span class="ce-actions">
-              <span class="ce-group">
-                <button class="btn btn-ghost" type="button">
-                  <svg class="icon"><use href="#i-eye"/></svg>
-                  View signed estimate
-                </button>
-              </span>
-              <span class="ce-group-rule" aria-hidden="true"></span>
-              <span class="ce-group">
-                <button class="btn btn-quiet" type="button" title="Roll back to draft for revisions">
-                  <svg class="icon"><use href="#i-rotate-ccw"/></svg>
-                  Reset to draft
-                </button>
-                <button class="btn btn-rust" type="button">
-                  <svg class="icon"><use href="#i-receipt-money"/></svg>
-                  Create invoice from estimate
-                </button>
-              </span>
-            </span>
-          </div>
-        </div>
 
       </section>
 
