@@ -98,7 +98,7 @@ export function ProfileStep({
             id="ob-gst"
             value={gstNumber}
             onChange={(e) => setGstNumber(e.target.value)}
-            placeholder="123456789 RT0001"
+            placeholder="e.g. 123456789 RT0001"
             inputMode="numeric"
             className="h-11 tabular-nums"
           />
@@ -121,7 +121,7 @@ export function ProfileStep({
             id="ob-wcb"
             value={wcbNumber}
             onChange={(e) => setWcbNumber(e.target.value)}
-            placeholder="WCB-1234567"
+            placeholder="e.g. WCB-1234567"
             className="h-11"
           />
           <p className="text-xs leading-snug text-muted-foreground">
@@ -152,12 +152,18 @@ export function ProfileStep({
           </p>
         </div>
 
-        <a
-          href="/settings/profile"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground underline-offset-[3px] hover:underline"
-        >
-          More business details →
-        </a>
+        <p className="px-0.5 text-xs leading-snug text-muted-foreground">
+          No rush. You can add your address, website, and payment details anytime in{' '}
+          <a
+            href="/settings/profile"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-foreground underline underline-offset-[3px]"
+          >
+            Settings
+          </a>{' '}
+          (opens in a new tab, so you won&apos;t lose your place here).
+        </p>
       </div>
 
       <StepActions
