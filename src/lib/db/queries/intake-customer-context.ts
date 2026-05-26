@@ -67,7 +67,7 @@ export async function loadIntakeCustomerContext(
       completed_at,
       project_budget_categories (
         name,
-        section,
+        section_row:project_budget_sections!section_id (name),
         project_cost_lines (label)
       )
     `,
@@ -85,14 +85,14 @@ export async function loadIntakeCustomerContext(
       description: (p.description as string | null) ?? null,
       completedAt: (p.completed_at as string | null) ?? null,
       categories: (
-        (p.project_budget_categories as Array<{
+        (p.project_budget_categories as unknown as Array<{
           name: string;
-          section: string | null;
+          section_row: { name: string } | null;
           project_cost_lines: Array<{ label: string }> | null;
         }> | null) ?? []
       ).map((c) => ({
         name: c.name,
-        section: c.section,
+        section: c.section_row?.name ?? null,
         sampleLines: (c.project_cost_lines ?? []).slice(0, 3).map((l) => l.label),
       })),
     })),

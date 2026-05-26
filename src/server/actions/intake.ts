@@ -40,6 +40,7 @@ import {
   loadIntakeCustomerContext,
   renderCustomerContextForPrompt,
 } from '@/lib/db/queries/intake-customer-context';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -1063,12 +1064,21 @@ export async function acceptInboundLeadAction(
     return { ok: false, error: projErr?.message ?? 'Failed to create project.' };
   }
 
-  // 3. Budget categories
+  // 3. Budget categories — resolve distinct section names to section row ids,
+  // set section_id, and let the DB trigger mirror the legacy `section` string.
+  const sectionIdByName = new Map<string, string>();
+  for (const b of draft.categories) {
+    const name = b.section?.trim() || 'General';
+    if (sectionIdByName.has(name)) continue;
+    const resolved = await resolveBudgetSectionId(supabase, tenant.id, proj.id, name);
+    if ('error' in resolved) return { ok: false, error: `Sections: ${resolved.error}` };
+    sectionIdByName.set(name, resolved.id);
+  }
   const categoryRows = draft.categories.map((b, i) => ({
     project_id: proj.id,
     tenant_id: tenant.id,
     name: b.name,
-    section: b.section?.trim() || 'General',
+    section_id: sectionIdByName.get(b.section?.trim() || 'General') ?? null,
     display_order: i,
   }));
   let categoryIds: string[] = [];

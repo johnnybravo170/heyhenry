@@ -22,6 +22,7 @@ import { z } from 'zod';
 import type { StarterTemplate } from '@/data/starter-templates/types';
 import { generateScopeScaffold, type ScaffoldDetailLevel } from '@/lib/ai/scope-scaffold';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ScaffoldGenerateResult =
@@ -154,11 +155,24 @@ export async function applyScaffoldAction(
     };
   }
 
+  // Resolve each distinct section name to its section row id up front, then
+  // set section_id on every category. The DB trigger mirrors the section row's
+  // name back into the legacy `section` string for not-yet-migrated readers,
+  // so we no longer write that string here.
+  const sectionIdByName = new Map<string, string>();
+  for (const b of scaffold.categories) {
+    const name = b.section.trim();
+    if (!name || sectionIdByName.has(name)) continue;
+    const resolved = await resolveBudgetSectionId(admin, tenant.id, projectId, name);
+    if ('error' in resolved) return { ok: false, error: resolved.error };
+    sectionIdByName.set(name, resolved.id);
+  }
+
   const categoryRows = scaffold.categories.map((b, i) => ({
     project_id: projectId,
     tenant_id: tenant.id,
     name: b.name,
-    section: b.section,
+    section_id: sectionIdByName.get(b.section.trim()) ?? null,
     description: b.description ?? null,
     estimate_cents: 0,
     display_order: i,

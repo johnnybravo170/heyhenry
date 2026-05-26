@@ -6,6 +6,7 @@
  * page and the AI budget tool.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 
@@ -145,6 +146,48 @@ export const listBudgetSectionsForProject = cache(
     return (data ?? []) as BudgetSection[];
   },
 );
+
+/**
+ * Resolve a budget section by name on a project, creating it if missing.
+ * Returns the section row id. Shared by every writer that arrives with a
+ * section *name* (intake, scaffolds, templates, quotes) so they can set
+ * `section_id` directly rather than relying on the legacy `section` string +
+ * sync trigger. Accepts either the RLS server client or the service-role
+ * admin client (both are structurally `SupabaseClient`).
+ */
+export async function resolveBudgetSectionId(
+  supabase: SupabaseClient,
+  tenantId: string,
+  projectId: string,
+  name: string,
+): Promise<{ id: string } | { error: string }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: 'Section name cannot be empty.' };
+
+  const { data: existing } = await supabase
+    .from('project_budget_sections')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('name', trimmed)
+    .maybeSingle();
+  if (existing) return { id: (existing as { id: string }).id };
+
+  const { data: maxRow } = await supabase
+    .from('project_budget_sections')
+    .select('sort_order')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: false })
+    .limit(1);
+  const nextOrder = maxRow?.[0] ? (maxRow[0] as { sort_order: number }).sort_order + 1 : 0;
+
+  const { data, error } = await supabase
+    .from('project_budget_sections')
+    .insert({ project_id: projectId, tenant_id: tenantId, name: trimmed, sort_order: nextOrder })
+    .select('id')
+    .single();
+  if (error || !data) return { error: error?.message ?? 'Failed to resolve section.' };
+  return { id: (data as { id: string }).id };
+}
 
 export async function getBudgetVsActual(projectId: string): Promise<BudgetSummary> {
   const supabase = await createClient();
