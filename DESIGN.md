@@ -39,7 +39,7 @@ Use rust sparingly — it earns attention precisely because everything around it
 
 - **Sans (everything):** `'Inter', system-ui, -apple-system, sans-serif`; weights 400 / 500 / 600 / 700 / 800; `font-feature-settings: 'cv11', 'ss01'` on body
 - **Mono:** `'JetBrains Mono', ui-monospace, monospace`; weights 500 / 600 / 700 — used as a *labeling device* (small uppercase eyebrows over data: "SCHEDULE", "REMAINING"), numeric columns, ⌘K chips. Not for body.
-- **Scale (px):** 11 · 12 · 13 · 14 · 16 · 20 · 28 · 36
+- **Scale (px, closed):** body/label **11** (JetBrains-mono eyebrow) · **12** · **14** · **16**; display **20 · 24 · 28 · 36** (used sparingly). **13 and 15 are intentionally excluded** — near-duplicates that breed strays. The set is enforced by `tests/unit/design-tokens.test.ts` and available as named tokens (`text-eyebrow`/`text-meta`/`text-body`/`text-lead`, `text-display-*`).
 - **Line-height:** 1.5 body, 1.15–1.2 headings
 - **Letter-spacing:** −0.02 to −0.025em on headings ≥20px; tight (≈ −0.005em) on body
 - **Numerals:** `font-variant-numeric: tabular-nums` on every money or metric value. Right-align numeric columns.
@@ -57,7 +57,7 @@ Use rust sparingly — it earns attention precisely because everything around it
 
 ## Component Stylings
 
-- **Buttons (primary):** ink fill `#0A0A0A`, white label, 9px radius, 34px height, 12px padding-inline, font 13/600. Hover: lift to `#222`.
+- **Buttons (primary):** ink fill `#0A0A0A`, white label, 9px radius, 34px height, 12px padding-inline, font 14/600. Hover: lift to `#222`. Default buttons are **ink**, not rust — see the one-rust-CTA rule below.
 - **Buttons (ghost):** white surface, 1px hairline border, ink label, 9px radius, 34px height. Hover: subtle cream fill, slightly darker border.
 - **Buttons (tertiary):** transparent fill, dashed hairline border, muted label, 28px height — for "add row" affordances inside tables.
 - **Cards:** pure white on paper bg, 12–14px radius, 1px hairline border, no shadow by default. Section cards have a header bar with rolled-up metrics.
@@ -89,7 +89,7 @@ No neumorphism, no glassmorphism, no hard drop shadows, no inner shadows on inpu
 ## Do's and Don'ts
 
 - ✅ Let scan-ability rule. Dense over decorated.
-- ✅ One ink, one accent. Use rust for CTAs only.
+- ✅ One ink, one accent. **Exactly one rust hero CTA per screen** (the highest-intent action — e.g. "Preview & send to customer"). Every other button is ink. Rust otherwise = ✦ Henry, active/selected states, inline accents.
 - ✅ Tabular numerals on every money/metric. Right-align numeric columns. De-emphasize cents.
 - ✅ Status through soft-pair colors (`warn` on `warnSoft`), never heavy fills.
 - ✅ Inline editing where the eye is. No "go to edit page" round-trips.

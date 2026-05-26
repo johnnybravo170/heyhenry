@@ -1,17 +1,27 @@
 'use client';
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment, type ReactNode, useState } from 'react';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { Money } from '@/components/ui/money';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { AppliedChangeOrderContribution } from '@/lib/db/queries/change-orders';
 import { withFrom } from '@/lib/nav/from-link';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import { statusToneClass } from '@/lib/ui/status-tokens';
 
-/** Mono eyebrow — the small uppercase label used on stat cells + section
- *  headers across the Paper surfaces. */
-const EYEBROW = 'font-mono text-[11px] uppercase tracking-wide text-muted-foreground';
+/** Join ReactNode parts with a " · " separator, dropping nullish/false parts.
+ *  Used to compose stat sub-lines that interleave labels with <Money>. */
+function joinDot(parts: ReactNode[]): ReactNode {
+  const kept = parts.filter((p) => p != null && p !== false);
+  if (kept.length === 0) return undefined;
+  return kept.map((p, i) => (
+    // biome-ignore lint/suspicious/noArrayIndexKey: static positional join — index is the stable identity
+    <Fragment key={i}>
+      {i > 0 ? ' · ' : null}
+      {p}
+    </Fragment>
+  ));
+}
 
 /** Smart-back hint passed to CO chips so the CO detail page can label
  * "Back to Budget" / "Back to Overview" rather than the generic referrer
@@ -78,7 +88,7 @@ function StatBox({
 }: {
   label: string;
   valueCents: number;
-  sub?: string;
+  sub?: ReactNode;
   highlight?: boolean;
   danger?: boolean;
   success?: boolean;
@@ -94,11 +104,15 @@ function StatBox({
         : '';
   const inner = (
     <>
-      <p className={EYEBROW}>{label}</p>
+      <Eyebrow as="p">{label}</Eyebrow>
       <p className={`mt-1.5 text-lg font-semibold ${valueToneClass}`}>
         <Money cents={valueCents} />
       </p>
-      {sub && <p className={`mt-1 ${EYEBROW} normal-case tracking-normal`}>{sub}</p>}
+      {sub && (
+        <Eyebrow as="p" className="mt-1 normal-case tracking-normal">
+          {sub}
+        </Eyebrow>
+      )}
     </>
   );
   if (href) {
@@ -221,19 +235,24 @@ export function VarianceTab({
   // even when a category is priced at the envelope level.
   const coImpactCents = appliedChangeOrders.reduce((s, c) => s + c.cost_impact_cents, 0);
   const coCount = appliedChangeOrders.length;
-  const estSubParts: string[] = [];
-  if (scope_subtotal_cents > 0) {
-    estSubParts.push(`Scope ${formatCurrency(scope_subtotal_cents)}`);
-  }
-  if (mgmt_fee_cents > 0) {
-    estSubParts.push(`Mgmt fee ${formatCurrency(mgmt_fee_cents)}`);
-  }
-  if (coCount) {
-    estSubParts.push(
-      `${coImpactCents >= 0 ? '+' : ''}${formatCurrency(coImpactCents)} from ${coCount} CO${coCount === 1 ? '' : 's'}`,
-    );
-  }
-  const estSub = estSubParts.length > 0 ? estSubParts.join(' · ') : undefined;
+  const estSub = joinDot([
+    scope_subtotal_cents > 0 ? (
+      <>
+        Scope <Money cents={scope_subtotal_cents} />
+      </>
+    ) : null,
+    mgmt_fee_cents > 0 ? (
+      <>
+        Mgmt fee <Money cents={mgmt_fee_cents} />
+      </>
+    ) : null,
+    coCount ? (
+      <>
+        {coImpactCents >= 0 ? '+' : ''}
+        <Money cents={coImpactCents} /> from {coCount} CO{coCount === 1 ? '' : 's'}
+      </>
+    ) : null,
+  ]);
 
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   function toggleRow(name: string) {
@@ -253,13 +272,23 @@ export function VarianceTab({
         <StatBox
           label="Actual Cost"
           valueCents={actual_total_cents}
-          sub={[
-            actual_labour_cents > 0 ? `Labour ${formatCurrency(actual_labour_cents)}` : null,
-            actual_bills_cents > 0 ? `Bills ${formatCurrency(actual_bills_cents)}` : null,
-            actual_expenses_cents > 0 ? `Expenses ${formatCurrency(actual_expenses_cents)}` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+          sub={joinDot([
+            actual_labour_cents > 0 ? (
+              <>
+                Labour <Money cents={actual_labour_cents} />
+              </>
+            ) : null,
+            actual_bills_cents > 0 ? (
+              <>
+                Bills <Money cents={actual_bills_cents} />
+              </>
+            ) : null,
+            actual_expenses_cents > 0 ? (
+              <>
+                Expenses <Money cents={actual_expenses_cents} />
+              </>
+            ) : null,
+          ])}
           danger={isAtRisk}
           href={
             projectId
@@ -344,9 +373,9 @@ export function VarianceTab({
               <div className="mt-3 space-y-2 border-t pt-3 text-sm">
                 {legacy.length > 0 ? (
                   <div>
-                    <p className={`${EYEBROW} text-amber-800 dark:text-amber-300`}>
+                    <Eyebrow as="p" className="text-amber-800 dark:text-amber-300">
                       Approved but not applied to lines
-                    </p>
+                    </Eyebrow>
                     <ul className="mt-1.5 space-y-1">
                       {legacy.map((c) => (
                         <li key={c.id} className="flex items-baseline justify-between gap-3">
@@ -370,15 +399,15 @@ export function VarianceTab({
                         </li>
                       ))}
                     </ul>
-                    <p className={`mt-1.5 ${EYEBROW} normal-case tracking-normal italic`}>
+                    <Eyebrow as="p" className="mt-1.5 normal-case tracking-normal italic">
                       Customer agreed to these but cost lines may not reflect them. Verify line
                       items match the agreed scope.
-                    </p>
+                    </Eyebrow>
                   </div>
                 ) : null}
                 {pending.length > 0 ? (
                   <div>
-                    <p className={EYEBROW}>Pending customer approval</p>
+                    <Eyebrow as="p">Pending customer approval</Eyebrow>
                     <ul className="mt-1.5 space-y-1">
                       {pending.map((c) => (
                         <li key={c.id} className="flex items-baseline justify-between gap-3">
@@ -477,14 +506,14 @@ export function VarianceTab({
       {by_category.length > 0 && (
         <div>
           <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h3 className={EYEBROW}>By Category · operator budget envelope</h3>
+            <Eyebrow as="h3">By Category · operator budget envelope</Eyebrow>
             <span className="text-sm text-muted-foreground">
-              Sums to {formatCurrency(envelope_total_cents)}
+              Sums to <Money cents={envelope_total_cents} />
               {envelopeGapCents !== 0 ? (
                 <>
                   {' '}
                   · {envelopeGapCents > 0 ? '+' : ''}
-                  {formatCurrency(envelopeGapCents)} vs revenue
+                  <Money cents={envelopeGapCents} /> vs revenue
                 </>
               ) : null}
             </span>
@@ -494,11 +523,21 @@ export function VarianceTab({
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="w-8 px-2 py-2" />
-                  <th className={`px-3 py-2 text-left ${EYEBROW}`}>Category</th>
-                  <th className={`px-3 py-2 text-right ${EYEBROW}`}>Estimated</th>
-                  <th className={`px-3 py-2 text-right ${EYEBROW}`}>Projected Cost</th>
-                  <th className={`px-3 py-2 text-right ${EYEBROW}`}>Actual</th>
-                  <th className={`px-3 py-2 text-right ${EYEBROW}`}>Projected Margin</th>
+                  <Eyebrow as="th" className="px-3 py-2 text-left">
+                    Category
+                  </Eyebrow>
+                  <Eyebrow as="th" className="px-3 py-2 text-right">
+                    Estimated
+                  </Eyebrow>
+                  <Eyebrow as="th" className="px-3 py-2 text-right">
+                    Projected Cost
+                  </Eyebrow>
+                  <Eyebrow as="th" className="px-3 py-2 text-right">
+                    Actual
+                  </Eyebrow>
+                  <Eyebrow as="th" className="px-3 py-2 text-right">
+                    Projected Margin
+                  </Eyebrow>
                 </tr>
               </thead>
               <tbody>
@@ -632,7 +671,9 @@ function CompositionCard({
     tone === 'danger' ? 'text-red-700 dark:text-red-300' : tone === 'primary' ? 'text-primary' : '';
   return (
     <div className="rounded-xl border bg-card p-4">
-      <p className={`mb-2 ${EYEBROW}`}>{title}</p>
+      <Eyebrow as="p" className="mb-2">
+        {title}
+      </Eyebrow>
       {rows.length > 0 ? (
         <ul className="space-y-1.5 text-sm">
           {rows.map((r) => {
@@ -707,7 +748,9 @@ function CategoryBreakdown({
       </div>
       {coContributions.length > 0 ? (
         <div>
-          <p className={`mb-1.5 ${EYEBROW}`}>Change Orders affecting this category</p>
+          <Eyebrow as="p" className="mb-1.5">
+            Change Orders affecting this category
+          </Eyebrow>
           <ul className="space-y-1 text-sm">
             {Array.from(new Map(coContributions.map((c) => [c.co_id, c])).values()).map((c) => (
               <li key={c.co_id} className="flex items-baseline justify-between gap-2">
@@ -774,7 +817,7 @@ function BreakdownStat({
 }) {
   return (
     <div className="rounded-lg border bg-card px-2 py-1.5">
-      <p className={EYEBROW}>{label}</p>
+      <Eyebrow as="p">{label}</Eyebrow>
       <p className={`text-sm font-medium ${danger ? 'text-red-700 dark:text-red-300' : ''}`}>
         <Money cents={cents} />
       </p>

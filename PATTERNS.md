@@ -808,3 +808,17 @@ A **skippable, resumable** one-step-per-screen flow inside the `(auth)` shell, w
 - Route guard: `src/app/(auth)/onboarding/page.tsx` reads the marker — `onboarding_completed_at` set → `redirect('/dashboard')` (loop-safe); else resume to the clamped furthest step. Marker columns added in `20260524040346_onboarding_progress_marker.sql` with existing tenants backfilled to "complete" so they never re-onboard.
 
 **Selection tile** (the `vertical-step` tiles): a keyboard-accessible `<button aria-pressed>` card (mobile ≥44px target) carrying the screen's **one rust accent** on the selected state only — `border-brand ring-3 ring-brand/15` + a `bg-brand` radio check. The CTA stays ink. Pattern mirrors `plan-picker.tsx`'s `PlanCard` (`role="button"`-style card) but uses a real `<button>` + `aria-pressed` for a single-select radio group. Reuse this for any "pick one of N options" tile group; reuse the step-shell shape for any future skippable multi-step setup.
+
+## 35. Paper closed type scale + the eyebrow / money primitives
+
+The "Paper" visual system (DESIGN.md) is a **closed** type scale, enforced — not a convention you can drift from. When you add or restyle any label, number, or eyebrow, reach for the token/primitive, never a fresh `text-[Npx]`.
+
+**Closed scale (the only sizes):** body/label `text-eyebrow` (11px JetBrains-mono) · `text-meta` (12) · `text-body` (14) · `text-lead` (16); display `text-display-xs/sm/md/lg` (20/24/28/36). Named `@theme` tokens live in `src/app/globals.css`. **13 and 15 do not exist.** Tailwind defaults `text-sm` (14) / `text-base` (16) are fine too.
+
+**Enforcement:** `tests/unit/design-tokens.test.ts` is a per-file count baseline (`tests/unit/design-tokens.baseline.json`) that fails CI when a file adds an arbitrary `text-[Npx]` or inline `font-size:` beyond its current count. It's a **ratchet** — fix some, then `pnpm design-tokens:baseline` to tighten. Never regenerate to absorb a *new* violation. Mirrors the `scripts/check-migration-prefixes.ts` / timezone-lint precedent.
+
+**`<Eyebrow>`** (`src/components/ui/eyebrow.tsx`) — the one mono eyebrow: `font-mono text-eyebrow uppercase tracking-[0.06em] text-muted-foreground`, polymorphic via `as` (`span` default; `p`/`h3`/`th` for block/heading/header-cell). Replaces the per-file copy-pasted eyebrow string. Pass overrides via `className` (tailwind-merge resolves `normal-case`/weight/margins). **Sibling instances to migrate as you touch them:** budget surfaces are done (`budget-summary` / `budget-cockpit` / `budget-categories-table`); ~28 other files still inline `font-mono text-[11px] uppercase …` — fold them into `<Eyebrow>` when editing nearby.
+
+**`<Money>`** (`src/components/ui/money.tsx`) — the one currency renderer: `tabular-nums`, full-ink symbol, de-emphasised cents (`0.7em` muted), invisible `.00` padding so whole-dollar and mixed-cent values right-align in a column. **Never hand-format currency for display** (`formatCurrency(...)` in a string, `` `$${...}` ``, `.toFixed(2)`) — that reintroduces the `$7,300` vs `$7,300.00` split. For currency inside a text run (sub-labels), build the run as JSX with `<Money>` rather than an interpolated string.
+
+**`<StatusBadge>`** — not yet extracted; the soft-pair status chips (`statusToneClass`) + Budget variance chips are the consolidation target (fast-follow card). Until then, status chips use `statusToneClass` tones (never rust).

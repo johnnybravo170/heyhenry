@@ -64,6 +64,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { Input } from '@/components/ui/input';
 import { Money } from '@/components/ui/money';
 import { Textarea } from '@/components/ui/textarea';
@@ -532,10 +533,10 @@ export function BudgetCategoriesTable({
       <div className="flex flex-col gap-3">
         {/* Scope head */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          <Eyebrow>
             Scope · {sectionEntries.length} section{sectionEntries.length === 1 ? '' : 's'} ·{' '}
             {categoryCount} categor{categoryCount === 1 ? 'y' : 'ies'}
-          </span>
+          </Eyebrow>
           <div className="ml-auto flex items-center gap-2">
             {headerActions}
             <Button
@@ -903,9 +904,7 @@ export function BudgetCategoriesTable({
                           >
                             <Plus className="size-3" />
                             Add category to {section}
-                            <span className="ml-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground/60">
-                              Name · estimate · description
-                            </span>
+                            <Eyebrow className="ml-1.5">Name · estimate · description</Eyebrow>
                           </button>
                         </div>
                       )}
@@ -1441,9 +1440,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 </Button>
                 {line.labor_cents > 0 || line.bills_cents > 0 || line.expense_cents > 0 ? (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Spent by source
-                    </span>
+                    <Eyebrow>Spent by source</Eyebrow>
                     {line.labor_cents > 0 ? (
                       <Link
                         href={`/projects/${projectId}?tab=time&focus=${line.budget_category_id}`}
@@ -1580,7 +1577,7 @@ function AddBudgetCategoryForm({
         <span className="font-bold text-base text-foreground">
           {isSection ? 'Add a budget section' : 'Add a budget category'}
         </span>
-        <span className="ml-auto font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+        <Eyebrow className="ml-auto">
           {isSection ? (
             'Name + description'
           ) : lockedSection ? (
@@ -1590,7 +1587,7 @@ function AddBudgetCategoryForm({
           ) : (
             'Catch-all · pick its section'
           )}
-        </span>
+        </Eyebrow>
       </div>
 
       {/* Fields */}
