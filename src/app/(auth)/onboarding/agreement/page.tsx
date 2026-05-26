@@ -44,13 +44,20 @@ export default async function OnboardingAgreementPage({
   if (await hasAcceptedCurrentAgreement(tenant.id, 'founding_member')) redirect(nextHref);
 
   const def = getAgreement('founding_member');
+  // The (auth) shell caps content at max-w-md, which is too narrow for a
+  // contract. Break out of that cap (full-bleed) and re-center the agreement
+  // at a comfortable reading width — without widening login/signup.
   return (
-    <AgreementSignStep
-      type={def.type}
-      title={def.title}
-      intro={def.intro}
-      bodyMarkdown={def.bodyMarkdown}
-      nextHref={nextHref}
-    />
+    <div className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 px-4">
+      <div className="mx-auto w-full max-w-2xl">
+        <AgreementSignStep
+          type={def.type}
+          title={def.title}
+          intro={def.intro}
+          bodyMarkdown={def.bodyMarkdown}
+          nextHref={nextHref}
+        />
+      </div>
+    </div>
   );
 }
