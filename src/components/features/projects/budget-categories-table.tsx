@@ -67,6 +67,7 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { Input } from '@/components/ui/input';
 import { Money } from '@/components/ui/money';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Textarea } from '@/components/ui/textarea';
 import type { AppliedChangeOrderContribution } from '@/lib/db/queries/change-orders';
 import type { CostLineActualsSummary } from '@/lib/db/queries/cost-line-actuals';
@@ -74,7 +75,6 @@ import type { CostLineRow } from '@/lib/db/queries/cost-lines';
 import type { MaterialsCatalogRow } from '@/lib/db/queries/materials-catalog';
 import type { BudgetLine, BudgetSection } from '@/lib/db/queries/project-budget-categories';
 import { withFrom } from '@/lib/nav/from-link';
-import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import {
   addBudgetCategoryAction,
@@ -169,7 +169,7 @@ function MiniBar({
       </div>
       <span
         className={cn(
-          'shrink-0 font-mono text-[11px] tabular-nums',
+          'shrink-0 font-mono text-eyebrow tabular-nums',
           s.actuallyOver
             ? 'text-destructive'
             : s.projectedOver
@@ -621,7 +621,7 @@ export function BudgetCategoriesTable({
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {isRenaming ? (
                           <Input
-                            className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.06em]"
+                            className="h-7 w-auto min-w-[180px] font-mono text-eyebrow font-bold uppercase tracking-[0.06em]"
                             value={editSectionValue}
                             onChange={(e) => setEditSectionValue(e.target.value)}
                             onKeyDown={(e) => {
@@ -650,12 +650,12 @@ export function BudgetCategoriesTable({
                           <button
                             type="button"
                             onClick={() => toggleSection(section)}
-                            className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-foreground"
+                            className="text-left font-mono text-eyebrow font-bold uppercase tracking-[0.06em] text-foreground"
                           >
                             {section}
                           </button>
                         )}
-                        <span className="text-[11px] font-medium text-muted-foreground">
+                        <span className="text-eyebrow font-medium text-muted-foreground">
                           {sectionLines.length} categor{sectionLines.length === 1 ? 'y' : 'ies'}
                         </span>
                         {!isRenaming && isRealSection ? (
@@ -711,29 +711,19 @@ export function BudgetCategoriesTable({
                         {/* Collapsed summary chips */}
                         {collapsed
                           ? overCats.map((l) => (
-                              <span
-                                key={l.budget_category_id}
-                                className={cn(
-                                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
-                                  statusToneClass.danger,
-                                )}
-                              >
+                              <StatusBadge key={l.budget_category_id} tone="danger">
                                 {l.budget_category_name} over{' '}
                                 <Money cents={l.actual_cents - l.estimate_cents} />
-                              </span>
+                              </StatusBadge>
                             ))
                           : null}
                         {collapsed
                           ? projOverCats.map((l) => (
-                              <span
+                              <StatusBadge
                                 key={l.budget_category_id}
-                                className={cn(
-                                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
-                                  statusToneClass.warning,
-                                )}
-                              >
-                                {l.budget_category_name} projected over
-                              </span>
+                                tone="warning"
+                                label={`${l.budget_category_name} projected over`}
+                              />
                             ))
                           : null}
                       </div>
@@ -768,7 +758,7 @@ export function BudgetCategoriesTable({
                                   });
                                 }}
                                 disabled={draftingSectionId === entity.id}
-                                className="inline-flex items-center gap-1 text-[11px] text-brand hover:text-brand/80 disabled:opacity-60"
+                                className="inline-flex items-center gap-1 text-eyebrow text-brand hover:text-brand/80 disabled:opacity-60"
                               >
                                 {draftingSectionId === entity.id ? (
                                   <Loader2 className="size-3 animate-spin" />
@@ -852,7 +842,7 @@ export function BudgetCategoriesTable({
                       </span>
                       <span
                         className={cn(
-                          'font-mono text-[11px] tabular-nums',
+                          'font-mono text-eyebrow tabular-nums',
                           seg.actuallyOver
                             ? 'text-destructive'
                             : seg.projectedOver
@@ -872,7 +862,7 @@ export function BudgetCategoriesTable({
                       <div
                         className={cn(
                           GRID,
-                          'border-b bg-muted/60 px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-muted-foreground',
+                          'border-b bg-muted/60 px-3 py-2 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground',
                         )}
                       >
                         <span />
@@ -1196,12 +1186,8 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                   'Budget',
                 )}
                 title={`Touched by CO: ${c.co_title}`}
-                className={cn(
-                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
-                  statusToneClass.info,
-                )}
               >
-                CO {c.co_short_id}
+                <StatusBadge tone="info" label={`CO ${c.co_short_id}`} />
               </a>
             ))}
           </div>
@@ -1287,7 +1273,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           <span className="mt-0.5 flex items-center justify-end gap-1.5">
             <span
               className={cn(
-                'text-right text-[11px]',
+                'text-right text-eyebrow',
                 line.actual_cents > line.estimate_cents
                   ? 'text-destructive'
                   : line.actual_cents + line.committed_cents > line.estimate_cents
@@ -1379,7 +1365,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                       )}
                       <span>
                         {cl.label}
-                        <span className="ml-1.5 font-mono text-[11px] tracking-[0.02em] text-muted-foreground/80">
+                        <span className="ml-1.5 font-mono text-eyebrow tracking-[0.02em] text-muted-foreground/80">
                           {Number(cl.qty)} {cl.unit}
                           {cl.unit_price_cents > 0 ? (
                             <>
@@ -1621,7 +1607,7 @@ function AddBudgetCategoryForm({
     >
       {/* Header bar — kind badge + title, so the form is never ambiguous. */}
       <div className="flex flex-wrap items-center gap-2.5 border-b bg-muted/40 px-4 py-2.5">
-        <span className="rounded bg-[#ECE3D0] px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        <span className="rounded bg-muted px-[7px] py-0.5 font-mono text-eyebrow font-bold uppercase tracking-wide text-muted-foreground">
           {isSection ? 'New section' : 'New category'}
         </span>
         <span className="font-bold text-base text-foreground">
@@ -1652,7 +1638,7 @@ function AddBudgetCategoryForm({
           <div className="flex min-w-0 flex-col gap-1.5">
             <label
               htmlFor="add-cat-name"
-              className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+              className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
             >
               {isSection ? 'Section name' : 'Name'} <span className="text-brand">*</span>
             </label>
@@ -1671,7 +1657,7 @@ function AddBudgetCategoryForm({
               <div className="flex min-w-0 flex-col gap-1.5">
                 <label
                   htmlFor="add-cat-section"
-                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                  className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
                 >
                   Section <span className="text-brand">*</span>
                 </label>
@@ -1694,7 +1680,7 @@ function AddBudgetCategoryForm({
                           setIsCustomSection(false);
                           setSection(existingSections[0] ?? '');
                         }}
-                        className="shrink-0 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                        className="shrink-0 text-eyebrow text-muted-foreground hover:text-foreground hover:underline"
                       >
                         ← Pick existing
                       </button>
@@ -1724,7 +1710,7 @@ function AddBudgetCategoryForm({
               <div className="flex min-w-0 flex-col gap-1.5">
                 <label
                   htmlFor="add-cat-estimate"
-                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                  className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
                 >
                   Estimate{' '}
                   <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
@@ -1746,7 +1732,7 @@ function AddBudgetCategoryForm({
         <div className="mt-3.5 flex flex-col gap-1.5">
           <label
             htmlFor="add-cat-desc"
-            className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+            className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
           >
             Description{' '}
             <span className="font-normal text-muted-foreground/70 normal-case tracking-normal">

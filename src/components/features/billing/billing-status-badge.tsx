@@ -7,13 +7,9 @@
  * than in the shared token map.
  */
 
-import { invoiceStatusTone, statusToneClass } from '@/lib/ui/status-tokens';
-import { cn } from '@/lib/utils';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { invoiceStatusTone } from '@/lib/ui/status-tokens';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
-
-// OD `.status`: text-only pill — rounded-full, soft fill + tone text, no
-// border, no leading icon. (Matches CostStatusBadge in project-costs-section.)
-const PILL = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold';
 
 export function BillingStatusBadge({
   status,
@@ -26,25 +22,18 @@ export function BillingStatusBadge({
   overdueDays?: number;
 }) {
   if (isOverdue) {
+    // Age suffix rendered as a child span so the separator and tabular
+    // numeral stay visually distinct from the "OVERDUE" label text.
     return (
-      <span className={cn(PILL, statusToneClass.danger)} data-slot="billing-status-badge">
+      <StatusBadge tone="danger" data-slot="billing-status-badge">
         Overdue
         {typeof overdueDays === 'number' && overdueDays > 0 ? (
-          <span className="ml-1 border-l border-current/30 pl-1 font-mono text-[11px] tabular-nums">
-            {overdueDays}d
-          </span>
+          <span className="ml-1 border-l border-current/30 pl-1 tabular-nums">{overdueDays}d</span>
         ) : null}
-      </span>
+      </StatusBadge>
     );
   }
 
   const tone = invoiceStatusTone[status];
-  return (
-    <span
-      className={cn(PILL, 'capitalize', statusToneClass[tone])}
-      data-slot="billing-status-badge"
-    >
-      {status}
-    </span>
-  );
+  return <StatusBadge tone={tone} label={status} data-slot="billing-status-badge" />;
 }
