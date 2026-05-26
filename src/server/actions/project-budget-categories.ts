@@ -228,9 +228,9 @@ export async function addBudgetCategoryAction(input: {
 
   const supabase = await createClient();
 
-  // Resolve (or create) the section entity, then set section_id explicitly.
-  // The trigger would also reconcile this from the `section` string, but we
-  // set it directly for clarity and to keep section sort_order correct.
+  // Resolve (or create) the section entity, then set section_id. The DB
+  // trigger mirrors the section row's name into the legacy `section` string,
+  // so we no longer write that column here.
   const sectionName = input.section.trim();
   if (!sectionName) return { ok: false, error: 'Section is required.' };
   const resolved = await resolveSectionId(supabase, tenant.id, input.project_id, sectionName);
@@ -254,7 +254,6 @@ export async function addBudgetCategoryAction(input: {
       project_id: input.project_id,
       tenant_id: tenant.id,
       name: input.name,
-      section: sectionName,
       section_id: resolved.id,
       description: input.description || null,
       estimate_cents: input.estimate_cents ?? 0,
@@ -531,19 +530,36 @@ export async function seedBudgetCategoriesFromTemplateAction(input: {
 
   const supabase = await createClient();
 
+  // Resolve the two section rows up front; set section_id and let the DB
+  // trigger mirror the legacy `section` string.
+  const interiorSection = await resolveBudgetSectionId(
+    supabase,
+    tenant.id,
+    input.project_id,
+    'interior',
+  );
+  if ('error' in interiorSection) return { ok: false, error: interiorSection.error };
+  const exteriorSection = await resolveBudgetSectionId(
+    supabase,
+    tenant.id,
+    input.project_id,
+    'exterior',
+  );
+  if ('error' in exteriorSection) return { ok: false, error: exteriorSection.error };
+
   const rows = [
     ...INTERIOR.map((name, i) => ({
       project_id: input.project_id,
       tenant_id: tenant.id,
       name,
-      section: 'interior' as const,
+      section_id: interiorSection.id,
       display_order: i,
     })),
     ...EXTERIOR.map((name, i) => ({
       project_id: input.project_id,
       tenant_id: tenant.id,
       name,
-      section: 'exterior' as const,
+      section_id: exteriorSection.id,
       display_order: INTERIOR.length + i,
     })),
   ];

@@ -18,6 +18,7 @@
 import { revalidatePath } from 'next/cache';
 import { findStarterTemplate, STARTER_TEMPLATES } from '@/data/starter-templates';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ApplyTemplateResult =
@@ -66,13 +67,24 @@ export async function applyStarterTemplateAction(input: {
     };
   }
 
+  // Resolve distinct template section names → section row ids; set section_id
+  // and let the DB trigger mirror the legacy `section` string.
+  const sectionIdByName = new Map<string, string>();
+  for (const c of template.categories) {
+    const name = c.section?.trim() || 'General';
+    if (sectionIdByName.has(name)) continue;
+    const resolved = await resolveBudgetSectionId(admin, tenant.id, input.projectId, name);
+    if ('error' in resolved) return { ok: false, error: resolved.error };
+    sectionIdByName.set(name, resolved.id);
+  }
+
   // Insert categories first; build a name → id map so lines can
   // reference their parent category by id.
   const categoryRows = template.categories.map((c, i) => ({
     project_id: input.projectId,
     tenant_id: tenant.id,
     name: c.name,
-    section: c.section,
+    section_id: sectionIdByName.get(c.section?.trim() || 'General') ?? null,
     description: c.description ?? null,
     estimate_cents: 0,
     display_order: i,

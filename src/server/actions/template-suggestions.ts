@@ -67,7 +67,9 @@ export async function getTemplateSuggestionsAction(): Promise<TemplateSuggestion
   const [categoriesRes, linesRes] = await Promise.all([
     admin
       .from('project_budget_categories')
-      .select('id, project_id, name, section, display_order')
+      .select(
+        'id, project_id, name, section_row:project_budget_sections!section_id(name), display_order',
+      )
       .in('project_id', projectIds),
     admin
       .from('project_cost_lines')
@@ -79,7 +81,7 @@ export async function getTemplateSuggestionsAction(): Promise<TemplateSuggestion
     id: string;
     project_id: string;
     name: string;
-    section: string;
+    section_row: { name: string } | null;
     display_order: number;
   };
   type LineRow = {
@@ -93,7 +95,7 @@ export async function getTemplateSuggestionsAction(): Promise<TemplateSuggestion
   };
 
   const categoriesByProject = new Map<string, CategoryRow[]>();
-  for (const b of (categoriesRes.data ?? []) as CategoryRow[]) {
+  for (const b of (categoriesRes.data ?? []) as unknown as CategoryRow[]) {
     const arr = categoriesByProject.get(b.project_id) ?? [];
     arr.push(b);
     categoriesByProject.set(b.project_id, arr);
@@ -190,7 +192,7 @@ export async function getTemplateSuggestionsAction(): Promise<TemplateSuggestion
       description: `Drafted from ${cluster.projects.length} similar projects you've quoted recently.`,
       categories: sampleCategories.map((b) => ({
         name: b.name,
-        section: b.section,
+        section: b.section_row?.name ?? '',
         lines: (linesByCategoryId.get(b.id) ?? []).map((l) => ({
           label: l.label,
           category: l.category as 'material' | 'labour' | 'sub' | 'equipment' | 'overhead',
