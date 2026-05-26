@@ -15,7 +15,7 @@
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { authenticateOAuthToken } from '@/lib/api-auth';
+import { authenticateMcpRequest } from '@/lib/api-auth';
 import { enforceRateLimit } from '@/lib/mcp-rate-limit';
 import { registerScopedTools } from '@/server/mcp-tools';
 
@@ -37,7 +37,7 @@ function withCors(res: Response): Response {
 }
 
 async function handle(req: Request): Promise<Response> {
-  const auth = await authenticateOAuthToken(req);
+  const auth = await authenticateMcpRequest(req);
   if (!auth.ok) return withCors(auth.response);
 
   const limited = await enforceRateLimit(auth.token.id);
