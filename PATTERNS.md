@@ -808,3 +808,45 @@ A **skippable, resumable** one-step-per-screen flow inside the `(auth)` shell, w
 - Route guard: `src/app/(auth)/onboarding/page.tsx` reads the marker — `onboarding_completed_at` set → `redirect('/dashboard')` (loop-safe); else resume to the clamped furthest step. Marker columns added in `20260524040346_onboarding_progress_marker.sql` with existing tenants backfilled to "complete" so they never re-onboard.
 
 **Selection tile** (the `vertical-step` tiles): a keyboard-accessible `<button aria-pressed>` card (mobile ≥44px target) carrying the screen's **one rust accent** on the selected state only — `border-brand ring-3 ring-brand/15` + a `bg-brand` radio check. The CTA stays ink. Pattern mirrors `plan-picker.tsx`'s `PlanCard` (`role="button"`-style card) but uses a real `<button>` + `aria-pressed` for a single-select radio group. Reuse this for any "pick one of N options" tile group; reuse the step-shell shape for any future skippable multi-step setup.
+
+---
+
+## 35. Paper type-scale tokens and display primitives
+
+**Closed scale:** `11px` · `12px` · `14px` · `16px` · display `20px` · `24px` · `28px` · `36px`. 10px and 13px are off-scale; `tests/unit/design-tokens.test.ts` catches them in CI.
+
+### Named CSS token
+
+`--text-eyebrow: 11px` is registered in `src/app/globals.css` `@theme inline`. The resulting `text-eyebrow` Tailwind class replaces raw `text-[11px]` in new code. No other off-scale sizes have named tokens — use built-ins (`text-xs` = 12px, `text-sm` = 14px, `text-base` = 16px).
+
+### `<Eyebrow>` component
+
+`src/components/ui/eyebrow.tsx` — mono uppercase label above data cells and panel sections. Default: `font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground`.
+
+```tsx
+// heading eyebrow over a section
+<Eyebrow as="h2">Schedule</Eyebrow>
+
+// inline chip
+<Eyebrow as="span" className="font-bold">Draft</Eyebrow>
+```
+
+The `as` prop sets the semantic element (`p` default / `span` / `h2` / `h3` / `div`). Override weight/color via `className`.
+
+**Not** the same as the private `Eyebrow` in `customer-document.tsx` (that one is 12px sans for prose/document surfaces).
+
+### `<Money>` component
+
+`src/components/ui/money.tsx` — canonical currency renderer for all operator-facing money values. Renders the currency symbol full-ink, integer at body weight, cents smaller + dimmer (`0.7em muted`), and pads whole-dollar amounts with invisible `.00` so integers right-align in a column.
+
+```tsx
+<Money cents={estimateCents} />
+<Money cents={deltaCents} signed />       // +/− with amber/emerald tint
+<Money cents={subtotal} symbol={false} /> // bare number, no symbol
+```
+
+Do NOT hand-roll currency formatting in table cells — always use `<Money>`. The `signed` prop is for change-order deltas only.
+
+### One rust CTA per screen
+
+`bg-brand` (rust `#C2410C`) is reserved for the single highest-intent primary action per screen. All other primary buttons stay ink (`bg-primary` / `bg-foreground`). If you're about to add a second `bg-brand` button, demote one to ink or outline.
