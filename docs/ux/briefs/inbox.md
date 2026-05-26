@@ -29,7 +29,7 @@ Henry ingests messy inputs — forwarded emails, lead-form submissions, dropped 
 Classify the artifact → suggest the destination intent · extract structured fields **with confidence** (flag low) · match to an existing project/customer (`recognized_customer_id`) · transcribe voice memos. Labeled + editable; **the operator confirms every Apply** — no auto-apply to records.
 
 ## Todos & Work log tabs
-- **Todos:** the operator's task list (`todos`/`tasks`) — quick-add, due date, optional project link. Not intake.
+- **Todos:** the operator's task list (`todos`/`tasks`) — quick-add, due date, optional project link. Not intake. *(Same surface also stands alone at `/todos`, linked from the dashboard command-center — one component/data, two entry points.)*
 - **Work log:** chronological `worklog_entries` feed (created / applied / sent), searchable — the activity record.
 
 ## Role variations
@@ -58,6 +58,7 @@ The intake triage queue (`intake_drafts`). The per-type **review dialogs** are t
 
 **Sub-flows**
 - **Classify → review → file/convert** — Henry classifies each `intake_draft` by type; the operator reviews (the dialogs above) and files to the right object. Capture-now / clean-up-later; never blocks capture.
+- **Web-share capture (`/share`)** — the PWA Share-Target landing: the operator shares a file/photo from the OS share sheet → a project-picker page → forwards into Intake with `?share=` (pre-stages the shared file). This is where the "web share" source originates. Thin picker; no separate brief.
 
 **Inline / transient / view-state**
 - **Tabs** — Intake · Todos · Work log (open Q: split Work log to a global surface); per-type badge; per-type empty states.
