@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase';
+import { getDecisionReportCard } from '@/server/ops-services/decision-report-card';
 import { jsonResult, type McpToolCtx, withAudit } from './context';
 
 const BUCKETS = ['decision', 'research', 'go_nogo', 'grooming'] as const;
@@ -136,6 +137,24 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
         created: true,
         url: 'https://ops.heyhenry.io/admin/queue',
       });
+    }),
+  );
+
+  server.tool(
+    'decision_bundles_report_card',
+    [
+      'Calibration signal for the Command Center (Step 8). Per bucket over a',
+      'trailing window: acted (resolved) vs dismissed (archived) vs parked, the',
+      'act_rate (acted / decided), and the mean recommendation rating.',
+      'Use it to STOP surfacing classes Jonathan keeps dismissing and to judge',
+      'which scouts earn their keep (low act_rate / low rating = prune).',
+    ].join('\n'),
+    {
+      days: z.number().int().min(1).max(365).default(60),
+    },
+    withAudit(ctx, 'decision_bundles_report_card', 'read:decision_bundles', async ({ days }) => {
+      const service = createServiceClient();
+      return jsonResult(await getDecisionReportCard(service, days));
     }),
   );
 }

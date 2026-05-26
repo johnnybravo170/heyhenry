@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase';
+import { getDecisionReportCard } from '@/server/ops-services/decision-report-card';
 import { BundleCard, type QueueBundle } from './bundle-card';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,8 @@ export default async function QueuePage() {
     .eq('status', 'parked')
     .order('surfaced_at', { ascending: false })
     .limit(100);
+
+  const reportCard = await getDecisionReportCard(service, 60);
 
   const openRows = (open ?? []) as QueueBundle[];
   const parkedRows = (parked ?? []) as QueueBundle[];
@@ -103,6 +106,52 @@ export default async function QueuePage() {
           )}
         </section>
       ))}
+
+      <section className="space-y-3 border-t border-[var(--border)] pt-6">
+        <div className="flex items-baseline gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide">Report card</h2>
+          <span className="text-xs text-[var(--muted-foreground)]">last {reportCard.days}d</span>
+        </div>
+        <p className="text-xs text-[var(--muted-foreground)]">
+          Acted vs dismissed per stream — calibration for what&apos;s worth surfacing.
+        </p>
+        {reportCard.buckets.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="text-[var(--muted-foreground)]">
+                <tr className="border-b border-[var(--border)]">
+                  <th className="py-1.5 pr-4 font-medium">Stream</th>
+                  <th className="py-1.5 pr-4 font-medium">Acted</th>
+                  <th className="py-1.5 pr-4 font-medium">Dismissed</th>
+                  <th className="py-1.5 pr-4 font-medium">Parked</th>
+                  <th className="py-1.5 pr-4 font-medium">Open</th>
+                  <th className="py-1.5 pr-4 font-medium">Act rate</th>
+                  <th className="py-1.5 pr-4 font-medium">Avg ★</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportCard.buckets.map((b) => (
+                  <tr key={b.bucket} className="border-b border-[var(--border)]">
+                    <td className="py-1.5 pr-4 font-medium">{b.bucket}</td>
+                    <td className="py-1.5 pr-4">{b.acted}</td>
+                    <td className="py-1.5 pr-4">{b.dismissed}</td>
+                    <td className="py-1.5 pr-4">{b.parked}</td>
+                    <td className="py-1.5 pr-4">{b.open}</td>
+                    <td className="py-1.5 pr-4">
+                      {b.act_rate === null ? '—' : `${Math.round(b.act_rate * 100)}%`}
+                    </td>
+                    <td className="py-1.5 pr-4">{b.avg_rating ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="rounded-md border border-dashed border-[var(--border)] px-4 py-6 text-center text-xs text-[var(--muted-foreground)]">
+            No history yet.
+          </p>
+        )}
+      </section>
     </div>
   );
 }
