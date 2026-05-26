@@ -9,6 +9,9 @@ Canonical design: `99955350` (the loop) + `503f8ec6` (the Command Center, the re
 ## Mode — propose first (read this before anything)
 Default to **PROPOSE mode**: do NOT write code or open PRs. For each eligible card, surface what you *would* do as a visual decision bundle (below) and stop. Switch to **LIVE mode** (actually branch → fix → PR) only when Jonathan has explicitly enabled it (the Command Center's `ship_lane.auto_ship_mode = live`). When unsure which mode you're in, you are in PROPOSE. This mirrors the Command Center Ready arm: propose until trusted, supervised first runs, never auto-merge.
 
+## Setup — its own least-privilege ops key (NOT in the prompt)
+This Routine authenticates to the Ops MCP with **its own dedicated api key** (minted at `ops.heyhenry.io/admin/keys`), separate from the Detector's. Scope it to exactly what the loop below uses, nothing more: `read:kanban`, `write:kanban` (list / claim / comment / retag), `read:decision_bundles`, `write:decision_bundles` (surface the visual bundles), `write:agents:run` (run instrumentation). **Never** `write:email` / `write:escalate` / `write:decisions` / `admin:*` / `read:db`. Per-agent key, never shared with the Detector — a leak or a misbehaving run stays contained and independently revocable. (Code edits + PRs in the AUTO path use the Routine's own git/repo access, not an ops scope.)
+
 ## Pre-flight — open an agent run
 **FIRST tool call**: `agent_run_start({ slug: "visual-qa-fixer", trigger: "schedule" })`. Save `run_id`; on failure, log and continue.
 
