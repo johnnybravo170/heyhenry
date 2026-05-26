@@ -93,6 +93,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 ### Worker & public surfaces (separate route groups)
 | Surface | Brief | OD render | Open dev cards | Built (ref) | Notes |
 |---|---|---|---|---|---|
+| Auth / sign-in (`(auth)`) | ✅ `auth.md` | ⬜ | — | 🟡 (live, pre-redesign) | login · magic-link · check-email · MFA(+recover) · signup · worker `join/[code]`; **never pipeline'd before (QA-caught gap).** Target: Paper restyle + **password-vs-magic-link product call** + mobile-first; role-routing spine (owner/admin/member→/dashboard, worker→/w, bookkeeper→/bk); onboarding handoff → `onboarding.md`. Preserve rate-limit/no-enumeration/MFA |
 | Worker app `/w` (mobile field surface) | ✅ `worker-app.md` | ✅ `od-worker-app` | 0 (build `6322a4d7` ✅) | 🟡 #318 | built (#318): bottom-nav 8→**4 primary + raised Log FAB**; field-hardened Paper (64px nav/FAB, 48/52px targets); Today cockpit + gated sub-billing nudge; **offline time-queue** (IndexedDB, "saved will sync", reconnect-flush); capability-gated expense/invoice; worker boundary intact. **Deferred:** offline for expense-blob + invoice submit + closed-tab SW sync; heavy capture flows (own renders). ✅-gate (live design-critique) pending |
 | Public pages (`/portal`, `/estimate`, `/approve`, `/decide`, `/view`, `/pulse`, `/home-record`) | ✅ `public-pages.md` | ✅ `od-public-pages` | 0 (build `f1f04673` ✅) | 🟡 #319 | built (#319): `<PublicBrandHeader>` letterhead · portal hub restyle (intentional order, bottom-sheet tabs, **calm non-enumerating boundary copy**) · tap-to-decide on the branded shell. Approval family + `customer_view_mode` GC-only lever already on `<CustomerDocument>` (#308/#310/#315). **Boundary audited** (orchestrator-verified: no new field surfaced, no authed-helper on public routes, filters intact). **Graduated:** Home Record · Pulse · Showcase · `/q` `/r`. ✅-gate (live design-critique) pending |
 
@@ -103,8 +104,9 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 
 - **Bookkeeper portal** (`/bk`) — **deferred, out of redesign scope for V1 — confirmed by the sweep.** Real + shipped, but scoped out by Role × Object Matrix `03b1ccf4` (`/bk` financial-only, "out of redesign scope"), Object Model `b4d880be` (Bookkeeper-domain tables out of scope), and Workflow Library `e0263cc3` (#8 Bookkeeper Review — deferred, separate portal). Revisit only if it re-enters scope.
 
-**Gaps surfaced during the sweep — all addressed:**
+**Gaps surfaced (during + after the sweep) — all addressed:**
 - **Project → Selections tab** — found un-briefed during the sweep, **now briefed** (`selections.md`, 2026-05-23) and promoted into the Project Hub table above.
+- **Auth / sign-in (`(auth)`)** — the login front door was never on the menu *or* in the scope ledger; caught in QA (2026-05-23). **Now briefed** (`auth.md`) and promoted into the Worker & public surfaces table. (Onboarding/post-signup was already briefed; this covers login · magic-link · MFA · signup · worker-join.)
 
 ## Scope ledger — the honest done-line (2026-05-23)
 The redesign-scope surface is briefed; everything else is explicitly classified.
@@ -121,7 +123,7 @@ The redesign-scope surface is briefed; everything else is explicitly classified.
 - **`admin`** (internal ops UI) · **`social`** (ops marketing drafts) · **`lead-gen` + `leads`** (PW-vertical public lead capture; GC leads = Contacts) · **legacy `jobs` + PW quotes** (`quotes.md` maps the PW→GC boundary; GC uses Projects).
 - **Owner Dashboard** (`dashboard.md`) — owner optimizes on a separate track ("don't touch").
 
-**Net:** **every GC-V1 redesign surface is now briefed — zero in-scope gaps.** Remaining work is downstream per screen (OD render → build → the ✅-verify gate) plus the explicitly out-of-scope set above (Bookkeeper `/bk`, `admin`, `social`, `lead-gen`/`leads`, legacy `jobs`/PW quotes, owner Dashboard).
+**Net:** **every GC-V1 redesign surface is now briefed — including the `(auth)` sign-in front door (`auth.md`), caught in QA after the initial "zero gaps" claim.** Remaining work is downstream per screen (OD render → build → the ✅-verify gate) plus the explicitly out-of-scope set above (Bookkeeper `/bk`, `admin`, `social`, `lead-gen`/`leads`, legacy `jobs`/PW quotes, owner Dashboard).
 
 ## Cross-cutting items
 - **"client" not "homeowner" terminology sweep** — Ops decision `1d055427`; dev card `2eab19b2` (12 briefs + sacred-path + vault Role × Object Matrix `03b1ccf4` + the 2 design skills). Folded into the reconciliation pass. Keep "customer" for data/product terms.
