@@ -33,12 +33,8 @@ const TILES: Tile[] = [
     chips: ['Projects', 'Estimates', 'Change orders', 'Draws'],
     isDefault: true,
   },
-  {
-    value: 'pressure_washing',
-    title: 'Pressure washing',
-    desc: 'One-day jobs with photo-driven invoices and route-friendly scheduling.',
-    chips: ['Jobs', 'Quick quotes', 'Before / after', 'Invoices'],
-  },
+  // Other trades (pressure washing, tile, decks) aren't open yet — only the
+  // general contracting / renovation vertical is offered at signup for now.
 ];
 
 export function VerticalStep({
@@ -126,8 +122,8 @@ export function VerticalStep({
       </div>
 
       <p className="px-0.5 text-xs leading-snug text-muted-foreground">
-        More trades (tile, decks) coming. Pick the closest fit — switching later re-seeds your
-        starter templates.
+        You&apos;re set up for general contracting and renovation. More trades (pressure washing,
+        tile, decks) are coming.
       </p>
 
       <StepActions

@@ -47,25 +47,32 @@ export default async function OnboardingPage() {
   // (or whatever the owner has since set) when it's a selectable option.
   const initialVertical = isSelectableVertical(tenant.vertical) ? tenant.vertical : 'renovation';
 
+  // The (auth) shell caps content at max-w-md, which feels cramped for a
+  // multi-step setup. Break out of that cap and re-center the flow wider
+  // (without widening login/signup).
   return (
-    <OnboardingFlow
-      resumeStep={resumeStep}
-      initialVertical={initialVertical}
-      profile={{
-        gstNumber: profile?.gstNumber ?? '',
-        wcbNumber: profile?.wcbNumber ?? '',
-        province: profile?.province ?? '',
-        logoSignedUrl: profile?.logoSignedUrl ?? null,
-        businessName: profile?.name ?? tenant.name,
-        addressLine1: profile?.addressLine1 ?? '',
-        addressLine2: profile?.addressLine2 ?? '',
-        city: profile?.city ?? '',
-        postalCode: profile?.postalCode ?? '',
-        phone: profile?.phone ?? '',
-        contactEmail: profile?.contactEmail ?? '',
-        websiteUrl: profile?.websiteUrl ?? '',
-        reviewUrl: profile?.reviewUrl ?? '',
-      }}
-    />
+    <div className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 px-4">
+      <div className="mx-auto w-full max-w-xl">
+        <OnboardingFlow
+          resumeStep={resumeStep}
+          initialVertical={initialVertical}
+          profile={{
+            gstNumber: profile?.gstNumber ?? '',
+            wcbNumber: profile?.wcbNumber ?? '',
+            province: profile?.province ?? '',
+            logoSignedUrl: profile?.logoSignedUrl ?? null,
+            businessName: profile?.name ?? tenant.name,
+            addressLine1: profile?.addressLine1 ?? '',
+            addressLine2: profile?.addressLine2 ?? '',
+            city: profile?.city ?? '',
+            postalCode: profile?.postalCode ?? '',
+            phone: profile?.phone ?? '',
+            contactEmail: profile?.contactEmail ?? '',
+            websiteUrl: profile?.websiteUrl ?? '',
+            reviewUrl: profile?.reviewUrl ?? '',
+          }}
+        />
+      </div>
+    </div>
   );
 }

@@ -39,7 +39,8 @@ export function MeetHenryStep({
         Meet Henry.
       </h1>
       <p className="text-sm leading-relaxed text-muted-foreground">
-        An assistant tucked inside the app — not a chat box. Here&apos;s what he&apos;ll do.
+        Your back-office assistant. Ask him anything from the corner, or let him work in the
+        background. Here&apos;s what he&apos;ll do.
       </p>
 
       <div className="flex flex-col gap-2.5 rounded-xl border border-brand/20 bg-brand/[0.06] p-3.5">
@@ -81,8 +82,9 @@ export function MeetHenryStep({
       </ul>
 
       <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">
-        Henry shows up where you need him — on the estimate, on the dashboard, on a late invoice. He
-        doesn&apos;t run a chat window in the corner.
+        Tap the <span className="font-semibold text-brand">✦ Henry</span> button in the corner to
+        ask him anything. He&apos;ll also surface right where you need him: on an estimate, on the
+        dashboard, on a late invoice.
       </p>
 
       <div className="-mx-4 mt-1 flex flex-col gap-2 border-t px-4 pt-3">
