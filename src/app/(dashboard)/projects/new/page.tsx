@@ -1,6 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { LeadIntakeForm } from '@/components/features/leads/lead-intake-form';
 import { NewProjectFormSurface } from '@/components/features/projects/new-project-page';
 import { ProjectForm } from '@/components/features/projects/project-form';
 import { listCustomers } from '@/lib/db/queries/customers';
@@ -79,51 +78,11 @@ export default async function NewProjectPage({
     );
   }
 
-  // ?intake=full opts into the original deeper guided flow (multi-step
-  // review of parsed scope + reply drafting). We'll fold this into the
-  // manual form as an inline accelerator in a follow-up — for now it's
-  // available via the link below the manual form.
-  const fullIntake = typeof params.intake === 'string' && params.intake === 'full';
-
-  if (fullIntake) {
-    return (
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-6">
-          <Link
-            href="/projects/new"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-3.5" />
-            Back to manual entry
-          </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Guided intake</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Drop screenshots, photos, sketches, PDFs (sub-trade quotes, drawings) — or paste the
-            message. Henry will extract scope, build a starting estimate, and draft a reply.
-          </p>
-          {aiChoice === 'openai' ? (
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-              Parse model: GPT-4.1 (A/B mode)
-            </p>
-          ) : null}
-        </div>
-
-        <LeadIntakeForm
-          parseModel={aiChoice === 'claude' ? 'claude-sonnet' : 'gpt-4.1'}
-          initialDraft={initialDraft}
-        />
-      </div>
-    );
-  }
-
-  // Default: unified surface. Manual ProjectForm is the primary input;
-  // an optional drop-zone accelerator above it pre-fills fields when
-  // an artifact is provided. Both paths produce the same project
-  // create; the operator never has to "choose" between them.
-  //
-  // The deeper guided flow (multi-step scope review + customer reply
-  // drafting + draft persistence) still lives at /projects/new?intake=full
-  // for inbound-lead use cases that need it.
+  // Canonical New Project surface: guided intake (drop a quote / photo / voice
+  // memo / paste → Henry parses → review + apply scope) is the default, with a
+  // toggle to manual typed entry. The old /projects/new?intake=full split is
+  // gone — that param now just lands here too. ?draft=<id> hydrates a persisted
+  // draft straight into the guided review. ?ai=gpt flips the parse model.
   return (
     <div className="mx-auto w-full max-w-3xl">
       <div className="mb-6">
@@ -136,27 +95,23 @@ export default async function NewProjectPage({
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">New project</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pick a customer, give the project a name, save. Build the budget on the next screen. Got a
-          quote or voice memo? Drop it in the accelerator below and Henry will pull the scope for
-          you to review.
+          Drop a quote, photos, sketches, a voice memo — or paste the message. Henry pulls the scope
+          and builds a starting estimate for you to review. No document? Enter it manually.
         </p>
+        {aiChoice === 'openai' ? (
+          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+            Parse model: GPT-4.1 (A/B mode)
+          </p>
+        ) : null}
       </div>
 
       <NewProjectFormSurface
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
         action={createProjectAction}
         defaults={{ management_fee_rate: defaultMgmtFeeRate }}
+        parseModel={aiChoice === 'claude' ? 'claude-sonnet' : 'gpt-4.1'}
+        initialDraft={initialDraft}
       />
-
-      <p className="mt-8 text-center text-xs text-muted-foreground">
-        Need the full guided intake (scope review + customer reply draft)?{' '}
-        <Link
-          href="/projects/new?intake=full"
-          className="font-medium text-foreground underline-offset-2 hover:underline"
-        >
-          Open guided intake →
-        </Link>
-      </p>
     </div>
   );
 }
