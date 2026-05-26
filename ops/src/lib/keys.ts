@@ -140,6 +140,7 @@ export type Scope =
   | 'write:board:review'
   | 'read:message_lab'
   | 'write:message_lab'
+  | 'read:db'
   | 'admin:maintenance'
   | 'admin:keys';
 

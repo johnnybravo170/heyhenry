@@ -36,6 +36,7 @@ const ALL_SCOPES = [
   'write:feedback',
   'read:message_lab',
   'write:message_lab',
+  'read:db',
   'admin:maintenance',
 ];
 

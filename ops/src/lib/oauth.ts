@@ -38,6 +38,7 @@ const ALL_SCOPES = [
   'write:email',
   'read:message_lab',
   'write:message_lab',
+  'read:db',
 ] as const;
 
 export const SUPPORTED_SCOPES: readonly string[] = ALL_SCOPES;
