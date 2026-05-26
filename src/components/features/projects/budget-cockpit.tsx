@@ -11,6 +11,7 @@
 
 import { AlertTriangle, ArrowRight, Shuffle } from 'lucide-react';
 import Link from 'next/link';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { Money } from '@/components/ui/money';
 import { cn } from '@/lib/utils';
 
@@ -82,15 +83,11 @@ export function BudgetAlertChips({
 function VarCell({ label, cents, sub }: { label: string; cents: number; sub: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
+      <Eyebrow className="font-semibold">{label}</Eyebrow>
       <span className="text-xl font-bold tabular-nums tracking-tight">
         <Money cents={cents} />
       </span>
-      <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-        {sub}
-      </span>
+      <Eyebrow>{sub}</Eyebrow>
     </div>
   );
 }
