@@ -93,6 +93,12 @@ Your job — the same regardless of flavour, but the signals live in different p
 
 11. Tag artifact roles so the contractor knows which is which.
 
+12. TAX REGISTRATION NUMBERS — if any Canadian GST/HST registration number appears on a document (format: nine digits then "RT" then four digits, e.g. "123456789 RT0001" or "123456789RT0001"), record each one in detected_tax_ids. For each, set:
+    - number: the number exactly as printed.
+    - placement: "sender" if it sits in the document's header / letterhead / sender block (top of page, beside the issuing business's name + address — i.e. the company that PRODUCED the document); "recipient" if it's in a bill-to / ship-to / customer block; "other" if you can't tell.
+    - near_business_name: the business name printed nearest the number, or null.
+    Do NOT guess or invent a number — only record one you can actually read. Empty array if none appear. (Deciding whether a "sender" number belongs to this contractor happens downstream; you only report what's on the page and where.)
+
 Return ONLY JSON matching the schema. Use empty arrays / null for anything you cannot confidently extract. Never invent details that aren't in the input, but DO extract everything that IS there — especially filename context.
 
 ${HUMAN_VOICE_RULES}`;
@@ -191,6 +197,28 @@ export const INTAKE_JSON_SCHEMA = {
         },
         required: ['competitive', 'competitor_count', 'urgency', 'upsells', 'design_intent'],
       },
+      detected_tax_ids: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            number: {
+              type: 'string',
+              description:
+                'GST/HST registration number exactly as printed, e.g. "123456789 RT0001".',
+            },
+            placement: {
+              type: 'string',
+              enum: ['sender', 'recipient', 'other'],
+              description:
+                'sender = header/letterhead/issuer block (the business that produced the doc); recipient = bill-to/ship-to/customer block; other = unclear.',
+            },
+            near_business_name: { type: ['string', 'null'] },
+          },
+          required: ['number', 'placement', 'near_business_name'],
+        },
+      },
       reply_draft: { type: 'string' },
       image_roles: {
         type: 'array',
@@ -209,7 +237,15 @@ export const INTAKE_JSON_SCHEMA = {
         },
       },
     },
-    required: ['customer', 'project', 'categories', 'signals', 'reply_draft', 'image_roles'],
+    required: [
+      'customer',
+      'project',
+      'categories',
+      'signals',
+      'detected_tax_ids',
+      'reply_draft',
+      'image_roles',
+    ],
   },
 } as const;
 
@@ -247,6 +283,18 @@ export type ParsedIntake = {
     upsells: Array<{ label: string; reason: string }>;
     design_intent: string[];
   };
+  /**
+   * GST/HST registration numbers detected on the dropped documents, with where
+   * they sat (sender/letterhead vs recipient block). Ownership ("is this the
+   * operator's own number?") is decided downstream against the tenant profile.
+   * Optional in the type — drafts pre-dating the field have none — but required
+   * in the schema for fresh responses.
+   */
+  detected_tax_ids?: Array<{
+    number: string;
+    placement: 'sender' | 'recipient' | 'other';
+    near_business_name: string | null;
+  }>;
   reply_draft: string;
   image_roles: Array<{
     index: number;
