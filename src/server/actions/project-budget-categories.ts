@@ -6,6 +6,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createClient } from '@/lib/supabase/server';
 
 export type BudgetCategoryActionResult = { ok: true; id: string } | { ok: false; error: string };
@@ -154,40 +155,11 @@ export async function deleteBudgetSectionAction(input: {
   return { ok: true };
 }
 
-/**
- * Resolve a section by name on a project, creating it if missing. Returns the
- * section row id. Used by category writes that arrive with a section name.
- */
-async function resolveSectionId(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  tenantId: string,
-  projectId: string,
-  name: string,
-): Promise<{ id: string } | { error: string }> {
-  const { data: existing } = await supabase
-    .from('project_budget_sections')
-    .select('id')
-    .eq('project_id', projectId)
-    .eq('name', name)
-    .maybeSingle();
-  if (existing) return { id: (existing as { id: string }).id };
-
-  const { data: maxRow } = await supabase
-    .from('project_budget_sections')
-    .select('sort_order')
-    .eq('project_id', projectId)
-    .order('sort_order', { ascending: false })
-    .limit(1);
-  const nextOrder = maxRow?.[0] ? (maxRow[0] as { sort_order: number }).sort_order + 1 : 0;
-
-  const { data, error } = await supabase
-    .from('project_budget_sections')
-    .insert({ project_id: projectId, tenant_id: tenantId, name, sort_order: nextOrder })
-    .select('id')
-    .single();
-  if (error || !data) return { error: error?.message ?? 'Failed to resolve section.' };
-  return { id: data.id };
-}
+// Section resolution (find-or-create by name) lives in the query lib as
+// `resolveBudgetSectionId` so every writer across the app shares one
+// implementation. `resolveSectionId` is the local alias kept for the callers
+// below.
+const resolveSectionId = resolveBudgetSectionId;
 
 export async function updateBudgetCategoryAction(input: {
   id: string;
