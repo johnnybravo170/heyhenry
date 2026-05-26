@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * Budget scope table — ONE aligned grid (section → category → line sharing
- * the same columns), per the Project Hub budget OD. No nested sub-tables: a
- * cost line's value sits in the column that matches its state (Estimate always;
- * then Spent / Committed / Remaining). Sections collapse for scan and show an
- * estimate + over/projected-over summary when closed. Sticky column header.
+ * Budget scope table — each SECTION is a free-standing heading that sits above
+ * its OWN bordered card; the card carries the column header (Category / Estimate
+ * / Spent / Committed / Remaining) and that section's category + cost-line rows,
+ * which share one aligned grid. No nested sub-tables: a cost line's value sits in
+ * the column that matches its state (Estimate always; then Spent / Committed /
+ * Remaining). Sections collapse for scan and show an estimate + over/projected-
+ * over summary on the heading when closed.
  *
  * Shared component, two postures: authoring (planning — everything expanded for
  * build/price) and execution (active+ — collapsed, actuals-forward), switched
@@ -561,23 +563,8 @@ export function BudgetCategoriesTable({
           />
         )}
 
-        <div className="overflow-x-auto rounded-xl border bg-card">
-          <div className="min-w-[720px]">
-            {/* Sticky column header */}
-            <div
-              className={cn(
-                GRID,
-                'sticky top-0 z-10 border-b bg-muted/60 px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-muted-foreground',
-              )}
-            >
-              <span />
-              <span>Category</span>
-              <span className="text-right">Estimate</span>
-              <span className="text-right">Spent</span>
-              <span className="text-right">Committed</span>
-              <span className="text-right">Remaining</span>
-            </div>
-
+        <div className="overflow-x-auto">
+          <div className="min-w-[720px] space-y-6">
             {sectionEntries.map(({ entity, lines: sectionLines }) => {
               const section = entity.name;
               const collapsed = collapsedSections.has(section);
@@ -599,22 +586,24 @@ export function BudgetCategoriesTable({
 
               return (
                 <SectionDroppable key={entity.id ?? '__other__'} section={section}>
-                  {/* Section row */}
-                  <div className={cn(GRID, 'border-b px-3 py-2.5 hover:bg-[#FFFCF7]')}>
+                  {/* Section heading — sits OUTSIDE and ABOVE the section card,
+                      so a section clearly brackets its own card of categories
+                      rather than reading as another row in a shared table. */}
+                  <div className="mb-2 flex items-start gap-2 px-1">
                     <button
                       type="button"
                       onClick={() => toggleSection(section)}
                       aria-expanded={!collapsed}
                       aria-label={collapsed ? `Expand ${section}` : `Collapse ${section}`}
-                      className="text-muted-foreground hover:text-foreground"
+                      className="mt-0.5 text-foreground/70 hover:text-foreground"
                     >
                       {collapsed ? (
-                        <ChevronRight className="size-4" />
+                        <ChevronRight className="size-5" />
                       ) : (
-                        <ChevronDown className="size-4" />
+                        <ChevronDown className="size-5" />
                       )}
                     </button>
-                    <div className="flex min-w-0 flex-col gap-1">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {isRenaming ? (
                           <Input
@@ -647,7 +636,7 @@ export function BudgetCategoriesTable({
                           <button
                             type="button"
                             onClick={() => toggleSection(section)}
-                            className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-foreground"
+                            className="text-left font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-foreground"
                           >
                             {section}
                           </button>
@@ -803,108 +792,124 @@ export function BudgetCategoriesTable({
                         )
                       ) : null}
                     </div>
-                    <span className="text-right text-sm font-medium">
-                      <Money cents={estimate} />
-                    </span>
-                    <span
-                      className={cn(
-                        'text-right text-sm font-medium',
-                        seg.actuallyOver && 'text-destructive',
-                      )}
-                    >
-                      <Money cents={spent} />
-                    </span>
-                    <span className="text-right text-sm text-muted-foreground">
-                      {committed > 0 ? <Money cents={committed} /> : '—'}
-                    </span>
-                    <span>
-                      <MiniBar estimate={estimate} spent={spent} committed={committed} />
-                    </span>
+                    {/* Section subtotal — set off to the right, NOT aligned to
+                        the per-category money columns, so the band reads as a
+                        separator rather than a data row. */}
+                    <div className="flex shrink-0 items-baseline gap-2.5 pt-0.5 text-right">
+                      <span className="font-mono text-[13px] font-bold tabular-nums text-foreground">
+                        <Money cents={estimate} />
+                      </span>
+                      <span
+                        className={cn(
+                          'font-mono text-[11px] tabular-nums',
+                          seg.actuallyOver
+                            ? 'text-destructive'
+                            : seg.projectedOver
+                              ? 'text-amber-700 dark:text-amber-300'
+                              : 'text-muted-foreground',
+                        )}
+                      >
+                        {seg.usedPct}% used
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Category rows */}
+                  {/* Section card — its own bordered block carrying the column
+                      header row and this section's category rows. */}
                   {!collapsed ? (
-                    <SortableContext
-                      items={sectionLines.map((l) => l.budget_category_id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {sectionLines.map((line) => (
-                        <BudgetCategoryRow
-                          key={line.budget_category_id}
-                          line={line}
-                          isExpanded={expanded.has(line.budget_category_id)}
-                          categoryLines={linesByBudgetCategory.get(line.budget_category_id) ?? []}
-                          toggleExpand={toggleExpand}
-                          editingId={editingId}
-                          editValue={editValue}
-                          setEditValue={setEditValue}
-                          setEditingId={setEditingId}
-                          isPending={isPending}
-                          saveEdit={saveEdit}
-                          startEdit={startEdit}
-                          editingNameId={editingNameId}
-                          editNameValue={editNameValue}
-                          setEditNameValue={setEditNameValue}
-                          setEditingNameId={setEditingNameId}
-                          saveEditName={saveEditName}
-                          startEditName={startEditName}
-                          editingDescId={editingDescId}
-                          editDescValue={editDescValue}
-                          setEditDescValue={setEditDescValue}
-                          setEditingDescId={setEditingDescId}
-                          saveEditDesc={saveEditDesc}
-                          startEditDesc={startEditDesc}
-                          removeCategory={removeCategory}
-                          addingLineFor={addingLineFor}
-                          setAddingLineFor={setAddingLineFor}
-                          editingLine={editingLine}
-                          setEditingLine={setEditingLine}
-                          deleteLine={deleteLine}
-                          projectId={projectId}
-                          catalog={catalog}
-                          coContributions={
-                            coContributionsByCategoryId[line.budget_category_id] ?? []
-                          }
-                          actualsByLineId={actualsByLineId}
-                          showHighlight={highlight && line.budget_category_id === focusCategoryId}
-                          isFocused={line.budget_category_id === focusCategoryId}
-                        />
-                      ))}
-                    </SortableContext>
-                  ) : null}
-
-                  {/* Contextual "+ Add category to {section}" — parent section is
-                      known, so the inline form drops the Section picker. */}
-                  {!collapsed ? (
-                    addCategoryForSection === section ? (
-                      <div className="border-b bg-[#FBF6EC] py-1 pl-[50px] pr-3">
-                        <AddBudgetCategoryForm
-                          projectId={projectId}
-                          kind="category"
-                          existingSections={allSections.filter(Boolean)}
-                          lockedSection={section}
-                          nested
-                          onDone={() => setAddCategoryForSection(null)}
-                        />
+                    <div className="overflow-hidden rounded-xl border bg-card">
+                      <div
+                        className={cn(
+                          GRID,
+                          'border-b bg-muted/60 px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-muted-foreground',
+                        )}
+                      >
+                        <span />
+                        <span>Category</span>
+                        <span className="text-right">Estimate</span>
+                        <span className="text-right">Spent</span>
+                        <span className="text-right">Committed</span>
+                        <span className="text-right">Remaining</span>
                       </div>
-                    ) : (
-                      <div className="border-b bg-[#FBF6EC] py-2 pl-[50px] pr-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAddCategoryForSection(section);
-                            setAddCategoryMode('closed');
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
-                        >
-                          <Plus className="size-3" />
-                          Add category to {section}
-                          <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground/60">
-                            Name · estimate · description
-                          </span>
-                        </button>
-                      </div>
-                    )
+                      <SortableContext
+                        items={sectionLines.map((l) => l.budget_category_id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {sectionLines.map((line) => (
+                          <BudgetCategoryRow
+                            key={line.budget_category_id}
+                            line={line}
+                            isExpanded={expanded.has(line.budget_category_id)}
+                            categoryLines={linesByBudgetCategory.get(line.budget_category_id) ?? []}
+                            toggleExpand={toggleExpand}
+                            editingId={editingId}
+                            editValue={editValue}
+                            setEditValue={setEditValue}
+                            setEditingId={setEditingId}
+                            isPending={isPending}
+                            saveEdit={saveEdit}
+                            startEdit={startEdit}
+                            editingNameId={editingNameId}
+                            editNameValue={editNameValue}
+                            setEditNameValue={setEditNameValue}
+                            setEditingNameId={setEditingNameId}
+                            saveEditName={saveEditName}
+                            startEditName={startEditName}
+                            editingDescId={editingDescId}
+                            editDescValue={editDescValue}
+                            setEditDescValue={setEditDescValue}
+                            setEditingDescId={setEditingDescId}
+                            saveEditDesc={saveEditDesc}
+                            startEditDesc={startEditDesc}
+                            removeCategory={removeCategory}
+                            addingLineFor={addingLineFor}
+                            setAddingLineFor={setAddingLineFor}
+                            editingLine={editingLine}
+                            setEditingLine={setEditingLine}
+                            deleteLine={deleteLine}
+                            projectId={projectId}
+                            catalog={catalog}
+                            coContributions={
+                              coContributionsByCategoryId[line.budget_category_id] ?? []
+                            }
+                            actualsByLineId={actualsByLineId}
+                            showHighlight={highlight && line.budget_category_id === focusCategoryId}
+                            isFocused={line.budget_category_id === focusCategoryId}
+                          />
+                        ))}
+                      </SortableContext>
+                      {/* Contextual "+ Add category to {section}" — parent
+                          section is known, so the form drops the Section picker. */}
+                      {addCategoryForSection === section ? (
+                        <div className="border-b bg-[#FBF6EC] py-1 pl-[50px] pr-3">
+                          <AddBudgetCategoryForm
+                            projectId={projectId}
+                            kind="category"
+                            existingSections={allSections.filter(Boolean)}
+                            lockedSection={section}
+                            nested
+                            onDone={() => setAddCategoryForSection(null)}
+                          />
+                        </div>
+                      ) : (
+                        <div className="border-b bg-[#FBF6EC] py-2 pl-[50px] pr-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddCategoryForSection(section);
+                              setAddCategoryMode('closed');
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
+                          >
+                            <Plus className="size-3" />
+                            Add category to {section}
+                            <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground/60">
+                              Name · estimate · description
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ) : null}
                 </SectionDroppable>
               );
@@ -912,7 +917,7 @@ export function BudgetCategoriesTable({
 
             {/* Catch-all bottom add-row — "+ Add category" (with section picker)
                 and "+ Add section". */}
-            <div className="flex items-center gap-2 border-t bg-muted/40 px-3 py-2.5">
+            <div className="flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
               <Button
                 size="sm"
                 variant="ghost"
@@ -1362,6 +1367,18 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                     ) : (
                       '—'
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingLine(cl);
+                        setAddingLineFor(null);
+                      }}
+                      aria-label={`Edit ${cl.label}`}
+                      title="Edit this line"
+                      className="rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground"
+                    >
+                      <Pencil className="size-3" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => deleteLine(cl.id)}
