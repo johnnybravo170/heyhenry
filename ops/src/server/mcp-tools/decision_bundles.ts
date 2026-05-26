@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase';
 import { jsonResult, type McpToolCtx, withAudit } from './context';
 
-const BUCKETS = ['decision', 'research', 'go_nogo', 'grooming'] as const;
+const BUCKETS = ['decision', 'research', 'go_nogo', 'grooming', 'visual'] as const;
 
 export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) {
   server.tool(
@@ -30,7 +30,7 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
           .schema('ops')
           .from('decision_bundles')
           .select(
-            'id, dedup_key, card_id, related_type, bucket, question, options, recommendation, why_today, links, status, resurface_trigger, choice, rating, decision_id, surfaced_at, resolved_at',
+            'id, dedup_key, card_id, related_type, bucket, question, options, recommendation, why_today, links, status, resurface_trigger, choice, rating, decision_id, before_image_url, after_image_url, image_caption, surfaced_at, resolved_at',
           )
           .eq('status', status)
           .order('surfaced_at', { ascending: false })
@@ -56,9 +56,11 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
       '    decision Jonathan already made.',
       '  • open/parked bundles are updated in place.',
       '',
-      'bucket: decision | research | go_nogo | grooming.',
+      'bucket: decision | research | go_nogo | grooming | visual.',
       'options (decision/go_nogo): [{ key, label, blast_radius?, unblocks? }].',
       'Set status=parked + resurface_trigger for good-but-premature research.',
+      'Visual-QA findings: bucket=visual + before_image_url (+ after_image_url) +',
+      'image_caption (caption the pixels, plain English). Renders as an image card.',
     ].join('\n'),
     {
       dedup_key: z.string().min(1).max(200),
@@ -72,6 +74,9 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
       related_type: z.enum(['kanban', 'idea']).optional().nullable(),
       status: z.enum(['open', 'parked']).default('open'),
       resurface_trigger: z.string().max(100).optional().nullable(),
+      before_image_url: z.string().url().max(2000).optional().nullable(),
+      after_image_url: z.string().url().max(2000).optional().nullable(),
+      image_caption: z.string().max(2000).optional().nullable(),
     },
     withAudit(ctx, 'decision_bundles_upsert', 'write:decision_bundles', async (input) => {
       const service = createServiceClient();
@@ -87,6 +92,9 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
         related_type: input.related_type ?? null,
         status: input.status,
         resurface_trigger: input.resurface_trigger ?? null,
+        before_image_url: input.before_image_url ?? null,
+        after_image_url: input.after_image_url ?? null,
+        image_caption: input.image_caption ?? null,
       };
 
       const { data: existing } = await service

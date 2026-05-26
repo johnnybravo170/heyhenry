@@ -17,7 +17,7 @@ export default async function QueuePage() {
     .schema('ops')
     .from('decision_bundles')
     .select(
-      'id, bucket, status, question, recommendation, why_today, options, links, resurface_trigger, surfaced_at',
+      'id, bucket, status, question, recommendation, why_today, options, links, resurface_trigger, before_image_url, after_image_url, image_caption, surfaced_at',
     )
     .eq('status', 'open')
     .order('surfaced_at', { ascending: false })
@@ -27,7 +27,7 @@ export default async function QueuePage() {
     .schema('ops')
     .from('decision_bundles')
     .select(
-      'id, bucket, status, question, recommendation, why_today, options, links, resurface_trigger, surfaced_at',
+      'id, bucket, status, question, recommendation, why_today, options, links, resurface_trigger, before_image_url, after_image_url, image_caption, surfaced_at',
     )
     .eq('status', 'parked')
     .order('surfaced_at', { ascending: false })
@@ -63,6 +63,12 @@ export default async function QueuePage() {
       bundles: byBucket('go_nogo'),
     },
     {
+      key: 'visual',
+      label: 'Visual QA',
+      blurb: 'Render defects from the visual-QA loop — caption the pixels; before/after.',
+      bundles: byBucket('visual'),
+    },
+    {
       key: 'grooming',
       label: 'Grooming / Parked',
       blurb: 'Underspecified (groom) or good-but-not-now (parked, resurfaces later).',
@@ -78,7 +84,7 @@ export default async function QueuePage() {
         <h1 className="text-2xl font-semibold tracking-tight">Command Center</h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           The Command Center routine&apos;s morning triage. {total} open item
-          {total === 1 ? '' : 's'} across five streams. Empty is success — nothing here means
+          {total === 1 ? '' : 's'} across the streams below. Empty is success — nothing here means
           nothing needs your judgment today.
         </p>
       </header>

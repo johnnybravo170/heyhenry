@@ -17,6 +17,9 @@ export type QueueBundle = {
   options: Option[] | null;
   links: Array<Record<string, unknown>> | null;
   resurface_trigger: string | null;
+  before_image_url: string | null;
+  after_image_url: string | null;
+  image_caption: string | null;
 };
 
 function optionChoice(o: Option): string {
@@ -62,6 +65,42 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
           </span>
           {bundle.recommendation}
         </p>
+      ) : null}
+
+      {bundle.before_image_url || bundle.after_image_url ? (
+        <div className="mt-3">
+          {bundle.image_caption ? (
+            <p className="mb-2 text-xs text-[var(--muted-foreground)]">{bundle.image_caption}</p>
+          ) : null}
+          <div className="flex flex-wrap gap-3">
+            {bundle.before_image_url ? (
+              <figure className="min-w-0">
+                <figcaption className="mb-1 text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
+                  Before
+                </figcaption>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bundle.before_image_url}
+                  alt="defect screenshot (before)"
+                  className="max-h-64 rounded-md border border-[var(--border)]"
+                />
+              </figure>
+            ) : null}
+            {bundle.after_image_url ? (
+              <figure className="min-w-0">
+                <figcaption className="mb-1 text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
+                  After
+                </figcaption>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bundle.after_image_url}
+                  alt="screenshot after fix"
+                  className="max-h-64 rounded-md border border-[var(--border)]"
+                />
+              </figure>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       {isParked && bundle.resurface_trigger ? (
