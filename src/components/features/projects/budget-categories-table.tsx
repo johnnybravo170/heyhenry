@@ -607,7 +607,7 @@ export function BudgetCategoriesTable({
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {isRenaming ? (
                           <Input
-                            className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.08em]"
+                            className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.06em]"
                             value={editSectionValue}
                             onChange={(e) => setEditSectionValue(e.target.value)}
                             onKeyDown={(e) => {
@@ -636,7 +636,7 @@ export function BudgetCategoriesTable({
                           <button
                             type="button"
                             onClick={() => toggleSection(section)}
-                            className="text-left font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-foreground"
+                            className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-foreground"
                           >
                             {section}
                           </button>
@@ -663,7 +663,7 @@ export function BudgetCategoriesTable({
                               <span
                                 key={l.budget_category_id}
                                 className={cn(
-                                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
                                   statusToneClass.danger,
                                 )}
                               >
@@ -677,7 +677,7 @@ export function BudgetCategoriesTable({
                               <span
                                 key={l.budget_category_id}
                                 className={cn(
-                                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
                                   statusToneClass.warning,
                                 )}
                               >
@@ -796,7 +796,7 @@ export function BudgetCategoriesTable({
                         the per-category money columns, so the band reads as a
                         separator rather than a data row. */}
                     <div className="flex shrink-0 items-baseline gap-2.5 pt-0.5 text-right">
-                      <span className="font-mono text-[13px] font-bold tabular-nums text-foreground">
+                      <span className="font-mono text-sm font-bold tabular-nums text-foreground">
                         <Money cents={estimate} />
                       </span>
                       <span
@@ -903,7 +903,7 @@ export function BudgetCategoriesTable({
                           >
                             <Plus className="size-3" />
                             Add category to {section}
-                            <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground/60">
+                            <span className="ml-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
                               Name · estimate · description
                             </span>
                           </button>
@@ -1148,7 +1148,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 )}
                 title={`Touched by CO: ${c.co_title}`}
                 className={cn(
-                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
                   statusToneClass.info,
                 )}
               >
@@ -1441,7 +1441,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 </Button>
                 {line.labor_cents > 0 || line.bills_cents > 0 || line.expense_cents > 0 ? (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
                       Spent by source
                     </span>
                     {line.labor_cents > 0 ? (
@@ -1647,7 +1647,7 @@ function AddBudgetCategoryForm({
                           setIsCustomSection(false);
                           setSection(existingSections[0] ?? '');
                         }}
-                        className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground hover:underline"
+                        className="shrink-0 text-xs text-muted-foreground hover:text-foreground hover:underline"
                       >
                         ← Pick existing
                       </button>
