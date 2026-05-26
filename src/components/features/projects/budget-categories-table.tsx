@@ -636,7 +636,7 @@ export function BudgetCategoriesTable({
                           <button
                             type="button"
                             onClick={() => toggleSection(section)}
-                            className="text-left font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-foreground"
+                            className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-foreground"
                           >
                             {section}
                           </button>
@@ -663,7 +663,7 @@ export function BudgetCategoriesTable({
                               <span
                                 key={l.budget_category_id}
                                 className={cn(
-                                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
                                   statusToneClass.danger,
                                 )}
                               >
@@ -677,7 +677,7 @@ export function BudgetCategoriesTable({
                               <span
                                 key={l.budget_category_id}
                                 className={cn(
-                                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
                                   statusToneClass.warning,
                                 )}
                               >
@@ -774,7 +774,7 @@ export function BudgetCategoriesTable({
                               setEditingSectionDescId(entity.id);
                             }}
                             title={entity.description_md}
-                            className="line-clamp-1 text-left text-[11px] text-muted-foreground/80 hover:text-foreground"
+                            className="line-clamp-1 text-left text-xs text-muted-foreground/80 hover:text-foreground"
                           >
                             {entity.description_md}
                           </button>
@@ -785,7 +785,7 @@ export function BudgetCategoriesTable({
                               setEditSectionDescValue('');
                               setEditingSectionDescId(entity.id);
                             }}
-                            className="w-fit text-left text-[11px] text-muted-foreground/50 hover:text-foreground"
+                            className="w-fit text-left text-xs text-muted-foreground/50 hover:text-foreground"
                           >
                             + Add description
                           </button>
@@ -796,7 +796,7 @@ export function BudgetCategoriesTable({
                         the per-category money columns, so the band reads as a
                         separator rather than a data row. */}
                     <div className="flex shrink-0 items-baseline gap-2.5 pt-0.5 text-right">
-                      <span className="font-mono text-[13px] font-bold tabular-nums text-foreground">
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
                         <Money cents={estimate} />
                       </span>
                       <span
@@ -903,7 +903,7 @@ export function BudgetCategoriesTable({
                           >
                             <Plus className="size-3" />
                             Add category to {section}
-                            <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground/60">
+                            <span className="ml-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground/60">
                               Name · estimate · description
                             </span>
                           </button>
@@ -1119,7 +1119,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 <button
                   type="button"
                   onClick={() => toggleExpand(line.budget_category_id)}
-                  className="text-left text-sm font-semibold hover:text-foreground"
+                  className="text-left text-base font-semibold hover:text-foreground"
                 >
                   {line.budget_category_name}
                   {categoryLines.length > 0 ? (
@@ -1148,7 +1148,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 )}
                 title={`Touched by CO: ${c.co_title}`}
                 className={cn(
-                  'rounded px-[7px] py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em]',
+                  'rounded px-[7px] py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em]',
                   statusToneClass.info,
                 )}
               >
@@ -1178,14 +1178,14 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
               type="button"
               onClick={() => startEditDesc(line)}
               title={line.budget_category_description}
-              className="line-clamp-1 text-left text-[11px] text-muted-foreground/80 hover:text-foreground"
+              className="line-clamp-1 text-left text-xs text-muted-foreground/80 hover:text-foreground"
             >
               {line.budget_category_description}
             </button>
           ) : null}
         </div>
         {/* estimate (editable when no priced lines) */}
-        <span className="text-right text-sm font-semibold">
+        <span className="text-right text-sm font-medium">
           {editingThis ? (
             <Input
               type="number"
@@ -1218,14 +1218,14 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
         {/* spent */}
         <span
           className={cn(
-            'text-right text-sm font-semibold',
+            'text-right text-sm font-medium',
             line.actual_cents > line.estimate_cents && 'text-destructive',
           )}
         >
           {line.actual_cents > 0 ? <Money cents={line.actual_cents} /> : '—'}
         </span>
         {/* committed */}
-        <span className="text-right text-sm font-semibold text-muted-foreground">
+        <span className="text-right text-sm font-medium text-muted-foreground">
           {line.committed_cents > 0 ? <Money cents={line.committed_cents} /> : '—'}
         </span>
         {/* remaining + bar */}
@@ -1302,7 +1302,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           a left guide rail runs down under the category name with subtle
           elbow connectors into each line. */}
       {wellOpen ? (
-        <div className="relative bg-[#F7EFDB] pb-1.5 before:pointer-events-none before:absolute before:bottom-[22px] before:left-[50px] before:top-0 before:w-px before:bg-[#C8B68C]/70 before:content-['']">
+        <div className="relative bg-[#F7EFDB] pb-3 before:pointer-events-none before:absolute before:bottom-[22px] before:left-[50px] before:top-0 before:w-px before:bg-[#C8B68C]/70 before:content-['']">
           {categoryLines.map((cl) => {
             const a = actualsByLineId[cl.id];
             const spent = a ? a.labour_cents + a.bills_cents + a.expenses_cents : 0;
@@ -1441,7 +1441,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 </Button>
                 {line.labor_cents > 0 || line.bills_cents > 0 || line.expense_cents > 0 ? (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                       Spent by source
                     </span>
                     {line.labor_cents > 0 ? (
@@ -1647,7 +1647,7 @@ function AddBudgetCategoryForm({
                           setIsCustomSection(false);
                           setSection(existingSections[0] ?? '');
                         }}
-                        className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground hover:underline"
+                        className="shrink-0 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
                       >
                         ← Pick existing
                       </button>
