@@ -607,7 +607,7 @@ export function BudgetCategoriesTable({
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {isRenaming ? (
                           <Input
-                            className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.08em]"
+                            className="h-7 w-auto min-w-[180px] font-mono text-[11px] font-bold uppercase tracking-[0.06em]"
                             value={editSectionValue}
                             onChange={(e) => setEditSectionValue(e.target.value)}
                             onKeyDown={(e) => {
@@ -636,7 +636,7 @@ export function BudgetCategoriesTable({
                           <button
                             type="button"
                             onClick={() => toggleSection(section)}
-                            className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-foreground"
+                            className="text-left font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-foreground"
                           >
                             {section}
                           </button>
