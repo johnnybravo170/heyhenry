@@ -34,8 +34,11 @@ populated.
 
 Set up / re-seed with `node scripts/setup-gc-demo-tenant.mjs` (idempotent).
 
-Shared passwords are in the ops knowledge vault (search "QA tenant credentials").
-Not real secrets — both tenants are inert (see below) — but kept out of the repo.
+**Password (both roles): `GcDemo-2026!`.** Canonical source is the `PASSWORD`
+const in `scripts/setup-gc-demo-tenant.mjs`; the seed script is what actually
+sets it, so grep there if this doc ever drifts. Mirrored in the ops knowledge
+vault (search "QA tenant credentials") for convenience. Not a real secret (both
+tenants are inert, see below).
 
 ## What `is_demo` does
 
