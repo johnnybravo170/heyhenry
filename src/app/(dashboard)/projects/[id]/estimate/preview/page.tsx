@@ -74,7 +74,9 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
       .order('created_at', { ascending: true }),
     supabase
       .from('project_budget_categories')
-      .select('id, name, section, description, display_order, estimate_cents')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), description, display_order, estimate_cents',
+      )
       .eq('project_id', id),
   ]);
   const categoryInfo = new Map<
@@ -90,7 +92,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
   for (const b of categories ?? []) {
     categoryInfo.set(b.id as string, {
       name: (b.name as string) ?? '',
-      section: (b.section as string | null) ?? null,
+      section: (b.section_row as unknown as { name: string } | null)?.name ?? null,
       description: (b.description as string | null) ?? null,
       order: (b.display_order as number) ?? 0,
       estimateCents: (b.estimate_cents as number) ?? 0,
