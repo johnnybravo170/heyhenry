@@ -817,7 +817,7 @@ export function BudgetCategoriesTable({
                   {/* Section card — its own bordered block carrying the column
                       header row and this section's category rows. */}
                   {!collapsed ? (
-                    <div className="overflow-hidden rounded-xl border bg-card">
+                    <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-md">
                       <div
                         className={cn(
                           GRID,
