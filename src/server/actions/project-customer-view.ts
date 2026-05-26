@@ -142,7 +142,7 @@ export async function draftEstimateScopeSummaryAction(input: {
       .order('created_at', { ascending: true }),
     supabase
       .from('project_budget_categories')
-      .select('id, name, section')
+      .select('id, name, section_row:project_budget_sections!section_id(name)')
       .eq('project_id', projectId.data),
   ]);
 
@@ -152,7 +152,7 @@ export async function draftEstimateScopeSummaryAction(input: {
   for (const c of categories ?? []) {
     catById.set(c.id as string, {
       name: (c.name as string | null) ?? null,
-      section: (c.section as string | null) ?? null,
+      section: (c.section_row as unknown as { name: string } | null)?.name ?? null,
     });
   }
 

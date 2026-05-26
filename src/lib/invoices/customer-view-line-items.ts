@@ -70,10 +70,11 @@ export type CustomerViewCategory = {
    *  customer estimate. When it has lines, the upsert/delete invariant keeps
    *  this equal to their sum (see project-cost-control.syncCategoryEstimate). */
   estimate_cents: number;
-  /** Section label from `project_budget_categories.section`. This is the
-   *  text-col header the operator uses to group categories in the Budget
-   *  tab (e.g. "Master suite addition", "Pizza Oven"). Empty string =
-   *  ungrouped. Sections mode aggregates categories by this value. */
+  /** Section label sourced from the `project_budget_sections` entity (the
+   *  category's `section_id` → row name). This is the header the operator
+   *  uses to group categories in the Budget tab (e.g. "Master suite
+   *  addition", "Pizza Oven"). Empty string = ungrouped. Sections mode
+   *  aggregates categories by this value. */
   section: string;
 };
 
