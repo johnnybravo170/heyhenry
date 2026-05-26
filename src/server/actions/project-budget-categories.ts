@@ -311,9 +311,8 @@ export async function addBudgetCategoryAction(input: {
 
   const supabase = await createClient();
 
-  // Resolve (or create) the section entity, then set section_id. The DB
-  // trigger mirrors the section row's name into the legacy `section` string,
-  // so we no longer write that column here.
+  // Resolve (or create) the section entity, then set section_id. There is no
+  // legacy `section` string column to write — readers join the section entity.
   const sectionName = input.section.trim();
   if (!sectionName) return { ok: false, error: 'Section is required.' };
   const resolved = await resolveSectionId(supabase, tenant.id, input.project_id, sectionName);
@@ -405,10 +404,10 @@ export async function moveSectionAction(input: {
 }
 
 /**
- * Rename a section. Sections are a real entity now, so this updates the
- * section row's name; the DB trigger cascades the new name into the
- * denormalized `section` string on member categories. Signature is kept so
- * existing callers (the budget table) keep working — the row is looked up by
+ * Rename a section. Sections are a real entity now, so this is a single-row
+ * update of the section row's name; member categories reference it by
+ * section_id, and readers join the entity. Signature is kept so existing
+ * callers (the budget table) keep working — the row is looked up by
  * (project_id, old_name).
  *
  * Idempotent on no-op (old === new) and on a section that doesn't exist yet.
@@ -502,8 +501,7 @@ export async function reorderBudgetCategoriesAction(input: {
 
   const now = new Date().toISOString();
   for (const u of updates) {
-    // Set section_id (the trigger mirrors the name back into the `section`
-    // string); display_order keeps within-section ordering.
+    // Set section_id; display_order keeps within-section ordering.
     const { error } = await supabase
       .from('project_budget_categories')
       .update({ section_id: u.section_id, display_order: u.display_order, updated_at: now })
@@ -613,8 +611,7 @@ export async function seedBudgetCategoriesFromTemplateAction(input: {
 
   const supabase = await createClient();
 
-  // Resolve the two section rows up front; set section_id and let the DB
-  // trigger mirror the legacy `section` string.
+  // Resolve the two section rows up front and set section_id on each category.
   const interiorSection = await resolveBudgetSectionId(
     supabase,
     tenant.id,
