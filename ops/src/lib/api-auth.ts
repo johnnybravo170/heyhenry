@@ -237,6 +237,77 @@ export async function authenticateOAuthToken(req: Request): Promise<OAuthAuthRes
   };
 }
 
+/**
+ * Auth for the remote MCP endpoint, accepting EITHER:
+ *   - an OAuth 2.1 opaque access token (claude.ai Routines / connectors), or
+ *   - an `ops_<keyId>_<secret>` HMAC api key presented as a STATIC bearer.
+ *
+ * The api-key path exists for non-claude.ai MCP clients (e.g. the Hermes
+ * Visual-QA profile on the Mini) that can't complete the claude.ai-restricted
+ * OAuth redirect flow. It is a *static bearer* check (look up the key, verify
+ * the secret hash, check revoked/expiry/scopes) — NOT the per-request HMAC
+ * signing the `/api/ops/*` REST routes use. That's the same bearer posture as
+ * an OAuth token: the secret is high-entropy and travels in the Authorization
+ * header over TLS. Scope is still enforced per-tool inside `withAudit`.
+ *
+ * Discrimination is by shape: only `ops_…` strings parse as api keys; opaque
+ * OAuth tokens fall through to the existing token lookup.
+ */
+export async function authenticateMcpRequest(req: Request): Promise<OAuthAuthResult> {
+  const origin = new URL(req.url).origin;
+  const resourceMetadata = `${origin}/.well-known/oauth-protected-resource`;
+
+  const authHeader = req.headers.get('authorization') ?? '';
+  if (!authHeader.startsWith('Bearer ')) {
+    return { ok: false, response: oauthChallenge(401, resourceMetadata) };
+  }
+  const raw = authHeader.slice(7).trim();
+
+  const parsed = parseKey(raw);
+  if (!parsed) {
+    // Not an api key → treat as an OAuth opaque token.
+    return authenticateOAuthToken(req);
+  }
+
+  const service = createServiceClient();
+  const { data: keyRow } = await service
+    .schema('ops')
+    .from('api_keys')
+    .select('id, name, scopes, secret_hash, expires_at, revoked_at')
+    .eq('id', parsed.keyId)
+    .maybeSingle();
+
+  if (
+    !keyRow ||
+    keyRow.revoked_at ||
+    new Date(keyRow.expires_at as string).getTime() < Date.now()
+  ) {
+    return { ok: false, response: oauthChallenge(401, resourceMetadata) };
+  }
+
+  const expectedHash = await hashSecret(parsed.secret);
+  if (!safeEqual(expectedHash, keyRow.secret_hash as string)) {
+    return { ok: false, response: oauthChallenge(401, resourceMetadata) };
+  }
+
+  await service
+    .schema('ops')
+    .from('api_keys')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', keyRow.id as string);
+
+  return {
+    ok: true,
+    token: {
+      id: keyRow.id as string,
+      // Prefix so audit / MCP attribution can tell a key apart from an OAuth client.
+      client_id: `apikey:${keyRow.name as string}`,
+      scopes: (keyRow.scopes as string[]) ?? [],
+      user_id: '',
+    },
+  };
+}
+
 function oauthChallenge(status: number, resourceMetadata: string): Response {
   const errorDesc = 'Missing or invalid access token';
   return new NextResponse(
