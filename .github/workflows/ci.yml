@@ -164,12 +164,6 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: [quality, e2e]
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      # Prod project ref is not a secret — it's embedded in the app's public
-      # NEXT_PUBLIC_SUPABASE_URL. Inlining it keeps the secret surface to two.
-      SUPABASE_PROJECT_ID: ygirnurpjqsthggfboer
     steps:
       - uses: actions/checkout@v4
 
@@ -178,16 +172,20 @@ jobs:
         with:
           version: latest
 
-      - name: Link prod project
-        # SUPABASE_DB_PASSWORD in env makes this non-interactive.
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
-
       - name: Push migrations to prod
         # Applies every migration under supabase/migrations/ whose version is
         # not yet in the remote supabase_migrations.schema_migrations ledger,
         # in lexical order. Idempotent — a no-op when the ledger is in sync.
         # Fails the job loudly (red main) if any migration errors: that signal
         # is the whole point of this job.
+        #
+        # CONNECTION: we push over the SESSION-mode pooler (port 5432), not the
+        # direct db host. GitHub runners are IPv4-only and the direct host is
+        # IPv6-only, so a `supabase link` + direct push would fail with "no
+        # route to host". The session pooler is IPv4-reachable and holds the
+        # connection for the whole session, so the migration advisory lock
+        # works (transaction mode / 6543 would not). SUPABASE_DB_URL is that
+        # session-pooler connection string — the only secret this job needs.
         #
         # ORDERING NOTE: Vercel deploys code via its own native Git
         # integration, independently of and in parallel with this job — so
@@ -197,4 +195,6 @@ jobs:
         # ships). A breaking change (e.g. a table rename) must ship in the
         # SAME merge as the code that depends on it and tolerate a few seconds'
         # apply window. See AGENTS.md "Database migrations".
-        run: supabase db push
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

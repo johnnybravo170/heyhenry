@@ -30,10 +30,8 @@ Both are bypassable (`git push --no-verify`); don't reach for the bypass casuall
 
 The `deploy-migrations` job in `.github/workflows/ci.yml` runs `supabase db push` against prod on every push to `main` (and on manual `workflow_dispatch`), gated behind `needs: [quality, e2e]` so schema never ships off a red main. You do **not** hand-apply migrations as a separate step anymore — merge the migration with its code and CI pushes it. The job is idempotent: it only applies versions missing from the remote `supabase_migrations.schema_migrations` ledger, and is a no-op when in sync.
 
-Requires three GitHub repo secrets (Settings → Secrets and variables → Actions):
-- `SUPABASE_ACCESS_TOKEN` — Supabase Management API personal access token.
-- `SUPABASE_DB_PASSWORD` — prod database password.
-- (project ref `ygirnurpjqsthggfboer` is inlined in the workflow, not a secret.)
+Requires one GitHub repo secret (Settings → Secrets and variables → Actions):
+- `SUPABASE_DB_URL` — the **session-mode pooler** connection string (port 5432, `...pooler.supabase.com`), same value as the app's `DATABASE_URL`. The job pushes via `--db-url` over the pooler on purpose: GitHub runners are IPv4-only and the direct db host is IPv6-only, so `supabase link` + a direct push would fail with "no route to host". Transaction mode (port 6543) won't work either — migrations need session-level advisory locks.
 
 **Ordering caveat — migrations must be backward-compatible.** Vercel deploys code via its own native Git integration, in parallel with this job, so schema is **not** guaranteed to land before the new code goes live. Default to additive expand → migrate → contract across separate ships (see the `project_budget_sections_*` and `*_property_record` migrations for the pattern). A genuinely breaking change (table/column rename) must ship in the **same merge** as the code that depends on it and tolerate a few seconds' apply window — only do this on low-write surfaces.
 
