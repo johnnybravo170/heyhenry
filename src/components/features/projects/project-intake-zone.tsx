@@ -53,7 +53,7 @@ async function shrinkIfNeeded(file: File): Promise<File> {
   }
 }
 
-type Category = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+type Category = { id: string; name: string; section: string };
 
 export function ProjectIntakeZone({
   projectId,

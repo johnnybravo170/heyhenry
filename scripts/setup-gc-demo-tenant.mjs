@@ -174,6 +174,22 @@ async function seedGcData(tenantId) {
     { name: 'Flooring', section: 'Finishes', est: 1100000, order: 7 },
     { name: 'Paint', section: 'Finishes', est: 350000, order: 8 },
   ];
+  // Sections are a real entity — insert them first so categories reference
+  // section_id (the legacy `section` string column no longer exists).
+  const sectionNames = [...new Set(catSpecs.map((c) => c.section))];
+  const { data: secRows } = await supabase
+    .from('project_budget_sections')
+    .insert(
+      sectionNames.map((name, i) => ({
+        tenant_id: tenantId,
+        project_id: projectId,
+        name,
+        sort_order: i,
+      })),
+    )
+    .select('id, name');
+  const sectionId = Object.fromEntries((secRows ?? []).map((s) => [s.name, s.id]));
+
   const { data: cats } = await supabase
     .from('project_budget_categories')
     .insert(
@@ -181,7 +197,7 @@ async function seedGcData(tenantId) {
         tenant_id: tenantId,
         project_id: projectId,
         name: c.name,
-        section: c.section,
+        section_id: sectionId[c.section] ?? null,
         estimate_cents: c.est,
         display_order: c.order,
         is_visible_in_report: true,

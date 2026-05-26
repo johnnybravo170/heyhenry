@@ -15,12 +15,9 @@ export type BudgetCategoryRow = {
   project_id: string;
   tenant_id: string;
   name: string;
-  section: string;
   /**
-   * FK to project_budget_sections — the authoritative grouping key on the
-   * budget page. Nullable: categories not yet linked group under "Other".
-   * The legacy `section` string is kept in sync by a DB trigger for readers
-   * not yet migrated off it.
+   * FK to project_budget_sections — the authoritative grouping key. Nullable:
+   * categories not linked to a section group under "Other".
    */
   section_id: string | null;
   description: string | null;
@@ -52,8 +49,9 @@ export type BudgetLine = {
   budget_category_name: string;
   budget_category_description: string | null;
   /**
-   * Legacy denormalized section name. Still present for any consumer keying
-   * on the string; the budget page groups by the `section_entity` below.
+   * Section name, derived from the `section_entity` below (the authoritative
+   * source). Kept as a convenience for consumers that key on the string (e.g.
+   * the budget table's drag grouping); empty string when unsectioned.
    */
   section: string;
   /**
@@ -389,7 +387,9 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
       budget_category_id: b.id,
       budget_category_name: b.name,
       budget_category_description: b.description,
-      section: b.section,
+      // Derived from the section entity; '' when the category has no section
+      // (matches the legacy denormalized-string behaviour for "Other").
+      section: b.section_row?.name ?? '',
       section_entity,
       estimate_cents,
       labor_cents,

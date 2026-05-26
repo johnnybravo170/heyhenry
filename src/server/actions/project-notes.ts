@@ -115,7 +115,7 @@ export async function askHenryAboutProjectAction(input: {
     supabase
       .from('project_budget_categories')
       .select(
-        'name, section, project_cost_lines (label, qty, unit, unit_price_cents, line_price_cents, notes)',
+        'name, section_row:project_budget_sections!section_id(name), project_cost_lines (label, qty, unit, unit_price_cents, line_price_cents, notes)',
       )
       .eq('project_id', input.projectId)
       .order('display_order'),
@@ -136,7 +136,8 @@ export async function askHenryAboutProjectAction(input: {
 
   const categoriesBlock = (categoryRows ?? [])
     .map((b) => {
-      const sec = b.section ? `${b.section} / ` : '';
+      const sectionName = (b.section_row as unknown as { name: string } | null)?.name;
+      const sec = sectionName ? `${sectionName} / ` : '';
       const lines =
         (b.project_cost_lines as Array<{
           label: string;

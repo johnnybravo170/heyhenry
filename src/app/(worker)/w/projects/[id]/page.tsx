@@ -40,7 +40,7 @@ export default async function WorkerProjectDetailPage({
 
   const { data: categories } = await admin
     .from('project_budget_categories')
-    .select('id, name, section, description')
+    .select('id, name, description')
     .eq('project_id', id)
     .order('display_order', { ascending: true });
 
