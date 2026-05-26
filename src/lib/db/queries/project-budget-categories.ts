@@ -187,6 +187,124 @@ export async function resolveBudgetSectionId(
   return { id: (data as { id: string }).id };
 }
 
+/** A single cost line in a normalized scope. */
+export type ScopeLineInput = {
+  label: string;
+  /** Cost-line bucket; defaults to 'material'. */
+  category?: string;
+  qty: number;
+  unit: string;
+  unit_cost_cents?: number;
+  unit_price_cents?: number;
+  notes?: string | null;
+};
+
+/** A budget category in a normalized scope, with its lines. */
+export type ScopeCategoryInput = {
+  name: string;
+  /** Section name; resolved to a section_id. Falsy → defaultSectionName. */
+  section?: string | null;
+  description?: string | null;
+  lines: ScopeLineInput[];
+};
+
+/**
+ * Apply a normalized scope (sections → categories → cost lines) to a project's
+ * budget. The single insert path shared by every "structured scope → budget"
+ * writer — inbound-lead intake accept, AI scope scaffold, and starter templates
+ * — so section resolution and category/line shaping live in ONE place.
+ *
+ * The caller owns everything around the insert: tenant/project ownership
+ * checks, any "project already has scope" guard, worklog entries, and
+ * revalidatePath. Pass the client the writes should run under — the RLS server
+ * client or the service-role admin client (matches `resolveBudgetSectionId`).
+ */
+export async function applyScopeToProject(
+  supabase: SupabaseClient,
+  args: {
+    tenantId: string;
+    projectId: string;
+    categories: ScopeCategoryInput[];
+    /** Section for categories with no section of their own. Default 'General'. */
+    defaultSectionName?: string;
+  },
+): Promise<{ ok: true; categoryCount: number; lineCount: number } | { ok: false; error: string }> {
+  const { tenantId, projectId, categories } = args;
+  const defaultSectionName = args.defaultSectionName ?? 'General';
+  const sectionNameFor = (c: ScopeCategoryInput) => (c.section ?? '').trim() || defaultSectionName;
+
+  // Resolve distinct section names → ids; set section_id and let the DB trigger
+  // mirror the legacy `section` string for not-yet-migrated readers.
+  const sectionIdByName = new Map<string, string>();
+  for (const c of categories) {
+    const name = sectionNameFor(c);
+    if (sectionIdByName.has(name)) continue;
+    const resolved = await resolveBudgetSectionId(supabase, tenantId, projectId, name);
+    if ('error' in resolved) return { ok: false, error: `Sections: ${resolved.error}` };
+    sectionIdByName.set(name, resolved.id);
+  }
+
+  // Insert categories with explicit display_order so lines map back to their
+  // parent by order (robust against insert-return reordering).
+  const categoryRows = categories.map((c, i) => ({
+    project_id: projectId,
+    tenant_id: tenantId,
+    name: c.name,
+    section_id: sectionIdByName.get(sectionNameFor(c)) ?? null,
+    description: c.description ?? null,
+    estimate_cents: 0,
+    display_order: i,
+  }));
+
+  const idByOrder = new Map<number, string>();
+  if (categoryRows.length) {
+    const { data: inserted, error: catErr } = await supabase
+      .from('project_budget_categories')
+      .insert(categoryRows)
+      .select('id, display_order');
+    if (catErr) return { ok: false, error: `Categories: ${catErr.message}` };
+    for (const row of inserted ?? []) {
+      idByOrder.set((row as { display_order: number }).display_order, (row as { id: string }).id);
+    }
+  }
+
+  const lineRows: Array<Record<string, unknown>> = [];
+  let sortOrder = 0;
+  categories.forEach((c, i) => {
+    const categoryId = idByOrder.get(i);
+    if (!categoryId) return;
+    for (const l of c.lines) {
+      const qty = Number(l.qty) || 1;
+      const unitCost = Number(l.unit_cost_cents ?? 0) || 0;
+      const unitPrice = Number(l.unit_price_cents ?? 0) || 0;
+      lineRows.push({
+        // NB: project_cost_lines has no tenant_id column (tenant scoping is via
+        // project_id → projects.tenant_id). Do not add one here.
+        project_id: projectId,
+        budget_category_id: categoryId,
+        category: l.category || 'material',
+        label: l.label,
+        notes: l.notes ?? null,
+        qty,
+        unit: l.unit || 'lot',
+        unit_cost_cents: unitCost,
+        unit_price_cents: unitPrice,
+        line_cost_cents: Math.round(qty * unitCost),
+        line_price_cents: Math.round(qty * unitPrice),
+        markup_pct:
+          unitCost > 0 ? Math.round(((unitPrice - unitCost) / unitCost) * 10000) / 100 : 0,
+        sort_order: sortOrder++,
+      });
+    }
+  });
+  if (lineRows.length) {
+    const { error: lineErr } = await supabase.from('project_cost_lines').insert(lineRows);
+    if (lineErr) return { ok: false, error: `Cost lines: ${lineErr.message}` };
+  }
+
+  return { ok: true, categoryCount: categoryRows.length, lineCount: lineRows.length };
+}
+
 export async function getBudgetVsActual(projectId: string): Promise<BudgetSummary> {
   const supabase = await createClient();
 

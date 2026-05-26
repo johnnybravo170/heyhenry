@@ -18,7 +18,7 @@
 import { revalidatePath } from 'next/cache';
 import { findStarterTemplate, STARTER_TEMPLATES } from '@/data/starter-templates';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
+import { applyScopeToProject } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ApplyTemplateResult =
@@ -67,87 +67,27 @@ export async function applyStarterTemplateAction(input: {
     };
   }
 
-  // Resolve distinct template section names → section row ids; set section_id
-  // and let the DB trigger mirror the legacy `section` string.
-  const sectionIdByName = new Map<string, string>();
-  for (const c of template.categories) {
-    const name = c.section?.trim() || 'General';
-    if (sectionIdByName.has(name)) continue;
-    const resolved = await resolveBudgetSectionId(admin, tenant.id, input.projectId, name);
-    if ('error' in resolved) return { ok: false, error: resolved.error };
-    sectionIdByName.set(name, resolved.id);
-  }
-
-  // Insert categories first; build a name → id map so lines can
-  // reference their parent category by id.
-  const categoryRows = template.categories.map((c, i) => ({
-    project_id: input.projectId,
-    tenant_id: tenant.id,
-    name: c.name,
-    section_id: sectionIdByName.get(c.section?.trim() || 'General') ?? null,
-    description: c.description ?? null,
-    estimate_cents: 0,
-    display_order: i,
-  }));
-  const { data: insertedCategories, error: categoryErr } = await admin
-    .from('project_budget_categories')
-    .insert(categoryRows)
-    .select('id, name');
-  if (categoryErr) return { ok: false, error: categoryErr.message };
-
-  const categoryIdByName = new Map<string, string>();
-  for (const c of insertedCategories ?? []) {
-    categoryIdByName.set(c.name as string, c.id as string);
-  }
-
-  // Insert cost lines, no prices set — operator fills in.
-  const lineRows: Array<{
-    project_id: string;
-    tenant_id: string;
-    budget_category_id: string;
-    category: string;
-    label: string;
-    qty: number;
-    unit: string;
-    unit_cost_cents: number;
-    unit_price_cents: number;
-    line_cost_cents: number;
-    line_price_cents: number;
-    sort_order: number;
-  }> = [];
-  let sortOrder = 0;
-  for (const category of template.categories) {
-    const categoryId = categoryIdByName.get(category.name);
-    if (!categoryId) continue;
-    for (const line of category.lines) {
-      lineRows.push({
-        project_id: input.projectId,
-        tenant_id: tenant.id,
-        budget_category_id: categoryId,
-        category: line.category,
-        label: line.label,
-        qty: line.qty,
-        unit: line.unit,
-        unit_cost_cents: 0,
-        unit_price_cents: 0,
-        line_cost_cents: 0,
-        line_price_cents: 0,
-        sort_order: sortOrder++,
-      });
-    }
-  }
-
-  if (lineRows.length > 0) {
-    const { error: linesErr } = await admin.from('project_cost_lines').insert(lineRows);
-    if (linesErr) return { ok: false, error: linesErr.message };
-  }
+  // Structure only — no prices (operator fills them in per project).
+  const applied = await applyScopeToProject(admin, {
+    tenantId: tenant.id,
+    projectId: input.projectId,
+    categories: template.categories.map((c) => ({
+      name: c.name,
+      section: c.section,
+      description: c.description ?? null,
+      lines: c.lines.map((l) => ({
+        label: l.label,
+        category: l.category,
+        qty: l.qty,
+        unit: l.unit,
+        notes: l.notes ?? null,
+      })),
+    })),
+  });
+  if (!applied.ok) return { ok: false, error: applied.error };
 
   revalidatePath(`/projects/${input.projectId}`);
-  return {
-    ok: true,
-    categoryCount: insertedCategories?.length ?? 0,
-    lineCount: lineRows.length,
-  };
+  return { ok: true, categoryCount: applied.categoryCount, lineCount: applied.lineCount };
 }
 
 /** Public list of starter templates for the picker UI. */

@@ -40,7 +40,7 @@ import {
   loadIntakeCustomerContext,
   renderCustomerContextForPrompt,
 } from '@/lib/db/queries/intake-customer-context';
-import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
+import { applyScopeToProject } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -1064,61 +1064,24 @@ export async function acceptInboundLeadAction(
     return { ok: false, error: projErr?.message ?? 'Failed to create project.' };
   }
 
-  // 3. Budget categories — resolve distinct section names to section row ids,
-  // set section_id, and let the DB trigger mirror the legacy `section` string.
-  const sectionIdByName = new Map<string, string>();
-  for (const b of draft.categories) {
-    const name = b.section?.trim() || 'General';
-    if (sectionIdByName.has(name)) continue;
-    const resolved = await resolveBudgetSectionId(supabase, tenant.id, proj.id, name);
-    if ('error' in resolved) return { ok: false, error: `Sections: ${resolved.error}` };
-    sectionIdByName.set(name, resolved.id);
-  }
-  const categoryRows = draft.categories.map((b, i) => ({
-    project_id: proj.id,
-    tenant_id: tenant.id,
-    name: b.name,
-    section_id: sectionIdByName.get(b.section?.trim() || 'General') ?? null,
-    display_order: i,
-  }));
-  let categoryIds: string[] = [];
-  if (categoryRows.length) {
-    const { data: bs, error: bErr } = await supabase
-      .from('project_budget_categories')
-      .insert(categoryRows)
-      .select('id');
-    if (bErr) return { ok: false, error: `Categories: ${bErr.message}` };
-    categoryIds = (bs ?? []).map((b) => b.id);
-  }
-
-  // 4. Cost lines
-  const lineRows: Array<Record<string, unknown>> = [];
-  draft.categories.forEach((b, bi) => {
-    const categoryId = categoryIds[bi] ?? null;
-    b.lines.forEach((l, li) => {
-      const qty = Number(l.qty) || 1;
-      const unitPrice = Number(l.unit_price_cents ?? 0) || 0;
-      lineRows.push({
-        project_id: proj.id,
-        budget_category_id: categoryId,
-        category: 'material',
+  // 3. Budget categories + cost lines — one shared apply path (sections →
+  // categories → lines). Intake lines carry parsed prices but no cost basis.
+  const applied = await applyScopeToProject(supabase, {
+    tenantId: tenant.id,
+    projectId: proj.id,
+    categories: draft.categories.map((b) => ({
+      name: b.name,
+      section: b.section,
+      lines: b.lines.map((l) => ({
         label: l.label,
-        notes: l.notes?.trim() || null,
-        qty,
+        qty: Number(l.qty) || 1,
         unit: l.unit || 'lot',
-        unit_cost_cents: 0,
-        unit_price_cents: unitPrice,
-        line_cost_cents: 0,
-        line_price_cents: Math.round(qty * unitPrice),
-        markup_pct: 0,
-        sort_order: li,
-      });
-    });
+        unit_price_cents: Number(l.unit_price_cents ?? 0) || 0,
+        notes: l.notes?.trim() || null,
+      })),
+    })),
   });
-  if (lineRows.length) {
-    const { error: lErr } = await supabase.from('project_cost_lines').insert(lineRows);
-    if (lErr) return { ok: false, error: `Cost lines: ${lErr.message}` };
-  }
+  if (!applied.ok) return { ok: false, error: applied.error };
 
   // 5. Worklog
   await supabase.from('worklog_entries').insert({
