@@ -55,7 +55,7 @@ Legend: ✅ done · 🟡 partial / deeper work open · ⬜ not started · — n/
 |---|---|---|---|---|---|
 | Dashboard | ✅ | ✅ `od-dashboard` | — | ✅ #297 | **Owner optimizes separately — don't touch** |
 | Contacts | ✅ | ✅ `od-contacts` | — | ✅ #273/#276/#292/#299 | |
-| Projects list | ✅ | ✅ `od-projects-list` | — | ✅ #277 | |
+| Projects list | ✅ | ✅ `od-projects-list` | — | ✅ #277 | ⚠ **New-project *creation* screen is being rebuilt in Coding (2026-05-26).** `/projects/new` (`new-project-page.tsx` · `project-form.tsx` · `intake-accelerator.tsx`). Any notes/render touching project *creation* (this row · `projects-list.md` · `project-hub.md` · `od-projects-list`) may be **stale** — reconcile against the live build before acting. |
 | Inbox | ✅ | ✅ `od-inbox-triage` | — | 🟡 ? | build state unconfirmed |
 | Billing / AR (cross-project) | ✅ `invoices.md` | ✅ `od-billing` | — | ✅ #288 | |
 | Invoice detail (`/invoices/[id]`) | ✅ `invoice-detail.md` | ✅ `od-invoice-detail` | 0 (build `6b0f6cfc` ✅) | 🟡 #315 | Paper restyle built (#315): friendly invoice # via shared `invoiceDocNumber()` off `invoices.code` (INV-<code8>; no sequential # in schema) · customer-view preview as draft hero · drift + missing-GST as inline cautions · defaults+overrides → "Document details" disclosure · 4 status postures · §25 gate + no-margin preserved. Customer counterpart `/view/invoice/[id]` → `customer-documents.md`. ✅-gate (live design-critique) pending |
