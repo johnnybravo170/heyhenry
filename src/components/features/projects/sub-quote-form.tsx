@@ -31,7 +31,7 @@ import {
   updateSubQuoteAction,
 } from '@/server/actions/sub-quotes';
 
-type Category = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+type Category = { id: string; name: string; section: string };
 
 type AllocationDraft = {
   key: string;

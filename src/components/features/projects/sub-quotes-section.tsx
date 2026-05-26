@@ -34,7 +34,7 @@ import {
 import { SubQuoteForm } from './sub-quote-form';
 import { SubQuoteUploadButton } from './sub-quote-upload-button';
 
-type Category = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+type Category = { id: string; name: string; section: string };
 
 const STATUS_LABEL: Record<SubQuoteRow['status'], string> = {
   pending_review: 'Pending review',

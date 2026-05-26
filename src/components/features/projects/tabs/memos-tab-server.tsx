@@ -141,7 +141,7 @@ export default async function MemosTabServer({ projectId }: { projectId: string 
         categories: budget.lines.map((b) => ({
           id: b.budget_category_id,
           name: b.budget_category_name,
-          section: b.section,
+          section: b.section_entity.name,
         })),
       }}
     />

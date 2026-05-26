@@ -162,7 +162,7 @@ export default async function CostsTabServer({ projectId }: { projectId: string 
       categories={projectCategories.map((b) => ({
         id: b.id,
         name: b.name,
-        section: (b.section as 'interior' | 'exterior' | 'general') ?? 'general',
+        section: b.section_row?.name ?? 'Other',
         cost_lines: costLinesByCategory.get(b.id) ?? [],
       }))}
     />
