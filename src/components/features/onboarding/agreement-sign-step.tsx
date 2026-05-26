@@ -68,7 +68,7 @@ export function AgreementSignStep({
         <CardDescription>{intro}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="max-h-[45vh] overflow-y-auto rounded-md border bg-muted/30 p-4">
+        <div className="max-h-[55vh] overflow-y-auto rounded-md border bg-muted/30 p-4 sm:p-6">
           <RichTextDisplay markdown={bodyMarkdown} />
         </div>
 
