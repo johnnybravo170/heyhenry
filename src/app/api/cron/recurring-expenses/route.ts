@@ -12,6 +12,10 @@
  * Idempotent: if today's run already created an expense for a rule
  * (linked via recurring_rule_id + matching expense_date), we skip —
  * prevents double-creation if the cron runs twice on the same day.
+ *
+ * Auth: Bearer ${CRON_SECRET} (Vercel cron injects this header). Matches
+ * every other cron route — without it this data-mutating endpoint is open
+ * to the public internet.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -27,7 +31,13 @@ function addOneMonth(isoDate: string): string {
   return next.toISOString().slice(0, 10);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = request.headers.get('authorization');
+  const expected = `Bearer ${process.env.CRON_SECRET}`;
+  if (!process.env.CRON_SECRET || auth !== expected) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const admin = createAdminClient();
   const today = new Date().toISOString().slice(0, 10);
 
