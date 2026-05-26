@@ -79,6 +79,7 @@ import { cn } from '@/lib/utils';
 import {
   addBudgetCategoryAction,
   createBudgetSectionAction,
+  deleteBudgetSectionAction,
   draftBudgetSectionDescriptionAction,
   removeBudgetCategoryAction,
   reorderBudgetCategoriesAction,
@@ -470,6 +471,18 @@ export function BudgetCategoriesTable({
     });
   }
 
+  function removeSection(sectionId: string) {
+    startTransition(async () => {
+      const r = await deleteBudgetSectionAction({ id: sectionId, project_id: projectId });
+      if (r.ok) {
+        toast.success('Section deleted');
+        router.refresh();
+      } else {
+        toast.error(r.error);
+      }
+    });
+  }
+
   function deleteLine(id: string) {
     const line = costLines.find((l) => l.id === id);
     if (!line) return;
@@ -657,6 +670,43 @@ export function BudgetCategoriesTable({
                           >
                             <Pencil className="size-3" />
                           </button>
+                        ) : null}
+                        {/* Delete is offered only on an EMPTY real section —
+                            deleteBudgetSectionAction blocks (server-side) while
+                            it still has categories, so we surface the trash
+                            exactly when it's actionable rather than dead-ending. */}
+                        {!isRenaming && isRealSection && sectionLines.length === 0 ? (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={`Delete ${section}`}
+                                title="Delete section"
+                                className="rounded p-0.5 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete “{section}”?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This removes the empty section heading. It has no categories, so
+                                  no scope or spend is affected.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => removeSection(entity.id as string)}
+                                  disabled={isPending}
+                                  className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+                                >
+                                  Delete section
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         ) : null}
                         {/* Collapsed summary chips */}
                         {collapsed
