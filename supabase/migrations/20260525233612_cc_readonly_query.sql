@@ -24,20 +24,25 @@
 -- ============================================================
 -- Role
 -- ============================================================
-DO $ccrole$
+DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cc_readonly') THEN
     CREATE ROLE cc_readonly NOLOGIN NOINHERIT;
   END IF;
 END
-$ccrole$;
+$$;
 
--- The SECURITY DEFINER function (owned by the migration role) must be able to
--- SET ROLE cc_readonly; membership grants that.
-GRANT cc_readonly TO CURRENT_USER;
+-- The SECURITY DEFINER function (owned by postgres) must be able to
+-- SET ROLE cc_readonly; membership grants that. NB: grant to the explicit
+-- role name, not CURRENT_USER/SESSION_USER — the Supabase CLI migration
+-- splitter chokes on the keyword-grantee form of GRANT ROLE ("unexpected EOF").
+GRANT cc_readonly TO postgres;
 
--- Schema visibility only. No blanket table grants.
-GRANT USAGE ON SCHEMA ops TO cc_readonly;
+-- Schema visibility only. No blanket table grants. CREATE on ops is required
+-- for cc_readonly to OWN the query function below (Postgres requires an
+-- object's owner to hold CREATE on its schema); it's inert otherwise — the
+-- role is NOLOGIN and only reachable through the read-only definer function.
+GRANT USAGE, CREATE ON SCHEMA ops TO cc_readonly;
 GRANT USAGE ON SCHEMA public TO cc_readonly;
 
 -- ============================================================
@@ -75,15 +80,17 @@ CREATE OR REPLACE FUNCTION ops.cc_readonly_query(q text, max_rows int DEFAULT 20
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $ccfn$
+AS $$
 DECLARE
   result jsonb;
   capped int := least(greatest(coalesce(max_rows, 200), 1), 1000);
 BEGIN
-  -- Drop privileges to the curated read-only role, lock search_path (so this
-  -- SECURITY DEFINER function is injection-safe and the dynamic query must
-  -- schema-qualify), and forbid any write at the transaction level.
-  SET LOCAL ROLE cc_readonly;
+  -- This function is OWNED BY cc_readonly (see ALTER below), so SECURITY
+  -- DEFINER runs it with cc_readonly's privileges: it can only SELECT the
+  -- curated ops.cc_* views and has no write grants. (Postgres forbids SET ROLE
+  -- inside a SECURITY DEFINER function, so we drop privileges via ownership,
+  -- not SET ROLE.) Lock search_path so the dynamic query must schema-qualify,
+  -- and forbid writes at the transaction level as belt-and-suspenders.
   SET LOCAL search_path = pg_catalog;
   SET LOCAL default_transaction_read_only = on;
   SET LOCAL statement_timeout = '5s';
@@ -98,7 +105,11 @@ BEGIN
 
   RETURN coalesce(result, '[]'::jsonb);
 END
-$ccfn$;
+$$;
+
+-- Own the function with the curated read-only role so SECURITY DEFINER runs it
+-- with exactly cc_readonly's (SELECT-only, cc_* views) privileges.
+ALTER FUNCTION ops.cc_readonly_query(text, int) OWNER TO cc_readonly;
 
 -- Only the ops app service role may invoke it (it then enforces the read:db
 -- MCP scope on top). Never expose to anon/authenticated.
