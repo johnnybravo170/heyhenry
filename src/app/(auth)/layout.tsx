@@ -9,7 +9,7 @@ import { HeyHenryWordmark } from '@/components/branding/heyhenry-wordmark';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted/30 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-4">
       <HeyHenryWordmark />
       {/* max-w-md (was max-w-sm) so the onboarding business-profile step has
           room for its labelled fields; login/signup sit comfortably here too. */}
