@@ -232,6 +232,19 @@ Send-path families to keep aligned when CASL evidence shape changes:
 Never bolt promotional content onto a transactional template — that flips
 the send into CEM territory and loses the transactional exemption.
 
+**Supabase auth emails** (magic link, recovery, signup confirmation, invite,
+email change, reauthentication) do **not** originate in app code — Supabase
+emits them. They are captured by the **Send Email Hook**
+(`src/app/api/auth/email-hook/route.ts`), which verifies the Standard Webhooks
+signature (`src/lib/webhooks/standard-webhook.ts`, secret
+`AUTH_EMAIL_HOOK_SECRET`), renders via `renderAuthEmail`
+(`src/lib/email/templates/auth.ts` → `renderEmailShell`), and ships through the
+same `sendEmail` wrapper (`caslCategory: 'transactional'`, `relatedType: 'auth'`).
+This is the single chokepoint for every auth email — never add a Supabase
+default template or custom-SMTP path that bypasses it. Enabled locally in
+`supabase/config.toml` `[auth.hook.send_email]`; prod is wired in the Supabase
+dashboard (Auth → Hooks) pointing at `https://app.heyhenry.io/api/auth/email-hook`.
+
 ---
 
 ## 13. Plan / feature gating

@@ -278,6 +278,18 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
+# Send Email Hook — routes ALL auth emails (magic link, recovery, signup
+# confirmation, invite, email change, reauthentication) to the HeyHenry app
+# so they render through renderEmailShell + Postmark instead of Supabase's
+# default "powered by Supabase" templates. Handler: src/app/api/auth/email-hook.
+# Local: Supabase auth runs in Docker, so reach the host dev server via
+# host.docker.internal. Prod is configured in the Supabase dashboard
+# (Auth → Hooks) pointing at https://app.heyhenry.io/api/auth/email-hook.
+[auth.hook.send_email]
+enabled = true
+uri = "http://host.docker.internal:3000/api/auth/email-hook"
+secrets = "env(AUTH_EMAIL_HOOK_SECRET)"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]
 enabled = false
