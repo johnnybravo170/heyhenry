@@ -52,6 +52,34 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+  /* Paper closed type scale (DESIGN.md §Typography; ratified 2026-05-26,
+     Ops decision "Paper design-system enforcement rulings"). Body/label tier
+     is named by intent so edits reach for a token, not an arbitrary `text-[Npx]`.
+     13 and 15 are intentionally absent — they're near-duplicates of 12/14/16 that
+     the eye can't resolve but the keyboard easily types, the exact adjacency that
+     breeds strays. The design-lint (tests/unit/design-tokens.test.ts) holds the
+     floor; these tokens are the migration target. Additive — Tailwind's default
+     text-* sizes still resolve. */
+  --text-eyebrow: 11px; /* JetBrains-mono uppercase eyebrows / labels / counts / pills */
+  --text-eyebrow--line-height: 1.3;
+  --text-meta: 12px; /* captions, meta, secondary labels */
+  --text-meta--line-height: 1.4;
+  --text-body: 14px; /* default body / UI text */
+  --text-body--line-height: 1.5;
+  --text-lead: 16px; /* lead body / emphasis */
+  --text-lead--line-height: 1.5;
+  /* Display tier — page headlines + big stat numbers only, used sparingly. */
+  --text-display-xs: 20px;
+  --text-display-xs--line-height: 1.2;
+  --text-display-sm: 24px;
+  --text-display-sm--line-height: 1.2;
+  --text-display-md: 28px;
+  --text-display-md--line-height: 1.15;
+  --text-display-lg: 36px;
+  --text-display-lg--line-height: 1.1;
+}
+
 :root {
   /* HeyHenry "Paper" palette — deepened 2026-05-20 for warmth + contrast on
      low-quality displays: deeper/warmer paper, solid warm borders (the old
