@@ -37,10 +37,12 @@ import {
   ChevronDown,
   ChevronRight,
   GripVertical,
+  Loader2,
   Maximize2,
   Minimize2,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -74,6 +76,7 @@ import { cn } from '@/lib/utils';
 import {
   addBudgetCategoryAction,
   createBudgetSectionAction,
+  draftBudgetSectionDescriptionAction,
   removeBudgetCategoryAction,
   reorderBudgetCategoriesAction,
   updateBudgetCategoryAction,
@@ -229,6 +232,8 @@ export function BudgetCategoriesTable({
   // is synthetic and has no description.
   const [editingSectionDescId, setEditingSectionDescId] = useState<string | null>(null);
   const [editSectionDescValue, setEditSectionDescValue] = useState('');
+  // Section id currently being drafted by Henry (✦ Draft from line items).
+  const [draftingSectionId, setDraftingSectionId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
   const router = useRouter();
@@ -697,14 +702,66 @@ export function BudgetCategoriesTable({
                         description_md. Only real sections (not "Other"). */}
                       {isRealSection ? (
                         isEditingDesc ? (
-                          <Textarea
-                            className="min-h-[3.5rem] resize-y text-xs"
-                            rows={2}
-                            value={editSectionDescValue}
-                            onChange={(e) => setEditSectionDescValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
+                          <div className="space-y-1">
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                // Prevent the Textarea's onBlur (which saves +
+                                // closes the editor) from firing when this
+                                // button is clicked, so the draft can populate
+                                // the open editor for review.
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  const sid = entity.id as string;
+                                  setDraftingSectionId(sid);
+                                  startTransition(async () => {
+                                    const r = await draftBudgetSectionDescriptionAction({
+                                      section_id: sid,
+                                    });
+                                    setDraftingSectionId(null);
+                                    if (r.ok) {
+                                      setEditSectionDescValue(r.text);
+                                      toast.success('Drafted — review and save.');
+                                    } else {
+                                      toast.error(r.error);
+                                    }
+                                  });
+                                }}
+                                disabled={draftingSectionId === entity.id}
+                                className="inline-flex items-center gap-1 text-[11px] text-brand hover:text-brand/80 disabled:opacity-60"
+                              >
+                                {draftingSectionId === entity.id ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
+                                  <Sparkles className="size-3" />
+                                )}
+                                Draft from line items
+                              </button>
+                            </div>
+                            <Textarea
+                              className="min-h-[3.5rem] resize-y text-xs"
+                              rows={2}
+                              value={editSectionDescValue}
+                              onChange={(e) => setEditSectionDescValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  const id = entity.id as string;
+                                  startTransition(async () => {
+                                    const r = await updateBudgetSectionAction({
+                                      id,
+                                      project_id: projectId,
+                                      description_md: editSectionDescValue.trim(),
+                                    });
+                                    if (r.ok) {
+                                      toast.success('Section description updated');
+                                      setEditingSectionDescId(null);
+                                    } else toast.error(r.error);
+                                  });
+                                }
+                                if (e.key === 'Escape') setEditingSectionDescId(null);
+                              }}
+                              onBlur={() => {
                                 const id = entity.id as string;
                                 startTransition(async () => {
                                   const r = await updateBudgetSectionAction({
@@ -712,29 +769,14 @@ export function BudgetCategoriesTable({
                                     project_id: projectId,
                                     description_md: editSectionDescValue.trim(),
                                   });
-                                  if (r.ok) {
-                                    toast.success('Section description updated');
-                                    setEditingSectionDescId(null);
-                                  } else toast.error(r.error);
+                                  if (r.ok) setEditingSectionDescId(null);
+                                  else toast.error(r.error);
                                 });
-                              }
-                              if (e.key === 'Escape') setEditingSectionDescId(null);
-                            }}
-                            onBlur={() => {
-                              const id = entity.id as string;
-                              startTransition(async () => {
-                                const r = await updateBudgetSectionAction({
-                                  id,
-                                  project_id: projectId,
-                                  description_md: editSectionDescValue.trim(),
-                                });
-                                if (r.ok) setEditingSectionDescId(null);
-                                else toast.error(r.error);
-                              });
-                            }}
-                            placeholder="Section description. Enter to save, Shift+Enter for new line."
-                            autoFocus
-                          />
+                              }}
+                              placeholder="Section description. Enter to save, Shift+Enter for new line."
+                              autoFocus
+                            />
+                          </div>
                         ) : entity.description_md ? (
                           <button
                             type="button"

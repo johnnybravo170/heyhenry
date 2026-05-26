@@ -5,6 +5,7 @@
  */
 
 import { revalidatePath } from 'next/cache';
+import { draftScopeSummary, type ScopeSummaryLine } from '@/lib/ai/estimate-scope-summary';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createClient } from '@/lib/supabase/server';
@@ -14,10 +15,10 @@ export type BudgetCategoryActionResult = { ok: true; id: string } | { ok: false;
 // ---------------------------------------------------------------------------
 // Section entity CRUD (project_budget_sections)
 //
-// Sections are now a real entity. The budget page sets `section_id` on
-// categories; the DB triggers (see migration ..._budget_sections_sync_triggers)
-// keep the legacy `section` string column in sync for the dozen-plus readers
-// not yet migrated, so we never touch the string in app code here.
+// Sections are a real entity and the single source of truth: categories carry
+// `section_id`, and every reader joins the section row. The legacy free-text
+// `section` string column + its sync triggers were dropped in the contract
+// migration, so there is no denormalized string to maintain here.
 // ---------------------------------------------------------------------------
 
 /**
@@ -69,9 +70,9 @@ export async function createBudgetSectionAction(input: {
 }
 
 /**
- * Update a section's name and/or description. Renaming cascades to the
- * denormalized `section` string on member categories via the DB trigger —
- * do NOT bulk-update category strings here.
+ * Update a section's name and/or description. A rename is a single-row update
+ * — every reader joins the section entity, so there is no per-category string
+ * to cascade.
  */
 export async function updateBudgetSectionAction(input: {
   id: string;
@@ -153,6 +154,88 @@ export async function deleteBudgetSectionAction(input: {
 
   revalidatePath(`/projects/${input.project_id}`);
   return { ok: true };
+}
+
+/**
+ * ✦ Draft a section's description with Henry from its own scope. The
+ * per-section twin of the project-level estimate scope summary: gathers ONLY
+ * client-safe material (this section's category names + cost-line
+ * labels/notes) and reuses the margin-safe `draftScopeSummary` helper —
+ * NEVER prices, totals, markup, margin, or supplier. Returns a paragraph the
+ * operator edits + saves via updateBudgetSectionAction; never persists itself.
+ */
+export async function draftBudgetSectionDescriptionAction(input: {
+  section_id: string;
+}): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  if (!input?.section_id) return { ok: false, error: 'Invalid section.' };
+
+  const supabase = await createClient();
+
+  // Section row (RLS-scoped to the tenant) + its project name for context.
+  const { data: section } = await supabase
+    .from('project_budget_sections')
+    .select('name, project:projects!project_id(name)')
+    .eq('id', input.section_id)
+    .maybeSingle();
+  if (!section) return { ok: false, error: 'Section not found.' };
+
+  const { data: categories } = await supabase
+    .from('project_budget_categories')
+    .select('id, name')
+    .eq('section_id', input.section_id);
+
+  const catNameById = new Map<string, string>();
+  for (const c of categories ?? []) catNameById.set(c.id as string, (c.name as string) ?? '');
+  const catIds = Array.from(catNameById.keys());
+
+  const sectionName = section.name as string;
+  let scopeLines: ScopeSummaryLine[] = [];
+
+  if (catIds.length > 0) {
+    // Client-safe columns ONLY — no unit_price_cents / line_price_cents.
+    const { data: lineRows } = await supabase
+      .from('project_cost_lines')
+      .select('label, notes, budget_category_id')
+      .in('budget_category_id', catIds)
+      .order('created_at', { ascending: true });
+
+    scopeLines = (lineRows ?? []).map((l) => ({
+      label: (l.label as string | null) ?? '',
+      notes: (l.notes as string | null) ?? null,
+      categoryName: catNameById.get(l.budget_category_id as string) ?? null,
+      section: sectionName,
+    }));
+
+    // A section can have categories but no priced lines yet — still give the
+    // model the category names so the draft has something to describe.
+    if (scopeLines.length === 0) {
+      scopeLines = (categories ?? []).map((c) => ({
+        label: (c.name as string) ?? '',
+        categoryName: (c.name as string) ?? null,
+        section: sectionName,
+      }));
+    }
+  }
+
+  const projectName =
+    (section.project as unknown as { name: string } | null)?.name ?? 'this project';
+
+  const text = await draftScopeSummary({
+    projectName,
+    description: `Section: ${sectionName}`,
+    lines: scopeLines,
+  });
+
+  if (!text) {
+    return {
+      ok: false,
+      error:
+        'Henry couldn’t draft a description — add a few line items to this section or write one yourself.',
+    };
+  }
+  return { ok: true, text };
 }
 
 // Section resolution (find-or-create by name) lives in the query lib as
