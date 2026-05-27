@@ -100,7 +100,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
 
   // Customer + project.
   const { data: customer, error: customerErr } = await admin
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenantId,
       name: 'Jane Homeowner',

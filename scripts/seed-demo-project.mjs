@@ -19,7 +19,7 @@ const targetEnd = new Date(today.getTime() + 56 * 24 * 60 * 60 * 1000)
 
 // 1. Customer
 const [customer] = await sql`
-  INSERT INTO public.customers
+  INSERT INTO public.contacts
     (tenant_id, type, kind, name, email, phone, address_line1, city, province, postal_code, notes, tax_exempt)
   VALUES (${TENANT_ID}, 'residential', 'customer',
           'Sarah & Mike Thompson', 'thompsons.demo@example.com', '+1-604-555-0142',
@@ -33,7 +33,7 @@ console.log('Customer:', customer.id, customer.name);
 // 2. Project
 const [project] = await sql`
   INSERT INTO public.projects
-    (tenant_id, customer_id, name, description, management_fee_rate,
+    (tenant_id, contact_id, name, description, management_fee_rate,
      start_date, target_end_date, percent_complete,
      portal_enabled, estimate_status, lifecycle_stage,
      estimate_approval_proof_paths, document_type)
@@ -185,7 +185,7 @@ console.log('Cost lines:', lineCount);
 // 5. Job (so tasks can attach)
 const [job] = await sql`
   INSERT INTO public.jobs
-    (tenant_id, customer_id, status, scheduled_at, started_at, notes)
+    (tenant_id, contact_id, status, scheduled_at, started_at, notes)
   VALUES (${TENANT_ID}, ${customer.id}, 'in_progress', ${startDate}, ${startDate},
           'Master bathroom + outdoor sauna combined project. Crew working 4-day weeks until Sauna pad arrives.')
   RETURNING id

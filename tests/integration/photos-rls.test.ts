@@ -85,7 +85,7 @@ describe.skipIf(!canRun)('photos RLS isolation (integration)', () => {
         .insert({ tenant_id: tenantIdA, user_id: userIdA, role: 'owner' });
 
       const custA = await admin
-        .from('customers')
+        .from('contacts')
         .insert({ tenant_id: tenantIdA, type: 'residential', name: `A-${stamp}` })
         .select('id')
         .single();
@@ -139,7 +139,7 @@ describe.skipIf(!canRun)('photos RLS isolation (integration)', () => {
         .insert({ tenant_id: tenantIdB, user_id: userIdB, role: 'owner' });
 
       const custB = await admin
-        .from('customers')
+        .from('contacts')
         .insert({ tenant_id: tenantIdB, type: 'commercial', name: `B-${stamp}` })
         .select('id')
         .single();

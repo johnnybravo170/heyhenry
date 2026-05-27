@@ -77,10 +77,10 @@ type RlsCase = {
 
 const RLS_TABLE_CASES: RlsCase[] = [
   {
-    table: 'customers',
+    table: 'contacts',
     seed: async ({ admin, tenant, stamp }) => {
       const r = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: tenant.tenantId,
           name: `cust-${stamp}`,
@@ -619,7 +619,7 @@ async function provisionTenant(
   // child-table cases can FK against real rows. We do this once per tenant
   // up front so each table case can read these via tenant.<id>.
   const customer = await admin
-    .from('customers')
+    .from('contacts')
     .insert({ tenant_id: tenantId, name: `cust-seed-${tag}-${stamp}`, type: 'residential' })
     .select('id')
     .single();
@@ -786,7 +786,7 @@ describe.skipIf(!canRun)('cross-tenant RLS isolation (integration)', () => {
     });
 
     async function contactIdsVisible(client: SupabaseClient): Promise<string[]> {
-      const r = await client.from('customers').select('id, tenant_id');
+      const r = await client.from('contacts').select('id, tenant_id');
       if (r.error) throw new Error(`select failed: ${r.error.message}`);
       return (r.data ?? []).map((row) => (row as { id: string }).id);
     }

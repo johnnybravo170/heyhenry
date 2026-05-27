@@ -70,7 +70,7 @@ describe.skipIf(!canRun)('jobs status-change logs worklog entry (integration)', 
 
       // Seed one customer and one booked job.
       const { data: customer } = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: tenantId,
           type: 'residential',

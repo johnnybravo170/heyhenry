@@ -83,7 +83,7 @@ describe.skipIf(!canRun)('Business Health AR parity (integration)', () => {
       .insert({ tenant_id: tenantId, user_id: userId, role: 'owner', is_active_for_user: true });
 
     const customer = await admin
-      .from('customers')
+      .from('contacts')
       .insert({ tenant_id: tenantId, name: `cust-${stamp}`, type: 'residential', kind: 'customer' })
       .select('id')
       .single();

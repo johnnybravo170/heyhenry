@@ -99,7 +99,7 @@ test.describe
       createdTenantId = mem?.tenant_id as string;
 
       const { data: customer } = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: createdTenantId,
           type: 'residential',

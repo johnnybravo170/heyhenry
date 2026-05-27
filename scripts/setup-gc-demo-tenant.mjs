@@ -126,7 +126,7 @@ async function seedGcData(tenantId) {
   }
 
   const { data: customer, error: customerErr } = await supabase
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenantId,
       name: 'The Mahmoud Family',
@@ -146,7 +146,7 @@ async function seedGcData(tenantId) {
     .from('projects')
     .insert({
       tenant_id: tenantId,
-      customer_id: customerId,
+      contact_id: customerId,
       name: DEMO_PROJECT_NAME,
       description: 'Full-home renovation: kitchen, two baths, flooring throughout, new envelope.',
       lifecycle_stage: 'active',
