@@ -24,7 +24,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { deleteCustomerAction } from '@/server/actions/contacts';
 
-export function DeleteCustomerButton({
+export function DeleteContactButton({
   contactId,
   customerName,
 }: {

@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CustomerForm } from '@/components/features/customers/customer-form';
+import { ContactForm } from '@/components/features/contacts/contact-form';
 import { getCustomer } from '@/lib/db/queries/contacts';
 import { formatPhone } from '@/lib/phone';
 import type { CustomerCreateInput, CustomerType } from '@/lib/validators/customer';
@@ -54,7 +54,7 @@ export default async function EditContactPage({ params }: { params: Promise<{ id
         <p className="text-sm text-muted-foreground">Update contact and address details.</p>
       </header>
 
-      <CustomerForm
+      <ContactForm
         mode="edit"
         defaults={defaults}
         action={action}

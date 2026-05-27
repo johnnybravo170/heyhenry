@@ -56,11 +56,11 @@ import type { CustomerActionResult } from '@/server/actions/contacts';
 
 const LIBRARIES: 'places'[] = ['places'];
 
-export type CustomerFormDefaults = Partial<CustomerCreateInput> & { id?: string };
+export type ContactFormDefaults = Partial<CustomerCreateInput> & { id?: string };
 
-export type CustomerFormProps = {
+export type ContactFormProps = {
   mode: 'create' | 'edit';
-  defaults?: CustomerFormDefaults;
+  defaults?: ContactFormDefaults;
   action: (input: CustomerCreateInput & { id?: string }) => Promise<CustomerActionResult>;
   submitLabel?: string;
   cancelHref?: string;
@@ -80,13 +80,7 @@ const EMPTY: CustomerCreateInput = {
   notes: '',
 };
 
-export function CustomerForm({
-  mode,
-  defaults,
-  action,
-  submitLabel,
-  cancelHref,
-}: CustomerFormProps) {
+export function ContactForm({ mode, defaults, action, submitLabel, cancelHref }: ContactFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);

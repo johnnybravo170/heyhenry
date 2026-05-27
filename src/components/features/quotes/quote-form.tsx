@@ -10,7 +10,7 @@ import { MapPin, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { CustomerPicker } from '@/components/features/customers/customer-picker';
+import { ContactPicker } from '@/components/features/contacts/contact-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -243,7 +243,7 @@ export function QuoteForm({
       {/* Customer picker */}
       <div className="rounded-xl border bg-card p-4">
         <span className="mb-2 block text-sm font-medium">Customer</span>
-        <CustomerPicker
+        <ContactPicker
           contacts={contacts}
           value={contactId}
           onChange={setContactId}

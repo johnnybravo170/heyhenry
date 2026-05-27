@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { ContactForm } from '@/components/features/contacts/contact-form';
 import { ContactIntakeForm } from '@/components/features/contacts/contact-intake-form';
-import { CustomerForm } from '@/components/features/customers/customer-form';
 import { type ContactKind, contactKinds } from '@/lib/validators/customer';
 import { createCustomerAction } from '@/server/actions/contacts';
 
@@ -53,7 +53,7 @@ export default async function NewContactPage({
           Or enter manually (no artifacts)
         </summary>
         <div className="mt-4">
-          <CustomerForm mode="create" action={createCustomerAction} cancelHref="/contacts" />
+          <ContactForm mode="create" action={createCustomerAction} cancelHref="/contacts" />
         </div>
       </details>
     </div>

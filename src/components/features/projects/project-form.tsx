@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { CustomerPickerWithCreate } from '@/components/features/customers/customer-picker-with-create';
+import { ContactPickerWithCreate } from '@/components/features/contacts/contact-picker-with-create';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -27,7 +27,7 @@ import { useHenryForm } from '@/hooks/use-henry-form';
 import { type ProjectInput, projectCreateSchema } from '@/lib/validators/project';
 import type { ProjectActionResult } from '@/server/actions/projects';
 
-export type ProjectFormCustomerOption = {
+export type ProjectFormContactOption = {
   id: string;
   name: string;
 };
@@ -39,7 +39,7 @@ export type ProjectFormDefaults = Partial<ProjectInput> & { id?: string };
  * only non-empty fields the operator hasn't already typed into get
  * applied. `customer_name` is a fuzzy hint — the form tries to match
  * an existing customer; if no match it surfaces a "Create new
- * customer 'X'?" affordance via the existing CustomerPickerWithCreate.
+ * customer 'X'?" affordance via the existing ContactPickerWithCreate.
  */
 export type ProjectFormSuggestions = {
   customer_name?: string | null;
@@ -51,7 +51,7 @@ export type ProjectFormSuggestions = {
 
 export type ProjectFormProps = {
   mode: 'create' | 'edit';
-  contacts: ProjectFormCustomerOption[];
+  contacts: ProjectFormContactOption[];
   defaults?: ProjectFormDefaults;
   action: (input: ProjectInput & { id?: string }) => Promise<ProjectActionResult>;
   submitLabel?: string;
@@ -242,7 +242,7 @@ export function ProjectForm({
             <FormItem>
               <FormLabel>Customer</FormLabel>
               <FormControl>
-                <CustomerPickerWithCreate
+                <ContactPickerWithCreate
                   contacts={customers}
                   value={field.value}
                   onChange={field.onChange}

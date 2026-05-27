@@ -14,7 +14,7 @@
 
 import { Copy, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import type { CustomerOption } from '@/components/features/customers/customer-picker-with-create';
+import type { ContactOption } from '@/components/features/contacts/contact-picker-with-create';
 import { CloneProjectDialog } from '@/components/features/projects/clone-project-dialog';
 import { DeleteProjectButton } from '@/components/features/projects/delete-project-button';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ export function ProjectActionsMenu({
   projectId: string;
   projectName: string;
   defaultContactId: string | null;
-  contacts: CustomerOption[];
+  contacts: ContactOption[];
 }) {
   const [cloneOpen, setCloneOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);

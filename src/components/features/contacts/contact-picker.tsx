@@ -19,7 +19,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-export type CustomerPickerProps = {
+export type ContactPickerProps = {
   contacts: { id: string; name: string }[];
   value: string;
   onChange: (id: string) => void;
@@ -34,14 +34,14 @@ export type CustomerPickerProps = {
   onAddNew?: (prefillName?: string) => void;
 };
 
-export function CustomerPicker({
+export function ContactPicker({
   contacts,
   value,
   onChange,
   placeholder = 'Pick a customer',
   error,
   onAddNew,
-}: CustomerPickerProps) {
+}: ContactPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 

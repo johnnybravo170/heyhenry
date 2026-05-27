@@ -40,7 +40,7 @@ const VISIBLE_KINDS = contactKinds.filter((k) => k !== 'agent') as Exclude<Conta
 /** Customer subtypes for the secondary filter row (agent lives on kind, not here). */
 const CUSTOMER_SUBTYPES = ['residential', 'commercial'] as const;
 
-export function CustomerSearchBar({
+export function ContactSearchBar({
   defaultQuery,
   kindCounts,
 }: {
