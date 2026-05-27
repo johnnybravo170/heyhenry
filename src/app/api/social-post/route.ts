@@ -205,8 +205,8 @@ export async function POST(request: Request) {
 
   // 5. Load customer city (if available)
   let customerCity: string | null = null;
-  if (job.customer_id) {
-    const customer = await getCustomer(job.customer_id);
+  if (job.contact_id) {
+    const customer = await getCustomer(job.contact_id);
     customerCity = customer?.city ?? null;
   }
 

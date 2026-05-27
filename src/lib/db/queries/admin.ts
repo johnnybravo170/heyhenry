@@ -43,7 +43,7 @@ export type TenantDetailData = {
   stripeAccountId: string | null;
   stripeOnboardedAt: string | null;
   stats: {
-    customers: number;
+    contacts: number;
     quotes: number;
     jobs: number;
     invoices: number;
@@ -274,7 +274,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetailDat
   // Fetch counts in parallel
   const [customersRes, quotesRes, jobsRes, invoicesRes, photosRes, worklogRes] = await Promise.all([
     admin
-      .from('customers')
+      .from('contacts')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .is('deleted_at', null),
@@ -314,7 +314,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetailDat
     stripeAccountId: tenant.stripe_account_id,
     stripeOnboardedAt: tenant.stripe_onboarded_at,
     stats: {
-      customers: customersRes.count ?? 0,
+      contacts: customersRes.count ?? 0,
       quotes: quotesRes.count ?? 0,
       jobs: jobsRes.count ?? 0,
       invoices: invoicesRes.count ?? 0,

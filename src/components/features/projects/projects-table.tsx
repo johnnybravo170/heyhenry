@@ -215,8 +215,8 @@ export function ProjectsTable({
                       <CloneProjectDialog
                         projectId={p.id}
                         projectName={p.name}
-                        defaultCustomerId={p.customer?.id ?? null}
-                        customers={customerOptions}
+                        defaultContactId={p.customer?.id ?? null}
+                        contacts={customerOptions}
                       />
                     </td>
                   </tr>

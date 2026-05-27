@@ -84,7 +84,7 @@ describe.skipIf(!canRun)('jobs status-change logs worklog entry (integration)', 
         .from('jobs')
         .insert({
           tenant_id: tenantId,
-          customer_id: customer?.id,
+          contact_id: customer?.id,
           status: 'booked',
         })
         .select('id, status, started_at, completed_at')

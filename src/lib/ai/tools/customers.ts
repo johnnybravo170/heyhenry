@@ -56,7 +56,7 @@ export const customerTools: AiTool[] = [
 
         return output;
       } catch (e) {
-        return `Failed to list customers: ${e instanceof Error ? e.message : String(e)}`;
+        return `Failed to list contacts: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   },
@@ -134,7 +134,7 @@ export const customerTools: AiTool[] = [
 
         const supabase = await createClient();
         const { data, error } = await supabase
-          .from('customers')
+          .from('contacts')
           .insert({
             tenant_id: tenant.id,
             name: input.name as string,
@@ -224,7 +224,7 @@ export const customerTools: AiTool[] = [
         updates.updated_at = new Date().toISOString();
 
         const supabase = await createClient();
-        const { error } = await supabase.from('customers').update(updates).eq('id', resolved.id);
+        const { error } = await supabase.from('contacts').update(updates).eq('id', resolved.id);
 
         if (error) {
           return `Failed to update customer: ${error.message}`;

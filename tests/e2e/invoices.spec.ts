@@ -105,13 +105,13 @@ test.describe
         .select('id')
         .single();
       expect(customer?.id).toBeTruthy();
-      const customerId = customer?.id as string;
+      const contactId = customer?.id as string;
 
       const { data: quote } = await admin
         .from('quotes')
         .insert({
           tenant_id: createdTenantId,
-          customer_id: customerId,
+          contact_id: contactId,
           status: 'accepted',
           total_cents: 25000, // $250.00
         })
@@ -125,7 +125,7 @@ test.describe
         .from('jobs')
         .insert({
           tenant_id: createdTenantId,
-          customer_id: customerId,
+          contact_id: contactId,
           quote_id: quoteId,
           status: 'complete',
           completed_at: now,

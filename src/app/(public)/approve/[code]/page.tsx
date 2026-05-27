@@ -35,7 +35,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ code:
       `id, project_id, tenant_id, title, description, reason, cost_impact_cents, timeline_impact_days,
        status, approved_by_name, approved_at, declined_at, declined_reason, approval_code,
        flow_version, category_notes, management_fee_override_rate,
-       projects:project_id (name, management_fee_rate, customers:customer_id (name, address_line1, city, province, postal_code)),
+       projects:project_id (name, management_fee_rate, contacts:contact_id (name, address_line1, city, province, postal_code)),
        tenants:tenant_id (name, logo_storage_path, timezone, gst_number, wcb_number)`,
     )
     .eq('approval_code', code)
@@ -53,7 +53,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ code:
   const coData = co as Record<string, unknown>;
   const project = coData.projects as Record<string, unknown> | null;
   const tenant = coData.tenants as Record<string, unknown> | null;
-  const customerRaw = (project?.customers as Record<string, unknown> | null) ?? null;
+  const customerRaw = (project?.contacts as Record<string, unknown> | null) ?? null;
   const projectName = (project?.name as string) ?? 'Project';
   const businessName = (tenant?.name as string) ?? 'Your Contractor';
   const tenantTz = (tenant?.timezone as string | null) ?? undefined;

@@ -113,13 +113,13 @@ export async function generatePropertyRecordAction(
     .from('projects')
     .select(
       `id, name, description, start_date, target_end_date,
-       customers:customer_id (name, address_line1, email, phone)`,
+       contacts:contact_id (name, address_line1, email, phone)`,
     )
     .eq('id', projectId)
     .single();
   if (!project) return { ok: false, error: 'Project not found.' };
   const p = project as Record<string, unknown>;
-  const customer = (p.customers ?? null) as Record<string, unknown> | null;
+  const customer = (p.contacts ?? null) as Record<string, unknown> | null;
 
   const { data: tenantRow } = await supabase
     .from('tenants')

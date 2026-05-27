@@ -29,7 +29,7 @@ export async function resolveCustomer(nameOrId: string): Promise<ResolvedCustome
 
   if (UUID_RE.test(nameOrId)) {
     const { data, error } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name, email, phone')
       .eq('id', nameOrId)
       .is('deleted_at', null)
@@ -41,7 +41,7 @@ export async function resolveCustomer(nameOrId: string): Promise<ResolvedCustome
 
   // Fuzzy name search
   const { data: matches, error } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, name, email, phone')
     .ilike('name', `%${nameOrId}%`)
     .is('deleted_at', null)

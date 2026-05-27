@@ -161,7 +161,7 @@ export default async function ContactsPage({
         <CustomerEmptyState variant={hasFilters ? 'filtered' : 'fresh'} />
       ) : (
         <CustomerTable
-          customers={rows}
+          contacts={rows}
           nowMs={nowMs}
           footer={
             <ContactsPager

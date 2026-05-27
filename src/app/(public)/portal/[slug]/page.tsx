@@ -123,7 +123,7 @@ export default async function PortalPage({
       `id, name, tenant_id, lifecycle_stage, percent_complete, start_date, target_end_date,
        portal_slug, portal_enabled, portal_show_budget,
        tenants:tenant_id (name, logo_storage_path, portal_show_budget, timezone),
-       customers:customer_id (name)`,
+       contacts:contact_id (name)`,
     )
     .eq('portal_slug', slug)
     .is('deleted_at', null)
@@ -154,7 +154,7 @@ export default async function PortalPage({
   const portalTenantObj = Array.isArray(portalTenantNode) ? portalTenantNode[0] : portalTenantNode;
   const tenantTz = portalTenantObj?.timezone ?? undefined;
   const tenant = p.tenants as Record<string, unknown> | null;
-  const customer = p.customers as Record<string, unknown> | null;
+  const customer = p.contacts as Record<string, unknown> | null;
   const businessName = (tenant?.name as string) ?? 'Your Contractor';
   const customerName = (customer?.name as string) ?? '';
   const projectId = p.id as string;
@@ -384,7 +384,7 @@ export default async function PortalPage({
           : Promise.resolve({ data: [] as Array<{ path: string | null; signedUrl: string }> }),
         subIds.length > 0
           ? admin
-              .from('customers')
+              .from('contacts')
               .select('id, name, kind, email, phone')
               .in('id', subIds)
               .is('deleted_at', null)
@@ -570,7 +570,7 @@ export default async function PortalPage({
       admin
         .from('project_idea_board_items')
         .select(
-          'id, project_id, customer_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
+          'id, project_id, contact_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
         )
         .eq('project_id', projectId)
         .order('created_at', { ascending: false }),

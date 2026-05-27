@@ -223,7 +223,7 @@ export async function importCustomerPage(
       updated_at: now,
     }));
     const { data: inserted, error: insertErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .insert(rows)
       .select('id, qbo_customer_id');
     if (insertErr) {
@@ -253,7 +253,7 @@ export async function importCustomerPage(
   for (const u of toUpdate) {
     const now = new Date().toISOString();
     const { error: updateErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .update({
         // We only update the qbo_* refs on auto-merge — name/email/etc
         // on the HH row may have been edited by the user and we don't
@@ -292,7 +292,7 @@ export async function loadCustomerImportContext(
 ): Promise<CustomerImportContext> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, name, email, phone, city, qbo_customer_id')
     .eq('tenant_id', tenantId)
     .is('deleted_at', null);

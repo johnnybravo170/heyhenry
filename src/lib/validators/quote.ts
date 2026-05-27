@@ -27,7 +27,7 @@ export const quoteSurfaceSchema = z.object({
 });
 
 export const quoteCreateSchema = z.object({
-  customer_id: z.string().uuid({ message: 'Pick a customer' }),
+  contact_id: z.string().uuid({ message: 'Pick a customer' }),
   notes: z.string().trim().max(2000).optional().or(z.literal('')),
   surfaces: z.array(quoteSurfaceSchema).min(1, 'Add at least one surface'),
 });

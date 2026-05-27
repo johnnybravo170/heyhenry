@@ -28,7 +28,7 @@ export default async function StaleQuotesPage() {
   const { data: projects } = await supabase
     .from('projects')
     .select(
-      'id, name, estimate_status, estimate_sent_at, customers:customer_id (id, name, email, phone, do_not_auto_message)',
+      'id, name, estimate_status, estimate_sent_at, contacts:contact_id (id, name, email, phone, do_not_auto_message)',
     )
     .eq('estimate_status', 'pending_approval')
     .lte('estimate_sent_at', cutoff)
@@ -41,7 +41,7 @@ export default async function StaleQuotesPage() {
   const rows = await Promise.all(
     (projects ?? []).map(async (p) => {
       const proj = p as Record<string, unknown>;
-      const customer = proj.customers as Record<string, unknown> | null;
+      const customer = proj.contacts as Record<string, unknown> | null;
       const { data: lines } = await supabase
         .from('project_cost_lines')
         .select('line_price_cents')
@@ -58,7 +58,7 @@ export default async function StaleQuotesPage() {
       return {
         projectId: proj.id as string,
         projectName: (proj.name as string) ?? 'Untitled project',
-        customerId: (customer?.id as string) ?? null,
+        contactId: (customer?.id as string) ?? null,
         customerName: (customer?.name as string) ?? 'Customer',
         customerEmail: (customer?.email as string | null) ?? null,
         customerHasKillSwitch: Boolean(customer?.do_not_auto_message),

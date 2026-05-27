@@ -26,7 +26,7 @@ export type ProjectCustomerSummary = {
 export type ProjectRow = {
   id: string;
   tenant_id: string;
-  customer_id: string | null;
+  contact_id: string | null;
   name: string;
   description: string | null;
   lifecycle_stage: LifecycleStage;
@@ -97,11 +97,11 @@ export type ProjectListFilters = {
   stage?: LifecycleStage;
   /** Multi-stage filter (the redesigned list). Takes precedence over `stage`. */
   stages?: LifecycleStage[];
-  customer_id?: string;
-  /** Free-text search over project name. Combine with `customerIds` for "name OR customer". */
+  contact_id?: string;
+  /** Free-text search over project name. Combine with `contactIds` for "name OR customer". */
   name?: string;
   /** Customer ids whose name matched the search term — OR'd with the name match. */
-  customerIds?: string[];
+  contactIds?: string[];
   /** "Needs attention" quick-filter: only over-budget projects. Backed by the
    *  denormalized `projects.is_over_budget` signal + partial index — cheap at
    *  scale (no per-row burn recompute across the result set). */
@@ -116,9 +116,9 @@ export type ProjectListFilters = {
 export type LifecycleStageCounts = Record<LifecycleStage, number>;
 
 const PROJECT_COLUMNS =
-  'id, tenant_id, customer_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, is_cost_plus, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, estimate_approval_method, estimate_approved_by_member_id, estimate_approval_proof_paths, estimate_approval_notes, terms_text, document_type, is_over_budget, deleted_at, created_at, updated_at';
+  'id, tenant_id, contact_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, is_cost_plus, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, estimate_approval_method, estimate_approved_by_member_id, estimate_approval_proof_paths, estimate_approval_notes, terms_text, document_type, is_over_budget, deleted_at, created_at, updated_at';
 
-const PROJECT_WITH_CUSTOMER_SELECT = `${PROJECT_COLUMNS}, customers:customer_id (id, name, type, city, province)`;
+const PROJECT_WITH_CUSTOMER_SELECT = `${PROJECT_COLUMNS}, contacts:contact_id (id, name, type, city, province)`;
 
 function extractCustomer(raw: unknown): ProjectCustomerSummary | null {
   if (!raw) return null;
@@ -142,7 +142,7 @@ function extractCustomer(raw: unknown): ProjectCustomerSummary | null {
 }
 
 function normalizeProject(row: Record<string, unknown>): ProjectWithCustomer {
-  const { customers: customerRaw, ...rest } = row;
+  const { contacts: customerRaw, ...rest } = row;
   return { ...(rest as ProjectRow), customer: extractCustomer(customerRaw) };
 }
 
@@ -176,17 +176,17 @@ function applyProjectListFilters<
   } else if (filters.stage) {
     q = q.eq('lifecycle_stage', filters.stage);
   }
-  if (filters.customer_id) q = q.eq('customer_id', filters.customer_id);
+  if (filters.contact_id) q = q.eq('contact_id', filters.contact_id);
   if (filters.overBudget) q = q.is('is_over_budget', true);
 
   const name = filters.name?.trim();
   if (name) {
     const needle = `%${escapeIlike(name)}%`;
-    const ids = filters.customerIds ?? [];
+    const ids = filters.contactIds ?? [];
     // "project name OR a customer whose name matched the term".
     q =
       ids.length > 0
-        ? q.or(`name.ilike.${needle},customer_id.in.(${ids.join(',')})`)
+        ? q.or(`name.ilike.${needle},contact_id.in.(${ids.join(',')})`)
         : q.or(`name.ilike.${needle}`);
   }
   return q;
@@ -237,7 +237,7 @@ async function getProjectUncached(id: string): Promise<ProjectWithRelations | nu
     .from('projects')
     .select(
       `${PROJECT_COLUMNS},
-       customers:customer_id (id, name, type)`,
+       contacts:contact_id (id, name, type)`,
     )
     .eq('id', id)
     .is('deleted_at', null)
@@ -249,7 +249,7 @@ async function getProjectUncached(id: string): Promise<ProjectWithRelations | nu
   }
   if (!data) return null;
 
-  const { customers: customerRaw, ...rest } = data as Record<string, unknown>;
+  const { contacts: customerRaw, ...rest } = data as Record<string, unknown>;
   const base: ProjectRow = rest as ProjectRow;
 
   // Load budget categories

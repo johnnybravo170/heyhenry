@@ -36,7 +36,7 @@ import { sendEstimateForApprovalAction } from '@/server/actions/estimate-approva
 
 type Props = {
   projectId: string;
-  customerId: string;
+  contactId: string;
   customerName: string;
   customerEmail: string | null;
   /** Saved additional recipients on the customer record. Pre-checked
@@ -57,7 +57,7 @@ type Props = {
 
 export function EstimatePreviewSendBar({
   projectId,
-  customerId,
+  contactId,
   customerName,
   customerEmail: initialEmail,
   customerAdditionalEmails,
@@ -152,7 +152,7 @@ export function EstimatePreviewSendBar({
       return;
     }
     startTransition(async () => {
-      const patch = await patchCustomerEmailAction(customerId, trimmed);
+      const patch = await patchCustomerEmailAction(contactId, trimmed);
       if (!patch.ok) {
         setEmailError(patch.error);
         return;

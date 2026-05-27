@@ -47,12 +47,12 @@ export default async function ChangeOrderDetailPage({
   // Customer contact for the send-preview dialog (email + SMS recipients).
   let customerEmail: string | null = null;
   let customerPhone: string | null = null;
-  if (project.customer_id) {
+  if (project.contact_id) {
     const admin = createAdminClient();
     const { data: cust } = await admin
-      .from('customers')
+      .from('contacts')
       .select('email, phone')
-      .eq('id', project.customer_id)
+      .eq('id', project.contact_id)
       .maybeSingle();
     customerEmail = (cust?.email as string | null) ?? null;
     customerPhone = (cust?.phone as string | null) ?? null;

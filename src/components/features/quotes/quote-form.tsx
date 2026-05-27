@@ -44,14 +44,14 @@ type ExistingSurface = {
 
 export type QuoteFormDefaults = {
   id?: string;
-  customer_id?: string;
+  contact_id?: string;
   notes?: string;
   surfaces?: ExistingSurface[];
 };
 
 export type QuoteFormProps = {
   mode: 'create' | 'edit';
-  customers: QuoteFormCustomerOption[];
+  contacts: QuoteFormCustomerOption[];
   catalog: MapQuoteCatalogEntry[];
   /** Combined tax rate for live preview (e.g. 0.05 AB GST, 0.13 ON HST).
    *  Server recomputes authoritatively at submission, including
@@ -65,7 +65,7 @@ export type QuoteFormProps = {
 
 export function QuoteForm({
   mode,
-  customers,
+  contacts,
   catalog,
   taxRate,
   defaults,
@@ -77,7 +77,7 @@ export function QuoteForm({
   const [pending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [customerId, setCustomerId] = useState(defaults?.customer_id ?? '');
+  const [contactId, setContactId] = useState(defaults?.contact_id ?? '');
   const [notes, setNotes] = useState(defaults?.notes ?? '');
   const [surfaces, setSurfaces] = useState<SurfaceEntry[]>(() => {
     if (!defaults?.surfaces) return [];
@@ -104,19 +104,19 @@ export function QuoteForm({
     return calculateQuoteTotal(surfaces, taxRate);
   }, [surfaces, taxRate]);
 
-  const selectedCustomer = customers.find((c) => c.id === customerId);
+  const selectedCustomer = contacts.find((c) => c.id === contactId);
 
   useHenryForm({
     formId: mode === 'create' ? 'quote-create' : `quote-edit-${defaults?.id ?? ''}`,
     title: mode === 'create' ? 'Creating a new quote' : 'Editing a quote',
     fields: [
       {
-        name: 'customer_id',
+        name: 'contact_id',
         label: 'Customer',
         type: 'text',
         description:
           'Give the customer name; setField resolves to the UUID. If no match, call list_customers first.',
-        currentValue: selectedCustomer?.name ?? customerId,
+        currentValue: selectedCustomer?.name ?? contactId,
       },
       {
         name: 'notes',
@@ -126,15 +126,15 @@ export function QuoteForm({
       },
     ],
     setField: (name, value) => {
-      if (name === 'customer_id') {
-        if (customers.some((c) => c.id === value)) {
-          setCustomerId(value);
+      if (name === 'contact_id') {
+        if (contacts.some((c) => c.id === value)) {
+          setContactId(value);
           return true;
         }
         const needle = value.trim().toLowerCase();
-        const match = customers.find((c) => c.name.toLowerCase().includes(needle));
+        const match = contacts.find((c) => c.name.toLowerCase().includes(needle));
         if (match) {
-          setCustomerId(match.id);
+          setContactId(match.id);
           return true;
         }
         return false;
@@ -201,7 +201,7 @@ export function QuoteForm({
     event.preventDefault();
     setFormError(null);
 
-    if (!customerId) {
+    if (!contactId) {
       setFormError('Pick a customer.');
       return;
     }
@@ -213,7 +213,7 @@ export function QuoteForm({
     startTransition(async () => {
       const payload = {
         ...(defaults?.id ? { id: defaults.id } : {}),
-        customer_id: customerId,
+        contact_id: contactId,
         notes,
         surfaces: surfaces.map((s) => ({
           surface_type: s.surface_type,
@@ -244,9 +244,9 @@ export function QuoteForm({
       <div className="rounded-xl border bg-card p-4">
         <span className="mb-2 block text-sm font-medium">Customer</span>
         <CustomerPicker
-          customers={customers}
-          value={customerId}
-          onChange={setCustomerId}
+          contacts={contacts}
+          value={contactId}
+          onChange={setContactId}
           placeholder="Pick a customer"
         />
       </div>

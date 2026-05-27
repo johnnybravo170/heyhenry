@@ -341,14 +341,14 @@ export async function parseInvoiceImportAction(
     { data: existingProjRaw, error: projErr },
     { data: existingInvRaw, error: invErr },
   ] = await Promise.all([
-    supabase.from('customers').select('id, name, email, phone, city').is('deleted_at', null),
+    supabase.from('contacts').select('id, name, email, phone, city').is('deleted_at', null),
     supabase
       .from('projects')
-      .select('id, name, customer_id, customers:customer_id (name)')
+      .select('id, name, contact_id, contacts:contact_id (name)')
       .is('deleted_at', null),
     supabase
       .from('invoices')
-      .select('id, customer_id, amount_cents, tax_cents, sent_at, paid_at, created_at')
+      .select('id, contact_id, amount_cents, tax_cents, sent_at, paid_at, created_at')
       .is('deleted_at', null),
   ]);
   if (custErr) return { ok: false, error: custErr.message };
@@ -363,17 +363,17 @@ export async function parseInvoiceImportAction(
     city: (c.city as string | null) ?? null,
   }));
   const existingProjects: ExistingProject[] = (existingProjRaw ?? []).map((p) => {
-    const cust = (p as Record<string, unknown>).customers as { name?: string } | null;
+    const cust = (p as Record<string, unknown>).contacts as { name?: string } | null;
     return {
       id: p.id as string,
       name: (p.name as string) ?? '',
-      customer_id: (p.customer_id as string | null) ?? null,
+      contact_id: (p.contact_id as string | null) ?? null,
       customer_name: cust?.name ?? null,
     };
   });
   const existingInvoices: ExistingInvoice[] = (existingInvRaw ?? []).map((i) => ({
     id: i.id as string,
-    customer_id: (i.customer_id as string | null) ?? null,
+    contact_id: (i.contact_id as string | null) ?? null,
     amount_cents: (i.amount_cents as number) ?? 0,
     tax_cents: (i.tax_cents as number) ?? 0,
     anchor_date:
@@ -391,7 +391,7 @@ export async function parseInvoiceImportAction(
       p.totalCents !== null && p.invoiceDateIso && customer.kind === 'matched'
         ? findInvoiceMatch(
             {
-              customerId: customer.existingId,
+              contactId: customer.existingId,
               totalCents: p.totalCents,
               invoiceDateIso: p.invoiceDateIso,
             },
@@ -440,11 +440,11 @@ function resolveCustomer(customerName: string, existing: ExistingCustomer[]): Cu
 
 function resolveProject(
   projectName: string | null | undefined,
-  customerId: string | null,
+  contactId: string | null,
   existing: ExistingProject[],
 ): ProjectResolution {
   if (!projectName) return { kind: 'unattached' };
-  const m = findProjectMatch({ name: projectName, customerId }, existing);
+  const m = findProjectMatch({ name: projectName, contactId }, existing);
   if (m.existing) {
     return { kind: 'matched', existingId: m.existing.id, existingName: m.existing.name };
   }
@@ -543,7 +543,7 @@ export async function commitInvoiceImportAction(input: {
   let customersCreated = 0;
   if (newCustomerNames.length > 0) {
     const { data: insertedCustomers, error: custInsErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .insert(
         newCustomerNames.map((name) => ({
           tenant_id: tenant.id,
@@ -593,7 +593,7 @@ export async function commitInvoiceImportAction(input: {
       return {
         key: projectKey(cName, r.project.kind === 'create' ? r.project.newName : ''),
         name: r.project.kind === 'create' ? r.project.newName : '',
-        customerId: customerNameToId.get(normalizeName(cName)) ?? null,
+        contactId: customerNameToId.get(normalizeName(cName)) ?? null,
       };
     });
   // Dedupe within import.
@@ -607,23 +607,23 @@ export async function commitInvoiceImportAction(input: {
       .insert(
         uniqueProjectInserts.map((p) => ({
           tenant_id: tenant.id,
-          customer_id: p.customerId,
+          contact_id: p.contactId,
           name: p.name,
           lifecycle_stage: 'active', // imported invoices imply the project ran
           import_batch_id: batchId,
         })),
       )
-      .select('id, name, customer_id');
+      .select('id, name, contact_id');
     if (projInsErr) {
-      await supabase.from('customers').delete().eq('import_batch_id', batchId);
+      await supabase.from('contacts').delete().eq('import_batch_id', batchId);
       await supabase.from('import_batches').delete().eq('id', batchId);
       return { ok: false, error: projInsErr.message };
     }
     for (const p of insertedProjects ?? []) {
-      // Reverse-lookup the customer name for the key. We have customer_id;
+      // Reverse-lookup the customer name for the key. We have contact_id;
       // find its name from our running map.
       const cName = Array.from(customerNameToId.entries()).find(
-        ([, id]) => id === (p.customer_id as string | null),
+        ([, id]) => id === (p.contact_id as string | null),
       )?.[0];
       if (cName) {
         projectKeyToId.set(projectKey(cName, p.name as string), p.id as string);
@@ -640,7 +640,7 @@ export async function commitInvoiceImportAction(input: {
         : r.customer.kind === 'create'
           ? r.customer.newName
           : '';
-    const customerId = customerNameToId.get(normalizeName(cName)) ?? null;
+    const contactId = customerNameToId.get(normalizeName(cName)) ?? null;
     let projectId: string | null = null;
     if (r.project.kind === 'matched') {
       projectId = r.project.existingId;
@@ -649,7 +649,7 @@ export async function commitInvoiceImportAction(input: {
     }
     return {
       tenant_id: tenant.id,
-      customer_id: customerId,
+      contact_id: contactId,
       project_id: projectId,
       status: r.proposed.status,
       // FROZEN MATH — do not recompute. amount_cents = subtotal,
@@ -673,7 +673,7 @@ export async function commitInvoiceImportAction(input: {
     if (invInsErr) {
       // Cascade rollback the side-effects we created.
       await supabase.from('projects').delete().eq('import_batch_id', batchId);
-      await supabase.from('customers').delete().eq('import_batch_id', batchId);
+      await supabase.from('contacts').delete().eq('import_batch_id', batchId);
       await supabase.from('import_batches').delete().eq('id', batchId);
       return { ok: false, error: invInsErr.message };
     }
@@ -753,7 +753,7 @@ export async function rollbackInvoiceImportAction(batchId: string): Promise<
   if (projDelErr) return { ok: false, error: projDelErr.message };
 
   const { data: deletedCustRows, error: custDelErr } = await supabase
-    .from('customers')
+    .from('contacts')
     .update({ deleted_at: now })
     .eq('import_batch_id', batchId)
     .is('deleted_at', null)

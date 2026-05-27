@@ -78,14 +78,14 @@ export default async function ProjectsPage({
 
   // Resolve customers matching the search term so we can match on
   // "project name OR customer name" in one paginated query.
-  const customerIds = query
+  const contactIds = query
     ? (await listCustomers({ search: query, limit: 100 })).map((c) => c.id)
     : [];
 
   const filters = {
     stages,
     name: query || undefined,
-    customerIds,
+    contactIds,
     overBudget: overBudget || undefined,
     sort,
     dir,

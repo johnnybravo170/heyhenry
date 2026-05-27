@@ -35,7 +35,7 @@ export async function getProjectsAwaitingApproval(): Promise<AwaitingApprovalPro
 
   const { data: projects, error } = await supabase
     .from('projects')
-    .select('id, name, estimate_sent_at, customers:customer_id (name)')
+    .select('id, name, estimate_sent_at, contacts:contact_id (name)')
     .eq('lifecycle_stage', 'awaiting_approval')
     .not('estimate_sent_at', 'is', null)
     .is('deleted_at', null)
@@ -77,7 +77,7 @@ export async function getProjectsAwaitingApproval(): Promise<AwaitingApprovalPro
   }
 
   return projects.map((p) => {
-    const customerRaw = p.customers as { name?: string } | { name?: string }[] | null;
+    const customerRaw = p.contacts as { name?: string } | { name?: string }[] | null;
     const customerName = Array.isArray(customerRaw)
       ? (customerRaw[0]?.name ?? null)
       : (customerRaw?.name ?? null);

@@ -17,7 +17,7 @@ export const quotes = pgTable(
     tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
-    customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'restrict' }),
+    contactId: uuid('contact_id').references(() => customers.id, { onDelete: 'restrict' }),
     status: text('status').default('draft').notNull(),
     subtotalCents: integer('subtotal_cents').default(0).notNull(),
     taxCents: integer('tax_cents').default(0).notNull(),

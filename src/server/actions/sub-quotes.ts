@@ -603,7 +603,7 @@ export async function parseSubQuoteFromFileAction(
   // Load project + existing categories so the AI can map scope → categories.
   const { data: project } = await supabase
     .from('projects')
-    .select('id, name, description, customers:customer_id (name)')
+    .select('id, name, description, contacts:contact_id (name)')
     .eq('id', projectId)
     .maybeSingle();
   if (!project) return { ok: false, error: 'Project not found.' };
@@ -636,9 +636,9 @@ export async function parseSubQuoteFromFileAction(
   }
 
   // Build the intro: project + customer + category roster.
-  const customerName = Array.isArray(project.customers)
-    ? (project.customers[0] as { name?: string } | undefined)?.name
-    : (project.customers as { name?: string } | null)?.name;
+  const customerName = Array.isArray(project.contacts)
+    ? (project.contacts[0] as { name?: string } | undefined)?.name
+    : (project.contacts as { name?: string } | null)?.name;
   const categoryRoster = Array.from(categoriesByName.values())
     .map((b) => `  - ${b.section ? `[${b.section}] ` : ''}${b.name}`)
     .join('\n');

@@ -46,12 +46,12 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
 
       <QuoteForm
         mode="edit"
-        customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
         catalog={catalog}
         taxRate={taxCtx.totalRate}
         defaults={{
           id: quote.id,
-          customer_id: quote.customer_id,
+          contact_id: quote.contact_id,
           notes: quote.notes ?? '',
           surfaces: quote.surfaces.map((s) => ({
             id: s.id,

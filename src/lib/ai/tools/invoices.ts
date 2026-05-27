@@ -128,9 +128,9 @@ export const invoiceTools: AiTool[] = [
         type JobRow = {
           id: string;
           status: string;
-          customer_id: string;
+          contact_id: string;
           quote_id: string | null;
-          customers:
+          contacts:
             | { name: string; email: string | null }
             | { name: string; email: string | null }[];
         };
@@ -138,7 +138,7 @@ export const invoiceTools: AiTool[] = [
         const result = await resolveByShortId<JobRow>(
           'jobs',
           input.job_id as string,
-          'id, status, customer_id, quote_id, customers:customer_id (name, email)',
+          'id, status, contact_id, quote_id, contacts:contact_id (name, email)',
         );
         if (typeof result === 'string') return result;
 
@@ -190,7 +190,7 @@ export const invoiceTools: AiTool[] = [
           .from('invoices')
           .insert({
             tenant_id: tenant.id,
-            customer_id: job.customer_id,
+            contact_id: job.contact_id,
             job_id: job.id,
             status: 'draft',
             amount_cents: amountCents,
@@ -203,7 +203,7 @@ export const invoiceTools: AiTool[] = [
           return `Failed to create invoice: ${error?.message ?? 'Unknown error'}`;
         }
 
-        const customerRaw = job.customers;
+        const customerRaw = job.contacts;
         const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
         const customerName = customer?.name ?? 'customer';
 
@@ -243,8 +243,8 @@ export const invoiceTools: AiTool[] = [
           amount_cents: number;
           tax_cents: number;
           tax_inclusive: boolean;
-          customer_id: string;
-          customers:
+          contact_id: string;
+          contacts:
             | { name: string; email: string | null }
             | { name: string; email: string | null }[];
         };
@@ -252,7 +252,7 @@ export const invoiceTools: AiTool[] = [
         const result = await resolveByShortId<InvoiceRow>(
           'invoices',
           input.invoice_id as string,
-          'id, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_id, customers:customer_id (name, email)',
+          'id, status, amount_cents, tax_cents, tax_inclusive, line_items, contact_id, contacts:contact_id (name, email)',
         );
         if (typeof result === 'string') return result;
 
@@ -262,7 +262,7 @@ export const invoiceTools: AiTool[] = [
           return `Invoice is "${invoice.status}". Only draft or sent invoices can be sent.`;
         }
 
-        const customerRaw = invoice.customers;
+        const customerRaw = invoice.contacts;
         const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
 
         if (!customer?.email) {
@@ -339,13 +339,13 @@ export const invoiceTools: AiTool[] = [
           amount_cents: number;
           tax_cents: number;
           tax_inclusive: boolean;
-          customers: { name: string } | { name: string }[];
+          contacts: { name: string } | { name: string }[];
         };
 
         const result = await resolveByShortId<InvoiceRow>(
           'invoices',
           input.invoice_id as string,
-          'id, status, amount_cents, tax_cents, tax_inclusive, line_items, customers:customer_id (name)',
+          'id, status, amount_cents, tax_cents, tax_inclusive, line_items, contacts:contact_id (name)',
         );
         if (typeof result === 'string') return result;
 
@@ -367,7 +367,7 @@ export const invoiceTools: AiTool[] = [
           return `Failed to mark invoice paid: ${updateErr.message}`;
         }
 
-        const customerRaw = invoice.customers;
+        const customerRaw = invoice.contacts;
         const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
         const customerName = customer?.name ?? 'customer';
         const totalCents = invoiceTotalCents(invoice);

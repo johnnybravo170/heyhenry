@@ -87,11 +87,11 @@ describe.skipIf(!canRun)('Business Health AR parity (integration)', () => {
       .insert({ tenant_id: tenantId, name: `cust-${stamp}`, type: 'residential', kind: 'customer' })
       .select('id')
       .single();
-    const customerId = customer.data?.id as string;
+    const contactId = customer.data?.id as string;
 
     const baseRow = (overrides: Record<string, unknown>) => ({
       tenant_id: tenantId,
-      customer_id: customerId,
+      contact_id: contactId,
       ...overrides,
     });
 

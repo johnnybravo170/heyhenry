@@ -11,7 +11,7 @@ export const metadata = {
   title: 'New job — HeyHenry',
 };
 
-function parseCustomerId(value: string | string[] | undefined): string | null {
+function parseContactId(value: string | string[] | undefined): string | null {
   if (typeof value !== 'string') return null;
   return /^[0-9a-f-]{36}$/i.test(value) ? value : null;
 }
@@ -22,13 +22,13 @@ export default async function NewJobPage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const prefilledCustomerId = parseCustomerId(resolvedSearchParams.customer_id);
+  const prefilledContactId = parseContactId(resolvedSearchParams.contact_id);
 
   const customers = await listCustomers({ limit: 500 });
 
   const defaults: Partial<JobInput> = {
     status: 'booked',
-    ...(prefilledCustomerId ? { customer_id: prefilledCustomerId } : {}),
+    ...(prefilledContactId ? { contact_id: prefilledContactId } : {}),
   };
 
   return (
@@ -61,7 +61,7 @@ export default async function NewJobPage({
       ) : (
         <JobForm
           mode="create"
-          customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+          contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
           defaults={defaults}
           action={createJobAction}
           cancelHref="/jobs"

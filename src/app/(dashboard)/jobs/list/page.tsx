@@ -17,7 +17,7 @@ function parseStatus(value: string | string[] | undefined): JobStatus | null {
   return (jobStatuses as readonly string[]).includes(value) ? (value as JobStatus) : null;
 }
 
-function parseCustomerId(value: string | string[] | undefined): string | null {
+function parseContactId(value: string | string[] | undefined): string | null {
   if (typeof value !== 'string') return null;
   // Lightweight UUID v4 guard. `listJobs` still validates via Supabase.
   return /^[0-9a-f-]{36}$/i.test(value) ? value : null;
@@ -34,13 +34,13 @@ export default async function JobListPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const status = parseStatus(resolvedSearchParams.status);
-  const customerId = parseCustomerId(resolvedSearchParams.customer_id);
-  const hasFilters = Boolean(status || customerId);
+  const contactId = parseContactId(resolvedSearchParams.contact_id);
+  const hasFilters = Boolean(status || contactId);
 
   const [jobs, counts, customers] = await Promise.all([
     listJobs({
       status: status ?? undefined,
-      customer_id: customerId ?? undefined,
+      contact_id: contactId ?? undefined,
       limit: 200,
     }),
     countJobsByStatus(),
@@ -78,7 +78,7 @@ export default async function JobListPage({
 
       {grandTotal > 0 ? (
         <Suspense fallback={null}>
-          <JobListFilters customers={customers.map((c) => ({ id: c.id, name: c.name }))} />
+          <JobListFilters contacts={customers.map((c) => ({ id: c.id, name: c.name }))} />
         </Suspense>
       ) : null}
 

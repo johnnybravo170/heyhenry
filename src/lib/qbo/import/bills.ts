@@ -335,7 +335,7 @@ export async function loadBillImportContext(
   const supabase = createAdminClient();
   const [vendorRes, billRes] = await Promise.all([
     supabase
-      .from('customers')
+      .from('contacts')
       .select('id, qbo_customer_id')
       .eq('tenant_id', tenantId)
       .eq('kind', 'vendor')

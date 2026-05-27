@@ -24,7 +24,7 @@ import { findContactMatches } from '@/lib/db/queries/contact-matches';
 import { createClient } from '@/lib/supabase/server';
 
 export type IntakeCustomerContext = {
-  customerId: string;
+  contactId: string;
   customerName: string;
   matchedOn: 'phone' | 'email' | 'name' | 'similar_name';
   projects: Array<{
@@ -72,12 +72,12 @@ export async function loadIntakeCustomerContext(
       )
     `,
     )
-    .eq('customer_id', customer.id)
+    .eq('contact_id', customer.id)
     .order('created_at', { ascending: false })
     .limit(3);
 
   return {
-    customerId: customer.id,
+    contactId: customer.id,
     customerName: customer.name,
     matchedOn: customer.matchedOn,
     projects: (projects ?? []).map((p) => ({

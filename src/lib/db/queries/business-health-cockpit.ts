@@ -90,7 +90,7 @@ type ArRow = {
   tax_cents: number | null;
   tax_inclusive: boolean | null;
   line_items: { total_cents?: number | null }[] | null;
-  customers: { name: string | null } | { name: string | null }[] | null;
+  contacts: { name: string | null } | { name: string | null }[] | null;
 };
 
 function ageDays(row: { sent_at: string | null; created_at: string }, now: number): number {
@@ -99,7 +99,7 @@ function ageDays(row: { sent_at: string | null; created_at: string }, now: numbe
   return Math.max(0, Math.floor(ms / 86_400_000));
 }
 
-function customerName(c: ArRow['customers']): string {
+function customerName(c: ArRow['contacts']): string {
   const rel = Array.isArray(c) ? c[0] : c;
   return rel?.name?.trim() || 'Customer';
 }
@@ -121,7 +121,7 @@ export async function getBusinessHealthCockpit(): Promise<BusinessHealthCockpit>
   const { data: arData, error: arError } = await supabase
     .from('invoices')
     .select(
-      'id, status, paid_at, deleted_at, sent_at, created_at, amount_cents, tax_cents, tax_inclusive, line_items, customers:customer_id (name)',
+      'id, status, paid_at, deleted_at, sent_at, created_at, amount_cents, tax_cents, tax_inclusive, line_items, contacts:contact_id (name)',
     )
     .eq('status', 'sent')
     .is('paid_at', null)
@@ -159,7 +159,7 @@ export async function getBusinessHealthCockpit(): Promise<BusinessHealthCockpit>
       late_30_plus.count += 1;
       overdueRows.push({
         id: row.id,
-        customer_name: customerName(row.customers),
+        customer_name: customerName(row.contacts),
         total_cents: total,
         age_days: age,
       });

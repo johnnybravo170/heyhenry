@@ -67,9 +67,9 @@ export default async function NewProjectPage({
 
         <ProjectForm
           mode="create"
-          customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+          contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
           defaults={{
-            customer_id: preselectedCustomer,
+            contact_id: preselectedCustomer,
             management_fee_rate: defaultMgmtFeeRate,
           }}
           action={createProjectAction}
@@ -106,7 +106,7 @@ export default async function NewProjectPage({
       </div>
 
       <NewProjectFormSurface
-        customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
         action={createProjectAction}
         defaults={{ management_fee_rate: defaultMgmtFeeRate }}
         parseModel={aiChoice === 'claude' ? 'claude-sonnet' : 'gpt-4.1'}

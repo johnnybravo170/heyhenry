@@ -435,7 +435,7 @@ export async function parseInboundLeadAction(
     status: 'extracting',
     transcript,
     artifacts: allArtifacts,
-    recognized_customer_id: customerContext?.customerId ?? null,
+    recognized_customer_id: customerContext?.contactId ?? null,
   });
 
   // Build the prompt + the typed file list.
@@ -633,7 +633,7 @@ export async function parseIntakeDraftAction(
     .update({
       status: 'extracting',
       error_message: null,
-      recognized_customer_id: customerContext?.customerId ?? null,
+      recognized_customer_id: customerContext?.contactId ?? null,
     })
     .eq('id', draftId);
 
@@ -1004,9 +1004,9 @@ export async function acceptInboundLeadAction(
 
   // 1. Customer — resolve to an existing row, or check for duplicates before
   //    creating a new one.
-  let customerId: string;
+  let contactId: string;
   if (options?.useExistingContactId) {
-    customerId = options.useExistingContactId;
+    contactId = options.useExistingContactId;
   } else {
     if (!options?.confirmCreate) {
       const duplicates = await findContactMatches({
@@ -1027,7 +1027,7 @@ export async function acceptInboundLeadAction(
     }
 
     const { data: cust, error: custErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .insert({
         tenant_id: tenant.id,
         kind: 'customer',
@@ -1042,9 +1042,9 @@ export async function acceptInboundLeadAction(
     if (custErr || !cust) {
       return { ok: false, error: custErr?.message ?? 'Failed to create customer.' };
     }
-    customerId = cust.id;
+    contactId = cust.id;
   }
-  const cust = { id: customerId };
+  const cust = { id: contactId };
 
   // 2. Project
   const projectName = draft.project.name?.trim() || `${customerName} project`;
@@ -1052,7 +1052,7 @@ export async function acceptInboundLeadAction(
     .from('projects')
     .insert({
       tenant_id: tenant.id,
-      customer_id: cust.id,
+      contact_id: cust.id,
       name: projectName,
       description: draft.project.description?.trim() || null,
       intake_source: 'text-thread',

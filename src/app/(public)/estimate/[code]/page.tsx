@@ -25,7 +25,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
        estimate_status, estimate_approved_at, estimate_approved_by_name,
        estimate_declined_reason, terms_text, document_type,
        customer_view_mode, customer_summary_md,
-       customers:customer_id (name, address_line1, tax_exempt),
+       contacts:contact_id (name, address_line1, tax_exempt),
        tenants:tenant_id (name, logo_storage_path, gst_number, wcb_number, timezone)`,
     )
     .eq('estimate_approval_code', code)
@@ -44,7 +44,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
 
   const p = project as Record<string, unknown>;
   const tenantRaw = p.tenants as Record<string, unknown> | null;
-  const customerRaw = p.customers as Record<string, unknown> | null;
+  const customerRaw = p.contacts as Record<string, unknown> | null;
 
   // Sign the tenant logo (private `photos` storage bucket).
   let logoUrl: string | null = null;

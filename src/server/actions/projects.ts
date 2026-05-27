@@ -27,7 +27,7 @@ export type ProjectActionResult =
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export async function createProjectAction(input: {
-  customer_id: string;
+  contact_id: string;
   name: string;
   description?: string;
   start_date?: string;
@@ -53,7 +53,7 @@ export async function createProjectAction(input: {
     .from('projects')
     .insert({
       tenant_id: tenant.id,
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       name: parsed.data.name,
       description: emptyToNull(parsed.data.description),
       start_date: emptyToNull(parsed.data.start_date),
@@ -112,7 +112,7 @@ export async function createProjectAction(input: {
 
 export async function updateProjectAction(input: {
   id: string;
-  customer_id: string;
+  contact_id: string;
   name: string;
   description?: string;
   start_date?: string;
@@ -136,7 +136,7 @@ export async function updateProjectAction(input: {
   const { error } = await supabase
     .from('projects')
     .update({
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       name: parsed.data.name,
       description: emptyToNull(parsed.data.description),
       start_date: emptyToNull(parsed.data.start_date),
@@ -456,14 +456,14 @@ export async function resumeProjectAction(input: { id: string }): Promise<Projec
 
 export async function cloneProjectAction(input: {
   source_id: string;
-  customer_id: string;
+  contact_id: string;
   name: string;
   clone_budget_categories: boolean;
   clone_notes: boolean;
   keep_line_photos?: boolean;
 }): Promise<ProjectActionResult> {
   if (!input.source_id) return { ok: false, error: 'Missing source project id.' };
-  if (!input.customer_id) return { ok: false, error: 'Pick a customer.' };
+  if (!input.contact_id) return { ok: false, error: 'Pick a customer.' };
   const name = input.name.trim();
   if (!name) return { ok: false, error: 'Project name is required.' };
 
@@ -487,7 +487,7 @@ export async function cloneProjectAction(input: {
     .from('projects')
     .insert({
       tenant_id: tenant.id,
-      customer_id: input.customer_id,
+      contact_id: input.contact_id,
       name,
       description: source.description,
       start_date: null,

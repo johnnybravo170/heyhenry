@@ -177,7 +177,7 @@ export async function listCustomers(filters: CustomerListFilters = {}): Promise<
   const limit = filters.limit ?? 100;
   const offset = filters.offset ?? 0;
 
-  let query = supabase.from('customers').select(CUSTOMER_COLUMNS);
+  let query = supabase.from('contacts').select(CUSTOMER_COLUMNS);
   query = applyListFilters(query, filters) as typeof query;
 
   const { data, error } = await query
@@ -185,7 +185,7 @@ export async function listCustomers(filters: CustomerListFilters = {}): Promise<
     .range(offset, offset + limit - 1);
 
   if (error) {
-    throw new Error(`Failed to list customers: ${error.message}`);
+    throw new Error(`Failed to list contacts: ${error.message}`);
   }
   return (data ?? []).map((row) => ({
     ...(row as unknown as CustomerRow),
@@ -224,7 +224,7 @@ function normalizeName(name: string): string {
 export async function findDuplicateContacts(): Promise<DuplicateContactsResult> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, kind, name, email, phone')
     .is('deleted_at', null);
   if (error) throw new Error(`Failed to scan contacts for duplicates: ${error.message}`);
@@ -302,12 +302,12 @@ export async function findDuplicateContacts(): Promise<DuplicateContactsResult> 
 
 export async function countCustomers(filters: CustomerListFilters = {}): Promise<number> {
   const supabase = await createClient();
-  let query = supabase.from('customers').select('id', { count: 'exact', head: true });
+  let query = supabase.from('contacts').select('id', { count: 'exact', head: true });
   query = applyListFilters(query, filters) as typeof query;
 
   const { count, error } = await query;
   if (error) {
-    throw new Error(`Failed to count customers: ${error.message}`);
+    throw new Error(`Failed to count contacts: ${error.message}`);
   }
   return count ?? 0;
 }
@@ -320,7 +320,7 @@ export type ContactKindCounts = Record<CustomerRow['kind'], number> & { all: num
  */
 export async function countCustomersByKind(): Promise<ContactKindCounts> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from('customers').select('kind').is('deleted_at', null);
+  const { data, error } = await supabase.from('contacts').select('kind').is('deleted_at', null);
   if (error) {
     throw new Error(`Failed to count customers by kind: ${error.message}`);
   }
@@ -346,7 +346,7 @@ export async function countCustomersByKind(): Promise<ContactKindCounts> {
 export async function getCustomer(id: string): Promise<CustomerRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('customers')
+    .from('contacts')
     .select(CUSTOMER_COLUMNS)
     .eq('id', id)
     .is('deleted_at', null)
@@ -400,12 +400,12 @@ const ACTIVE_PROJECT_STAGES = ['planning', 'awaiting_approval', 'active', 'on_ho
  * whole roster. RLS scopes both queries to the tenant.
  */
 export async function getContactSignals(
-  customerIds: string[],
+  contactIds: string[],
   options: { includeMoney: boolean },
 ): Promise<Map<string, ContactSignal>> {
   const signals = new Map<string, ContactSignal>();
-  if (customerIds.length === 0) return signals;
-  for (const id of customerIds) {
+  if (contactIds.length === 0) return signals;
+  for (const id of contactIds) {
     signals.set(id, {
       activeProjects: 0,
       totalProjects: 0,
@@ -417,18 +417,18 @@ export async function getContactSignals(
 
   const projectsRes = await supabase
     .from('projects')
-    .select('customer_id, lifecycle_stage')
-    .in('customer_id', customerIds)
+    .select('contact_id, lifecycle_stage')
+    .in('contact_id', contactIds)
     .is('deleted_at', null);
   if (projectsRes.error) {
     throw new Error(`Failed to load contact project signals: ${projectsRes.error.message}`);
   }
   for (const row of (projectsRes.data ?? []) as {
-    customer_id: string | null;
+    contact_id: string | null;
     lifecycle_stage: string | null;
   }[]) {
-    if (!row.customer_id) continue;
-    const sig = signals.get(row.customer_id);
+    if (!row.contact_id) continue;
+    const sig = signals.get(row.contact_id);
     if (!sig) continue;
     sig.totalProjects += 1;
     if (row.lifecycle_stage && ACTIVE_PROJECT_STAGES.includes(row.lifecycle_stage)) {
@@ -440,9 +440,9 @@ export async function getContactSignals(
     const invoicesRes = await supabase
       .from('invoices')
       .select(
-        'customer_id, status, paid_at, deleted_at, sent_at, amount_cents, tax_cents, tax_inclusive, line_items',
+        'contact_id, status, paid_at, deleted_at, sent_at, amount_cents, tax_cents, tax_inclusive, line_items',
       )
-      .in('customer_id', customerIds)
+      .in('contact_id', contactIds)
       .eq('status', 'sent')
       .is('paid_at', null)
       .is('deleted_at', null);
@@ -450,14 +450,14 @@ export async function getContactSignals(
       throw new Error(`Failed to load contact AR signals: ${invoicesRes.error.message}`);
     }
     const byCustomer = new Map<string, ArInvoice[]>();
-    for (const row of (invoicesRes.data ?? []) as ({ customer_id: string | null } & ArInvoice)[]) {
-      if (!row.customer_id) continue;
-      const list = byCustomer.get(row.customer_id) ?? [];
+    for (const row of (invoicesRes.data ?? []) as ({ contact_id: string | null } & ArInvoice)[]) {
+      if (!row.contact_id) continue;
+      const list = byCustomer.get(row.contact_id) ?? [];
       list.push(row);
-      byCustomer.set(row.customer_id, list);
+      byCustomer.set(row.contact_id, list);
     }
-    for (const [customerId, invoices] of byCustomer) {
-      const sig = signals.get(customerId);
+    for (const [contactId, invoices] of byCustomer) {
+      const sig = signals.get(contactId);
       if (sig) sig.arDueCents = arOutstanding(invoices);
     }
   }
@@ -472,21 +472,21 @@ export async function getCustomerRelated(id: string): Promise<CustomerRelated> {
     supabase
       .from('quotes')
       .select('id, status, total_cents, created_at')
-      .eq('customer_id', id)
+      .eq('contact_id', id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(20),
     supabase
       .from('jobs')
       .select('id, status, scheduled_at, completed_at, created_at')
-      .eq('customer_id', id)
+      .eq('contact_id', id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(20),
     supabase
       .from('invoices')
       .select('id, status, amount_cents, tax_cents, tax_inclusive, line_items, created_at')
-      .eq('customer_id', id)
+      .eq('contact_id', id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(20),

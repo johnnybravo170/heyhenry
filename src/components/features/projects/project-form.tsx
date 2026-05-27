@@ -51,7 +51,7 @@ export type ProjectFormSuggestions = {
 
 export type ProjectFormProps = {
   mode: 'create' | 'edit';
-  customers: ProjectFormCustomerOption[];
+  contacts: ProjectFormCustomerOption[];
   defaults?: ProjectFormDefaults;
   action: (input: ProjectInput & { id?: string }) => Promise<ProjectActionResult>;
   submitLabel?: string;
@@ -66,7 +66,7 @@ export type ProjectFormProps = {
 };
 
 const EMPTY: ProjectInput = {
-  customer_id: '',
+  contact_id: '',
   name: '',
   description: '',
   start_date: '',
@@ -76,7 +76,7 @@ const EMPTY: ProjectInput = {
 
 export function ProjectForm({
   mode,
-  customers: initialCustomers,
+  contacts: initialCustomers,
   defaults,
   action,
   submitLabel,
@@ -119,11 +119,11 @@ export function ProjectForm({
     apply('start_date', suggestions.start_date);
     apply('target_end_date', suggestions.target_end_date);
 
-    if (suggestions.customer_name && !dirty.customer_id) {
+    if (suggestions.customer_name && !dirty.contact_id) {
       const needle = suggestions.customer_name.trim().toLowerCase();
       const match = customers.find((c) => c.name.toLowerCase().includes(needle));
       if (match) {
-        form.setValue('customer_id', match.id, { shouldValidate: true, shouldDirty: false });
+        form.setValue('contact_id', match.id, { shouldValidate: true, shouldDirty: false });
       } else {
         onUnmatchedCustomer?.(suggestions.customer_name);
       }
@@ -131,19 +131,19 @@ export function ProjectForm({
   }, [suggestions, customers, form, onUnmatchedCustomer]);
 
   const watched = form.watch();
-  const selectedCustomer = customers.find((c) => c.id === watched.customer_id);
+  const selectedCustomer = customers.find((c) => c.id === watched.contact_id);
 
   useHenryForm({
     formId: mode === 'create' ? 'project-create' : `project-edit-${defaults?.id ?? ''}`,
     title: mode === 'create' ? 'Creating a new renovation project' : 'Editing a project',
     fields: [
       {
-        name: 'customer_id',
+        name: 'contact_id',
         label: 'Customer',
         type: 'text',
         description:
           'Give the customer name; setField resolves to the UUID. If no match, call list_customers first.',
-        currentValue: selectedCustomer?.name ?? watched.customer_id,
+        currentValue: selectedCustomer?.name ?? watched.contact_id,
       },
       { name: 'name', label: 'Project name', type: 'text', currentValue: watched.name },
       {
@@ -173,15 +173,15 @@ export function ProjectForm({
       },
     ],
     setField: (name, value) => {
-      if (name === 'customer_id') {
+      if (name === 'contact_id') {
         if (customers.some((c) => c.id === value)) {
-          form.setValue('customer_id', value, { shouldValidate: true });
+          form.setValue('contact_id', value, { shouldValidate: true });
           return true;
         }
         const needle = value.trim().toLowerCase();
         const match = customers.find((c) => c.name.toLowerCase().includes(needle));
         if (match) {
-          form.setValue('customer_id', match.id, { shouldValidate: true });
+          form.setValue('contact_id', match.id, { shouldValidate: true });
           return true;
         }
         return false;
@@ -237,13 +237,13 @@ export function ProjectForm({
 
         <FormField
           control={form.control}
-          name="customer_id"
+          name="contact_id"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Customer</FormLabel>
               <FormControl>
                 <CustomerPickerWithCreate
-                  customers={customers}
+                  contacts={customers}
                   value={field.value}
                   onChange={field.onChange}
                   onCustomerCreated={(c) => setCustomers((cs) => [c, ...cs])}

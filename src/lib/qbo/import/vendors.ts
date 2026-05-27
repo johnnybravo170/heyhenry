@@ -7,7 +7,7 @@
  * round-trip idempotency since QBO Vendor and Customer Ids are drawn
  * from the same global namespace inside a QBO company.
  *
- * Dedup is simpler than for customers: no fuzzy match against the
+ * Dedup is simpler than for contacts: no fuzzy match against the
  * existing roster. Vendor names overlap heavily ("Home Depot" exists
  * for every contractor), and a strong email/phone match against a
  * customer-kind row would silently flip its kind, which would corrupt
@@ -112,7 +112,7 @@ export async function importVendorPage(ctx: VendorImportContext, page: QboVendor
       updated_at: now,
     }));
     const { data: inserted, error } = await supabase
-      .from('customers')
+      .from('contacts')
       .insert(rows)
       .select('id, qbo_customer_id');
     if (error) {
@@ -128,7 +128,7 @@ export async function importVendorPage(ctx: VendorImportContext, page: QboVendor
   for (const u of toUpdate) {
     const now = new Date().toISOString();
     const { error } = await supabase
-      .from('customers')
+      .from('contacts')
       .update({
         qbo_sync_token: u.qbo.SyncToken,
         qbo_sync_status: 'synced',
@@ -153,7 +153,7 @@ export async function loadVendorImportContext(
 ): Promise<VendorImportContext> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, qbo_customer_id')
     .eq('tenant_id', tenantId)
     .eq('kind', 'vendor')

@@ -109,7 +109,7 @@ export async function askHenryAboutProjectAction(input: {
   const [{ data: project }, { data: categoryRows }, { data: recentNotes }] = await Promise.all([
     supabase
       .from('projects')
-      .select('name, description, customers:customer_id (name)')
+      .select('name, description, contacts:contact_id (name)')
       .eq('id', input.projectId)
       .maybeSingle(),
     supabase
@@ -130,9 +130,9 @@ export async function askHenryAboutProjectAction(input: {
 
   if (!project) return { ok: false, error: 'Project not found.' };
 
-  const customerName = Array.isArray(project.customers)
-    ? (project.customers[0] as { name?: string } | undefined)?.name
-    : (project.customers as { name?: string } | null)?.name;
+  const customerName = Array.isArray(project.contacts)
+    ? (project.contacts[0] as { name?: string } | undefined)?.name
+    : (project.contacts as { name?: string } | null)?.name;
 
   const categoriesBlock = (categoryRows ?? [])
     .map((b) => {

@@ -93,7 +93,7 @@ export async function sendEstimateForApprovalAction(input: {
   const { data: project, error: projErr } = await supabase
     .from('projects')
     .select(
-      'id, name, estimate_status, estimate_approval_code, management_fee_rate, auto_followup_enabled, customers:customer_id (name, email, additional_emails, phone, tax_exempt)',
+      'id, name, estimate_status, estimate_approval_code, management_fee_rate, auto_followup_enabled, contacts:contact_id (name, email, additional_emails, phone, tax_exempt)',
     )
     .eq('id', input.projectId)
     .single();
@@ -101,7 +101,7 @@ export async function sendEstimateForApprovalAction(input: {
   if (projErr || !project) return { ok: false, error: 'Project not found.' };
 
   const p = project as Record<string, unknown>;
-  const customerRaw = p.customers as Record<string, unknown> | null;
+  const customerRaw = p.contacts as Record<string, unknown> | null;
   const customerEmail = customerRaw?.email as string | null;
   const customerAdditionalEmails = (customerRaw?.additional_emails as string[] | null) ?? [];
   const customerPhone = (customerRaw?.phone as string | null) ?? null;
@@ -521,10 +521,10 @@ async function notifyOperatorOfFirstView(params: {
 
   // Customer + tenant context for the email body.
   const [{ data: projectFull }, { data: tenant }] = await Promise.all([
-    admin.from('projects').select('customers:customer_id (name)').eq('id', projectId).maybeSingle(),
+    admin.from('projects').select('contacts:contact_id (name)').eq('id', projectId).maybeSingle(),
     admin.from('tenants').select('name').eq('id', tenantId).maybeSingle(),
   ]);
-  const customerRaw = projectFull?.customers as { name?: string } | { name?: string }[] | null;
+  const customerRaw = projectFull?.contacts as { name?: string } | { name?: string }[] | null;
   const customerName = Array.isArray(customerRaw)
     ? (customerRaw[0]?.name ?? null)
     : (customerRaw?.name ?? null);
@@ -586,10 +586,10 @@ async function notifyOperatorOfApproval(params: {
 
   const { data: projectFull } = await admin
     .from('projects')
-    .select('customers:customer_id (name)')
+    .select('contacts:contact_id (name)')
     .eq('id', projectId)
     .maybeSingle();
-  const customerRaw = projectFull?.customers as { name?: string } | { name?: string }[] | null;
+  const customerRaw = projectFull?.contacts as { name?: string } | { name?: string }[] | null;
   const customerName = Array.isArray(customerRaw)
     ? (customerRaw[0]?.name ?? null)
     : (customerRaw?.name ?? null);
@@ -683,7 +683,7 @@ export async function submitEstimateFeedbackAction(
 
   const { data: project } = await admin
     .from('projects')
-    .select('id, tenant_id, name, estimate_status, customers:customer_id (name)')
+    .select('id, tenant_id, name, estimate_status, contacts:contact_id (name)')
     .eq('estimate_approval_code', approvalCode)
     .maybeSingle();
 
@@ -714,7 +714,7 @@ export async function submitEstimateFeedbackAction(
   // Fire notifications per tenant member prefs. Best-effort — one bad
   // member shouldn't block the others.
   const customerName =
-    ((p.customers as Record<string, unknown> | null)?.name as string | undefined) ?? 'the customer';
+    ((p.contacts as Record<string, unknown> | null)?.name as string | undefined) ?? 'the customer';
   const projectName = (p.name as string) ?? 'their project';
 
   await dispatchFeedbackNotifications({

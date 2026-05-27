@@ -31,7 +31,7 @@ export default async function DecidePage({ params }: { params: Promise<{ code: s
     .select(
       `id, approval_code, label, description, due_date, status, photo_refs, options, decided_value,
        decided_by_customer, decided_at,
-       projects:project_id (name, customers:customer_id (name)),
+       projects:project_id (name, contacts:contact_id (name)),
        tenants:tenant_id (name, logo_storage_path, timezone)`,
     )
     .eq('approval_code', code)
@@ -53,7 +53,7 @@ export default async function DecidePage({ params }: { params: Promise<{ code: s
   const d = decision as Record<string, unknown>;
   const project = d.projects as Record<string, unknown> | null;
   const tenant = d.tenants as Record<string, unknown> | null;
-  const customer = project?.customers as Record<string, unknown> | null;
+  const customer = project?.contacts as Record<string, unknown> | null;
   const businessName = (tenant?.name as string) ?? 'Your Contractor';
   const tenantTz = (tenant?.timezone as string | null) ?? undefined;
   const projectName = (project?.name as string) ?? 'Project';

@@ -69,16 +69,16 @@ export async function getBillingOverviewAction(): Promise<BillingOverview> {
     .eq('id', tenant.id)
     .single();
 
-  const customerId = (data?.stripe_customer_id as string | null) ?? null;
+  const contactId = (data?.stripe_customer_id as string | null) ?? null;
   const subId = (data?.stripe_subscription_id as string | null) ?? null;
   const foundingMemberFlag = Boolean(data?.founding_member);
 
-  if (!subId || !customerId) {
-    return { ok: true, hasSubscription: false, hasCustomer: Boolean(customerId) };
+  if (!subId || !contactId) {
+    return { ok: true, hasSubscription: false, hasCustomer: Boolean(contactId) };
   }
 
   const sub = await loadSubscriptionExpanded(subId);
-  const card = await getDefaultCard({ customerId, subscription: sub });
+  const card = await getDefaultCard({ contactId, subscription: sub });
   const item = sub.items.data[0];
   const priceId = item?.price.id ?? null;
   const planMatch = priceId ? findPlanForPriceId(priceId) : null;
@@ -162,12 +162,12 @@ export async function listInvoicesAction(input: {
     .select('stripe_customer_id')
     .eq('id', tenant.id)
     .single();
-  const customerId = (data?.stripe_customer_id as string | null) ?? null;
-  if (!customerId) return { ok: true, invoices: [], hasMore: false, nextCursor: null };
+  const contactId = (data?.stripe_customer_id as string | null) ?? null;
+  if (!contactId) return { ok: true, invoices: [], hasMore: false, nextCursor: null };
 
   const stripe = await getPlatformStripe();
   const limit = Math.min(Math.max(input.limit ?? 12, 1), 50);
-  const params: Stripe.InvoiceListParams = { customer: customerId, limit };
+  const params: Stripe.InvoiceListParams = { customer: contactId, limit };
   if (input.cursor) params.starting_after = input.cursor;
 
   const list = await stripe.invoices.list(params);
@@ -206,12 +206,12 @@ export async function createSetupIntentAction(): Promise<SetupIntentResult> {
     .select('stripe_customer_id')
     .eq('id', tenant.id)
     .single();
-  const customerId = (data?.stripe_customer_id as string | null) ?? null;
-  if (!customerId) return { ok: false, error: 'No Stripe customer on file yet.' };
+  const contactId = (data?.stripe_customer_id as string | null) ?? null;
+  if (!contactId) return { ok: false, error: 'No Stripe customer on file yet.' };
 
   const stripe = await getPlatformStripe();
   const intent = await stripe.setupIntents.create({
-    customer: customerId,
+    customer: contactId,
     payment_method_types: ['card'],
     usage: 'off_session',
     metadata: { tenant_id: tenant.id, kind: 'card_update' },
@@ -241,12 +241,12 @@ export async function setDefaultPaymentMethodAction(input: {
     .select('stripe_customer_id, stripe_subscription_id')
     .eq('id', tenant.id)
     .single();
-  const customerId = (data?.stripe_customer_id as string | null) ?? null;
+  const contactId = (data?.stripe_customer_id as string | null) ?? null;
   const subId = (data?.stripe_subscription_id as string | null) ?? null;
-  if (!customerId) return { ok: false, error: 'No Stripe customer on file yet.' };
+  if (!contactId) return { ok: false, error: 'No Stripe customer on file yet.' };
 
   const stripe = await getPlatformStripe();
-  await stripe.customers.update(customerId, {
+  await stripe.customers.update(contactId, {
     invoice_settings: { default_payment_method: input.paymentMethodId },
   });
   if (subId) {
@@ -285,9 +285,9 @@ export async function previewPlanChangeAction(input: {
     .select('stripe_customer_id, stripe_subscription_id')
     .eq('id', tenant.id)
     .single();
-  const customerId = (data?.stripe_customer_id as string | null) ?? null;
+  const contactId = (data?.stripe_customer_id as string | null) ?? null;
   const subId = (data?.stripe_subscription_id as string | null) ?? null;
-  if (!customerId || !subId) return { ok: false, error: 'No active subscription.' };
+  if (!contactId || !subId) return { ok: false, error: 'No active subscription.' };
 
   const stripe = await getPlatformStripe();
   const sub = await loadSubscriptionExpanded(subId);
@@ -303,7 +303,7 @@ export async function previewPlanChangeAction(input: {
   // Some Stripe SDK versions surface it under a different name (`createPreview`);
   // we cast through `unknown` to stay version-agnostic.
   const upcoming = await retrieveUpcomingInvoice(stripe, {
-    customer: customerId,
+    customer: contactId,
     subscription: subId,
     subscription_items: [{ id: item.id, price: newPriceId }],
     subscription_proration_behavior: 'create_prorations',

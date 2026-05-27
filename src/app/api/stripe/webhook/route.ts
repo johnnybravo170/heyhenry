@@ -176,12 +176,12 @@ async function applySubscriptionToTenant(
   // Resolve tenant: prefer metadata, fall back to stripe_customer_id lookup.
   let tenantId = tenantIdHint;
   if (!tenantId) {
-    const customerId =
+    const contactId =
       typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
     const { data } = await admin
       .from('tenants')
       .select('id')
-      .eq('stripe_customer_id', customerId)
+      .eq('stripe_customer_id', contactId)
       .maybeSingle();
     tenantId = (data?.id as string | null) ?? null;
   }

@@ -15,8 +15,8 @@ import { sql } from 'drizzle-orm';
 import { boolean, check, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 
-export const customers = pgTable(
-  'customers',
+export const contacts = pgTable(
+  'contacts',
   {
     id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     tenantId: uuid('tenant_id')
@@ -55,23 +55,33 @@ export const customers = pgTable(
   },
   (table) => [
     check(
-      'customers_kind_check',
+      'contacts_kind_check',
       sql`${table.kind} IN ('customer', 'vendor', 'sub', 'agent', 'inspector', 'referral', 'other')`,
     ),
     check(
-      'customers_type_check',
+      'contacts_type_check',
       sql`${table.type} IS NULL OR ${table.type} IN ('residential', 'commercial')`,
     ),
     check(
-      'customers_type_requires_customer_kind',
+      'contacts_type_requires_customer_kind',
       sql`${table.kind} = 'customer' OR ${table.type} IS NULL`,
     ),
     check(
-      'customers_do_not_auto_message_source_check',
+      'contacts_do_not_auto_message_source_check',
       sql`${table.doNotAutoMessageSource} IS NULL OR ${table.doNotAutoMessageSource} IN ('unsubscribe_link', 'sms_stop', 'email_complaint', 'manual_owner', 'manual_admin')`,
     ),
   ],
 );
 
-export type Customer = typeof customers.$inferSelect;
-export type NewCustomer = typeof customers.$inferInsert;
+export type Contact = typeof contacts.$inferSelect;
+export type NewContact = typeof contacts.$inferInsert;
+
+/**
+ * Back-compat aliases. The table + type were renamed `customers` → `contacts`
+ * (the table always held all contact kinds). These thin aliases keep existing
+ * `customers` / `Customer` imports compiling while call sites migrate to the
+ * new names; remove them in a follow-up once references are cut over.
+ */
+export const customers = contacts;
+export type Customer = Contact;
+export type NewCustomer = NewContact;

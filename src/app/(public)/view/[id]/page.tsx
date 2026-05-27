@@ -26,7 +26,7 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
   const { data: quote } = await supabase
     .from('quotes')
     .select(
-      'id, tenant_id, customer_id, status, subtotal_cents, tax_cents, total_cents, pdf_url, sent_at, notes, created_at',
+      'id, tenant_id, contact_id, status, subtotal_cents, tax_cents, total_cents, pdf_url, sent_at, notes, created_at',
     )
     .eq('id', id)
     .is('deleted_at', null)
@@ -54,9 +54,9 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
 
   // Load customer info.
   const { data: customer } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('name, email, phone, address_line1, city, province, postal_code')
-    .eq('id', quote.customer_id)
+    .eq('id', quote.contact_id)
     .single();
 
   // Load line items.
