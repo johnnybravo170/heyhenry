@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import { Markdown } from '@/app/(auth)/board/markdown';
 import { archiveBundleAction, parkBundleAction, resolveBundleAction } from './actions';
 
 type Option = { key?: string; label?: string; blast_radius?: string; unblocks?: string };
@@ -24,6 +25,14 @@ export type QueueBundle = {
 
 function optionChoice(o: Option): string {
   return (o.key ?? o.label ?? '').toString();
+}
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+      {children}
+    </p>
+  );
 }
 
 export function BundleCard({ bundle }: { bundle: QueueBundle }) {
@@ -48,24 +57,29 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
     });
   }
 
+  const options = bundle.options ?? [];
+
   return (
-    <div className="rounded-md border border-[var(--border)] p-4">
-      <p className="text-sm font-medium">{bundle.question}</p>
+    <div className="rounded-lg border border-[var(--border)] p-4">
+      <div className="max-w-[68ch]">
+        <p className="text-[15px] font-semibold leading-snug">{bundle.question}</p>
 
-      {bundle.why_today ? (
-        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-          <span className="font-medium uppercase tracking-wide">Why today:</span> {bundle.why_today}
-        </p>
-      ) : null}
+        {bundle.why_today ? (
+          <div className="mt-3">
+            <Eyebrow>Why today</Eyebrow>
+            <div className="text-[var(--muted-foreground)]">
+              <Markdown>{bundle.why_today}</Markdown>
+            </div>
+          </div>
+        ) : null}
 
-      {bundle.recommendation ? (
-        <p className="mt-2 text-sm">
-          <span className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-            Recommendation:{' '}
-          </span>
-          {bundle.recommendation}
-        </p>
-      ) : null}
+        {bundle.recommendation ? (
+          <div className="mt-3">
+            <Eyebrow>Recommendation</Eyebrow>
+            <Markdown>{bundle.recommendation}</Markdown>
+          </div>
+        ) : null}
+      </div>
 
       {bundle.before_image_url || bundle.after_image_url ? (
         <div className="mt-3">
@@ -104,35 +118,49 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
       ) : null}
 
       {isParked && bundle.resurface_trigger ? (
-        <p className="mt-2 text-xs text-amber-600">
+        <p className="mt-3 text-xs text-amber-600">
           Parked → resurfaces on {bundle.resurface_trigger}
         </p>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {bundle.options && bundle.options.length > 0 ? (
-          bundle.options.map((o, i) => (
-            <button
-              key={optionChoice(o) || i}
-              type="button"
-              disabled={isPending}
-              onClick={() =>
-                run(
-                  () => resolveBundleAction({ id: bundle.id, choice: optionChoice(o), rating }),
-                  'Resolved.',
-                )
-              }
-              className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-medium text-[var(--primary-foreground)] disabled:opacity-50"
-              title={[
-                o.blast_radius && `blast: ${o.blast_radius}`,
-                o.unblocks && `unblocks: ${o.unblocks}`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            >
-              {o.label ?? o.key}
-            </button>
-          ))
+      {/* Choices — bordered rows, not filled slabs, so a full-sentence option
+          reads as text instead of a wall of white-on-black. */}
+      <div className="mt-4 max-w-[68ch] space-y-2">
+        {options.length > 0 ? (
+          options.map((o, i) => {
+            const meta = [
+              o.blast_radius && `blast: ${o.blast_radius}`,
+              o.unblocks && `unblocks: ${o.unblocks}`,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+            return (
+              <button
+                key={optionChoice(o) || i}
+                type="button"
+                disabled={isPending}
+                onClick={() =>
+                  run(
+                    () => resolveBundleAction({ id: bundle.id, choice: optionChoice(o), rating }),
+                    'Resolved.',
+                  )
+                }
+                className="flex w-full items-start gap-3 rounded-md border border-[var(--border)] p-3 text-left transition-colors hover:border-[var(--foreground)] disabled:opacity-50"
+              >
+                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded bg-[var(--muted)] font-mono text-[11px] font-medium">
+                  {String.fromCharCode(65 + i)}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm leading-snug">{o.label ?? o.key}</span>
+                  {meta ? (
+                    <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
+                      {meta}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })
         ) : (
           <button
             type="button"
@@ -148,7 +176,10 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
             Do it
           </button>
         )}
+      </div>
 
+      {/* Secondary actions + rating */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {!isParked ? (
           <button
             type="button"
