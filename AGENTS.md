@@ -26,6 +26,24 @@ Two guards exist:
 
 Both are bypassable (`git push --no-verify`); don't reach for the bypass casually — silent skips are exactly what these guards exist to prevent.
 
+## Data API grants — new public tables must GRANT explicitly
+
+As of `20260527151331_optin_data_api_no_auto_grant`, this project no longer auto-exposes new `public`-schema tables to the Data API roles (`anon` / `authenticated` / `service_role`). Supabase removed that default for everyone — enforced 2026-10-30 — and we opted in early (ref discussion #45329). **Every new `public` table must issue its own grants in the same migration as its RLS block:**
+
+```sql
+ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
+-- ... tenant policies (select / insert WITH CHECK / update / delete) ...
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.<table> TO authenticated;  -- RLS still scopes rows to tenant
+GRANT ALL                            ON public.<table> TO service_role;   -- bypasses RLS (server/admin/MCP)
+-- GRANT SELECT ON public.<table> TO anon;  -- ONLY if intentionally public-readable (rare)
+-- sequence-backed PK (serial/identity, not gen_random_uuid()):
+--   GRANT USAGE, SELECT ON SEQUENCE public.<seq> TO authenticated;
+```
+
+Without the GRANT, authenticated reads return permission-denied **even with correct policies** — RLS sits on top of table privileges, so the policy never even evaluates. This is a new root cause for the "silent RLS block" symptom (cf. the policy-less-RLS variant in migs `0091` / `0173`). `ops.*` tables are unaffected (different default-privilege domain) but already grant to `service_role` by convention.
+
+`scripts/check-migration-grants.ts` runs in CI and fails any migration created after the opt-in that `CREATE TABLE`s in `public` without a matching GRANT. Forward-only: tables created before the opt-in kept their grants, so this governs new tables only.
+
 ## Prod migrations apply automatically on merge to main
 
 The `deploy-migrations` job in `.github/workflows/ci.yml` runs `supabase db push` against prod on every push to `main` (and on manual `workflow_dispatch`), gated behind `needs: [quality, e2e]` so schema never ships off a red main. You do **not** hand-apply migrations as a separate step anymore — merge the migration with its code and CI pushes it. The job is idempotent: it only applies versions missing from the remote `supabase_migrations.schema_migrations` ledger, and is a no-op when in sync.
