@@ -1,11 +1,11 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { ContactsDuplicateBanner } from '@/components/features/customers/contacts-duplicate-banner';
-import { ContactsPager } from '@/components/features/customers/contacts-pager';
-import { CustomerEmptyState } from '@/components/features/customers/customer-empty-state';
-import { CustomerSearchBar } from '@/components/features/customers/customer-search-bar';
-import { CustomerTable } from '@/components/features/customers/customer-table';
+import { ContactEmptyState } from '@/components/features/contacts/contact-empty-state';
+import { ContactSearchBar } from '@/components/features/contacts/contact-search-bar';
+import { ContactTable } from '@/components/features/contacts/contact-table';
+import { ContactsDuplicateBanner } from '@/components/features/contacts/contacts-duplicate-banner';
+import { ContactsPager } from '@/components/features/contacts/contacts-pager';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import {
@@ -153,14 +153,14 @@ export default async function ContactsPage({
 
       {showSearchBar ? (
         <Suspense fallback={null}>
-          <CustomerSearchBar defaultQuery={query} kindCounts={kindCounts} />
+          <ContactSearchBar defaultQuery={query} kindCounts={kindCounts} />
         </Suspense>
       ) : null}
 
       {showingCount === 0 ? (
-        <CustomerEmptyState variant={hasFilters ? 'filtered' : 'fresh'} />
+        <ContactEmptyState variant={hasFilters ? 'filtered' : 'fresh'} />
       ) : (
-        <CustomerTable
+        <ContactTable
           contacts={rows}
           nowMs={nowMs}
           footer={

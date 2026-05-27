@@ -4,7 +4,7 @@
  * URL-state filters for the jobs list view (`/jobs/list`).
  *
  * Two controls: a status chip group and an optional customer <Select>.
- * Following the Track A `CustomerSearchBar` pattern, state lives in the URL
+ * Following the Track A `ContactSearchBar` pattern, state lives in the URL
  * (`?status=&contact_id=`) so links are shareable and the browser back
  * button works.
  */
@@ -22,14 +22,14 @@ import {
 import { cn } from '@/lib/utils';
 import { type JobStatus, jobStatuses, jobStatusLabels } from '@/lib/validators/job';
 
-export type JobsCustomerOption = {
+export type JobsContactOption = {
   id: string;
   name: string;
 };
 
 const ALL_CUSTOMERS = '__all__';
 
-export function JobListFilters({ contacts }: { contacts: JobsCustomerOption[] }) {
+export function JobListFilters({ contacts }: { contacts: JobsContactOption[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
