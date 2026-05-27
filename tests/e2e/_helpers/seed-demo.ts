@@ -27,7 +27,7 @@ export type SeededDemo = {
   password: string;
   userId: string;
   tenantId: string;
-  customerId: string;
+  contactId: string;
   projectId: string;
   /** Two budget categories created on the project, indexed by name. */
   budgetCategoryIdsByName: Record<string, string>;
@@ -100,7 +100,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
 
   // Customer + project.
   const { data: customer, error: customerErr } = await admin
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenantId,
       name: 'Jane Homeowner',
@@ -113,13 +113,13 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
     await tearDownDemo({ admin, userId, tenantId });
     throw new Error(`seedDemo: insert customer failed: ${customerErr?.message}`);
   }
-  const customerId = customer.id as string;
+  const contactId = customer.id as string;
 
   const { data: project, error: projectErr } = await admin
     .from('projects')
     .insert({
       tenant_id: tenantId,
-      customer_id: customerId,
+      contact_id: contactId,
       name: 'Kitchen reno',
       lifecycle_stage: 'active',
       management_fee_rate: 0.18,
@@ -228,7 +228,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
     password,
     userId,
     tenantId,
-    customerId,
+    contactId,
     projectId,
     budgetCategoryIdsByName,
     costLineIds,

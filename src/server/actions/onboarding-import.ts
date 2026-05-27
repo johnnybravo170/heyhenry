@@ -96,7 +96,7 @@ Return ONLY JSON matching the schema. No prose, no markdown, no explanation.`;
 const CUSTOMER_PARSE_SCHEMA = {
   type: 'object',
   properties: {
-    customers: {
+    contacts: {
       type: 'array',
       items: {
         type: 'object',
@@ -206,9 +206,9 @@ export async function parseCustomerImportAction(formData: FormData): Promise<Par
       ? `${payload.slice(0, MAX_LLM_SLICE_CHARS)}\n[...truncated — too large for one pass; split the file]`
       : payload;
 
-  let raw: { customers: RawProposedCustomer[] };
+  let raw: { contacts: RawProposedCustomer[] };
   try {
-    const res = await gateway().runStructured<{ customers: RawProposedCustomer[] }>({
+    const res = await gateway().runStructured<{ contacts: RawProposedCustomer[] }>({
       kind: 'structured',
       task: 'onboarding_customer_classify',
       tenant_id: tenant.id,
@@ -221,7 +221,7 @@ export async function parseCustomerImportAction(formData: FormData): Promise<Par
     return { ok: false, error: userSafeError(err) };
   }
 
-  const proposals = (raw.customers ?? [])
+  const proposals = (raw.contacts ?? [])
     .map((r): ImportProposalRow['proposed'] | null => {
       const name = pickString(r.name);
       if (!name) return null;
@@ -244,7 +244,7 @@ export async function parseCustomerImportAction(formData: FormData): Promise<Par
   // per proposal, the round-trip is the cost.
   const supabase = await createClient();
   const { data: existingRaw, error: existingErr } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, name, email, phone, city')
     .is('deleted_at', null);
   if (existingErr) return { ok: false, error: existingErr.message };
@@ -358,7 +358,7 @@ export async function commitCustomerImportAction(input: {
       kind: 'customer',
       import_batch_id: batchId,
     }));
-    const { error: insErr } = await supabase.from('customers').insert(insertRows);
+    const { error: insErr } = await supabase.from('contacts').insert(insertRows);
     if (insErr) {
       // Best-effort cleanup — drop the batch row so we don't leave a
       // batch with summary saying "5 created" but zero linked customers.
@@ -406,7 +406,7 @@ export async function rollbackCustomerImportAction(
   // by projects/jobs/invoices. The batch row records the rollback for audit.
   const now = new Date().toISOString();
   const { data: deletedRows, error: delErr } = await supabase
-    .from('customers')
+    .from('contacts')
     .update({ deleted_at: now })
     .eq('import_batch_id', batchId)
     .is('deleted_at', null)

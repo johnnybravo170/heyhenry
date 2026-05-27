@@ -2,7 +2,7 @@
 
 /**
  * Searchable customer combobox using shadcn Command + Popover.
- * Filters client-side as you type. Scales to hundreds of customers.
+ * Filters client-side as you type. Scales to hundreds of contacts.
  */
 
 import { Check, ChevronsUpDown, Plus, X } from 'lucide-react';
@@ -20,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 
 export type CustomerPickerProps = {
-  customers: { id: string; name: string }[];
+  contacts: { id: string; name: string }[];
   value: string;
   onChange: (id: string) => void;
   placeholder?: string;
@@ -35,7 +35,7 @@ export type CustomerPickerProps = {
 };
 
 export function CustomerPicker({
-  customers,
+  contacts,
   value,
   onChange,
   placeholder = 'Pick a customer',
@@ -45,7 +45,7 @@ export function CustomerPicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  const selected = customers.find((c) => c.id === value);
+  const selected = contacts.find((c) => c.id === value);
 
   const handleAddNew = useCallback(() => {
     setOpen(false);
@@ -104,11 +104,7 @@ export function CustomerPicker({
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <Command>
-            <CommandInput
-              placeholder="Search customers..."
-              value={query}
-              onValueChange={setQuery}
-            />
+            <CommandInput placeholder="Search contacts..." value={query} onValueChange={setQuery} />
             {/* Pinned at the top so "Add new customer" is always one click
                 away — it's the most common action when populating the
                 system, and it must never get filtered out or buried. When
@@ -123,12 +119,10 @@ export function CustomerPicker({
             </button>
             <CommandList>
               <CommandEmpty>
-                <p className="py-3 text-center text-sm text-muted-foreground">
-                  No customers found.
-                </p>
+                <p className="py-3 text-center text-sm text-muted-foreground">No contacts found.</p>
               </CommandEmpty>
               <CommandGroup>
-                {customers.map((c) => (
+                {contacts.map((c) => (
                   <CommandItem
                     key={c.id}
                     value={c.name}

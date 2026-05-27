@@ -48,7 +48,7 @@ export async function parseProjectAugmentAction(formData: FormData): Promise<Par
   const supabase = await createClient();
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, name, description, customers:customer_id (name)')
+    .select('id, name, description, contacts:contact_id (name)')
     .eq('id', projectId)
     .maybeSingle();
   if (projErr || !project) {
@@ -89,9 +89,9 @@ export async function parseProjectAugmentAction(formData: FormData): Promise<Par
   }
 
   // Build the intro text: project context + category roster.
-  const customerName = Array.isArray(project.customers)
-    ? (project.customers[0] as { name?: string } | undefined)?.name
-    : (project.customers as { name?: string } | null)?.name;
+  const customerName = Array.isArray(project.contacts)
+    ? (project.contacts[0] as { name?: string } | undefined)?.name
+    : (project.contacts as { name?: string } | null)?.name;
   const categoryRoster = existingCategories.length
     ? existingCategories
         .map((b) => {

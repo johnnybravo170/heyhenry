@@ -59,10 +59,10 @@ export type QuoteActionResult =
 async function resolveQuoteTaxRate(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string,
-  customerId: string,
+  contactId: string,
 ): Promise<number> {
   const [{ data: cust }, taxCtx] = await Promise.all([
-    supabase.from('customers').select('tax_exempt').eq('id', customerId).maybeSingle(),
+    supabase.from('contacts').select('tax_exempt').eq('id', contactId).maybeSingle(),
     canadianTax.getCustomerFacingContext(tenantId),
   ]);
   return cust?.tax_exempt ? 0 : taxCtx.totalRate;
@@ -107,7 +107,7 @@ export async function createQuoteAction(input: unknown): Promise<QuoteActionResu
     return { ...s, price_cents };
   });
 
-  const taxRate = await resolveQuoteTaxRate(supabase, tenant.id, parsed.data.customer_id);
+  const taxRate = await resolveQuoteTaxRate(supabase, tenant.id, parsed.data.contact_id);
   const totals = calculateQuoteTotal(pricedSurfaces, taxRate);
 
   // Insert quote.
@@ -115,7 +115,7 @@ export async function createQuoteAction(input: unknown): Promise<QuoteActionResu
     .from('quotes')
     .insert({
       tenant_id: tenant.id,
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       status: 'draft',
       subtotal_cents: totals.subtotal_cents,
       tax_cents: totals.tax_cents,
@@ -163,7 +163,7 @@ export async function createQuoteAction(input: unknown): Promise<QuoteActionResu
   }
 
   revalidatePath('/quotes');
-  revalidatePath(`/contacts/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.contact_id}`);
   return { ok: true, id: quoteId };
 }
 
@@ -203,14 +203,14 @@ export async function updateQuoteAction(input: unknown): Promise<QuoteActionResu
     return { ...s, price_cents };
   });
 
-  const taxRate = await resolveQuoteTaxRate(supabase, tenant.id, parsed.data.customer_id);
+  const taxRate = await resolveQuoteTaxRate(supabase, tenant.id, parsed.data.contact_id);
   const totals = calculateQuoteTotal(pricedSurfaces, taxRate);
 
   // Update quote row.
   const { error: quoteErr } = await supabase
     .from('quotes')
     .update({
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       subtotal_cents: totals.subtotal_cents,
       tax_cents: totals.tax_cents,
       total_cents: totals.total_cents,
@@ -256,7 +256,7 @@ export async function updateQuoteAction(input: unknown): Promise<QuoteActionResu
 
   revalidatePath('/quotes');
   revalidatePath(`/quotes/${parsed.data.id}`);
-  revalidatePath(`/contacts/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.contact_id}`);
   return { ok: true, id: parsed.data.id };
 }
 
@@ -602,10 +602,10 @@ export async function convertQuoteToJobAction(input: {
 
   const supabase = await createClient();
 
-  // Load the quote to get customer_id.
+  // Load the quote to get contact_id.
   const { data: quote, error: loadErr } = await supabase
     .from('quotes')
-    .select('id, customer_id, status')
+    .select('id, contact_id, status')
     .eq('id', input.quoteId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -624,7 +624,7 @@ export async function convertQuoteToJobAction(input: {
     .from('jobs')
     .insert({
       tenant_id: tenant.id,
-      customer_id: quote.customer_id,
+      contact_id: quote.contact_id,
       quote_id: quote.id,
       status: 'booked',
       notes: `Job from Quote #${quote.id.slice(0, 8)}`,
@@ -666,7 +666,7 @@ export async function convertQuoteToProjectAction(input: {
 
   const { data: quote, error: loadErr } = await supabase
     .from('quotes')
-    .select('id, customer_id, status, notes, customers:customer_id (id, name)')
+    .select('id, contact_id, status, notes, contacts:contact_id (id, name)')
     .eq('id', input.quoteId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -675,7 +675,7 @@ export async function convertQuoteToProjectAction(input: {
   if (quote.status !== 'accepted')
     return { ok: false, error: 'Only accepted quotes can be converted to projects.' };
 
-  const customerRaw = Array.isArray(quote.customers) ? quote.customers[0] : quote.customers;
+  const customerRaw = Array.isArray(quote.contacts) ? quote.contacts[0] : quote.contacts;
   const customerName =
     customerRaw && typeof customerRaw === 'object' && 'name' in customerRaw
       ? (customerRaw as { name: string }).name
@@ -685,7 +685,7 @@ export async function convertQuoteToProjectAction(input: {
     .from('projects')
     .insert({
       tenant_id: tenant.id,
-      customer_id: quote.customer_id,
+      contact_id: quote.contact_id,
       quote_id: quote.id,
       name: `${customerName} — Renovation`,
       description: quote.notes || null,
@@ -756,7 +756,7 @@ export async function duplicateQuoteAction(input: { quoteId: string }): Promise<
   // Load original quote.
   const { data: quote, error: qErr } = await supabase
     .from('quotes')
-    .select('customer_id, subtotal_cents, tax_cents, total_cents, notes')
+    .select('contact_id, subtotal_cents, tax_cents, total_cents, notes')
     .eq('id', input.quoteId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -775,7 +775,7 @@ export async function duplicateQuoteAction(input: { quoteId: string }): Promise<
     .from('quotes')
     .insert({
       tenant_id: tenant.id,
-      customer_id: quote.customer_id,
+      contact_id: quote.contact_id,
       status: 'draft',
       subtotal_cents: quote.subtotal_cents,
       tax_cents: quote.tax_cents,
@@ -841,7 +841,7 @@ export async function approveQuotePublicAction(
   // Load quote with customer and tenant info.
   const { data: quote, error: qErr } = await admin
     .from('quotes')
-    .select('id, tenant_id, customer_id, status, total_cents')
+    .select('id, tenant_id, contact_id, status, total_cents')
     .eq('id', quoteId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -877,9 +877,9 @@ export async function approveQuotePublicAction(
 
   // Load customer name for notifications.
   const { data: customer } = await admin
-    .from('customers')
+    .from('contacts')
     .select('name')
-    .eq('id', quote.customer_id as string)
+    .eq('id', quote.contact_id as string)
     .single();
 
   const customerName = (customer?.name as string) ?? 'Customer';
@@ -970,7 +970,7 @@ export async function declineQuotePublicAction(
   // Load quote.
   const { data: quote, error: qErr } = await admin
     .from('quotes')
-    .select('id, tenant_id, customer_id, status, total_cents')
+    .select('id, tenant_id, contact_id, status, total_cents')
     .eq('id', quoteId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -1006,9 +1006,9 @@ export async function declineQuotePublicAction(
 
   // Load customer name.
   const { data: customer } = await admin
-    .from('customers')
+    .from('contacts')
     .select('name')
-    .eq('id', quote.customer_id as string)
+    .eq('id', quote.contact_id as string)
     .single();
 
   const customerName = (customer?.name as string) ?? 'Customer';

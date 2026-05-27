@@ -22,13 +22,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { deleteCustomerAction } from '@/server/actions/customers';
+import { deleteCustomerAction } from '@/server/actions/contacts';
 
 export function DeleteCustomerButton({
-  customerId,
+  contactId,
   customerName,
 }: {
-  customerId: string;
+  contactId: string;
   customerName: string;
 }) {
   const [pending, startTransition] = useTransition();
@@ -39,7 +39,7 @@ export function DeleteCustomerButton({
     event.preventDefault();
     startTransition(async () => {
       try {
-        const result = await deleteCustomerAction(customerId);
+        const result = await deleteCustomerAction(contactId);
         // A successful delete redirects and never returns, so reaching this
         // branch means the server returned an error.
         if (result && 'ok' in result && !result.ok) {

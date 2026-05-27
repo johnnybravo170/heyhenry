@@ -72,12 +72,12 @@ export async function onQuoteApproved(quoteId: string): Promise<void> {
     const admin = createAdminClient();
     const { data: quote } = await admin
       .from('quotes')
-      .select('id, tenant_id, customers:customer_id (name)')
+      .select('id, tenant_id, contacts:contact_id (name)')
       .eq('id', quoteId)
       .maybeSingle();
     if (!quote) return;
 
-    const customerRaw = (quote as Record<string, unknown>).customers as
+    const customerRaw = (quote as Record<string, unknown>).contacts as
       | { name: string }
       | { name: string }[]
       | null;
@@ -211,7 +211,7 @@ export async function nightlyLeadUnansweredScan(): Promise<{
 
   // Pull all live leads with their last-contact timestamp.
   const { data: leads } = await admin
-    .from('customers')
+    .from('contacts')
     .select('id, tenant_id, name, created_at')
     .eq('kind', 'lead')
     .is('deleted_at', null);

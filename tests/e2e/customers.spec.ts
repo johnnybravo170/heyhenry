@@ -64,7 +64,7 @@ test.describe
       // exercised by seedDemo and createCustomerAction unit tests
       // separately. Here we only need a second row to exercise
       // search filtering.
-      await seed.admin.from('customers').insert({
+      await seed.admin.from('contacts').insert({
         tenant_id: seed.tenantId,
         name: 'Acme Supply',
         type: 'commercial',
@@ -92,7 +92,7 @@ test.describe
       await signInAsOwner(page, seed);
 
       const { data: acme } = await seed.admin
-        .from('customers')
+        .from('contacts')
         .select('id')
         .eq('tenant_id', seed.tenantId)
         .eq('name', 'Acme Supply')
@@ -119,7 +119,7 @@ test.describe
       await expect(page.getByRole('link', { name: 'Jane Homeowner' })).toBeVisible();
 
       const { data: stillThere } = await seed.admin
-        .from('customers')
+        .from('contacts')
         .select('id, deleted_at')
         .eq('id', acmeId)
         .maybeSingle();

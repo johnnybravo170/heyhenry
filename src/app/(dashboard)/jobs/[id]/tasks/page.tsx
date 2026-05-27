@@ -14,7 +14,7 @@ export default async function JobTasksPage({ params }: { params: Promise<{ id: s
   const supabase = await createClient();
   const { data: job } = await supabase
     .from('jobs')
-    .select('id, customers:customer_id (name)')
+    .select('id, contacts:contact_id (name)')
     .eq('id', id)
     .is('deleted_at', null)
     .maybeSingle();
@@ -28,7 +28,7 @@ export default async function JobTasksPage({ params }: { params: Promise<{ id: s
   ]);
   const isOwner = tenant?.member.role === 'owner' || tenant?.member.role === 'admin';
 
-  const customerRaw = (job as { customers: unknown }).customers;
+  const customerRaw = (job as { contacts: unknown }).contacts;
   const customerObj = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
   const customerName =
     customerObj &&

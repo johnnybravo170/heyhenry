@@ -5,7 +5,7 @@ import {
 import { SelectionFormDialog } from '@/components/features/portal/selection-form-dialog';
 import { SelectionList } from '@/components/features/portal/selection-list';
 import type { GalleryPickerPhoto } from '@/components/features/portal/selection-photo-picker';
-import { CustomerIdeasSection } from '@/components/features/projects/customer-ideas-section';
+import { ContactIdeasSection } from '@/components/features/projects/customer-ideas-section';
 import { listPhotosByProject } from '@/lib/db/queries/photos';
 import {
   groupSelectionsByRoom,
@@ -27,7 +27,7 @@ export default async function SelectionsTabServer({ projectId }: { projectId: st
     supabase
       .from('project_idea_board_items')
       .select(
-        'id, project_id, customer_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
+        'id, project_id, contact_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
       )
       .eq('project_id', projectId)
       .order('created_at', { ascending: false }),
@@ -99,7 +99,7 @@ export default async function SelectionsTabServer({ projectId }: { projectId: st
 
   return (
     <div className="space-y-6">
-      <CustomerIdeasSection projectId={projectId} items={ideaItems} />
+      <ContactIdeasSection projectId={projectId} items={ideaItems} />
 
       <div className="flex items-start justify-between gap-3">
         <div>

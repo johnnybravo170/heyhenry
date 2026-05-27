@@ -22,7 +22,7 @@ export type JobCustomerSummary = {
 export type JobRow = {
   id: string;
   tenant_id: string;
-  customer_id: string | null;
+  contact_id: string | null;
   quote_id: string | null;
   status: JobStatus;
   scheduled_at: string | null;
@@ -70,7 +70,7 @@ export type JobWithRelations = JobWithCustomer & {
 
 export type JobListFilters = {
   status?: JobStatus;
-  customer_id?: string;
+  contact_id?: string;
   limit?: number;
   offset?: number;
 };
@@ -90,9 +90,9 @@ export type JobStatusCounts = {
 };
 
 const JOB_COLUMNS =
-  'id, tenant_id, customer_id, quote_id, status, scheduled_at, started_at, completed_at, notes, created_at, updated_at, deleted_at';
+  'id, tenant_id, contact_id, quote_id, status, scheduled_at, started_at, completed_at, notes, created_at, updated_at, deleted_at';
 
-const JOB_WITH_CUSTOMER_SELECT = `${JOB_COLUMNS}, customers:customer_id (id, name, type)`;
+const JOB_WITH_CUSTOMER_SELECT = `${JOB_COLUMNS}, contacts:contact_id (id, name, type)`;
 
 /**
  * Supabase returns the joined `customers` shape as an array when the
@@ -116,7 +116,7 @@ function extractCustomer(raw: unknown): JobCustomerSummary | null {
 }
 
 function normalizeJob(row: Record<string, unknown>): JobWithCustomer {
-  const { customers: customerRaw, ...rest } = row;
+  const { contacts: customerRaw, ...rest } = row;
   return {
     ...(rest as JobRow),
     customer: extractCustomer(customerRaw),
@@ -131,7 +131,7 @@ export async function listJobs(filters: JobListFilters = {}): Promise<JobWithCus
   let query = supabase.from('jobs').select(JOB_WITH_CUSTOMER_SELECT).is('deleted_at', null);
 
   if (filters.status) query = query.eq('status', filters.status);
-  if (filters.customer_id) query = query.eq('customer_id', filters.customer_id);
+  if (filters.contact_id) query = query.eq('contact_id', filters.contact_id);
 
   const { data, error } = await query
     .order('scheduled_at', { ascending: true, nullsFirst: false })
@@ -151,7 +151,7 @@ export async function getJob(id: string): Promise<JobWithRelations | null> {
     .from('jobs')
     .select(
       `${JOB_COLUMNS},
-       customers:customer_id (id, name, type),
+       contacts:contact_id (id, name, type),
        quotes:quote_id (id, status, total_cents, created_at)`,
     )
     .eq('id', id)
@@ -164,7 +164,7 @@ export async function getJob(id: string): Promise<JobWithRelations | null> {
   }
   if (!data) return null;
 
-  const { customers: customerRaw, quotes: quoteRaw, ...rest } = data as Record<string, unknown>;
+  const { contacts: customerRaw, quotes: quoteRaw, ...rest } = data as Record<string, unknown>;
   const base: JobRow = rest as JobRow;
 
   const quoteCandidate = Array.isArray(quoteRaw) ? quoteRaw[0] : quoteRaw;

@@ -16,7 +16,7 @@ import {
 } from '@/components/features/projects/promote-idea-button';
 import type { IdeaBoardItem } from '@/server/actions/project-idea-board';
 
-export function CustomerIdeasSection({
+export function ContactIdeasSection({
   projectId,
   items,
 }: {
@@ -70,7 +70,7 @@ export function CustomerIdeasSection({
               </h3>
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {groupItems.map((item) => (
-                  <CustomerIdeaCard key={item.id} projectId={projectId} item={item} />
+                  <ContactIdeaCard key={item.id} projectId={projectId} item={item} />
                 ))}
               </ul>
             </div>
@@ -81,7 +81,7 @@ export function CustomerIdeasSection({
   );
 }
 
-function CustomerIdeaCard({ projectId, item }: { projectId: string; item: IdeaBoardItem }) {
+function ContactIdeaCard({ projectId, item }: { projectId: string; item: IdeaBoardItem }) {
   const promoted = Boolean(item.promoted_to_selection_id);
   return (
     <li className="flex flex-col overflow-hidden rounded-md border bg-card">

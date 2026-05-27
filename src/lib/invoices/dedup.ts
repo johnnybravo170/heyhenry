@@ -26,7 +26,7 @@ export type InvoiceMatchTier = 'customer+amount+date' | null;
 
 export type ExistingInvoice = {
   id: string;
-  customer_id: string | null;
+  contact_id: string | null;
   amount_cents: number;
   tax_cents: number;
   /** invoice_date — use the earliest of (sent_at, paid_at, created_at)
@@ -36,7 +36,7 @@ export type ExistingInvoice = {
 };
 
 export type ProposedInvoice = {
-  customerId: string | null;
+  contactId: string | null;
   totalCents: number; // amount_cents + tax_cents
   invoiceDateIso: string | null; // YYYY-MM-DD or full ISO
 };
@@ -53,14 +53,14 @@ export function findInvoiceMatch(
   proposed: ProposedInvoice,
   existing: ExistingInvoice[],
 ): InvoiceDedupMatch {
-  if (!proposed.customerId || !proposed.invoiceDateIso) return { tier: null, existing: null };
+  if (!proposed.contactId || !proposed.invoiceDateIso) return { tier: null, existing: null };
 
   const proposedDate = new Date(proposed.invoiceDateIso);
   if (Number.isNaN(proposedDate.getTime())) return { tier: null, existing: null };
   const proposedMs = proposedDate.getTime();
 
   for (const e of existing) {
-    if (e.customer_id !== proposed.customerId) continue;
+    if (e.contact_id !== proposed.contactId) continue;
     if (e.amount_cents + e.tax_cents !== proposed.totalCents) continue;
     const anchorMs = new Date(e.anchor_date).getTime();
     if (Number.isNaN(anchorMs)) continue;

@@ -38,7 +38,7 @@ export type JobActionResult =
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export type JobFormInput = {
-  customer_id: string;
+  contact_id: string;
   quote_id?: string;
   status?: string;
   scheduled_at?: string;
@@ -80,7 +80,7 @@ export async function createJobAction(input: JobFormInput): Promise<JobActionRes
     .from('jobs')
     .insert({
       tenant_id: tenant.id,
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       quote_id: emptyToNull(parsed.data.quote_id),
       status: parsed.data.status,
       scheduled_at: parseScheduledAt(parsed.data.scheduled_at),
@@ -103,7 +103,7 @@ export async function createJobAction(input: JobFormInput): Promise<JobActionRes
     .from('tasks')
     .select('id, phase')
     .eq('tenant_id', tenant.id)
-    .eq('lead_id', parsed.data.customer_id)
+    .eq('lead_id', parsed.data.contact_id)
     .eq('scope', 'lead')
     .not('status', 'in', '(done,verified)');
 
@@ -139,9 +139,9 @@ export async function createJobAction(input: JobFormInput): Promise<JobActionRes
   const scheduledAt = parseScheduledAt(parsed.data.scheduled_at);
   if (scheduledAt) {
     const { data: customer } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name, email, address_line1, city, province')
-      .eq('id', parsed.data.customer_id)
+      .eq('id', parsed.data.contact_id)
       .maybeSingle();
 
     if (customer?.email) {
@@ -200,7 +200,7 @@ export async function createJobAction(input: JobFormInput): Promise<JobActionRes
   revalidatePath('/jobs');
   revalidatePath('/jobs/list');
   revalidatePath('/jobs/calendar');
-  revalidatePath(`/contacts/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.contact_id}`);
   return { ok: true, id: data.id };
 }
 
@@ -220,7 +220,7 @@ export async function updateJobAction(
   const { error } = await supabase
     .from('jobs')
     .update({
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       quote_id: emptyToNull(parsed.data.quote_id),
       status: parsed.data.status,
       scheduled_at: parseScheduledAt(parsed.data.scheduled_at),
@@ -237,7 +237,7 @@ export async function updateJobAction(
   revalidatePath('/jobs');
   revalidatePath('/jobs/list');
   revalidatePath(`/jobs/${parsed.data.id}`);
-  revalidatePath(`/contacts/${parsed.data.customer_id}`);
+  revalidatePath(`/contacts/${parsed.data.contact_id}`);
   return { ok: true, id: parsed.data.id };
 }
 
@@ -274,7 +274,7 @@ export async function changeJobStatusAction(input: {
   // 1. Load the current job (old status, customer for the worklog body).
   const { data: current, error: loadErr } = await supabase
     .from('jobs')
-    .select('id, status, started_at, completed_at, customer_id, customers:customer_id (id, name)')
+    .select('id, status, started_at, completed_at, contact_id, contacts:contact_id (id, name)')
     .eq('id', parsed.data.id)
     .is('deleted_at', null)
     .maybeSingle();
@@ -297,7 +297,7 @@ export async function changeJobStatusAction(input: {
   // 2 + 3. Atomic: jobs UPDATE + worklog_entries INSERT in one Postgres
   // transaction. Either both commit or neither does — no more
   // "status changed but worklog failed" half-state.
-  const customerRaw = current.customers;
+  const customerRaw = current.contacts;
   const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
   const customerName =
     customer && typeof customer === 'object' && 'name' in customer
@@ -336,15 +336,13 @@ export async function changeJobStatusAction(input: {
     const { data: fullJob } = await supabase
       .from('jobs')
       .select(
-        'id, scheduled_at, notes, customers:customer_id (id, name, email, address_line1, city, province)',
+        'id, scheduled_at, notes, contacts:contact_id (id, name, email, address_line1, city, province)',
       )
       .eq('id', parsed.data.id)
       .maybeSingle();
 
     if (fullJob?.scheduled_at) {
-      const customerData = Array.isArray(fullJob.customers)
-        ? fullJob.customers[0]
-        : fullJob.customers;
+      const customerData = Array.isArray(fullJob.contacts) ? fullJob.contacts[0] : fullJob.contacts;
 
       if (customerData?.email) {
         const startTime = new Date(fullJob.scheduled_at as string);
@@ -438,7 +436,7 @@ export async function duplicateJobAction(input: { jobId: string }): Promise<JobA
 
   const { data: job, error: loadErr } = await supabase
     .from('jobs')
-    .select('customer_id, quote_id, notes')
+    .select('contact_id, quote_id, notes')
     .eq('id', input.jobId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -449,7 +447,7 @@ export async function duplicateJobAction(input: { jobId: string }): Promise<JobA
     .from('jobs')
     .insert({
       tenant_id: tenant.id,
-      customer_id: job.customer_id,
+      contact_id: job.contact_id,
       quote_id: job.quote_id,
       status: 'booked',
       notes: job.notes,

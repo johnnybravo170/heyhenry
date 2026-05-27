@@ -83,7 +83,7 @@ export async function createInvoiceAction(input: {
   // Load the job with customer and optional quote.
   const { data: job, error: jobErr } = await supabase
     .from('jobs')
-    .select('id, status, customer_id, quote_id, quotes:quote_id (id, total_cents)')
+    .select('id, status, contact_id, quote_id, quotes:quote_id (id, total_cents)')
     .eq('id', input.jobId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -96,7 +96,7 @@ export async function createInvoiceAction(input: {
     return { ok: false, error: 'Job must be complete before generating an invoice.' };
   }
 
-  if (!job.customer_id) {
+  if (!job.contact_id) {
     return { ok: false, error: 'Job has no customer assigned.' };
   }
 
@@ -131,9 +131,9 @@ export async function createInvoiceAction(input: {
   // Province-aware tax via the provider, honoring customer tax-exempt flag.
   const { canadianTax } = await import('@/lib/providers/tax/canadian');
   const { data: cust } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('tax_exempt')
-    .eq('id', job.customer_id)
+    .eq('id', job.contact_id)
     .maybeSingle();
   const taxExempt = Boolean(cust?.tax_exempt);
   const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
@@ -167,7 +167,7 @@ export async function createInvoiceAction(input: {
     .insert({
       tenant_id: tenant.id,
       job_id: parsed.data.job_id,
-      customer_id: job.customer_id,
+      contact_id: job.contact_id,
       status: 'draft',
       amount_cents: parsed.data.amount_cents,
       tax_cents: parsed.data.tax_cents,
@@ -225,7 +225,7 @@ export async function sendInvoiceAction(input: {
   const { data: invoice, error: invErr } = await supabase
     .from('invoices')
     .select(
-      'id, code, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, customer_id, payment_instructions_override, terms_override, policies_override',
+      'id, code, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, contact_id, payment_instructions_override, terms_override, policies_override',
     )
     .eq('id', parsed.data.invoice_id)
     .is('deleted_at', null)
@@ -283,9 +283,9 @@ export async function sendInvoiceAction(input: {
 
   // Load customer for the checkout line item and email.
   const { data: customer } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('name, email, additional_emails')
-    .eq('id', invoice.customer_id)
+    .eq('id', invoice.contact_id)
     .single();
 
   const customerEmail = (customer?.email as string | null) ?? null;
@@ -461,7 +461,7 @@ export async function resendInvoiceAction(input: {
   const { data: invoice, error: invErr } = await supabase
     .from('invoices')
     .select(
-      'id, code, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, customer_id, pdf_url, payment_instructions_override, terms_override, policies_override',
+      'id, code, status, amount_cents, tax_cents, tax_inclusive, line_items, customer_note, job_id, contact_id, pdf_url, payment_instructions_override, terms_override, policies_override',
     )
     .eq('id', input.invoiceId)
     .is('deleted_at', null)
@@ -523,9 +523,9 @@ export async function resendInvoiceAction(input: {
 
   // Load customer for email. Tenant name/logo come from getEmailBrandingForTenant below.
   const { data: customer } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('name, email, additional_emails')
-    .eq('id', invoice.customer_id)
+    .eq('id', invoice.contact_id)
     .single();
 
   const resendCustomerEmail = (customer?.email as string | null) ?? null;
@@ -866,7 +866,7 @@ export async function duplicateInvoiceAction(input: {
 
   const { data: invoice, error: invErr } = await supabase
     .from('invoices')
-    .select('job_id, customer_id, amount_cents, tax_cents, line_items, customer_note')
+    .select('job_id, contact_id, amount_cents, tax_cents, line_items, customer_note')
     .eq('id', input.invoiceId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -878,7 +878,7 @@ export async function duplicateInvoiceAction(input: {
     .insert({
       tenant_id: tenant.id,
       job_id: invoice.job_id,
-      customer_id: invoice.customer_id,
+      contact_id: invoice.contact_id,
       status: 'draft',
       amount_cents: invoice.amount_cents,
       tax_cents: invoice.tax_cents,
@@ -1146,13 +1146,13 @@ export async function createMilestoneInvoiceAction(input: {
 
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, customer_id, name, draw_gst_mode')
+    .select('id, contact_id, name, draw_gst_mode')
     .eq('id', input.projectId)
     .is('deleted_at', null)
     .maybeSingle();
 
   if (projErr || !project) return { ok: false, error: 'Project not found.' };
-  if (!project.customer_id) return { ok: false, error: 'Project has no customer assigned.' };
+  if (!project.contact_id) return { ok: false, error: 'Project has no customer assigned.' };
 
   const items: InvoiceLineItem[] = input.lineItems.map((li) => ({
     description: li.description.trim(),
@@ -1168,7 +1168,7 @@ export async function createMilestoneInvoiceAction(input: {
   //   - inclusive: entered total IS the all-in; GST backed out ("incl. $X GST")
   //   - on_top:    entered total is the subtotal; GST added ("+ $X GST")
   const [{ data: cust }, invoicingPrefs] = await Promise.all([
-    supabase.from('customers').select('tax_exempt').eq('id', project.customer_id).maybeSingle(),
+    supabase.from('contacts').select('tax_exempt').eq('id', project.contact_id).maybeSingle(),
     getPrefs<InvoicingPrefs>(tenant.id, 'invoicing'),
   ]);
   const gstMode = resolveDrawGstMode(project.draw_gst_mode, invoicingPrefs.drawGstMode);
@@ -1200,7 +1200,7 @@ export async function createMilestoneInvoiceAction(input: {
     .insert({
       tenant_id: tenant.id,
       project_id: input.projectId,
-      customer_id: project.customer_id,
+      contact_id: project.contact_id,
       status: 'draft',
       doc_type: 'draw',
       tax_inclusive: inclusive,
@@ -1283,13 +1283,13 @@ export async function createInvoiceFromEstimateAction(input: {
 
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, customer_id, name, management_fee_rate')
+    .select('id, contact_id, name, management_fee_rate')
     .eq('id', input.projectId)
     .is('deleted_at', null)
     .maybeSingle();
 
   if (projErr || !project) return { ok: false, error: 'Project not found.' };
-  if (!project.customer_id) return { ok: false, error: 'Project has no customer assigned.' };
+  if (!project.contact_id) return { ok: false, error: 'Project has no customer assigned.' };
 
   const { data: lines, error: linesErr } = await supabase
     .from('project_cost_lines')
@@ -1338,9 +1338,9 @@ export async function createInvoiceFromEstimateAction(input: {
   // operator priced the lines without GST embedded.
   const { canadianTax } = await import('@/lib/providers/tax/canadian');
   const { data: cust } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('tax_exempt')
-    .eq('id', project.customer_id)
+    .eq('id', project.contact_id)
     .maybeSingle();
   const taxExempt = Boolean(cust?.tax_exempt);
   const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
@@ -1356,7 +1356,7 @@ export async function createInvoiceFromEstimateAction(input: {
     .insert({
       tenant_id: tenant.id,
       project_id: input.projectId,
-      customer_id: project.customer_id,
+      contact_id: project.contact_id,
       status: 'draft',
       amount_cents: 0,
       tax_cents: taxCents,
@@ -1393,13 +1393,13 @@ export async function generateFinalInvoiceAction(input: {
 
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, customer_id, name, management_fee_rate, is_cost_plus')
+    .select('id, contact_id, name, management_fee_rate, is_cost_plus')
     .eq('id', input.projectId)
     .is('deleted_at', null)
     .maybeSingle();
 
   if (projErr || !project) return { ok: false, error: 'Project not found.' };
-  if (!project.customer_id) return { ok: false, error: 'Project has no customer assigned.' };
+  if (!project.contact_id) return { ok: false, error: 'Project has no customer assigned.' };
 
   const mgmtRate = (project.management_fee_rate as number) ?? 0.12;
   const isCostPlus = project.is_cost_plus !== false; // default-true semantics
@@ -1584,9 +1584,9 @@ export async function generateFinalInvoiceAction(input: {
   // credit nets out tax already collected on draws.
   const { canadianTax } = await import('@/lib/providers/tax/canadian');
   const { data: cust } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('tax_exempt')
-    .eq('id', project.customer_id)
+    .eq('id', project.contact_id)
     .maybeSingle();
   const taxExempt = Boolean(cust?.tax_exempt);
   const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
@@ -1601,7 +1601,7 @@ export async function generateFinalInvoiceAction(input: {
     .insert({
       tenant_id: tenant.id,
       project_id: input.projectId,
-      customer_id: project.customer_id,
+      contact_id: project.contact_id,
       status: 'draft',
       amount_cents: 0,
       tax_cents: taxCents,
@@ -1649,7 +1649,7 @@ export async function applyCustomerViewToInvoiceAction(input: {
 
   const { data: invoice, error: invoiceErr } = await supabase
     .from('invoices')
-    .select('id, status, project_id, customer_id, tax_inclusive')
+    .select('id, status, project_id, contact_id, tax_inclusive')
     .eq('id', input.invoiceId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -1703,9 +1703,9 @@ export async function applyCustomerViewToInvoiceAction(input: {
   // are pre-tax and the bottom-of-invoice GST line applies once.
   const { canadianTax } = await import('@/lib/providers/tax/canadian');
   const { data: cust } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('tax_exempt')
-    .eq('id', invoice.customer_id)
+    .eq('id', invoice.contact_id)
     .maybeSingle();
   const taxExempt = Boolean(cust?.tax_exempt);
   const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);

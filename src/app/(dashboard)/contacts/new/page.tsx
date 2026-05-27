@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ContactIntakeForm } from '@/components/features/contacts/contact-intake-form';
 import { CustomerForm } from '@/components/features/customers/customer-form';
 import { type ContactKind, contactKinds } from '@/lib/validators/customer';
-import { createCustomerAction } from '@/server/actions/customers';
+import { createCustomerAction } from '@/server/actions/contacts';
 
 export const metadata = {
   title: 'New contact — HeyHenry',

@@ -16,12 +16,12 @@ import { CustomerPicker } from '@/components/features/customers/customer-picker'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ContactMatch } from '@/lib/db/queries/contact-matches-types';
-import { createCustomerAction } from '@/server/actions/customers';
+import { createCustomerAction } from '@/server/actions/contacts';
 
 export type CustomerOption = { id: string; name: string };
 
 export type CustomerPickerWithCreateProps = {
-  customers: CustomerOption[];
+  contacts: CustomerOption[];
   value: string;
   onChange: (id: string) => void;
   /** Called after a new customer is created so the parent can update its picker list. */
@@ -30,7 +30,7 @@ export type CustomerPickerWithCreateProps = {
 };
 
 export function CustomerPickerWithCreate({
-  customers,
+  contacts,
   value,
   onChange,
   onCustomerCreated,
@@ -70,7 +70,7 @@ export function CustomerPickerWithCreate({
   return (
     <div>
       <CustomerPicker
-        customers={customers}
+        contacts={contacts}
         value={value}
         onChange={onChange}
         placeholder={placeholder}

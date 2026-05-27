@@ -21,7 +21,7 @@ import {
   type RelatedInvoice,
   type RelatedJob,
   type RelatedQuote,
-} from '@/lib/db/queries/customers';
+} from '@/lib/db/queries/contacts';
 import { invoiceTotalCents } from '@/lib/db/queries/invoices';
 import { listTasksForLead } from '@/lib/db/queries/tasks';
 import { formatPhone } from '@/lib/phone';
@@ -124,7 +124,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               Edit
             </Link>
           </Button>
-          <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
+          <DeleteCustomerButton contactId={customer.id} customerName={customer.name} />
         </div>
       </header>
 
@@ -147,7 +147,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
       {customer.email || customer.phone ? (
         <DoNotAutoMessageToggle
-          customerId={customer.id}
+          contactId={customer.id}
           enabled={customer.do_not_auto_message}
           setAt={customer.do_not_auto_message_at}
           source={customer.do_not_auto_message_source}
@@ -161,8 +161,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
       {isCustomerKind ? (
         <div className="grid gap-4 md:grid-cols-3">
-          <RelatedQuotesCard quotes={related.quotes} timezone={tz} customerId={customer.id} />
-          <RelatedJobsCard jobs={related.jobs} timezone={tz} customerId={customer.id} />
+          <RelatedQuotesCard quotes={related.quotes} timezone={tz} contactId={customer.id} />
+          <RelatedJobsCard jobs={related.jobs} timezone={tz} contactId={customer.id} />
           <RelatedInvoicesCard invoices={related.invoices} timezone={tz} />
         </div>
       ) : (
@@ -265,18 +265,18 @@ function SectionCard({
 function RelatedQuotesCard({
   quotes,
   timezone,
-  customerId,
+  contactId,
 }: {
   quotes: RelatedQuote[];
   timezone: string;
-  customerId: string;
+  contactId: string;
 }) {
   return (
     <SectionCard
       title="Recent quotes"
       icon={FileText}
       count={quotes.length}
-      actionHref={`/quotes/new?customer_id=${customerId}`}
+      actionHref={`/quotes/new?contact_id=${contactId}`}
       actionLabel="New quote"
     >
       {quotes.length === 0 ? (
@@ -311,18 +311,18 @@ function RelatedQuotesCard({
 function RelatedJobsCard({
   jobs,
   timezone,
-  customerId,
+  contactId,
 }: {
   jobs: RelatedJob[];
   timezone: string;
-  customerId: string;
+  contactId: string;
 }) {
   return (
     <SectionCard
       title="Recent jobs"
       icon={Calendar}
       count={jobs.length}
-      actionHref={`/jobs/new?customer_id=${customerId}`}
+      actionHref={`/jobs/new?contact_id=${contactId}`}
       actionLabel="New job"
     >
       {jobs.length === 0 ? (

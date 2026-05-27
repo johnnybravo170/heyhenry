@@ -31,13 +31,13 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── locate project + customer + owner ──────────────────────────────────────
 const [project] = await sql`
-  SELECT id, customer_id FROM public.projects
+  SELECT id, contact_id FROM public.projects
   WHERE tenant_id = ${TENANT_ID} AND name = ${PROJECT_NAME}
   LIMIT 1
 `;
 if (!project) throw new Error(`project not found: ${PROJECT_NAME}`);
 const projectId = project.id;
-const customerId = project.customer_id;
+const customerId = project.contact_id;
 
 const [owner] = await sql`
   SELECT user_id FROM public.tenant_members
@@ -137,7 +137,7 @@ for (const p of photoSpecs) {
   const takenAt = ts(-p.daysAgo);
   await sql`
     INSERT INTO public.photos
-      (tenant_id, project_id, customer_id, storage_path, tag, caption,
+      (tenant_id, project_id, contact_id, storage_path, tag, caption,
        taken_at, uploaded_at, uploader_user_id, source, mime, bytes,
        width, height, caption_source, portal_tags, client_visible)
     VALUES (${TENANT_ID}, ${projectId}, ${customerId},
@@ -154,7 +154,7 @@ console.log(`photos added: ${photoCount}`);
 // ── idea-board items ───────────────────────────────────────────────────────
 // Image inspiration items get generated via Imagen and uploaded to the
 // idea-board path under the photos bucket. Notes + links are inserted
-// directly. customer_id is set so the portal can group "their" items.
+// directly. contact_id is set so the portal can group "their" items.
 
 async function uploadIdeaBoardImage(itemId, buf) {
   const path = `${TENANT_ID}/idea-board-${projectId}/${itemId}.jpg`;
@@ -218,7 +218,7 @@ for (const spec of ideaImageSpecs) {
   // placeholder, then update once we know the path.
   const [row] = await sql`
     INSERT INTO public.project_idea_board_items
-      (tenant_id, project_id, customer_id, kind, image_storage_path, title, notes, room, created_at, updated_at)
+      (tenant_id, project_id, contact_id, kind, image_storage_path, title, notes, room, created_at, updated_at)
     VALUES (${TENANT_ID}, ${projectId}, ${customerId}, 'image',
             ${'pending'}, ${spec.title}, ${spec.notes}, ${spec.room},
             ${ts(-spec.daysAgo)}, ${ts(-spec.daysAgo)})
@@ -261,7 +261,7 @@ for (const n of noteSpecs) {
   }
   await sql`
     INSERT INTO public.project_idea_board_items
-      (tenant_id, project_id, customer_id, kind, notes, title, room, created_at, updated_at)
+      (tenant_id, project_id, contact_id, kind, notes, title, room, created_at, updated_at)
     VALUES (${TENANT_ID}, ${projectId}, ${customerId}, 'note',
             ${n.notes}, ${n.title}, ${n.room},
             ${ts(-n.daysAgo)}, ${ts(-n.daysAgo)})
@@ -297,7 +297,7 @@ for (const l of linkSpecs) {
   }
   await sql`
     INSERT INTO public.project_idea_board_items
-      (tenant_id, project_id, customer_id, kind, source_url, title, notes, room, created_at, updated_at)
+      (tenant_id, project_id, contact_id, kind, source_url, title, notes, room, created_at, updated_at)
     VALUES (${TENANT_ID}, ${projectId}, ${customerId}, 'link',
             ${l.source_url}, ${l.title}, ${l.notes}, ${l.room},
             ${ts(-l.daysAgo)}, ${ts(-l.daysAgo)})

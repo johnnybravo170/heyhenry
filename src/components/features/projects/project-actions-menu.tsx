@@ -29,13 +29,13 @@ import {
 export function ProjectActionsMenu({
   projectId,
   projectName,
-  defaultCustomerId,
-  customers,
+  defaultContactId,
+  contacts,
 }: {
   projectId: string;
   projectName: string;
-  defaultCustomerId: string | null;
-  customers: CustomerOption[];
+  defaultContactId: string | null;
+  contacts: CustomerOption[];
 }) {
   const [cloneOpen, setCloneOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -69,8 +69,8 @@ export function ProjectActionsMenu({
       <CloneProjectDialog
         projectId={projectId}
         projectName={projectName}
-        defaultCustomerId={defaultCustomerId}
-        customers={customers}
+        defaultContactId={defaultContactId}
+        contacts={contacts}
         open={cloneOpen}
         onOpenChange={setCloneOpen}
         hideTrigger

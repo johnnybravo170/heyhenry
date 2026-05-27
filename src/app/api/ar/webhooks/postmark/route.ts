@@ -22,7 +22,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db/client';
 import { arSendLog, arSuppressionList } from '@/lib/db/schema/ar';
-import { customers } from '@/lib/db/schema/customers';
+import { contacts } from '@/lib/db/schema/contacts';
 import { claimWebhookEvent } from '@/lib/webhooks/idempotency';
 
 export const dynamic = 'force-dynamic';
@@ -143,17 +143,14 @@ export async function POST(request: Request) {
           .onConflictDoNothing();
         // CASL: complaint is a legal stop signal. Flip platform-wide.
         await db
-          .update(customers)
+          .update(contacts)
           .set({
             doNotAutoMessage: true,
             doNotAutoMessageAt: now,
             doNotAutoMessageSource: 'email_complaint',
           })
           .where(
-            and(
-              sql`lower(${customers.email}) = ${toAddress}`,
-              eq(customers.doNotAutoMessage, false),
-            ),
+            and(sql`lower(${contacts.email}) = ${toAddress}`, eq(contacts.doNotAutoMessage, false)),
           );
       }
       break;

@@ -329,12 +329,12 @@ function MissingInfoBlock({
 
 function RecognizedCustomerPill({
   customerName,
-  customerId,
+  contactId,
 }: {
   customerName: string | null;
-  customerId: string | null;
+  contactId: string | null;
 }) {
-  if (!customerId) return null;
+  if (!contactId) return null;
   const displayName = (customerName ?? '').trim() || 'this customer';
   return (
     <div className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm dark:border-emerald-800 dark:bg-emerald-900/20">
@@ -954,7 +954,7 @@ export function LeadIntakeForm({
         </p>
         <RecognizedCustomerPill
           customerName={initialDraft?.customer_name ?? customerName}
-          customerId={initialDraft?.recognized_customer_id ?? null}
+          contactId={initialDraft?.recognized_customer_id ?? null}
         />
         <ArtifactChipRow artifacts={initialDraft?.artifacts ?? null} />
         {transcript ? <TranscriptPanel transcript={transcript} /> : null}
@@ -1043,7 +1043,7 @@ export function LeadIntakeForm({
         ) : null}
         <RecognizedCustomerPill
           customerName={initialDraft?.customer_name ?? customerName}
-          customerId={initialDraft?.recognized_customer_id ?? null}
+          contactId={initialDraft?.recognized_customer_id ?? null}
         />
         <ArtifactChipRow artifacts={initialDraft?.artifacts ?? null} />
         <MissingInfoBlock

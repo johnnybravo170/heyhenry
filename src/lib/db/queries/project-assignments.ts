@@ -74,7 +74,7 @@ export async function listProjectsForWorker(
   // name; this filter just scopes the "projects I can log against" list.
   const { data: projects, error: projErr } = await admin
     .from('projects')
-    .select('id, name, lifecycle_stage, target_end_date, customers:customer_id (name)')
+    .select('id, name, lifecycle_stage, target_end_date, contacts:contact_id (name)')
     .in('id', projectIds)
     .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
     .is('deleted_at', null);
@@ -88,7 +88,7 @@ export async function listProjectsForWorker(
 
   return ((projects ?? []) as unknown as Array<Record<string, unknown>>)
     .map((p) => {
-      const customersRaw = p.customers as { name?: string } | { name?: string }[] | null;
+      const customersRaw = p.contacts as { name?: string } | { name?: string }[] | null;
       const customer = Array.isArray(customersRaw) ? customersRaw[0] : customersRaw;
       return {
         project_id: p.id as string,

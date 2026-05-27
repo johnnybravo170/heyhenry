@@ -18,7 +18,7 @@ export default async function MessagesTabServer({ projectId }: { projectId: stri
       .order('created_at', { ascending: true }),
     supabase
       .from('projects')
-      .select('portal_slug, portal_enabled, customers:customer_id (name)')
+      .select('portal_slug, portal_enabled, contacts:contact_id (name)')
       .eq('id', projectId)
       .single(),
   ]);
@@ -26,7 +26,7 @@ export default async function MessagesTabServer({ projectId }: { projectId: stri
   const initialMessages = (messages ?? []) as MessageRow[];
   const portalEnabled = Boolean(portalData?.portal_enabled);
   const portalSlug = (portalData?.portal_slug as string | null) ?? null;
-  const customerRaw = portalData?.customers as
+  const customerRaw = portalData?.contacts as
     | { name?: string }
     | { name?: string }[]
     | null

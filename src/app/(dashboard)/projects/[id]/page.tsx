@@ -29,7 +29,7 @@ import TimeTabServer from '@/components/features/projects/tabs/time-tab-server';
 import { UnsentChangesChip } from '@/components/features/projects/unsent-changes-chip';
 import { VersionsDropdown } from '@/components/features/projects/versions-dropdown';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { listAssignmentsForProject } from '@/lib/db/queries/project-assignments';
 import { listBudgetCategoriesForProject } from '@/lib/db/queries/project-budget-categories';
 import { getProjectTabAlerts } from '@/lib/db/queries/project-tab-alerts';
@@ -143,7 +143,7 @@ export default async function ProjectDetailPage({
     listBudgetCategoriesForProject(id),
     // Customer options for the ⋯ overflow's Duplicate dialog (clone needs a
     // target customer, defaulting to this project's customer).
-    listCustomers({ limit: 500 }),
+    listContacts({ limit: 500 }),
     canManageCrew && tenantId ? listWorkerProfiles(tenantId) : Promise.resolve([]),
     canManageCrew && tenantId ? listAssignmentsForProject(tenantId, id) : Promise.resolve([]),
     // Unread inbound messages count for the Messages tab badge. Cheap
@@ -311,8 +311,8 @@ export default async function ProjectDetailPage({
           <ProjectActionsMenu
             projectId={project.id}
             projectName={project.name}
-            defaultCustomerId={project.customer?.id ?? null}
-            customers={customerOptions}
+            defaultContactId={project.customer?.id ?? null}
+            contacts={customerOptions}
           />
         </div>
       </header>

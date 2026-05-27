@@ -189,9 +189,7 @@ export async function getTodaysJobs(timezone: string): Promise<TodaysJob[]> {
 
   const { data, error } = await supabase
     .from('jobs')
-    .select(
-      'id, status, scheduled_at, notes, customers:customer_id (id, name, address_line1, city)',
-    )
+    .select('id, status, scheduled_at, notes, contacts:contact_id (id, name, address_line1, city)')
     .is('deleted_at', null)
     .gte('scheduled_at', bounds.start)
     .lte('scheduled_at', bounds.end)
@@ -200,7 +198,7 @@ export async function getTodaysJobs(timezone: string): Promise<TodaysJob[]> {
   if (error) throw new Error(`Failed to load today's jobs: ${error.message}`);
 
   return (data ?? []).map((row) => {
-    const { customers: customerRaw, ...rest } = row as Record<string, unknown>;
+    const { contacts: customerRaw, ...rest } = row as Record<string, unknown>;
     return {
       ...(rest as Omit<TodaysJob, 'customer'>),
       customer: extractCustomer(customerRaw),
@@ -459,7 +457,7 @@ export async function getAttentionItems(
     ? null
     : supabase
         .from('quotes')
-        .select('id, sent_at, customers:customer_id (name)')
+        .select('id, sent_at, contacts:contact_id (name)')
         .eq('status', 'sent')
         .lt('sent_at', threeDaysAgo)
         .is('deleted_at', null)
@@ -480,7 +478,7 @@ export async function getAttentionItems(
     supabase
       .from('invoices')
       .select(
-        'id, amount_cents, tax_cents, tax_inclusive, line_items, sent_at, customers:customer_id (name)',
+        'id, amount_cents, tax_cents, tax_inclusive, line_items, sent_at, contacts:contact_id (name)',
       )
       .eq('status', 'sent')
       .is('paid_at', null)
@@ -511,7 +509,7 @@ export async function getAttentionItems(
     items.push({
       kind: 'stale_quote',
       id: row.id as string,
-      customerName: extractCustomerName(row.customers),
+      customerName: extractCustomerName(row.contacts),
       daysSinceSent: daysBetween(row.sent_at as string, now),
     });
   }
@@ -521,7 +519,7 @@ export async function getAttentionItems(
     items.push({
       kind: 'overdue_invoice',
       id: row.id as string,
-      customerName: extractCustomerName(row.customers),
+      customerName: extractCustomerName(row.contacts),
       totalCents: invoiceTotalCents({
         amount_cents: row.amount_cents as number | null,
         tax_cents: row.tax_cents as number | null,
@@ -568,12 +566,12 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
 
   const nameById = new Map<string, string>();
 
-  const customerIds = idsByType.get('customer');
-  if (customerIds?.size) {
+  const contactIds = idsByType.get('customer');
+  if (contactIds?.size) {
     const { data: rows } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name')
-      .in('id', Array.from(customerIds));
+      .in('id', Array.from(contactIds));
     for (const row of rows ?? []) nameById.set(row.id as string, (row as { name: string }).name);
   }
 
@@ -590,10 +588,10 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
   if (jobIds?.size) {
     const { data: rows } = await supabase
       .from('jobs')
-      .select('id, customers:customer_id (name)')
+      .select('id, contacts:contact_id (name)')
       .in('id', Array.from(jobIds));
     for (const row of rows ?? []) {
-      const customerRaw = (row as { customers?: unknown }).customers;
+      const customerRaw = (row as { contacts?: unknown }).contacts;
       const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
       const name =
         customer && typeof customer === 'object' && 'name' in customer
@@ -607,10 +605,10 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
   if (quoteIds?.size) {
     const { data: rows } = await supabase
       .from('quotes')
-      .select('id, customers:customer_id (name)')
+      .select('id, contacts:contact_id (name)')
       .in('id', Array.from(quoteIds));
     for (const row of rows ?? []) {
-      const customerRaw = (row as { customers?: unknown }).customers;
+      const customerRaw = (row as { contacts?: unknown }).contacts;
       const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
       const name =
         customer && typeof customer === 'object' && 'name' in customer
@@ -624,10 +622,10 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
   if (invoiceIds?.size) {
     const { data: rows } = await supabase
       .from('invoices')
-      .select('id, customers:customer_id (name)')
+      .select('id, contacts:contact_id (name)')
       .in('id', Array.from(invoiceIds));
     for (const row of rows ?? []) {
-      const customerRaw = (row as { customers?: unknown }).customers;
+      const customerRaw = (row as { contacts?: unknown }).contacts;
       const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
       const name =
         customer && typeof customer === 'object' && 'name' in customer

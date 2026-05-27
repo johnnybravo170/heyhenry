@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { ContactRow, ContactSignal } from '@/lib/db/queries/customers';
+import type { ContactRow, ContactSignal } from '@/lib/db/queries/contacts';
 import { formatPhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import { type ContactKind, contactKindLabels } from '@/lib/validators/customer';
@@ -160,11 +160,11 @@ function MessagingOff() {
  * phone/email links sit above it (`z-10`) so tap-to-call still works.
  */
 export function CustomerTable({
-  customers,
+  contacts,
   nowMs,
   footer,
 }: {
-  customers: ContactRow[];
+  contacts: ContactRow[];
   /** Server-stable timestamp for relative-time rendering (avoids hydration drift). */
   nowMs: number;
   /** Pagination footer rendered inside the table card (desktop) / below cards (mobile). */
@@ -184,7 +184,7 @@ export function CustomerTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {customers.map((customer) => (
+            {contacts.map((customer) => (
               <TableRow
                 key={customer.id}
                 className="relative transition-colors hover:bg-muted/50 focus-within:bg-muted/50"
@@ -226,7 +226,7 @@ export function CustomerTable({
       {/* Mobile cards, grouped by kind */}
       <div className="flex flex-col gap-5 md:hidden">
         {KIND_ORDER.map((kind) => {
-          const rows = customers.filter((c) => c.kind === kind);
+          const rows = contacts.filter((c) => c.kind === kind);
           if (rows.length === 0) return null;
           return (
             <section key={kind} className="flex flex-col gap-2">

@@ -87,8 +87,8 @@ export async function startCheckoutAction(input: {
     .single();
   if (rowErr || !row) return { error: 'Could not load tenant.' };
 
-  const customerId = await ensureStripeCustomer({
-    existingCustomerId: (row.stripe_customer_id as string | null) ?? null,
+  const contactId = await ensureStripeCustomer({
+    existingContactId: (row.stripe_customer_id as string | null) ?? null,
     tenantId: tenant.id,
     email: user.email,
     name: (row.name as string) ?? tenant.name,
@@ -97,7 +97,7 @@ export async function startCheckoutAction(input: {
   if (!row.stripe_customer_id) {
     await admin
       .from('tenants')
-      .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
+      .update({ stripe_customer_id: contactId, updated_at: new Date().toISOString() })
       .eq('id', tenant.id);
   }
 
@@ -107,7 +107,7 @@ export async function startCheckoutAction(input: {
 
   const origin = await originFromHeaders();
   const { url } = await createSubscriptionCheckoutSession({
-    customerId,
+    contactId,
     tenantId: tenant.id,
     plan: input.plan,
     cycle: input.billing as BillingCycle,

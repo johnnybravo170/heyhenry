@@ -2,10 +2,10 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CustomerForm } from '@/components/features/customers/customer-form';
-import { getCustomer } from '@/lib/db/queries/customers';
+import { getCustomer } from '@/lib/db/queries/contacts';
 import { formatPhone } from '@/lib/phone';
 import type { CustomerCreateInput, CustomerType } from '@/lib/validators/customer';
-import { type CustomerActionResult, updateCustomerAction } from '@/server/actions/customers';
+import { type CustomerActionResult, updateCustomerAction } from '@/server/actions/contacts';
 
 export const metadata = {
   title: 'Edit contact — HeyHenry',

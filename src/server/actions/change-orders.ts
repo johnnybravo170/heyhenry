@@ -791,7 +791,7 @@ export async function sendChangeOrderAction(
   const { data: co, error: coErr } = await supabase
     .from('change_orders')
     .select(
-      '*, projects:project_id (id, name, customer_id, management_fee_rate, customers:customer_id (name, email, phone)), jobs:job_id (id, customer_id, customers:customer_id (name, email, phone))',
+      '*, projects:project_id (id, name, contact_id, management_fee_rate, contacts:contact_id (name, email, phone)), jobs:job_id (id, contact_id, contacts:contact_id (name, email, phone))',
     )
     .eq('id', changeOrderId)
     .single();
@@ -810,7 +810,7 @@ export async function sendChangeOrderAction(
   const job = coData.jobs as Record<string, unknown> | null;
   const projectName = (project?.name as string) ?? 'Job';
   const projectId = (project?.id as string) ?? (job?.id as string) ?? '';
-  const customerRaw = (project?.customers ?? job?.customers) as Record<string, unknown> | null;
+  const customerRaw = (project?.contacts ?? job?.contacts) as Record<string, unknown> | null;
   const customerEmail = customerRaw?.email as string | null;
   const customerPhone = customerRaw?.phone as string | null;
   const customerName = (customerRaw?.name as string) ?? 'Customer';

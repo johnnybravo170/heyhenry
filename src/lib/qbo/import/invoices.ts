@@ -40,7 +40,7 @@ type InvoiceLineItem = {
 /**
  * Map QBO Invoice → HH row shape, including denormalized line_items.
  * Returns the row plus the QBO customer id we need to resolve to an
- * HH customer_id before insert.
+ * HH contact_id before insert.
  */
 export function mapQboInvoiceToRow(qbo: QboInvoice): {
   qbo_customer_id: string;
@@ -144,21 +144,21 @@ export async function importInvoicePage(
   const toInsert: Array<{
     qbo_invoice_id: string;
     qbo_sync_token: string;
-    customer_id: string;
+    contact_id: string;
     row: ReturnType<typeof mapQboInvoiceToRow>['row'];
   }> = [];
   const toUpdate: Array<{
     id: string;
     qbo: QboInvoice;
-    customer_id: string;
+    contact_id: string;
     row: ReturnType<typeof mapQboInvoiceToRow>['row'];
   }> = [];
   let skipped = 0;
 
   for (const qbo of page) {
     const { qbo_customer_id, row } = mapQboInvoiceToRow(qbo);
-    const customerId = ctx.qboCustomerIdToHhId.get(qbo_customer_id);
-    if (!customerId) {
+    const contactId = ctx.qboCustomerIdToHhId.get(qbo_customer_id);
+    if (!contactId) {
       // Customer not in HH — likely not imported yet, or skipped to
       // the review queue. Skip the invoice; user can re-run after
       // resolving the customer review queue.
@@ -168,12 +168,12 @@ export async function importInvoicePage(
 
     const existingHhId = ctx.qboInvoiceIdToHhId.get(qbo.Id);
     if (existingHhId) {
-      toUpdate.push({ id: existingHhId, qbo, customer_id: customerId, row });
+      toUpdate.push({ id: existingHhId, qbo, contact_id: contactId, row });
     } else {
       toInsert.push({
         qbo_invoice_id: qbo.Id,
         qbo_sync_token: qbo.SyncToken,
-        customer_id: customerId,
+        contact_id: contactId,
         row,
       });
     }
@@ -184,7 +184,7 @@ export async function importInvoicePage(
     const now = new Date().toISOString();
     const rows = toInsert.map((r) => ({
       tenant_id: ctx.tenantId,
-      customer_id: r.customer_id,
+      contact_id: r.contact_id,
       status: r.row.status,
       amount_cents: r.row.amount_cents,
       tax_cents: r.row.tax_cents,
@@ -259,7 +259,7 @@ export async function loadInvoiceImportContext(
   // every previously-imported one.
   const [customerRes, invoiceRes] = await Promise.all([
     supabase
-      .from('customers')
+      .from('contacts')
       .select('id, qbo_customer_id')
       .eq('tenant_id', tenantId)
       .not('qbo_customer_id', 'is', null)

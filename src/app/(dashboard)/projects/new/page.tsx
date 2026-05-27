@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { NewProjectFormSurface } from '@/components/features/projects/new-project-page';
 import { ProjectForm } from '@/components/features/projects/project-form';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { loadIntakeDraft } from '@/lib/db/queries/intake-drafts';
 import { getDefaultManagementFeeRate } from '@/server/actions/project-defaults';
 import { createProjectAction } from '@/server/actions/projects';
@@ -35,7 +35,7 @@ export default async function NewProjectPage({
   // for spot-checks.
   const aiChoice = typeof params.ai === 'string' && params.ai === 'gpt' ? 'openai' : 'claude';
   const [customers, initialDraft, defaultMgmtFeeRate] = await Promise.all([
-    listCustomers({ limit: 500 }),
+    listContacts({ limit: 500 }),
     draftIdParam ? loadIntakeDraft(draftIdParam) : Promise.resolve(null),
     getDefaultManagementFeeRate(),
   ]);
@@ -67,9 +67,9 @@ export default async function NewProjectPage({
 
         <ProjectForm
           mode="create"
-          customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+          contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
           defaults={{
-            customer_id: preselectedCustomer,
+            contact_id: preselectedCustomer,
             management_fee_rate: defaultMgmtFeeRate,
           }}
           action={createProjectAction}
@@ -106,7 +106,7 @@ export default async function NewProjectPage({
       </div>
 
       <NewProjectFormSurface
-        customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
         action={createProjectAction}
         defaults={{ management_fee_rate: defaultMgmtFeeRate }}
         parseModel={aiChoice === 'claude' ? 'claude-sonnet' : 'gpt-4.1'}

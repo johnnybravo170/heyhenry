@@ -40,7 +40,7 @@ test.describe
 
     let createdUserId: string | null = null;
     let createdTenantId: string | null = null;
-    let createdCustomerId: string | null = null;
+    let createdContactId: string | null = null;
     let createdJobId: string | null = null;
 
     test.afterAll(async () => {
@@ -99,7 +99,7 @@ test.describe
       createdTenantId = mem?.tenant_id as string;
 
       const { data: customer } = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: createdTenantId,
           type: 'residential',
@@ -108,7 +108,7 @@ test.describe
         .select('id')
         .single();
       expect(customer?.id).toBeTruthy();
-      createdCustomerId = customer?.id as string;
+      createdContactId = customer?.id as string;
 
       // --- 2/3. Empty state on /jobs ---
       await page.goto('/jobs');
@@ -182,6 +182,6 @@ test.describe
       await expect(page.getByRole('heading', { name: /no jobs yet/i })).toBeVisible();
 
       // Silence unused-var warnings.
-      void createdCustomerId;
+      void createdContactId;
     });
   });

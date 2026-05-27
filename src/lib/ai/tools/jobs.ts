@@ -35,7 +35,7 @@ export const jobTools: AiTool[] = [
             enum: ['booked', 'in_progress', 'complete', 'cancelled'],
             description: 'Filter by job status (ignored when filter is set)',
           },
-          customer_id: {
+          contact_id: {
             type: 'string',
             description: 'Filter by customer UUID (ignored when filter is set)',
           },
@@ -75,7 +75,7 @@ export const jobTools: AiTool[] = [
           const { data: jobs, error: jobErr } = await supabase
             .from('jobs')
             .select(
-              'id, completed_at, notes, customers:customer_id (name), quotes:quote_id (total_cents)',
+              'id, completed_at, notes, contacts:contact_id (name), quotes:quote_id (total_cents)',
             )
             .eq('status', 'complete')
             .is('deleted_at', null)
@@ -94,7 +94,7 @@ export const jobTools: AiTool[] = [
           let output = `Found ${uninvoiced.length} completed job(s) without an invoice:\n\n`;
           for (let i = 0; i < uninvoiced.length; i++) {
             const j = uninvoiced[i];
-            const customerRaw = j.customers;
+            const customerRaw = j.contacts;
             const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
             const quoteRaw = j.quotes;
             const quote = Array.isArray(quoteRaw) ? quoteRaw[0] : quoteRaw;
@@ -120,7 +120,7 @@ export const jobTools: AiTool[] = [
           const supabase = await createClient();
           const { data, error } = await supabase
             .from('jobs')
-            .select('id, scheduled_at, notes, customers:customer_id (name)')
+            .select('id, scheduled_at, notes, contacts:contact_id (name)')
             .eq('status', 'booked')
             .gte('scheduled_at', now)
             .lte('scheduled_at', future)
@@ -138,7 +138,7 @@ export const jobTools: AiTool[] = [
           let output = `Upcoming jobs (next ${daysAhead} day(s)):\n\n`;
           for (let i = 0; i < data.length; i++) {
             const j = data[i];
-            const customerRaw = j.customers;
+            const customerRaw = j.contacts;
             const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
             output += `${i + 1}. ${(customer as { name?: string })?.name ?? 'No customer'}\n`;
             if (j.scheduled_at) output += `   Scheduled: ${formatDateTime(j.scheduled_at)}\n`;
@@ -151,7 +151,7 @@ export const jobTools: AiTool[] = [
 
         const rows = await listJobs({
           status: input.status as 'booked' | 'in_progress' | 'complete' | 'cancelled' | undefined,
-          customer_id: input.customer_id as string | undefined,
+          contact_id: input.contact_id as string | undefined,
           limit: Math.min((input.limit as number) || 20, 100),
         });
 
@@ -265,7 +265,7 @@ export const jobTools: AiTool[] = [
         // Load current job
         const { data: job, error: loadErr } = await supabase
           .from('jobs')
-          .select('id, status, started_at, completed_at, customers:customer_id (name)')
+          .select('id, status, started_at, completed_at, contacts:contact_id (name)')
           .eq('id', jobId)
           .is('deleted_at', null)
           .maybeSingle();
@@ -302,7 +302,7 @@ export const jobTools: AiTool[] = [
         }
 
         // Extract customer name from Supabase join
-        const customerRaw = job.customers as unknown;
+        const customerRaw = job.contacts as unknown;
         const customerObj = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
         const customerName =
           customerObj && typeof customerObj === 'object' && 'name' in customerObj
@@ -380,7 +380,7 @@ export const jobTools: AiTool[] = [
           .from('jobs')
           .insert({
             tenant_id: tenant.id,
-            customer_id: resolved.id,
+            contact_id: resolved.id,
             quote_id: quoteId,
             status: 'booked',
             scheduled_at: scheduledAt,
@@ -440,13 +440,13 @@ export const jobTools: AiTool[] = [
         type JobRow = {
           id: string;
           status: string;
-          customers: { name: string } | { name: string }[];
+          contacts: { name: string } | { name: string }[];
         };
 
         const result = await resolveByShortId<JobRow>(
           'jobs',
           input.job_id as string,
-          'id, status, customers:customer_id (name)',
+          'id, status, contacts:contact_id (name)',
         );
         if (typeof result === 'string') return result;
 
@@ -464,7 +464,7 @@ export const jobTools: AiTool[] = [
           return `Failed to schedule job: ${error.message}`;
         }
 
-        const customerRaw = job.customers;
+        const customerRaw = job.contacts;
         const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
         const customerName = customer?.name ?? 'customer';
 
@@ -507,7 +507,7 @@ export const jobTools: AiTool[] = [
         type JobRow = {
           id: string;
           status: string;
-          customers:
+          contacts:
             | { name: string; phone: string | null }
             | { name: string; phone: string | null }[];
         };
@@ -515,7 +515,7 @@ export const jobTools: AiTool[] = [
         const result = await resolveByShortId<JobRow>(
           'jobs',
           input.job_id as string,
-          'id, status, customers:customer_id (name, phone)',
+          'id, status, contacts:contact_id (name, phone)',
         );
         if (typeof result === 'string') return result;
 
@@ -525,7 +525,7 @@ export const jobTools: AiTool[] = [
           return `Job is "${jobStatusLabels[job.status] ?? job.status}". Review requests can only be sent for completed jobs.`;
         }
 
-        const customerRaw = job.customers;
+        const customerRaw = job.contacts;
         const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
 
         if (!customer?.phone) {

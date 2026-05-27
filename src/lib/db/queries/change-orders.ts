@@ -94,7 +94,7 @@ export async function listPendingChangeOrdersForDashboard(): Promise<
   const { data } = await supabase
     .from('change_orders')
     .select(
-      'id, job_id, project_id, cost_impact_cents, status, jobs:job_id (id, customers:customer_id (name)), projects:project_id (id, customers:customer_id (name))',
+      'id, job_id, project_id, cost_impact_cents, status, jobs:job_id (id, contacts:contact_id (name)), projects:project_id (id, contacts:contact_id (name))',
     )
     .eq('status', 'pending_approval')
     .order('created_at', { ascending: false })
@@ -103,7 +103,7 @@ export async function listPendingChangeOrdersForDashboard(): Promise<
   const nameFrom = (rel: unknown): string | null => {
     const obj = Array.isArray(rel) ? rel[0] : rel;
     if (!obj) return null;
-    const customers = (obj as { customers?: unknown }).customers;
+    const customers = (obj as { contacts?: unknown }).contacts;
     const customerObj = Array.isArray(customers) ? customers[0] : customers;
     return ((customerObj as { name?: string } | null)?.name as string | undefined) ?? null;
   };

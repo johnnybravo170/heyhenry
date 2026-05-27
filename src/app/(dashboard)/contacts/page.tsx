@@ -13,8 +13,8 @@ import {
   countCustomersByKind,
   findDuplicateContacts,
   getContactSignals,
-  listCustomers,
-} from '@/lib/db/queries/customers';
+  listContacts,
+} from '@/lib/db/queries/contacts';
 import {
   type ContactKind,
   type CustomerType,
@@ -81,7 +81,7 @@ export default async function ContactsPage({
   const canSeeMoney = tenant?.member.role === 'owner' || tenant?.member.role === 'admin';
 
   const [customers, grandTotal, kindCounts] = await Promise.all([
-    listCustomers({ ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
+    listContacts({ ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     countCustomers(filters),
     countCustomersByKind(),
   ]);
@@ -161,7 +161,7 @@ export default async function ContactsPage({
         <CustomerEmptyState variant={hasFilters ? 'filtered' : 'fresh'} />
       ) : (
         <CustomerTable
-          customers={rows}
+          contacts={rows}
           nowMs={nowMs}
           footer={
             <ContactsPager
