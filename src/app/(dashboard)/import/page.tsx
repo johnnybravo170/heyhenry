@@ -48,7 +48,7 @@ export default async function ImportHubPage() {
     { count: timeEntryCount },
     { count: activeBatchCount },
   ] = await Promise.all([
-    supabase.from('customers').select('id', { count: 'exact', head: true }).is('deleted_at', null),
+    supabase.from('contacts').select('id', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('invoices').select('id', { count: 'exact', head: true }).is('deleted_at', null),
     supabase

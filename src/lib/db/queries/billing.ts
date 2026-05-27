@@ -213,7 +213,7 @@ export async function getBillingData(filters: BillingFilters = {}): Promise<Bill
       ? await Promise.all([
           supabase
             .from('projects')
-            .select('id, name, lifecycle_stage, customers:customer_id (id, name, city, province)')
+            .select('id, name, lifecycle_stage, contacts:contact_id (id, name, city, province)')
             .in('id', projectIds)
             .is('deleted_at', null),
           supabase
@@ -266,7 +266,7 @@ export async function getBillingData(filters: BillingFilters = {}): Promise<Bill
     id: string;
     name: string;
     lifecycle_stage: LifecycleStage;
-    customers: unknown;
+    contacts: unknown;
   };
   const headers = new Map<string, ProjHeader>();
   for (const p of projRes.data ?? []) {
@@ -355,8 +355,8 @@ export async function getBillingData(filters: BillingFilters = {}): Promise<Bill
       project_id: projectId,
       project_name: header.name,
       lifecycle_stage: stage,
-      customer: customerOf(header.customers),
-      region: regionOf(header.customers),
+      customer: customerOf(header.contacts),
+      region: regionOf(header.contacts),
       contract_cents: contract,
       billed_cents: billed,
       paid_cents: paid,

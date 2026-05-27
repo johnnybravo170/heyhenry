@@ -115,7 +115,7 @@ test.describe
           .from('projects')
           .insert({
             tenant_id: createdTenantId,
-            customer_id: customer?.id,
+            contact_id: customer?.id,
             name: `Test Reno ${stamp}`,
             status: 'in_progress',
           })

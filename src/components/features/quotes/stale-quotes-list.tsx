@@ -10,7 +10,7 @@ import { enrollStaleQuoteFollowupAction } from '@/server/actions/automations';
 export type StaleQuoteRow = {
   projectId: string;
   projectName: string;
-  customerId: string | null;
+  contactId: string | null;
   customerName: string;
   customerEmail: string | null;
   customerHasKillSwitch: boolean;

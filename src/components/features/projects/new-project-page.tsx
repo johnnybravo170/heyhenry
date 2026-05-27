@@ -29,13 +29,13 @@ import type { ParseModelChoice } from '@/server/actions/intake';
 import type { ProjectActionResult } from '@/server/actions/projects';
 
 export function NewProjectFormSurface({
-  customers,
+  contacts,
   action,
   defaults,
   parseModel = 'claude-sonnet',
   initialDraft = null,
 }: {
-  customers: ProjectFormCustomerOption[];
+  contacts: ProjectFormCustomerOption[];
   action: (input: ProjectInput & { id?: string }) => Promise<ProjectActionResult>;
   defaults?: ProjectFormDefaults;
   parseModel?: ParseModelChoice;
@@ -48,7 +48,7 @@ export function NewProjectFormSurface({
   if (mode === 'manual') {
     return (
       <div className="space-y-4">
-        <ProjectForm mode="create" customers={customers} defaults={defaults} action={action} />
+        <ProjectForm mode="create" contacts={contacts} defaults={defaults} action={action} />
         <p className="text-center text-xs text-muted-foreground">
           Got a quote, photos, or a voice memo?{' '}
           <button

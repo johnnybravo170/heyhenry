@@ -311,8 +311,8 @@ export default async function ProjectDetailPage({
           <ProjectActionsMenu
             projectId={project.id}
             projectName={project.name}
-            defaultCustomerId={project.customer?.id ?? null}
-            customers={customerOptions}
+            defaultContactId={project.customer?.id ?? null}
+            contacts={customerOptions}
           />
         </div>
       </header>

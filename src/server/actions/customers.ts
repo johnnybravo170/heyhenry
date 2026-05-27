@@ -123,7 +123,7 @@ export async function createCustomerAction(
   }
 
   const { data, error } = await supabase
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenant.id,
       kind,
@@ -187,7 +187,7 @@ export async function updateCustomerAction(
   }
 
   const { error } = await supabase
-    .from('customers')
+    .from('contacts')
     .update({
       kind,
       type: subtype,
@@ -219,7 +219,7 @@ export async function updateCustomerAction(
  * when a customer is missing an email and the operator fills it in inline.
  */
 export async function patchCustomerEmailAction(
-  customerId: string,
+  contactId: string,
   email: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const trimmed = email.trim();
@@ -229,14 +229,14 @@ export async function patchCustomerEmailAction(
 
   const supabase = await createClient();
   const { error } = await supabase
-    .from('customers')
+    .from('contacts')
     .update({ email: trimmed, updated_at: new Date().toISOString() })
-    .eq('id', customerId)
+    .eq('id', contactId)
     .is('deleted_at', null);
 
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath(`/contacts/${customerId}`);
+  revalidatePath(`/contacts/${contactId}`);
   return { ok: true };
 }
 
@@ -250,7 +250,7 @@ export async function patchCustomerEmailAction(
  * platform-initiated stops (the webhook paths set their own source values).
  */
 export async function setDoNotAutoMessageAction(
-  customerId: string,
+  contactId: string,
   enabled: boolean,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const tenant = await getCurrentTenant();
@@ -259,7 +259,7 @@ export async function setDoNotAutoMessageAction(
   const supabase = await createClient();
   const now = new Date().toISOString();
   const { error } = await supabase
-    .from('customers')
+    .from('contacts')
     .update({
       do_not_auto_message: enabled,
       do_not_auto_message_at: enabled ? now : null,
@@ -270,12 +270,12 @@ export async function setDoNotAutoMessageAction(
         : null,
       updated_at: now,
     })
-    .eq('id', customerId)
+    .eq('id', contactId)
     .is('deleted_at', null);
 
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath(`/contacts/${customerId}`);
+  revalidatePath(`/contacts/${contactId}`);
   return { ok: true };
 }
 
@@ -298,7 +298,7 @@ export async function deleteCustomerAction(id: string): Promise<CustomerActionRe
 
   const supabase = await createClient();
   const { error } = await supabase
-    .from('customers')
+    .from('contacts')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .is('deleted_at', null);

@@ -27,7 +27,7 @@ export const photos = pgTable('photos', {
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade' }),
-  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  contactId: uuid('contact_id').references(() => customers.id, { onDelete: 'set null' }),
 
   storagePath: text('storage_path').notNull(),
 

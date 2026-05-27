@@ -31,7 +31,7 @@ export type SimpleResult = { ok: true } | { ok: false; error: string };
 export type IdeaBoardItem = {
   id: string;
   project_id: string;
-  customer_id: string | null;
+  contact_id: string | null;
   kind: 'image' | 'link' | 'note';
   image_storage_path: string | null;
   source_url: string | null;
@@ -71,10 +71,10 @@ function trimText(raw: unknown, max: number): string | null {
 async function resolveProjectFromSlug(
   admin: ReturnType<typeof createAdminClient>,
   portalSlug: string,
-): Promise<{ projectId: string; tenantId: string; customerId: string | null } | null> {
+): Promise<{ projectId: string; tenantId: string; contactId: string | null } | null> {
   const { data } = await admin
     .from('projects')
-    .select('id, tenant_id, customer_id, portal_enabled')
+    .select('id, tenant_id, contact_id, portal_enabled')
     .eq('portal_slug', portalSlug)
     .eq('portal_enabled', true)
     .is('deleted_at', null)
@@ -83,7 +83,7 @@ async function resolveProjectFromSlug(
   return {
     projectId: (data as Record<string, unknown>).id as string,
     tenantId: (data as Record<string, unknown>).tenant_id as string,
-    customerId: ((data as Record<string, unknown>).customer_id as string | null) ?? null,
+    contactId: ((data as Record<string, unknown>).contact_id as string | null) ?? null,
   };
 }
 
@@ -104,7 +104,7 @@ async function attachImageUrls(
 // Customer side — portal_slug auth via admin client
 // ============================================================================
 
-export async function getCustomerIdeaBoardItemsAction(
+export async function getContactIdeaBoardItemsAction(
   portalSlug: string,
 ): Promise<{ ok: true; items: IdeaBoardItem[] } | { ok: false; error: string }> {
   const admin = createAdminClient();
@@ -114,7 +114,7 @@ export async function getCustomerIdeaBoardItemsAction(
   const { data, error } = await admin
     .from('project_idea_board_items')
     .select(
-      'id, project_id, customer_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
+      'id, project_id, contact_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
     )
     .eq('project_id', project.projectId)
     .order('created_at', { ascending: false });
@@ -124,7 +124,7 @@ export async function getCustomerIdeaBoardItemsAction(
   return { ok: true, items };
 }
 
-export async function addCustomerIdeaBoardImageAction(
+export async function addContactIdeaBoardImageAction(
   formData: FormData,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const portalSlug = formData.get('portal_slug');
@@ -168,7 +168,7 @@ export async function addCustomerIdeaBoardImageAction(
     id: itemId,
     tenant_id: project.tenantId,
     project_id: project.projectId,
-    customer_id: project.customerId,
+    contact_id: project.contactId,
     kind: 'image',
     image_storage_path: storagePath,
     title,
@@ -184,7 +184,7 @@ export async function addCustomerIdeaBoardImageAction(
   return { ok: true, id: itemId };
 }
 
-export async function addCustomerIdeaBoardLinkAction(input: {
+export async function addContactIdeaBoardLinkAction(input: {
   portalSlug: string;
   url: string;
   title?: string;
@@ -213,7 +213,7 @@ export async function addCustomerIdeaBoardLinkAction(input: {
     .insert({
       tenant_id: project.tenantId,
       project_id: project.projectId,
-      customer_id: project.customerId,
+      contact_id: project.contactId,
       kind: 'link',
       source_url: url,
       thumbnail_url: trimText(input.thumbnailUrl, MAX_URL_LENGTH),
@@ -227,7 +227,7 @@ export async function addCustomerIdeaBoardLinkAction(input: {
   return { ok: true, id: (data as { id: string }).id };
 }
 
-export async function addCustomerIdeaBoardNoteAction(input: {
+export async function addContactIdeaBoardNoteAction(input: {
   portalSlug: string;
   notes: string;
   room?: string;
@@ -244,7 +244,7 @@ export async function addCustomerIdeaBoardNoteAction(input: {
     .insert({
       tenant_id: project.tenantId,
       project_id: project.projectId,
-      customer_id: project.customerId,
+      contact_id: project.contactId,
       kind: 'note',
       notes,
       room: trimText(input.room, MAX_ROOM_LENGTH),
@@ -255,7 +255,7 @@ export async function addCustomerIdeaBoardNoteAction(input: {
   return { ok: true, id: (data as { id: string }).id };
 }
 
-export async function deleteCustomerIdeaBoardItemAction(input: {
+export async function deleteContactIdeaBoardItemAction(input: {
   portalSlug: string;
   itemId: string;
 }): Promise<SimpleResult> {
@@ -327,7 +327,7 @@ export async function getProjectIdeaBoardItemsAction(
   const { data, error } = await supabase
     .from('project_idea_board_items')
     .select(
-      'id, project_id, customer_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
+      'id, project_id, contact_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
     )
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });

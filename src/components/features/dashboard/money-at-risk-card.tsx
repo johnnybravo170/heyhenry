@@ -60,8 +60,8 @@ export function MoneyAtRiskCard({ rows }: { rows: MoneyAtRiskRow[] }) {
           <li key={r.contactId} className="flex flex-wrap items-center justify-between gap-3 p-3">
             <div className="flex min-w-0 flex-col gap-0.5">
               <div className="flex items-center gap-2 text-sm font-medium">
-                {r.customerId ? (
-                  <Link href={`/contacts/${r.customerId}`} className="truncate hover:underline">
+                {r.contactId ? (
+                  <Link href={`/contacts/${r.contactId}`} className="truncate hover:underline">
                     {r.contactName}
                   </Link>
                 ) : (
@@ -116,7 +116,7 @@ export function MoneyAtRiskCard({ rows }: { rows: MoneyAtRiskRow[] }) {
               variant="outline"
               size="sm"
               disabled={pending}
-              onClick={() => onClear(r.contactId, r.contactName)}
+              onClick={() => onClear(r.arContactId, r.contactName)}
             >
               I called them
             </Button>

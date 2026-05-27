@@ -101,7 +101,7 @@ export async function submitLeadAction(input: {
 
   // 4. Create customer in the operator's tenant.
   const { data: customer, error: custErr } = await admin
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenant.id,
       type: 'residential',
@@ -122,7 +122,7 @@ export async function submitLeadAction(input: {
     .from('quotes')
     .insert({
       tenant_id: tenant.id,
-      customer_id: customer.id,
+      contact_id: customer.id,
       status: 'draft',
       subtotal_cents: totals.subtotal_cents,
       tax_cents: totals.tax_cents,

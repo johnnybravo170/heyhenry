@@ -38,16 +38,16 @@ type CloneOption = 'budget_categories' | 'notes' | 'line_photos';
 export function CloneProjectDialog({
   projectId,
   projectName,
-  defaultCustomerId,
-  customers,
+  defaultContactId,
+  contacts,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   hideTrigger = false,
 }: {
   projectId: string;
   projectName: string;
-  defaultCustomerId: string | null;
-  customers: CustomerOption[];
+  defaultContactId: string | null;
+  contacts: CustomerOption[];
   /** Controlled-open mode — pass both to drive the dialog from a parent
    * (e.g. the project ⋯ overflow menu). Omit for the default self-triggered
    * icon-button behaviour used in the projects table. */
@@ -62,8 +62,8 @@ export function CloneProjectDialog({
   const [pending, startTransition] = useTransition();
 
   const [name, setName] = useState(`Copy of ${projectName}`);
-  const [customerId, setCustomerId] = useState(defaultCustomerId ?? '');
-  const [customerList, setCustomerList] = useState(customers);
+  const [contactId, setContactId] = useState(defaultContactId ?? '');
+  const [customerList, setCustomerList] = useState(contacts);
   const [include, setInclude] = useState<Record<CloneOption, boolean>>({
     budget_categories: true,
     notes: true,
@@ -74,14 +74,14 @@ export function CloneProjectDialog({
   useEffect(() => {
     if (open) {
       setName(`Copy of ${projectName}`);
-      setCustomerId(defaultCustomerId ?? '');
-      setCustomerList(customers);
+      setContactId(defaultContactId ?? '');
+      setCustomerList(contacts);
       setInclude({ budget_categories: true, notes: true, line_photos: false });
     }
-  }, [open, projectName, defaultCustomerId, customers]);
+  }, [open, projectName, defaultContactId, contacts]);
 
   function handleSubmit() {
-    if (!customerId) {
+    if (!contactId) {
       toast.error('Pick a customer.');
       return;
     }
@@ -92,7 +92,7 @@ export function CloneProjectDialog({
     startTransition(async () => {
       const res = await cloneProjectAction({
         source_id: projectId,
-        customer_id: customerId,
+        contact_id: contactId,
         name: name.trim(),
         clone_budget_categories: include.budget_categories,
         clone_notes: include.notes,
@@ -145,9 +145,9 @@ export function CloneProjectDialog({
           <div className="space-y-1.5">
             <Label>Customer</Label>
             <CustomerPickerWithCreate
-              customers={customerList}
-              value={customerId}
-              onChange={setCustomerId}
+              contacts={customerList}
+              value={contactId}
+              onChange={setContactId}
               onCustomerCreated={(c) => setCustomerList((cs) => [c, ...cs])}
             />
           </div>

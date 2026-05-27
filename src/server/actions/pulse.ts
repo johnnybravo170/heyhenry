@@ -133,12 +133,12 @@ export async function approvePulseAction(updateId: string): Promise<PulseActionR
   // Fetch the customer for delivery.
   const { data: jobRow } = await admin
     .from('jobs')
-    .select('customers:customer_id (name, email, phone)')
+    .select('contacts:contact_id (name, email, phone)')
     .eq('id', row.job_id)
     .maybeSingle();
 
   const customerRaw =
-    (jobRow?.customers as
+    (jobRow?.contacts as
       | { name?: string; email?: string | null; phone?: string | null }
       | { name?: string; email?: string | null; phone?: string | null }[]
       | null) ?? null;

@@ -230,7 +230,7 @@ export async function sendPortalInviteAction(input: {
   const { data: project } = await supabase
     .from('projects')
     .select(
-      'id, name, portal_slug, portal_enabled, customers:customer_id (name, email, additional_emails)',
+      'id, name, portal_slug, portal_enabled, contacts:contact_id (name, email, additional_emails)',
     )
     .eq('id', input.projectId)
     .single();
@@ -244,7 +244,7 @@ export async function sendPortalInviteAction(input: {
     return { ok: false, error: 'Portal is not enabled for this project.' };
   }
 
-  const customerRaw = projectData.customers as Record<string, unknown> | null;
+  const customerRaw = projectData.contacts as Record<string, unknown> | null;
   const customerEmail = (customerRaw?.email as string | null) ?? null;
   const customerAdditionalEmails = (customerRaw?.additional_emails as string[] | null) ?? [];
   const customerName = (customerRaw?.name as string) ?? 'Homeowner';

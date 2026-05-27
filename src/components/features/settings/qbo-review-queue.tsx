@@ -41,14 +41,14 @@ export function QboReviewQueueList({ jobs, timezone }: Props) {
     job: ReviewJobSummary,
     entry: ReviewQueueEntry,
     kind: 'merge' | 'create' | 'skip',
-    hhCustomerId?: string,
+    hhContactId?: string,
   ) {
-    const key = `${job.id}:${entry.qbo_id}:${kind}:${hhCustomerId ?? ''}`;
+    const key = `${job.id}:${entry.qbo_id}:${kind}:${hhContactId ?? ''}`;
     setActiveKey(key);
     startTransition(async () => {
       const action =
         kind === 'merge'
-          ? { kind: 'merge' as const, hhCustomerId: hhCustomerId ?? '' }
+          ? { kind: 'merge' as const, hhContactId: hhContactId ?? '' }
           : kind === 'create'
             ? { kind: 'create' as const }
             : { kind: 'skip' as const };

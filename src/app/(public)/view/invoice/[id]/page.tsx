@@ -50,7 +50,7 @@ export default async function PublicInvoiceViewPage({
   const supabase = createAdminClient();
 
   const SELECT =
-    'id, code, tenant_id, customer_id, status, doc_type, tax_inclusive, percent_complete, amount_cents, tax_cents, line_items, customer_note, pdf_url, sent_at, paid_at, created_at, payment_instructions_override, terms_override, policies_override, payment_method';
+    'id, code, tenant_id, contact_id, status, doc_type, tax_inclusive, percent_complete, amount_cents, tax_cents, line_items, customer_note, pdf_url, sent_at, paid_at, created_at, payment_instructions_override, terms_override, policies_override, payment_method';
 
   let { data: invoice } = await supabase
     .from('invoices')
@@ -92,9 +92,9 @@ export default async function PublicInvoiceViewPage({
       .eq('id', invoice.tenant_id)
       .single(),
     supabase
-      .from('customers')
+      .from('contacts')
       .select('name, email, phone, address_line1, city, province, postal_code')
-      .eq('id', invoice.customer_id)
+      .eq('id', invoice.contact_id)
       .single(),
   ]);
 

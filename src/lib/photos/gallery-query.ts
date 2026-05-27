@@ -53,7 +53,7 @@ export async function loadGalleryForJob(params: {
     getBusinessProfileAdmin(params.tenantId),
     admin
       .from('jobs')
-      .select('id, customers:customer_id (name, city)')
+      .select('id, contacts:contact_id (name, city)')
       .eq('id', params.jobId)
       .maybeSingle(),
     admin
@@ -71,7 +71,7 @@ export async function loadGalleryForJob(params: {
   const paths = visible.map((p) => p.storage_path as string);
   const urlMap = await signGalleryUrls(paths);
 
-  const customerRaw = (job as { customers?: unknown } | null)?.customers;
+  const customerRaw = (job as { contacts?: unknown } | null)?.contacts;
   const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
   const label =
     customer && typeof customer === 'object' && 'name' in customer

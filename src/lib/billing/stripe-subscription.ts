@@ -35,12 +35,12 @@ const getStripe = getPlatformStripe;
  * pass the existing `stripeCustomerId` and we'll skip the create.
  */
 export async function ensureStripeCustomer(input: {
-  existingCustomerId: string | null;
+  existingContactId: string | null;
   tenantId: string;
   email: string;
   name: string;
 }): Promise<string> {
-  if (input.existingCustomerId) return input.existingCustomerId;
+  if (input.existingContactId) return input.existingContactId;
   const stripe = await getStripe();
   const customer = await stripe.customers.create({
     email: input.email,
@@ -61,7 +61,7 @@ export async function ensureStripeCustomer(input: {
  * input field.
  */
 export async function createSubscriptionCheckoutSession(input: {
-  customerId: string;
+  contactId: string;
   tenantId: string;
   plan: Plan;
   cycle: BillingCycle;
@@ -75,7 +75,7 @@ export async function createSubscriptionCheckoutSession(input: {
 
   const params: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
-    customer: input.customerId,
+    customer: input.contactId,
     line_items: [{ price: priceId, quantity: 1 }],
     payment_method_collection: 'always',
     // Stripe Tax: computes GST/HST/PST/QST per the customer's billing
@@ -140,7 +140,7 @@ export async function loadSubscriptionExpanded(
  * subscription-level default.
  */
 export async function getDefaultCard(input: {
-  customerId: string;
+  contactId: string;
   subscription?: LoadedSubscription | null;
 }): Promise<{ brand: string; last4: string; expMonth: number; expYear: number } | null> {
   const stripe = await getStripe();
@@ -153,7 +153,7 @@ export async function getDefaultCard(input: {
       expYear: subPm.card.exp_year,
     };
   }
-  const customer = (await stripe.customers.retrieve(input.customerId, {
+  const customer = (await stripe.customers.retrieve(input.contactId, {
     expand: ['invoice_settings.default_payment_method'],
   })) as Stripe.Customer;
   if (customer.deleted) return null;

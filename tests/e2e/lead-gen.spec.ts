@@ -178,9 +178,9 @@ test.describe
       // Check draft quote was created.
       const { data: quotes } = await admin
         .from('quotes')
-        .select('id, status, customer_id, total_cents')
+        .select('id, status, contact_id, total_cents')
         .eq('tenant_id', createdTenantId)
-        .eq('customer_id', customer.id);
+        .eq('contact_id', customer.id);
       expect(quotes).toHaveLength(1);
       const quote = quotes?.[0];
       if (!quote) throw new Error('Quote not found');

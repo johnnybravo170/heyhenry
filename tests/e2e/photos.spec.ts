@@ -146,7 +146,7 @@ test.describe
         .from('jobs')
         .insert({
           tenant_id: createdTenantId,
-          customer_id: customer?.id,
+          contact_id: customer?.id,
           status: 'booked',
         })
         .select('id')

@@ -31,7 +31,7 @@ import { buildShareUrl, getOrCreateShareLink, slugify } from './share-links';
 type JobWithCustomer = {
   id: string;
   tenant_id: string;
-  customer_id: string | null;
+  contact_id: string | null;
   customer?: {
     id: string;
     name: string | null;
@@ -54,14 +54,14 @@ export async function handleJobCompleted(jobId: string): Promise<RunResult> {
     const { data: job, error: jobErr } = await admin
       .from('jobs')
       .select(
-        'id, tenant_id, customer_id, quote_id, customers:customer_id (id, name, email, phone, city)',
+        'id, tenant_id, contact_id, quote_id, contacts:contact_id (id, name, email, phone, city)',
       )
       .eq('id', jobId)
       .maybeSingle();
     if (jobErr || !job) return { ok: false, error: `job_not_found: ${jobErr?.message ?? 'none'}` };
 
     const customerRaw =
-      (job as JobWithCustomer).customer ?? (job as { customers?: unknown }).customers;
+      (job as JobWithCustomer).customer ?? (job as { contacts?: unknown }).contacts;
     const customer = Array.isArray(customerRaw)
       ? customerRaw[0]
       : (customerRaw as JobWithCustomer['customer']);

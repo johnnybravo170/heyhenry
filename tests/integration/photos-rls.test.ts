@@ -91,7 +91,7 @@ describe.skipIf(!canRun)('photos RLS isolation (integration)', () => {
         .single();
       const jobA = await admin
         .from('jobs')
-        .insert({ tenant_id: tenantIdA, customer_id: custA.data?.id, status: 'booked' })
+        .insert({ tenant_id: tenantIdA, contact_id: custA.data?.id, status: 'booked' })
         .select('id')
         .single();
       const jobIdA = jobA.data?.id as string;
@@ -145,7 +145,7 @@ describe.skipIf(!canRun)('photos RLS isolation (integration)', () => {
         .single();
       const jobB = await admin
         .from('jobs')
-        .insert({ tenant_id: tenantIdB, customer_id: custB.data?.id, status: 'booked' })
+        .insert({ tenant_id: tenantIdB, contact_id: custB.data?.id, status: 'booked' })
         .select('id')
         .single();
       const jobIdB = jobB.data?.id as string;

@@ -42,7 +42,7 @@ export default async function PortalTabServer({ projectId }: { projectId: string
     supabase
       .from('projects')
       .select(
-        'name, portal_slug, portal_enabled, portal_show_budget, customer_view_mode, customer_summary_md, customers:customer_id (name, email, additional_emails)',
+        'name, portal_slug, portal_enabled, portal_show_budget, customer_view_mode, customer_summary_md, contacts:contact_id (name, email, additional_emails)',
       )
       .eq('id', projectId)
       .single(),
@@ -98,7 +98,7 @@ export default async function PortalTabServer({ projectId }: { projectId: string
   // PostgREST embed returns customers as either an array or an object
   // depending on the FK shape, so unwrap.
   const projectName = (portalData?.name as string | undefined) ?? 'this project';
-  const customerRaw = portalData?.customers as
+  const customerRaw = portalData?.contacts as
     | { name?: string; email?: string; additional_emails?: string[] }
     | { name?: string; email?: string; additional_emails?: string[] }[]
     | null

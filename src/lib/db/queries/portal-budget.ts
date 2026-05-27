@@ -136,7 +136,7 @@ export async function getPortalBudgetSummary(
     admin
       .from('projects')
       .select(
-        'tenant_id, management_fee_rate, customer_view_mode, customer_summary_md, customers:customer_id (tax_exempt)',
+        'tenant_id, management_fee_rate, customer_view_mode, customer_summary_md, contacts:contact_id (tax_exempt)',
       )
       .eq('id', projectId)
       .maybeSingle(),
@@ -290,7 +290,7 @@ export async function getPortalBudgetSummary(
   const projectTotal = projectTotalFromBuckets + coUncategorizedCents;
   const tenantId = (project?.tenant_id as string | null | undefined) ?? null;
   const mgmtRate = Number((project?.management_fee_rate as number | null | undefined) ?? 0) || 0;
-  const customerRaw = project?.customers as
+  const customerRaw = project?.contacts as
     | { tax_exempt?: boolean | null }
     | { tax_exempt?: boolean | null }[]
     | null

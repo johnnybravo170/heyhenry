@@ -30,7 +30,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
 
   const defaults: JobInput & { id: string } = {
     id: job.id,
-    customer_id: job.customer_id ?? '',
+    contact_id: job.contact_id ?? '',
     quote_id: job.quote_id ?? '',
     status: job.status as JobStatus,
     scheduled_at: toDatetimeLocal(job.scheduled_at),
@@ -60,7 +60,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
 
       <JobForm
         mode="edit"
-        customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
         defaults={defaults}
         action={action}
         cancelHref={`/jobs/${job.id}`}

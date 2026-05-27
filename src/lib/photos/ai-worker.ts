@@ -38,7 +38,7 @@ type PhotoRow = {
 type JobContextRow = {
   status: string | null;
   scheduled_at: string | null;
-  customer_id: string | null;
+  contact_id: string | null;
   quote_id: string | null;
 };
 
@@ -134,11 +134,11 @@ async function processOne(photo: PhotoRow): Promise<'applied' | 'soft_applied' |
       .order('sort_order', { ascending: true });
     surfaces = (items ?? []).map((li) => li.label as string).filter(Boolean);
   }
-  if (jobContext?.customer_id) {
+  if (jobContext?.contact_id) {
     const { data: cust } = await admin
-      .from('customers')
+      .from('contacts')
       .select('city')
-      .eq('id', jobContext.customer_id)
+      .eq('id', jobContext.contact_id)
       .maybeSingle();
     customerCity = (cust?.city as string | null) ?? null;
   }
@@ -194,7 +194,7 @@ async function loadJobContext(jobId: string | null): Promise<JobContextRow | nul
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('jobs')
-    .select('status, scheduled_at, customer_id, quote_id')
+    .select('status, scheduled_at, contact_id, quote_id')
     .eq('id', jobId)
     .maybeSingle();
   if (error) return null;

@@ -33,8 +33,8 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
        estimate_status, estimate_approved_at, estimate_approved_by_name,
        estimate_declined_reason, terms_text, document_type,
        customer_view_mode, customer_summary_md,
-       customer_id, tenant_id,
-       customers:customer_id (name, email, additional_emails, address_line1, tax_exempt),
+       contact_id, tenant_id,
+       contacts:contact_id (name, email, additional_emails, address_line1, tax_exempt),
        tenants:tenant_id (name, logo_storage_path, gst_number, wcb_number, timezone)`,
     )
     .eq('id', id)
@@ -45,7 +45,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
 
   const p = project as Record<string, unknown>;
   const tenantRaw = p.tenants as Record<string, unknown> | null;
-  const customerRaw = p.customers as Record<string, unknown> | null;
+  const customerRaw = p.contacts as Record<string, unknown> | null;
   const managementFeeRate = Number(p.management_fee_rate) || 0;
   const taxExempt = Boolean(customerRaw?.tax_exempt);
   const taxCtx = await canadianTax.getCustomerFacingContext(p.tenant_id as string);
@@ -186,7 +186,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
     <div className="mx-auto max-w-2xl px-4 pb-10">
       <EstimatePreviewSendBar
         projectId={id}
-        customerId={p.customer_id as string}
+        contactId={p.contact_id as string}
         customerName={(customerRaw?.name as string) ?? 'Customer'}
         customerEmail={(customerRaw?.email as string | null) ?? null}
         customerAdditionalEmails={(customerRaw?.additional_emails as string[] | null) ?? []}

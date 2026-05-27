@@ -241,7 +241,7 @@ export async function parseTimeEntryImportAction(
       supabase.from('tenant_members').select('user_id, first_name, last_name'),
       supabase
         .from('projects')
-        .select('id, name, customer_id, customers:customer_id (name)')
+        .select('id, name, contact_id, contacts:contact_id (name)')
         .is('deleted_at', null),
     ]);
   if (memErr) return { ok: false, error: memErr.message };
@@ -253,11 +253,11 @@ export async function parseTimeEntryImportAction(
     last_name: (m.last_name as string | null) ?? null,
   }));
   const projects: ExistingProject[] = (projectRowsRaw ?? []).map((p) => {
-    const cust = (p as Record<string, unknown>).customers as { name?: string } | null;
+    const cust = (p as Record<string, unknown>).contacts as { name?: string } | null;
     return {
       id: p.id as string,
       name: (p.name as string) ?? '',
-      customer_id: (p.customer_id as string | null) ?? null,
+      contact_id: (p.contact_id as string | null) ?? null,
       customer_name: cust?.name ?? null,
     };
   });

@@ -18,7 +18,7 @@ export const jobs = pgTable(
     tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
-    customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'restrict' }),
+    contactId: uuid('contact_id').references(() => customers.id, { onDelete: 'restrict' }),
     quoteId: uuid('quote_id').references(() => quotes.id, { onDelete: 'set null' }),
     status: text('status').default('booked').notNull(),
     scheduledAt: timestamp('scheduled_at', { withTimezone: true }),

@@ -33,7 +33,7 @@ export const lifecycleStageLabels: Record<LifecycleStage, string> = {
 };
 
 export const projectCreateSchema = z.object({
-  customer_id: z.string().uuid({ message: 'Pick a customer.' }),
+  contact_id: z.string().uuid({ message: 'Pick a customer.' }),
   name: z
     .string()
     .trim()
