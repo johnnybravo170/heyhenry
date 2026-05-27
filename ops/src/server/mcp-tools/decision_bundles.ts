@@ -58,7 +58,8 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
       '  • open/parked bundles are updated in place.',
       '',
       'bucket: decision | research | go_nogo | grooming | visual.',
-      'options (decision/go_nogo): [{ key, label, blast_radius?, unblocks? }].',
+      'options (decision/go_nogo): [{ key, label, blast_radius?, unblocks?, recommended? }].',
+      'Mark the option matching your recommendation recommended:true (light-shaded in the queue).',
       'Set status=parked + resurface_trigger for good-but-premature research.',
       'Visual-QA findings: bucket=visual + before_image_url (+ after_image_url) +',
       'image_caption (caption the pixels, plain English). Renders as an image card.',
@@ -82,6 +83,14 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
     withAudit(ctx, 'decision_bundles_upsert', 'write:decision_bundles', async (input) => {
       const service = createServiceClient();
 
+      // Dedup on the SOURCE identity, not the free-form dedup_key string. The
+      // routine has formed the key inconsistently for the same card (short id
+      // vs full uuid vs ops:<slug>), which slipped past the old exact-string
+      // guard and re-dumped the item every run. When there's a card_id we
+      // canonicalize the key to `card:<uuid>` and match on card_id, so the
+      // same card can't appear twice however the caller spelled the key.
+      const canonicalKey = input.card_id ? `card:${input.card_id}` : input.dedup_key;
+
       const fields = {
         bucket: input.bucket,
         question: input.question,
@@ -96,25 +105,29 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
         before_image_url: input.before_image_url ?? null,
         after_image_url: input.after_image_url ?? null,
         image_caption: input.image_caption ?? null,
+        dedup_key: canonicalKey,
       };
 
-      const { data: existing } = await service
-        .schema('ops')
-        .from('decision_bundles')
-        .select('id, status')
-        .eq('dedup_key', input.dedup_key)
-        .maybeSingle();
+      const matchQuery = service.schema('ops').from('decision_bundles').select('id, status');
+      const { data: matches } = input.card_id
+        ? await matchQuery.eq('card_id', input.card_id)
+        : await matchQuery.eq('dedup_key', canonicalKey);
 
-      if (existing && (existing.status === 'resolved' || existing.status === 'archived')) {
-        return jsonResult({ ok: true, id: existing.id, skipped: 'already settled' });
+      const rows = matches ?? [];
+      const liveMatch = rows.find((r) => r.status === 'open' || r.status === 'parked');
+      const settledMatch = rows.find((r) => r.status === 'resolved' || r.status === 'archived');
+
+      // Never resurrect a decision Jonathan already settled.
+      if (!liveMatch && settledMatch) {
+        return jsonResult({ ok: true, id: settledMatch.id, skipped: 'already settled' });
       }
 
-      if (existing) {
+      if (liveMatch) {
         const { data, error } = await service
           .schema('ops')
           .from('decision_bundles')
           .update(fields)
-          .eq('id', existing.id)
+          .eq('id', liveMatch.id)
           .select('id')
           .single();
         if (error || !data) throw new Error(error?.message ?? 'Update failed');
@@ -133,7 +146,6 @@ export function registerDecisionBundleTools(server: McpServer, ctx: McpToolCtx) 
           actor_type: 'agent',
           actor_name: ctx.actorName,
           key_id: ctx.keyId,
-          dedup_key: input.dedup_key,
           ...fields,
         })
         .select('id')

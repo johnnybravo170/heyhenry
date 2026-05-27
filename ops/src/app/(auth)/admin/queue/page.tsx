@@ -18,26 +18,25 @@ export default async function QueuePage() {
     .schema('ops')
     .from('decision_bundles')
     .select(
-      'id, bucket, status, question, recommendation, why_today, options, links, resurface_trigger, before_image_url, after_image_url, image_caption, surfaced_at',
+      'id, bucket, status, question, recommendation, why_today, options, links, resurface_trigger, before_image_url, after_image_url, image_caption, feedback, surfaced_at',
     )
     .eq('status', 'open')
     .order('surfaced_at', { ascending: false })
     .limit(300);
 
-  const { data: parked } = await service
+  // Parked items are deliberately OFF the list — the goal is an emptyable
+  // queue, not a visible backlog. They stay in the DB and the routine
+  // resurfaces them (flips back to open) when their trigger fires; we only
+  // show a quiet count so nothing feels lost.
+  const { count: parkedCount } = await service
     .schema('ops')
     .from('decision_bundles')
-    .select(
-      'id, bucket, status, question, recommendation, why_today, options, links, resurface_trigger, before_image_url, after_image_url, image_caption, surfaced_at',
-    )
-    .eq('status', 'parked')
-    .order('surfaced_at', { ascending: false })
-    .limit(100);
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'parked');
 
   const reportCard = await getDecisionReportCard(service, 60);
 
   const openRows = (open ?? []) as QueueBundle[];
-  const parkedRows = (parked ?? []) as QueueBundle[];
   const byBucket = (b: string) => openRows.filter((r) => r.bucket === b);
 
   const streams: Stream[] = [
@@ -73,9 +72,9 @@ export default async function QueuePage() {
     },
     {
       key: 'grooming',
-      label: 'Grooming / Parked',
-      blurb: 'Underspecified (groom) or good-but-not-now (parked, resurfaces later).',
-      bundles: [...byBucket('grooming'), ...parkedRows],
+      label: 'Grooming',
+      blurb: 'Underspecified — needs shaping before it can be a real call.',
+      bundles: byBucket('grooming'),
     },
   ];
 
@@ -112,6 +111,13 @@ export default async function QueuePage() {
           )}
         </section>
       ))}
+
+      {parkedCount && parkedCount > 0 ? (
+        <p className="text-xs text-[var(--muted-foreground)]">
+          {parkedCount} parked item{parkedCount === 1 ? '' : 's'} hidden — they resurface on their
+          own when their trigger fires. Not a backlog you work.
+        </p>
+      ) : null}
 
       <section className="space-y-3 border-t border-[var(--border)] pt-6">
         <div className="flex items-baseline gap-3">

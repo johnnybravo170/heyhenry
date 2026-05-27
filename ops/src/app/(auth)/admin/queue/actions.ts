@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/ops-gate';
 import { createServiceClient } from '@/lib/supabase';
+import { commentCard } from '@/server/ops-services/kanban';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -118,6 +119,54 @@ export async function parkBundleAction(input: {
     })
     .eq('id', input.id);
   if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin/queue');
+  return { ok: true };
+}
+
+/**
+ * Leave a note / question on a bundle WITHOUT resolving it. Appends to the
+ * bundle's feedback thread (the morning routine reads it) and, when the bundle
+ * is linked to a kanban card, posts the same note as a comment on that card so
+ * it's actionable where the work lives.
+ */
+export async function noteBundleAction(input: { id: string; note: string }): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const note = input.note.trim();
+  if (!note) return { ok: false, error: 'A note is required.' };
+
+  const service = createServiceClient();
+  const { data: bundle } = await service
+    .schema('ops')
+    .from('decision_bundles')
+    .select('id, card_id, related_type, feedback')
+    .eq('id', input.id)
+    .maybeSingle();
+  if (!bundle) return { ok: false, error: 'Bundle not found.' };
+
+  const entry = `[${new Date().toISOString()}] ${admin.email}: ${note}`;
+  const nextFeedback = bundle.feedback ? `${bundle.feedback}\n${entry}` : entry;
+
+  const { error } = await service
+    .schema('ops')
+    .from('decision_bundles')
+    .update({ feedback: nextFeedback })
+    .eq('id', input.id);
+  if (error) return { ok: false, error: error.message };
+
+  // Mirror onto the linked kanban card so a stale/already-handled card gets
+  // flagged where the work lives. Non-fatal — the note is saved regardless.
+  if (bundle.related_type === 'kanban' && bundle.card_id) {
+    try {
+      await commentCard(
+        { actorType: 'human', actorName: admin.email, keyId: null, adminUserId: admin.userId },
+        bundle.card_id,
+        `From the Command Center queue: ${note}`,
+      );
+    } catch {
+      // swallow — kanban comment is best-effort
+    }
+  }
 
   revalidatePath('/admin/queue');
   return { ok: true };
