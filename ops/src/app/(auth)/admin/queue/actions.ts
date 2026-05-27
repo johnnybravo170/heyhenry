@@ -3,9 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/ops-gate';
 import { createServiceClient } from '@/lib/supabase';
-import { commentCard } from '@/server/ops-services/kanban';
+import { commentCard, createCard, moveCard, updateCard } from '@/server/ops-services/kanban';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+
+type BundleOption = { key?: string; label?: string; blast_radius?: string; recommended?: boolean };
 
 type Bundle = {
   id: string;
@@ -14,6 +16,8 @@ type Bundle = {
   question: string;
   recommendation: string | null;
   why_today: string | null;
+  options: BundleOption[] | null;
+  card_id: string | null;
 };
 
 async function loadBundle(id: string): Promise<Bundle | null> {
@@ -21,7 +25,7 @@ async function loadBundle(id: string): Promise<Bundle | null> {
   const { data } = await service
     .schema('ops')
     .from('decision_bundles')
-    .select('id, bucket, status, question, recommendation, why_today')
+    .select('id, bucket, status, question, recommendation, why_today, options, card_id')
     .eq('id', id)
     .maybeSingle();
   return (data as Bundle) ?? null;
@@ -29,6 +33,75 @@ async function loadBundle(id: string): Promise<Bundle | null> {
 
 function settled(status: string): boolean {
   return status === 'resolved' || status === 'archived';
+}
+
+type AdminCtx = { actorType: 'human'; actorName: string; keyId: null; adminUserId: string };
+
+// Low-blast-radius work can auto-ship (PR, never merge) per the autonomy
+// boundary (knowledge 57e7d23d). Anything touching $/schema/auth/the MCP
+// surface / shared design tokens — or with no blast info — is review-gated.
+const LOW_BLAST = new Set(['none', 'low', 'ui', 'copy', 'presentational', 'component', 'isolated']);
+
+function routeTagFor(option: BundleOption | undefined): 'cc:autoship' | 'cc:review' {
+  const blast = (option?.blast_radius ?? '').toLowerCase().trim();
+  return LOW_BLAST.has(blast) ? 'cc:autoship' : 'cc:review';
+}
+
+/**
+ * Dispatch a resolved decision so the work actually moves — not just logged.
+ * Card-linked: comment the call, unblock (→ todo), tag the execution route
+ * (cc:autoship for low-blast → the dispatch routine opens a PR; cc:review for
+ * gated work). Card-less (manual/research act): create a tracked task assigned
+ * to Jonathan. Best-effort — callers must not let a dispatch failure fail the
+ * resolve (the decision log is the source of truth).
+ */
+async function dispatchResolution(
+  ctx: AdminCtx,
+  bundle: Bundle,
+  choice: string,
+  decisionId: string,
+): Promise<void> {
+  const option = (bundle.options ?? []).find((o) => (o.key ?? o.label ?? '').toString() === choice);
+  const routeTag = routeTagFor(option);
+  const chosenLabel = option?.label ?? option?.key ?? choice;
+  const recLine = bundle.recommendation ? `\n\n${bundle.recommendation}` : '';
+
+  if (bundle.card_id) {
+    const service = createServiceClient();
+    const { data: card } = await service
+      .schema('ops')
+      .from('kanban_cards')
+      .select('tags')
+      .eq('id', bundle.card_id)
+      .maybeSingle();
+    const tags = Array.from(
+      new Set([...((card?.tags as string[] | null) ?? []), 'from-command-center', routeTag]),
+    );
+    const routeNote =
+      routeTag === 'cc:autoship'
+        ? 'auto-ship (low blast → PR for you to review)'
+        : 'review-gated (higher blast → human/PR review before build)';
+    await commentCard(
+      ctx,
+      bundle.card_id,
+      `Command Center decision — Jonathan chose: ${chosenLabel}.${recLine}\n\nRouted: ${routeNote}.`,
+    );
+    await moveCard(ctx, bundle.card_id, 'todo');
+    await updateCard(ctx, bundle.card_id, { tags });
+    return;
+  }
+
+  // No linked card — a manual/personal act. Track it as a card assigned to Jonathan.
+  await createCard(ctx, {
+    boardSlug: 'ops',
+    title: bundle.question.slice(0, 200),
+    column: 'todo',
+    body: `From the Command Center — Jonathan chose: ${chosenLabel}.${recLine}`,
+    assignee: ctx.actorName,
+    tags: ['cc:task', 'from-command-center'],
+    related_type: 'decision',
+    related_id: decisionId,
+  });
 }
 
 /**
@@ -83,6 +156,20 @@ export async function resolveBundleAction(input: {
     })
     .eq('id', input.id);
   if (error) return { ok: false, error: error.message };
+
+  // Dispatch the decided work so it actually moves. Best-effort: a failure
+  // here must not fail the resolve — the decision is already logged + the
+  // bundle settled.
+  try {
+    await dispatchResolution(
+      { actorType: 'human', actorName: admin.email, keyId: null, adminUserId: admin.userId },
+      bundle,
+      input.choice,
+      decision.id,
+    );
+  } catch {
+    // swallow — dispatch is a side-effect, not the source of truth
+  }
 
   revalidatePath('/admin/queue');
   return { ok: true };
