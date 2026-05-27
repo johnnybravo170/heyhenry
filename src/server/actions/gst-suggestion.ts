@@ -1,20 +1,19 @@
 'use server';
 
 /**
- * GST/HST number suggestion — slice 2 of card 015406d5.
+ * GST/HST number suggestion on intake (cards 015406d5 + dc77f067).
  *
- * The intake parser records any GST/HST numbers it sees on dropped documents
- * (`ParsedIntake.detected_tax_ids`, each with a placement + nearby business
- * name). This module decides whether one of them is the OPERATOR'S OWN number
- * worth offering to save, and handles the save / dismissal.
- *
- * Ownership gate (deliberately conservative — never save someone else's number
- * as the tenant's): we only suggest a number that (a) sits in the document's
- * SENDER / letterhead block, (b) is a valid Canadian GST/HST number, (c) sits
- * next to a business name that fuzzy-matches THIS tenant's name, and (d) hasn't
- * been dismissed — and only when the tenant has no GST number on file yet. A
- * sub-trade quote's sender number is the sub's, so the business-name match is
- * what keeps us from grabbing it.
+ * The parser records GST/HST numbers it sees on dropped docs
+ * (`ParsedIntake.detected_tax_ids`: number + placement + nearby business name).
+ * From a SENDER-block, validly-formatted, not-dismissed number this module
+ * decides which of two offers to make:
+ *  - OWNER: the business name matches THIS tenant and they have no number on
+ *    file → offer to save it to their business profile (`tenants.gst_number`).
+ *  - SUB: the business name is present but ISN'T the tenant's → it's an outside
+ *    business that sent us a quote/bill → offer to add them as a contact
+ *    (`kind='sub'`) and log the number on their card (`contacts.gst_number`).
+ * The business-name match is the load-bearing gate that keeps a sub's number
+ * off the tenant profile (and vice-versa).
  */
 
 import { getCurrentTenant } from '@/lib/auth/helpers';
@@ -61,12 +60,20 @@ async function getDismissedNumbers(tenantId: string): Promise<Set<string>> {
 }
 
 /**
- * Returns the operator's-own GST number to offer (formatted as printed), or
- * null if there's nothing to suggest. Pure read — no writes.
+ * What to offer the operator about a detected GST number:
+ *  - `owner`: it's the operator's own number (letterhead matches the tenant) and
+ *    they have none on file → offer to save it to their business profile.
+ *  - `sub`: it's an outside business's number (sender block, name ≠ tenant) → it
+ *    came in on a quote/bill, so offer to add them as a contact + log the number.
+ * Pure read — no writes.
  */
+export type GstSuggestion =
+  | { kind: 'owner'; number: string }
+  | { kind: 'sub'; number: string; businessName: string };
+
 export async function evaluateGstSuggestionAction(
   detected: DetectedTaxId[],
-): Promise<{ number: string } | null> {
+): Promise<GstSuggestion | null> {
   const tenant = await getCurrentTenant();
   if (!tenant) return null;
   if (!Array.isArray(detected) || detected.length === 0) return null;
@@ -77,18 +84,79 @@ export async function evaluateGstSuggestionAction(
     .select('gst_number')
     .eq('id', tenant.id)
     .maybeSingle();
-  // Already have one on file → never pester.
-  if ((row?.gst_number as string | null)?.trim()) return null;
+  const tenantHasGst = Boolean((row?.gst_number as string | null)?.trim());
 
   const dismissed = await getDismissedNumbers(tenant.id);
-  const match = detected.find(
+  const candidates = detected.filter(
     (d) =>
       d?.placement === 'sender' &&
       isValidGstNumber(d.number) &&
-      !dismissed.has(normalizeGstNumber(d.number)) &&
-      businessNameMatches(d.near_business_name, tenant.name),
+      !dismissed.has(normalizeGstNumber(d.number)),
   );
-  return match ? { number: match.number } : null;
+
+  // Owner's own number — only worth offering when the profile is still empty.
+  if (!tenantHasGst) {
+    const own = candidates.find((d) => businessNameMatches(d.near_business_name, tenant.name));
+    if (own) return { kind: 'owner', number: own.number };
+  }
+
+  // Otherwise, an outside business that sent us a doc (a sub / vendor): a sender
+  // number with a real business name that ISN'T ours.
+  const sub = candidates.find(
+    (d) => d.near_business_name?.trim() && !businessNameMatches(d.near_business_name, tenant.name),
+  );
+  if (sub?.near_business_name) {
+    return { kind: 'sub', number: sub.number, businessName: sub.near_business_name.trim() };
+  }
+  return null;
+}
+
+/**
+ * Add (or update) a sub/vendor contact with a GST number detected on their
+ * quote. Attaches to an existing contact if one matches by name + is missing a
+ * number; otherwise creates a new `kind='sub'` contact.
+ */
+export async function saveSubContactGstAction(
+  rawNumber: string,
+  businessName: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  const name = businessName.trim();
+  if (!name) return { ok: false, error: 'Missing business name.' };
+  if (!isValidGstNumber(rawNumber)) {
+    return { ok: false, error: "That doesn't look like a valid GST/HST number." };
+  }
+  const gst = normalizeGstNumber(rawNumber);
+  const admin = createAdminClient();
+
+  // Attach to an existing sub/vendor contact of the same name if one exists.
+  const { data: existing } = await admin
+    .from('contacts')
+    .select('id, gst_number')
+    .eq('tenant_id', tenant.id)
+    .in('kind', ['sub', 'vendor'])
+    .ilike('name', name)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    if (!(existing.gst_number as string | null)?.trim()) {
+      const { error } = await admin
+        .from('contacts')
+        .update({ gst_number: gst })
+        .eq('id', existing.id);
+      if (error) return { ok: false, error: error.message };
+    }
+    return { ok: true };
+  }
+
+  const { error } = await admin
+    .from('contacts')
+    .insert({ tenant_id: tenant.id, kind: 'sub', name, gst_number: gst });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 export async function saveTenantGstNumberAction(
