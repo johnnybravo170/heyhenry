@@ -10,7 +10,7 @@ export function registerEmailTools(server: McpServer, ctx: McpToolCtx) {
   server.tool(
     'ops_email_send',
     [
-      'Send an email via HeyHenry ops (Resend-backed).',
+      'Send an email via HeyHenry ops (Postmark-backed).',
       'Use for: transactional sends from agents (digests, alerts, handoffs).',
       'DO NOT use for: bulk marketing (use the autoresponder for that),',
       'per-customer invoices (use the in-app invoice flow).',

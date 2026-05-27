@@ -30,9 +30,6 @@ export const env = {
   get alertsToEmail() {
     return process.env.OPS_ALERTS_TO_EMAIL ?? 'riffninjavideos@gmail.com';
   },
-  get resendApiKey() {
-    return process.env.RESEND_API_KEY ?? null;
-  },
   get sentryWebhookSecret() {
     return req('SENTRY_WEBHOOK_SECRET');
   },
