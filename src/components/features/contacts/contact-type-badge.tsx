@@ -20,7 +20,7 @@ import {
  * Customer subtype (residential / commercial) is a quiet secondary cue, not a
  * second color — pass `withSubtype` to render it inline after the pill.
  */
-export function CustomerTypeBadge({
+export function ContactTypeBadge({
   type,
   kind,
   withSubtype,

@@ -34,7 +34,7 @@ type ProjectRow = {
   region: string | null;
 };
 
-type CustomerOption = { id: string; name: string };
+type ContactOption = { id: string; name: string };
 
 function daysSince(iso: string, nowMs: number): number {
   const then = new Date(iso).getTime();
@@ -100,7 +100,7 @@ export function ProjectsTable({
   dir: 'asc' | 'desc';
   /** Server-stable timestamp for "sent Nd ago" (avoids hydration drift). */
   nowMs: number;
-  customerOptions: CustomerOption[];
+  customerOptions: ContactOption[];
   /** Card footer row (pager + range count) rendered inside the table card. */
   footer?: ReactNode;
 }) {

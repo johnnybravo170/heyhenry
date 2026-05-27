@@ -2,9 +2,9 @@ import { Calendar, FileText, Mail, MapPin, Pencil, Phone, Receipt } from 'lucide
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ContactNotesFeed } from '@/components/features/contacts/contact-notes-feed';
+import { ContactTypeBadge } from '@/components/features/contacts/contact-type-badge';
+import { DeleteContactButton } from '@/components/features/contacts/delete-contact-button';
 import { DoNotAutoMessageToggle } from '@/components/features/contacts/do-not-auto-message-toggle';
-import { CustomerTypeBadge } from '@/components/features/customers/customer-type-badge';
-import { DeleteCustomerButton } from '@/components/features/customers/delete-customer-button';
 import { InvoiceStatusBadge } from '@/components/features/invoices/invoice-status-badge';
 import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
 import { QuoteStatusBadge } from '@/components/features/quotes/quote-status-badge';
@@ -29,6 +29,7 @@ import type { CustomerType } from '@/lib/validators/customer';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
 import type { JobStatus } from '@/lib/validators/job';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { formatGstNumber } from '@/lib/validators/tax-id';
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', {
   style: 'currency',
@@ -109,7 +110,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
-            <CustomerTypeBadge
+            <ContactTypeBadge
               type={customer.type as CustomerType}
               kind={customer.kind}
               withSubtype
@@ -124,7 +125,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               Edit
             </Link>
           </Button>
-          <DeleteCustomerButton contactId={customer.id} customerName={customer.name} />
+          <DeleteContactButton contactId={customer.id} customerName={customer.name} />
         </div>
       </header>
 
@@ -132,6 +133,9 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         <ContactRow icon={Mail} label="Email" value={customer.email} />
         <ContactRow icon={Phone} label="Phone" value={formatPhone(customer.phone)} />
         <ContactRow icon={MapPin} label="Address" value={addressLines(customer)} />
+        {customer.gst_number ? (
+          <ContactRow icon={Receipt} label="GST/HST" value={formatGstNumber(customer.gst_number)} />
+        ) : null}
         {!customer.email && !customer.phone && !addressLines(customer) ? (
           <p className="md:col-span-3 text-sm text-muted-foreground">
             No contact details yet.{' '}

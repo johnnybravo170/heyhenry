@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * CustomerPicker + inline "Create new customer" panel.
+ * ContactPicker + inline "Create new customer" panel.
  *
  * Standardizes the pick-or-create customer flow used by the new-project
  * form, the clone-project dialog, and any future place that needs to
@@ -11,31 +11,31 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ContactPicker } from '@/components/features/contacts/contact-picker';
 import { ExistingMatchesBanner } from '@/components/features/contacts/existing-matches-banner';
-import { CustomerPicker } from '@/components/features/customers/customer-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ContactMatch } from '@/lib/db/queries/contact-matches-types';
 import { createCustomerAction } from '@/server/actions/contacts';
 
-export type CustomerOption = { id: string; name: string };
+export type ContactOption = { id: string; name: string };
 
-export type CustomerPickerWithCreateProps = {
-  contacts: CustomerOption[];
+export type ContactPickerWithCreateProps = {
+  contacts: ContactOption[];
   value: string;
   onChange: (id: string) => void;
   /** Called after a new customer is created so the parent can update its picker list. */
-  onCustomerCreated?: (customer: CustomerOption) => void;
+  onCustomerCreated?: (customer: ContactOption) => void;
   placeholder?: string;
 };
 
-export function CustomerPickerWithCreate({
+export function ContactPickerWithCreate({
   contacts,
   value,
   onChange,
   onCustomerCreated,
   placeholder,
-}: CustomerPickerWithCreateProps) {
+}: ContactPickerWithCreateProps) {
   const [showInline, setShowInline] = useState(false);
   const [draft, setDraft] = useState({ name: '', email: '', phone: '' });
   const [saving, setSaving] = useState(false);
@@ -69,7 +69,7 @@ export function CustomerPickerWithCreate({
 
   return (
     <div>
-      <CustomerPicker
+      <ContactPicker
         contacts={contacts}
         value={value}
         onChange={onChange}

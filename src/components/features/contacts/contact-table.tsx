@@ -15,7 +15,7 @@ import type { ContactRow, ContactSignal } from '@/lib/db/queries/contacts';
 import { formatPhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import { type ContactKind, contactKindLabels } from '@/lib/validators/customer';
-import { CustomerTypeBadge } from './customer-type-badge';
+import { ContactTypeBadge } from './contact-type-badge';
 
 /** Leads newer than this read as "New"; older lean to the muted stale cue. */
 const LEAD_FRESH_DAYS = 7;
@@ -159,7 +159,7 @@ function MessagingOff() {
  * detail page via a stretched overlay link (PATTERNS: row-as-link) — the
  * phone/email links sit above it (`z-10`) so tap-to-call still works.
  */
-export function CustomerTable({
+export function ContactTable({
   contacts,
   nowMs,
   footer,
@@ -190,7 +190,7 @@ export function CustomerTable({
                 className="relative transition-colors hover:bg-muted/50 focus-within:bg-muted/50"
               >
                 <TableCell className="align-top">
-                  <CustomerTypeBadge type={customer.type} kind={customer.kind} withSubtype />
+                  <ContactTypeBadge type={customer.type} kind={customer.kind} withSubtype />
                 </TableCell>
                 <TableCell className="align-top">
                   <Link
@@ -252,7 +252,7 @@ export function CustomerTable({
                     >
                       {customer.name}
                     </Link>
-                    <CustomerTypeBadge type={customer.type} kind={customer.kind} />
+                    <ContactTypeBadge type={customer.type} kind={customer.kind} />
                   </div>
                   <div className="relative z-10 w-fit">
                     <Reach customer={customer} />

@@ -15,9 +15,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import {
-  type CustomerOption,
-  CustomerPickerWithCreate,
-} from '@/components/features/customers/customer-picker-with-create';
+  type ContactOption,
+  ContactPickerWithCreate,
+} from '@/components/features/contacts/contact-picker-with-create';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -47,7 +47,7 @@ export function CloneProjectDialog({
   projectId: string;
   projectName: string;
   defaultContactId: string | null;
-  contacts: CustomerOption[];
+  contacts: ContactOption[];
   /** Controlled-open mode — pass both to drive the dialog from a parent
    * (e.g. the project ⋯ overflow menu). Omit for the default self-triggered
    * icon-button behaviour used in the projects table. */
@@ -144,7 +144,7 @@ export function CloneProjectDialog({
 
           <div className="space-y-1.5">
             <Label>Customer</Label>
-            <CustomerPickerWithCreate
+            <ContactPickerWithCreate
               contacts={customerList}
               value={contactId}
               onChange={setContactId}

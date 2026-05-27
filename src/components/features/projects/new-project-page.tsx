@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { LeadIntakeForm } from '@/components/features/leads/lead-intake-form';
 import {
   ProjectForm,
-  type ProjectFormCustomerOption,
+  type ProjectFormContactOption,
   type ProjectFormDefaults,
 } from '@/components/features/projects/project-form';
 import type { IntakeDraftRow } from '@/lib/db/queries/intake-drafts';
@@ -35,7 +35,7 @@ export function NewProjectFormSurface({
   parseModel = 'claude-sonnet',
   initialDraft = null,
 }: {
-  contacts: ProjectFormCustomerOption[];
+  contacts: ProjectFormContactOption[];
   action: (input: ProjectInput & { id?: string }) => Promise<ProjectActionResult>;
   defaults?: ProjectFormDefaults;
   parseModel?: ParseModelChoice;

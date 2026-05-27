@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { CustomerPicker } from '@/components/features/customers/customer-picker';
+import { ContactPicker } from '@/components/features/contacts/contact-picker';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -189,7 +189,7 @@ export function JobForm({
               <FormItem>
                 <FormLabel>Customer</FormLabel>
                 <FormControl>
-                  <CustomerPicker
+                  <ContactPicker
                     contacts={contacts}
                     value={field.value ?? ''}
                     onChange={field.onChange}

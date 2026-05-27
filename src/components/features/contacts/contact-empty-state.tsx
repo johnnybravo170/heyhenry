@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
  * - "filtered" (customers exist but search/filter returned zero) encourages
  *   clearing the filter
  */
-export function CustomerEmptyState({ variant }: { variant: 'fresh' | 'filtered' }) {
+export function ContactEmptyState({ variant }: { variant: 'fresh' | 'filtered' }) {
   if (variant === 'filtered') {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-card py-16 text-center">
