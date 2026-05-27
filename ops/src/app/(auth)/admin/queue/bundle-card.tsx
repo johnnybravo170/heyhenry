@@ -4,9 +4,20 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Markdown } from '@/app/(auth)/board/markdown';
-import { archiveBundleAction, parkBundleAction, resolveBundleAction } from './actions';
+import {
+  archiveBundleAction,
+  noteBundleAction,
+  parkBundleAction,
+  resolveBundleAction,
+} from './actions';
 
-type Option = { key?: string; label?: string; blast_radius?: string; unblocks?: string };
+type Option = {
+  key?: string;
+  label?: string;
+  blast_radius?: string;
+  unblocks?: string;
+  recommended?: boolean;
+};
 
 export type QueueBundle = {
   id: string;
@@ -21,6 +32,7 @@ export type QueueBundle = {
   before_image_url: string | null;
   after_image_url: string | null;
   image_caption: string | null;
+  feedback: string | null;
 };
 
 function optionChoice(o: Option): string {
@@ -38,9 +50,10 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 export function BundleCard({ bundle }: { bundle: QueueBundle }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [mode, setMode] = useState<'idle' | 'park' | 'never'>('idle');
+  const [mode, setMode] = useState<'idle' | 'park' | 'never' | 'note'>('idle');
   const [trigger, setTrigger] = useState('resurface:v1');
   const [note, setNote] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState<number | undefined>(undefined);
 
   const isParked = bundle.status === 'parked';
@@ -134,6 +147,7 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
             ]
               .filter(Boolean)
               .join(' · ');
+            const recommended = o.recommended === true;
             return (
               <button
                 key={optionChoice(o) || i}
@@ -145,13 +159,30 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
                     'Resolved.',
                   )
                 }
-                className="flex w-full items-start gap-3 rounded-md border border-[var(--border)] p-3 text-left transition-colors hover:border-[var(--foreground)] disabled:opacity-50"
+                className={`flex w-full items-start gap-3 rounded-md border p-3 text-left transition-colors disabled:opacity-50 ${
+                  recommended
+                    ? 'border-[var(--foreground)]/30 bg-[var(--muted)] hover:border-[var(--foreground)]'
+                    : 'border-[var(--border)] hover:border-[var(--foreground)]'
+                }`}
               >
-                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded bg-[var(--muted)] font-mono text-[11px] font-medium">
+                <span
+                  className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded font-mono text-[11px] font-medium ${
+                    recommended
+                      ? 'bg-[var(--foreground)] text-[var(--background)]'
+                      : 'bg-[var(--muted)]'
+                  }`}
+                >
                   {String.fromCharCode(65 + i)}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm leading-snug">{o.label ?? o.key}</span>
+                  <span className="block text-sm leading-snug">
+                    {o.label ?? o.key}
+                    {recommended ? (
+                      <span className="ml-2 align-middle text-[10px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+                        ✦ Recommended
+                      </span>
+                    ) : null}
+                  </span>
                   {meta ? (
                     <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
                       {meta}
@@ -198,6 +229,15 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
           className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted-foreground)] hover:border-[var(--foreground)] disabled:opacity-50"
         >
           Never
+        </button>
+
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => setMode(mode === 'note' ? 'idle' : 'note')}
+          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs hover:border-[var(--foreground)] disabled:opacity-50"
+        >
+          Note / question
         </button>
 
         <select
@@ -272,6 +312,45 @@ export function BundleCard({ bundle }: { bundle: QueueBundle }) {
           >
             Confirm never
           </button>
+        </div>
+      ) : null}
+
+      {mode === 'note' ? (
+        <div className="mt-3 border-t border-[var(--border)] pt-3">
+          <textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder="Leave a note or question — saved here and posted to the linked kanban card. Doesn't resolve the item."
+            rows={3}
+            className="w-full rounded-md border border-[var(--border)] bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[var(--ring)]"
+          />
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              disabled={isPending || !feedback.trim()}
+              onClick={() =>
+                run(async () => {
+                  const r = await noteBundleAction({ id: bundle.id, note: feedback.trim() });
+                  if (r.ok) setFeedback('');
+                  return r;
+                }, 'Note saved.')
+              }
+              className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-xs font-medium text-[var(--primary-foreground)] disabled:opacity-50"
+            >
+              Save note
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {bundle.feedback ? (
+        <div className="mt-3 border-t border-[var(--border)] pt-3">
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+            Notes
+          </p>
+          <pre className="whitespace-pre-wrap font-sans text-xs text-[var(--muted-foreground)]">
+            {bundle.feedback}
+          </pre>
         </div>
       ) : null}
     </div>
