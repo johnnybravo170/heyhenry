@@ -75,13 +75,3 @@ export const contacts = pgTable(
 
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
-
-/**
- * Back-compat aliases. The table + type were renamed `customers` → `contacts`
- * (the table always held all contact kinds). These thin aliases keep existing
- * `customers` / `Customer` imports compiling while call sites migrate to the
- * new names; remove them in a follow-up once references are cut over.
- */
-export const customers = contacts;
-export type Customer = Contact;
-export type NewCustomer = NewContact;

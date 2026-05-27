@@ -12,7 +12,7 @@ export * from './bank-transactions';
 export * from './casl';
 export * from './catalog-items';
 export * from './contact-notes';
-export * from './customers';
+export * from './contacts';
 export * from './data-exports';
 export * from './estimate-snippets';
 export * from './invoices';

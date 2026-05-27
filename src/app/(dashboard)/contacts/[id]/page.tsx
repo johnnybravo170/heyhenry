@@ -21,7 +21,7 @@ import {
   type RelatedInvoice,
   type RelatedJob,
   type RelatedQuote,
-} from '@/lib/db/queries/customers';
+} from '@/lib/db/queries/contacts';
 import { invoiceTotalCents } from '@/lib/db/queries/invoices';
 import { listTasksForLead } from '@/lib/db/queries/tasks';
 import { formatPhone } from '@/lib/phone';

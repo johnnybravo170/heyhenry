@@ -17,7 +17,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { customers } from './customers';
+import { contacts } from './contacts';
 import { jobs } from './jobs';
 import { tenants } from './tenants';
 
@@ -27,7 +27,7 @@ export const photos = pgTable('photos', {
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade' }),
-  contactId: uuid('contact_id').references(() => customers.id, { onDelete: 'set null' }),
+  contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
 
   storagePath: text('storage_path').notNull(),
 

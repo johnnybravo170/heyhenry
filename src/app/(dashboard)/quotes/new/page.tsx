@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { QuoteForm } from '@/components/features/quotes/quote-form';
 import { requireTenant } from '@/lib/auth/helpers';
 import { listMapQuoteCatalog } from '@/lib/db/queries/catalog-items';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createQuoteAction } from '@/server/actions/quotes';
 
@@ -34,7 +34,7 @@ export default async function NewQuotePage({
   const prefilledContactId = parseContactId(resolvedParams.contact_id);
 
   const [customers, catalog, taxCtx] = await Promise.all([
-    listCustomers({ limit: 500 }),
+    listContacts({ limit: 500 }),
     listMapQuoteCatalog(),
     // Customer-facing: the rate here must match the total the customer signs.
     canadianTax.getCustomerFacingContext(tenant.id),

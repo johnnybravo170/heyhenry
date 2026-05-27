@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { JobForm } from '@/components/features/jobs/job-form';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import type { JobInput } from '@/lib/validators/job';
 import { createJobAction } from '@/server/actions/jobs';
 
@@ -24,7 +24,7 @@ export default async function NewJobPage({
   const resolvedSearchParams = await searchParams;
   const prefilledContactId = parseContactId(resolvedSearchParams.contact_id);
 
-  const customers = await listCustomers({ limit: 500 });
+  const customers = await listContacts({ limit: 500 });
 
   const defaults: Partial<JobInput> = {
     status: 'booked',

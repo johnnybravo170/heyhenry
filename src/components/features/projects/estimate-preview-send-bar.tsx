@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { EstimatePreflight } from '@/lib/estimate/preflight';
-import { patchCustomerEmailAction } from '@/server/actions/customers';
+import { patchCustomerEmailAction } from '@/server/actions/contacts';
 import { sendEstimateForApprovalAction } from '@/server/actions/estimate-approval';
 
 type Props = {
