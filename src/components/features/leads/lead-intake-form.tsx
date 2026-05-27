@@ -44,6 +44,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { ExistingMatchesBanner } from '@/components/features/contacts/existing-matches-banner';
 import { IntakeDropzone } from '@/components/features/contacts/intake-dropzone';
+import { GstSuggestionPrompt } from '@/components/features/leads/gst-suggestion-prompt';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1061,6 +1062,7 @@ export function LeadIntakeForm({
           onAccept={handleAcceptSuggestion}
           onDismiss={handleDismissSuggestion}
         />
+        <GstSuggestionPrompt detectedTaxIds={draft.detected_tax_ids ?? []} />
         {transcript ? <TranscriptPanel transcript={transcript} /> : null}
         {parsedBy ? <p className="text-xs text-muted-foreground">Parsed by: {parsedBy}</p> : null}
         <ReviewDraft
