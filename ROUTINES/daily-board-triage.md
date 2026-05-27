@@ -46,7 +46,13 @@ Compare the current now-context stage to parked items' resurface triggers. If th
 
 ## Step 7 — Write to the queue + ONE digest
 - Each decision / research decision / go-no-go → idempotent card/idea comment (the durable record) + upsert into `/admin/queue`.
-- **ONE digest email** (`ops_email_send` → jonathan@smartfusion.ca): stream **counts** (Decisions N · Research N · Shipping N · Go/no-go N · Grooming N), the single highest-leverage item inline, and ONE **"Open your queue →"** link. No per-item emails. **No email on an empty day.** Only a genuinely time-critical single item may also `escalate_sms`.
+- **ONE digest email** — send via **`ops_digest_send`** (NOT `ops_email_send`; the formatter owns the HTML so the digest can't drift into a monospace wall). Pass STRUCTURED data only:
+  - `counts`: per-stream counts in **urgency order** (fires/decisions → go/no-go → research → grooming/parked). Stable order every day.
+  - `top_item`: the single highest-leverage item, shown inline in full. `severity:"fire"` ONLY for genuinely broken-in-prod. `body` is markdown-lite — wrap model strings / file paths / env vars in `` `backticks` `` (renders as the ONLY monospace), `**bold**` for emphasis, blank lines for paragraphs.
+  - `streams`: everything else, collapsed to **one item per row** — short `title` + a one-line `teaser`. NEVER cram multiple items into one teaser; each item is its own row.
+  - `subject`: a scannable summary like "2 fires, 4 research calls, 2 stalled cards".
+  - The "Open your queue →" link is added by the formatter — don't compose it. Detail lives in the queue, not the email; the email is a nudge.
+  - No per-item emails. **No email on an empty day.** Only a genuinely time-critical single item may also `escalate_sms`.
 - `worklog_add` a one-line run summary.
 
 ## Step 8 — Report card (calibrates everything, incl. which scouts earn their keep)
