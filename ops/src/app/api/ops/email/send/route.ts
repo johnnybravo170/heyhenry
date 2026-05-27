@@ -1,11 +1,11 @@
 /**
- * POST /api/ops/email/send — send a transactional email via Resend.
+ * POST /api/ops/email/send — send a transactional email via Postmark.
  *
  * HMAC-authed like every other `/api/ops/*` route. Scope: `write:email`.
  *
  * Env:
- *   RESEND_API_KEY           — required
- *   OPS_EMAIL_DEFAULT_FROM   — fallback `from`
+ *   POSTMARK_SERVER_TOKEN    — required
+ *   OPS_EMAIL_DEFAULT_FROM   — optional `from` override (verified sender)
  *
  * GET on this path returns a health snippet — handy for "is this alive?"
  * without leaking the key.
@@ -13,7 +13,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticateRequest, logAuditSuccess } from '@/lib/api-auth';
-import { resendConfigured, sendOpsEmail } from '@/server/ops-services/email';
+import { postmarkConfigured, sendOpsEmail } from '@/server/ops-services/email';
 
 const tagSchema = z.object({
   name: z.string().min(1).max(256),
@@ -38,7 +38,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     endpoint: '/api/ops/email/send',
-    resend_configured: resendConfigured(),
+    postmark_configured: postmarkConfigured(),
     default_from_configured: Boolean(process.env.OPS_EMAIL_DEFAULT_FROM),
   });
 }
