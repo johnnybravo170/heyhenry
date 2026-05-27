@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { ContactRow, ContactSignal } from '@/lib/db/queries/customers';
+import type { ContactRow, ContactSignal } from '@/lib/db/queries/contacts';
 import { formatPhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import { type ContactKind, contactKindLabels } from '@/lib/validators/customer';

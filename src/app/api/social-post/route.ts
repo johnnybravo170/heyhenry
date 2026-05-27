@@ -8,7 +8,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { getCustomer } from '@/lib/db/queries/customers';
+import { getCustomer } from '@/lib/db/queries/contacts';
 import { getJob } from '@/lib/db/queries/jobs';
 import { listPhotosByJob, type PhotoWithUrl } from '@/lib/db/queries/photos';
 import { getQuote } from '@/lib/db/queries/quotes';

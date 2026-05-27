@@ -6,7 +6,7 @@ import { JobEmptyState } from '@/components/features/jobs/job-empty-state';
 import { JobListFilters } from '@/components/features/jobs/job-list-filters';
 import { JobListTable } from '@/components/features/jobs/job-list-table';
 import { Button } from '@/components/ui/button';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { countJobsByStatus, listJobs } from '@/lib/db/queries/jobs';
 import { type JobStatus, jobStatuses } from '@/lib/validators/job';
 
@@ -44,7 +44,7 @@ export default async function JobListPage({
       limit: 200,
     }),
     countJobsByStatus(),
-    listCustomers({ limit: 500 }),
+    listContacts({ limit: 500 }),
   ]);
 
   const grandTotal = counts.booked + counts.in_progress + counts.complete + counts.cancelled;

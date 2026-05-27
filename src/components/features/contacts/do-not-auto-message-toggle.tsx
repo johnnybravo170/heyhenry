@@ -4,7 +4,7 @@ import { Ban, ShieldCheck } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { setDoNotAutoMessageAction } from '@/server/actions/customers';
+import { setDoNotAutoMessageAction } from '@/server/actions/contacts';
 
 const SOURCE_LABELS: Record<string, string> = {
   unsubscribe_link: 'clicked unsubscribe link',

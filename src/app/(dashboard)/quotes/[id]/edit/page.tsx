@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { QuoteForm } from '@/components/features/quotes/quote-form';
 import { requireTenant } from '@/lib/auth/helpers';
 import { listMapQuoteCatalog } from '@/lib/db/queries/catalog-items';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { getQuote } from '@/lib/db/queries/quotes';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 import { updateQuoteAction } from '@/server/actions/quotes';
@@ -19,7 +19,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
   const { tenant } = await requireTenant();
   const [quote, customers, catalog, taxCtx] = await Promise.all([
     getQuote(id),
-    listCustomers({ limit: 500 }),
+    listContacts({ limit: 500 }),
     listMapQuoteCatalog(),
     // Customer-facing: the rate here must match the total the customer signs.
     canadianTax.getCustomerFacingContext(tenant.id),

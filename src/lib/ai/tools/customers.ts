@@ -1,5 +1,5 @@
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { getCustomer, getCustomerRelated, listCustomers } from '@/lib/db/queries/customers';
+import { getCustomer, getCustomerRelated, listContacts } from '@/lib/db/queries/contacts';
 import { createClient } from '@/lib/supabase/server';
 import { formatDate } from '../format';
 import { resolveCustomer } from '../helpers/resolve-customer';
@@ -32,7 +32,7 @@ export const customerTools: AiTool[] = [
     },
     handler: async (input) => {
       try {
-        const rows = await listCustomers({
+        const rows = await listContacts({
           search: input.search as string | undefined,
           type: input.type as 'residential' | 'commercial' | 'agent' | undefined,
           limit: Math.min((input.limit as number) || 20, 100),

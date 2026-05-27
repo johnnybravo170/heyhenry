@@ -172,7 +172,7 @@ function applyListFilters<
   return q;
 }
 
-export async function listCustomers(filters: CustomerListFilters = {}): Promise<CustomerRow[]> {
+export async function listContacts(filters: CustomerListFilters = {}): Promise<CustomerRow[]> {
   const supabase = await createClient();
   const limit = filters.limit ?? 100;
   const offset = filters.offset ?? 0;

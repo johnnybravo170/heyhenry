@@ -52,7 +52,7 @@ import {
   customerTypeLabels,
   customerTypes,
 } from '@/lib/validators/customer';
-import type { CustomerActionResult } from '@/server/actions/customers';
+import type { CustomerActionResult } from '@/server/actions/contacts';
 
 const LIBRARIES: 'places'[] = ['places'];
 
