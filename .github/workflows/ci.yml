@@ -68,6 +68,14 @@ jobs:
         # scripts/check-migration-prefixes.ts.
         run: pnpm exec tsx scripts/check-migration-prefixes.ts
 
+      - name: Migration grants on new public tables
+        # Since the no-auto-grant opt-in (20260527151331), a new public table
+        # is unreachable over the Data API until it issues an explicit GRANT —
+        # RLS policies alone are not enough (they sit on top of table privs).
+        # Fail any post-opt-in migration that CREATE TABLEs in public without
+        # one. See scripts/check-migration-grants.ts.
+        run: pnpm exec tsx scripts/check-migration-grants.ts
+
       - name: Unit tests
         run: pnpm test
 
