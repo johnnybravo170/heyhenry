@@ -81,7 +81,7 @@ test.describe
         }
 
         // Create customer directly
-        await admin.from('customers').insert({
+        await admin.from('contacts').insert({
           tenant_id: createdTenantId,
           name: customerName,
           email: customerEmail,
@@ -105,7 +105,7 @@ test.describe
 
         // Get customer
         const { data: customer } = await admin
-          .from('customers')
+          .from('contacts')
           .select('id')
           .eq('tenant_id', createdTenantId)
           .single();

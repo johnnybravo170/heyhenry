@@ -50,7 +50,7 @@ test.describe
           await admin.from('quote_surfaces').delete().eq('quote_id', q.id);
         }
         await admin.from('quotes').delete().eq('tenant_id', createdTenantId);
-        await admin.from('customers').delete().eq('tenant_id', createdTenantId);
+        await admin.from('contacts').delete().eq('tenant_id', createdTenantId);
         await admin.from('catalog_items').delete().eq('tenant_id', createdTenantId);
         await admin.from('todos').delete().eq('tenant_id', createdTenantId);
         await admin.from('worklog_entries').delete().eq('tenant_id', createdTenantId);
@@ -165,7 +165,7 @@ test.describe
       // --- 8. Verify in DB ---
       // Check customer was created.
       const { data: customers } = await admin
-        .from('customers')
+        .from('contacts')
         .select('id, name, email, phone')
         .eq('tenant_id', createdTenantId)
         .eq('email', leadEmail);
