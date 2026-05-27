@@ -35,6 +35,8 @@ export const contacts = pgTable(
     postalCode: text('postal_code'),
     lat: numeric('lat', { precision: 10, scale: 7 }),
     lng: numeric('lng', { precision: 10, scale: 7 }),
+    /** GST/HST registration number — mainly for vendor/sub contacts. */
+    gstNumber: text('gst_number'),
     /**
      * @deprecated Writes go to `contact_notes` (see `./contact-notes.ts`).
      * Column retained for read compatibility until a follow-up migration drops it.
