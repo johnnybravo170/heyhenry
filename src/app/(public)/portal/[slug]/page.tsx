@@ -769,8 +769,12 @@ export default async function PortalPage({
             </div>
           </div>
 
-          {/* Top tab strip — every tab reachable, scrolls horizontally on phones. */}
-          <div className="mb-6 flex gap-1 overflow-x-auto border-b">
+          {/* Top tab strip — every tab reachable, scrolls horizontally on phones.
+              `overflow-y-hidden` paired with `overflow-x-auto` kills the phantom
+              vertical scrollbar (CSS spec computes overflow-y to auto when the
+              other axis is auto, so any 1px of vertical overflow — the border-b
+              underline, line-height, focus ring — would otherwise trip the bar). */}
+          <div className="mb-6 flex gap-1 overflow-x-auto overflow-y-hidden border-b">
             {TABS.map((t) => (
               <Link
                 key={t.key}

@@ -272,7 +272,7 @@ export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProp
             strategy={horizontalListSortingStrategy}
           >
             <ol
-              className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto pb-1"
+              className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto overflow-y-hidden pb-1"
               aria-label="Project phases (edit mode)"
             >
               {orderedPhases.map((p) => (
@@ -292,7 +292,7 @@ export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProp
         </DndContext>
       ) : (
         <ol
-          className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto pb-1"
+          className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto overflow-y-hidden pb-1"
           aria-label="Project phases"
         >
           {orderedPhases.map((p) => {
