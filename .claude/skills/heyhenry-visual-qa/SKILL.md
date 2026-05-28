@@ -11,6 +11,23 @@ Its sibling `heyhenry-design-critique` judges workflow / positioning / object-mo
 
 **Work from pixels, not the DOM.** A defect is what a person sees, not what the code says.
 
+## Calibration — file early, file often
+
+**PASS is rare. One defect is enough to file the screen.**
+
+If you can name **a single** issue from the checklist on a screen — even one you'd call "minor" or "borderline" — the screen is **not PASS**. It's a digest entry, captured with a before screenshot and a plain-English caption. The whole point of the loop is to surface what Jonathan would catch by eye; a lenient grader that swallows "small" defects is worse than no grader, because it launders broken screens as approved.
+
+Defects do not need to compound. Do not bundle issues mentally and ask "is this *bad enough* to file?" — the answer is yes the moment you can name one.
+
+Specifically:
+- "Borderline low contrast" → file it.
+- "Minor banner-to-content spacing" → file it.
+- "Cards look a bit empty / a bit cramped" → file it.
+- "Two cards on this row say the same thing" → file it.
+- "AWAITING APPROVAL is yellow, the others are white — probably intentional?" → file it. Let Jonathan decide; don't pre-rule.
+
+A sweep where every screen is PASS is almost always a calibration failure, not a clean app. When in doubt, file.
+
 ## The HeyHenry baseline — what "right" looks like
 A **calm, dense working tool** on a warm "Paper" system: cream surfaces, white cards, near-black ink, and exactly **ONE rust accent** (`#C2410C`) reserved for the single primary "decide" CTA + the ✦ Henry mark. Money is tabular and right-aligned. Status reads as **glyph + word**, never colour alone. Type is a tight 16/14/12 ramp in medium-weight Inter.
 
@@ -19,7 +36,7 @@ These are defects in themselves (not just "taste"):
 - **Loud saturated colour blocks** (solid red/amber/emerald/blue) instead of soft Paper tones.
 - **More than one rust** element competing, or rust on anything but the one decide-CTA / ✦ Henry mark.
 
-**Tuning note:** the typical HeyHenry failure is **cramming + off-system decoration**, not empty space. A big empty void is rare (usually a half-built section, or an intelligence strip that should hide itself when empty). **And evaluate spacing/rhythm *between* sections, not just within cards** — insufficient vertical gap between stacked bands (banner → card row → panel) is an easy miss and a real defect; scan the page's vertical rhythm explicitly, top to bottom. Weight "loud / cluttered / off-Paper" higher than "too sparse."
+**Tuning note:** the typical HeyHenry failure is **cramming + off-system decoration** at the page level, but **void *inside* card chrome is the second-most-common defect** — a stat card where the number floats in oversized space, an empty intelligence strip rendering empty chrome. Don't let "weight cluttered over sparse" become cover for ignoring oversized-card voids. Two distinct void modes, both worth filing: (a) **page-level void** — a big empty band where a section is half-built (rare); (b) **card-level void** — a card whose content uses ≲ 50% of its footprint (common, and easy to miss). **And evaluate spacing/rhythm *between* sections, not just within cards** — insufficient vertical gap between stacked bands (banner → card row → panel) is an easy miss and a real defect; scan the page's vertical rhythm explicitly, top to bottom.
 
 ## Universal design principles (the general eye)
 The HeyHenry rules above are the house style; these are the universal principles beneath them — the "why" that catches defects no past-bug list anticipated. **When they conflict with the house style, the house style wins** (HeyHenry is deliberately dense, so "generous whitespace" means *rhythm and grouping*, not sprawl).
@@ -77,6 +94,8 @@ Each line: **what to look for** · "plain-English caption" · [auto-fix | surfac
 - **Cramped vertical rhythm (section spacing)** — stacked sections (banner → card row → panel) butting together with little or no vertical gap; no consistent breathing room down the page · "The sections are stacked right on top of each other with no space between them — it feels cramped." · [auto if a one-off margin; surface if it's the page-shell spacing scale]
 - **Collapsed container** — a region that should fill its row renders as a short broken stub (e.g. calendar cells collapsing) · "The calendar cells are short broken boxes instead of filling the row." · [surface if non-obvious]
 - **Truncation collision / wrap** — a short pill/label wraps to two lines, or text jams against a neighbour · "The status tag is awkwardly split across two lines." · [auto]
+- **Card-content density mismatch** — a card whose label + value + caption occupy less than roughly half of the card's footprint, leaving a big empty bottom band inside the card; numbers float in oversized boxes · "The number is small and floats in a big mostly-empty box — the card feels oversized for what's in it." · [surface — sizing decision]
+- **Unlabelled / unframed stat row** — a row of stat cards sitting under another row with no section heading and no extra vertical gap, so the two rows read as one ragged grid instead of two related sections · "Two rows of number-boxes stacked together with no heading on the second one — it looks like one broken grid." · [surface — layout-architecture]
 
 ### 7 · Data & stability
 - **Raw / unformatted data** — a UUID shown as an invoice number, a raw ISO date, an unformatted phone, a literal HTML entity, a date off by a day · "The invoice number is a jumble of letters; the date shows 2026-04-28 instead of Apr 28." · [auto — match the tenant-tz date helper]
@@ -85,7 +104,8 @@ Each line: **what to look for** · "plain-English caption" · [auto-fix | surfac
 ### 8 · Components & states
 - **Missing interactive / feedback states** — a button with no hover or active state, an input with no visible focus ring, or a clickable thing with no affordance (doesn't look clickable) · "This doesn't look clickable, and nothing changes when I hover or tap it." · [auto if one component; surface if the shared button/input primitive] _(may need a hover/interaction pass, not just a static shot)_
 - **Poor empty / loading / error state** — a blank region with no empty-state message, a layout that pops/shifts with no skeleton while loading, or a raw unstyled error · "When there's nothing here, or it's loading, the screen looks broken instead of telling me what's going on." · [auto if one surface; surface if a shared state pattern]
-- **Consistency drift** — mixed border-radii, inconsistent shadow/elevation, two button styles for the same action, or mixed icon styles (outline + filled) on one screen · "Things that should match don't — corners, shadows, or buttons differ across the screen." · [surface — usually a token or primitive]
+- **Consistency drift** — mixed border-radii, inconsistent shadow/elevation, two button styles for the same action, or mixed icon styles (outline + filled) on one screen; also includes one card in a row with a different fill colour than its siblings with no clear status reason · "Things that should match don't — corners, shadows, fills, or buttons differ across the screen." · [surface — usually a token or primitive]
+- **Redundant metric** — the same number/entity is rendered twice on one screen in two card framings (e.g. "ACTIVE 7" and "ACTIVE PROJECTS 7" both visible at once), making the viewer bounce between them wondering if they're the same thing · "Two boxes on the same page are showing the same number — am I supposed to read them as different?" · [surface — object-model decision, needs `heyhenry-screen-design`]
 
 ## Output — what a finding looks like
 Per defect: **before/after screenshots** + a **plain-English caption** + the **risk tag** ([auto-fix] or [surface]).
