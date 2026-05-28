@@ -106,17 +106,27 @@ export async function setIdeaStatusAction(id: string, status: string): Promise<A
   const admin = await requireAdmin();
   if (!VALID_STATUS.includes(status)) return { ok: false, error: 'Invalid status.' };
   const service = createServiceClient();
+  // A deliberate human 'rejected' is a STRONG negative signal (archived_explicit),
+  // distinct from an idea that merely aged out (archived_stale, emitted by the
+  // hygiene auto-archive cron). End-to-end archival is gated on archived_at, so
+  // a rejection that ONLY flips status leaves the idea visible in digests until
+  // ideas-review eventually catches up — set archived_at in the same update so
+  // the rejection actually takes effect, and the outcome event reflects reality.
+  const update: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  if (status === 'rejected') {
+    update.archived_at = new Date().toISOString();
+  }
   const { data, error } = await service
     .schema('ops')
     .from('ideas')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update(update)
     .eq('id', id)
     .select('actor_name')
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  // A deliberate human 'rejected' is a STRONG negative signal (archived_explicit),
-  // distinct from an idea that merely aged out (archived_stale, emitted by the
-  // hygiene auto-archive cron). That distinction is the point of the outcome log.
   if (status === 'rejected' && data) {
     await logIdeaOutcome(
       id,
