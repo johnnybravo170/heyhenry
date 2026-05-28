@@ -708,24 +708,38 @@ export function BudgetCategoriesTable({
                             </AlertDialogContent>
                           </AlertDialog>
                         ) : null}
-                        {/* Collapsed summary chips */}
-                        {collapsed
-                          ? overCats.map((l) => (
-                              <StatusBadge key={l.budget_category_id} tone="danger">
-                                {l.budget_category_name} over{' '}
-                                <Money cents={l.actual_cents - l.estimate_cents} />
-                              </StatusBadge>
-                            ))
-                          : null}
-                        {collapsed
-                          ? projOverCats.map((l) => (
-                              <StatusBadge
-                                key={l.budget_category_id}
-                                tone="warning"
-                                label={`${l.budget_category_name} projected over`}
+                        {/* Quiet variance flag — short, sentence-case, soft-pair tone, font-medium.
+                            Aggregated (one chip per status, not one per category) so the section
+                            eyebrow leads and the chip is a quiet tally beside it. OD spec:
+                            od-project-hub/screens/desktop-budget.html "QUIET VARIANCE FLAG". */}
+                        {collapsed && overCats.length > 0 ? (
+                          <StatusBadge
+                            tone="danger"
+                            className="font-medium normal-case tracking-normal"
+                          >
+                            <span className="tabular-nums">
+                              <Money
+                                cents={overCats.reduce(
+                                  (s, l) => s + (l.actual_cents - l.estimate_cents),
+                                  0,
+                                )}
                               />
-                            ))
-                          : null}
+                            </span>{' '}
+                            over
+                            {overCats.length > 1 ? (
+                              <span className="ml-1 opacity-70">({overCats.length})</span>
+                            ) : null}
+                          </StatusBadge>
+                        ) : null}
+                        {collapsed && projOverCats.length > 0 ? (
+                          <StatusBadge
+                            tone="warning"
+                            className="font-medium normal-case tracking-normal"
+                          >
+                            <span className="tabular-nums">{projOverCats.length}</span> projected
+                            over
+                          </StatusBadge>
+                        ) : null}
                       </div>
                       {/* Inline section description — same pattern as the category
                         description. Stored as plain text/markdown in

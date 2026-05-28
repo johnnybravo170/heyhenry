@@ -72,9 +72,9 @@ export function Money({
       {showSymbol ? symbol : null}
       {integer}
       {fraction ? (
-        <span className="text-[0.7em] text-muted-foreground/70">{fraction}</span>
+        <span className="text-[0.8em] text-muted-foreground/70">{fraction}</span>
       ) : (
-        <span aria-hidden className="invisible text-[0.7em]">
+        <span aria-hidden className="invisible text-[0.8em]">
           .00
         </span>
       )}
