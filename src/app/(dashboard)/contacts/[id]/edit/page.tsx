@@ -5,6 +5,7 @@ import { ContactForm } from '@/components/features/contacts/contact-form';
 import { getCustomer } from '@/lib/db/queries/contacts';
 import { formatPhone } from '@/lib/phone';
 import type { CustomerCreateInput, CustomerType } from '@/lib/validators/customer';
+import { isUuid } from '@/lib/validators/uuid';
 import { type CustomerActionResult, updateCustomerAction } from '@/server/actions/contacts';
 
 export const metadata = {
@@ -13,6 +14,7 @@ export const metadata = {
 
 export default async function EditContactPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const customer = await getCustomer(id);
   if (!customer) notFound();
 

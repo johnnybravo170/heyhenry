@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { JobStatus } from '@/lib/validators/job';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type JobCustomerSummary = {
   id: string;
@@ -145,6 +146,7 @@ export async function listJobs(filters: JobListFilters = {}): Promise<JobWithCus
 }
 
 export async function getJob(id: string): Promise<JobWithRelations | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase

@@ -8,12 +8,14 @@
 import { NextResponse } from 'next/server';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenant = await getCurrentTenant();
   if (!tenant) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
+  if (!isUuid(id)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('pulse_updates')

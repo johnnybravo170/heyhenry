@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/queries/change-orders';
 import { listCostLines } from '@/lib/db/queries/cost-lines';
 import { getProject } from '@/lib/db/queries/projects';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function generateMetadata({
   params,
@@ -32,6 +33,7 @@ export default async function EditChangeOrderPage({
   params: Promise<{ id: string; coId: string }>;
 }) {
   const { id, coId } = await params;
+  if (!isUuid(id) || !isUuid(coId)) notFound();
 
   const [project, co] = await Promise.all([getProject(id), getChangeOrder(coId)]);
   if (!project || !co) notFound();
