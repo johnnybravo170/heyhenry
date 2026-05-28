@@ -31,6 +31,20 @@ const KIND_LABELS = {
   po: 'PO',
 } as const;
 
+/**
+ * Subtle source-tint pill classes — distinct per source so the kind reads
+ * at-a-glance, never rust (which is reserved for action / alarm). Soft-pair
+ * tones mirror the OD spec (`--src-labour-bg` / `--src-bill-bg` /
+ * `--src-expense-bg`). PO inherits the bill family since both are "billable
+ * commitments" — kept slightly lighter to disambiguate from a real bill.
+ */
+const KIND_PILL_CLASSES: Record<keyof typeof KIND_LABELS, string> = {
+  labour: 'bg-[#E8E4F2] text-[#4F427A]',
+  bill: 'bg-[#E6EDFA] text-[#1E40AF]',
+  expense: 'bg-[#FBEFD2] text-[#92580E]',
+  po: 'bg-[#E6EDFA]/60 text-[#1E40AF]/80',
+};
+
 const EMPTY: CostLineActualsSummary = {
   total_cents: 0,
   labour_hours: 0,
@@ -58,7 +72,7 @@ export function CostLineActualsInline({
 
   if (data.rows.length === 0) {
     return (
-      <div className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+      <div className="px-3 py-2 text-xs text-muted-foreground">
         Nothing has been spent against{' '}
         <span className="font-medium text-foreground">{costLineLabel}</span> yet. Bills, expenses,
         and time entries can be assigned to this line on their own forms.
@@ -67,7 +81,9 @@ export function CostLineActualsInline({
   }
 
   return (
-    <div className="space-y-2 rounded-md border bg-muted/20 p-3 text-xs">
+    // Transparent background — the parent's spend-detail well provides the
+    // tint, so this surface never out-shines the line above it.
+    <div className="space-y-2 p-3 text-xs">
       {/* Summary strip — labour hours up front since that's the */}
       {/* operator's most common drill-in: "how many hours have we put */}
       {/* on this line?" */}
@@ -121,7 +137,9 @@ export function CostLineActualsInline({
           return (
             <li key={`${r.kind}-${r.id}`} className="flex items-center gap-2 py-1.5">
               <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span
+                className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-eyebrow font-bold uppercase tracking-[0.06em] ${KIND_PILL_CLASSES[r.kind]}`}
+              >
                 {KIND_LABELS[r.kind]}
               </span>
               <span className="min-w-0 flex-1 truncate">
@@ -138,14 +156,14 @@ export function CostLineActualsInline({
       </ul>
 
       {data.rows.length > 10 ? (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-eyebrow text-muted-foreground">
           Showing 10 most recent of {data.rows.length} entries.
         </p>
       ) : null}
 
       <Link
         href={`/projects/${projectId}?tab=costs&focus_line=${costLineId}`}
-        className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-1 font-mono text-eyebrow font-semibold uppercase tracking-[0.06em] text-muted-foreground hover:text-foreground"
       >
         Open in Spend tab
         <ArrowUpRight className="size-3" />
