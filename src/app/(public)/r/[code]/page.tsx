@@ -73,7 +73,7 @@ export default async function ReferralLandingPage({ params }: Props) {
             <span className="grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground">
               <Link2Off className="size-6" aria-hidden="true" />
             </span>
-            <p className="mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mt-4 font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Referral link · not active
             </p>
             <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground">

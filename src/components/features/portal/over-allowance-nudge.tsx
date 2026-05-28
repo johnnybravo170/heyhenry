@@ -64,13 +64,13 @@ export function OverAllowanceNudge({
       <div className="flex flex-wrap items-start gap-3 p-3 sm:flex-nowrap">
         <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-wide text-brand">
+          <div className="flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wide text-brand">
             Henry · over-allowance check
             <span className="font-normal normal-case text-muted-foreground">
               deterministic · allowance vs actual
             </span>
           </div>
-          <p className="mt-1 text-[13px] leading-snug text-foreground">
+          <p className="mt-1 text-sm leading-snug text-foreground">
             <b>{lead.label}</b> is{' '}
             <span className="font-mono font-bold text-rose-800">
               +{formatCurrency(lead.overByCents)}
@@ -110,7 +110,7 @@ export function OverAllowanceNudge({
           </Button>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-brand/15 px-3 py-1.5 text-[11px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-brand/15 px-3 py-1.5 text-xs text-muted-foreground">
         <span>
           {ranked.length} {ranked.length === 1 ? 'selection' : 'selections'} · {rooms.join(' · ')}
         </span>

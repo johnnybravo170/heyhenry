@@ -191,7 +191,7 @@ export function DocumentUpload({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-[10px] text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground">
             Linking to a sub-trade adds them to the client&rsquo;s &ldquo;Trade contacts&rdquo; list
             on the portal.
           </p>

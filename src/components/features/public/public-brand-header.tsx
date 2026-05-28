@@ -74,7 +74,7 @@ export function PublicBrandHeader({
         ) : null}
       </div>
       {hideSecure ? null : (
-        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 font-mono text-xs uppercase tracking-wide text-muted-foreground">
           <Lock aria-hidden className="h-3 w-3 text-emerald-600" />
           secure
         </span>

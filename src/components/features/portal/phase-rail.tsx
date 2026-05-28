@@ -327,7 +327,7 @@ export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProp
                   {isComplete ? <Check className="size-3.5" aria-hidden /> : null}
                   <span className="truncate">{p.name}</span>
                   {expandable ? (
-                    <span className="ml-1 inline-flex size-4 items-center justify-center rounded-full bg-black/10 text-[10px] tabular-nums">
+                    <span className="ml-1 inline-flex size-4 items-center justify-center rounded-full bg-black/10 text-xs tabular-nums">
                       {photos.length}
                     </span>
                   ) : null}

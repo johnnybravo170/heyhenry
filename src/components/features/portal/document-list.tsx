@@ -87,10 +87,10 @@ export function DocumentList({
         return (
           <div key={type} className="overflow-hidden rounded-xl border bg-card">
             <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
-              <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-foreground">
                 {documentTypeLabels[type]}
               </h3>
-              <span className="font-mono text-[11px] text-muted-foreground">{docs.length}</span>
+              <span className="font-mono text-xs text-muted-foreground">{docs.length}</span>
               {TYPE_NOTE[type] ? (
                 <span className="text-xs text-muted-foreground">· {TYPE_NOTE[type]}</span>
               ) : null}

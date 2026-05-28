@@ -193,7 +193,7 @@ export default async function PropertyRecordPage({
                   <p className="text-base font-bold tracking-tight">{snapshot.contractor.name}</p>
                 )}
               </div>
-              <p className="mt-6 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand">
+              <p className="mt-6 font-mono text-xs font-bold uppercase tracking-[0.18em] text-brand">
                 Property Record
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -205,7 +205,7 @@ export default async function PropertyRecordPage({
                   {snapshot.customer.address ? ` · ${snapshot.customer.address}` : null}
                 </p>
               ) : null}
-              <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              <p className="mt-1.5 font-mono text-xs uppercase tracking-wide text-muted-foreground">
                 {logoUrl ? '' : `Prepared by ${snapshot.contractor.name} · `}
                 Generated {formatDate(snapshot.generated_at, tenantTz)}
               </p>
@@ -213,7 +213,7 @@ export default async function PropertyRecordPage({
 
             {hasPdf || hasZip ? (
               <div className="sm:text-right">
-                <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                <p className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   Take this with you
                 </p>
                 <div className="flex flex-col gap-2 sm:min-w-[230px]">
@@ -233,7 +233,7 @@ export default async function PropertyRecordPage({
                     >
                       <Archive className="size-4" aria-hidden />
                       Download ZIP{' '}
-                      <span className="font-mono text-[11px] uppercase opacity-80">Everything</span>
+                      <span className="font-mono text-xs uppercase opacity-80">Everything</span>
                     </a>
                   ) : null}
                 </div>
@@ -250,7 +250,7 @@ export default async function PropertyRecordPage({
                 ))}
               </div>
               {snapshot.project.start_date || snapshot.project.target_end_date ? (
-                <p className="mt-4 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="mt-4 font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {snapshot.project.start_date
                     ? `Started ${formatDate(snapshot.project.start_date, tenantTz)}`
                     : ''}
@@ -274,7 +274,7 @@ export default async function PropertyRecordPage({
                     <li key={phase.name}>
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <span className="text-sm font-semibold">{phase.name}</span>
-                        <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                           {phase.status === 'complete'
                             ? `Completed ${formatDate(phase.completed_at, tenantTz)}`
                             : phase.status === 'in_progress'
@@ -315,7 +315,7 @@ export default async function PropertyRecordPage({
               <div className="space-y-4">
                 {Array.from(selectionsByRoom.entries()).map(([room, items]) => (
                   <div key={room} className="overflow-hidden rounded-lg border bg-card">
-                    <h3 className="border-b bg-paper-soft px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wide text-brand">
+                    <h3 className="border-b bg-paper-soft px-4 py-2 font-mono text-xs font-bold uppercase tracking-wide text-brand">
                       {room}
                     </h3>
                     <ul className="divide-y">
@@ -328,7 +328,7 @@ export default async function PropertyRecordPage({
                             className="px-4 py-3"
                           >
                             <div className="flex flex-wrap items-baseline gap-2">
-                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide">
+                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-mono text-xs font-medium uppercase tracking-wide">
                                 {selectionCategoryLabels[sel.category as SelectionCategory] ??
                                   sel.category}
                               </span>
@@ -374,7 +374,7 @@ export default async function PropertyRecordPage({
                     if (bucket.length === 0) return null;
                     return (
                       <div key={tag}>
-                        <h3 className="mb-2 font-mono text-[11px] font-bold uppercase tracking-wide text-foreground">
+                        <h3 className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-foreground">
                           {portalPhotoTagLabels[tag]}
                           <span className="ml-2 font-normal text-muted-foreground">
                             {bucket.length} {bucket.length === 1 ? 'photo' : 'photos'}
@@ -449,14 +449,14 @@ export default async function PropertyRecordPage({
                       {d.description ? (
                         <p className="mt-0.5 text-xs text-muted-foreground">{d.description}</p>
                       ) : null}
-                      <p className="mt-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                      <p className="mt-1 font-mono text-xs uppercase tracking-wide text-muted-foreground">
                         {d.decided_by_customer ? `By ${d.decided_by_customer} · ` : ''}
                         {formatDate(d.decided_at, tenantTz)}
                       </p>
                     </div>
                     <span
                       className={cn(
-                        'shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide',
+                        'shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold uppercase tracking-wide',
                         d.decided_value === 'approved'
                           ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                           : 'border-border bg-muted text-muted-foreground',
@@ -484,7 +484,7 @@ export default async function PropertyRecordPage({
                       {co.description ? (
                         <p className="mt-1 text-xs text-muted-foreground">{co.description}</p>
                       ) : null}
-                      <p className="mt-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                      <p className="mt-1 font-mono text-xs uppercase tracking-wide text-muted-foreground">
                         Approved
                         {co.approved_by_name ? ` by ${co.approved_by_name}` : ''}
                         {co.approved_at ? ` · ${formatDate(co.approved_at, tenantTz)}` : ''}
@@ -495,7 +495,7 @@ export default async function PropertyRecordPage({
                       <p className="text-base font-bold tabular-nums">
                         {cadFormat.format((co.cost_impact_cents ?? 0) / 100)}
                       </p>
-                      <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                      <p className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                         CAD
                       </p>
                     </div>
@@ -514,7 +514,7 @@ export default async function PropertyRecordPage({
                   if (docs.length === 0) return null;
                   return (
                     <div key={type} className="overflow-hidden rounded-lg border bg-card">
-                      <h3 className="flex items-baseline gap-2 border-b bg-paper-soft px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wide text-foreground">
+                      <h3 className="flex items-baseline gap-2 border-b bg-paper-soft px-4 py-2 font-mono text-xs font-bold uppercase tracking-wide text-foreground">
                         {documentTypeLabels[type]}
                         <span className="font-normal text-muted-foreground">
                           {docs.length} {docs.length === 1 ? 'file' : 'files'}
@@ -574,7 +574,7 @@ export default async function PropertyRecordPage({
               <span className="font-semibold text-foreground">{snapshot.contractor.name}</span>.
               Save this link — it works forever.
             </p>
-            <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground/70">
+            <p className="font-mono text-xs uppercase tracking-wide text-muted-foreground/70">
               Powered by <span className="font-semibold text-muted-foreground">HeyHenry</span>
             </p>
           </footer>
@@ -595,7 +595,7 @@ function Section({
 }) {
   return (
     <section className="mt-8 border-t border-brand pt-8">
-      <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-brand">
+      <p className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-brand">
         {eyebrow}
       </p>
       <h2 className="mb-4 mt-1 text-xl font-bold tracking-tight">{title}</h2>
