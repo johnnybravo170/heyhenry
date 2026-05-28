@@ -86,3 +86,73 @@ export async function getScoutReportCard(scoutTag: string, days = 30): Promise<S
     archivedWithoutPromotion,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Idea outcome log (ops.idea_outcomes) — the producer-learner training signal.
+//
+// Append-only history of what happened to each idea, mirroring the kanban
+// logEvent pattern (written by app code after a mutation, not a DB trigger).
+// The whole point vs. the existing scattered signals (user_rating column,
+// archived_at, promoted: tag) is (a) a chronological history that survives
+// re-rating and (b) the stale-vs-deliberate archive distinction the report
+// card can't make. See migration 20260528204600_ops_idea_outcomes.sql.
+// ---------------------------------------------------------------------------
+
+export type IdeaOutcomeEvent =
+  | 'promoted_to_card'
+  | 'rated_up'
+  | 'rated_down'
+  | 'archived_explicit'
+  | 'archived_stale'
+  | 'parked';
+
+export type IdeaOutcomeActor = {
+  actorType: 'human' | 'agent' | 'system';
+  actorName: string;
+  keyId?: string | null;
+  adminUserId?: string | null;
+};
+
+/**
+ * Append one outcome event for an idea.
+ *
+ * `scoutSlug` is the producing scout's identity — pass the idea's `actor_name`
+ * (e.g. 'business-scout'), NOT the scout TAG getScoutReportCard groups by
+ * ('biz-scout'). The learner + ops.scout_policy standardize on actor_name.
+ *
+ * Best-effort: outcome telemetry must NEVER break the underlying user action
+ * (a failed promote/rate because the log insert failed would be absurd), so a
+ * failure is logged and swallowed — same "instrumentation is not a hard
+ * dependency" rule the routines follow.
+ */
+export async function logIdeaOutcome(
+  ideaId: string,
+  scoutSlug: string,
+  eventType: IdeaOutcomeEvent,
+  actor: IdeaOutcomeActor,
+  opts: { cardId?: string | null; rating?: number | null; metadata?: Record<string, unknown> } = {},
+): Promise<void> {
+  try {
+    const service = createServiceClient();
+    const { error } = await service
+      .schema('ops')
+      .from('idea_outcomes')
+      .insert({
+        idea_id: ideaId,
+        scout_slug: scoutSlug,
+        event_type: eventType,
+        card_id: opts.cardId ?? null,
+        rating: opts.rating ?? null,
+        metadata: opts.metadata ?? {},
+        actor_type: actor.actorType,
+        actor_name: actor.actorName,
+        key_id: actor.keyId ?? null,
+        admin_user_id: actor.adminUserId ?? null,
+      });
+    if (error) {
+      console.error(`[idea_outcomes] failed to log ${eventType} for ${ideaId}: ${error.message}`);
+    }
+  } catch (e) {
+    console.error(`[idea_outcomes] threw logging ${eventType} for ${ideaId}:`, e);
+  }
+}
