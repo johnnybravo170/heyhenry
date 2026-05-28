@@ -13,6 +13,7 @@ import { AlertTriangle, ArrowRight, Shuffle } from 'lucide-react';
 import Link from 'next/link';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { Money } from '@/components/ui/money';
+import { BUDGET_BAR_CLASSES, budgetBarTone } from '@/lib/budget/bar-tone';
 import { cn } from '@/lib/utils';
 
 export function BudgetAlertChips({
@@ -119,6 +120,10 @@ export function BudgetSummaryPanel({
   const baseline = baselineVersion
     ? `Contract baseline · v${baselineVersion}`
     : 'Contract baseline';
+  // Status-aware bar tone — rust never fills here (rust = action/alarm only).
+  // < 85% = on-track green, ≥ 85% = nearing amber, ≥ 100% = over red.
+  const tone = budgetBarTone(consumedPct);
+  const toneClasses = BUDGET_BAR_CLASSES[tone];
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
@@ -155,12 +160,15 @@ export function BudgetSummaryPanel({
             </span>
           </div>
           <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-            <span className="block h-full bg-foreground" style={{ width: spentW }} />
-            <span className="block h-full bg-[#7A6A4D]" style={{ width: committedW }} />
+            <span className={cn('block h-full', toneClasses.spent)} style={{ width: spentW }} />
+            <span
+              className={cn('block h-full', toneClasses.committed)}
+              style={{ width: committedW }}
+            />
           </div>
           <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <Legend swatch="bg-foreground" label="Spent" cents={spentCents} />
-            <Legend swatch="bg-[#7A6A4D]" label="Committed" cents={committedCents} />
+            <Legend swatch={toneClasses.swatchSpent} label="Spent" cents={spentCents} />
+            <Legend swatch={toneClasses.swatchCommitted} label="Committed" cents={committedCents} />
             <Legend swatch="border bg-muted" label="Remaining" cents={remainingCents} />
           </div>
         </div>
