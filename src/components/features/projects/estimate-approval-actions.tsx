@@ -30,9 +30,9 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
-import { statusToneClass } from '@/lib/ui/status-tokens';
-import { cn } from '@/lib/utils';
+import type { StatusTone } from '@/lib/ui/status-tokens';
 import {
   type ManualApprovalMethod,
   manualApprovalMethodLabels,
@@ -127,17 +127,17 @@ export function EstimateApprovalActions({
         : status === 'declined'
           ? 'Declined'
           : 'Draft';
-  // Tokenized status tones (not raw hex) so the pill matches every other
-  // status pill in the app: Draft→neutral, Sent→info, Approved→success,
-  // Declined→danger.
-  const statusToneCls =
+  // Tokenized status tone — drives the shared <StatusBadge> so this pill
+  // matches every other status pill in the app at exactly the canonical
+  // size. Draft → neutral, Sent → info, Approved → success, Declined → danger.
+  const statusTone: StatusTone =
     status === 'approved'
-      ? statusToneClass.success
+      ? 'success'
       : status === 'pending_approval'
-        ? statusToneClass.info
+        ? 'info'
         : status === 'declined'
-          ? statusToneClass.danger
-          : statusToneClass.neutral;
+          ? 'danger'
+          : 'neutral';
   // Before approval you PREVIEW & SEND (primary); you bill AFTER approval, so
   // "Create invoice" is quiet/disabled until then. Once approved the primary
   // flips to "Create invoice from estimate".
@@ -222,19 +222,14 @@ export function EstimateApprovalActions({
           acting on the budget table. */}
       <div className="overflow-hidden rounded-xl border bg-card">
         <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3">
-          <span className="inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          <span className="inline-flex items-center gap-2 font-mono text-eyebrow font-bold uppercase tracking-wide text-muted-foreground">
             <span className="text-foreground">Client estimate</span>
             <span className="text-muted-foreground/50">·</span>
-            <span
-              className={cn(
-                'rounded px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide',
-                statusToneCls,
-              )}
-            >
-              {statusLabel}
-            </span>
+            {/* Canonical StatusBadge — was an inline span at the wrong size
+                before #76cfd6c8; now matches every other status pill in the app. */}
+            <StatusBadge tone={statusTone} label={statusLabel} />
           </span>
-          <span className="ml-auto font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          <span className="ml-auto font-mono text-eyebrow uppercase tracking-wide text-muted-foreground">
             {status === 'approved' && approvedByName ? (
               <>
                 Signed by <strong className="font-bold text-foreground/80">{approvedByName}</strong>
