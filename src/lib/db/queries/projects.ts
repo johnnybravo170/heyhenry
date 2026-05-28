@@ -10,6 +10,7 @@
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import type { LifecycleStage } from '@/lib/validators/project';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type ProjectCustomerSummary = {
   id: string;
@@ -231,6 +232,12 @@ export async function countProjects(filters: ProjectListFilters = {}): Promise<n
  * in the same render dedupe to a single DB call.
  */
 async function getProjectUncached(id: string): Promise<ProjectWithRelations | null> {
+  // Treat a non-UUID id as "no such row" — same outcome as PGRST116 below.
+  // Prevents the raw Postgres "invalid input syntax for type uuid" 500s when
+  // a stale bookmark, typo, or vision-driven QA agent calls with a label
+  // instead of an id. Route guards should catch this earlier; this is
+  // defense-in-depth for non-route callers.
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase
