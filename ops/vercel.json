@@ -18,6 +18,14 @@
       "schedule": "30 13 * * *"
     },
     {
+      "path": "/api/ops/ideas-stale/run",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/ops/bundles-cap/run",
+      "schedule": "30 15 * * *"
+    },
+    {
       "path": "/api/ops/ideas-digest/run",
       "schedule": "0 16 * * *"
     },
