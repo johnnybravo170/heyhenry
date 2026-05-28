@@ -6,6 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type ArContactRow = {
   id: string;
@@ -173,6 +174,7 @@ export async function listArSequences(): Promise<ArSequenceRow[]> {
 }
 
 export async function getArSequence(id: string): Promise<ArSequenceDetail | null> {
+  if (!isUuid(id)) return null;
   const admin = createAdminClient();
   const { data: seq, error } = await admin
     .from('ar_sequences')
@@ -306,6 +308,7 @@ export async function listArTemplates(): Promise<ArTemplateRow[]> {
 }
 
 export async function getArTemplate(id: string): Promise<ArTemplateDetail | null> {
+  if (!isUuid(id)) return null;
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('ar_templates')

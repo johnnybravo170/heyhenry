@@ -8,11 +8,13 @@ import {
   getWorkerTimeEntry,
   listWorkerProjectsWithBudgetCategories,
 } from '@/lib/db/queries/worker-time';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const dynamic = 'force-dynamic';
 
 export default async function WorkerEditTimePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { tenant } = await requireWorker();
   const profile = await getOrCreateWorkerProfile(tenant.id, tenant.member.id);
 

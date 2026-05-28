@@ -7,9 +7,11 @@ import { TaskAddRow } from '@/components/features/tasks/task-add-row';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { listTasksForJob } from '@/lib/db/queries/tasks';
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/validators/uuid';
 
 export default async function JobTasksPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const supabase = await createClient();
   const { data: job } = await supabase

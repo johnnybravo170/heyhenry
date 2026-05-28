@@ -15,6 +15,7 @@ import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { CustomerViewMode } from '@/lib/validators/project-customer-view';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const metadata = {
   title: 'Preview estimate — HeyHenry',
@@ -24,6 +25,7 @@ const LOGO_SIGN_SECONDS = 60 * 60 * 24 * 30;
 
 export default async function EstimatePreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const { data: project } = await supabase

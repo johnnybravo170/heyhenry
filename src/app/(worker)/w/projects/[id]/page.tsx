@@ -10,6 +10,7 @@ import {
 } from '@/lib/db/queries/project-assignments';
 import { getOrCreateWorkerProfile } from '@/lib/db/queries/worker-profiles';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ export default async function WorkerProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { tenant } = await requireWorker();
   const profile = await getOrCreateWorkerProfile(tenant.id, tenant.member.id);
 

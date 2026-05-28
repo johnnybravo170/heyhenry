@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { formatDate } from '@/lib/date/format';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 import { QuoteApprovalForm } from './quote-approval-form';
 
 export const metadata: Metadata = {
@@ -20,6 +22,7 @@ type LineItem = {
 
 export default async function PublicQuoteViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = createAdminClient();
 
   // Load quote with tenant and customer info.
