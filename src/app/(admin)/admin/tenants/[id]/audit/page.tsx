@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { formatDateTime } from '@/lib/date/format';
 import { getTenantDetail } from '@/lib/db/queries/admin';
 import { listAuditLog } from '@/lib/db/queries/audit-log';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ const PRESETS: Array<{ value: string; label: string }> = [
 
 export default async function AdminTenantAuditPage({ params, searchParams }: Props) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const sp = await searchParams;
 
   const tenant = await getTenantDetail(id);

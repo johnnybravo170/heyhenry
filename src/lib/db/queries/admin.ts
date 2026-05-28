@@ -7,6 +7,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { demoExclusionList, getDemoTenantIds } from '@/lib/tenants/demo';
+import { isUuid } from '@/lib/validators/uuid';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -244,6 +245,7 @@ export async function listTenantsWithStats(): Promise<TenantListRow[]> {
 }
 
 export async function getTenantDetail(tenantId: string): Promise<TenantDetailData | null> {
+  if (!isUuid(tenantId)) return null;
   const admin = createAdminClient();
 
   // Fetch tenant

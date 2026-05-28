@@ -18,6 +18,7 @@ import { IntakeSourceChip } from '@/components/features/inbox/intake-source-chip
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { type InboxIntakeRow, loadIntakeDraft } from '@/lib/db/queries/intake-drafts';
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/validators/uuid';
 
 const KIND_LABEL: Record<string, string> = {
   voice_memo: 'Voice memo',
@@ -49,6 +50,7 @@ export default async function IntakeDraftDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const tenant = await getCurrentTenant();
   if (!tenant) {

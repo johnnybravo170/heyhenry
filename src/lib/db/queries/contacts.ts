@@ -14,6 +14,7 @@
 import { type ArInvoice, arOutstanding } from '@/lib/invoices/ar';
 import { phoneDigits } from '@/lib/phone';
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type CustomerRow = {
   id: string;
@@ -345,6 +346,11 @@ export async function countCustomersByKind(): Promise<ContactKindCounts> {
 }
 
 export async function getCustomer(id: string): Promise<CustomerRow | null> {
+  // Defense-in-depth: a non-UUID id can never match a row. Short-circuit so
+  // the route guards' upstream `notFound()` is mirrored here for non-route
+  // callers — and we don't trip Postgres' "invalid input syntax for type
+  // uuid" 500. Route guards should catch this earlier.
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('contacts')

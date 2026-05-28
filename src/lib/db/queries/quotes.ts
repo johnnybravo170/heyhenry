@@ -8,6 +8,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type QuoteCustomerSummary = {
   id: string;
@@ -131,6 +132,7 @@ export async function listQuotes(filters: QuoteListFilters = {}): Promise<QuoteW
 }
 
 export async function getQuote(id: string): Promise<QuoteWithRelations | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase

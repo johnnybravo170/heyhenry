@@ -5,6 +5,7 @@ import { JobForm } from '@/components/features/jobs/job-form';
 import { listContacts } from '@/lib/db/queries/contacts';
 import { getJob } from '@/lib/db/queries/jobs';
 import type { JobInput, JobStatus } from '@/lib/validators/job';
+import { isUuid } from '@/lib/validators/uuid';
 import { type JobActionResult, updateJobAction } from '@/server/actions/jobs';
 
 export const metadata = {
@@ -25,6 +26,7 @@ function toDatetimeLocal(iso: string | null | undefined): string {
 
 export default async function EditJobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const [job, customers] = await Promise.all([getJob(id), listContacts({ limit: 500 })]);
   if (!job) notFound();
 

@@ -4,6 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { ChangeOrderStatus } from '@/lib/validators/change-order';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type ChangeOrderRow = {
   id: string;
@@ -141,6 +142,7 @@ export async function listChangeOrders(
 }
 
 export async function getChangeOrder(id: string): Promise<ChangeOrderRow | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('change_orders')
