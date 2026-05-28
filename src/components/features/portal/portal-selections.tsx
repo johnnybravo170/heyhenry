@@ -54,7 +54,7 @@ export function PortalSelections({
                 return (
                   <li key={sel.id} className="px-4 py-3">
                     <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
+                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
                         {selectionCategoryLabels[sel.category as SelectionCategory] ?? sel.category}
                       </span>
                       {headline ? <span className="text-sm font-medium">{headline}</span> : null}

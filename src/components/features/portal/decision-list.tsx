@@ -59,9 +59,9 @@ function DecisionRow({ decision, projectId }: { decision: ProjectDecision; proje
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{decision.label}</p>
         {decision.description ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{decision.description}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{decision.description}</p>
         ) : null}
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           {decision.due_date ? (
             <span>
               Due{' '}

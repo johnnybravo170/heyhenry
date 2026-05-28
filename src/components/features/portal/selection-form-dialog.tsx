@@ -313,7 +313,7 @@ export function SelectionFormDialog({
                 onChange={(e) => setAllowance(e.target.value)}
                 placeholder="0.00"
               />
-              <p className="mt-1 text-[10px] text-muted-foreground">Budget for this pick</p>
+              <p className="mt-1 text-xs text-muted-foreground">Budget for this pick</p>
             </div>
             <div>
               <Label htmlFor="sel-actual">Actual cost (optional)</Label>
@@ -326,7 +326,7 @@ export function SelectionFormDialog({
                 onChange={(e) => setActualCost(e.target.value)}
                 placeholder="0.00"
               />
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Real cost — variance shown if over
               </p>
             </div>

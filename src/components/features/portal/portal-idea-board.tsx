@@ -700,17 +700,17 @@ function IdeaCard({
         </div>
 
         {item.notes ? (
-          <p className="whitespace-pre-wrap text-xs text-muted-foreground">{item.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{item.notes}</p>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
           {item.room ? (
-            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
               {item.room}
             </span>
           ) : null}
           {promoted ? (
-            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
               Promoted to selection
             </span>
           ) : null}

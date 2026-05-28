@@ -149,7 +149,7 @@ export function PhotoPortalButton({
                 />
                 <span>{portalPhotoTagLabels[tag]}</span>
                 {tag === 'behind_wall' ? (
-                  <span className="ml-auto text-[10px] text-muted-foreground">
+                  <span className="ml-auto text-xs text-muted-foreground">
                     Held back into its own section
                   </span>
                 ) : null}
@@ -176,7 +176,7 @@ export function PhotoPortalButton({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Pinned photos appear inline on the client&rsquo;s timeline.
               </p>
             </div>

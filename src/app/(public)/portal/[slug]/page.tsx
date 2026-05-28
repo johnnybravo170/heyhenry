@@ -788,7 +788,7 @@ export default async function PortalPage({
               >
                 {t.label}
                 {t.badge && tab !== t.key && t.badge > 0 ? (
-                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
                     {t.badge > 9 ? '9+' : t.badge}
                   </span>
                 ) : null}
@@ -1089,14 +1089,14 @@ export default async function PortalPage({
                       href={tabHref(item.key)}
                       prefetch={false}
                       aria-current={active ? 'page' : undefined}
-                      className={`relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
+                      className={`relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
                         active ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       <item.Icon aria-hidden className="h-[18px] w-[18px]" />
                       {item.label}
                       {item.badge && !active && item.badge > 0 ? (
-                        <span className="absolute right-[22%] top-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                        <span className="absolute right-[22%] top-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
                           {item.badge > 9 ? '9+' : item.badge}
                         </span>
                       ) : null}
@@ -1107,7 +1107,7 @@ export default async function PortalPage({
                   href={tabHref('budget')}
                   prefetch={false}
                   aria-current={moreActive ? 'page' : undefined}
-                  className={`flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
+                  className={`flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
                     moreActive ? 'text-foreground' : 'text-muted-foreground'
                   }`}
                 >

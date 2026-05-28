@@ -14,7 +14,7 @@ export default function PropertyRecordNotFound() {
       <div className="grid size-20 place-items-center rounded-2xl border bg-card text-muted-foreground">
         <Unlink className="size-9" aria-hidden />
       </div>
-      <p className="mt-6 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand">
+      <p className="mt-6 font-mono text-xs font-bold uppercase tracking-[0.18em] text-brand">
         Property Record
       </p>
       <h1 className="mt-2.5 text-2xl font-bold tracking-tight sm:text-3xl">
@@ -25,7 +25,7 @@ export default function PropertyRecordNotFound() {
         was reset by your contractor.
       </p>
       <div className="mt-7 w-full max-w-md rounded-xl border bg-paper-soft px-5 py-4 text-left">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        <p className="font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">
           What to do
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">
@@ -34,7 +34,7 @@ export default function PropertyRecordNotFound() {
           one is issued whenever the record is regenerated.
         </p>
       </div>
-      <p className="mt-10 font-mono text-[11px] uppercase tracking-wide text-muted-foreground/70">
+      <p className="mt-10 font-mono text-xs uppercase tracking-wide text-muted-foreground/70">
         Powered by <span className="font-semibold text-muted-foreground">HeyHenry</span>
       </p>
     </div>

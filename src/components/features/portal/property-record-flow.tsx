@@ -112,7 +112,7 @@ function ReadinessChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-[11px] font-bold uppercase tracking-wide',
+        'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-xs font-bold uppercase tracking-wide',
         tone,
       )}
     >
@@ -283,7 +283,7 @@ export function PropertyRecordFlow({
 
       {/* Readiness line — Web link · PDF · ZIP */}
       <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-paper-soft px-3 py-2">
-        <span className="mr-1 border-r pr-2 font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        <span className="mr-1 border-r pr-2 font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">
           Readiness
         </span>
         <ReadinessChip name="Web link" state="built" detail="Live" />
@@ -473,7 +473,7 @@ function PreviewDrawer({
 
           {/* Format build */}
           <section>
-            <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            <p className="font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Formats
             </p>
             <p className="text-sm font-semibold">Build PDF + ZIP before sending</p>
@@ -513,7 +513,7 @@ function PreviewDrawer({
 
           {/* ✦ Henry closeout-summary editor */}
           <section>
-            <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            <p className="font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Project summary
             </p>
             <p className="text-sm font-semibold">Edit the closeout paragraph</p>
@@ -523,7 +523,7 @@ function PreviewDrawer({
               sees it as plain prose (no ✦).
             </p>
             <div className="mt-3 overflow-hidden rounded-lg border">
-              <div className="flex items-center gap-1.5 border-b bg-[var(--rust-soft)] px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wide text-brand">
+              <div className="flex items-center gap-1.5 border-b bg-[var(--rust-soft)] px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide text-brand">
                 <Sparkles className="size-3" aria-hidden />
                 Henry draft
               </div>
@@ -539,7 +539,7 @@ function PreviewDrawer({
                 className="rounded-none border-0 focus-visible:ring-0"
               />
               <div className="flex items-center gap-2 border-t bg-paper-soft px-3 py-2">
-                <span className="mr-auto font-mono text-[11px] text-muted-foreground">
+                <span className="mr-auto font-mono text-xs text-muted-foreground">
                   {text.trim().length} chars
                 </span>
                 <Button
@@ -575,7 +575,7 @@ function PreviewDrawer({
         </div>
 
         <DialogFooter className="items-center gap-2 border-t px-5 py-3 sm:justify-between">
-          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wide text-emerald-700">
             <Check className="size-3.5" aria-hidden />
             Client-safe by construction
           </span>

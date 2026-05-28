@@ -117,11 +117,11 @@ export function PortalMessagesPanel({
                     : 'bg-primary text-primary-foreground'
                 }`}
               >
-                <p className="mb-0.5 text-[11px] font-medium opacity-80">
+                <p className="mb-0.5 text-xs font-medium opacity-80">
                   {m.sender_label ?? (fromBusiness ? businessName : customerName)}
                 </p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.body}</p>
-                <p className="mt-1 text-[10px] opacity-70">
+                <p className="mt-1 text-xs opacity-70">
                   {new Intl.DateTimeFormat('en-CA', {
                     timeZone: tz,
                     hour: 'numeric',

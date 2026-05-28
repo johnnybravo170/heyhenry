@@ -123,7 +123,7 @@ function ProjectRollup({ rollup }: { rollup: ReturnType<typeof rollupVariance> }
     >
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Total allowance
           </p>
           <p className="mt-0.5 font-mono text-base font-semibold">
@@ -131,7 +131,7 @@ function ProjectRollup({ rollup }: { rollup: ReturnType<typeof rollupVariance> }
           </p>
         </div>
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Actual to date
           </p>
           <p className="mt-0.5 font-mono text-base font-semibold">
@@ -142,7 +142,7 @@ function ProjectRollup({ rollup }: { rollup: ReturnType<typeof rollupVariance> }
           </p>
         </div>
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Net variance
           </p>
           <div className="mt-0.5">
@@ -150,7 +150,7 @@ function ProjectRollup({ rollup }: { rollup: ReturnType<typeof rollupVariance> }
           </div>
         </div>
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Over allowance
           </p>
           <p className="mt-0.5 text-sm">
@@ -208,7 +208,7 @@ function SelectionRow({
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
             {selectionCategoryLabels[selection.category as SelectionCategory] ?? selection.category}
           </span>
           {headline ? <span className="text-sm font-medium">{headline}</span> : null}
@@ -229,7 +229,7 @@ function SelectionRow({
         <div className="flex flex-col items-end gap-1 text-right">
           {selection.allowance_cents != null ? (
             <div className="flex items-baseline gap-2">
-              <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                 Allowance
               </span>
               <Money cents={selection.allowance_cents} className="text-sm font-mono" />
@@ -237,7 +237,7 @@ function SelectionRow({
           ) : null}
           {selection.actual_cost_cents != null ? (
             <div className="flex items-baseline gap-2">
-              <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
                 Actual
               </span>
               <Money
@@ -252,7 +252,7 @@ function SelectionRow({
               asChild
               size="sm"
               variant="destructive"
-              className="mt-1 h-7 gap-1 px-2.5 text-[11px] font-bold uppercase tracking-wide"
+              className="mt-1 h-7 gap-1 px-2.5 text-xs font-bold uppercase tracking-wide"
             >
               <Link href={startCoHref(projectId, selection, variance.label)}>
                 <ArrowUpRight className="size-3" aria-hidden />

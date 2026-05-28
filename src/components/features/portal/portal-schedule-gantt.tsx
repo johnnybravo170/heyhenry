@@ -192,7 +192,7 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
               <div
                 // biome-ignore lint/suspicious/noArrayIndexKey: positional
                 key={`d-${i}`}
-                className="text-[10px] tabular-nums text-muted-foreground"
+                className="text-xs tabular-nums text-muted-foreground"
                 style={{ gridRow: 2, gridColumnStart: i + 1 }}
               >
                 {m.weekStartLabel}
@@ -229,7 +229,7 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
                   {task.name}
                 </span>
                 {task.warning ? (
-                  <span className="mt-0.5 text-[11px] font-medium text-amber-700">
+                  <span className="mt-0.5 text-xs font-medium text-amber-700">
                     ⚠ {task.warning}
                   </span>
                 ) : null}

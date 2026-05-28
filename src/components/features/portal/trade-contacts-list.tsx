@@ -36,7 +36,7 @@ export function TradeContactsList({
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{c.name}</p>
               {KIND_LABEL[c.kind] ? (
-                <p className="text-[11px] text-muted-foreground">{KIND_LABEL[c.kind]}</p>
+                <p className="text-xs text-muted-foreground">{KIND_LABEL[c.kind]}</p>
               ) : null}
             </div>
             {c.phone ? (

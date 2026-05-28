@@ -54,7 +54,7 @@ export function VarianceDelta({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide tabular-nums',
+        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-wide tabular-nums',
         toneClass[tone],
         className,
       )}
@@ -88,7 +88,7 @@ export function ByTag({
   className?: string;
 }) {
   const base =
-    'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide';
+    'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-wide';
 
   if (promoted) {
     return (
