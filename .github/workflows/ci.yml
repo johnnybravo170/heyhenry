@@ -118,7 +118,7 @@ jobs:
         # setup-cli call the GitHub API to resolve the release, and
         # that lookup got rate-limited on 2026-05-28 and took the whole
         # E2E job red. Bump deliberately when we want a newer CLI.
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: 2.101.0
 
@@ -187,7 +187,7 @@ jobs:
       - name: Install Supabase CLI
         # Version pinned (not `latest`) — see the e2e job's setup-cli step
         # for the rate-limit incident that prompted the pin. Bump deliberately.
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: 2.101.0
 
