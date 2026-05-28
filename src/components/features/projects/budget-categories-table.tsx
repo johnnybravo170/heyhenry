@@ -1640,9 +1640,8 @@ function AddBudgetCategoryForm({
     >
       {/* Header bar — kind badge + title, so the form is never ambiguous. */}
       <div className="flex flex-wrap items-center gap-2.5 border-b bg-muted/40 px-4 py-2.5">
-        <span className="rounded bg-muted px-[7px] py-0.5 font-mono text-eyebrow font-bold uppercase tracking-wide text-muted-foreground">
-          {isSection ? 'New section' : 'New category'}
-        </span>
+        <StatusBadge tone="neutral" label={isSection ? 'New section' : 'New category'} />
+
         <span className="font-bold text-base text-foreground">
           {isSection ? 'Add a budget section' : 'Add a budget category'}
         </span>

@@ -122,6 +122,22 @@
   --sidebar-accent-foreground: #0a0a0a;
   --sidebar-border: #e2d7c0;
   --sidebar-ring: #0a0a0a;
+
+  /* Source-tint palette — distinct *kind* family (Labour / Bill / Expense /
+     PO), parallel to but separate from the status-tone palette. Used by
+     <SourcePill> to identify the cost source on ledger rows. PO inherits the
+     bill family (both are billable commitments); quote also maps to bill
+     (vendor pricing not yet committed). Values verbatim from the OD render. */
+  --src-bill-bg:    #E6EDFA;
+  --src-bill-ink:   #1E40AF;
+  --src-expense-bg: #FBEFD2;
+  --src-expense-ink:#92580E;
+  --src-labour-bg:  #E8E4F2;
+  --src-labour-ink: #4F427A;
+  /* PO = bill family, slightly lighter to disambiguate "committed" from
+     "billed". OD render uses opacity on the bill colour. */
+  --src-po-bg:      #EFF3FB;
+  --src-po-ink:     #2A4FAE;
 }
 
 .dark {

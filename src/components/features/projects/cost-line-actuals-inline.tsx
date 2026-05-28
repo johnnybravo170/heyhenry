@@ -13,6 +13,7 @@
 
 import { ArrowUpRight, Banknote, Clock, FileText, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
+import { SourcePill } from '@/components/ui/source-pill';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { CostLineActualsSummary } from '@/lib/db/queries/cost-line-actuals';
 import { formatCurrency } from '@/lib/pricing/calculator';
@@ -23,27 +24,6 @@ const KIND_ICONS = {
   bill: FileText,
   po: ShoppingBag,
 } as const;
-
-const KIND_LABELS = {
-  labour: 'Labour',
-  expense: 'Expense',
-  bill: 'Bill',
-  po: 'PO',
-} as const;
-
-/**
- * Subtle source-tint pill classes — distinct per source so the kind reads
- * at-a-glance, never rust (which is reserved for action / alarm). Soft-pair
- * tones mirror the OD spec (`--src-labour-bg` / `--src-bill-bg` /
- * `--src-expense-bg`). PO inherits the bill family since both are "billable
- * commitments" — kept slightly lighter to disambiguate from a real bill.
- */
-const KIND_PILL_CLASSES: Record<keyof typeof KIND_LABELS, string> = {
-  labour: 'bg-[#E8E4F2] text-[#4F427A]',
-  bill: 'bg-[#E6EDFA] text-[#1E40AF]',
-  expense: 'bg-[#FBEFD2] text-[#92580E]',
-  po: 'bg-[#E6EDFA]/60 text-[#1E40AF]/80',
-};
 
 const EMPTY: CostLineActualsSummary = {
   total_cents: 0,
@@ -137,11 +117,7 @@ export function CostLineActualsInline({
           return (
             <li key={`${r.kind}-${r.id}`} className="flex items-center gap-2 py-1.5">
               <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-              <span
-                className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-eyebrow font-bold uppercase tracking-[0.06em] ${KIND_PILL_CLASSES[r.kind]}`}
-              >
-                {KIND_LABELS[r.kind]}
-              </span>
+              <SourcePill kind={r.kind} className="shrink-0" />
               <span className="min-w-0 flex-1 truncate">
                 {r.label}
                 {r.sublabel ? <span className="text-muted-foreground"> — {r.sublabel}</span> : null}

@@ -4,10 +4,10 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Fragment, type ReactNode, useState } from 'react';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { Money } from '@/components/ui/money';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { AppliedChangeOrderContribution } from '@/lib/db/queries/change-orders';
 import { withFrom } from '@/lib/nav/from-link';
-import { statusToneClass } from '@/lib/ui/status-tokens';
 
 /** Join ReactNode parts with a " · " separator, dropping nullish/false parts.
  *  Used to compose stat sub-lines that interleave labels with <Money>. */
@@ -384,9 +384,11 @@ export function VarianceTab({
                             className="flex flex-1 items-baseline justify-between gap-2 hover:underline"
                           >
                             <span>
-                              <span className="mr-1.5 inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                                {c.flow_version === 1 ? 'v1' : 'unapplied'}
-                              </span>
+                              <StatusBadge
+                                tone="warning"
+                                label={c.flow_version === 1 ? 'v1' : 'unapplied'}
+                                className="mr-1.5"
+                              />
                               {c.title}
                             </span>
                             <Money
@@ -568,9 +570,8 @@ export function VarianceTab({
                                 href={coHref(projectId, c.co_id, fromTab)}
                                 onClick={(e) => e.stopPropagation()}
                                 title={`Touched by CO: ${c.co_title}`}
-                                className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-wide ${statusToneClass.info}`}
                               >
-                                CO {c.co_short_id}
+                                <StatusBadge tone="info" label={`CO ${c.co_short_id}`} />
                               </a>
                             ))}
                           </div>
@@ -755,11 +756,7 @@ function CategoryBreakdown({
             {Array.from(new Map(coContributions.map((c) => [c.co_id, c])).values()).map((c) => (
               <li key={c.co_id} className="flex items-baseline justify-between gap-2">
                 <a href={coHref(projectId, c.co_id, fromTab)} className="hover:underline">
-                  <span
-                    className={`mr-1.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-wide ${statusToneClass.info}`}
-                  >
-                    CO {c.co_short_id}
-                  </span>
+                  <StatusBadge tone="info" label={`CO ${c.co_short_id}`} className="mr-1.5" />
                   {c.co_title}
                 </a>
                 <span className="text-muted-foreground tabular-nums">
