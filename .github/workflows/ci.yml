@@ -109,12 +109,18 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Install Supabase CLI
+        id: setup-supabase
         # The supabase npm dep is a thin wrapper that doesn't always
         # install a usable binary in CI. setup-cli is the canonical
         # path and matches what supabase docs recommend.
+        #
+        # Version is pinned (not `latest`) because `latest` makes
+        # setup-cli call the GitHub API to resolve the release, and
+        # that lookup got rate-limited on 2026-05-28 and took the whole
+        # E2E job red. Bump deliberately when we want a newer CLI.
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.101.0
 
       - name: Reap leaked Supabase containers from prior job
         # GitHub runners are reused across jobs. If a previous run on
@@ -145,7 +151,10 @@ jobs:
         run: pnpm test:e2e
 
       - name: Stop Supabase local stack
-        if: always()
+        # Only run cleanup if the CLI actually installed. Otherwise a
+        # rate-limited / failed setup-cli step cascades into a second red
+        # step (`supabase: command not found`) for the same root cause.
+        if: always() && steps.setup-supabase.outcome == 'success'
         run: supabase stop --no-backup
 
       - name: Upload Playwright report
@@ -176,9 +185,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Supabase CLI
+        # Version pinned (not `latest`) — see the e2e job's setup-cli step
+        # for the rate-limit incident that prompted the pin. Bump deliberately.
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.101.0
 
       - name: Push migrations to prod
         # Applies every migration under supabase/migrations/ whose version is
