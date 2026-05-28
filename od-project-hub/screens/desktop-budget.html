@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Project Hub · Glenwood Heights — Budget · HeyHenry</title>
+<title>Project Hub · Glenwood Heights — Budget (live target v2) · HeyHenry</title>
 <meta name="viewport" content="width=1440" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,31 +15,55 @@
     --nav-active:   #E8DEC9;
     --card:         #FFFFFF;
     --chip-fill:    #ECE3D0;
+
+    /* 4-step ink ramp — section / category / line / meta */
     --ink:          #0A0A0A;
     --ink-2:        #3A3A3A;
     --muted:        #57534B;
     --faint:        #A8A8A8;
+
     --hair:         #E2D7C0;
     --rule:         #D8CBB0;
+    --rule-strong:  #BBA77A;   /* the under-section divider */
+
+    /* Rust is reserved for ACTION + alarm (CTAs, over-budget flag chips).
+       NEVER used for the neutral progress fill — that's status-aware below. */
     --rust:         #C2410C;
     --rust-soft:    #FEF0E3;
+
+    /* Status colours — used for FLAGS, badges, AND consumption bars. */
     --ok:           #15803D;  --ok-soft:    #DCFCE7;
     --warn:         #B45309;  --warn-soft:  #FEF3C7;
     --danger:       #B91C1C;  --danger-soft:#FEE2E2;
     --info:         #1E40AF;  --info-soft:  #E6EDFA;
 
-    /* Tonal warm-neutrals for the contained well (NOT a new colour) */
-    --well-head:    #F2E9D4;
-    --well-body:    #F7EFDB;
+    /* Status-aware FILL pairs — for consumption bars (spent + committed).
+       Rust stays out of progress entirely. */
+    --ok-fill:        #15803D;
+    --ok-fill-mid:    #4FA46B;   /* committed segment, lower density */
+    --warn-fill:      #B45309;
+    --warn-fill-mid:  #D69147;
+    --over-fill:      #B91C1C;
+    --over-fill-mid:  #D85555;
+    --over-fill-deep: #7F1717;   /* the bit past 100% */
+
+    /* Tonal warm-neutrals for the contained well (the open-category surface) */
+    --well-head:    #EFE4CB;
+    --well-body:    #F5ECD5;
     --well-rail:    #C8B68C;
     --well-accent:  #B89968;
-    --well-deep:    #FBF6EC;   /* the spend-detail mini-well sits inside the well */
+    --well-hair:    #E5D6B4;     /* hairline between line-rows in the well */
+
+    /* Source pill tints — subtle, distinct, never rust */
+    --src-bill-bg:    #E6EDFA;  --src-bill-ink:   #1E40AF;
+    --src-expense-bg: #FBEFD2;  --src-expense-ink:#92580E;
+    --src-labour-bg:  #E8E4F2;  --src-labour-ink: #4F427A;
 
     --radius-card:  14px;
     --radius-input: 9px;
     --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
     --shadow-form:  0 1px 0 rgba(10,10,10,0.02), 0 8px 24px -16px rgba(10,10,10,0.10);
-    --track:        0.06em;   /* one uppercase track, everywhere */
+    --track:        0.06em;
     --sans: 'Inter', system-ui, -apple-system, sans-serif;
     --mono: 'JetBrains Mono', ui-monospace, monospace;
   }
@@ -59,7 +83,7 @@
   button { font-family: inherit; }
   a { color: inherit; text-decoration: none; }
 
-  /* ───── Mono helpers — one place, one tracking, one tone ───── */
+  /* ───── Mono helpers ───── */
   .label-mono {
     font-family: var(--mono);
     font-size: 11px;
@@ -69,8 +93,8 @@
     letter-spacing: var(--track);
   }
   .num { font-variant-numeric: tabular-nums; }
-  .cents { color: var(--muted); font-weight: 400; }    /* same-size mute (at 12) */
-  .num-lg .cents { font-size: 12px; font-weight: 500; } /* downscale when main ≥ 14 */
+  /* Cents — readable, never microscopic. ~0.8em + muted. */
+  .cents { color: var(--muted); font-weight: 400; }
 
   /* ───── Shell ───── */
   .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
@@ -300,7 +324,7 @@
   }
   .btn-add .henry-glyph { color: var(--rust); }
 
-  /* Tabs */
+  /* Tabs — active underline RUST (action cue), not ink */
   .tab-strip {
     border-bottom: 1px solid var(--hair);
     display: flex; align-items: center;
@@ -316,11 +340,12 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     white-space: nowrap;
+    margin-bottom: -1px;
   }
   .tab:hover { color: var(--ink); }
   .tab.is-on {
     color: var(--ink);
-    border-bottom-color: var(--ink);
+    border-bottom-color: var(--rust);
   }
   .tab.is-secondary { color: var(--faint); font-weight: 500; }
   .tab.is-secondary:hover { color: var(--ink-2); }
@@ -354,12 +379,14 @@
   .budget { margin-top: 22px; display: flex; flex-direction: column; gap: 16px; }
 
   /* ──────────────────────────────────────────────────────────
-     BUDGET SUMMARY PANEL
+     BUDGET SUMMARY — calm white card.
+     Punch from TYPE contrast, not a coloured slab.
      ────────────────────────────────────────────────────────── */
   .panel {
     background: var(--card);
     border: 1px solid var(--hair);
     border-radius: var(--radius-card);
+    box-shadow: var(--shadow-pop);
     overflow: hidden;
   }
   .panel-head {
@@ -374,9 +401,9 @@
   .panel-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
   .panel-link {
     display: inline-flex; align-items: center; gap: 4px;
-    color: var(--ink-2);
+    color: var(--rust);
     font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
+    font-size: 11px; font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track);
     padding: 4px 8px;
@@ -384,39 +411,45 @@
     background: transparent; border: 0;
     cursor: pointer;
   }
-  .panel-link:hover { background: var(--chip-fill); color: var(--ink); }
+  .panel-link:hover { background: var(--rust-soft); }
   .panel-link svg { width: 11px; height: 11px; }
 
-  .summary-body { padding: 4px 18px 18px; }
+  .summary-body { padding: 6px 18px 18px; }
   .summary-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 18px;
     align-items: baseline;
-    padding-top: 6px;
+    padding-top: 4px;
   }
-  .var-cell { display: flex; flex-direction: column; gap: 4px; }
+  .var-cell { display: flex; flex-direction: column; gap: 5px; }
   .var-label {
     font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
+    font-size: 11px; font-weight: 700;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: var(--track);
   }
-  /* Display-size scope summary numbers (allowed exception to 16/14/12) */
+  /* The 4 hero numbers — true-black, 800, tabular. The contrast is here. */
   .var-value {
     font-size: 24px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--ink);
-    letter-spacing: -0.015em;
+    letter-spacing: -0.025em;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
   }
-  .var-value .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  /* Cents on display numbers — readable ~0.8em, not a speck. */
+  .var-value .cents {
+    font-size: 20px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
   .var-sub {
     font-family: var(--mono);
     font-size: 11px; font-weight: 500;
-    color: var(--muted);
+    color: var(--faint);
     letter-spacing: var(--track);
     text-transform: uppercase;
   }
@@ -438,11 +471,13 @@
     margin-left: auto;
     font-family: var(--mono);
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track);
     color: var(--muted);
   }
+  .progress-meta .right strong { color: var(--ink); }
+  /* Consumption bar — status-aware. Rust never fills here. */
   .seg-bar {
     display: flex;
     height: 8px;
@@ -450,9 +485,17 @@
     overflow: hidden;
     background: var(--chip-fill);
   }
-  .seg-spent { background: var(--ink); }
-  .seg-committed { background: #7A6A4D; }
   .seg-bar i { display: block; height: 100%; }
+
+  /* Status modifier sits on the wrapping .progress-stack so bar + legend match. */
+  .progress-stack.is-ok    .seg-spent     { background: var(--ok-fill); }
+  .progress-stack.is-ok    .seg-committed { background: var(--ok-fill-mid); }
+  .progress-stack.is-warn  .seg-spent     { background: var(--warn-fill); }
+  .progress-stack.is-warn  .seg-committed { background: var(--warn-fill-mid); }
+  .progress-stack.is-over  .seg-spent     { background: var(--over-fill); }
+  .progress-stack.is-over  .seg-committed { background: var(--over-fill-mid); }
+  .progress-stack.is-over  .seg-over      { background: var(--over-fill-deep); }
+
   .seg-legend {
     display: flex; gap: 18px; flex-wrap: wrap;
     margin-top: 10px;
@@ -463,20 +506,23 @@
     display: inline-block; width: 8px; height: 8px;
     border-radius: 2px; margin-right: 6px; vertical-align: middle;
   }
-  .seg-legend .sw.spent { background: var(--ink); }
-  .seg-legend .sw.committed { background: #7A6A4D; }
+  .progress-stack.is-ok   .seg-legend .sw.spent     { background: var(--ok-fill); }
+  .progress-stack.is-ok   .seg-legend .sw.committed { background: var(--ok-fill-mid); }
+  .progress-stack.is-warn .seg-legend .sw.spent     { background: var(--warn-fill); }
+  .progress-stack.is-warn .seg-legend .sw.committed { background: var(--warn-fill-mid); }
+  .progress-stack.is-over .seg-legend .sw.spent     { background: var(--over-fill); }
+  .progress-stack.is-over .seg-legend .sw.committed { background: var(--over-fill-mid); }
   .seg-legend .sw.remaining { background: var(--chip-fill); border: 1px solid var(--rule); }
-  .seg-legend strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .seg-legend strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
 
   /* ──────────────────────────────────────────────────────────
-     CLIENT ESTIMATE FOOTER — what the *customer* sees.
-     Status-aware. DRAFT shows "Mark approved / Mark declined /
-     Create invoice from estimate / Preview & send".
+     CLIENT ESTIMATE FOOTER (status-aware)
      ────────────────────────────────────────────────────────── */
   .client-estimate {
     background: var(--card);
     border: 1px solid var(--hair);
     border-radius: var(--radius-card);
+    box-shadow: var(--shadow-pop);
     overflow: hidden;
   }
   .ce-head {
@@ -532,16 +578,19 @@
   }
 
   /* ──────────────────────────────────────────────────────────
-     SCOPE TABLE — Section → Category → Line, with contained well
+     SCOPE — each Section is its OWN floating white card.
+     The "section divider" is the gap between cards on paper.
      ────────────────────────────────────────────────────────── */
+  .scope-region { display: flex; flex-direction: column; gap: 14px; }
+
   .scope-head {
     display: flex; align-items: center; gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 2px;
     padding: 0 4px;
   }
   .scope-eyebrow {
     font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
+    font-size: 11px; font-weight: 700;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: var(--track);
@@ -564,76 +613,96 @@
   .scope-toggle:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--rule); }
   .scope-toggle svg { width: 11px; height: 11px; }
 
-  .table {
-    background: var(--card);
-    border: 1px solid var(--hair);
-    border-radius: var(--radius-card);
+  /* The col-labels strip — on PAPER, not in a card. Sticky as you scroll.
+     The transparent left/right borders absorb the 1px the section cards spend
+     on their own border, so labels right-align with the $ columns below. */
+  .col-labels {
+    position: sticky;
+    top: 56px;
+    z-index: 5;
+    background: var(--bg);
+    padding: 10px 18px 8px 14px;
+    border-top:    1px solid transparent;
+    border-left:   1px solid transparent;
+    border-right:  1px solid transparent;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track);
   }
-  /* Shared row grid — section, category, AND line all share so columns align */
+  .col-labels .right { text-align: right; }
+
+  /* Shared row grid — section, category, AND line share so columns align. */
   .row-grid {
     display: grid;
     grid-template-columns: 24px 1fr 110px 110px 110px 180px;
     gap: 12px;
     align-items: center;
   }
-  .table-col-head {
-    padding: 10px 18px 9px 14px;
-    background: var(--chrome);
-    border-bottom: 1px solid var(--hair);
-    border-top-left-radius: var(--radius-card);
-    border-top-right-radius: var(--radius-card);
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: var(--track);
-    position: sticky;
-    top: 56px;
-    z-index: 5;
-  }
-  .table-col-head .right { text-align: right; }
 
-  /* ─── SECTION row ─── */
-  .section-row {
-    padding: 13px 18px 13px 14px;
-    border-top: 1px solid var(--hair);
+  /* ─── SECTION CARD — floats off the paper ─── */
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-pop);
+    overflow: hidden;
+  }
+
+  /* ─── SECTION HEAD — the dominant scan anchor ─── */
+  .section-head {
+    padding: 16px 18px 16px 14px;
     cursor: pointer;
     background: var(--card);
     position: relative;
   }
-  .section-row:first-of-type { border-top: 0; }
-  .section-row:hover { background: #FFFCF7; }
+  .section-head:hover { background: #FFFCF7; }
+  .section-card.is-open .section-head {
+    border-bottom: 1px solid var(--rule-strong);  /* the strong rule */
+  }
   .section-twist {
     width: 18px; height: 18px;
     display: grid; place-items: center;
-    color: var(--muted);
+    color: var(--ink-2);
   }
-  .section-twist svg { width: 12px; height: 12px; transition: transform 120ms; }
-  .section-row.is-open .section-twist svg { transform: rotate(90deg); }
+  .section-twist svg { width: 13px; height: 13px; transition: transform 120ms; }
+  .section-card.is-open .section-twist svg { transform: rotate(90deg); }
+
+  /* Section name — UPPERCASE mono, BIG (13), HEAVY (800), TRUE-BLACK. Locks the eye. */
   .section-name {
     font-family: var(--mono);
-    font-size: 11px; font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
     color: var(--ink);
     text-transform: uppercase;
     letter-spacing: var(--track);
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 10px;
     flex-wrap: wrap;
+    line-height: 1.25;
   }
   .section-name .count {
-    color: var(--muted);
-    font-weight: 500;
+    color: var(--faint);
+    font-weight: 600;
   }
+
   .num-r {
     text-align: right;
     font-variant-numeric: tabular-nums;
     color: var(--ink);
     white-space: nowrap;
   }
-  /* Section numerics: 14px, semibold, with de-emph cents */
-  .section-num { font-size: 14px; font-weight: 600; color: var(--ink); }
+  /* Section numerics — TRUE-BLACK, 700, the strongest tier of the value ramp. */
+  .section-num {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
   .section-num .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
   .section-num.is-over { color: var(--danger); }
-  .section-num.is-muted { color: var(--muted); font-weight: 500; }
+  .section-num.is-muted { color: var(--faint); font-weight: 500; }
 
   .section-prog {
     display: flex; align-items: center; gap: 10px;
@@ -646,27 +715,52 @@
     display: flex;
   }
   .section-prog .mini-bar i { height: 100%; display: block; }
-  .section-prog .mini-bar .s { background: var(--ink); }
-  .section-prog .mini-bar .c { background: #7A6A4D; }
-  .section-prog .mini-bar .over { background: var(--danger); }
+
+  /* Status-aware mini-bar fills. Default to ok (green) so any bar
+     without an explicit status reads as healthy. */
+  .section-prog .mini-bar .s    { background: var(--ok-fill); }
+  .section-prog .mini-bar .c    { background: var(--ok-fill-mid); }
+  .section-prog .mini-bar .over { background: var(--over-fill-deep); }
+  .section-prog.is-ok    .mini-bar .s { background: var(--ok-fill); }
+  .section-prog.is-ok    .mini-bar .c { background: var(--ok-fill-mid); }
+  .section-prog.is-warn  .mini-bar .s { background: var(--warn-fill); }
+  .section-prog.is-warn  .mini-bar .c { background: var(--warn-fill-mid); }
+  .section-prog.is-over  .mini-bar .s { background: var(--over-fill); }
+  .section-prog.is-over  .mini-bar .c { background: var(--over-fill-mid); }
+  .section-prog.is-over  .mini-bar .over { background: var(--over-fill-deep); }
+
   .section-prog .pct {
     font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
+    font-size: 11px; font-weight: 700;
     color: var(--muted);
     width: 38px; text-align: right;
     letter-spacing: var(--track);
   }
-  .section-prog .pct.is-over { color: var(--danger); }
   .section-prog .pct.is-warn { color: var(--warn); }
+  .section-prog .pct.is-over { color: var(--danger); }
 
-  /* ─── SECTION BODY — holds open + closed categories of an expanded section. */
+  /* ─── SECTION BODY — categories + lines for the expanded section ─── */
   .section-body {
-    padding: 4px 0 6px;
+    padding: 0 0 4px;
     background: var(--card);
-    border-top: 1px solid var(--hair);
   }
 
-  /* ─── CATEGORY row (16px semibold + description + progress + $left + trash) */
+  /* Column-anchor strip — repeats the 4 money headers inside any open
+     section so the user always knows what each $ column means, even
+     when the page-level col-labels strip has scrolled out of frame. */
+  .body-cols {
+    padding: 7px 18px 7px 14px;
+    background: #FBF6EA;
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+  }
+  .body-cols .right { text-align: right; }
+
+  /* ─── CATEGORY row — STEP DOWN from section: ink-2, 16/14, semibold ─── */
   .cat-row {
     padding: 12px 18px 12px 14px;
     background: transparent;
@@ -685,7 +779,7 @@
   .cat-name-wrap { min-width: 0; }
   .cat-name {
     font-size: 16px; font-weight: 600;
-    color: var(--ink);
+    color: var(--ink-2);
     display: flex; align-items: center; gap: 8px;
     line-height: 1.3;
     letter-spacing: -0.005em;
@@ -694,7 +788,7 @@
     font-family: var(--sans);
     font-size: 12px;
     font-weight: 500;
-    color: var(--muted);
+    color: var(--faint);
     letter-spacing: 0;
     text-transform: none;
   }
@@ -704,20 +798,20 @@
     line-height: 1.4;
     margin-top: 2px;
   }
-  /* Category numerics: 14px, with de-emph cents (one consistent treatment) */
+  /* Category numerics — ink-2, 600 — step below section's true-black 700. */
   .cat-num {
     font-size: 14px;
     font-weight: 600;
-    color: var(--ink);
+    color: var(--ink-2);
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
-  .cat-num .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .cat-num .cents { color: var(--faint); font-size: 12px; font-weight: 500; }
   .cat-num.is-zero { color: var(--faint); font-weight: 500; }
   .cat-num.is-muted { color: var(--muted); font-weight: 500; }
   .cat-num.is-over { color: var(--danger); }
 
-  /* HOVER-REVEAL drag handle */
+  /* Drag handle — hover-reveal */
   .grip {
     position: absolute;
     left: 0;
@@ -732,10 +826,10 @@
   }
   .grip svg { width: 11px; height: 11px; }
   .cat-row:hover .grip { opacity: 1; }
-  .section-row:hover .grip { opacity: 1; }
-  .section-row .grip { left: -2px; }
+  .section-head:hover .grip { opacity: 1; }
+  .section-head .grip { left: -2px; }
 
-  /* Status chips — one tracking, one mono, status tones only */
+  /* ─── STATUS chips (CO 2, Sub accepted) — kept compact + mono ─── */
   .cat-chip {
     display: inline-flex; align-items: center; gap: 4px;
     font-family: var(--mono);
@@ -746,12 +840,26 @@
     border-radius: 4px;
     line-height: 1.4;
   }
-  .cat-chip.danger { color: var(--danger); background: var(--danger-soft); }
-  .cat-chip.warn { color: var(--warn); background: var(--warn-soft); }
   .cat-chip.info { color: var(--info); background: var(--info-soft); }
-  .cat-chip.ok { color: var(--ok); background: var(--ok-soft); }
+  .cat-chip.ok   { color: var(--ok);   background: var(--ok-soft);   }
 
-  /* Remaining-column composite: bar + "$X left" + trash */
+  /* ─── QUIET VARIANCE FLAG — short, sentence-case, soft-pair. ─── */
+  .flag-chip {
+    display: inline-flex; align-items: center;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    line-height: 1.45;
+    letter-spacing: 0;
+    text-transform: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .flag-chip.over { background: var(--rust-soft); color: var(--rust); }
+  .flag-chip.warn { background: var(--warn-soft); color: var(--warn); }
+
+  /* Remaining column: bar + "$X left" + trash */
   .cat-remain {
     display: flex; flex-direction: column; gap: 4px;
     align-items: stretch;
@@ -768,10 +876,10 @@
   }
   .cat-remain .left-amt.is-over { color: var(--danger); }
   .cat-remain .left-amt.is-warn { color: var(--warn); }
-  .cat-remain .left-amt strong { color: var(--ink); font-weight: 600; }
-  .cat-remain .left-amt .cents { color: var(--muted); }
+  .cat-remain .left-amt strong { color: var(--ink); font-weight: 700; }
+  .cat-remain .left-amt .cents { color: var(--faint); }
 
-  /* ─── CONTAINED WELL — open category + lines */
+  /* ─── CONTAINED WELL — open category + lines ─── */
   .cat-group.is-open {
     background: var(--well-body);
     border-top: 1px solid var(--rule);
@@ -791,7 +899,7 @@
   .cat-group.is-open .cat-twist svg { transform: rotate(90deg); }
   .cat-group.is-open .cat-twist { color: var(--muted); }
 
-  /* Lines tray — sits inside the well */
+  /* Lines tray */
   .lines-tray {
     padding: 4px 0 4px;
     position: relative;
@@ -808,20 +916,28 @@
     opacity: 0.7;
   }
 
-  /* LINE rows — chevron + name + meta + 4 cols + edit/trash */
+  /* LINE rows — the ANCHOR tier. Each row is its own discrete band
+     on a brighter, near-paper surface — clearly lighter than the
+     warm-cream section band above, so the line name + its 4 numbers
+     are what the eye lands on when scanning down. */
   .line-row {
-    padding: 8px 18px 8px 14px;
-    color: var(--ink-2);
+    padding: 9px 18px 9px 14px;
+    color: var(--muted);
     position: relative;
+    background: #FCF8EE;
+  }
+  /* Crisper hairlines BETWEEN sibling line-rows (and after a spend-detail well) */
+  .lines-tray .line-row + .line-row,
+  .lines-tray .line-detail + .line-row {
+    border-top: 1px solid var(--well-hair);
   }
   .line-name-wrap {
     padding-left: 16px;
     min-width: 0;
-    display: flex; align-items: baseline; gap: 6px;
+    display: flex; align-items: baseline; gap: 8px;
     flex-wrap: wrap;
     position: relative;
   }
-  /* Elbow connector off the left guide rail */
   .line-name-wrap::before {
     content: "";
     position: absolute;
@@ -843,96 +959,155 @@
   }
   .line-chev svg { width: 11px; height: 11px; transition: transform 120ms; }
   .line-row.is-open .line-chev svg { transform: rotate(90deg); }
+  /* Line name — the PRIMARY anchor of the row. True ink, semibold —
+     so the eye lands on the line name first, not on the spend-detail well. */
   .line-name {
     color: var(--ink);
-    font-weight: 500;
+    font-weight: 600;
     font-size: 14px;
     line-height: 1.4;
+    letter-spacing: -0.005em;
   }
+  /* Sub-note — clearly stepped DOWN: smaller, fainter, mono. */
   .line-meta {
     font-family: var(--mono);
     font-size: 11px; font-weight: 500;
-    color: var(--muted);
+    color: var(--faint);
     letter-spacing: 0.02em;
   }
-  /* Line numerics: 14px regular, de-emph cents (lighter than categories) */
+  /* Line numerics — meaningful values BOLD + DARK; cents readable but quieter. */
   .line-num {
     font-size: 14px;
-    font-weight: 400;
-    color: var(--ink);
+    font-weight: 600;
+    color: var(--ink-2);
     text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    letter-spacing: -0.005em;
   }
-  .line-num .cents { color: var(--muted); font-size: 12px; font-weight: 400; }
-  .line-num.is-zero { color: var(--faint); font-weight: 400; }
-  .line-num.is-muted { color: var(--muted); }
-  /* Remaining + actions cell on the line */
+  .line-num .cents { color: var(--faint); font-size: 12px; font-weight: 500; }
+  .line-num.is-zero { color: var(--faint); font-weight: 500; }
+  .line-num.is-muted { color: var(--faint); }
+  /* Empty-cell DASH placeholders — tiny, dim, quiet. They were noise. */
+  .line-num.is-empty,
+  .cat-num.is-empty,
+  .section-num.is-empty {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--faint);
+    opacity: 0.5;
+    letter-spacing: 0;
+  }
   .line-remain {
     display: flex; align-items: center; justify-content: flex-end;
     gap: 8px;
   }
 
-  /* ─── PER-LINE SPEND-DETAIL WELL (BILL / EXPENSE / LABOUR) ─── */
+  /* ─── PER-LINE SPEND-DETAIL WELL ───────────────────────────
+     Clearly SUBORDINATE to its line. Faint cream tint (darker than
+     the bright line-row above it, so it never outshines its parent),
+     indented under the line, anchored back to the line by a strong
+     left connector rail. Reads as "this line's detail", never a
+     louder sibling. */
   .line-detail {
-    margin: 2px 18px 8px 80px;     /* indent under the line name */
-    padding: 10px 12px 10px 12px;
-    background: var(--well-deep);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    display: flex; flex-direction: column; gap: 6px;
+    margin: 4px 18px 10px 80px;
+    background: #F1E7CD;
+    border: 1px solid var(--well-rail);
+    border-left: 3px solid var(--well-accent);
+    border-radius: 0 8px 8px 0;
+    overflow: hidden;
+    position: relative;
   }
+  /* Horizontal connector tab — bridges from the lines-tray vertical rail
+     to the well's left edge, completing the "child of the line above" read. */
+  .line-detail::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 14px;
+    width: 20px;
+    height: 1px;
+    background: var(--well-accent);
+    opacity: 0.7;
+  }
+
+  /* Column-header strip inside the spend-detail well — transparent so it
+     sits ON the tinted surface (never brighter than the line above). */
+  .ld-head {
+    display: grid;
+    grid-template-columns: 64px 80px 1fr 92px;
+    gap: 12px;
+    padding: 7px 14px 6px;
+    background: transparent;
+    border-bottom: 1px solid var(--well-rail);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: var(--track);
+  }
+  .ld-head .right { text-align: right; }
+
   .ld-row {
     display: grid;
     grid-template-columns: 64px 80px 1fr 92px;
     align-items: center;
     gap: 12px;
+    padding: 8px 14px;
   }
+  .ld-row + .ld-row { border-top: 1px solid var(--well-hair); }
+
+  /* Source pills — calm, distinct tints. */
   .ld-pill {
     font-family: var(--mono);
     font-size: 11px; font-weight: 700;
     color: var(--muted);
     background: var(--chip-fill);
-    padding: 2px 0;
+    padding: 3px 0;
     border-radius: 4px;
     text-transform: uppercase;
     letter-spacing: var(--track);
     text-align: center;
     line-height: 1.4;
   }
-  .ld-pill.is-bill { background: var(--info-soft); color: var(--info); }
-  .ld-pill.is-expense { background: #F1E6CC; color: var(--ink-2); }
-  .ld-pill.is-labour { background: #ECE3D0; color: var(--muted); }
+  .ld-pill.is-bill    { background: var(--src-bill-bg);    color: var(--src-bill-ink); }
+  .ld-pill.is-expense { background: var(--src-expense-bg); color: var(--src-expense-ink); }
+  .ld-pill.is-labour  { background: var(--src-labour-bg);  color: var(--src-labour-ink); }
+
   .ld-date {
     font-family: var(--mono);
-    font-size: 11px; font-weight: 500;
-    color: var(--muted);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
     letter-spacing: 0.02em;
   }
   .ld-label {
-    font-size: 12px;
+    font-size: 14px;
     color: var(--ink-2);
     min-width: 0;
     line-height: 1.4;
+    font-weight: 500;
   }
   .ld-label .who {
-    color: var(--muted);
+    color: var(--faint);
     margin-left: 4px;
+    font-weight: 500;
   }
   .ld-amt {
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--ink);
     text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    letter-spacing: -0.005em;
   }
-  .ld-amt .cents { color: var(--muted); font-weight: 400; }
+  .ld-amt .cents { color: var(--muted); font-weight: 500; font-size: 11px; }
+
   .ld-foot {
     display: flex; align-items: center; gap: 12px;
-    margin-top: 2px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--rule);
+    padding: 9px 14px 9px;
+    background: transparent;
+    border-top: 1px solid var(--well-rail);
   }
   .ld-total {
     font-family: var(--mono);
@@ -943,35 +1118,38 @@
   }
   .ld-total .v {
     font-family: var(--sans);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 800;
     color: var(--ink);
     font-variant-numeric: tabular-nums;
     text-transform: none;
-    letter-spacing: 0;
+    letter-spacing: -0.005em;
     margin-left: 6px;
   }
-  .ld-total .v .cents { color: var(--muted); font-weight: 400; }
+  .ld-total .v .cents { color: var(--muted); font-weight: 500; font-size: 11px; }
+
+  /* "Open in Spend tab" — a real link → RUST (action) */
   .ld-link {
     margin-left: auto;
     font-family: var(--mono);
     font-size: 11px; font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track);
-    color: var(--ink-2);
+    color: var(--rust);
     display: inline-flex; align-items: center; gap: 4px;
     cursor: pointer;
   }
-  .ld-link:hover { color: var(--ink); }
+  .ld-link:hover { color: #A6360A; }
   .ld-link svg { width: 11px; height: 11px; }
+
   .ld-empty {
     font-size: 12px;
     color: var(--muted);
     line-height: 1.5;
-    padding: 2px 0;
+    padding: 14px;
+    background: transparent;
   }
 
-  /* Actions block at the bottom of a category's lines tray */
   .line-actions {
     padding: 8px 18px 4px 64px;
     display: flex; align-items: center;
@@ -991,7 +1169,7 @@
   .add-line-btn:hover { color: var(--ink); border-color: var(--ink-2); background: rgba(255,255,255,0.6); }
   .add-line-btn svg { width: 11px; height: 11px; }
 
-  /* Spent-by-source — same mono label discipline as the rest */
+  /* Spent by source */
   .source-strip {
     display: inline-flex; align-items: center;
     gap: 12px; flex-wrap: wrap;
@@ -1010,14 +1188,21 @@
   }
   .source-strip .src-item .src-name {
     font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
+    font-size: 11px; font-weight: 700;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: var(--track);
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--chip-fill);
   }
+  /* Subtle source tints — match the spend-detail pills so labels scan-link. */
+  .source-strip .src-item.is-labour  .src-name { background: var(--src-labour-bg);  color: var(--src-labour-ink); }
+  .source-strip .src-item.is-bill    .src-name { background: var(--src-bill-bg);    color: var(--src-bill-ink); }
+  .source-strip .src-item.is-expense .src-name { background: var(--src-expense-bg); color: var(--src-expense-ink); }
   .source-strip .src-item .amt {
     color: var(--ink);
-    font-weight: 600;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
   .source-strip .src-item .amt .cents { color: var(--muted); font-weight: 400; }
@@ -1025,9 +1210,9 @@
   .source-strip .src-item.is-link:hover .amt { color: var(--rust); }
   .source-strip .sep { color: var(--faint); }
 
-  /* Contextual "+ Add category" at the foot of an expanded section. */
+  /* "+ Add category to <Section>" at the foot of an expanded section */
   .section-add {
-    padding: 8px 14px 12px 50px;
+    padding: 8px 14px 14px 50px;
   }
   .section-add .btn-context {
     display: inline-flex; align-items: center; gap: 6px;
@@ -1051,14 +1236,10 @@
     text-transform: uppercase;
   }
 
-  /* Catch-all bottom add-row — "+ Add category" / "+ Add section" */
+  /* Catch-all bottom add-row — on PAPER, not in a card. */
   .add-row {
     display: flex; align-items: center; gap: 10px;
-    padding: 12px 18px 13px 14px;
-    border-top: 1px solid var(--hair);
-    background: var(--chrome);
-    border-bottom-left-radius: var(--radius-card);
-    border-bottom-right-radius: var(--radius-card);
+    padding: 14px 4px 0;
   }
   .add-row .btn-add-line {
     display: inline-flex; align-items: center; gap: 6px;
@@ -1201,7 +1382,7 @@
 
       <section class="budget" aria-label="Budget">
 
-        <!-- ───── Budget summary ───── -->
+        <!-- ───── Budget summary — calm white card; punch from TYPE ───── -->
         <div class="panel">
           <div class="panel-head">
             <span class="panel-title">Budget summary</span>
@@ -1233,12 +1414,12 @@
               </div>
             </div>
 
-            <div class="progress-stack">
+            <div class="progress-stack is-ok">
               <div class="progress-meta">
                 <span><strong>53%</strong> complete</span>
                 <span class="sep">&middot;</span>
                 <span><strong>61%</strong> of budget consumed</span>
-                <span class="right">$86,100 / $142,000</span>
+                <span class="right"><strong>$86,100</strong> / $142,000</span>
               </div>
               <div class="seg-bar" aria-hidden="true">
                 <i class="seg-spent" style="width:43.2%;"></i>
@@ -1283,8 +1464,9 @@
           </div>
         </div>
 
-        <!-- ───── Scope table ───── -->
-        <section aria-label="Scope">
+        <!-- ───── Scope — each Section is its own floating card ───── -->
+        <section class="scope-region" aria-label="Scope">
+
           <div class="scope-head">
             <span class="scope-eyebrow">Scope <span class="sep">&middot;</span> 3 sections <span class="sep">&middot;</span> 10 categories</span>
             <div class="scope-actions">
@@ -1299,27 +1481,30 @@
             </div>
           </div>
 
-          <div class="table" role="table">
+          <!-- Column labels — on PAPER (not in a card), sticky as you scroll -->
+          <div class="col-labels row-grid" role="row">
+            <span></span>
+            <span>Category</span>
+            <span class="right">Estimate</span>
+            <span class="right">Spent</span>
+            <span class="right">Committed</span>
+            <span class="right">Remaining</span>
+          </div>
 
-            <!-- Column header -->
-            <div class="table-col-head row-grid" role="row">
-              <span></span>
-              <span>Category</span>
-              <span class="right">Estimate</span>
-              <span class="right">Spent</span>
-              <span class="right">Committed</span>
-              <span class="right">Remaining</span>
-            </div>
-
-            <!-- ─── Section 1: Site &amp; structure (collapsed) ─── -->
-            <div class="section-row row-grid" role="row" aria-expanded="false">
+          <!-- ─── SECTION 1: Site & structure (collapsed) ─── -->
+          <article class="section-card">
+            <div class="section-head row-grid" role="row" aria-expanded="false">
               <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
               <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
-              <span class="section-name">Site &amp; structure <span class="count">3 categories</span> <span class="cat-chip danger">Framing over $4,800</span></span>
+              <span class="section-name">
+                Site &amp; structure
+                <span class="count">3 categories</span>
+                <span class="flag-chip over">Framing $4,800 over</span>
+              </span>
               <span class="num-r section-num">$31,900<span class="cents">.00</span></span>
               <span class="num-r section-num is-over">$36,700<span class="cents">.00</span></span>
-              <span class="num-r section-num is-muted">&mdash;</span>
-              <span class="section-prog">
+              <span class="num-r section-num is-empty">&mdash;</span>
+              <span class="section-prog is-over">
                 <span class="mini-bar">
                   <i class="s" style="width:100%;"></i>
                   <i class="over" style="width:15%;"></i>
@@ -1327,16 +1512,21 @@
                 <span class="pct is-over">115%</span>
               </span>
             </div>
+          </article>
 
-            <!-- ─── Section 2: Trades (EXPANDED) ─── -->
-            <div class="section-row is-open row-grid" role="row" aria-expanded="true">
+          <!-- ─── SECTION 2: Trades (EXPANDED) ─── -->
+          <article class="section-card is-open">
+            <div class="section-head row-grid" role="row" aria-expanded="true">
               <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
               <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
-              <span class="section-name">Trades <span class="count">3 categories</span></span>
+              <span class="section-name">
+                Trades
+                <span class="count">3 categories</span>
+              </span>
               <span class="num-r section-num">$46,700<span class="cents">.00</span></span>
               <span class="num-r section-num">$11,400<span class="cents">.00</span></span>
               <span class="num-r section-num">$17,200<span class="cents">.00</span></span>
-              <span class="section-prog">
+              <span class="section-prog is-ok">
                 <span class="mini-bar">
                   <i class="s" style="width:24.4%;"></i>
                   <i class="c" style="width:36.8%;"></i>
@@ -1345,8 +1535,17 @@
               </span>
             </div>
 
-            <!-- Section body — open + closed categories of "Trades" -->
             <div class="section-body">
+
+              <!-- Column anchor — repeats the 4 money headers inside the open section -->
+              <div class="body-cols row-grid" role="row" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span class="right">Estimate</span>
+                <span class="right">Spent</span>
+                <span class="right">Committed</span>
+                <span class="right">Remaining</span>
+              </div>
 
               <!-- Trades / Electrical (closed) -->
               <div class="cat-group">
@@ -1365,7 +1564,7 @@
                   <span class="num-r cat-num">$8,200<span class="cents">.00</span></span>
                   <span class="num-r cat-num is-muted">$2,800<span class="cents">.00</span></span>
                   <div class="cat-remain">
-                    <span class="section-prog">
+                    <span class="section-prog is-ok">
                       <span class="mini-bar">
                         <i class="s" style="width:56.6%;"></i>
                         <i class="c" style="width:19.3%;"></i>
@@ -1396,7 +1595,7 @@
                   <span class="num-r cat-num">$3,200<span class="cents">.00</span></span>
                   <span class="num-r cat-num is-muted">$6,000<span class="cents">.00</span></span>
                   <div class="cat-remain">
-                    <span class="section-prog">
+                    <span class="section-prog is-ok">
                       <span class="mini-bar">
                         <i class="s" style="width:17.6%;"></i>
                         <i class="c" style="width:33.0%;"></i>
@@ -1423,14 +1622,20 @@
                     </span>
                     <span class="num-r line-num">$2,560<span class="cents">.00</span></span>
                     <span class="num-r line-num">$2,560<span class="cents">.00</span></span>
-                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num is-empty">&mdash;</span>
                     <span class="line-remain">
-                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <span class="num-r line-num is-empty">&mdash;</span>
                       <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
                       <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
                     </span>
                   </div>
                   <div class="line-detail" aria-label="Rough-in labour — spend detail">
+                    <div class="ld-head">
+                      <span>Source</span>
+                      <span>Date</span>
+                      <span>Entry</span>
+                      <span class="right">Amount</span>
+                    </div>
                     <div class="ld-row">
                       <span class="ld-pill is-labour">Labour</span>
                       <span class="ld-date">Mar 04</span>
@@ -1465,9 +1670,9 @@
                     </span>
                     <span class="num-r line-num">$640<span class="cents">.00</span></span>
                     <span class="num-r line-num">$640<span class="cents">.00</span></span>
-                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num is-empty">&mdash;</span>
                     <span class="line-remain">
-                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <span class="num-r line-num is-empty">&mdash;</span>
                       <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
                       <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
                     </span>
@@ -1482,10 +1687,10 @@
                       <span class="line-meta">Kohler &middot; PO 4218</span>
                     </span>
                     <span class="num-r line-num">$4,800<span class="cents">.00</span></span>
-                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num is-empty">&mdash;</span>
                     <span class="num-r line-num">$4,800<span class="cents">.00</span></span>
                     <span class="line-remain">
-                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <span class="num-r line-num is-empty">&mdash;</span>
                       <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
                       <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
                     </span>
@@ -1500,10 +1705,10 @@
                       <span class="line-meta">D. Tomic &middot; accepted sub-quote</span>
                     </span>
                     <span class="num-r line-num">$1,200<span class="cents">.00</span></span>
-                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num is-empty">&mdash;</span>
                     <span class="num-r line-num">$1,200<span class="cents">.00</span></span>
                     <span class="line-remain">
-                      <span class="num-r line-num is-zero">&mdash;</span>
+                      <span class="num-r line-num is-empty">&mdash;</span>
                       <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
                       <button class="icon-btn-sm is-danger" aria-label="Delete line"><svg><use href="#i-trash"/></svg></button>
                     </span>
@@ -1518,8 +1723,8 @@
                       <span class="line-meta">112 hrs @ $80.00</span>
                     </span>
                     <span class="num-r line-num">$9,000<span class="cents">.00</span></span>
-                    <span class="num-r line-num is-zero">&mdash;</span>
-                    <span class="num-r line-num is-zero">&mdash;</span>
+                    <span class="num-r line-num is-empty">&mdash;</span>
+                    <span class="num-r line-num is-empty">&mdash;</span>
                     <span class="line-remain">
                       <span class="num-r line-num">$9,000<span class="cents">.00</span></span>
                       <button class="icon-btn-sm" aria-label="Edit line"><svg><use href="#i-edit"/></svg></button>
@@ -1527,7 +1732,13 @@
                     </span>
                   </div>
                   <div class="line-detail" aria-label="Connection &amp; finishing labour — spend detail">
-                    <span class="ld-empty">Nothing has been spent against this line yet. Time entries and bills assigned to it will roll up here.</span>
+                    <div class="ld-head">
+                      <span>Source</span>
+                      <span>Date</span>
+                      <span>Entry</span>
+                      <span class="right">Amount</span>
+                    </div>
+                    <div class="ld-empty">Nothing has been spent against this line yet. Time entries and bills assigned to it will roll up here.</div>
                     <div class="ld-foot">
                       <span class="ld-total">Total <span class="v num">$0<span class="cents">.00</span></span></span>
                       <a class="ld-link" href="#">Open in Spend tab <svg><use href="#i-arrow-up-right"/></svg></a>
@@ -1539,17 +1750,17 @@
                     <button class="add-line-btn"><svg><use href="#i-plus"/></svg>Add line</button>
                     <div class="source-strip">
                       <span class="src-label">Spent by source</span>
-                      <span class="src-item is-link"><span class="src-name">Labour</span><span class="amt">$3,200<span class="cents">.00</span></span></span>
+                      <span class="src-item is-labour is-link"><span class="src-name">Labour</span><span class="amt">$3,200<span class="cents">.00</span></span></span>
                       <span class="sep">&middot;</span>
-                      <span class="src-item"><span class="src-name">Bills</span><span class="amt" style="color:var(--faint);">$0<span class="cents">.00</span></span></span>
+                      <span class="src-item is-bill"><span class="src-name">Bills</span><span class="amt" style="color:var(--faint);">$0<span class="cents">.00</span></span></span>
                       <span class="sep">&middot;</span>
-                      <span class="src-item is-link"><span class="src-name">Expenses</span><span class="amt" style="color:var(--faint);">$0<span class="cents">.00</span></span></span>
+                      <span class="src-item is-expense is-link"><span class="src-name">Expenses</span><span class="amt" style="color:var(--faint);">$0<span class="cents">.00</span></span></span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Trades / Insulation &amp; drywall (closed) -->
+              <!-- Trades / Insulation & drywall (closed) -->
               <div class="cat-group">
                 <div class="cat-row row-grid" role="row">
                   <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
@@ -1566,7 +1777,7 @@
                   <span class="num-r cat-num is-zero">$0<span class="cents">.00</span></span>
                   <span class="num-r cat-num is-muted">$8,400<span class="cents">.00</span></span>
                   <div class="cat-remain">
-                    <span class="section-prog">
+                    <span class="section-prog is-ok">
                       <span class="mini-bar">
                         <i class="c" style="width:60.0%;"></i>
                       </span>
@@ -1590,16 +1801,23 @@
               </div>
 
             </div>
+          </article>
 
-            <!-- ─── Section 3: Envelope &amp; finishes (collapsed) ─── -->
-            <div class="section-row row-grid" role="row" aria-expanded="false">
+          <!-- ─── SECTION 3: Envelope & finishes (collapsed) ─── -->
+          <article class="section-card">
+            <div class="section-head row-grid" role="row" aria-expanded="false">
               <span class="grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
               <span class="section-twist"><svg><use href="#i-chevron-right"/></svg></span>
-              <span class="section-name">Envelope &amp; finishes <span class="count">4 categories</span> <span class="cat-chip danger">Windows over $900</span> <span class="cat-chip warn">Flooring projected over</span></span>
+              <span class="section-name">
+                Envelope &amp; finishes
+                <span class="count">4 categories</span>
+                <span class="flag-chip over">Windows $900 over</span>
+                <span class="flag-chip warn">Flooring projected over</span>
+              </span>
               <span class="num-r section-num">$63,400<span class="cents">.00</span></span>
               <span class="num-r section-num">$13,200<span class="cents">.00</span></span>
               <span class="num-r section-num">$7,600<span class="cents">.00</span></span>
-              <span class="section-prog">
+              <span class="section-prog is-ok">
                 <span class="mini-bar">
                   <i class="s" style="width:20.8%;"></i>
                   <i class="c" style="width:12.0%;"></i>
@@ -1607,21 +1825,21 @@
                 <span class="pct">33%</span>
               </span>
             </div>
+          </article>
 
-            <!-- Catch-all bottom add-row -->
-            <div class="add-row">
-              <button class="btn-add-line" type="button">
-                <svg><use href="#i-plus"/></svg>
-                Add category
-              </button>
-              <button class="btn-add-line" type="button">
-                <svg><use href="#i-plus"/></svg>
-                Add section
-              </button>
-              <span class="add-spacer"></span>
-            </div>
-
+          <!-- Catch-all bottom add-row (on paper, no card) -->
+          <div class="add-row">
+            <button class="btn-add-line" type="button">
+              <svg><use href="#i-plus"/></svg>
+              Add category
+            </button>
+            <button class="btn-add-line" type="button">
+              <svg><use href="#i-plus"/></svg>
+              Add section
+            </button>
+            <span class="add-spacer"></span>
           </div>
+
         </section>
 
       </section>
