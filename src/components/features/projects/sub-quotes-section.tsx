@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { ReceiptPreviewButton } from '@/components/features/expenses/receipt-preview-button';
 import { Button } from '@/components/ui/button';
 import { Money } from '@/components/ui/money';
+import { StatusBadge } from '@/components/ui/status-badge';
 import type { SubQuoteRow } from '@/lib/db/queries/project-sub-quotes';
 
 export type SubQuoteItem = SubQuoteRow & {
@@ -24,7 +25,7 @@ export type SubQuoteItem = SubQuoteRow & {
   attachment_mime_hint: 'image' | 'pdf' | null;
 };
 
-import { type StatusTone, statusToneClass } from '@/lib/ui/status-tokens';
+import type { StatusTone } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import {
   acceptSubQuoteAction,
@@ -54,11 +55,6 @@ const STATUS_TONE: Record<SubQuoteRow['status'], StatusTone> = {
   expired: 'neutral',
   superseded: 'neutral',
 };
-
-// OD `.pill`: text-only mono, 10px/700, uppercase, 4px radius, soft fill,
-// no border, no leading icon. Matches CostStatusBadge on the cost ledger.
-const PILL =
-  'inline-flex items-center whitespace-nowrap rounded border-transparent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide';
 
 const SHORT_MONTHS = [
   'Jan',
@@ -275,9 +271,11 @@ function SubQuoteRowView({
               ) : null}
             </div>
           </div>
-          <span className={cn(PILL, statusToneClass[STATUS_TONE[quote.status]])}>
-            {STATUS_LABEL[quote.status]}
-          </span>
+          <StatusBadge
+            tone={STATUS_TONE[quote.status]}
+            label={STATUS_LABEL[quote.status]}
+            className="whitespace-nowrap"
+          />
           {quote.quote_date ? (
             <span className="font-mono text-[11px] tracking-wide text-muted-foreground">
               {fmtShortDate(quote.quote_date)}
