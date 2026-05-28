@@ -9,6 +9,7 @@
  *  3. New worker       → "Create account" tab (default).
  */
 
+import { AlertTriangle } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
@@ -178,6 +179,9 @@ export default function JoinPage() {
     return (
       <Card>
         <CardHeader>
+          <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-amber-100">
+            <AlertTriangle className="size-5 text-amber-700" aria-hidden="true" />
+          </div>
           <CardTitle className="text-2xl">Invite not valid</CardTitle>
           <CardDescription>
             This invite link is no longer valid. Contact your employer for a new one.
@@ -192,6 +196,7 @@ export default function JoinPage() {
   return (
     <Card>
       <CardHeader>
+        {/* Employer logo or initials monogram */}
         {logoUrl ? (
           <div className="mb-3 flex h-20 max-w-[280px] items-center justify-center">
             {/* biome-ignore lint/performance/noImgElement: external tenant logo URL */}
@@ -201,7 +206,11 @@ export default function JoinPage() {
               className="max-h-full max-w-full object-contain"
             />
           </div>
-        ) : null}
+        ) : (
+          <div className="mb-3 flex size-16 items-center justify-center rounded-xl bg-muted font-mono text-2xl font-bold uppercase text-muted-foreground">
+            {tenantName?.[0] ?? '?'}
+          </div>
+        )}
         <CardTitle className="text-2xl">Join {tenantName}</CardTitle>
         <CardDescription>
           {tenantName} has invited you to join their team on HeyHenry.
@@ -211,9 +220,21 @@ export default function JoinPage() {
       {/* Path 1: already signed in */}
       {sessionEmail ? (
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            You're signed in as <span className="font-medium text-foreground">{sessionEmail}</span>.
-          </p>
+          {/* Paper-soft signed-in row with avatar circle */}
+          <div className="flex items-center gap-3 rounded-lg bg-paper-soft px-3 py-2.5">
+            <span
+              aria-hidden="true"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/20 font-mono text-sm font-bold uppercase text-brand"
+            >
+              {sessionEmail[0]}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{sessionEmail}</p>
+              <p className="font-mono text-eyebrow uppercase tracking-[0.06em] text-muted-foreground">
+                Signed in
+              </p>
+            </div>
+          </div>
           {error ? (
             <p className="text-sm text-destructive" role="alert">
               {error}
@@ -237,7 +258,7 @@ export default function JoinPage() {
         <>
           {/* Mode toggle */}
           <CardContent className="pb-0">
-            <div className="mb-4 inline-flex w-full rounded-md border bg-muted/40 p-0.5 text-sm">
+            <div className="mb-4 inline-flex w-full rounded-md border bg-muted p-0.5 text-sm">
               <button
                 type="button"
                 onClick={() => {
@@ -366,6 +387,13 @@ export default function JoinPage() {
           )}
         </>
       )}
+
+      {/* "Powered by HeyHenry" footer */}
+      <div className="border-t px-6 py-3 text-center">
+        <p className="font-mono text-eyebrow uppercase tracking-[0.06em] text-muted-foreground">
+          Powered by <strong className="font-bold text-foreground">HeyHenry</strong>
+        </p>
+      </div>
     </Card>
   );
 }
