@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/ops-gate';
 import { createServiceClient } from '@/lib/supabase';
+import { logIdeaOutcome } from '@/server/ops-services/ideas';
 import { createCard } from '@/server/ops-services/kanban';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -30,7 +31,7 @@ export async function promoteIdeaToKanbanAction(
   const { data: idea, error: ideaErr } = await service
     .schema('ops')
     .from('ideas')
-    .select('id, title, body, tags')
+    .select('id, title, body, tags, actor_name')
     .eq('id', ideaId)
     .maybeSingle();
   if (ideaErr) return { ok: false, error: ideaErr.message };
@@ -71,6 +72,14 @@ export async function promoteIdeaToKanbanAction(
       })
       .eq('id', ideaId);
 
+    await logIdeaOutcome(
+      ideaId,
+      idea.actor_name as string,
+      'promoted_to_card',
+      { actorType: 'human', actorName: admin.email, adminUserId: admin.userId },
+      { cardId: res.id, metadata: { board: input.boardSlug, via: 'promote_to_kanban' } },
+    );
+
     await service
       .schema('ops')
       .from('idea_comments')
@@ -94,15 +103,29 @@ export async function promoteIdeaToKanbanAction(
 const VALID_STATUS = ['new', 'reviewed', 'in_progress', 'done', 'rejected'];
 
 export async function setIdeaStatusAction(id: string, status: string): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   if (!VALID_STATUS.includes(status)) return { ok: false, error: 'Invalid status.' };
   const service = createServiceClient();
-  const { error } = await service
+  const { data, error } = await service
     .schema('ops')
     .from('ideas')
     .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .select('actor_name')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  // A deliberate human 'rejected' is a STRONG negative signal (archived_explicit),
+  // distinct from an idea that merely aged out (archived_stale, emitted by the
+  // hygiene auto-archive cron). That distinction is the point of the outcome log.
+  if (status === 'rejected' && data) {
+    await logIdeaOutcome(
+      id,
+      data.actor_name as string,
+      'archived_explicit',
+      { actorType: 'human', actorName: admin.email, adminUserId: admin.userId },
+      { metadata: { via: 'set_status_rejected' } },
+    );
+  }
   revalidatePath(`/ideas/${id}`);
   revalidatePath('/ideas');
   return { ok: true };
@@ -140,7 +163,7 @@ export async function rateIdeaFeedbackAction(
   if (!trimmed) return { ok: false, error: 'Reason required.' };
   if (trimmed.length > 500) return { ok: false, error: 'Reason must be ≤500 chars.' };
   const service = createServiceClient();
-  const { error } = await service
+  const { data, error } = await service
     .schema('ops')
     .from('ideas')
     .update({
@@ -150,8 +173,19 @@ export async function rateIdeaFeedbackAction(
       user_rated_by: admin.userId,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', id);
+    .eq('id', id)
+    .select('actor_name')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  if (data) {
+    await logIdeaOutcome(
+      id,
+      data.actor_name as string,
+      rating > 0 ? 'rated_up' : 'rated_down',
+      { actorType: 'human', actorName: admin.email, adminUserId: admin.userId },
+      { rating, metadata: { reason: trimmed, via: 'ui_feedback' } },
+    );
+  }
   revalidatePath(`/ideas/${id}`);
   revalidatePath('/ideas');
   revalidatePath('/dashboard');
@@ -206,7 +240,7 @@ export async function queueFollowupAction(
     const { data: idea } = await service
       .schema('ops')
       .from('ideas')
-      .select('id, title, body, tags, rating')
+      .select('id, title, body, tags, rating, actor_name')
       .eq('id', ideaId)
       .maybeSingle();
     if (!idea) return { ok: false, error: 'Idea not found.' };
@@ -249,6 +283,14 @@ export async function queueFollowupAction(
       .from('ideas')
       .update({ status: 'in_progress', updated_at: new Date().toISOString() })
       .eq('id', ideaId);
+
+    await logIdeaOutcome(
+      ideaId,
+      idea.actor_name as string,
+      'promoted_to_card',
+      { actorType: 'human', actorName: admin.email, adminUserId: admin.userId },
+      { cardId: card.id, metadata: { lane, via: 'promote_to_roadmap' } },
+    );
 
     resolvedAt = new Date().toISOString();
     resolvedBySystem = 'roadmap';

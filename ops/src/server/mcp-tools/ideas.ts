@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase';
-import { getScoutReportCard } from '@/server/ops-services/ideas';
+import { getScoutReportCard, logIdeaOutcome } from '@/server/ops-services/ideas';
 import { jsonResult, type McpToolCtx, withAudit } from './context';
 
 export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
@@ -128,10 +128,17 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
-        .select('id')
+        .select('id, actor_name')
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) throw new Error('Idea not found');
+      await logIdeaOutcome(
+        id,
+        data.actor_name as string,
+        rating > 0 ? 'rated_up' : 'rated_down',
+        { actorType: 'agent', actorName: ctx.actorName, keyId: ctx.keyId },
+        { rating, metadata: { reason, via: 'mcp_ideas_rate' } },
+      );
       return jsonResult({ ok: true, id, rating, url: `https://ops.heyhenry.io/ideas/${id}` });
     }),
   );
@@ -176,10 +183,17 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         })
         .eq('id', id)
         .is('archived_at', null)
-        .select('id, title, remind_at')
+        .select('id, title, remind_at, actor_name')
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) return jsonResult({ ok: false, error: 'not found or already archived' });
+      await logIdeaOutcome(
+        data.id as string,
+        data.actor_name as string,
+        'parked',
+        { actorType: 'agent', actorName: ctx.actorName, keyId: ctx.keyId },
+        { metadata: { remind_at: data.remind_at, via: 'mcp_ideas_snooze' } },
+      );
       return jsonResult({
         ok: true,
         id: data.id,
