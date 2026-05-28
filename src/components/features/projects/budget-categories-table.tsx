@@ -708,24 +708,34 @@ export function BudgetCategoriesTable({
                             </AlertDialogContent>
                           </AlertDialog>
                         ) : null}
-                        {/* Collapsed summary chips */}
-                        {collapsed
-                          ? overCats.map((l) => (
-                              <StatusBadge key={l.budget_category_id} tone="danger">
-                                {l.budget_category_name} over{' '}
-                                <Money cents={l.actual_cents - l.estimate_cents} />
-                              </StatusBadge>
-                            ))
-                          : null}
-                        {collapsed
-                          ? projOverCats.map((l) => (
-                              <StatusBadge
-                                key={l.budget_category_id}
-                                tone="warning"
-                                label={`${l.budget_category_name} projected over`}
+                        {/* Collapsed summary chips — quiet secondary signal next
+                            to the section name. Aggregated (one chip per status,
+                            not one per category) and font-medium (not bold) so
+                            the section eyebrow stays dominant. Category names
+                            belong in the expanded rows; the chip is just a
+                            scannable tally. */}
+                        {collapsed && overCats.length > 0 ? (
+                          <StatusBadge tone="danger" className="font-medium">
+                            <span className="tabular-nums">
+                              <Money
+                                cents={overCats.reduce(
+                                  (s, l) => s + (l.actual_cents - l.estimate_cents),
+                                  0,
+                                )}
                               />
-                            ))
-                          : null}
+                            </span>{' '}
+                            over
+                            {overCats.length > 1 ? (
+                              <span className="ml-1 opacity-70">({overCats.length})</span>
+                            ) : null}
+                          </StatusBadge>
+                        ) : null}
+                        {collapsed && projOverCats.length > 0 ? (
+                          <StatusBadge tone="warning" className="font-medium">
+                            <span className="tabular-nums">{projOverCats.length}</span> projected
+                            over
+                          </StatusBadge>
+                        ) : null}
                       </div>
                       {/* Inline section description — same pattern as the category
                         description. Stored as plain text/markdown in
