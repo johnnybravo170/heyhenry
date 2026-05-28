@@ -131,7 +131,7 @@ export function BudgetSummaryPanel({
         <span className="text-base font-bold tracking-tight">Budget summary</span>
         <Link
           href={`/projects/${projectId}?tab=overview`}
-          className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           Variance by category <ArrowRight className="size-2.5" />
         </Link>

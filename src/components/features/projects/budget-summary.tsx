@@ -384,7 +384,7 @@ export function VarianceTab({
                             className="flex flex-1 items-baseline justify-between gap-2 hover:underline"
                           >
                             <span>
-                              <span className="mr-1.5 inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                              <span className="mr-1.5 inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                                 {c.flow_version === 1 ? 'v1' : 'unapplied'}
                               </span>
                               {c.title}
@@ -568,7 +568,7 @@ export function VarianceTab({
                                 href={coHref(projectId, c.co_id, fromTab)}
                                 onClick={(e) => e.stopPropagation()}
                                 title={`Touched by CO: ${c.co_title}`}
-                                className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusToneClass.info}`}
+                                className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-wide ${statusToneClass.info}`}
                               >
                                 CO {c.co_short_id}
                               </a>
@@ -756,7 +756,7 @@ function CategoryBreakdown({
               <li key={c.co_id} className="flex items-baseline justify-between gap-2">
                 <a href={coHref(projectId, c.co_id, fromTab)} className="hover:underline">
                   <span
-                    className={`mr-1.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusToneClass.info}`}
+                    className={`mr-1.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-wide ${statusToneClass.info}`}
                   >
                     CO {c.co_short_id}
                   </span>

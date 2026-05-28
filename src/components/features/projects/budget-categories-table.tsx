@@ -1352,24 +1352,35 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           elbow connectors into each line. */}
       {wellOpen ? (
         <div className="relative bg-[#F7EFDB] pb-3 before:pointer-events-none before:absolute before:bottom-[22px] before:left-[50px] before:top-0 before:w-px before:bg-[#C8B68C]/70 before:content-['']">
-          {categoryLines.map((cl) => {
+          {categoryLines.map((cl, lineIdx) => {
             const a = actualsByLineId[cl.id];
             const spent = a ? a.labour_cents + a.bills_cents + a.expenses_cents : 0;
             const committed = a?.po_cents ?? 0;
             const remaining = cl.line_price_cents - spent - committed;
             const lineExpanded = expandedLineIds.has(cl.id);
+            // Empty-cell placeholder: tiny + dim per OD ("is-empty" treatment).
+            const dashCell = 'inline-block font-light tabular-nums text-muted-foreground/50';
             return (
               <div key={cl.id}>
-                <div className={cn(GRID, 'px-3 py-1.5 hover:bg-[#FFFCF7]/60')}>
+                {/* LINE row — the anchor tier. Bright near-paper surface (clearly
+                    lighter than the warm-cream category band above), discrete
+                    band with a crisp hairline above (except the first), semibold
+                    ink line name — the eye lands on the name first. */}
+                <div
+                  className={cn(
+                    GRID,
+                    'bg-[#FCF8EE] px-3 py-2 hover:bg-[#FFFCF7]',
+                    lineIdx > 0 && 'border-t border-[#E5D6B4]',
+                  )}
+                >
                   <span />
                   {/* Deeper indent + elbow connector off the left guide rail —
-                      LINE clearly sits under the CATEGORY. Lighter weight than
-                      the category row above. */}
+                      LINE clearly sits under the CATEGORY. */}
                   <div className="relative flex min-w-0 flex-col pl-4 before:pointer-events-none before:absolute before:left-0 before:top-1/2 before:h-px before:w-2.5 before:bg-[#C8B68C]/70 before:content-['']">
                     <button
                       type="button"
                       onClick={() => toggleLineSpend(cl.id)}
-                      className="flex items-start gap-1 text-left text-sm font-normal hover:text-foreground"
+                      className="flex items-start gap-1 text-left text-sm font-semibold text-foreground hover:text-foreground"
                       aria-expanded={lineExpanded}
                     >
                       {lineExpanded ? (
@@ -1379,7 +1390,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                       )}
                       <span>
                         {cl.label}
-                        <span className="ml-1.5 font-mono text-eyebrow tracking-[0.02em] text-muted-foreground/80">
+                        <span className="ml-1.5 font-mono text-eyebrow font-medium tracking-[0.02em] text-muted-foreground/70">
                           {Number(cl.qty)} {cl.unit}
                           {cl.unit_price_cents > 0 ? (
                             <>
@@ -1397,24 +1408,28 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                       setEditingLine(cl);
                       setAddingLineFor(null);
                     }}
-                    className="text-right text-sm font-normal hover:underline"
+                    className="text-right text-sm font-semibold text-foreground hover:underline"
                     title="Edit this line"
                   >
                     <Money cents={cl.line_price_cents} />
                   </button>
-                  <span className="text-right text-sm font-normal text-muted-foreground">
-                    {spent > 0 ? <Money cents={spent} /> : '—'}
+                  <span className="text-right text-sm font-medium text-muted-foreground">
+                    {spent > 0 ? <Money cents={spent} /> : <span className={dashCell}>—</span>}
                   </span>
-                  <span className="text-right text-sm font-normal text-muted-foreground">
-                    {committed > 0 ? <Money cents={committed} /> : '—'}
+                  <span className="text-right text-sm font-medium text-muted-foreground">
+                    {committed > 0 ? (
+                      <Money cents={committed} />
+                    ) : (
+                      <span className={dashCell}>—</span>
+                    )}
                   </span>
-                  <span className="flex items-center justify-end gap-1 text-right text-sm font-normal text-muted-foreground">
+                  <span className="flex items-center justify-end gap-1 text-right text-sm font-medium text-muted-foreground">
                     {remaining !== 0 ? (
                       <span className={cn(remaining < 0 && 'text-destructive')}>
                         <Money cents={Math.abs(remaining)} />
                       </span>
                     ) : (
-                      '—'
+                      <span className={dashCell}>—</span>
                     )}
                     <button
                       type="button"
@@ -1439,7 +1454,11 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                   </span>
                 </div>
                 {lineExpanded ? (
-                  <div className="bg-muted/30 py-2 pl-[50px] pr-3">
+                  /* PER-LINE SPEND-DETAIL WELL — clearly SUBORDINATE to its line.
+                     Faint cream tint (darker than the bright line-row above so
+                     it never out-shines its parent), indented under the line, and
+                     a 3px left accent rail tying it back to the line. */
+                  <div className="relative mx-3 my-1 ml-[80px] mr-3 overflow-hidden rounded-r-lg border border-[#E5D6B4] border-l-[3px] border-l-[#B89968] bg-[#F1E7CD] py-2">
                     <CostLineActualsInline
                       projectId={projectId}
                       costLineId={cl.id}
