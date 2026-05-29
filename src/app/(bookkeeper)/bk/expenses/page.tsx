@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ExpensesPager } from '@/components/features/expenses/expenses-pager';
 import { ExpensesTable } from '@/components/features/expenses/expenses-table';
 import { requireBookkeeper } from '@/lib/auth/helpers';
 import {
@@ -6,7 +7,10 @@ import {
   buildPickerOptions,
   listExpenseCategories,
 } from '@/lib/db/queries/expense-categories';
-import { listOverheadExpenses } from '@/lib/db/queries/overhead-expenses';
+import {
+  listOverheadExpensesPage,
+  OVERHEAD_LEDGER_PAGE_SIZE,
+} from '@/lib/db/queries/overhead-expenses';
 import { listPaymentSources, toLite } from '@/lib/db/queries/payment-sources';
 import { formatCurrency } from '@/lib/pricing/calculator';
 
@@ -16,6 +20,10 @@ export const metadata = {
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
+function str(v: string | string[] | undefined): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim() : null;
+}
+
 export default async function BookkeeperExpensesPage({
   searchParams,
 }: {
@@ -24,20 +32,28 @@ export default async function BookkeeperExpensesPage({
   await requireBookkeeper();
   const resolved = await searchParams;
   const uncategorizedOnly = resolved.uncategorized === '1';
+  const page = Math.max(1, Number.parseInt(str(resolved.page) ?? '1', 10) || 1);
 
   // Bookkeeper sees every expense — overhead AND project-linked.
   // Overhead appears with a "—" in the project column; project-linked
   // shows a link back to the project so the bookkeeper can verify
-  // context if needed.
-  const [expenses, categoryRows, sourceRows] = await Promise.all([
-    listOverheadExpenses({ includeProjectExpenses: true, uncategorizedOnly }),
+  // context if needed. Paginated: only one page of rows (and their
+  // signed receipt URLs) materializes per load; the summary strip pulls
+  // its totals from the full matching set, not the page.
+  const [ledger, categoryRows, sourceRows] = await Promise.all([
+    listOverheadExpensesPage(
+      { includeProjectExpenses: true, uncategorizedOnly },
+      page,
+      OVERHEAD_LEDGER_PAGE_SIZE,
+    ),
     listExpenseCategories(),
     listPaymentSources(),
   ]);
   const pickerOptions = buildPickerOptions(buildCategoryTree(categoryRows));
   const paymentSources = toLite(sourceRows);
-  const total = expenses.reduce((s, e) => s + e.amount_cents, 0);
-  const totalTax = expenses.reduce((s, e) => s + e.tax_cents, 0);
+  const expenses = ledger.rows;
+  const total = ledger.summary.amount_cents;
+  const totalTax = ledger.summary.tax_cents;
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,7 +89,7 @@ export default async function BookkeeperExpensesPage({
         </nav>
       </header>
 
-      {expenses.length > 0 ? (
+      {ledger.total > 0 ? (
         <div className="flex gap-4 rounded-md border bg-muted/30 px-4 py-3 text-sm">
           <span>
             <span className="text-muted-foreground">Total: </span>
@@ -86,12 +102,12 @@ export default async function BookkeeperExpensesPage({
           </span>
           <span className="text-muted-foreground">·</span>
           <span className="text-muted-foreground">
-            {expenses.length} {expenses.length === 1 ? 'entry' : 'entries'}
+            {ledger.total} {ledger.total === 1 ? 'entry' : 'entries'}
           </span>
         </div>
       ) : null}
 
-      {expenses.length === 0 ? (
+      {ledger.total === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">
             {uncategorizedOnly
@@ -105,6 +121,15 @@ export default async function BookkeeperExpensesPage({
           categories={pickerOptions}
           paymentSources={paymentSources}
           showProjectColumn
+          shownOf={{ shown: expenses.length, total: ledger.total }}
+          footer={
+            <ExpensesPager
+              page={ledger.page}
+              pageSize={ledger.pageSize}
+              total={ledger.total}
+              basePath="/bk/expenses"
+            />
+          }
         />
       )}
     </div>
