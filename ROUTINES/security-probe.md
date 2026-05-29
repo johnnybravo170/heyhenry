@@ -133,7 +133,7 @@ Probe for accidental leakage:
      payload → CRITICAL (compare to known-public anon key from the
      environment baseline before crying wolf)
    - `ANTHROPIC_API_KEY` literal value (`sk-ant-`) → CRITICAL
-   - `RESEND_API_KEY`, `TWILIO_AUTH_TOKEN` → CRITICAL
+   - `POSTMARK_SERVER_TOKEN`, `TWILIO_AUTH_TOKEN` → CRITICAL
 
    Any genuine match → `escalate_sms` immediately, alongside the
    incident. `check_key`: `block-g-secret-leak-<host>-<secret-type>`.

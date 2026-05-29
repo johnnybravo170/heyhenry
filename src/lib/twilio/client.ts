@@ -91,7 +91,7 @@ export function normalizePhone(raw: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Lazy-init Twilio client (same pattern as Stripe/Resend/Anthropic)
+// Lazy-init Twilio client (same pattern as Stripe/Postmark/Anthropic)
 // ---------------------------------------------------------------------------
 
 let _client: Twilio | null = null;
