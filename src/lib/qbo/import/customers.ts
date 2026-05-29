@@ -247,27 +247,21 @@ export async function importCustomerPage(
     }
   }
 
-  // Updates: do them serially (small batches per page in practice, and
-  // Supabase doesn't support multi-row UPDATE with different values in
-  // one call without an RPC).
-  for (const u of toUpdate) {
-    const now = new Date().toISOString();
-    const { error: updateErr } = await supabase
-      .from('contacts')
-      .update({
-        // We only update the qbo_* refs on auto-merge — name/email/etc
-        // on the HH row may have been edited by the user and we don't
-        // want to clobber that. The exception is the QBO-linked row
-        // itself (round-trip path) where we DO refresh content.
+  // Updates: one set-based UPDATE for the whole page via the bulk RPC instead
+  // of one round trip per row. We only update the qbo_* refs on auto-merge —
+  // name/email/etc on the HH row may have been edited by the user and we don't
+  // want to clobber that (the bulk fn touches sync metadata only, by design).
+  if (toUpdate.length > 0) {
+    const { error: updateErr } = await supabase.rpc('qbo_bulk_update_contacts', {
+      p_rows: toUpdate.map((u) => ({
+        id: u.id,
+        tenant_id: ctx.tenantId,
         qbo_customer_id: u.qbo.Id,
         qbo_sync_token: u.qbo.SyncToken,
-        qbo_sync_status: 'synced',
-        qbo_synced_at: now,
-        updated_at: now,
-      })
-      .eq('id', u.id);
+      })),
+    });
     if (updateErr) {
-      throw new Error(`Failed to update customer ${u.id}: ${updateErr.message}`);
+      throw new Error(`Failed to update customers page: ${updateErr.message}`);
     }
   }
 

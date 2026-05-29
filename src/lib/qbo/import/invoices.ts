@@ -214,15 +214,16 @@ export async function importInvoicePage(
     }
   }
 
-  for (const u of toUpdate) {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('invoices')
-      .update({
-        // Imported invoices have FROZEN money math (see migration
-        // 0187_invoices_import_batch.sql) — but the source of truth is
-        // QBO, so on re-import we refresh status / line_items / notes.
-        // amount_cents and tax_cents only change if QBO recomputed them.
+  if (toUpdate.length > 0) {
+    // One set-based UPDATE for the whole page instead of one round trip per
+    // row. Imported invoices have FROZEN money math (see migration
+    // 0187_invoices_import_batch.sql) — but the source of truth is QBO, so on
+    // re-import we refresh status / line_items / notes. amount_cents and
+    // tax_cents only change if QBO recomputed them.
+    const { error } = await supabase.rpc('qbo_bulk_update_invoices', {
+      p_rows: toUpdate.map((u) => ({
+        id: u.id,
+        tenant_id: ctx.tenantId,
         status: u.row.status,
         amount_cents: u.row.amount_cents,
         tax_cents: u.row.tax_cents,
@@ -231,13 +232,10 @@ export async function importInvoicePage(
         sent_at: u.row.sent_at,
         paid_at: u.row.paid_at,
         qbo_sync_token: u.qbo.SyncToken,
-        qbo_sync_status: 'synced',
-        qbo_synced_at: now,
-        updated_at: now,
-      })
-      .eq('id', u.id);
+      })),
+    });
     if (error) {
-      throw new Error(`Failed to update invoice ${u.id}: ${error.message}`);
+      throw new Error(`Failed to update invoices page: ${error.message}`);
     }
   }
 
