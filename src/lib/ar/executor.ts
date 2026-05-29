@@ -272,7 +272,7 @@ async function runChannelStep(
   if (channel === 'email') {
     const html = template.bodyHtml ? renderTemplate(template.bodyHtml, vars) : undefined;
     const subject = template.subject ? renderTemplate(template.subject, vars) : '';
-    // Build a proper RFC 5322 From header so Resend renders a display name
+    // Build a proper RFC 5322 From header so Postmark renders a display name
     // (e.g. "Jon's Amazing Service <hello@mail.heyhenry.io>") instead of a
     // bare email. Escape quotes in the display name just in case.
     // AR is marketing-class — default to send.heyhenry.io unless the template

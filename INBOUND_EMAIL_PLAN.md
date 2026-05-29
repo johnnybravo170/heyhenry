@@ -93,7 +93,7 @@ UPDATE inbound_emails SET status='applied', applied_sub_quote_id|applied_bill_id
 
 ### Create
 - `src/lib/inbound-email/sender-resolver.ts` — FROM address → `{ tenantId, ownerUserId }` lookup
-- `src/lib/inbound-email/bounce.ts` — Resend-based polite bounce
+- `src/lib/inbound-email/bounce.ts` — polite bounce via the shared `sendEmail` helper (Postmark)
 - `src/components/features/projects/staged-emails-banner.tsx` — banner with inline list
 - `src/components/features/inbox/staged-bill-confirm-dialog.tsx` — bill review/confirm
 - `supabase/migrations/0178_inbound_emails_staging.sql` — see Migration
@@ -165,7 +165,7 @@ Per [feedback_apply_migrations.md](memory) — apply via `supabase db query --li
 
 - **DNS:** GoDaddy forward — `henry@heyhenry.io` → Postmark inbound. heyhenry.io MX stays where it is.
 - **Banner UX:** preview last 3 staged items inline + "See all" link to `/inbox/email?project={id}`.
-- **Resend outbound `henry@heyhenry.io`:** NOT yet registered. A0 must add it (only `noreply@heyhenry.io` is registered today). Bounce sender (A3) cannot ship until this is done.
+- **Postmark outbound bounce sender:** the shipped bounce sends from `Henry <henry@inbound.heyhenry.io>` (matches the inbound subdomain so replies land back at the parser). That subdomain must be a verified Postmark Sender Signature / domain before the bounce sender (A3) can ship.
 - **Bounce persistence:** persist with `status='bounced'` for abuse visibility.
 
 ## Out of scope (explicit)
@@ -185,15 +185,15 @@ Each task is small enough to commit on its own. Per [feedback_commit_and_push.md
 
 ### Phase A — Infrastructure pivot (server side)
 
-#### A0. DNS + Postmark + Resend setup (Jonathan-driven)
+#### A0. DNS + Postmark setup (Jonathan-driven)
 
 **Files:** none (manual / dashboard work)
 
-This is the only task that requires Jonathan's hands on the GoDaddy / Postmark / Resend dashboards. Code work in A1-A6 / B1-B4 can proceed in parallel — they don't depend on the live mail flow until the C1 smoke test.
+This is the only task that requires Jonathan's hands on the GoDaddy / Postmark dashboards. Code work in A1-A6 / B1-B4 can proceed in parallel — they don't depend on the live mail flow until the C1 smoke test.
 
 - [ ] **GoDaddy:** add an email forward for `henry@heyhenry.io` → the Postmark inbound address (Postmark provides this when you create the Inbound Server below). MX records stay as-is.
-- [ ] **Postmark:** create an Inbound Server (or reuse if one exists). Copy the inbound forward address. Set the webhook URL to `https://app.heyhenry.io/api/inbound/postmark?token=<POSTMARK_INBOUND_TOKEN>` (env var already in Vercel).
-- [ ] **Resend:** add `henry@heyhenry.io` as a verified sender on the heyhenry.io domain (only `noreply@heyhenry.io` is registered today). The bounce sender in A3 sends from this address — it will fail without this step.
+- [ ] **Postmark (inbound):** create an Inbound Server (or reuse if one exists). Copy the inbound forward address. Set the webhook URL to `https://app.heyhenry.io/api/inbound/postmark?token=<POSTMARK_INBOUND_TOKEN>` (env var already in Vercel).
+- [ ] **Postmark (outbound bounce sender):** verify the `inbound.heyhenry.io` subdomain (DKIM + Return-Path) so `henry@inbound.heyhenry.io` can send. The bounce sender in A3 sends from this address via the shared `sendEmail` helper — it will fail without this step.
 - [ ] Send a test forward from `jonathan@heyhenry.io` to `henry@heyhenry.io`. Check Postmark's inbound activity log shows it parsed.
 
 **Verify:** Postmark inbound activity log shows the test message. HTTP webhook attempt visible (401 expected at this stage — the route still uses old per-tenant-slug logic).
@@ -300,56 +300,49 @@ describe('normaliseEmail', () => {
 - create `src/lib/inbound-email/bounce.ts`
 
 **Behaviour:**
-Given an unknown From address, send a polite reply via Resend (already wired in the app). Subject: "Re: <original subject>". Body: short explanation + the operator's recovery path.
+Given an unknown From address, send a polite reply via the shared `sendEmail` helper (Postmark). Sent from `henry@inbound.heyhenry.io` so the reply lands back at the inbound parser. Subject: "Re: <original subject>". Body: short explanation + the operator's recovery path (HTML body in `src/lib/email/templates/inbound-bounce.ts`).
 
-**Code:**
+**Code (as shipped):**
 
 ```ts
 // src/lib/inbound-email/bounce.ts
 
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email/send';
+import { inboundBounceEmailHtml } from '@/lib/email/templates/inbound-bounce';
 
-const FROM = 'Henry <henry@heyhenry.io>';
+const HENRY_FROM = 'Henry <henry@inbound.heyhenry.io>';
 
 export async function sendUnknownSenderBounce(args: {
   to: string;
   originalSubject: string;
 }): Promise<void> {
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
-    console.warn('[bounce] RESEND_API_KEY missing — skipping bounce send');
-    return;
-  }
-  const resend = new Resend(resendKey);
-
-  const subject = args.originalSubject.startsWith('Re:')
+  const subject = args.originalSubject.toLowerCase().startsWith('re:')
     ? args.originalSubject
-    : `Re: ${args.originalSubject}`;
+    : `Re: ${args.originalSubject || '(no subject)'}`;
 
-  const text = [
-    `Hi,`,
-    ``,
-    `I didn't recognise this sender address, so I haven't filed your forward.`,
-    ``,
-    `Forward from the email address you signed up to HeyHenry with — that's the only`,
-    `address I currently accept attachments from. (If you want a second address`,
-    `allowlisted, that's coming soon. Reply support@heyhenry.io and we'll sort it.)`,
-    ``,
-    `— Henry`,
-  ].join('\n');
+  const html = inboundBounceEmailHtml({
+    originalSubject: args.originalSubject || '(no subject)',
+    fromAddress: args.to,
+  });
 
-  await resend.emails.send({
-    from: FROM,
+  const result = await sendEmail({
     to: args.to,
     subject,
-    text,
+    html,
+    from: HENRY_FROM,
+    caslCategory: 'response_to_request',
+    relatedType: 'other',
   });
+
+  if (!result.ok) {
+    console.warn('[inbound-email/bounce] send failed', { to: args.to, error: result.error });
+  }
 }
 ```
 
 **Steps:**
-- [ ] Confirm the app already imports `resend` somewhere (it does — used by autoresponder per [project_heyhenry_resend_upgrade.md](memory)). Match that import style.
-- [ ] Verify `henry@heyhenry.io` is verified for outbound sending in Resend. If not, add to A0.
+- [ ] Route through the shared `sendEmail` helper (Postmark) — no direct provider SDK. An explicit `from` keeps the send on the transactional stream.
+- [ ] Verify `inbound.heyhenry.io` is verified for outbound sending in Postmark. If not, add to A0.
 - [ ] Write the file
 - [ ] Commit + push
 
