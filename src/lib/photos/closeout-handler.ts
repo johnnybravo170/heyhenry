@@ -16,6 +16,7 @@
 
 import { emitArEvent } from '@/lib/ar/event-bus';
 import { getBusinessProfileAdmin, getPrimaryOperatorName } from '@/lib/db/queries/profile';
+import { FROM_EMAIL_TRANSACTIONAL } from '@/lib/email/client';
 import { getSignedUrl } from '@/lib/storage/photos';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { toAbsoluteUrl } from '@/lib/validators/profile';
@@ -177,9 +178,7 @@ async function ensureCloseoutSetup(
     .eq('id', tenantId)
     .maybeSingle();
   const fromName = (tenantRow?.name as string | undefined) ?? 'Hey Henry';
-  const fromEmail = process.env.RESEND_FROM_EMAIL
-    ? extractEmail(process.env.RESEND_FROM_EMAIL)
-    : 'noreply@heyhenry.io';
+  const fromEmail = extractEmail(FROM_EMAIL_TRANSACTIONAL);
   const templateDef = buildCloseoutTemplate({ tenantId, fromName, fromEmail });
 
   // Existing Closeout template? Refresh its body from code so template edits
