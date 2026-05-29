@@ -153,14 +153,27 @@ export async function GET(request: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.heyhenry.io';
   const logUrl = `${appUrl}/w/time/new`;
 
+  // Resolve emails for email-nudge workers up front, in parallel. There's no
+  // batch getUserById and listUsers() pagination silently drops users on big
+  // tenants (see operator-names.ts), so we fan out per-ID concurrently rather
+  // than awaiting each inside the send loop.
+  const emailByUserId = new Map<string, string>();
+  await Promise.all(
+    workers
+      .filter((w) => w.nudge_email)
+      .map(async (w) => {
+        const { data: authUser } = await admin.auth.admin.getUserById(w.user_id);
+        if (authUser?.user?.email) emailByUserId.set(w.user_id, authUser.user.email);
+      }),
+  );
+
   for (const w of workers) {
     const who = w.display_name ?? 'there';
     const tenant = tenantName.get(w.tenant_id) ?? 'your crew';
     const body = `Hey ${who} — quick reminder to log today\u2019s hours for ${tenant}. ${logUrl}`;
 
     if (w.nudge_email) {
-      const { data: authUser } = await admin.auth.admin.getUserById(w.user_id);
-      const email = authUser?.user?.email;
+      const email = emailByUserId.get(w.user_id);
       if (email) {
         const res = await sendEmail({
           to: email,
