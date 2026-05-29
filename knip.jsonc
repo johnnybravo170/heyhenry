@@ -6,8 +6,11 @@
   "ignoreWorkspaces": ["ops", "mcp", "mcp-ops"],
 
   // Standalone executables that are run directly, not imported — treat as entries
-  // so they are not reported as unused files.
-  "entry": ["scripts/**/*.{ts,mjs}"],
+  // so they are not reported as unused files. The Henry eval harness CLIs
+  // (evals/henry/run.ts via `pnpm henry:eval`, list-tools.ts) are entries too;
+  // their imports (driver/scenarios/assert/types) resolve transitively, so knip
+  // still catches genuinely-dead files inside evals/.
+  "entry": ["scripts/**/*.{ts,mjs}", "evals/henry/run.ts", "evals/henry/list-tools.ts"],
 
   // Out of scope for the app guard: agent/skill tooling and compiled build output.
   // (Kept in default project scope otherwise, so deps used only in config files
