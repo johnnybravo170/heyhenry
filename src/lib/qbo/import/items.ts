@@ -166,11 +166,13 @@ export async function importItemPage(ctx: ItemImportContext, page: QboItem[]): P
     }
   }
 
-  for (const u of toUpdate) {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('catalog_items')
-      .update({
+  if (toUpdate.length > 0) {
+    // One set-based UPDATE for the whole page instead of one round trip per
+    // row. QBO is the source of truth for catalog items on re-import.
+    const { error } = await supabase.rpc('qbo_bulk_update_catalog_items', {
+      p_rows: toUpdate.map((u) => ({
+        id: u.id,
+        tenant_id: ctx.tenantId,
         name: u.mapped.name,
         description: u.mapped.description,
         sku: u.mapped.sku,
@@ -181,13 +183,10 @@ export async function importItemPage(ctx: ItemImportContext, page: QboItem[]): P
         category: u.mapped.category,
         is_active: u.mapped.is_active,
         qbo_sync_token: u.qbo.SyncToken,
-        qbo_sync_status: 'synced',
-        qbo_synced_at: now,
-        updated_at: now,
-      })
-      .eq('id', u.id);
+      })),
+    });
     if (error) {
-      throw new Error(`Failed to update catalog_items ${u.id}: ${error.message}`);
+      throw new Error(`Failed to update catalog_items page: ${error.message}`);
     }
   }
 
