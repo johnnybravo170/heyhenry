@@ -114,6 +114,7 @@ For each surviving finding (2–4 max):
 
 1. Call `ideas_add`:
    - **title**: `"HeyHenry: <tool name> — <one-line benefit>"`
+   - **actor_name**: `"ai-tools-scout"` — REQUIRED on every call. Stamps the idea with this scout's slug so the scout-learner can attribute outcomes back to this scout's policy. Without it, the idea lands under the generic OAuth client_id and the learner can't update any producer file. (Producer-learner Phase 0 — see `ops.idea_outcomes`.)
    - **body**: structured markdown, sections in this order:
      ```
      ## What it is
