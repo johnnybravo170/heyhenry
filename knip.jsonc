@@ -29,10 +29,8 @@
     "src/widget/client/submit-lead.ts"
   ],
 
-  // resend: planned-but-unwired email vendor (referenced in docs/legal/vendors.yaml,
-  //   BACKUPS_PLAN.md) — kept pending a wire-or-retire decision, not dead.
   // @radix-ui/react-hover-card: unused UI primitive — candidate for removal later.
-  "ignoreDependencies": ["resend", "@radix-ui/react-hover-card"],
+  "ignoreDependencies": ["@radix-ui/react-hover-card"],
 
   // Block CI on NEW unused files and unused dependencies (high signal, low false
   // positive). Unused exports/types are advisory only — knip flags exports that

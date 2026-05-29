@@ -15,18 +15,18 @@ SUPABASE_SERVICE_ROLE_KEY      # same as main app (bypasses RLS)
 OPS_KEY_PEPPER                 # 32+ bytes of random, NEW value specific to ops
 OPS_ALERTS_FROM_EMAIL          # optional, default ops@mail.heyhenry.io
 OPS_ALERTS_TO_EMAIL            # optional, default riffninjavideos@gmail.com
-RESEND_API_KEY                 # required for alert sends + /api/ops/email/send
+POSTMARK_SERVER_TOKEN          # required for alert sends + /api/ops/email/send
 OPS_EMAIL_DEFAULT_FROM         # default `from` for /api/ops/email/send,
                                # e.g. "Hey Henry <ops@heyhenry.io>"
 ```
 
 ## Email sending
 
-`POST /api/ops/email/send` (scope `write:email`) wraps Resend so Routines
-and MCP callers can send transactional email without holding Resend
+`POST /api/ops/email/send` (scope `write:email`) wraps Postmark so Routines
+and MCP callers can send transactional email without holding Postmark
 secrets themselves. The MCP tool equivalent is `ops_email_send`.
 
-- `RESEND_API_KEY` — sending-only key, scoped to heyhenry.io domain.
+- `POSTMARK_SERVER_TOKEN` — Postmark server token (point at the same Postmark server as the app).
 - `OPS_EMAIL_DEFAULT_FROM` — default sender, e.g. `"Hey Henry <ops@heyhenry.io>"`.
 
 `GET /api/ops/email/send` returns a small health snippet confirming
