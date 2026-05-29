@@ -9,15 +9,20 @@ import { Button } from '@/components/ui/button';
  * Server-paginated footer for the overhead-expense ledger. Page lives in the
  * URL (`?page=`) alongside the active filters; preserves all other params.
  * Renders inside the table card's bottom strip, hidden when one page.
+ *
+ * `basePath` defaults to the owner ledger (`/expenses`); the bookkeeper twin
+ * passes `/bk/expenses` so paging stays on its own route.
  */
 export function ExpensesPager({
   page,
   pageSize,
   total,
+  basePath = '/expenses',
 }: {
   page: number;
   pageSize: number;
   total: number;
+  basePath?: string;
 }) {
   const searchParams = useSearchParams();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -27,7 +32,7 @@ export function ExpensesPager({
     if (nextPage <= 1) params.delete('page');
     else params.set('page', String(nextPage));
     const qs = params.toString();
-    return qs ? `/expenses?${qs}` : '/expenses';
+    return qs ? `${basePath}?${qs}` : basePath;
   }
 
   const firstRow = total === 0 ? 0 : (page - 1) * pageSize + 1;
