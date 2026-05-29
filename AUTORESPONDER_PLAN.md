@@ -13,8 +13,8 @@ platform scope only.
 - Step executor: `src/lib/ar/executor.ts`
 - Merge-tag renderer: `src/lib/ar/render.ts`
 - Cron entry: `src/app/api/ar/cron/route.ts` (scheduled in `vercel.json`)
-- Resend webhook receiver: `src/app/api/ar/webhooks/resend/route.ts`
-- Svix signature verifier: `src/lib/ar/webhook-verify.ts`
+- Postmark webhook receiver: `src/app/api/ar/webhooks/postmark/route.ts` (token-authed via `POSTMARK_OUTBOUND_WEBHOOK_TOKEN` query param; handles Delivery / Bounce / SpamComplaint / Open / Click `RecordType`s)
+- (legacy) Svix signature verifier: `src/lib/ar/webhook-verify.ts` — from the Resend era; the Postmark receiver uses query-param token auth instead, so this is currently unused
 - Unsubscribe route: `src/app/unsubscribe/[token]/route.ts`
 - Signed unsub tokens: `src/lib/ar/unsub-token.ts`
 
@@ -60,44 +60,50 @@ Passes against local Supabase.
 
 | Var | Where | Purpose |
 |---|---|---|
-| `RESEND_API_KEY` | already present | send email |
-| `RESEND_FROM_EMAIL` | set to `Hey Henry <hello@send.heyhenry.io>` | default from |
-| `RESEND_WEBHOOK_SECRET` | new — `whsec_...` from Resend dashboard | verify webhooks |
+| `POSTMARK_SERVER_TOKEN` | already present | send email |
+| `POSTMARK_FROM_EMAIL_MARKETING` | set to `HeyHenry <newsletters@send.heyhenry.io>` | default marketing from (AR sends route to the `outbound-marketing` stream) |
+| `POSTMARK_OUTBOUND_WEBHOOK_TOKEN` | new — random 32+ char string, matched against the `?token=` query param | auth the Postmark event webhook |
 | `CRON_SECRET` | new — random 32+ char string | auth the cron endpoint |
 | `AR_UNSUB_SECRET` | new — random 32+ char string | sign unsub tokens |
 | `AR_PUBLIC_BASE_URL` | new — `https://app.heyhenry.io` | for building unsub links |
 
-## Resend domain / DKIM setup
+## Postmark domain / DKIM setup
 
 Split transactional (invoices, quotes) from marketing so deliverability issues
-on one don't poison the other.
+on one don't poison the other. Each class also gets its own Postmark message
+stream (separate suppression list + reputation). See
+[docs/email-architecture.md](docs/email-architecture.md) for the full four-class
+model — this section is the AR-specific (marketing) slice.
 
 ### Subdomains
 
-1. **`mail.heyhenry.io`** — existing transactional. Keep as-is.
-2. **`send.heyhenry.io`** — new, for AR sends. Add in Resend dashboard →
-   Domains → Add Domain → enter `send.heyhenry.io`, region `us-east-1`.
+1. **`mail.heyhenry.io`** — transactional (`outbound-transactional` stream). Keep as-is.
+2. **`send.heyhenry.io`** — marketing, for AR sends (`outbound-marketing` stream).
+   Add in Postmark dashboard → Sender Signatures / Domains → Add Domain →
+   `send.heyhenry.io`.
 
 ### DNS records (add to heyhenry.io DNS)
 
-For `send.heyhenry.io`, Resend will show:
+For `send.heyhenry.io`, Postmark issues the exact records to publish — copy them
+from the dashboard rather than hand-typing (they're per-domain and rotate):
 
-- **MX**: `send.heyhenry.io  MX 10 feedback-smtp.us-east-1.amazonses.com`
-- **TXT (SPF)**: `send.heyhenry.io  TXT "v=spf1 include:amazonses.com ~all"`
-- **TXT (DKIM)**: three CNAME-style DKIM records (`resend._domainkey.send`, etc.)
+- **DKIM**: the Postmark-issued DKIM `TXT`/`CNAME` at the selector for `send`.
+- **Return-Path (CNAME)**: e.g. `pm-bounces.send.heyhenry.io` → Postmark's bounce
+  host, so bounces align for DMARC.
 - **TXT (DMARC)** on root `heyhenry.io`:
   `_dmarc.heyhenry.io  TXT  "v=DMARC1; p=quarantine; rua=mailto:dmarc@heyhenry.io; adkim=r; aspf=r"`
 
-Wait for Resend to show all records green (usually <15 min, up to a few hours).
+Wait for Postmark to show DKIM + Return-Path green (usually <15 min, up to a few hours).
 
-### Resend webhook
+### Postmark webhook
 
-Resend dashboard → Webhooks → Add Endpoint:
+In the Postmark dashboard, on the `outbound-marketing` stream → Webhooks, point
+the endpoint at our receiver (the same route handles all three outbound streams):
 
-- URL: `https://app.heyhenry.io/api/ar/webhooks/resend`
-- Events: `email.delivered`, `email.opened`, `email.clicked`, `email.bounced`,
-  `email.complained`, `email.delivery_delayed`
-- Copy the signing secret (starts with `whsec_`) into `RESEND_WEBHOOK_SECRET`.
+- URL: `https://app.heyhenry.io/api/ar/webhooks/postmark?token=<POSTMARK_OUTBOUND_WEBHOOK_TOKEN>`
+- Events (RecordTypes): Delivery, Bounce, Spam Complaint, Open, Click.
+- The `?token=` value must match the `POSTMARK_OUTBOUND_WEBHOOK_TOKEN` env var —
+  that's how the route authenticates the callback.
 
 ### Cron dispatch
 

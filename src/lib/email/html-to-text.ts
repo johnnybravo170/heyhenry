@@ -1,6 +1,6 @@
 /**
  * Convert one of our email templates' HTML body into a plain-text
- * alternative for Resend's `text:` field. Modern spam filters
+ * alternative for Postmark's `TextBody` field. Modern spam filters
  * (Gmail/Outlook in particular) downweight HTML-only emails because
  * legitimate senders typically include both parts.
  *

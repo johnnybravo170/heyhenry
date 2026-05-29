@@ -90,7 +90,7 @@ export async function sendMessageNotification(input: SendMessageNotificationInpu
   if (emailRaw) {
     // Pre-write the Message-ID we're about to send onto the row's
     // external_id so the inbound resolver can match the customer's reply
-    // even if Resend overrides our header. Belt-and-suspenders with the
+    // even if Postmark overrides our header. Belt-and-suspenders with the
     // body footer below.
     const messageIdHeader = outboundMessageId(input.messageId);
     await input.supabase
