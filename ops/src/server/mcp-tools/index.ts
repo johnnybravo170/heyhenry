@@ -25,6 +25,7 @@ import { registerMessageLabTools } from './message_eval';
 import { registerMetaTools } from './meta';
 import { registerReviewQueueTools } from './review_queue';
 import { registerRoadmapTools } from './roadmap';
+import { registerScoutPolicyTools } from './scout_policy';
 import { registerSocialDraftTools } from './social_drafts';
 import { registerWorklogTools } from './worklog';
 
@@ -62,6 +63,9 @@ export function registerScopedTools(server: McpServer, ctx: McpToolCtx) {
   }
   if (any(ctx.scopes, 'read:ideas', 'write:ideas')) {
     registerIdeaTools(server, ctx);
+    // Scout policy lives under the ideas scope group — same producer-learner
+    // concern, no need for a separate scope. See ops.scout_policy migration.
+    registerScoutPolicyTools(server, ctx);
   }
   if (any(ctx.scopes, 'read:decisions', 'write:decisions')) {
     registerDecisionTools(server, ctx);
