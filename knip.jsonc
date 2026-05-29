@@ -1,0 +1,54 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+
+  // Guard scope: the Next.js app at the workspace root only. The ops/mcp/mcp-ops
+  // sub-workspaces are maintained separately and out of scope for this guard.
+  "ignoreWorkspaces": ["ops", "mcp", "mcp-ops"],
+
+  // Standalone executables that are run directly, not imported — treat as entries
+  // so they are not reported as unused files.
+  "entry": ["scripts/**/*.{ts,mjs}"],
+
+  // Out of scope for the app guard: agent/skill tooling and compiled build output.
+  // (Kept in default project scope otherwise, so deps used only in config files
+  // like postcss/tailwind are still seen as used.)
+  //
+  // RATCHET: the src/ files below are dead/parked code KNOWN when this guard was
+  // added (see .audit/DEAD-CODE-TRIAGE.md — the pre-V1 triage). They are frozen
+  // here so CI fails on NEW dead code, not pre-existing debt. Burn them down
+  // (delete the code or wire it up) and remove the entry — do not grow this list.
+  "ignore": [
+    ".claude/**",
+    "**/dist/**",
+    "src/components/features/settings/template-suggestions-card.tsx",
+    "src/server/actions/template-suggestions.ts",
+    "src/server/actions/starter-templates.ts",
+    "src/server/actions/inbound-email.ts",
+    "src/server/actions/onboarding-verification.ts",
+    "src/lib/ai/schedule-bootstrap.ts",
+    "src/widget/client/submit-lead.ts"
+  ],
+
+  // resend: planned-but-unwired email vendor (referenced in docs/legal/vendors.yaml,
+  //   BACKUPS_PLAN.md) — kept pending a wire-or-retire decision, not dead.
+  // @radix-ui/react-hover-card: unused UI primitive — candidate for removal later.
+  "ignoreDependencies": ["resend", "@radix-ui/react-hover-card"],
+
+  // Block CI on NEW unused files and unused dependencies (high signal, low false
+  // positive). Unused exports/types are advisory only — knip flags exports that
+  // merely don't NEED the `export` keyword (used internally), which is not dead code.
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "unlisted": "warn",
+    "binaries": "warn",
+    "unresolved": "warn",
+    "exports": "warn",
+    "types": "warn",
+    "nsExports": "warn",
+    "nsTypes": "warn",
+    "enumMembers": "warn",
+    "classMembers": "off",
+    "duplicates": "warn"
+  }
+}

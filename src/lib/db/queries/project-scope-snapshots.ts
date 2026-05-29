@@ -161,15 +161,3 @@ export async function getLatestSnapshot(projectId: string): Promise<ProjectScope
 
   return (data as ProjectScopeSnapshot) ?? null;
 }
-
-/** All snapshots for a project, oldest first. Drives the Versions dropdown. */
-export async function listSnapshots(projectId: string): Promise<ProjectScopeSnapshot[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('project_scope_snapshots')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('version_number', { ascending: true });
-
-  return ((data ?? []) as ProjectScopeSnapshot[]) ?? [];
-}

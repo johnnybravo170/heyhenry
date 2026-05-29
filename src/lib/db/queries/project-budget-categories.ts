@@ -128,22 +128,20 @@ export const listBudgetCategoriesForProject = cache(
  * categories) so they still render on the budget page now that sections are
  * a real entity.
  */
-export const listBudgetSectionsForProject = cache(
-  async (projectId: string): Promise<BudgetSection[]> => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('project_budget_sections')
-      .select('id, name, sort_order, description_md')
-      .eq('project_id', projectId)
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true });
+const listBudgetSectionsForProject = cache(async (projectId: string): Promise<BudgetSection[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('project_budget_sections')
+    .select('id, name, sort_order, description_md')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
 
-    if (error) {
-      throw new Error(`Failed to list sections: ${error.message}`);
-    }
-    return (data ?? []) as BudgetSection[];
-  },
-);
+  if (error) {
+    throw new Error(`Failed to list sections: ${error.message}`);
+  }
+  return (data ?? []) as BudgetSection[];
+});
 
 /**
  * Resolve a budget section by name on a project, creating it if missing.
@@ -188,7 +186,7 @@ export async function resolveBudgetSectionId(
 }
 
 /** A single cost line in a normalized scope. */
-export type ScopeLineInput = {
+type ScopeLineInput = {
   label: string;
   /** Cost-line bucket; defaults to 'material'. */
   category?: string;
