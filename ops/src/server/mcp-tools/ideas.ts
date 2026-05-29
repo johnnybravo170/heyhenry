@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase';
-import { getScoutReportCard, logIdeaOutcome } from '@/server/ops-services/ideas';
+import { getScoutReportCard, listScoutOutcomes, logIdeaOutcome } from '@/server/ops-services/ideas';
 import { jsonResult, type McpToolCtx, withAudit } from './context';
 
 export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
@@ -206,7 +206,15 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'ideas_report_card',
-    "Combined feedback view for a scout-style agent. Returns the agent's recently rated ideas (explicit -2/-1/+1/+2), promoted ideas (implicit +2), and archived-without-promotion ideas (implicit -1) in the window. Call this BEFORE producing new findings so you can adjust based on past signal.",
+    [
+      "Combined feedback view for a scout-style agent. Returns the agent's recently rated ideas (explicit -2/-1/+1/+2), promoted ideas (implicit +2), and the archive split derived from ops.idea_outcomes:",
+      '',
+      '- archivedExplicit: STRONG negative (deliberate human reject). Near-veto on this idea-class.',
+      '- archivedStale: WEAK negative (aged out under the ideas-stale cron — nobody looked). Discount heavily; the queue being deep is not a verdict on this idea.',
+      '- archivedWithoutPromotion: legacy union of the two above; retained for back-compat. Prefer the split fields.',
+      '',
+      'Call this BEFORE producing new findings so you can adjust based on past signal.',
+    ].join('\n'),
     {
       scout_tag: z.string().min(1).max(50),
       days: z.number().int().min(1).max(365).default(30),
@@ -214,6 +222,32 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
     withAudit(ctx, 'ideas_report_card', 'read:ideas', async ({ scout_tag, days }) => {
       const card = await getScoutReportCard(scout_tag, days);
       return jsonResult(card);
+    }),
+  );
+
+  server.tool(
+    'ideas_outcomes_list',
+    [
+      'Raw outcome-event read for one scout, by slug, within a time window. This is the producer-learner training feed: per-idea history with the strong/weak archive distinction `ideas_report_card`’s legacy shape cannot express.',
+      '',
+      'event_type values:',
+      '- promoted_to_card  : strongest positive (idea became a kanban/roadmap card; see card_id)',
+      '- rated_up          : strong positive (user_rating > 0; see rating column for the signed value)',
+      '- rated_down        : strong negative (user_rating < 0)',
+      '- archived_explicit : strong negative (human deliberately rejected)',
+      '- archived_stale    : WEAK negative (aged out — discount heavily)',
+      '- parked            : neutral/contextual (idea snoozed for later)',
+      '',
+      '`scout_slug` is the producing scout’s actor_name (e.g. "business-scout") — NOT the tag identifier `ideas_report_card` filters on. Use this from the scout-learner profile, not from scouts themselves.',
+    ].join('\n'),
+    {
+      scout_slug: z.string().min(1).max(100),
+      days: z.number().int().min(1).max(365).default(30),
+      limit: z.number().int().min(1).max(2000).default(500),
+    },
+    withAudit(ctx, 'ideas_outcomes_list', 'read:ideas', async ({ scout_slug, days, limit }) => {
+      const result = await listScoutOutcomes(scout_slug, days, limit);
+      return jsonResult(result);
     }),
   );
 }
