@@ -9,7 +9,6 @@
  * worth the complexity.
  */
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export type TaskFilter = 'all' | 'mine' | 'unassigned' | 'blocked' | 'due_week';
@@ -48,8 +47,4 @@ export function TaskFilters({
       ))}
     </div>
   );
-}
-
-export function useTaskFilter(initial: TaskFilter = 'all') {
-  return useState<TaskFilter>(initial);
 }

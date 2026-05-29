@@ -59,44 +59,6 @@ export async function listCatalogItems(opts: ListCatalogItemsOpts = {}): Promise
   return (data ?? []) as CatalogItemRow[];
 }
 
-export async function getCatalogItem(id: string): Promise<CatalogItemRow | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('catalog_items')
-    .select(COLUMNS)
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to load catalog item: ${error.message}`);
-  }
-  return (data as CatalogItemRow | null) ?? null;
-}
-
-/**
- * Find a catalog item by its QBO Id. Used by the import worker for
- * idempotent re-import — match QBO Item.Id → existing catalog_item row.
- */
-export async function getCatalogItemByQboId(
-  tenantId: string,
-  qboItemId: string,
-): Promise<CatalogItemRow | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('catalog_items')
-    .select(COLUMNS)
-    .eq('tenant_id', tenantId)
-    .eq('qbo_item_id', qboItemId)
-    .maybeSingle();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to load catalog item by QBO id: ${error.message}`);
-  }
-  return (data as CatalogItemRow | null) ?? null;
-}
-
 /**
  * Map-quote catalog row — the subset of `catalog_items` the map-based
  * quote builder uses. Filtered to active per_unit items with a

@@ -57,18 +57,3 @@ export async function listTimeEntries(filters: TimeEntryFilters = {}): Promise<T
   }
   return (data ?? []) as TimeEntryRow[];
 }
-
-export async function getTimeEntry(id: string): Promise<TimeEntryRow | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('time_entries')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to load time entry: ${error.message}`);
-  }
-  return data as TimeEntryRow | null;
-}

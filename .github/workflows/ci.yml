@@ -53,6 +53,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Dead code (knip)
+        # Ratchet guard: fails on NEW unused files or unused dependencies in the
+        # app (root) workspace. Pre-existing dead/parked code is frozen in
+        # knip.jsonc's ignore list (see .audit/DEAD-CODE-TRIAGE.md). Unused
+        # exports/types are advisory only — knip flags exports that merely don't
+        # need the `export` keyword, which is not dead code.
+        run: pnpm knip
+
       - name: Vendor coverage (privacy policy ↔ codebase)
         # Asserts every third-party SDK / vendor env var in the
         # codebase has an entry in docs/legal/vendors.yaml. The

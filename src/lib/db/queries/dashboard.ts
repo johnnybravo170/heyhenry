@@ -94,7 +94,7 @@ export type RecentWorklogEntry = {
 // ---------------------------------------------------------------------------
 
 /** Return the start and end of "today" in the given IANA timezone as ISO strings. */
-export function todayBounds(timezone: string): { start: string; end: string } {
+function todayBounds(timezone: string): { start: string; end: string } {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
