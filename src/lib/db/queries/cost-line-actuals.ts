@@ -16,7 +16,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export type CostLineActualsRow = {
+type CostLineActualsRow = {
   kind: 'labour' | 'expense' | 'bill' | 'po';
   id: string;
   label: string;
