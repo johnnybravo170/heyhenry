@@ -28,17 +28,3 @@ export async function listEstimateSnippets(): Promise<EstimateSnippetRow[]> {
   if (error) throw new Error(`Failed to list snippets: ${error.message}`);
   return (data ?? []) as EstimateSnippetRow[];
 }
-
-export async function getEstimateSnippet(id: string): Promise<EstimateSnippetRow | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('estimate_snippets')
-    .select(COLUMNS)
-    .eq('id', id)
-    .maybeSingle();
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to load snippet: ${error.message}`);
-  }
-  return (data as EstimateSnippetRow | null) ?? null;
-}

@@ -106,20 +106,6 @@ export async function listProjectsForWorker(
     );
 }
 
-export async function getAssignment(
-  tenantId: string,
-  assignmentId: string,
-): Promise<ProjectAssignmentRow | null> {
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from('project_assignments')
-    .select(COLUMNS)
-    .eq('id', assignmentId)
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  return (data as ProjectAssignmentRow) ?? null;
-}
-
 export async function isWorkerAssignedToProject(
   tenantId: string,
   workerProfileId: string,

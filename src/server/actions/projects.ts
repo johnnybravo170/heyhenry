@@ -426,34 +426,6 @@ export async function transitionLifecycleStageAction(input: {
   return { ok: true, id: parsed.data.id };
 }
 
-/**
- * Resume an on-hold project back to the stage it was in before the hold.
- * Falls back to `planning` if the pre-hold stage is missing (shouldn't
- * happen, but defensive).
- */
-export async function resumeProjectAction(input: { id: string }): Promise<ProjectActionResult> {
-  const tenant = await getCurrentTenant();
-  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
-
-  const supabase = await createClient();
-  const { data: current, error: loadErr } = await supabase
-    .from('projects')
-    .select('id, lifecycle_stage, resumed_from_stage, name')
-    .eq('id', input.id)
-    .is('deleted_at', null)
-    .maybeSingle();
-
-  if (loadErr) return { ok: false, error: loadErr.message };
-  if (!current) return { ok: false, error: 'Project not found.' };
-
-  if (current.lifecycle_stage !== 'on_hold') {
-    return { ok: false, error: 'Project is not on hold.' };
-  }
-
-  const target = (current.resumed_from_stage as LifecycleStage | null) ?? 'planning';
-  return transitionLifecycleStageAction({ id: input.id, stage: target });
-}
-
 export async function cloneProjectAction(input: {
   source_id: string;
   contact_id: string;

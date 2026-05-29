@@ -317,46 +317,6 @@ export async function fetchIdeaBoardUrlPreviewAction(input: {
 // Operator side — authenticated server client, RLS-enforced
 // ============================================================================
 
-export async function getProjectIdeaBoardItemsAction(
-  projectId: string,
-): Promise<{ ok: true; items: IdeaBoardItem[] } | { ok: false; error: string }> {
-  const tenant = await getCurrentTenant();
-  if (!tenant) return { ok: false, error: 'Not signed in.' };
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('project_idea_board_items')
-    .select(
-      'id, project_id, contact_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
-    )
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: false });
-  if (error) return { ok: false, error: error.message };
-
-  // Sign image URLs via the admin client — operator's authed JWT also has
-  // bucket access, but we keep the signing path consistent with the
-  // customer-side renderer.
-  const admin = createAdminClient();
-  const items = await attachImageUrls(admin, (data ?? []) as IdeaBoardItem[]);
-  return { ok: true, items };
-}
-
-export async function markIdeaBoardItemsReadAction(projectId: string): Promise<SimpleResult> {
-  const tenant = await getCurrentTenant();
-  if (!tenant) return { ok: false, error: 'Not signed in.' };
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from('project_idea_board_items')
-    .update({ read_by_operator_at: new Date().toISOString() })
-    .eq('project_id', projectId)
-    .is('read_by_operator_at', null);
-  if (error) return { ok: false, error: error.message };
-
-  revalidatePath(`/projects/${projectId}`);
-  return { ok: true };
-}
-
 /**
  * Phase 2 — stamp an idea-board item as promoted to a specific selection.
  *

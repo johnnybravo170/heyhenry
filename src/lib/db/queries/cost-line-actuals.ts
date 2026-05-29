@@ -37,16 +37,6 @@ export type CostLineActualsSummary = {
   rows: CostLineActualsRow[];
 };
 
-const EMPTY: CostLineActualsSummary = {
-  total_cents: 0,
-  labour_hours: 0,
-  labour_cents: 0,
-  expenses_cents: 0,
-  bills_cents: 0,
-  po_cents: 0,
-  rows: [],
-};
-
 type CostRow = {
   id: string;
   source_type: 'receipt' | 'vendor_bill';
@@ -73,134 +63,12 @@ function effectiveAmount(
   return r.amount_cents;
 }
 
-export async function getCostLineActuals(costLineId: string): Promise<CostLineActualsSummary> {
-  if (!costLineId) return EMPTY;
-  const admin = createAdminClient();
-
-  const [timeRes, costRes, poItemsRes] = await Promise.all([
-    admin
-      .from('time_entries')
-      .select('id, hours, hourly_rate_cents, entry_date, notes, user_id')
-      .eq('cost_line_id', costLineId)
-      .order('entry_date', { ascending: false }),
-    admin
-      .from('project_costs')
-      .select('id, source_type, amount_cents, pre_tax_amount_cents, cost_date, vendor, description')
-      .eq('cost_line_id', costLineId)
-      .eq('status', 'active')
-      .order('cost_date', { ascending: false }),
-    admin
-      .from('purchase_order_items')
-      .select(
-        'id, label, qty, unit, line_total_cents, created_at, purchase_orders:po_id (vendor, status)',
-      )
-      .eq('cost_line_id', costLineId)
-      .order('created_at', { ascending: false }),
-  ]);
-
-  type TimeRow = {
-    id: string;
-    hours: number;
-    hourly_rate_cents: number | null;
-    entry_date: string;
-    notes: string | null;
-    user_id: string | null;
-  };
-  type PoItemRow = {
-    id: string;
-    label: string | null;
-    qty: number | null;
-    unit: string | null;
-    line_total_cents: number;
-    created_at: string;
-    purchase_orders:
-      | { vendor: string | null; status: string }
-      | { vendor: string | null; status: string }[]
-      | null;
-  };
-
-  const timeRows = (timeRes.data ?? []) as TimeRow[];
-  const costRows = (costRes.data ?? []) as CostRow[];
-  const poItemRows = (poItemsRes.data ?? []) as PoItemRow[];
-
-  const rows: CostLineActualsRow[] = [];
-  let labourHours = 0;
-  let labourCents = 0;
-  for (const t of timeRows) {
-    const cents = Math.round((t.hours ?? 0) * (t.hourly_rate_cents ?? 0));
-    labourHours += t.hours ?? 0;
-    labourCents += cents;
-    rows.push({
-      kind: 'labour',
-      id: t.id,
-      label: `${t.hours} hrs`,
-      sublabel: t.notes ?? null,
-      amount_cents: cents,
-      hours: t.hours,
-      occurred_at: t.entry_date,
-    });
-  }
-
-  let expensesCents = 0;
-  let billsCents = 0;
-  for (const c of costRows) {
-    const amount = effectiveAmount(c);
-    if (c.source_type === 'vendor_bill') {
-      billsCents += amount;
-      rows.push({
-        kind: 'bill',
-        id: c.id,
-        label: c.vendor ?? 'Bill',
-        sublabel: c.description ?? null,
-        amount_cents: amount,
-        occurred_at: c.cost_date,
-      });
-    } else {
-      expensesCents += amount;
-      rows.push({
-        kind: 'expense',
-        id: c.id,
-        label: c.vendor ?? 'Expense',
-        sublabel: c.description ?? null,
-        amount_cents: amount,
-        occurred_at: c.cost_date,
-      });
-    }
-  }
-
-  let poCents = 0;
-  for (const p of poItemRows) {
-    poCents += p.line_total_cents;
-    const po = Array.isArray(p.purchase_orders) ? p.purchase_orders[0] : p.purchase_orders;
-    rows.push({
-      kind: 'po',
-      id: p.id,
-      label: po?.vendor ? `${po.vendor} · ${p.label ?? 'PO line'}` : (p.label ?? 'PO line'),
-      sublabel: po?.status ? `PO ${po.status}` : null,
-      amount_cents: p.line_total_cents,
-      occurred_at: p.created_at,
-    });
-  }
-
-  rows.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
-
-  return {
-    total_cents: labourCents + expensesCents + billsCents + poCents,
-    labour_hours: labourHours,
-    labour_cents: labourCents,
-    expenses_cents: expensesCents,
-    bills_cents: billsCents,
-    po_cents: poCents,
-    rows,
-  };
-}
-
 /**
- * Project-wide variant: same shape as `getCostLineActuals` but returns
- * a Map keyed by `cost_line_id`. Used by the Budget tab so the page
+ * Project-wide per-line spend rollup: a `CostLineActualsSummary` per
+ * `cost_line_id`, returned as a Map. Used by the Budget tab so the page
  * pre-fetches every line's actuals in a single round-trip rather than
  * one fetch per expand. Cost lines with no actuals don't appear in the
- * map; consumers should default to `EMPTY` for missing keys.
+ * map; consumers should default to an empty summary for missing keys.
  */
 export async function getCostLineActualsByProject(
   projectId: string,

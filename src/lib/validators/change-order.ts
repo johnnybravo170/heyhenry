@@ -112,6 +112,3 @@ export const changeOrderApprovalSchema = z.object({
     .min(1, { message: 'Please type your name to approve.' })
     .max(200, { message: 'Name must be at most 200 characters.' }),
 });
-
-export type ChangeOrderInput = z.infer<typeof changeOrderCreateSchema>;
-export type ChangeOrderApprovalInput = z.infer<typeof changeOrderApprovalSchema>;

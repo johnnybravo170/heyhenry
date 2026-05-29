@@ -146,7 +146,6 @@ export const customerUpdateSchema = customerCreateSchema.extend({
 });
 
 export type CustomerCreateInput = z.infer<typeof customerCreateSchema>;
-export type CustomerUpdateInput = z.infer<typeof customerUpdateSchema>;
 
 /**
  * Collapse empty strings from the form into `null` so the DB stores a real
