@@ -186,6 +186,9 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
           remind_at: remindDate.toISOString(),
           review_criterion: criterion.trim(),
           review_status: 'pending',
+          // Fresh snooze resets the drift counter — a revised condition/date is
+          // a new bet, and a previously 'stalled' idea re-enters the review pool.
+          resnooze_count: 0,
           // Don't reset email_sent_at — even snoozed ideas should still have
           // appeared in their original daily digest. The review path is
           // additive, not a replacement for the digest.
