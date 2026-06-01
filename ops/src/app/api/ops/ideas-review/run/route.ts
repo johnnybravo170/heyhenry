@@ -45,6 +45,7 @@ type IdeaRow = {
   rating: number | null;
   tags: string[];
   remind_at: string;
+  review_criterion: string | null;
   review_attempt_count: number;
   last_review_attempt_at: string | null;
 };
@@ -148,7 +149,7 @@ async function runIdeasReview(): Promise<{
     .schema('ops')
     .from('ideas')
     .select(
-      'id, title, body, rating, tags, remind_at, review_attempt_count, last_review_attempt_at',
+      'id, title, body, rating, tags, remind_at, review_criterion, review_attempt_count, last_review_attempt_at',
     )
     .is('archived_at', null)
     .eq('review_status', 'pending')
@@ -311,7 +312,39 @@ async function callSonnet(
   context: BusinessContext,
 ): Promise<Verdict> {
   const today = new Date().toISOString().slice(0, 10);
-  const prompt = `You are a strategic advisor reviewing a deferred idea for Jonathan Boettcher (HeyHenry — voice-first AI assistant for contractors). Today is ${today}. The idea below was snoozed for re-evaluation today. Use the current business context to decide if it's actionable RIGHT NOW.
+  const criterion = idea.review_criterion?.trim();
+
+  // Criterion path: the idea was deferred until a specific condition is met.
+  // Judge ONLY whether that condition is now true — not the idea's merit, and
+  // NOT generic priority-alignment (which is what made old verdicts read as a
+  // restatement of current priorities). Legacy snoozes (no criterion) keep the
+  // original "actionable now?" framing.
+  const job = criterion
+    ? `──────────────────
+UNBLOCK CONDITION (what this idea was deferred until)
+──────────────────
+${criterion}
+
+──────────────────
+YOUR JOB
+──────────────────
+This idea was already judged worth doing — it was snoozed until the condition above came true. Your ONLY job is to decide whether that condition is now met, using the business context as evidence. Do not re-litigate the idea's merit.
+
+- **actionable** — the condition is now met (or met closely enough that acting this week is right). Choose this ONLY if you can cite specific evidence in the context that the condition holds. Alignment with current priorities is NOT the condition — the condition is exactly the text above, nothing looser.
+- **not_yet** — the condition is not yet met. Re-snooze. Set re_snooze_to to when the condition could plausibly next be worth re-checking (estimate from what's in flight); default 14-30 days out.
+- **dismiss** — the condition can no longer be met or has gone moot (a decision superseded it, market moved, scope absorbed elsewhere). Be decisive — Jonathan can override via the email.
+
+When genuinely unsure between actionable and not_yet, choose not_yet.`
+    : `──────────────────
+YOUR JOB
+──────────────────
+Decide if this idea is actionable RIGHT NOW. Three verdicts:
+
+- **actionable** — context supports doing this in the next 1-2 weeks. The idea aligns with current priorities, doesn't block on something stuck, and the original rationale still holds.
+- **not_yet** — still good but blocked on timing, capital, a stuck card, or external dependency. Specify a re-snooze date 14-90 days out depending on what unblocks it.
+- **dismiss** — current context has made this idea obsolete (decision contradicts it, market moved, scope absorbed elsewhere). Be decisive — Jonathan can override via the email.`;
+
+  const prompt = `You are a strategic advisor reviewing a deferred idea for Jonathan Boettcher (HeyHenry — voice-first AI assistant for contractors). Today is ${today}. The idea below was snoozed for re-evaluation today.
 
 ──────────────────
 IDEA
@@ -337,19 +370,12 @@ ${context.kanban_in_flight}
 RECENT WORKLOG (last 14d):
 ${context.recent_worklog}
 
-──────────────────
-YOUR JOB
-──────────────────
-Decide if this idea is actionable RIGHT NOW. Three verdicts:
-
-- **actionable** — context supports doing this in the next 1-2 weeks. The idea aligns with current priorities, doesn't block on something stuck, and the original rationale still holds.
-- **not_yet** — still good but blocked on timing, capital, a stuck card, or external dependency. Specify a re-snooze date 14-90 days out depending on what unblocks it.
-- **dismiss** — current context has made this idea obsolete (decision contradicts it, market moved, scope absorbed elsewhere). Be decisive — Jonathan can override via the email.
+${job}
 
 Respond with JSON only, no prose. Schema:
 {
   "verdict": "actionable" | "not_yet" | "dismiss",
-  "reasoning": "2-3 sentence explanation, plain English, cite specific context items",
+  "reasoning": "2-3 sentence explanation, plain English, cite specific context items${criterion ? '; state whether the condition is met and what shows it' : ''}",
   "suggested_action": "specific 1-week first step, or null",
   "re_snooze_to": "YYYY-MM-DD, or null"
 }`;
@@ -502,6 +528,7 @@ async function sendVerdictEmail(args: {
   const { shadow, kind, idea, verdict, ideaUrl } = args;
   const today = new Date().toISOString().slice(0, 10);
   const prefix = shadow ? '[SHADOW] ' : '';
+  const criterion = idea.review_criterion?.trim();
 
   const subjectByKind: Record<typeof kind, string> = {
     actionable: `${prefix}Snoozed idea ready for action: ${idea.title}`,
@@ -550,6 +577,11 @@ async function sendVerdictEmail(args: {
           <div>
             <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;background:${verdictColor[kind]}1a;color:${verdictColor[kind]};">${verdictLabel[kind]}</span>
           </div>
+          ${
+            criterion
+              ? `<div style="margin-top:12px;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;line-height:1.5;color:#475569;"><strong style="color:#334155;">Condition checked:</strong> ${escapeHtml(criterion)}</div>`
+              : ''
+          }
           <div style="margin-top:12px;font-size:13px;line-height:1.6;color:#334155;">${escapeHtml(verdict.reasoning)}</div>
           ${actionBlock}
           <div style="margin-top:18px;">
@@ -573,7 +605,7 @@ ${idea.title}
 ${ideaUrl}
 
 VERDICT: ${verdictLabel[kind]}
-
+${criterion ? `\nCONDITION CHECKED:\n${criterion}\n` : ''}
 REASONING:
 ${verdict.reasoning}
 
