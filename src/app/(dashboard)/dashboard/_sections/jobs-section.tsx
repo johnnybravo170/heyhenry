@@ -15,10 +15,14 @@ export async function JobsSection() {
     getProjectsAwaitingApproval(),
   ]);
 
+  // Stacks today's-jobs + awaiting-approval into a single drag-sortable slot.
+  // The slot wrapper (SortableSection) provides no spacing, so without this
+  // container the cards butt together at 0px — flex-col gap-6 matches the
+  // dashboard's top-level rhythm (and AttentionSection / MetricsSection).
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {showTodaysJobs ? <TodaysJobs jobs={todaysJobs} timezone={tz} /> : null}
       <AwaitingApprovalList projects={awaitingApproval} variant="compact" />
-    </>
+    </div>
   );
 }
