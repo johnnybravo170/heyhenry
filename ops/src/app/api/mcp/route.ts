@@ -87,6 +87,18 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  // Keep-warm ping (Vercel cron — see vercel.json). Returns 200 immediately
+  // without auth/DB/audit so the /api/mcp lambda stays warm; otherwise the
+  // first real call after the function scales to zero eats a cold start and
+  // the MCP client reports the connector as unresponsive. Exposes nothing.
+  if (new URL(req.url).searchParams.get('warm') === '1') {
+    return withCors(
+      new Response(JSON.stringify({ ok: true, warm: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+  }
   return handle(req);
 }
 
