@@ -5,6 +5,7 @@ import { env } from '@/lib/env';
 import { generateContentWithRetry } from '@/lib/llm/gemini-retry';
 import { geminiFlashCostCents, trackOpsAiCall } from '@/lib/llm/telemetry';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDate } from '@/lib/tz';
 import { sendOpsEmail } from '@/server/ops-services/email';
 
 /**
@@ -180,7 +181,7 @@ ${JSON.stringify(context).slice(0, 40000)}`;
       digestMarkdown = `_Digest LLM call failed: ${e instanceof Error ? e.message : String(e)}_`;
     }
 
-    const digestTitle = `Weekly digest — ${new Date().toLocaleDateString('en-CA')}`;
+    const digestTitle = `Weekly digest — ${fmtDate(new Date())}`;
     const { error: digestErr } = await service
       .schema('ops')
       .from('worklog_entries')
