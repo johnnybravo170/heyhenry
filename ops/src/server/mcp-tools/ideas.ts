@@ -146,19 +146,28 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
   server.tool(
     'ideas_snooze',
     [
-      'Defer an idea for re-evaluation at a future date.',
+      'Defer an idea until a specific CONDITION is met.',
       '',
-      'Sets `remind_at` and resets `review_status` to `pending`. The /api/ops/ideas-review/run cron picks the idea up at/after `remind_at`, asks Sonnet whether the idea is actionable in current business context, and either emails Jonathan or re-snoozes.',
+      'Sets `remind_at` (when to next CHECK) and `review_criterion` (WHAT to check for), and resets `review_status` to `pending`. The /api/ops/ideas-review/run cron picks the idea up at/after `remind_at` and asks Sonnet a single question: "has this condition become true in current business context?" — then emails Jonathan only if it has, or re-snoozes quietly.',
       '',
-      'Use this when an idea is interesting but blocked on timing, capital, or external dependencies. Example: "snooze the BC equipment-dealer co-marketing idea until 2026-08-01 — too pre-launch right now, revisit when the app is live."',
+      'The criterion is the whole point: a snooze without a stated condition can only be re-evaluated as a vague "is this aligned with priorities?", which drifts forever. Always name the concrete event/state that should resurface the idea.',
+      '',
+      'Use when an idea is good but blocked on timing, capital, a stuck card, or an external dependency. Example: snooze the sub-management routing idea with remind_at 2026-06-15 and criterion "JVD\'s week-1 activation (estimate->invoice->payment) is confirmed AND there is an active conversion conversation with a sub-heavy GC". `remind_at` is just the polling cadence — pick when the condition could plausibly first be true.',
     ].join('\n'),
     {
       id: z.string().uuid(),
       remind_at: z
         .string()
         .datetime({ message: 'remind_at must be ISO 8601 UTC, e.g. 2026-08-01T15:00:00Z' }),
+      criterion: z
+        .string()
+        .min(8, { message: 'criterion must state the concrete unblock condition to check for' })
+        .max(1000)
+        .describe(
+          'The unblock condition that should resurface this idea, in plain English. Name a checkable event or state, not a vague aspiration. E.g. "after V1 has shipped and 3 founding members are activated", not "when the time is right".',
+        ),
     },
-    withAudit(ctx, 'ideas_snooze', 'write:ideas', async ({ id, remind_at }) => {
+    withAudit(ctx, 'ideas_snooze', 'write:ideas', async ({ id, remind_at, criterion }) => {
       const service = createServiceClient();
       const remindDate = new Date(remind_at);
       if (Number.isNaN(remindDate.getTime())) {
@@ -175,6 +184,7 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         .from('ideas')
         .update({
           remind_at: remindDate.toISOString(),
+          review_criterion: criterion.trim(),
           review_status: 'pending',
           // Don't reset email_sent_at — even snoozed ideas should still have
           // appeared in their original daily digest. The review path is
@@ -183,7 +193,7 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         })
         .eq('id', id)
         .is('archived_at', null)
-        .select('id, title, remind_at, actor_name')
+        .select('id, title, remind_at, review_criterion, actor_name')
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) return jsonResult({ ok: false, error: 'not found or already archived' });
@@ -192,13 +202,20 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         data.actor_name as string,
         'parked',
         { actorType: 'agent', actorName: ctx.actorName, keyId: ctx.keyId },
-        { metadata: { remind_at: data.remind_at, via: 'mcp_ideas_snooze' } },
+        {
+          metadata: {
+            remind_at: data.remind_at,
+            criterion: data.review_criterion,
+            via: 'mcp_ideas_snooze',
+          },
+        },
       );
       return jsonResult({
         ok: true,
         id: data.id,
         title: data.title,
         remind_at: data.remind_at,
+        criterion: data.review_criterion,
         url: `https://ops.heyhenry.io/ideas/${data.id}`,
       });
     }),
