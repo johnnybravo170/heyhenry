@@ -107,7 +107,7 @@ function StageStrip({
             )}
             <span
               className={cn(
-                'rounded-full px-2 py-0.5 text-[11px] leading-tight whitespace-nowrap',
+                'rounded-full px-2 py-0.5 text-eyebrow leading-tight whitespace-nowrap',
                 lit ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground/60',
                 isCurrent && 'ring-1 ring-primary font-medium',
               )}
