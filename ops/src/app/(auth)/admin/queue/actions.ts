@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { isLowBlast } from '@/lib/blast-radius';
 import { requireAdmin } from '@/lib/ops-gate';
 import { createServiceClient } from '@/lib/supabase';
 import { commentCard, createCard, moveCard, updateCard } from '@/server/ops-services/kanban';
@@ -40,11 +41,11 @@ type AdminCtx = { actorType: 'human'; actorName: string; keyId: null; adminUserI
 // Low-blast-radius work can auto-ship (PR, never merge) per the autonomy
 // boundary (knowledge 57e7d23d). Anything touching $/schema/auth/the MCP
 // surface / shared design tokens — or with no blast info — is review-gated.
-const LOW_BLAST = new Set(['none', 'low', 'ui', 'copy', 'presentational', 'component', 'isolated']);
-
+// Vocabulary + leading-token parsing live in @/lib/blast-radius so the drafting
+// side (daily-board-triage) and this router can't drift apart — the prose-vs-token
+// mismatch that kept the autoship lane empty.
 function routeTagFor(option: BundleOption | undefined): 'cc:autoship' | 'cc:review' {
-  const blast = (option?.blast_radius ?? '').toLowerCase().trim();
-  return LOW_BLAST.has(blast) ? 'cc:autoship' : 'cc:review';
+  return isLowBlast(option?.blast_radius) ? 'cc:autoship' : 'cc:review';
 }
 
 /**
