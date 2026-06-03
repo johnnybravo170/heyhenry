@@ -66,10 +66,7 @@ const API_KEYS_REF = String.raw`references\s+(?:"?ops"?\s*\.\s*)?"?api_keys"?`;
 
 // Inline column FK:  <...>key_id uuid [not null] references ops.api_keys(id)
 // The [^,;()] guard keeps the match inside a single column definition.
-const INLINE_FK = new RegExp(
-  String.raw`\b([a-z_]*key_id)\b[^,;()]*?\b${API_KEYS_REF}`,
-  'gi',
-);
+const INLINE_FK = new RegExp(String.raw`\b([a-z_]*key_id)\b[^,;()]*?\b${API_KEYS_REF}`, 'gi');
 
 // Table / ALTER constraint FK:  foreign key (key_id) references ops.api_keys
 const CONSTRAINT_FK = new RegExp(
