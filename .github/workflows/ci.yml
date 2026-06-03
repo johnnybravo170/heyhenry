@@ -84,6 +84,14 @@ jobs:
         # one. See scripts/check-migration-grants.ts.
         run: pnpm exec tsx scripts/check-migration-grants.ts
 
+      - name: Ops key_id polymorphic FK
+        # ops key_id / created_by_key_id holds an ops.api_keys.id OR an
+        # ops.oauth_tokens.id (OAuth/MCP path). A single-target FK to
+        # ops.api_keys silently 500s every OAuth-authed insert — it bricked the
+        # Command Center queue for 8 days. Fail any new migration that adds it.
+        # See scripts/check-migration-ops-key-id-fk.ts.
+        run: pnpm exec tsx scripts/check-migration-ops-key-id-fk.ts
+
       - name: Unit tests
         run: pnpm test
 
