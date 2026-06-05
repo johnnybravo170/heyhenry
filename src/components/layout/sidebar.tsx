@@ -85,7 +85,7 @@ export function SidebarNav({ navItems }: { navItems: VerticalNavItem[] }) {
     >
       <div
         className={cn(
-          'flex h-12 items-center border-b',
+          'flex h-14 items-center border-b',
           collapsed ? 'justify-center px-2' : 'justify-between px-4',
         )}
       >
