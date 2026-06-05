@@ -95,6 +95,13 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      - name: Ops unit tests
+        # The ops workspace has its own vitest suite (the root `pnpm test` only
+        # covers the app workspace). Guards the MCP write-tool arg-forwarding
+        # path against a silent SDK/Zod-bump regression. See
+        # ops/tests/mcp-tools/write-tool-forwarding.test.ts.
+        run: pnpm --filter @heyhenry/ops test
+
       - name: Build
         run: pnpm build
 
