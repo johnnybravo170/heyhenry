@@ -143,6 +143,13 @@ export const ROUTING: Record<KnownTask, RouteConfig> = {
     secondary: { provider: 'gemini', weight: 0.4 },
     fallback_chain: ['openai', 'gemini', 'anthropic'],
   },
+  // On-demand customer reply draft from the New-Project review screen.
+  // Short, text-only, cheap — same shape as note_reply_draft.
+  intake_reply_draft: {
+    primary: { provider: 'openai' },
+    secondary: { provider: 'gemini', weight: 0.4 },
+    fallback_chain: ['openai', 'gemini', 'anthropic'],
+  },
 
   // Audio transcription is OpenAI-only (Whisper / gpt-4o-transcribe).
   // Gemini and Anthropic don't expose a dedicated transcription

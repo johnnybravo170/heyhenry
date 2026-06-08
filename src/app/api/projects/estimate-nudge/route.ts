@@ -19,20 +19,21 @@ const NOT_OPENED_AFTER_HOURS = 24;
 const REOPEN_SILENCE_DAYS = 14;
 const DEDUPE_HOURS = 12;
 
-async function recentlyNudged(
+/** Project IDs nudged with `kind` within the dedupe window, batched. */
+async function recentlyNudgedSet(
   admin: ReturnType<typeof createAdminClient>,
-  projectId: string,
+  projectIds: string[],
   kind: string,
-): Promise<boolean> {
+): Promise<Set<string>> {
+  if (projectIds.length === 0) return new Set();
   const cutoff = new Date(Date.now() - DEDUPE_HOURS * 60 * 60 * 1000).toISOString();
   const { data } = await admin
     .from('project_events')
-    .select('id')
-    .eq('project_id', projectId)
+    .select('project_id')
+    .in('project_id', projectIds)
     .eq('kind', kind)
-    .gte('occurred_at', cutoff)
-    .limit(1);
-  return (data ?? []).length > 0;
+    .gte('occurred_at', cutoff);
+  return new Set((data ?? []).map((r) => r.project_id as string));
 }
 
 async function emitNudge(
@@ -83,20 +84,30 @@ export async function GET(request: Request) {
     .lt('estimate_sent_at', notOpenedCutoff)
     .is('deleted_at', null);
 
-  let notOpened = 0;
-  for (const row of (pendingProjects ?? []) as Array<{
+  const pendingRows = (pendingProjects ?? []) as Array<{
     id: string;
     tenant_id: string;
     name: string;
-  }>) {
-    const { count } = await admin
-      .from('public_page_views')
-      .select('id', { count: 'exact', head: true })
-      .eq('resource_type', 'estimate')
-      .eq('resource_id', row.id);
+  }>;
+  const pendingIds = pendingRows.map((p) => p.id);
 
-    if ((count ?? 0) > 0) continue;
-    if (await recentlyNudged(admin, row.id, 'estimate_not_opened_nudge')) continue;
+  // Batch the per-project view + dedupe lookups (was 2 queries/project).
+  const [viewedRes, notOpenedNudged] = await Promise.all([
+    pendingIds.length > 0
+      ? admin
+          .from('public_page_views')
+          .select('resource_id')
+          .eq('resource_type', 'estimate')
+          .in('resource_id', pendingIds)
+      : Promise.resolve({ data: [] as { resource_id: string }[] }),
+    recentlyNudgedSet(admin, pendingIds, 'estimate_not_opened_nudge'),
+  ]);
+  const viewedEstimateIds = new Set((viewedRes.data ?? []).map((r) => r.resource_id as string));
+
+  let notOpened = 0;
+  for (const row of pendingRows) {
+    if (viewedEstimateIds.has(row.id)) continue;
+    if (notOpenedNudged.has(row.id)) continue;
 
     await emitNudge(admin, {
       tenant_id: row.tenant_id,
@@ -118,28 +129,44 @@ export async function GET(request: Request) {
     .in('estimate_status', ['pending_approval', 'declined'])
     .is('deleted_at', null);
 
-  let reopened = 0;
-  for (const row of (sentProjects ?? []) as Array<{
+  const sentRows = (sentProjects ?? []) as Array<{
     id: string;
     tenant_id: string;
     name: string;
-  }>) {
-    const { data: views } = await admin
-      .from('public_page_views')
-      .select('viewed_at')
-      .eq('resource_type', 'estimate')
-      .eq('resource_id', row.id)
-      .order('viewed_at', { ascending: false })
-      .limit(2);
+  }>;
+  const sentIds = sentRows.map((p) => p.id);
 
-    const v = (views ?? []) as { viewed_at: string }[];
+  // Batch all estimate views for the candidate projects (was 1 query/project),
+  // ordered newest-first so per-project grouping preserves that order.
+  const [sentViewsRes, reopenNudged] = await Promise.all([
+    sentIds.length > 0
+      ? admin
+          .from('public_page_views')
+          .select('resource_id, viewed_at')
+          .eq('resource_type', 'estimate')
+          .in('resource_id', sentIds)
+          .order('viewed_at', { ascending: false })
+      : Promise.resolve({ data: [] as { resource_id: string; viewed_at: string }[] }),
+    recentlyNudgedSet(admin, sentIds, 'estimate_reopened_after_silence'),
+  ]);
+  const viewedAtByProject = new Map<string, string[]>();
+  for (const r of sentViewsRes.data ?? []) {
+    const pid = r.resource_id as string;
+    const arr = viewedAtByProject.get(pid) ?? [];
+    arr.push(r.viewed_at as string);
+    viewedAtByProject.set(pid, arr);
+  }
+
+  let reopened = 0;
+  for (const row of sentRows) {
+    const v = viewedAtByProject.get(row.id) ?? [];
     if (v.length < 2) continue;
-    const latest = new Date(v[0].viewed_at);
-    const prior = new Date(v[1].viewed_at);
+    const latest = new Date(v[0]);
+    const prior = new Date(v[1]);
     const gapMs = latest.getTime() - prior.getTime();
     if (gapMs < REOPEN_SILENCE_DAYS * 24 * 60 * 60 * 1000) continue;
-    if (new Date(v[0].viewed_at) <= new Date(silenceCutoff)) continue;
-    if (await recentlyNudged(admin, row.id, 'estimate_reopened_after_silence')) continue;
+    if (new Date(v[0]) <= new Date(silenceCutoff)) continue;
+    if (reopenNudged.has(row.id)) continue;
 
     await emitNudge(admin, {
       tenant_id: row.tenant_id,

@@ -186,14 +186,16 @@ export async function getBillingData(filters: BillingFilters = {}): Promise<Bill
   const limit = filters.limit ?? 25;
   const offset = filters.offset ?? 0;
 
-  // All non-deleted invoices; project-less ones (the job-based pressure-washing
-  // model) are dropped in the grouping loop below — this is the GC surface.
+  // Non-deleted invoices that belong to a project — this is the GC surface, so
+  // project-less invoices (the job-based pressure-washing model) are excluded in
+  // Postgres rather than fetched and dropped in the grouping loop below.
   const { data: invRows, error: invErr } = await supabase
     .from('invoices')
     .select(
       'id, project_id, doc_type, status, amount_cents, tax_cents, tax_inclusive, sent_at, paid_at, payment_method, line_items, deleted_at',
     )
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .not('project_id', 'is', null);
   if (invErr) throw new Error(`Failed to load invoices for billing: ${invErr.message}`);
   const invoices = (invRows ?? []) as RawInvoice[];
 

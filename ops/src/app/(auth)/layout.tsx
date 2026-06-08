@@ -26,6 +26,7 @@ const MORE_NAV = [
   { href: '/admin/kanban', label: 'Kanban' },
   { href: '/worklog', label: 'Worklog' },
   { href: '/ideas', label: 'Ideas' },
+  { href: '/admin/scout-policy', label: 'Scout Policy' },
   { href: '/knowledge', label: 'Knowledge' },
   { href: '/decisions', label: 'Decisions' },
   { href: '/admin/launch', label: 'Launch' },

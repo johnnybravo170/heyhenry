@@ -190,15 +190,57 @@ function AddCostGate({ onChoose }: { onChoose: (kind: 'receipt' | 'bill') => voi
   );
 }
 
+// ─── Overhead (non-billable) toggle ──────────────────────────────────────────
+
+/**
+ * Cost-plus only (card #11). When checked, the cost is logged as project
+ * overhead the contractor absorbs: it still counts toward job cost and
+ * margin, but it's excluded from the cost-plus customer invoice (no
+ * markup, never shown to the customer). Charlie's case: a sub's WCB bill.
+ */
+function NonBillableToggle({
+  idPrefix,
+  checked,
+  onChange,
+}: {
+  idPrefix: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <label
+      htmlFor={`${idPrefix}-non-billable`}
+      className="flex cursor-pointer items-start gap-2 rounded-md border bg-background p-3"
+    >
+      <input
+        type="checkbox"
+        id={`${idPrefix}-non-billable`}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 size-4 shrink-0"
+      />
+      <span className="text-sm">
+        <span className="font-medium">Don&apos;t bill the customer (overhead)</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">
+          Counts toward your job cost and margin, but stays off the customer&apos;s cost-plus
+          invoice.
+        </span>
+      </span>
+    </label>
+  );
+}
+
 // ─── Receipt (expense) form ──────────────────────────────────────────────────
 
 function ReceiptForm({
   projectId,
   categories,
+  isCostPlus,
   onDone,
 }: {
   projectId: string;
   categories: Category[];
+  isCostPlus: boolean;
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -210,6 +252,7 @@ function ReceiptForm({
   const [categoryId, setCategoryId] = useState('');
   const [costLineId, setCostLineId] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [nonBillable, setNonBillable] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -224,6 +267,7 @@ function ReceiptForm({
       fd.set('budget_category_id', categoryId);
       if (costLineId) fd.set('cost_line_id', costLineId);
       if (receipt) fd.set('receipt', receipt);
+      if (nonBillable) fd.set('is_billable', 'false');
       const res = await logExpenseWithReceiptAction(fd);
       if (res.ok) onDone();
       else setError(res.error);
@@ -337,6 +381,9 @@ function ReceiptForm({
           )}
         </div>
       </div>
+      {isCostPlus ? (
+        <NonBillableToggle idPrefix="receipt" checked={nonBillable} onChange={setNonBillable} />
+      ) : null}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>
@@ -357,11 +404,13 @@ const GST_RATE = 0.05;
 function BillForm({
   projectId,
   categories,
+  isCostPlus,
   initial,
   onDone,
 }: {
   projectId: string;
   categories: Category[];
+  isCostPlus: boolean;
   initial?: ProjectBillRow;
   onDone: () => void;
 }) {
@@ -385,6 +434,7 @@ function BillForm({
   const [vendorGstNumber, setVendorGstNumber] = useState(initial?.vendor_gst_number ?? '');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [gstManual, setGstManual] = useState(initial?.gst_cents != null && initial.gst_cents > 0);
+  const [nonBillable, setNonBillable] = useState(initial?.is_billable === false);
 
   function handleSubtotalChange(val: string) {
     setSubtotalRaw(val);
@@ -430,6 +480,7 @@ function BillForm({
       if (costLineId) fd.set('cost_line_id', costLineId);
       fd.set('cost_code', costCode);
       fd.set('vendor_gst_number', vendorGstNumber);
+      fd.set('is_billable', nonBillable ? 'false' : 'true');
       if (attachmentFile) fd.set('attachment', attachmentFile);
       const res = await upsertBillWithAttachmentAction(fd);
       if (res.ok) onDone();
@@ -636,6 +687,9 @@ function BillForm({
         )}
       </div>
 
+      {isCostPlus ? (
+        <NonBillableToggle idPrefix="bill" checked={nonBillable} onChange={setNonBillable} />
+      ) : null}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>
@@ -856,11 +910,13 @@ function FilterChips({
 
 export function ProjectCostsSection({
   projectId,
+  isCostPlus,
   bills,
   expenses,
   categories,
 }: {
   projectId: string;
+  isCostPlus: boolean;
   bills: BillItem[];
   expenses: ExpenseItem[];
   categories: Category[];
@@ -1000,17 +1056,28 @@ export function ProjectCostsSection({
       )}
 
       {adding === 'receipt' && (
-        <ReceiptForm projectId={projectId} categories={categories} onDone={() => setAdding(null)} />
+        <ReceiptForm
+          projectId={projectId}
+          categories={categories}
+          isCostPlus={isCostPlus}
+          onDone={() => setAdding(null)}
+        />
       )}
 
       {adding === 'bill' && (
-        <BillForm projectId={projectId} categories={categories} onDone={() => setAdding(null)} />
+        <BillForm
+          projectId={projectId}
+          categories={categories}
+          isCostPlus={isCostPlus}
+          onDone={() => setAdding(null)}
+        />
       )}
 
       {editingBill && (
         <BillForm
           projectId={projectId}
           categories={categories}
+          isCostPlus={isCostPlus}
           initial={editingBill}
           onDone={() => setEditingBill(null)}
         />

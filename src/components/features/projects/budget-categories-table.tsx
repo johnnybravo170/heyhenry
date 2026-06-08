@@ -1482,10 +1482,14 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
             );
           })}
 
-          {/* cl-actions: add line + spent-by-source. Indented to line-name start. */}
-          <div className="flex flex-wrap items-center gap-3 py-2 pl-[50px] pr-3">
+          {/* cl-actions: add-line affordance + spent-by-source. Indented to the
+              line-name start. The add-line row is a distinct full-width dashed
+              "+ Add line" button on its own row so it reads as "add ANOTHER
+              line" rather than part of the last line above it (founding-member
+              feedback, card #5). */}
+          <div className="flex flex-col gap-2 pl-[50px] pr-3 pt-2">
             {addingLineFor === line.budget_category_id ? (
-              <div className="w-full">
+              <div className="w-full pb-1">
                 <CostLineForm
                   projectId={projectId}
                   catalog={catalog}
@@ -1495,52 +1499,49 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 />
               </div>
             ) : (
-              <>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => {
-                    setAddingLineFor(line.budget_category_id);
-                    setEditingLine(null);
-                  }}
-                >
-                  <Plus className="size-3" />
-                  Add line
-                </Button>
-                {line.labor_cents > 0 || line.bills_cents > 0 || line.expense_cents > 0 ? (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <Eyebrow>Spent by source</Eyebrow>
-                    {line.labor_cents > 0 ? (
-                      <Link
-                        href={`/projects/${projectId}?tab=time&focus=${line.budget_category_id}`}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        Labour{' '}
-                        <Money cents={line.labor_cents} className="font-medium text-foreground" />
-                      </Link>
-                    ) : null}
-                    {line.bills_cents > 0 ? (
-                      <Link
-                        href={`/projects/${projectId}?tab=costs&focus=${line.budget_category_id}`}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        Bills{' '}
-                        <Money cents={line.bills_cents} className="font-medium text-foreground" />
-                      </Link>
-                    ) : null}
-                    {line.expense_cents > 0 ? (
-                      <Link
-                        href={`/projects/${projectId}?tab=costs&focus=${line.budget_category_id}`}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        Expenses{' '}
-                        <Money cents={line.expense_cents} className="font-medium text-foreground" />
-                      </Link>
-                    ) : null}
-                  </div>
-                ) : null}
-              </>
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-[#C8B68C]/80 bg-card/40 px-3 py-2 font-medium text-sm text-muted-foreground transition-colors hover:border-foreground/50 hover:bg-card hover:text-foreground"
+                onClick={() => {
+                  setAddingLineFor(line.budget_category_id);
+                  setEditingLine(null);
+                }}
+              >
+                <Plus className="size-3.5 shrink-0" />
+                Add line
+              </button>
             )}
+            {line.labor_cents > 0 || line.bills_cents > 0 || line.expense_cents > 0 ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pb-1 text-xs">
+                <Eyebrow>Spent by source</Eyebrow>
+                {line.labor_cents > 0 ? (
+                  <Link
+                    href={`/projects/${projectId}?tab=time&focus=${line.budget_category_id}`}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Labour{' '}
+                    <Money cents={line.labor_cents} className="font-medium text-foreground" />
+                  </Link>
+                ) : null}
+                {line.bills_cents > 0 ? (
+                  <Link
+                    href={`/projects/${projectId}?tab=costs&focus=${line.budget_category_id}`}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Bills <Money cents={line.bills_cents} className="font-medium text-foreground" />
+                  </Link>
+                ) : null}
+                {line.expense_cents > 0 ? (
+                  <Link
+                    href={`/projects/${projectId}?tab=costs&focus=${line.budget_category_id}`}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Expenses{' '}
+                    <Money cents={line.expense_cents} className="font-medium text-foreground" />
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

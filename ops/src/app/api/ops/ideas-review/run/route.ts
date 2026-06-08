@@ -37,6 +37,11 @@ const MAX_PER_RUN = 10;
 const MAX_RETRY_COUNT = 3;
 const STUCK_REVIEWING_MINUTES = 30;
 const RETRY_BACKOFF_MINUTES = 60;
+// Drift cap: after this many consecutive not_yet re-snoozes, stop re-snoozing
+// and escalate to Jonathan once instead of looping forever on a condition
+// that never comes true. Reset when the idea is actioned or re-snoozed afresh
+// via ideas_snooze (new criterion/date).
+const MAX_RESNOOZE_COUNT = 4;
 
 type IdeaRow = {
   id: string;
@@ -45,7 +50,9 @@ type IdeaRow = {
   rating: number | null;
   tags: string[];
   remind_at: string;
+  review_criterion: string | null;
   review_attempt_count: number;
+  resnooze_count: number;
   last_review_attempt_at: string | null;
 };
 
@@ -58,6 +65,13 @@ type Action =
   | { id: string; outcome: 'actioned'; verdict: Verdict; email_sent: boolean }
   | { id: string; outcome: 're_snoozed'; verdict: Verdict; new_remind_at: string }
   | { id: string; outcome: 'dismissed'; verdict: Verdict; email_sent: boolean }
+  | {
+      id: string;
+      outcome: 'stalled';
+      verdict: Verdict;
+      email_sent: boolean;
+      resnooze_count: number;
+    }
   | { id: string; outcome: 'lock_lost' }
   | { id: string; outcome: 'errored'; error: string; attempt: number; backoff: boolean };
 
@@ -80,7 +94,11 @@ export async function GET(req: NextRequest) {
     const result = await runIdeasReview();
     if (run) {
       const acted = result.actions.filter(
-        (a) => a.outcome === 'actioned' || a.outcome === 're_snoozed' || a.outcome === 'dismissed',
+        (a) =>
+          a.outcome === 'actioned' ||
+          a.outcome === 're_snoozed' ||
+          a.outcome === 'dismissed' ||
+          a.outcome === 'stalled',
       ).length;
       const errored = result.actions.filter((a) => a.outcome === 'errored').length;
       await finishAgentRun(run.id, {
@@ -109,12 +127,13 @@ function summarize(r: { actions: Action[]; due_count: number; shadow_mode: boole
       acc[x.outcome] = (acc[x.outcome] ?? 0) + 1;
       return acc;
     },
-    { actioned: 0, re_snoozed: 0, dismissed: 0, lock_lost: 0, errored: 0 },
+    { actioned: 0, re_snoozed: 0, dismissed: 0, stalled: 0, lock_lost: 0, errored: 0 },
   );
   const parts = [
     a.actioned ? `${a.actioned} actioned` : null,
     a.re_snoozed ? `${a.re_snoozed} re-snoozed` : null,
     a.dismissed ? `${a.dismissed} dismissed` : null,
+    a.stalled ? `${a.stalled} stalled` : null,
     a.errored ? `${a.errored} errored` : null,
   ].filter(Boolean);
   const tail = parts.length ? parts.join(', ') : 'no due ideas';
@@ -148,7 +167,7 @@ async function runIdeasReview(): Promise<{
     .schema('ops')
     .from('ideas')
     .select(
-      'id, title, body, rating, tags, remind_at, review_attempt_count, last_review_attempt_at',
+      'id, title, body, rating, tags, remind_at, review_criterion, review_attempt_count, resnooze_count, last_review_attempt_at',
     )
     .is('archived_at', null)
     .eq('review_status', 'pending')
@@ -311,7 +330,39 @@ async function callSonnet(
   context: BusinessContext,
 ): Promise<Verdict> {
   const today = new Date().toISOString().slice(0, 10);
-  const prompt = `You are a strategic advisor reviewing a deferred idea for Jonathan Boettcher (HeyHenry — voice-first AI assistant for contractors). Today is ${today}. The idea below was snoozed for re-evaluation today. Use the current business context to decide if it's actionable RIGHT NOW.
+  const criterion = idea.review_criterion?.trim();
+
+  // Criterion path: the idea was deferred until a specific condition is met.
+  // Judge ONLY whether that condition is now true — not the idea's merit, and
+  // NOT generic priority-alignment (which is what made old verdicts read as a
+  // restatement of current priorities). Legacy snoozes (no criterion) keep the
+  // original "actionable now?" framing.
+  const job = criterion
+    ? `──────────────────
+UNBLOCK CONDITION (what this idea was deferred until)
+──────────────────
+${criterion}
+
+──────────────────
+YOUR JOB
+──────────────────
+This idea was already judged worth doing — it was snoozed until the condition above came true. Your ONLY job is to decide whether that condition is now met, using the business context as evidence. Do not re-litigate the idea's merit.
+
+- **actionable** — the condition is now met (or met closely enough that acting this week is right). Choose this ONLY if you can cite specific evidence in the context that the condition holds. Alignment with current priorities is NOT the condition — the condition is exactly the text above, nothing looser.
+- **not_yet** — the condition is not yet met. Re-snooze. Set re_snooze_to to when the condition could plausibly next be worth re-checking (estimate from what's in flight); default 14-30 days out.
+- **dismiss** — the condition can no longer be met or has gone moot (a decision superseded it, market moved, scope absorbed elsewhere). Be decisive — Jonathan can override via the email.
+
+When genuinely unsure between actionable and not_yet, choose not_yet.`
+    : `──────────────────
+YOUR JOB
+──────────────────
+Decide if this idea is actionable RIGHT NOW. Three verdicts:
+
+- **actionable** — context supports doing this in the next 1-2 weeks. The idea aligns with current priorities, doesn't block on something stuck, and the original rationale still holds.
+- **not_yet** — still good but blocked on timing, capital, a stuck card, or external dependency. Specify a re-snooze date 14-90 days out depending on what unblocks it.
+- **dismiss** — current context has made this idea obsolete (decision contradicts it, market moved, scope absorbed elsewhere). Be decisive — Jonathan can override via the email.`;
+
+  const prompt = `You are a strategic advisor reviewing a deferred idea for Jonathan Boettcher (HeyHenry — voice-first AI assistant for contractors). Today is ${today}. The idea below was snoozed for re-evaluation today.
 
 ──────────────────
 IDEA
@@ -337,19 +388,12 @@ ${context.kanban_in_flight}
 RECENT WORKLOG (last 14d):
 ${context.recent_worklog}
 
-──────────────────
-YOUR JOB
-──────────────────
-Decide if this idea is actionable RIGHT NOW. Three verdicts:
-
-- **actionable** — context supports doing this in the next 1-2 weeks. The idea aligns with current priorities, doesn't block on something stuck, and the original rationale still holds.
-- **not_yet** — still good but blocked on timing, capital, a stuck card, or external dependency. Specify a re-snooze date 14-90 days out depending on what unblocks it.
-- **dismiss** — current context has made this idea obsolete (decision contradicts it, market moved, scope absorbed elsewhere). Be decisive — Jonathan can override via the email.
+${job}
 
 Respond with JSON only, no prose. Schema:
 {
   "verdict": "actionable" | "not_yet" | "dismiss",
-  "reasoning": "2-3 sentence explanation, plain English, cite specific context items",
+  "reasoning": "2-3 sentence explanation, plain English, cite specific context items${criterion ? '; state whether the condition is met and what shows it' : ''}",
   "suggested_action": "specific 1-week first step, or null",
   "re_snooze_to": "YYYY-MM-DD, or null"
 }`;
@@ -435,7 +479,12 @@ async function dispatch(
     await service
       .schema('ops')
       .from('ideas')
-      .update({ review_status: 'actioned', review_attempt_count: 0, updated_at: now })
+      .update({
+        review_status: 'actioned',
+        review_attempt_count: 0,
+        resnooze_count: 0,
+        updated_at: now,
+      })
       .eq('id', idea.id);
     const sent = await sendVerdictEmail({
       shadow,
@@ -448,6 +497,35 @@ async function dispatch(
   }
 
   if (verdict.verdict === 'not_yet') {
+    // Drift cap: if this idea has already been re-snoozed MAX_RESNOOZE_COUNT
+    // times, stop the loop. Park it in 'stalled' (out of the review pool) and
+    // escalate to Jonathan ONCE for a manual call. It re-enters the loop only
+    // when ideas_snooze is called again (which resets resnooze_count).
+    if (idea.resnooze_count >= MAX_RESNOOZE_COUNT) {
+      await service
+        .schema('ops')
+        .from('ideas')
+        .update({ review_status: 'stalled', review_attempt_count: 0, updated_at: now })
+        .eq('id', idea.id);
+      // Stalled always emails (in shadow and prod) — it's a decision request,
+      // not a routine verdict, and it fires at most once per stall.
+      const sent = await sendVerdictEmail({
+        shadow,
+        kind: 'stalled',
+        idea,
+        verdict,
+        ideaUrl,
+        resnoozeCount: idea.resnooze_count,
+      });
+      return {
+        id: idea.id,
+        outcome: 'stalled',
+        verdict,
+        email_sent: sent,
+        resnooze_count: idea.resnooze_count,
+      };
+    }
+
     const newRemindAt = `${verdict.re_snooze_to}T15:00:00Z`;
     await service
       .schema('ops')
@@ -456,6 +534,7 @@ async function dispatch(
         review_status: 'pending',
         remind_at: newRemindAt,
         review_attempt_count: 0,
+        resnooze_count: idea.resnooze_count + 1,
         updated_at: now,
       })
       .eq('id', idea.id);
@@ -476,6 +555,7 @@ async function dispatch(
       review_status: 'dismissed',
       archived_at: shadow ? null : now, // Shadow: don't actually archive.
       review_attempt_count: 0,
+      resnooze_count: 0,
       updated_at: now,
     })
     .eq('id', idea.id);
@@ -494,19 +574,22 @@ async function dispatch(
 
 async function sendVerdictEmail(args: {
   shadow: boolean;
-  kind: 'actionable' | 'not_yet' | 'dismiss';
+  kind: 'actionable' | 'not_yet' | 'dismiss' | 'stalled';
   idea: IdeaRow;
   verdict: Verdict;
   ideaUrl: string;
+  resnoozeCount?: number;
 }): Promise<boolean> {
-  const { shadow, kind, idea, verdict, ideaUrl } = args;
+  const { shadow, kind, idea, verdict, ideaUrl, resnoozeCount } = args;
   const today = new Date().toISOString().slice(0, 10);
   const prefix = shadow ? '[SHADOW] ' : '';
+  const criterion = idea.review_criterion?.trim();
 
   const subjectByKind: Record<typeof kind, string> = {
     actionable: `${prefix}Snoozed idea ready for action: ${idea.title}`,
     not_yet: `${prefix}Snoozed idea — re-snoozed (verdict: not_yet): ${idea.title}`,
     dismiss: `${prefix}Snoozed idea — dismissed: ${idea.title}`,
+    stalled: `${prefix}Snoozed idea stalled — re-snoozed ${resnoozeCount ?? MAX_RESNOOZE_COUNT}× without its condition being met: ${idea.title}`,
   };
   const subject = subjectByKind[kind].slice(0, 240);
 
@@ -514,21 +597,25 @@ async function sendVerdictEmail(args: {
     actionable: 'Actionable now',
     not_yet: 'Not yet — re-snoozed',
     dismiss: 'Dismiss — context changed',
+    stalled: 'Stalled — needs your call',
   };
   const verdictColor: Record<typeof kind, string> = {
     actionable: '#047857', // green
     not_yet: '#ca8a04', // amber
     dismiss: '#64748b', // slate
+    stalled: '#b91c1c', // red — a decision is required
   };
 
   const actionBlock =
-    verdict.verdict === 'actionable'
+    kind === 'actionable' && verdict.verdict === 'actionable'
       ? `<div style="margin-top:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;font-size:13px;line-height:1.55;color:#065f46;"><strong>Suggested action:</strong> ${escapeHtml(
           verdict.suggested_action,
         )}</div>`
-      : verdict.verdict === 'not_yet'
-        ? `<div style="margin-top:14px;font-size:12px;color:#64748b;">Re-snoozed to ${escapeHtml(verdict.re_snooze_to)}.</div>`
-        : `<div style="margin-top:14px;font-size:12px;color:#64748b;">${shadow ? 'Would archive on real run.' : 'Idea has been archived.'}</div>`;
+      : kind === 'stalled'
+        ? `<div style="margin-top:14px;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:13px;line-height:1.55;color:#991b1b;">This idea has been re-snoozed ${resnoozeCount ?? MAX_RESNOOZE_COUNT} times and its condition still isn't met, so it's been parked. <strong>It won't be auto-reviewed again until you decide:</strong> act on it, dismiss it, or re-snooze with a revised condition/date (re-snoozing via <code>ideas_snooze</code> resets the counter and resumes review).</div>`
+        : kind === 'not_yet' && verdict.verdict === 'not_yet'
+          ? `<div style="margin-top:14px;font-size:12px;color:#64748b;">Re-snoozed to ${escapeHtml(verdict.re_snooze_to)}.</div>`
+          : `<div style="margin-top:14px;font-size:12px;color:#64748b;">${shadow ? 'Would archive on real run.' : 'Idea has been archived.'}</div>`;
 
   const shadowBanner = shadow
     ? `<div style="padding:10px 24px;background:#fef3c7;border-bottom:1px solid #fde68a;font-size:12px;color:#92400e;"><strong>SHADOW MODE</strong> — verdicts are emailed for review only. Auto-archive is paused. Disable via IDEAS_REVIEW_SHADOW=false on the ops project.</div>`
@@ -550,6 +637,11 @@ async function sendVerdictEmail(args: {
           <div>
             <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;background:${verdictColor[kind]}1a;color:${verdictColor[kind]};">${verdictLabel[kind]}</span>
           </div>
+          ${
+            criterion
+              ? `<div style="margin-top:12px;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;line-height:1.5;color:#475569;"><strong style="color:#334155;">Condition checked:</strong> ${escapeHtml(criterion)}</div>`
+              : ''
+          }
           <div style="margin-top:12px;font-size:13px;line-height:1.6;color:#334155;">${escapeHtml(verdict.reasoning)}</div>
           ${actionBlock}
           <div style="margin-top:18px;">
@@ -573,16 +665,18 @@ ${idea.title}
 ${ideaUrl}
 
 VERDICT: ${verdictLabel[kind]}
-
+${criterion ? `\nCONDITION CHECKED:\n${criterion}\n` : ''}
 REASONING:
 ${verdict.reasoning}
 
 ${
-  verdict.verdict === 'actionable'
+  kind === 'actionable' && verdict.verdict === 'actionable'
     ? `SUGGESTED ACTION:\n${verdict.suggested_action}\n`
-    : verdict.verdict === 'not_yet'
-      ? `Re-snoozed to ${verdict.re_snooze_to}.\n`
-      : `${shadow ? 'Would archive on real run.' : 'Idea archived.'}\n`
+    : kind === 'stalled'
+      ? `STALLED: re-snoozed ${resnoozeCount ?? MAX_RESNOOZE_COUNT}× without its condition being met. Parked — won't be auto-reviewed again until you act, dismiss, or re-snooze with a revised condition/date (re-snoozing resets the counter).\n`
+      : kind === 'not_yet' && verdict.verdict === 'not_yet'
+        ? `Re-snoozed to ${verdict.re_snooze_to}.\n`
+        : `${shadow ? 'Would archive on real run.' : 'Idea archived.'}\n`
 }
 ${shadow ? '\n⚠ SHADOW MODE — verdicts emailed for review only. Disable via IDEAS_REVIEW_SHADOW=false.\n' : ''}`;
 

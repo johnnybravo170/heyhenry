@@ -23,6 +23,7 @@
     "db:push": "supabase db push",
     "db:generate": "drizzle-kit generate",
     "smoke": "tsx scripts/smoke-foundation.ts",
+    "henry:eval": "tsx evals/henry/run.ts",
     "design-tokens:baseline": "tsx scripts/gen-design-token-baseline.ts",
     "monitor": "bash scripts/monitor-health.sh",
     "verify-deploy": "bash scripts/verify-deploy.sh",
