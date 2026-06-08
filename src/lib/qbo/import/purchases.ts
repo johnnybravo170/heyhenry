@@ -176,11 +176,14 @@ export async function importPurchasePage(
     }
   }
 
-  for (const u of toUpdate) {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('project_costs')
-      .update({
+  if (toUpdate.length > 0) {
+    // One set-based UPDATE for the whole page instead of one round trip per
+    // row. The bulk fn carries the same source_type='receipt' guard so a
+    // bill / non-receipt cost is never touched.
+    const { error } = await supabase.rpc('qbo_bulk_update_purchases', {
+      p_rows: toUpdate.map((u) => ({
+        id: u.id,
+        tenant_id: ctx.tenantId,
         amount_cents: u.row.amount_cents,
         vendor: u.row.vendor,
         description: u.row.description,
@@ -188,14 +191,10 @@ export async function importPurchasePage(
         qbo_class_id: u.row.qbo_class_id,
         qbo_class_name: u.row.qbo_class_name,
         qbo_sync_token: u.qbo.SyncToken,
-        qbo_sync_status: 'synced',
-        qbo_synced_at: now,
-        updated_at: now,
-      })
-      .eq('id', u.id)
-      .eq('source_type', 'receipt');
+      })),
+    });
     if (error) {
-      throw new Error(`Failed to update project_cost ${u.id}: ${error.message}`);
+      throw new Error(`Failed to update project_costs page: ${error.message}`);
     }
   }
 

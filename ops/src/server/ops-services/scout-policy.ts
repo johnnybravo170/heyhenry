@@ -90,6 +90,52 @@ export async function getScoutPolicyHistory(
   return (data ?? []) as ScoutPolicyRow[];
 }
 
+const POLICY_COLS =
+  'id, scout_slug, version, status, policy, proposed_by, rationale, activated_by, activated_at, superseded_at, actor_type, actor_name, created_at, updated_at';
+
+export type ScoutPolicyReviewState = {
+  /** status='proposed', oldest-first (drain in proposal order). */
+  proposed: ScoutPolicyRow[];
+  /** status='active', one per scout, keyed by scout_slug for side-by-side context. */
+  activeBySlug: Record<string, ScoutPolicyRow>;
+};
+
+/**
+ * Everything the /admin/scout-policy review page needs in one call: the
+ * proposed versions awaiting a human call, plus the currently-active version
+ * per scout so the reviewer can eyeball the change.
+ */
+export async function getScoutPolicyReviewState(): Promise<ScoutPolicyReviewState> {
+  const service = createServiceClient();
+  const [proposedRes, activeRes] = await Promise.all([
+    service
+      .schema('ops')
+      .from('scout_policy')
+      .select(POLICY_COLS)
+      .eq('status', 'proposed')
+      .order('created_at', { ascending: true }),
+    service
+      .schema('ops')
+      .from('scout_policy')
+      .select(POLICY_COLS)
+      .eq('status', 'active')
+      .order('scout_slug', { ascending: true }),
+  ]);
+  if (proposedRes.error)
+    throw new Error(`scout_policy proposed query failed: ${proposedRes.error.message}`);
+  if (activeRes.error)
+    throw new Error(`scout_policy active query failed: ${activeRes.error.message}`);
+
+  const activeBySlug: Record<string, ScoutPolicyRow> = {};
+  for (const row of (activeRes.data ?? []) as ScoutPolicyRow[]) {
+    activeBySlug[row.scout_slug] = row;
+  }
+  return {
+    proposed: (proposedRes.data ?? []) as ScoutPolicyRow[],
+    activeBySlug,
+  };
+}
+
 export type ProposeScoutPolicyInput = {
   scoutSlug: string;
   /**

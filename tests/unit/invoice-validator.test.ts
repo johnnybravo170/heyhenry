@@ -5,11 +5,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   canTransition,
+  drawDeleteSchema,
+  drawEditSchema,
   invoiceCreateSchema,
   invoiceMarkPaidSchema,
   invoiceSendSchema,
   invoiceVoidSchema,
 } from '@/lib/validators/invoice';
+
+const UUID = '11111111-2222-4333-8444-555555555555';
 
 describe('invoiceCreateSchema', () => {
   it('accepts a valid invoice', () => {
@@ -120,8 +124,8 @@ describe('canTransition', () => {
     expect(canTransition('sent', 'void')).toBe(true);
   });
 
-  it('disallows draft -> paid (must go through sent)', () => {
-    expect(canTransition('draft', 'paid')).toBe(false);
+  it('allows draft -> paid (manual out-of-band payment, no send first)', () => {
+    expect(canTransition('draft', 'paid')).toBe(true);
   });
 
   it('disallows paid -> anything', () => {
@@ -134,5 +138,65 @@ describe('canTransition', () => {
     expect(canTransition('void', 'draft')).toBe(false);
     expect(canTransition('void', 'sent')).toBe(false);
     expect(canTransition('void', 'paid')).toBe(false);
+  });
+});
+
+describe('drawEditSchema', () => {
+  it('accepts a valid draw edit', () => {
+    const parsed = drawEditSchema.safeParse({
+      invoice_id: UUID,
+      label: 'Draw #2',
+      percent_complete: 40,
+      line_items: [{ description: 'Rough-in', quantity: 1, unit_price_cents: 500000 }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('allows a null percent_complete', () => {
+    const parsed = drawEditSchema.safeParse({
+      invoice_id: UUID,
+      label: 'Deposit',
+      percent_complete: null,
+      line_items: [{ description: 'Deposit', quantity: 1, unit_price_cents: 100000 }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects an empty label', () => {
+    const parsed = drawEditSchema.safeParse({
+      invoice_id: UUID,
+      label: '   ',
+      line_items: [{ description: 'X', quantity: 1, unit_price_cents: 100 }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('rejects zero line items', () => {
+    const parsed = drawEditSchema.safeParse({
+      invoice_id: UUID,
+      label: 'Draw',
+      line_items: [],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('rejects a percent over 100', () => {
+    const parsed = drawEditSchema.safeParse({
+      invoice_id: UUID,
+      label: 'Draw',
+      percent_complete: 150,
+      line_items: [{ description: 'X', quantity: 1, unit_price_cents: 100 }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+});
+
+describe('drawDeleteSchema', () => {
+  it('accepts a valid UUID', () => {
+    expect(drawDeleteSchema.safeParse({ invoice_id: UUID }).success).toBe(true);
+  });
+
+  it('rejects a bad id', () => {
+    expect(drawDeleteSchema.safeParse({ invoice_id: 'nope' }).success).toBe(false);
   });
 });

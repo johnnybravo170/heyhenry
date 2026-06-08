@@ -27,6 +27,12 @@ export async function StagedEmailsBanner({ projectId }: { projectId: string }) {
     )
     .eq('tenant_id', tenant.id)
     .eq('disposition', 'pending_review')
+    // This banner is specifically for FORWARDED EMAILS staged on the
+    // project (its name, its envelope join, and the See-all link all
+    // assume source='email'). Without this filter, a lead_form / voice /
+    // drop draft stamped to the project leaks in and the See-all link —
+    // hardcoded to ?source=email — lands on an empty inbox.
+    .eq('source', 'email')
     .eq('accepted_project_id', projectId)
     .order('created_at', { ascending: false })
     .limit(3);

@@ -82,9 +82,10 @@ Your job — the same regardless of flavour, but the signals live in different p
 
 8b. REASONING (RECEIPTS) — for EVERY line you produce, fill the "reasoning" field with one short, specific sentence (max ~200 chars) explaining why this line is in the draft. Cite the specific phrase, measurement, or photo that justifies it. The operator clicks an info icon next to the line to see this; weak reasoning ("standard scope item") is worse than honest specificity ("Tony said 657 sq ft of carpet to come out — tear-out implied as start of scope"). Never fabricate a citation. If the line is genuinely inferred from renovation patterns rather than a direct mention, say so plainly ("inferred — flooring scope this size always needs transition strips").
 
-9. Draft a short reply in the contractor's voice — see VOICE rules below.
-   - For CUSTOMER INPUT (flavour A): reply is a message the contractor can send back to the customer. Answer their questions, address opt-outs, propose next step.
-   - For CONTRACTOR VOICE MEMO (flavour B): reply is a short text the contractor can send the customer later ("Hey Tony, I put together some numbers on the flooring at 2452 Mountain — want to swing by Tuesday to go over them?"). It's a follow-up, not a response.
+9. Decide whether a customer reply would obviously help — do NOT write it. Set reply_warranted TRUE only when there's a real reason to message the customer:
+   - CUSTOMER INPUT (flavour A): the customer asked a question, raised an opt-out, or is plainly waiting on a response.
+   - CONTRACTOR VOICE MEMO (flavour B): there's a concrete follow-up that moves the job forward (numbers to share, a visit to book) AND there's a customer to send it to.
+   Set reply_warranted FALSE for a bare scope with no customer message and no follow-up hook — just a name and an address, photos with no question, an empty drop. When TRUE, put a short fragment in reply_reason naming the trigger ("customer asked about timeline"); when FALSE, reply_reason is null. The contractor drafts the actual reply on demand later — your job here is only the yes/no call. Do not manufacture a reason to reply.
 
 10. Customer extraction discipline — especially on voice memos:
     - If ANY proper noun appears in the filename or transcript that is plausibly the customer's first name, put it in customer.name. A first name alone is better than null.
@@ -219,7 +220,16 @@ export const INTAKE_JSON_SCHEMA = {
           required: ['number', 'placement', 'near_business_name'],
         },
       },
-      reply_draft: { type: 'string' },
+      reply_warranted: {
+        type: 'boolean',
+        description:
+          'TRUE only when a customer reply would obviously help (an inbound question, an opt-out, or a concrete follow-up with a customer to send it to). FALSE for a bare scope with no customer message. The reply itself is drafted on demand, not here — never manufacture a reason.',
+      },
+      reply_reason: {
+        type: ['string', 'null'],
+        description:
+          'When reply_warranted is true, a short fragment naming the trigger ("customer asked about timeline"). Null when false.',
+      },
       image_roles: {
         type: 'array',
         items: {
@@ -243,7 +253,8 @@ export const INTAKE_JSON_SCHEMA = {
       'categories',
       'signals',
       'detected_tax_ids',
-      'reply_draft',
+      'reply_warranted',
+      'reply_reason',
       'image_roles',
     ],
   },
@@ -295,7 +306,22 @@ export type ParsedIntake = {
     placement: 'sender' | 'recipient' | 'other';
     near_business_name: string | null;
   }>;
-  reply_draft: string;
+  /**
+   * Henry's yes/no call on whether a customer reply would obviously help.
+   * The reply itself is drafted on demand (draftIntakeReplyAction), not
+   * during the parse — so we never manufacture an email nobody asked for.
+   * Optional in the type: drafts predating this change have no flag.
+   */
+  reply_warranted?: boolean;
+  /** Short fragment naming the reply trigger when warranted; null otherwise. */
+  reply_reason?: string | null;
+  /**
+   * The drafted reply text. No longer produced by the parse — populated
+   * client-side when the operator clicks "Draft a reply" on review, and
+   * editable from there. Optional: persisted drafts predating this change
+   * may still carry one.
+   */
+  reply_draft?: string | null;
   image_roles: Array<{
     index: number;
     role: 'screenshot' | 'reference' | 'measurement' | 'pdf_quote' | 'pdf_doc' | 'other';
