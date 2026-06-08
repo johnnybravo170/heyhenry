@@ -231,10 +231,13 @@ export default async function ProjectDetailPage({
     stage === 'planning' || stage === 'awaiting_approval' ? 'budget' : 'overview';
   const tab: Tab = explicitTab ?? defaultTab;
 
-  // Pre-approval projects (planning / awaiting_approval) default to
-  // expanded so the operator sees the full scope at a glance while
-  // authoring. Active+ defaults collapsed (status-tracking posture).
-  const budgetExpanded = explicitExpand ?? (stage === 'planning' || stage === 'awaiting_approval');
+  // Budget defaults to categories-expanded for ALL lifecycle stages so the
+  // operator always sees the categories under each section at a glance (the
+  // collapse-to-sections-only posture buried the line categories and reset on
+  // every nav-back / receipt-scan re-mount — founding-member feedback, card #3).
+  // Individual cost line items still default collapsed (handled in the table).
+  // `?expand=none` (or legacy `?mode=executing`) still collapses on demand.
+  const budgetExpanded = explicitExpand ?? true;
 
   // One unified nav (no separate header-actions pill row). Primary tabs
   // are the run-the-job work; the secondary group (Client / Photos /
