@@ -13,6 +13,7 @@
 
 import { ArrowUpRight, Banknote, Clock, FileText, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
+import { SourcePill } from '@/components/ui/source-pill';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { CostLineActualsSummary } from '@/lib/db/queries/cost-line-actuals';
 import { formatCurrency } from '@/lib/pricing/calculator';
@@ -22,13 +23,6 @@ const KIND_ICONS = {
   expense: Banknote,
   bill: FileText,
   po: ShoppingBag,
-} as const;
-
-const KIND_LABELS = {
-  labour: 'Labour',
-  expense: 'Expense',
-  bill: 'Bill',
-  po: 'PO',
 } as const;
 
 const EMPTY: CostLineActualsSummary = {
@@ -58,7 +52,7 @@ export function CostLineActualsInline({
 
   if (data.rows.length === 0) {
     return (
-      <div className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+      <div className="px-3 py-2 text-xs text-muted-foreground">
         Nothing has been spent against{' '}
         <span className="font-medium text-foreground">{costLineLabel}</span> yet. Bills, expenses,
         and time entries can be assigned to this line on their own forms.
@@ -67,7 +61,9 @@ export function CostLineActualsInline({
   }
 
   return (
-    <div className="space-y-2 rounded-md border bg-muted/20 p-3 text-xs">
+    // Transparent background — the parent's spend-detail well provides the
+    // tint, so this surface never out-shines the line above it.
+    <div className="space-y-2 p-3 text-xs">
       {/* Summary strip — labour hours up front since that's the */}
       {/* operator's most common drill-in: "how many hours have we put */}
       {/* on this line?" */}
@@ -121,9 +117,7 @@ export function CostLineActualsInline({
           return (
             <li key={`${r.kind}-${r.id}`} className="flex items-center gap-2 py-1.5">
               <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {KIND_LABELS[r.kind]}
-              </span>
+              <SourcePill kind={r.kind} className="shrink-0" />
               <span className="min-w-0 flex-1 truncate">
                 {r.label}
                 {r.sublabel ? <span className="text-muted-foreground"> — {r.sublabel}</span> : null}
@@ -138,14 +132,14 @@ export function CostLineActualsInline({
       </ul>
 
       {data.rows.length > 10 ? (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-eyebrow text-muted-foreground">
           Showing 10 most recent of {data.rows.length} entries.
         </p>
       ) : null}
 
       <Link
         href={`/projects/${projectId}?tab=costs&focus_line=${costLineId}`}
-        className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-1 font-mono text-eyebrow font-semibold uppercase tracking-[0.06em] text-muted-foreground hover:text-foreground"
       >
         Open in Spend tab
         <ArrowUpRight className="size-3" />

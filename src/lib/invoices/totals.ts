@@ -32,3 +32,19 @@ export function invoiceTotalCents(row: {
   const items = (row.line_items ?? []).reduce((s, li) => s + (li?.total_cents ?? 0), 0);
   return amount + items + tax;
 }
+
+/**
+ * Friendly, non-UUID invoice number. Reuses the unguessable `code`
+ * (mig 20260523194840) as the secret, surfacing only its first 8 chars
+ * uppercased — `INV-A1B2C3D4`. Falls back to the raw id for rows that
+ * predate the backfill so the header always shows *something* stable.
+ *
+ * Single source of truth so the operator detail page and the public pay
+ * surface (`/view/invoice/[id]`) never drift into two schemes. Pure (no
+ * server imports) so client + server callers can both use it.
+ */
+export function invoiceDocNumber(row: { code: string | null | undefined; id: string }): string {
+  return `INV-${String(row.code ?? row.id)
+    .slice(0, 8)
+    .toUpperCase()}`;
+}

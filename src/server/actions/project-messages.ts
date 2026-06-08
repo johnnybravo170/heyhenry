@@ -241,7 +241,7 @@ export async function postCustomerPortalMessageAction(input: {
 
   const { data: project } = await admin
     .from('projects')
-    .select('id, tenant_id, name, portal_slug, portal_enabled, customers:customer_id (name)')
+    .select('id, tenant_id, name, portal_slug, portal_enabled, contacts:contact_id (name)')
     .eq('portal_slug', input.portalSlug)
     .eq('portal_enabled', true)
     .is('deleted_at', null)
@@ -253,7 +253,7 @@ export async function postCustomerPortalMessageAction(input: {
   const projectId = p.id as string;
   const tenantId = p.tenant_id as string;
   const projectName = (p.name as string) ?? 'their project';
-  const customer = (p.customers as Record<string, unknown> | null) ?? null;
+  const customer = (p.contacts as Record<string, unknown> | null) ?? null;
   const customerName = (customer?.name as string | undefined) ?? 'the customer';
 
   const { error: insErr } = await admin.from('project_messages').insert({

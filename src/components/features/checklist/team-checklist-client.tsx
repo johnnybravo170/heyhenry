@@ -86,7 +86,14 @@ export function TeamChecklistClient({
             <ItemRow key={item.id} item={item} applyOptimistic={applyOptimistic} />
           ))}
           {completed.length > 0 && open.length > 0 ? (
-            <li className="my-1 border-t" aria-hidden />
+            /* Labeled completed divider — mono eyebrow rule */
+            <li className="my-2 flex items-center gap-2.5" aria-hidden>
+              <span className="h-px flex-1 bg-border" />
+              <span className="font-mono text-eyebrow uppercase tracking-[0.08em] text-muted-foreground/60">
+                Completed
+              </span>
+              <span className="h-px flex-1 bg-border" />
+            </li>
           ) : null}
           {completed.map((item) => (
             <ItemRow key={item.id} item={item} applyOptimistic={applyOptimistic} />
@@ -181,26 +188,49 @@ function AddRow({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            submit();
-          }
-        }}
-        placeholder="Add a thing&hellip;"
-        className="flex-1"
-        disabled={pending}
-        aria-label="New checklist item"
-      />
-      <CategoryPicker value={category} onChange={setCategory} knownCategories={knownCategories} />
-      <Button size="sm" onClick={submit} disabled={pending || !title.trim()}>
-        {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-        <span className="sr-only">Add</span>
-      </Button>
+    /* Paper-soft defined add-row with labeled fields */
+    <div className="grid grid-cols-[1fr_auto_auto] items-end gap-2 rounded-[10px] border border-border bg-paper-soft p-3">
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`checklist-add-title-${projectId}`}
+          className="font-mono text-eyebrow font-bold uppercase tracking-[0.06em] text-foreground"
+        >
+          Add a thing
+        </label>
+        <Input
+          id={`checklist-add-title-${projectId}`}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder="What does the crew need on site?"
+          disabled={pending}
+          aria-label="New checklist item"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <span
+          className="font-mono text-eyebrow font-bold uppercase tracking-[0.06em] text-foreground"
+          aria-hidden="true"
+        >
+          Category
+        </span>
+        <CategoryPicker value={category} onChange={setCategory} knownCategories={knownCategories} />
+      </div>
+      <div className="flex flex-col gap-1">
+        {/* Spacer label to align button baseline with inputs */}
+        <span className="font-mono text-eyebrow opacity-0" aria-hidden="true">
+          &nbsp;
+        </span>
+        <Button onClick={submit} disabled={pending || !title.trim()}>
+          {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+          Add
+        </Button>
+      </div>
     </div>
   );
 }
@@ -253,7 +283,7 @@ function CategoryPicker({
         <div className="flex flex-col gap-1">
           {knownCategories.length > 0 && (
             <>
-              <p className="px-2 pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="px-2 pt-1 font-mono text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Used here
               </p>
               {knownCategories.map((c) => (
@@ -350,26 +380,31 @@ function ItemRow({
   return (
     <li
       className={cn(
-        'flex items-start gap-2 py-2 border-b last:border-0 transition-opacity',
+        'grid grid-cols-[44px_1fr_auto] items-center gap-2.5 border-b border-dashed last:border-0 min-h-[52px] transition-opacity',
         pending && 'opacity-60',
       )}
     >
+      {/* 44×44 touch-target wrapping the 22×22 checkbox box — WCAG ≥44px */}
       <button
         type="button"
         onClick={toggle}
         disabled={pending}
         aria-label={isCompleted ? 'Mark not done' : 'Mark done'}
-        className={cn(
-          'mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition',
-          isCompleted
-            ? 'border-foreground/40 bg-foreground text-background'
-            : 'border-foreground/30 hover:bg-muted',
-        )}
+        className="flex size-11 shrink-0 items-center justify-center rounded-[10px] transition hover:bg-muted/60"
       >
-        {isCompleted ? <Check className="size-4" /> : null}
+        <span
+          className={cn(
+            'flex size-[22px] items-center justify-center rounded-[6px] border-[1.5px] transition',
+            isCompleted
+              ? 'border-foreground bg-foreground text-background'
+              : 'border-border bg-card',
+          )}
+        >
+          {isCompleted ? <Check className="size-3.5" /> : null}
+        </span>
       </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1 py-2">
         {editing ? (
           <InlineTitleEditor
             initial={item.title}
@@ -395,8 +430,9 @@ function ItemRow({
             type="button"
             onClick={() => setEditing(true)}
             className={cn(
-              'text-left text-sm leading-snug',
-              isCompleted && 'text-muted-foreground line-through',
+              'text-left text-sm font-semibold leading-snug',
+              isCompleted &&
+                'font-normal text-muted-foreground line-through decoration-muted-foreground/40',
             )}
           >
             {item.title}
@@ -405,7 +441,7 @@ function ItemRow({
 
         <div className="flex flex-wrap items-center gap-1.5">
           {item.category ? (
-            <span className="inline-flex h-5 items-center rounded-full bg-muted px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-mono text-eyebrow font-bold uppercase tracking-[0.06em] text-muted-foreground">
               {item.category}
             </span>
           ) : null}
@@ -562,7 +598,7 @@ function PhotoControl({
       <label
         htmlFor={inputId}
         className={cn(
-          'inline-flex h-5 cursor-pointer items-center gap-1 rounded-full border border-dashed px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:bg-muted',
+          'inline-flex cursor-pointer items-center gap-1 rounded-full border border-dashed px-2 py-0.5 font-mono text-eyebrow font-bold uppercase tracking-[0.06em] text-muted-foreground hover:bg-muted',
           pending && 'pointer-events-none opacity-60',
         )}
       >

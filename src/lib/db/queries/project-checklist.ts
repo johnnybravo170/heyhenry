@@ -118,22 +118,22 @@ export async function listOpenChecklistRollup(
   const supabase = await createClient();
   const { data } = await supabase
     .from('project_checklist_items')
-    .select('project_id, projects:project_id (name, customers:customer_id (name))')
+    .select('project_id, projects:project_id (name, contacts:contact_id (name))')
     .eq('tenant_id', tenantId)
     .is('completed_at', null);
 
   type Row = {
     project_id: string;
     projects:
-      | { name?: string; customers?: { name?: string } | { name?: string }[] | null }
-      | { name?: string; customers?: { name?: string } | { name?: string }[] | null }[]
+      | { name?: string; contacts?: { name?: string } | { name?: string }[] | null }
+      | { name?: string; contacts?: { name?: string } | { name?: string }[] | null }[]
       | null;
   };
 
   const counts = new Map<string, ProjectChecklistRollupRow>();
   for (const r of (data ?? []) as Row[]) {
     const proj = Array.isArray(r.projects) ? r.projects[0] : r.projects;
-    const cust = proj && (Array.isArray(proj.customers) ? proj.customers[0] : proj.customers);
+    const cust = proj && (Array.isArray(proj.contacts) ? proj.contacts[0] : proj.contacts);
     const existing = counts.get(r.project_id);
     if (existing) {
       existing.open_count += 1;

@@ -2,9 +2,10 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { JobForm } from '@/components/features/jobs/job-form';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { getJob } from '@/lib/db/queries/jobs';
 import type { JobInput, JobStatus } from '@/lib/validators/job';
+import { isUuid } from '@/lib/validators/uuid';
 import { type JobActionResult, updateJobAction } from '@/server/actions/jobs';
 
 export const metadata = {
@@ -25,12 +26,13 @@ function toDatetimeLocal(iso: string | null | undefined): string {
 
 export default async function EditJobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [job, customers] = await Promise.all([getJob(id), listCustomers({ limit: 500 })]);
+  if (!isUuid(id)) notFound();
+  const [job, customers] = await Promise.all([getJob(id), listContacts({ limit: 500 })]);
   if (!job) notFound();
 
   const defaults: JobInput & { id: string } = {
     id: job.id,
-    customer_id: job.customer_id ?? '',
+    contact_id: job.contact_id ?? '',
     quote_id: job.quote_id ?? '',
     status: job.status as JobStatus,
     scheduled_at: toDatetimeLocal(job.scheduled_at),
@@ -60,7 +62,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
 
       <JobForm
         mode="edit"
-        customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
         defaults={defaults}
         action={action}
         cancelHref={`/jobs/${job.id}`}

@@ -13,7 +13,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { verifyUnsubToken } from '@/lib/ar/unsub-token';
 import { getDb } from '@/lib/db/client';
 import { arContacts, arEnrollments, arSuppressionList } from '@/lib/db/schema/ar';
-import { customers } from '@/lib/db/schema/customers';
+import { contacts } from '@/lib/db/schema/contacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +61,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ to
       // (across tenants) so future automated messages from any contractor
       // are blocked.
       await db
-        .update(customers)
+        .update(contacts)
         .set({
           doNotAutoMessage: true,
           doNotAutoMessageAt: now,
@@ -69,8 +69,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ to
         })
         .where(
           and(
-            sql`lower(${customers.email}) = ${contact.email.toLowerCase()}`,
-            eq(customers.doNotAutoMessage, false),
+            sql`lower(${contacts.email}) = ${contact.email.toLowerCase()}`,
+            eq(contacts.doNotAutoMessage, false),
           ),
         );
     }

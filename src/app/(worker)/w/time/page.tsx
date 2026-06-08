@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { WorkerTimeList } from '@/components/features/worker/worker-time-list';
+import { WorkerTimeQueue } from '@/components/features/worker/worker-time-queue';
 import { Button } from '@/components/ui/button';
 import { requireWorker } from '@/lib/auth/helpers';
 import { getOrCreateWorkerProfile } from '@/lib/db/queries/worker-profiles';
@@ -30,6 +31,7 @@ export default async function WorkerTimePage() {
           </Link>
         </Button>
       </div>
+      <WorkerTimeQueue />
       <WorkerTimeList entries={entries} canEditOld={canEditOld} />
     </div>
   );

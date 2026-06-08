@@ -1,0 +1,1700 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Home Record — operator flow (mobile) · HeyHenry</title>
+<meta name="viewport" content="width=414" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+    --shadow-lift:  0 18px 60px rgba(10,10,10,0.16);
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #2B241A;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 36px 16px 80px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* Frame label between phones */
+  .frame-label {
+    width: 100%;
+    max-width: 980px;
+    margin: 28px auto 12px;
+    color: #E8DEC9;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .frame-label .num {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #C2A368;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .frame-label h2 {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.005em;
+    color: #F3EBDB;
+  }
+  .frame-label .hint {
+    font-size: 12px;
+    color: rgba(243,235,219,0.65);
+  }
+
+  /* Phone column wrapper */
+  .row {
+    display: flex; gap: 22px; flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 980px;
+    margin: 0 auto 12px;
+  }
+
+  /* The phone bezel */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 44px;
+    border: 8px solid #0a0a0a;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+    position: relative;
+    overflow: hidden;
+  }
+  .phone .status {
+    height: 44px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px 0 22px;
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    position: relative;
+  }
+  .phone .status .right {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .phone .status .right svg { width: 14px; height: 14px; color: var(--ink); }
+  .phone .dyn {
+    position: absolute;
+    top: 8px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 28px;
+    background: #0a0a0a;
+    border-radius: 999px;
+    z-index: 10;
+  }
+  .phone .top {
+    height: 52px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 12px;
+  }
+  .phone .top .back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    color: var(--ink);
+    display: grid; place-items: center;
+  }
+  .phone .top .back svg { width: 14px; height: 14px; }
+  .phone .top .ttl {
+    flex: 1; min-width: 0;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .phone .top .sub {
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0;
+  }
+  .phone .top .meta {
+    display: flex; flex-direction: column;
+    line-height: 1.15;
+    flex: 1; min-width: 0;
+  }
+  .phone .top .icns {
+    display: flex; gap: 4px;
+  }
+  .phone .top .icns .icn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    display: grid; place-items: center;
+    color: var(--ink-2);
+  }
+  .phone .top .icns .icn svg { width: 14px; height: 14px; }
+
+  /* Sub-tabs underneath */
+  .phone .tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--hair);
+    background: var(--bg);
+    padding: 0 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .phone .tabs::-webkit-scrollbar { display: none; }
+  .phone .tabs .t {
+    padding: 11px 12px;
+    font-size: 14px; font-weight: 600;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    background: transparent;
+    border-left: 0; border-right: 0; border-top: 0;
+  }
+  .phone .tabs .t.on {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+  .phone .tabs .t .ct {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 0 5px; height: 16px;
+    border-radius: 999px;
+    display: inline-flex; align-items: center;
+    margin-left: 4px;
+  }
+
+  .phone .body {
+    height: calc(844px - 44px - 52px - 42px - 72px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px 14px 24px;
+  }
+  .phone .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 72px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+  }
+  .phone .bottom-nav .it {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .phone .bottom-nav .it.on { color: var(--ink); }
+  .phone .bottom-nav .it svg { width: 18px; height: 18px; }
+
+  /* ───── Home Record card (compact for mobile) ───── */
+  .hr-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .hr-head {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .hr-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--chip-fill);
+    color: var(--ink);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .hr-icon svg { width: 16px; height: 16px; }
+  .hr-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hr-title {
+    margin: 2px 0 4px;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  .hr-sub {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.45;
+  }
+  .hr-meta-line {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* State strip — mobile stack */
+  .ss {
+    margin-top: 12px;
+    padding: 12px 12px 12px 13px;
+    border-radius: 10px;
+    border: 1px solid var(--hair);
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .ss .head {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .ss .mark {
+    width: 24px; height: 24px; border-radius: 999px;
+    display: grid; place-items: center; flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+  }
+  .ss .mark svg { width: 12px; height: 12px; }
+  .ss .body { flex: 1; min-width: 0; }
+  .ss .body strong { color: var(--ink); font-weight: 600; }
+  .ss.is-pending {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.22);
+    border-left: 3px solid var(--rust);
+  }
+  .ss.is-pending .mark { background: var(--rust); color: #fff; }
+  .ss.is-ready {
+    background: var(--card);
+    border-left: 3px solid var(--ok);
+  }
+  .ss.is-ready .mark { background: var(--ok-soft); color: var(--ok); }
+  .ss.is-sent {
+    background: var(--ok-soft);
+    border-left: 3px solid var(--ok);
+  }
+  .ss.is-sent .mark { background: var(--ok); color: #fff; }
+  .ss.is-empty {
+    background: var(--chrome);
+    border-left: 3px solid var(--rule);
+  }
+  .ss.is-empty .mark { background: var(--chip-fill); color: var(--ink-2); }
+
+  /* Mobile action grid in the strip */
+  .ss .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .ss .actions .btn-full {
+    grid-column: 1 / -1;
+  }
+  .ss-btn, .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 9px;
+    font-size: 14px; font-weight: 600;
+    border: 1px solid transparent;
+    background: var(--card);
+    color: var(--ink);
+    border-color: var(--hair);
+    width: 100%;
+  }
+  .ss-btn.is-rust, .btn.is-rust {
+    background: var(--rust); color: #fff; border-color: var(--rust);
+  }
+  .ss-btn.is-quiet, .btn.is-quiet {
+    background: transparent; border-color: transparent; color: var(--muted);
+  }
+  .ss-btn svg, .btn svg { width: 14px; height: 14px; }
+  .ss.is-pending .ss-btn:not(.is-rust) {
+    background: transparent;
+    border-color: rgba(194,65,12,0.25);
+    color: var(--ink);
+  }
+  .ss.is-sent .ss-btn:not(.is-rust) {
+    background: transparent;
+    border-color: rgba(21,128,61,0.25);
+    color: var(--ink);
+  }
+
+  /* Readiness chips on mobile */
+  .readiness {
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .readiness .lbl {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .readiness .chips {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .chip svg { width: 11px; height: 11px; }
+  .chip.is-built { background: var(--ok-soft); color: var(--ok); border-color: rgba(21,128,61,0.22); }
+  .chip.is-not-built { background: var(--card); color: var(--muted); border-color: var(--hair); }
+  .chip.is-stale { background: var(--warn-soft); color: var(--warn); border-color: rgba(180,83,9,0.28); }
+
+  /* Empty state */
+  .empty {
+    margin-top: 12px;
+    padding: 18px 14px;
+    background: var(--chrome);
+    border: 1px dashed var(--rule);
+    border-radius: 12px;
+    text-align: center;
+  }
+  .empty .icn {
+    width: 44px; height: 44px;
+    margin: 0 auto 10px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--rust);
+    display: grid; place-items: center;
+  }
+  .empty .icn svg { width: 22px; height: 22px; }
+  .empty .h {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .empty .s {
+    margin-top: 4px;
+    font-size: 14px; color: var(--muted);
+    line-height: 1.45;
+  }
+  .empty .btn {
+    margin-top: 14px;
+    background: var(--rust); color: #fff; border-color: var(--rust);
+  }
+
+  /* State label between mobile cards (when stacking multiple) */
+  .state-label {
+    margin: 14px 0 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ───── Preview as a sheet (mobile) ───── */
+  .sheet {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    z-index: 30;
+    display: flex; flex-direction: column;
+  }
+  .sheet .sheet-head {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sheet .sheet-head .close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .sheet .sheet-head .close svg { width: 14px; height: 14px; }
+  .sheet .sheet-head .meta {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    line-height: 1.2;
+  }
+  .sheet .sheet-head .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .sheet .sheet-head .title {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .sheet .sheet-body {
+    flex: 1; min-height: 0;
+    overflow-y: auto;
+    padding: 14px;
+  }
+  .sheet .sheet-foot {
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sheet .sheet-foot .left {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ok);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .sheet .sheet-foot .left svg { width: 11px; height: 11px; }
+
+  /* Preview banner */
+  .preview-banner {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 12px;
+    background: var(--info-soft);
+    border: 1px solid rgba(30,64,175,0.22);
+    border-left: 3px solid var(--info);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .preview-banner svg { width: 14px; height: 14px; color: var(--info); flex-shrink: 0; margin-top: 1px; }
+  .preview-banner strong { color: var(--ink); font-weight: 600; }
+
+  /* The representative doc body on mobile */
+  .preview-doc {
+    margin-top: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 18px 16px;
+  }
+  .preview-doc .gc-head {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .preview-doc .gc-logo {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: linear-gradient(160deg, #2b3a45 0%, #0f1a23 100%);
+    color: #E8DEC9;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .preview-doc .gc-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .preview-doc .gc-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .preview-doc .doc-eyebrow {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .preview-doc .doc-title {
+    margin: 4px 0 4px;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+  .preview-doc .doc-to { font-size: 14px; color: var(--ink-2); }
+  .preview-doc .doc-to .m { color: var(--muted); }
+  .preview-doc .doc-gen {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .preview-doc .doc-dl {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    margin-top: 12px;
+  }
+  .preview-doc .doc-dl .btn { font-size: 12px; height: 44px; }
+  .preview-doc .doc-dl .btn svg { width: 14px; height: 14px; }
+
+  .pdoc-sec {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+  }
+  .pdoc-sec:first-of-type { border-top: 0; padding-top: 0; }
+  .pdoc-sec h4 {
+    margin: 0 0 8px;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .pdoc-sec p {
+    font-size: 14px; line-height: 1.55; color: var(--ink-2);
+    margin: 0;
+  }
+  .summary-approved {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--ok);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .summary-approved .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ok);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .summary-approved .badge svg { width: 11px; height: 11px; }
+  .summary-approved .body {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 10px 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid var(--hair);
+    font-size: 14px;
+  }
+  .phase:first-child { border-top: 0; }
+  .phase .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+  .phase .nm { color: var(--ink); font-weight: 600; }
+  .phase .dt {
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .photo-grid {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .ph {
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--hair);
+  }
+  .ph::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(10,10,10,0.45));
+  }
+  .ph .cap {
+    position: absolute;
+    left: 8px; right: 8px; bottom: 7px;
+    font-size: 12px;
+    color: #fff;
+    z-index: 1;
+    line-height: 1.25;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .ph .tag {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(255,255,255,0.95);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    padding: 3px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+  .ph .tag.is-bw { color: var(--info); }
+  .ph .tag.is-after { color: var(--ok); }
+  .img-1 { background: linear-gradient(170deg, #d4b48e 0%, #8a6840 100%); }
+  .img-2 { background: linear-gradient(165deg, #5a6f5b 0%, #2f3d2e 100%); }
+  .img-3 { background: linear-gradient(180deg, #c7c1b2 0%, #5d564a 100%); }
+  .img-4 { background: linear-gradient(170deg, #c25a3e 0%, #5e2718 100%); }
+
+  /* Format-build group on mobile */
+  .group {
+    margin-top: 14px;
+    padding: 12px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+  }
+  .group .glabel {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .group .gtitle {
+    margin-top: 2px;
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .format-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  .format-row .ic {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .format-row .ic svg { width: 14px; height: 14px; }
+  .format-row .meta { flex: 1; min-width: 0; }
+  .format-row .nm { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .format-row .sub { font-size: 12px; color: var(--muted); }
+
+  .henry-credit {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.18);
+    border-left: 3px solid var(--rust);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .henry-credit .h {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .henry-credit .h .glyph { margin-right: 4px; font-size: 12px; }
+
+  .summary-editor {
+    margin-top: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .summary-editor .h {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 12px;
+    background: var(--rust-soft);
+    border-bottom: 1px solid var(--hair);
+    color: var(--rust);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .summary-editor .h .glyph { font-size: 12px; }
+  .summary-editor .h .pill {
+    margin-left: auto;
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.22);
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .summary-editor textarea {
+    width: 100%;
+    border: 0; outline: none;
+    background: var(--card);
+    padding: 12px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.55;
+    resize: vertical;
+    min-height: 140px;
+  }
+  .summary-editor .actions {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 8px;
+    border-top: 1px solid var(--hair);
+    background: var(--chrome);
+  }
+
+  /* Mobile dialog (centered card) */
+  .scrim {
+    position: absolute; inset: 0;
+    background: rgba(10,10,10,0.55);
+    z-index: 40;
+  }
+  .dialog {
+    position: absolute;
+    left: 14px; right: 14px;
+    top: 50%; transform: translateY(-50%);
+    background: var(--card);
+    border-radius: 14px;
+    z-index: 41;
+    overflow: hidden;
+    box-shadow: var(--shadow-lift);
+    max-height: 84%;
+    display: flex; flex-direction: column;
+  }
+  .dialog .h {
+    padding: 14px 16px 6px;
+  }
+  .dialog .h .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .dialog .h .t {
+    margin: 2px 0 4px;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .dialog .h .d {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5;
+  }
+  .dialog .b {
+    padding: 8px 16px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto;
+  }
+  .dialog .f {
+    padding: 10px 12px;
+    border-top: 1px solid var(--hair);
+    background: var(--chrome);
+    display: flex; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .dialog .f .btn { flex: 1; min-width: 100px; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .input {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 12px;
+    height: 44px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .input.is-focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(10,10,10,0.06); }
+  .input svg { width: 14px; height: 14px; color: var(--muted); }
+  .field-hint { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .field-hint.is-warn { color: var(--warn); }
+
+  .will-include {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .will-include .h {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0;
+  }
+  .will-include ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .will-include li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--ink-2);
+  }
+  .will-include li svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .will-include li.is-on { color: var(--ink); }
+  .will-include li.is-on svg { color: var(--ok); }
+  .will-include li.is-off { color: var(--faint); }
+  .will-include li.is-off svg { color: var(--faint); }
+  .will-include li.is-stale { color: var(--warn); }
+  .will-include li.is-stale svg { color: var(--warn); }
+  .will-include li .tail {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .stale-warn {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 12px;
+    background: var(--warn-soft);
+    border: 1px solid rgba(180,83,9,0.22);
+    border-left: 3px solid var(--warn);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .stale-warn svg { width: 14px; height: 14px; color: var(--warn); flex-shrink: 0; margin-top: 1px; }
+  .stale-warn strong { color: var(--ink); font-weight: 600; }
+
+  .last-sent {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .last-sent svg { width: 11px; height: 11px; color: var(--ok); }
+
+  /* Toast on mobile */
+  .toast-row {
+    position: absolute;
+    left: 14px; right: 14px;
+    bottom: 88px;
+    z-index: 35;
+    display: flex; justify-content: center;
+  }
+  .toast {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.32);
+  }
+  .toast svg { width: 14px; height: 14px; color: var(--ok-soft); }
+
+  /* Spin */
+  .spin {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    display: inline-block;
+    animation: spin .9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Progress bar */
+  .progress-bar {
+    margin-top: 8px;
+    height: 6px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar .bar {
+    position: absolute; inset: 0 auto 0 0;
+    background: var(--rust);
+    border-radius: 999px;
+  }
+  .progress-meta {
+    margin-top: 6px;
+    display: flex; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 1 · State strip across the lifecycle on a phone
+     Two phones, side by side: Snapshot-pending + Ready.
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 01</span>
+  <h2>Home Record · Documents tab · two states on a phone</h2>
+  <span class="hint">State strip stacks vertically; primary CTA full-width &amp; 44px.</span>
+</div>
+<div class="row">
+
+  <!-- A · Snapshot-pending -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status">
+      <span>9:41</span>
+      <span class="right">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg>
+      </span>
+    </div>
+    <div class="top">
+      <button class="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta">
+        <span class="ttl">Glenwood whole-home reno</span>
+        <span class="sub">Daniel &amp; Priya · Closeout</span>
+      </div>
+      <div class="icns">
+        <button class="icn" aria-label="More"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="t">Overview</button>
+      <button class="t">Budget</button>
+      <button class="t">Schedule</button>
+      <button class="t">Photos<span class="ct">218</span></button>
+      <button class="t on">Documents<span class="ct">14</span></button>
+      <button class="t">Notes</button>
+    </div>
+    <div class="body">
+      <div class="state-label">State · Snapshot pending</div>
+      <div class="hr-card">
+        <div class="hr-head">
+          <div class="hr-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+          </div>
+          <div>
+            <div class="hr-eyebrow">Home Record</div>
+            <div class="hr-title">The permanent handoff package</div>
+            <div class="hr-sub">Phases · photos · selections · COs · warranties — one link, forever.</div>
+            <div class="hr-meta-line">Last generated Mar 24 · 4:18 PM</div>
+          </div>
+        </div>
+
+        <div class="ss is-pending">
+          <div class="head">
+            <span class="mark">2</span>
+            <span class="body">
+              <strong>Snapshot ready.</strong>
+              Preview the document the way Daniel &amp; Priya will see it, then build the PDF + ZIP and send.
+            </span>
+          </div>
+          <div class="actions">
+            <button class="ss-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M21 3l-9 9"/></svg>
+              View live
+            </button>
+            <button class="ss-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+              Regenerate
+            </button>
+            <button class="ss-btn is-rust btn-full">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview &amp; finish
+            </button>
+          </div>
+        </div>
+
+        <div class="readiness">
+          <span class="lbl">Readiness</span>
+          <div class="chips">
+            <span class="chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Web link · Live
+            </span>
+            <span class="chip is-not-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              PDF · Not built
+            </span>
+            <span class="chip is-not-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              ZIP · Not built
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+
+  <!-- B · Ready -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status">
+      <span>9:41</span>
+      <span class="right">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg>
+      </span>
+    </div>
+    <div class="top">
+      <button class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta">
+        <span class="ttl">Glenwood whole-home reno</span>
+        <span class="sub">Daniel &amp; Priya · Closeout</span>
+      </div>
+      <div class="icns">
+        <button class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="t">Overview</button>
+      <button class="t">Budget</button>
+      <button class="t">Schedule</button>
+      <button class="t">Photos<span class="ct">218</span></button>
+      <button class="t on">Documents<span class="ct">14</span></button>
+      <button class="t">Notes</button>
+    </div>
+    <div class="body">
+      <div class="state-label">State · Ready</div>
+      <div class="hr-card">
+        <div class="hr-head">
+          <div class="hr-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+          </div>
+          <div>
+            <div class="hr-eyebrow">Home Record</div>
+            <div class="hr-title">The permanent handoff package</div>
+            <div class="hr-sub">Phases · photos · selections · COs · warranties — one link, forever.</div>
+            <div class="hr-meta-line">Last generated Mar 24 · 4:18 PM</div>
+          </div>
+        </div>
+
+        <div class="ss is-ready">
+          <div class="head">
+            <span class="mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span class="body">
+              <strong>Ready to send.</strong>
+              All three formats built · the link works forever.
+            </span>
+          </div>
+          <div class="actions">
+            <button class="ss-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview
+            </button>
+            <button class="ss-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+              Regenerate
+            </button>
+            <button class="ss-btn is-rust btn-full">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+              Email to client
+            </button>
+          </div>
+        </div>
+
+        <div class="readiness">
+          <span class="lbl">Readiness</span>
+          <div class="chips">
+            <span class="chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Web link · Live
+            </span>
+            <span class="chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              PDF · Built
+            </span>
+            <span class="chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              ZIP · 184 MB
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 2 · Empty · Sent · Stale states
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 02</span>
+  <h2>Empty · Sent · Stale</h2>
+  <span class="hint">No-record empty-state · sent confirmation · stale-after-regenerate readiness.</span>
+</div>
+<div class="row">
+
+  <!-- A · Empty -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status"><span>9:41</span><span class="right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg></span></div>
+    <div class="top">
+      <button class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta"><span class="ttl">Glenwood whole-home reno</span><span class="sub">Daniel &amp; Priya · Closeout</span></div>
+      <div class="icns"><button class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div>
+    </div>
+    <div class="tabs">
+      <button class="t">Overview</button>
+      <button class="t">Photos<span class="ct">218</span></button>
+      <button class="t on">Documents<span class="ct">14</span></button>
+      <button class="t">Notes</button>
+    </div>
+    <div class="body">
+      <div class="state-label">State · No record yet</div>
+      <div class="hr-card">
+        <div class="hr-head">
+          <div class="hr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg></div>
+          <div>
+            <div class="hr-eyebrow">Home Record</div>
+            <div class="hr-title">The permanent handoff package</div>
+            <div class="hr-sub">Frozen and shareable — regenerate anytime, the link stays the same.</div>
+          </div>
+        </div>
+        <div class="empty">
+          <div class="icn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+          </div>
+          <div class="h">No Home Record yet.</div>
+          <div class="s">Assemble the finished job into one permanent package for Daniel &amp; Priya.</div>
+          <button class="btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+            Generate Home Record
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+
+  <!-- B · Sent (with success toast) -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status"><span>9:41</span><span class="right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg></span></div>
+    <div class="top">
+      <button class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta"><span class="ttl">Glenwood whole-home reno</span><span class="sub">Daniel &amp; Priya · Closeout</span></div>
+      <div class="icns"><button class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div>
+    </div>
+    <div class="tabs">
+      <button class="t">Overview</button>
+      <button class="t">Photos<span class="ct">218</span></button>
+      <button class="t on">Documents<span class="ct">14</span></button>
+      <button class="t">Notes</button>
+    </div>
+    <div class="body">
+      <div class="state-label">State · Sent</div>
+      <div class="hr-card">
+        <div class="hr-head">
+          <div class="hr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg></div>
+          <div>
+            <div class="hr-eyebrow">Home Record</div>
+            <div class="hr-title">The permanent handoff package</div>
+            <div class="hr-meta-line">Last generated Mar 24 · 4:18 PM</div>
+          </div>
+        </div>
+
+        <div class="ss is-sent">
+          <div class="head">
+            <span class="mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span class="body">
+              <strong>Sent to daniel.mehta@gmail.com</strong>
+              · Mar 24 at 4:42 PM · Delivered.
+            </span>
+          </div>
+          <div class="actions">
+            <button class="ss-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview
+            </button>
+            <button class="ss-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+              Regenerate
+            </button>
+            <button class="ss-btn is-rust btn-full">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 8L4 20l4-8z"/></svg>
+              Resend
+            </button>
+          </div>
+        </div>
+
+        <div class="readiness">
+          <span class="lbl">Readiness</span>
+          <div class="chips">
+            <span class="chip is-built"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Web link · Live</span>
+            <span class="chip is-built"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>PDF · Built</span>
+            <span class="chip is-built"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>ZIP · 184 MB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-row">
+      <span class="toast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        Sent to daniel.mehta@gmail.com
+      </span>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 3 · Preview sheet (full-screen on mobile)
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 03</span>
+  <h2>Preview — full-screen sheet on mobile</h2>
+  <span class="hint">The trust gate · representative client view · ✦ Henry summary editor below.</span>
+</div>
+<div class="row">
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status"><span>9:41</span><span class="right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg></span></div>
+
+    <div class="sheet" role="dialog" aria-label="Home Record preview">
+      <div class="sheet-head">
+        <button class="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
+        <div class="meta">
+          <span class="eyebrow">Home Record · Preview</span>
+          <span class="title">As Daniel &amp; Priya will see it</span>
+        </div>
+      </div>
+
+      <div class="sheet-body">
+        <div class="preview-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/></svg>
+          <span><strong>This view shows only what's in the snapshot.</strong> Internal notes, supplier cost, pending decisions never enter it.</span>
+        </div>
+
+        <article class="preview-doc">
+          <div class="gc-head">
+            <div class="gc-logo">MR</div>
+            <div>
+              <div class="gc-name">Maple Ridge Renos</div>
+              <div class="gc-meta">Vancouver · BC · GST #80213-4471</div>
+            </div>
+          </div>
+
+          <div class="doc-eyebrow">Home Record</div>
+          <div class="doc-title">Glenwood whole-home reno</div>
+          <div class="doc-to">Prepared for <strong style="color:var(--ink);font-weight:600;">Daniel &amp; Priya Mehta</strong> <span class="m">— 3214 Glenwood Crescent</span></div>
+          <div class="doc-gen">Generated Mar 24, 2026 · Frozen tz America/Vancouver</div>
+
+          <div class="doc-dl">
+            <button class="btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download PDF
+            </button>
+            <button class="btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+              Download ZIP
+            </button>
+          </div>
+
+          <section class="pdoc-sec">
+            <h4>Project summary</h4>
+            <div class="summary-approved">
+              <div class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Approved · client sees plain prose
+              </div>
+              <p class="body" style="margin:6px 0 0;">Over fourteen weeks we took your Glenwood home down to studs and brought it back: a north-facing kitchen, refinished oak floors, a dining-room addition with a four-pane Loewen slider, and a downstairs primary suite with heated tile. Three change orders along the way — all approved by you.</p>
+            </div>
+          </section>
+
+          <section class="pdoc-sec">
+            <h4>Phases</h4>
+            <div class="phase"><span class="dot"></span><div><div class="nm">Demo &amp; site prep</div><div class="dt">Jan 14 → Jan 20</div></div></div>
+            <div class="phase"><span class="dot"></span><div><div class="nm">Framing &amp; rough-in</div><div class="dt">Jan 21 → Feb 12</div></div></div>
+            <div class="phase"><span class="dot"></span><div><div class="nm">Insulation, drywall, paint</div><div class="dt">Feb 13 → Mar 04</div></div></div>
+            <div class="phase"><span class="dot"></span><div><div class="nm">Finishes &amp; fixtures</div><div class="dt">Mar 05 → Mar 21</div></div></div>
+          </section>
+
+          <section class="pdoc-sec">
+            <h4>Behind-the-wall photos</h4>
+            <p style="font-size:12px;color:var(--muted);margin:0 0 6px;">Useful for future repairs and resale.</p>
+            <div class="photo-grid">
+              <div class="ph img-2"><span class="tag is-bw">Behind wall</span><span class="cap">Plumbing rough-in · kitchen</span></div>
+              <div class="ph img-3"><span class="tag is-bw">Behind wall</span><span class="cap">Electrical · panel side</span></div>
+              <div class="ph img-1"><span class="tag is-after">After</span><span class="cap">Kitchen · morning light</span></div>
+              <div class="ph img-4"><span class="tag is-after">After</span><span class="cap">Dining addition</span></div>
+            </div>
+          </section>
+        </article>
+
+        <!-- The mobile-only side rail = stacked groups below the document -->
+        <div class="group">
+          <span class="glabel">Formats</span>
+          <div class="gtitle">Build PDF + ZIP before sending</div>
+
+          <div class="format-row">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/></svg></div>
+            <div class="meta"><div class="nm">Branded PDF</div><div class="sub">Photos embedded</div></div>
+            <span class="chip is-built"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Built</span>
+          </div>
+          <div class="format-row">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/></svg></div>
+            <div class="meta"><div class="nm">ZIP archive</div><div class="sub">Photos + docs + README</div></div>
+            <button class="btn is-rust" style="width:auto;padding:0 14px;">Build ZIP</button>
+          </div>
+
+          <div class="henry-credit">
+            <div class="h"><span class="glyph">✦</span>Henry · auto-curated</div>
+            Henry picked the clearest <strong style="color:var(--ink);font-weight:600;">68 photos from 218</strong> so the record stays readable. All 218 are still in the ZIP archive.
+          </div>
+        </div>
+
+        <div class="group">
+          <span class="glabel">Project summary</span>
+          <div class="gtitle">Edit the closeout paragraph</div>
+
+          <div class="summary-editor">
+            <div class="h">
+              <span class="glyph">✦</span>Henry drafted this
+              <span class="pill">1 of 3</span>
+            </div>
+            <textarea rows="7">Over fourteen weeks we took your Glenwood home down to studs and brought it back: a north-facing kitchen with quartz waterfall island, refinished oak floors throughout, a dining-room addition with a four-pane Loewen sliding door, and a downstairs primary suite with heated tile. Three change orders along the way — all approved by you before we ordered material.</textarea>
+            <div class="actions">
+              <button class="btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                Regenerate
+              </button>
+              <button class="btn is-rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Keep
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-foot">
+        <span class="left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Client-safe
+        </span>
+        <button class="btn is-rust" style="flex:1;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+          Email to client
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 4 · Email dialog + Regenerate AlertDialog (mobile)
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 04</span>
+  <h2>Email dialog · Regenerate AlertDialog</h2>
+  <span class="hint">Centered cards over a dim scrim · scroll-on-tall-content · all CTAs 44px.</span>
+</div>
+<div class="row">
+
+  <!-- A · Email dialog -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status"><span>9:41</span><span class="right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg></span></div>
+    <div class="top">
+      <button class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta"><span class="ttl">Glenwood whole-home reno</span><span class="sub">Closeout</span></div>
+    </div>
+    <div class="scrim"></div>
+    <div class="dialog">
+      <div class="h">
+        <div class="eyebrow">Home Record</div>
+        <div class="t">Email to client</div>
+        <div class="d">One email · web link + PDF + ZIP. From Maple Ridge Renos via HeyHenry.</div>
+      </div>
+      <div class="b">
+        <div class="field">
+          <label class="field-label" for="hr-m-to">Send to</label>
+          <div class="input is-focus">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+            <input id="hr-m-to" type="email" value="daniel.mehta@gmail.com" style="all:unset;flex:1;font-size:14px;color:var(--ink);" />
+          </div>
+        </div>
+
+        <div class="will-include">
+          <span class="h">Will include</span>
+          <ul>
+            <li class="is-on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Permanent web link<span class="tail">Always</span></li>
+            <li class="is-on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Branded PDF<span class="tail">Built Mar 24</span></li>
+            <li class="is-on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>ZIP archive<span class="tail">184 MB</span></li>
+          </ul>
+        </div>
+
+        <div class="last-sent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Last sent Mar 18 at 11:02 AM
+        </div>
+      </div>
+      <div class="f">
+        <button class="btn is-quiet" style="flex:0 0 86px;">Cancel</button>
+        <button class="btn is-rust">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 8L4 20l4-8z"/></svg>
+          Resend
+        </button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+
+  <!-- B · Regenerate AlertDialog -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status"><span>9:41</span><span class="right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg></span></div>
+    <div class="top">
+      <button class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta"><span class="ttl">Glenwood whole-home reno</span><span class="sub">Closeout</span></div>
+    </div>
+    <div class="scrim"></div>
+    <div class="dialog">
+      <div class="h">
+        <div class="eyebrow">Confirm</div>
+        <div class="t">Refresh this Home Record?</div>
+        <div class="d">Pulls in newer photos, selections, decisions, and change orders — and recomputes the ✦ Henry summary draft.</div>
+      </div>
+      <div class="b">
+        <div class="will-include">
+          <span class="h">What happens</span>
+          <ul>
+            <li class="is-on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>The link stays the same.</li>
+            <li class="is-stale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Rebuild PDF + ZIP after.</li>
+            <li class="is-on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Your edited summary stays.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="f">
+        <button class="btn is-quiet" style="flex:0 0 86px;">Cancel</button>
+        <button class="btn is-rust">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 5 · Building formats · Stale · Error (mobile)
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 05</span>
+  <h2>Building formats · Stale-after-regenerate · Error</h2>
+  <span class="hint">ZIP can take up to 60 seconds on big projects — honest long-running label, not a bare spinner.</span>
+</div>
+<div class="row">
+
+  <!-- A · Building ZIP -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status"><span>9:41</span><span class="right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg></span></div>
+    <div class="top">
+      <button class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta"><span class="ttl">Glenwood whole-home reno</span><span class="sub">Closeout</span></div>
+    </div>
+    <div class="tabs">
+      <button class="t">Overview</button>
+      <button class="t">Photos<span class="ct">218</span></button>
+      <button class="t on">Documents<span class="ct">14</span></button>
+      <button class="t">Notes</button>
+    </div>
+    <div class="body">
+      <div class="state-label">State · Building ZIP</div>
+      <div class="hr-card">
+        <div class="hr-head">
+          <div class="hr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg></div>
+          <div>
+            <div class="hr-eyebrow">Home Record</div>
+            <div class="hr-title">Bundling 218 photos + 14 documents</div>
+            <div class="hr-sub">ZIP is the slow one — durable file copies + README so the archive works forever offline.</div>
+          </div>
+        </div>
+
+        <div class="format-row" style="margin-top:14px;">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/></svg></div>
+          <div class="meta">
+            <div class="nm">ZIP archive · in flight</div>
+            <div class="sub">Compressing photo 142 of 218</div>
+          </div>
+          <span class="chip is-not-built">
+            <span class="spin" style="color:var(--muted);"></span>
+            Building
+          </span>
+        </div>
+        <div class="progress-bar"><div class="bar" style="width:48%;"></div></div>
+        <div class="progress-meta"><span>Photos 142 of 218</span><span>48% · ~26s</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+
+  <!-- B · Stale + error toast -->
+  <div class="phone">
+    <div class="dyn"></div>
+    <div class="status"><span>9:41</span><span class="right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a16 16 0 0 1 16 0"/><path d="M8 14a10 10 0 0 1 8 0"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h13a4 4 0 0 1 0 8H3z"/><rect x="18" y="9" width="3" height="2"/></svg></span></div>
+    <div class="top">
+      <button class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <div class="meta"><span class="ttl">Glenwood whole-home reno</span><span class="sub">Closeout</span></div>
+    </div>
+    <div class="tabs">
+      <button class="t">Overview</button>
+      <button class="t">Photos<span class="ct">218</span></button>
+      <button class="t on">Documents<span class="ct">14</span></button>
+      <button class="t">Notes</button>
+    </div>
+    <div class="body">
+      <div class="state-label">State · Snapshot refreshed · PDF + ZIP stale</div>
+      <div class="hr-card">
+        <div class="hr-head">
+          <div class="hr-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg></div>
+          <div>
+            <div class="hr-eyebrow">Home Record</div>
+            <div class="hr-title">Refreshed · build fresh formats</div>
+            <div class="hr-meta-line">Regenerated Mar 24 · 5:02 PM</div>
+          </div>
+        </div>
+
+        <div class="stale-warn" style="margin-top:12px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 1 22h22z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>
+          <div>
+            <strong>Snapshot was refreshed after the last build.</strong>
+            The PDF + ZIP are from Mar 18 — Daniel &amp; Priya would receive an older view.
+          </div>
+        </div>
+
+        <div class="readiness">
+          <span class="lbl">Readiness</span>
+          <div class="chips">
+            <span class="chip is-built"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Web link · Live</span>
+            <span class="chip is-stale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 1 22h22z"/><line x1="12" y1="9" x2="12" y2="14"/></svg>PDF · Stale · Mar 18</span>
+            <span class="chip is-stale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 1 22h22z"/><line x1="12" y1="9" x2="12" y2="14"/></svg>ZIP · Stale · Mar 18</span>
+          </div>
+        </div>
+
+        <button class="btn is-rust" style="margin-top:12px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview &amp; finish
+        </button>
+      </div>
+    </div>
+
+    <div class="toast-row">
+      <span class="toast" style="background:var(--danger);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+        Couldn't reach Postmark · try again
+      </span>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+      <div class="it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg>Projects</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/></svg>Cal</div>
+      <div class="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/></svg>You</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

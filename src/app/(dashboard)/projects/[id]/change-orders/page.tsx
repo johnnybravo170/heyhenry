@@ -5,6 +5,7 @@ import { ChangeOrderList } from '@/components/features/change-orders/change-orde
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { listChangeOrders } from '@/lib/db/queries/change-orders';
 import { getProject } from '@/lib/db/queries/projects';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ChangeOrdersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const project = await getProject(id);
   if (!project) notFound();
 

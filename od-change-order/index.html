@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OD — Change Order — HeyHenry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 28px 80px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--rust);
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; color: var(--ink); }
+  .lede { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 58ch; line-height: 1.55; }
+  .meta {
+    margin-top: 22px; display: flex; gap: 18px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase; flex-wrap: wrap;
+  }
+  .meta span strong { color: var(--ink); font-weight: 700; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .screen-card {
+    background: var(--card); border: 1px solid var(--hair); border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 120ms, border-color 120ms;
+    text-decoration: none; color: inherit;
+  }
+  .screen-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .screen-thumb {
+    aspect-ratio: 16/10; background: var(--bg); border-bottom: 1px solid var(--hair);
+    position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px;
+  }
+  .screen-thumb iframe {
+    width: 1440px; height: 900px; transform: scale(0.32); transform-origin: top left;
+    border: 0; pointer-events: none; position: absolute; top: 0; left: 0;
+  }
+  .screen-thumb.mobile iframe {
+    width: 480px; height: 4000px; transform: scale(0.18); transform-origin: top center;
+    position: absolute; top: 0; left: 50%; margin-left: -240px;
+  }
+  .screen-thumb.mobile { background: #ECE3D0; }
+  .screen-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .screen-eyebrow {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .screen-title { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; color: var(--ink); }
+  .screen-desc { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.5; }
+  .notes {
+    margin-top: 48px; background: var(--card); border: 1px solid var(--hair);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .notes h2 {
+    margin: 0 0 12px; font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
+    font-family: var(--mono); text-transform: uppercase; color: var(--ink);
+  }
+  .notes ul { margin: 0; padding-left: 16px; color: var(--ink-2); font-size: 14px; line-height: 1.6; }
+  .notes li + li { margin-top: 6px; }
+  .notes code {
+    font-family: var(--mono); font-size: 12px; background: var(--bg);
+    border: 1px solid var(--hair); border-radius: 4px; padding: 1px 5px; color: var(--ink);
+  }
+  .notes strong { color: var(--ink); font-weight: 600; }
+  .notes .open-q {
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--hair);
+    color: var(--muted); font-size: 12px;
+  }
+
+  /* Diff-action palette legend */
+  .legend {
+    margin-top: 24px;
+    background: var(--card); border: 1px solid var(--hair); border-radius: 14px;
+    padding: 18px 22px;
+  }
+  .legend h2 {
+    margin: 0 0 4px; font-size: 12px; font-weight: 700;
+    font-family: var(--mono); text-transform: uppercase; color: var(--ink);
+    letter-spacing: 0.08em;
+  }
+  .legend .legend-sub {
+    color: var(--muted); font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .legend-row {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 16px;
+    align-items: baseline;
+    padding: 8px 0;
+    border-top: 1px solid var(--hair);
+  }
+  .legend-row:first-of-type { border-top: 0; padding-top: 0; }
+  .act {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    line-height: 1.3;
+    width: max-content;
+  }
+  .act .gly { font-size: 12px; font-weight: 700; line-height: 0.8; }
+  .act-add    { background: #DCFCE7;     color: #15803D; border-color: rgba(21, 128, 61, 0.2); }
+  .act-change { background: #E6EDFA;     color: #1E40AF; border-color: rgba(30, 64, 175, 0.2); }
+  .act-remove { background: #FEE2E2;     color: #B91C1C; border-color: rgba(185, 28, 28, 0.2); }
+  .act-budget { background: #ECE3D0;     color: #57534B; border-color: #D8CBB0; }
+  .legend-rule {
+    font-size: 13px; color: var(--ink-2); line-height: 1.5;
+  }
+  .legend-rule strong { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OD &middot; HeyHenry &middot; Paper palette (deepened 2026-05-20)</div>
+  <h1>Change Order</h1>
+  <p class="lede">
+    The contract amendment surface &mdash; a <strong style="color:var(--ink);">mini-estimate in diff mode</strong> against the signed scope.
+    Same line / category / markup vocabulary as the estimate, same price-only customer document, same typed-name approval.
+    Lives <em>inside the Budget tab</em>: no reintroduced top-level Changes tab. Voice/photo CO drafting is deferred per the brief &mdash; this pass is the manual flow done well.
+  </p>
+  <div class="meta">
+    <span><strong>Object</strong> &middot; Change Order (<code style="font-family:var(--mono);">change_orders</code> + <code style="font-family:var(--mono);">change_order_lines</code>)</span>
+    <span><strong>Roles</strong> &middot; owner / admin / member &middot; homeowner (public)</span>
+    <span><strong>Primary action</strong> &middot; get a scope change priced, agreed, and folded into the budget</span>
+    <span><strong>Mock data</strong> &middot; Hillcrest Kitchen (Helen Chao &middot; Abbotsford) &middot; CO-3</span>
+  </div>
+
+  <div class="grid">
+    <a class="screen-card" href="screens/desktop.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop.html" loading="lazy" title="Change Order desktop preview"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">01 &middot; Desktop &middot; 4 frames</div>
+        <div class="screen-title">Editor &middot; Lifecycle &middot; Send preview &middot; Public approval</div>
+        <div class="screen-desc">
+          Hero frame is the v2 line-diff editor inside the Budget tab &mdash; sticky <strong>Total Cost Impact</strong>
+          with an operator-only <strong>Margin on change</strong> read, three category groups showing all four
+          diff actions (ADD &middot; CHANGE &middot; REMOVE &middot; BUDGET), a warn-soft per-CO management-fee override with required reason.
+          Then lifecycle states sampler, the send preview with email+SMS channels + copyable approval link,
+          and the customer-facing public page in browser chrome.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile.html" loading="lazy" title="Change Order mobile preview"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">02 &middot; Mobile &middot; 4 phones</div>
+        <div class="screen-title">On-site capture &middot; 390 wide (iPhone)</div>
+        <div class="screen-desc">
+          Mobile is &ldquo;doing work&rdquo; per the brief: dense desktop diff table collapses to stacked
+          Before / After / &Delta; cards, 44px+ targets everywhere, sticky impact at top with margin chip,
+          sticky <code>Preview &amp; send</code> at bottom. Send flow is a bottom sheet with the email+SMS legibility cue
+          and a one-tap <code>Copy</code> on the approval link. Public approval page lives in mobile Safari chrome.
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="legend">
+    <h2>Diff-action palette</h2>
+    <div class="legend-sub">
+      One intentional, token-sourced tone per action &mdash; <strong>always</strong> paired with a label + glyph so it&rsquo;s never colour-only.
+      Used identically in the editor and the public diff view. Separate semantic system from lifecycle status (those use <code style="font-family:var(--mono);">status-tokens.ts</code> draft / pending / approved / declined / voided).
+    </div>
+    <div class="legend-row">
+      <span class="act act-add"><span class="gly">+</span>ADD</span>
+      <div class="legend-rule"><strong>ok-soft / ok-ink.</strong> Net-additive scope &mdash; new line, new work, customer pays more. Background tint on the editor row.</div>
+    </div>
+    <div class="legend-row">
+      <span class="act act-change"><span class="gly">&harr;</span>CHANGE</span>
+      <div class="legend-rule"><strong>info-soft / info-ink.</strong> Existing line modified (qty / unit price / both). Semantic-neutral &mdash; not "good" or "bad", just changed. Shows a <code style="font-family:var(--mono);">was</code> sub-line for grounding.</div>
+    </div>
+    <div class="legend-row">
+      <span class="act act-remove"><span class="gly">&minus;</span>REMOVE</span>
+      <div class="legend-rule"><strong>danger-soft / danger-ink.</strong> A signed-scope line being struck from the contract. Line-through on the label so the deletion reads from across the room. Delta renders in <code style="font-family:var(--mono);">ok</code> (the project total drops) &mdash; tone signals contractual seriousness, not moral judgment.</div>
+    </div>
+    <div class="legend-row">
+      <span class="act act-budget"><span class="gly">&#9633;</span>BUDGET</span>
+      <div class="legend-rule"><strong>chip-fill / muted-ink.</strong> Envelope-level shift (<code style="font-family:var(--mono);">modify_envelope</code>) &mdash; the coarser, no-line-detail signal. Used only when the category has no line-level diffs (avoids double-counting).</div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h2>Brief alignment</h2>
+    <ul>
+      <li><strong>A CO is a mini-estimate</strong> &mdash; same line/category/markup vocabulary, same price-only customer doc, same typed-name approval. Designed in <em>diff mode</em> against the signed scope, not as a separate app.</li>
+      <li><strong>Diff is legible at a glance</strong> &mdash; <strong>changed rows lead</strong>, each as <strong>Before &rarr; After &rarr; &Delta;</strong>. Action chips on the row + a subtle tint on the row background; line-through for removes; <code>was</code> microcopy under changes. Same vocabulary in editor and on the public page.</li>
+      <li><strong>Sticky total delta + operator margin read</strong> &mdash; the impact bar pins at the top of the editor with the <code>+$X</code> total. An <strong>operator-only</strong> mono whisper sits next to it: <code>MARGIN ON CHANGE &middot; 22.4%</code> in warn-soft with an <code>OPS</code> tag, so the GC knows whether the CO holds margin. <strong>The customer never sees this.</strong></li>
+      <li><strong>Lives inside the Budget tab</strong> &mdash; breadcrumb is <code>Projects &rsaquo; Hillcrest &rsaquo; Budget &rsaquo; New change order</code>; the project sub-tab nav shows Budget active with a small <code>CO &middot; draft</code> badge. <strong>No reintroduced top-level Changes tab</strong> (honors decision <code>6790ef2b</code> + the Hub-locked IA).</li>
+      <li><strong>Plain-English &ldquo;What&rsquo;s changing &amp; why&rdquo;</strong> &mdash; a peach (rust-soft) card on the public page, above the diff table. This is the trust-moment piece the brief flags as missing today. The editor labels the description field with the hint <code>(plain English &mdash; customer reads this)</code> so the operator writes for Helen, not for the audit log.</li>
+      <li><strong>Send preview reuses the estimate send-bar pattern</strong> &mdash; rendered customer doc on the left, send controls on the right (recipients checklist, optional personal note, <strong>copyable approval link</strong>, info-soft <code>Email + SMS &middot; both go out</code> channel chip). On mobile it's a bottom sheet with the same elements stacked.</li>
+      <li><strong>Lifecycle states</strong> &mdash; Draft (the editor) &middot; Pending (sent, awaiting customer, realtime) &middot; Approved (applied banner + a peach <strong>&#10026; HENRY &middot; Now billable &middot; roll into draw 3?</strong> nudge &mdash; this is the approved-but-unbilled leak the brief calls out) &middot; Declined (with reason + Clone-to-draft) &middot; Empty (calm).</li>
+      <li><strong>Rust stays the single accent</strong> &mdash; primary CTA + the &#10026; HENRY chrome only. Henry fill reflects meaning: peach for draft-ready / ready-to-bill (never danger-red on a positive). The OPS margin whisper uses <strong>warn-soft</strong>, not rust &mdash; the rust budget is preserved.</li>
+      <li><strong>Three type sizes on every surface</strong> (16 / 14 / 12) plus mono labels (11) as a labelling device only &mdash; eyebrows, column headers, currency hashes, IDs. Money is tabular-nums, right-aligned, de-emph cents <strong>everywhere</strong>, including the impact bar and the public fee breakdown.</li>
+      <li><strong>Public page = price-only</strong> &mdash; cost / markup never appears. Fee breakdown shows Cost of work &middot; Management fee (12.00%) &middot; Total. New-vs-was project total. <code>was $164,000.00</code> reads as a strikethrough; the new total reads in ink.</li>
+      <li><strong>Approve = typed-name e-signature</strong>; decline takes an optional reason; the 3-state form (pending &rarr; approve / decline &rarr; done) is sketched as mini-state previews under the live form. The desktop frame surfaces all three sub-states so the build team can see the whole flow at once.</li>
+      <li><strong>WCAG &middot; never colour-only</strong> &mdash; every action chip pairs the colour with a mono label and a glyph; line-through carries the removal signal independently of the danger tint.</li>
+    </ul>
+    <div class="open-q">
+      <strong>Deferred this pass:</strong> <strong>voice/photo CO drafting</strong>. Per the brief, the manual workflow must be excellent on its own before the voice accelerator lands on top. The screens above are designed to be the form that voice will eventually pre-fill &mdash; the affordances (timeline-impact field, fee override, category notes, +Add line) are already where the dictation will land.<br/><br/>
+      <strong>Open questions on file</strong> (from the brief): customer-decline parity with estimate (lean: keep CO decline) &middot; inline-new-category staging behaviour &middot; approved-but-unbilled threshold &middot; v1 retirement.
+    </div>
+  </div>
+</div>
+</body>
+</html>

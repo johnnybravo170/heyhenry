@@ -23,12 +23,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { resizeImage } from '@/lib/storage/resize-image';
 import { cn } from '@/lib/utils';
 import {
-  addCustomerIdeaBoardImageAction,
-  addCustomerIdeaBoardLinkAction,
-  addCustomerIdeaBoardNoteAction,
-  deleteCustomerIdeaBoardItemAction,
+  addContactIdeaBoardImageAction,
+  addContactIdeaBoardLinkAction,
+  addContactIdeaBoardNoteAction,
+  deleteContactIdeaBoardItemAction,
   fetchIdeaBoardUrlPreviewAction,
-  getCustomerIdeaBoardItemsAction,
+  getContactIdeaBoardItemsAction,
   type IdeaBoardItem,
 } from '@/server/actions/project-idea-board';
 
@@ -49,7 +49,7 @@ export function PortalIdeaBoard({
   const [roomFilter, setRoomFilter] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const res = await getCustomerIdeaBoardItemsAction(portalSlug);
+    const res = await getContactIdeaBoardItemsAction(portalSlug);
     if (res.ok) {
       setItems((prev) => {
         if (prev.length === res.items.length) {
@@ -281,7 +281,7 @@ function ImageComposer({
         fd.append('file', finalFile);
         if (room.trim()) fd.append('room', room.trim());
         if (notes.trim()) fd.append('notes', notes.trim());
-        const res = await addCustomerIdeaBoardImageAction(fd);
+        const res = await addContactIdeaBoardImageAction(fd);
         if (!res.ok) {
           toast.error(res.error);
           return;
@@ -433,7 +433,7 @@ function LinkComposer({
       return;
     }
     startTransition(async () => {
-      const res = await addCustomerIdeaBoardLinkAction({
+      const res = await addContactIdeaBoardLinkAction({
         portalSlug,
         url: trimmedUrl,
         title: title.trim() || undefined,
@@ -541,7 +541,7 @@ function NoteComposer({
     const trimmed = notes.trim();
     if (!trimmed) return;
     startTransition(async () => {
-      const res = await addCustomerIdeaBoardNoteAction({
+      const res = await addContactIdeaBoardNoteAction({
         portalSlug,
         notes: trimmed,
         room: room.trim() || undefined,
@@ -618,7 +618,7 @@ function IdeaCard({
   function handleDelete() {
     if (!window.confirm('Remove this idea from your board?')) return;
     startTransition(async () => {
-      const res = await deleteCustomerIdeaBoardItemAction({ portalSlug, itemId: item.id });
+      const res = await deleteContactIdeaBoardItemAction({ portalSlug, itemId: item.id });
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -700,17 +700,17 @@ function IdeaCard({
         </div>
 
         {item.notes ? (
-          <p className="whitespace-pre-wrap text-xs text-muted-foreground">{item.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{item.notes}</p>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
           {item.room ? (
-            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
               {item.room}
             </span>
           ) : null}
           {promoted ? (
-            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
               Promoted to selection
             </span>
           ) : null}

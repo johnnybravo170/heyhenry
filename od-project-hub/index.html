@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OD — Project Hub — HeyHenry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 28px 80px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--rust);
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; color: var(--ink); }
+  .lede { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 56ch; line-height: 1.55; }
+  .meta {
+    margin-top: 22px; display: flex; gap: 18px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase; flex-wrap: wrap;
+  }
+  .meta span strong { color: var(--ink); font-weight: 700; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .screen-card {
+    background: var(--card); border: 1px solid var(--hair); border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 120ms, border-color 120ms;
+    text-decoration: none; color: inherit;
+  }
+  .screen-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .screen-thumb {
+    aspect-ratio: 16/10; background: var(--bg); border-bottom: 1px solid var(--hair);
+    position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px;
+  }
+  .screen-thumb iframe {
+    width: 1440px; height: 900px; transform: scale(0.32); transform-origin: top left;
+    border: 0; pointer-events: none; position: absolute; top: 0; left: 0;
+  }
+  .screen-thumb.mobile iframe {
+    width: 390px; height: 844px; transform: scale(0.45); transform-origin: center;
+    position: static;
+  }
+  .screen-thumb.mobile { background: #ECE3D0; }
+  .screen-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .screen-eyebrow {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .screen-title { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; color: var(--ink); }
+  .screen-desc { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.5; }
+  .notes {
+    margin-top: 48px; background: var(--card); border: 1px solid var(--hair);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .notes h2 {
+    margin: 0 0 12px; font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
+    font-family: var(--mono); text-transform: uppercase; color: var(--ink);
+  }
+  .notes ul { margin: 0; padding-left: 16px; color: var(--ink-2); font-size: 14px; line-height: 1.6; }
+  .notes li + li { margin-top: 6px; }
+  .notes code {
+    font-family: var(--mono); font-size: 12px; background: var(--bg);
+    border: 1px solid var(--hair); border-radius: 4px; padding: 1px 5px; color: var(--ink);
+  }
+  .notes strong { color: var(--ink); font-weight: 600; }
+  .notes .open-q {
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--hair);
+    color: var(--muted); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OD &middot; HeyHenry &middot; Paper palette</div>
+  <h1>Project Hub</h1>
+  <p class="lede">
+    The operator&rsquo;s run-the-job workspace for one active renovation. Persistent shell (lean identity header +
+    one unified nav) carried across every tab. Six tabs in the set so far &mdash; <strong>Overview</strong>
+    (the &ldquo;what needs you&rdquo; cockpit), <strong>Budget</strong> (the execution-posture scope table:
+    spend &middot; commit &middot; remaining + scope-diff entry points), <strong>Spend</strong>
+    (the <em>external</em> money-out ledger &mdash; subs &middot; POs &middot; vendor bills &middot; receipts, grouped by Budget&rsquo;s categories), <strong>Labour</strong>
+    (the <em>internal</em> money-out twin of Spend &mdash; the worker-invoice approval queue + the time log that feeds budget actuals), <strong>Schedule</strong>
+    (the <em>work timeline</em> &mdash; phases &rarr; tasks &rarr; working-day Gantt, with a This-week digest and a visible &#10022; cascade Henry moment), and <strong>Billing</strong>
+    (the <em>money-IN</em> tab &mdash; contract position, draws against the contract, ready-to-bill, overdue, AR autopilot).
+  </p>
+  <div class="meta">
+    <span><strong>Object</strong> &middot; Project in execution</span>
+    <span><strong>Roles</strong> &middot; owner / admin / member</span>
+    <span><strong>Primary action</strong> &middot; do the next thing that keeps the job moving</span>
+    <span><strong>Mock</strong> &middot; Glenwood Heights &middot; Mohan &middot; Northbeam Construction</span>
+  </div>
+  <div class="grid">
+    <a class="screen-card" href="screens/desktop.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop.html" loading="lazy" title="Project Hub Overview &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">01 &middot; Desktop &middot; Overview</div>
+        <div class="screen-title">Active Glenwood Heights &middot; cockpit</div>
+        <div class="screen-desc">
+          Lean header + Project Details popover (Name / Customer / Description / Dates / Billing / Status + Crew checklist).
+          One unified 9-tab nav with a soft Budget&sup2; alert count.
+          &ldquo;Needs you&rdquo; cockpit ranked by Henry &mdash; margin-at-risk (top, danger-soft wash) &middot; ready-to-bill draw &middot; unsent CO &middot; client message &middot; missing receipts collapsed into &ldquo;+1 more.&rdquo;
+          Budget &amp; margin card + Henry diagnostic strip + recent activity feed.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile.html" loading="lazy" title="Project Hub Overview &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">02 &middot; Mobile &middot; Overview</div>
+        <div class="screen-title">Cockpit on a truck &middot; 390 wide</div>
+        <div class="screen-desc">
+          Compact lean header. Tab nav collapses to a single select; trigger carries the total alert count, dropdown rows carry per-tab badges (Budget&sup2; &middot; Spend&sup1; &middot; Billing&sup1; &middot; Client&sup2;).
+          Same Needs-you stack &middot; 2&times;2 summary &middot; segmented bar &middot; activity feed. Bottom tab bar with Projects active.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/desktop-budget.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-budget.html" loading="lazy" title="Project Hub Budget &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">03 &middot; Desktop &middot; Budget</div>
+        <div class="screen-title">Execution posture &middot; scope table</div>
+        <div class="screen-desc">
+          Same shell, Budget tab active. Two compact alert chips at top (margin-at-risk &middot; 2 unsent scope changes) &middot; calm signed-estimate banner (v3, 2 applied COs) &middot; budget summary with the dual-metric progress (53% complete &middot; 61% consumed).
+          Scope table grouped into 3 sections (Site &amp; Structure collapsed with &ldquo;Framing over $4,800&rdquo; chip surfaced; Trades expanded showing Electrical &middot; Plumbing &middot; Insulation &amp; Drywall; Envelope &amp; Finishes collapsed with Windows-over + Flooring-projected chips). Plumbing further expanded showing five cost lines + a &ldquo;Spent by source&rdquo; strip that deep-links to Labour &middot; Bills &middot; Sub commits.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile-budget.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile-budget.html" loading="lazy" title="Project Hub Budget &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">04 &middot; Mobile &middot; Budget</div>
+        <div class="screen-title">Stacked cards &middot; 390 wide</div>
+        <div class="screen-desc">
+          Tab nav shows &ldquo;Budget &middot; 2&rdquo; (warn-soft tab-owned count). Alert chips stack at top; signed banner is one calm line.
+          2&times;2 summary &middot; segmented bar.
+          Scope = stacked section + category cards. Section rows carry their own chips so collapsed sections still surface their at-risk items. Plumbing card expanded into cost lines (with the source-strip below).
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/desktop-spend.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-spend.html" loading="lazy" title="Project Hub Spend &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">05 &middot; Desktop &middot; Spend</div>
+        <div class="screen-title">Procurement workflow &middot; quotes &middot; POs &middot; costs</div>
+        <div class="screen-desc">
+          Same shell, Spend tab active. Spend is NOT a Budget clone &mdash; it&rsquo;s the AP workflow grouped <em>By type</em> with three sub-tabs (<strong>Vendor quotes</strong> &middot; <strong>POs</strong> &middot; <strong>Costs</strong>, default landing) and a secondary read-only <em>By category</em> reconcile lens.
+          Summary trimmed to <strong>three</strong> real money-out moments: Committed $24,800 (inline breakdown: quotes $18,000 &middot; POs $6,800) &middot; Billed $38,300 (with $6,200 unpaid as the rust actionable shout) &middot; Paid $32,100.
+          Costs sub-tab shown active: filter chips (All / Unpaid / Paid), the &ldquo;Did you pay this already?&rdquo; cost-gate fork preview, and a proper cost table (Date &middot; Vendor &middot; Status &middot; Category &middot; Description &middot; Subtotal &middot; GST &middot; Total). Below, the Vendor-quotes centerpiece &mdash; the Henry sub-quote OCR flow: TRIO Contracting expanded with line items + category allocations + Henry &ldquo;needs a category&rdquo; note + emerald balanced tally + Accept (enabled because balanced); Pacific Wallboard collapsed (Accepted).
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile-spend.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile-spend.html" loading="lazy" title="Project Hub Spend &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">06 &middot; Mobile &middot; Spend</div>
+        <div class="screen-title">Procurement workflow &middot; 390 wide</div>
+        <div class="screen-desc">
+          Tab select carries &ldquo;Spend &middot; 1&rdquo; (the uncategorized-costs alert). Summary stacks as three full-width rows (Committed with quotes/POs breakdown &middot; Billed with the rust &ldquo;$6,200 unpaid &rarr;&rdquo; shout &middot; Paid). Toggle: By type / By category.
+          Sub-tabs as a segmented control: <strong>Quotes (1)</strong> &middot; <strong>POs (3)</strong> &middot; <strong>Costs</strong> (active). Costs view shows filter chips, a full-width rust &ldquo;Add cost&rdquo; primary, and the cost-gate sheet preview (&ldquo;Did you pay this already?&rdquo; &rarr; Yes=receipt / No=vendor bill).
+          Cost cards stack vendor + description + category-meta + amount (with sub/GST breakdown) + status pill + Mark paid where applicable. Below, the Vendor-quotes centerpiece &mdash; TRIO Contracting expanded with line items, category-allocation rows (matched / no-match warn), the Henry note, the emerald balanced tally, and the Accept button enabled.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/desktop-labour.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-labour.html" loading="lazy" title="Project Hub Labour &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">07 &middot; Desktop &middot; Labour</div>
+        <div class="screen-title">Internal money-out &middot; invoices + time log</div>
+        <div class="screen-desc">
+          Same shell, <strong>Labour</strong> tab active (renamed from Time &mdash; label-only; route key stays <code>time</code>). Honest two-half roll-up: <strong>TOTAL HOURS 142.5</strong> &middot; <strong>LABOUR COST $11,840</strong> &middot; <strong>2 INVOICES AWAITING YOU</strong> with a single rust &ldquo;$4,711 to approve &rarr;&rdquo; shout &mdash; the labour cost and invoice amounts are <em>not</em> summed. Footnote: &ldquo;External costs live on Spend &rarr;&rdquo;.
+          <strong>Region A &mdash; Worker invoices</strong>: 5 rows showing all 4 operator-side states (Submitted &times;2 &middot; Approved &middot; Paid &middot; Rejected). Status pills are soft-pair (warn / info / ok / danger). Approve is the <em>one</em> rust accent in the awaiting row; Mark paid is ghost. One row shows a slid-out reject-reason textarea; another shows the danger-toned rejection callout; Tony Da Silva&rsquo;s row shows the <strong>GST EXEMPT</strong> chip mirroring Spend&rsquo;s permit row.
+          One peach-soft <strong>Henry nudge</strong> (rust border-left, labeled, undoable): <em>&ldquo;$2,140 in approved worker invoices isn&rsquo;t in the budget yet &mdash; add to job costs?&rdquo;</em> &mdash; the planned worker_invoice &rarr; project_cost_line link.
+          <strong>Region B &mdash; Time entries</strong>: focus banner (Info-soft) showing the Budget deep-link state filtered to Framing. Inline log-time panel open (Date / Hours / Rate / Category / Line item / Scope notes; rate required, helper &ldquo;use 0 for unbilled&rdquo;). Table: Date &middot; Worker &middot; Allocation (cost-line if tagged, else category, else italic &ldquo;unallocated&rdquo;) &middot; Hours &middot; Rate &middot; Billed &middot; Notes. One legacy row shows &ldquo;&mdash;&rdquo; for rate AND billed.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile-labour.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile-labour.html" loading="lazy" title="Project Hub Labour &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">08 &middot; Mobile &middot; Labour</div>
+        <div class="screen-title">Internal money-out &middot; 390 wide</div>
+        <div class="screen-desc">
+          Tab select carries &ldquo;Labour &middot; 2&rdquo; (warn-soft &mdash; 2 invoices awaiting). Roll-up stacks as three full-width rows (Total hours &middot; Labour cost &middot; Awaiting you with the rust &ldquo;$4,711 to approve &rarr;&rdquo; shout). Worker filter as a pill.
+          Both regions become stacked cards matching the Spend cards. <strong>Worker invoices</strong>: 3 cards visible (Submitted Marcus with rust Approve + ghost Reject &middot; Approved Cole with ghost Mark paid &middot; Rejected Northbeam with danger-soft reason); &ldquo;Show 2 more&rdquo; muted link.
+          The Henry nudge becomes a peach card with stacked rust CTA + ghost Not now.
+          <strong>Time entries</strong>: focus banner (Filtered to Framing &middot; Clear), 4 stacked time cards (date &middot; hours, worker &middot; allocation, rate &middot; billed, notes); 1 legacy null-rate card shows &ldquo;&mdash;&rdquo;. Below, the <strong>Log time bottom sheet</strong> docked with the form (Date &middot; Hours &middot; Rate&#42; &middot; Category &middot; Line item &middot; Notes &middot; rust submit). Bottom tab bar with Projects active.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/desktop-billing.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-billing.html" loading="lazy" title="Project Hub Billing &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">09 &middot; Desktop &middot; Billing</div>
+        <div class="screen-title">Money-IN &middot; contract position &middot; draws</div>
+        <div class="screen-desc">
+          Same shell, <strong>Billing</strong> tab active (renamed from Customer Billing &mdash; route key stays <code>invoices</code>). First time the tab carries a <em>danger</em>-toned &ldquo;1&rdquo; count (1 overdue draw); the existing warn-soft and rust-fill tokens already serve Budget&sup2; and Client&sup2;.
+          <strong>Position card</strong>: five honest cells &mdash; Contract <strong>$142,000</strong> (Estimate $135k + COs $7k) &middot; Billed $67,200 (47.3%) &middot; Paid $56,000 &middot; <strong>Outstanding $11,200</strong> (rust shout, the single actionable owed figure) &middot; Remaining to bill $74,800. Two real-button actionables below: peach <strong>Ready to bill $11,760</strong> (Henry&rsquo;s milestone-complete suggestion) + danger <strong>Overdue $11,200 &middot; 1</strong>.
+          <strong>Action row</strong>: rust <em>+&nbsp;New draw</em> &middot; ghost <em>Invoice full estimate</em> (disabled &mdash; draws exist) &middot; ghost <em>Generate final</em> (disabled &mdash; not at 100%) &middot; <strong>GST on draws: On top</strong> select (real per-project setting).
+          <strong>Draws table</strong>: 3 rows showing all three lifecycle states &mdash; Draw 3 OVERDUE (17d past sent, ghost Mark paid + Send reminder, plus an info-soft <em>AR autopilot</em> strip beneath: &ldquo;Reminder #2 scheduled tomorrow 9:00 AM &middot; CASL-aware nightly &middot; Cancel sequence&rdquo;) &middot; Draw 2 PAID via Stripe (chip) &middot; Draw 1 PAID via Interac e-Transfer (chip, at parity with Stripe).
+          <strong>Henry Ready-to-bill nudge</strong> (peach, rust border-left): &ldquo;Rough-in&rsquo;s done &mdash; bill Draw 4 for $11,760?&rdquo; with sub-line listing the inspection trigger + Framing/Electrical/Plumbing complete &middot; &ldquo;Henry drafts, you send.&rdquo;
+          <strong>+ New draw form</strong> open and prefilled from Henry: Milestone label &middot; % Complete &middot; line items sub-table (description + amount, + Add line) &middot; <strong>live GST preview</strong> &ldquo;Subtotal $11,200 + $560 GST = $11,760 &middot; GST on top mode&rdquo; (info-soft strip honoring the project&rsquo;s draw GST mode) &middot; rust <em>Create draft &amp; continue</em>.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile-billing.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile-billing.html" loading="lazy" title="Project Hub Billing &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">10 &middot; Mobile &middot; Billing</div>
+        <div class="screen-title">Money-IN &middot; 390 wide</div>
+        <div class="screen-desc">
+          Tab select carries &ldquo;Billing &middot; 1&rdquo; (danger-soft &mdash; 1 overdue). Position stacks as <strong>five</strong> sum-rows (Contract / Billed / Paid / Outstanding rust shout / Remaining) plus the <strong>two actionable tiles</strong> (peach Ready-to-bill $11,760 + danger Overdue $11,200) as full-width stacked buttons.
+          Action stack: full-width rust <em>+&nbsp;New draw</em>; secondary ghost row (<em>Invoice full estimate</em>, <em>Generate final</em>); full-width GST mode select.
+          The Henry nudge is a peach card with stacked rust CTA + ghost dismiss.
+          <strong>Draws</strong>: 3 stacked cards &mdash; Draw 3 overdue (danger-tint card, pill + age chip + ghost Mark paid + Send reminder, AR autopilot strip below) &middot; Draw 2 paid via Stripe &middot; Draw 1 paid via Interac.
+          <strong>+ New draw bottom-sheet</strong> docked: Milestone label, % Complete, GST mode (readonly), line item with delete + Add line, live GST preview, rust Create draft. Bottom tab bar with Projects active.
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/desktop-schedule.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-schedule.html" loading="lazy" title="Project Hub Schedule &mdash; desktop"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">11 &middot; Desktop &middot; Schedule</div>
+        <div class="screen-title">Work timeline &middot; phases &middot; cascade as a Henry moment</div>
+        <div class="screen-desc">
+          Same shell, <strong>Schedule</strong> tab active &mdash; the job&rsquo;s work timeline (phases &rarr; tasks &rarr; working-day Gantt), <em>not</em> crew scheduling (that lives at <code>/calendar</code>; this tab carries one read-only Crew-this-week card that deep-links there). Tab carries a danger-toned &ldquo;1&rdquo; count (1 behind task); same predicate drives Overview&rsquo;s Needs-You ranking.
+          <strong>Anchor + This-week digest</strong>: quiet &ldquo;Project start: Mon Mar 23 2026&rdquo; + a digest card with three one-line reads (<em>Active now</em>: &#9888; Drywall &middot; Plumbing rough-in / <em>Starts this week</em>: Cabinets &amp; fixtures Thu / <em>Finishes this week</em>: &mdash;) + a danger-soft <strong>1 behind</strong> pill. A four-swatch legend (Firm / Rough / Done / Behind) teaches the bar vocabulary used below.
+          <strong>Toolbar</strong>: one outline <em>+&nbsp;Add task</em> + a &#8943; overflow holding the destructive globals (Auto-link dependencies, Clear &amp; start over) &mdash; both with a danger-toned <em>Destructive</em> mark; replaces the toolbar-equal weight + native <code>confirm()</code> of the current shipped tab.
+          <strong>&#10022; Henry cascade card</strong> (caution-soft warn fill, rust left-border): &ldquo;Moving Drywall +3 working days pushed Finishes, Punch List &amp; Final Walkthrough. New finish: Apr 2 &rarr; Apr 8.&rdquo; with Undo + rust <em>Notify customer</em>. Turns the silent <code>cascadeForwardFromTask</code> into a labeled trust moment.
+          <strong>The Gantt</strong>: CSS-grid autoscale, sticky-left task-name column, 21-day window (Mar 23 &rarr; Apr 12, 3 calendar weeks), month + day-of-month headers, faint weekend bands, rust <strong>Today</strong> line at Apr 2. Phase-grouped rows in canonical order with phase swatches (Demo / Framing / Rough-in / Inspection / Drywall / Cabinets &amp; Fixtures / Finishes / Punch List). 9 task bars: Demo + Framing done (emerald + strikethrough name); <strong>Electrical rough-in firm 8&nbsp;working&nbsp;days Mar 26 &rarr; Apr 6</strong> spanning a weekend with the weekend columns visibly <em>receded</em> through a translucent paper-wash overlay; Plumbing rough-in dashed teal + Internal chip; Final inspection rough cyan (Apr 1); <strong>Drywall &#9888; behind</strong> firm purple with danger outline + glyph + in-progress shoulder; Cabinet install rough amber starting today (Thu Apr 2); Finishes &amp; Punch List rough with <em>+3d cascade</em> meta. Hover quick-actions on bars (<em>Mark done</em> + <em>Lock dates</em> / <em>Bump 1d</em>) and a custom dark tooltip showing working-day count + date range.
+          <strong>Crew this week</strong>: a single read-only line &mdash; &ldquo;Mike Reyes (Mon&ndash;Wed) &middot; <em>Sub</em> Dave T. (Mon&ndash;Fri)&rdquo; with <em>Manage in Calendar &rarr;</em>. The only crew presence on this tab; never an editor (the per-project crew grid was deleted &mdash; #269 &mdash; to enforce single-scheduler).
+        </div>
+      </div>
+    </a>
+    <a class="screen-card" href="screens/mobile-schedule.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile-schedule.html" loading="lazy" title="Project Hub Schedule &mdash; mobile"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">12 &middot; Mobile &middot; Schedule</div>
+        <div class="screen-title">Digest-first &middot; List | Timeline &middot; 390 wide</div>
+        <div class="screen-desc">
+          Tab select carries &ldquo;Schedule &middot; 1&rdquo; (danger-soft &mdash; 1 behind, same count as the Overview Needs-You). Mobile is field-usable: digest is the <strong>default view</strong> &mdash; ridding a GC of the &ldquo;pinch-scroll a Gantt to mark drywall done&rdquo; problem.
+          <strong>Segmented toggle</strong> at the top (<em>List | Timeline</em>) &mdash; List default; Timeline is a contained horizontal-scroll Gantt snippet below.
+          <strong>This-week digest</strong> + behind pill + the same 4-swatch legend.
+          <strong>Toolbar</strong>: meta line + a single <em>Add</em> outline button (destructive globals live behind the header &#8943; on mobile).
+          <strong>&#10022; Henry cascade card</strong> stacked full-width with Undo / Notify customer as a 1:1.6 grid (Notify weighted as the more likely action).
+          <strong>Task list</strong>: 9 stacked cards, each carrying phase chip + state pill + name + working-day count + date range. The two highest-frequency edits (<em>Mark done</em> + <em>Bump 1 day</em>) live <strong>inline at 44px on the Behind card</strong> and on in-progress cards &mdash; never costing a dialog. The behind card uses danger outline + &#9888; glyph + danger state pill + an in-progress shoulder, with the original Apr 1 due-date struck through in mono. Plumbing carries the <em>Internal</em> chip. Finishes / Punch list carry the <em>+3d cascade</em> meta.
+          <strong>Crew this week</strong> as a compact card &mdash; same read-only / deep-link contract as desktop. <strong>Timeline preview</strong> below: a 552px-wide horizontally scrollable mini-Gantt with the same bar vocabulary, today line, weekend bands &mdash; rendered for the &ldquo;show me the shape of the project&rdquo; moment without becoming the primary mobile read.
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="notes">
+    <h2>Brief alignment</h2>
+    <ul>
+      <li><strong>Lean identity-only header</strong> &mdash; name + &#9662; chevron + Active badge on line 1; muted linked customer on line 2; ghost &ldquo;&#10022; Add&rdquo; + &ldquo;&#8943;&rdquo; overflow on the right. No metrics in the persistent chrome &mdash; carries across every tab unchanged (Overview &amp; Budget shown).</li>
+      <li><strong>Project Details popover</strong> &mdash; consolidates name, customer, description, dates, billing, status into one card + a Crew checklist with each worker&rsquo;s default pay/charge rate read-only and a per-row &ldquo;&#9662; override&rdquo; disclosure.</li>
+      <li><strong>ONE unified nav</strong> &mdash; 9 tabs (Budget &middot; Spend &middot; Labour &middot; Schedule &middot; Billing &middot; Overview &middot; Client &middot; Photos &middot; Documents). Soft warn-tone &ldquo;&sup2;&rdquo; count on the Budget tab (the alerts&rsquo; owning surface); rust &ldquo;&sup2;&rdquo; on Client for unread messages. Mobile collapses to a select with a total badge on the trigger + per-tab badges in the dropdown.</li>
+      <li><strong>Alert surfacing model</strong> &mdash; same alerts surface in three layers: as <em>chips</em> on their owning tab (Budget shows margin-at-risk + unsent scope changes), as a <em>count badge</em> on the tab label (Budget&sup2;), and as a row in the Overview &ldquo;Needs you&rdquo; aggregator. No stacked banners; no duplicate homes.</li>
+      <li><strong>Henry-fill = meaning</strong> &mdash; danger-soft for at-risk, rust-soft <em>peach</em> for ready-to-bill (positive, never danger-red), warn-soft for unsent changes, info-soft for client message + CO chips, ok-soft for accepted sub-quotes. Sparkles reserved for genuine Henry <em>insights</em> (the Budget-card diagnostic strip on Overview, the &ldquo;&#10022; Add&rdquo; capture button) &mdash; not on every alert row.</li>
+      <li><strong>Budget &mdash; execution posture</strong> &mdash; the same component as the estimate&rsquo;s authoring face, actuals-forward. Columns Category &middot; Estimate &middot; Spent &middot; Committed &middot; Remaining (+ thin multi-segment bar). Sections default collapsed; one expanded (Trades). One category drill-in (Plumbing) with cost lines + &ldquo;Spent by source&rdquo; deep-links. Calm signed-estimate banner anchors the top above the summary.</li>
+      <li><strong>Dual budget read</strong> &mdash; &ldquo;53% complete &middot; 61% of budget consumed &middot; $86,100 of $142,000.&rdquo; Two distinct metrics; the gap is the margin story. Never merged.</li>
+      <li><strong>Three type sizes</strong> &mdash; 28 title, 16 panel titles, 14 body, 12 secondary; 11px mono uppercase for eyebrows/labels. Tabular numerals on every money figure; cents demoted.</li>
+      <li><strong>Single accent</strong> &mdash; rust is reserved for the &ldquo;Bill draw&rdquo; CTA, the &#10022; Add button, and Henry insight glyphs only. Status uses soft-pair tones (label + glyph + small chip), never raw red/amber/blue blocks.</li>
+    </ul>
+    <div class="open-q">
+      <strong>Notes:</strong> Mock data is Glenwood Heights Master Suite Addition (Daniel &amp; Priya Mohan) under Northbeam Construction &mdash; 53% complete, 61% of budget consumed, status Active. The Budget tab here is the <em>execution</em> face (post-approval); the same component&rsquo;s authoring face (pre-approval columns Category &middot; Cost &middot; Markup% &middot; Price) lives in <code>estimate.md</code> and is a follow-up build.
+    </div>
+  </div>
+</div>
+</body>
+</html>

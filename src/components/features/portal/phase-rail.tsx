@@ -272,7 +272,7 @@ export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProp
             strategy={horizontalListSortingStrategy}
           >
             <ol
-              className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto pb-1"
+              className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto overflow-y-hidden pb-1"
               aria-label="Project phases (edit mode)"
             >
               {orderedPhases.map((p) => (
@@ -292,7 +292,7 @@ export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProp
         </DndContext>
       ) : (
         <ol
-          className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto pb-1"
+          className="mt-4 flex min-w-0 items-stretch gap-1 overflow-x-auto overflow-y-hidden pb-1"
           aria-label="Project phases"
         >
           {orderedPhases.map((p) => {
@@ -327,7 +327,7 @@ export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProp
                   {isComplete ? <Check className="size-3.5" aria-hidden /> : null}
                   <span className="truncate">{p.name}</span>
                   {expandable ? (
-                    <span className="ml-1 inline-flex size-4 items-center justify-center rounded-full bg-black/10 text-[10px] tabular-nums">
+                    <span className="ml-1 inline-flex size-4 items-center justify-center rounded-full bg-black/10 text-xs tabular-nums">
                       {photos.length}
                     </span>
                   ) : null}

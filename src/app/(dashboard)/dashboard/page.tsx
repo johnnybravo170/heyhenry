@@ -1,7 +1,9 @@
 import { Suspense } from 'react';
+import { DashboardSections } from '@/components/features/dashboard/dashboard-sections';
 import { FirstRunHero } from '@/components/features/dashboard/first-run-hero';
 import { getCurrentUser, requireTenant } from '@/lib/auth/helpers';
-import { getHourInTimezone } from '@/lib/db/queries/dashboard';
+import { DEFAULT_DASHBOARD_SECTION_ORDER } from '@/lib/dashboard/sections';
+import { getDashboardSectionOrder, getHourInTimezone } from '@/lib/db/queries/dashboard';
 import { isFirstRunTenant } from '@/lib/db/queries/first-run';
 import { getBusinessProfile, getOperatorProfile } from '@/lib/db/queries/profile';
 import { AttentionSection } from './_sections/attention-section';
@@ -28,10 +30,11 @@ export default async function DashboardPage() {
   const hour = getHourInTimezone(tz);
   const greeting = getGreeting(hour);
 
-  const [profile, operator, firstRun] = await Promise.all([
+  const [profile, operator, firstRun, sectionOrder] = await Promise.all([
     getBusinessProfile(tenant.id),
     user ? getOperatorProfile(tenant.id, user.id) : Promise.resolve(null),
     isFirstRunTenant(tenant.id),
+    user ? getDashboardSectionOrder(user.id) : Promise.resolve(DEFAULT_DASHBOARD_SECTION_ORDER),
   ]);
 
   const firstName = operator?.firstName?.trim() || null;
@@ -61,21 +64,31 @@ export default async function DashboardPage() {
 
       {firstRun ? <FirstRunHero firstName={firstName} vertical={tenant.vertical} /> : null}
 
-      <Suspense fallback={<AttentionSkeleton />}>
-        <AttentionSection />
-      </Suspense>
-
-      <Suspense fallback={<JobsSkeleton />}>
-        <JobsSection />
-      </Suspense>
-
-      <Suspense fallback={<PipelineSkeleton />}>
-        <PipelineSection />
-      </Suspense>
-
-      <Suspense fallback={<MetricsSkeleton />}>
-        <MetricsSection />
-      </Suspense>
+      <DashboardSections
+        initialOrder={sectionOrder}
+        sections={{
+          attention: (
+            <Suspense fallback={<AttentionSkeleton />}>
+              <AttentionSection />
+            </Suspense>
+          ),
+          jobs: (
+            <Suspense fallback={<JobsSkeleton />}>
+              <JobsSection />
+            </Suspense>
+          ),
+          pipeline: (
+            <Suspense fallback={<PipelineSkeleton />}>
+              <PipelineSection />
+            </Suspense>
+          ),
+          metrics: (
+            <Suspense fallback={<MetricsSkeleton />}>
+              <MetricsSection />
+            </Suspense>
+          ),
+        }}
+      />
     </div>
   );
 }

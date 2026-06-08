@@ -48,7 +48,7 @@ export async function sendMessageNotification(input: SendMessageNotificationInpu
     .from('projects')
     .select(
       `id, name, portal_slug, portal_enabled,
-       customers:customer_id (name, email, phone),
+       contacts:contact_id (name, email, phone),
        tenants:tenant_id (name)`,
     )
     .eq('id', input.projectId)
@@ -60,7 +60,7 @@ export async function sendMessageNotification(input: SendMessageNotificationInpu
   const portalEnabled = Boolean(p.portal_enabled);
   if (!portalSlug || !portalEnabled) return;
 
-  const customer = (p.customers as Record<string, unknown> | null) ?? null;
+  const customer = (p.contacts as Record<string, unknown> | null) ?? null;
   if (!customer) return;
 
   const customerName = (customer.name as string) ?? '';
@@ -90,7 +90,7 @@ export async function sendMessageNotification(input: SendMessageNotificationInpu
   if (emailRaw) {
     // Pre-write the Message-ID we're about to send onto the row's
     // external_id so the inbound resolver can match the customer's reply
-    // even if Resend overrides our header. Belt-and-suspenders with the
+    // even if Postmark overrides our header. Belt-and-suspenders with the
     // body footer below.
     const messageIdHeader = outboundMessageId(input.messageId);
     await input.supabase

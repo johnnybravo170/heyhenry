@@ -121,8 +121,10 @@ export const projectCostStatusTone = {
 /** Worker-facing invoice (time / expense submission from crew). */
 export const workerInvoiceStatusTone = {
   draft: 'neutral',
-  submitted: 'info',
-  approved: 'success',
+  // OD: submitted = the operator's approval queue → warning (amber);
+  // approved = awaiting payment, in-flight → info (blue); paid → success (green).
+  submitted: 'warning',
+  approved: 'info',
   rejected: 'danger',
   paid: 'success',
 } as const satisfies Record<string, StatusTone>;
@@ -148,6 +150,87 @@ export const projectStageTone = {
   on_hold: 'hold',
   declined: 'danger',
   complete: 'done',
+  cancelled: 'neutral',
+} as const satisfies Record<string, StatusTone>;
+
+/**
+ * The tenant's HeyHenry subscription cockpit state (Settings ▸ Billing).
+ *
+ * This is NOT the raw Stripe `subscription_status` — it's the *derived*
+ * cockpit state the operator reads at a glance, layering `cancelAtPeriodEnd`
+ * and `pausedUntil` on top of the status. One tone + one glyph + one headline
+ * per state so the cockpit pill reads as a state machine, not a generic
+ * `status.replace('_',' ')` pill.
+ *
+ *   trialing             — info blue, in-flight (card not yet charged)
+ *   active               — success green, healthy + paid
+ *   cancel_at_period_end — hold slate, winding down (access until period end)
+ *   paused               — hold slate, billing paused (resumes_at)
+ *   past_due             — warning amber, NEEDS ACTION (card declined)
+ *   canceled             — neutral gray, access ended / data preserved
+ */
+export type SubscriptionCockpitState =
+  | 'trialing'
+  | 'active'
+  | 'cancel_at_period_end'
+  | 'paused'
+  | 'past_due'
+  | 'canceled';
+
+export const subscriptionStateTone = {
+  trialing: 'info',
+  active: 'success',
+  cancel_at_period_end: 'hold',
+  paused: 'hold',
+  past_due: 'warning',
+  canceled: 'neutral',
+} as const satisfies Record<SubscriptionCockpitState, StatusTone>;
+
+/** Short pill label per cockpit state (text never colour-only). */
+export const subscriptionStateLabel: Record<SubscriptionCockpitState, string> = {
+  trialing: 'Trial',
+  active: 'Active',
+  cancel_at_period_end: 'Cancelling',
+  paused: 'Paused',
+  past_due: 'Needs attention',
+  canceled: 'Canceled',
+};
+/**
+ * QuickBooks per-row sync status (`qbo_sync_status` on customers /
+ * invoices / quotes / project_costs / payments / bills).
+ *
+ *   synced   — landed in QBO (or read in from it): success
+ *   pending  — queued for the future push worker: info (in-flight)
+ *   failed   — last sync attempt errored: danger
+ *   disabled — row excluded from sync: neutral
+ *
+ * Import-only today — these get *stamped* by the future push epic. The
+ * map is defined now so the per-row badge surface is consistent the day
+ * push lands; no push UI ships against it yet (see settings-quickbooks brief).
+ */
+export const qboSyncStatusTone = {
+  synced: 'success',
+  pending: 'info',
+  failed: 'danger',
+  disabled: 'neutral',
+} as const satisfies Record<string, StatusTone>;
+
+/**
+ * QuickBooks import-run lifecycle (`qbo_import_jobs.status`). Drives the
+ * run-status pill in import history and the connection-cockpit "needs you"
+ * read. Replaces the raw secondary/destructive/outline mapping.
+ *
+ *   completed — success
+ *   failed    — danger
+ *   running   — info (in-flight)
+ *   queued    — info (in-flight / cron will resume)
+ *   cancelled — neutral
+ */
+export const qboRunStatusTone = {
+  completed: 'success',
+  failed: 'danger',
+  running: 'info',
+  queued: 'info',
   cancelled: 'neutral',
 } as const satisfies Record<string, StatusTone>;
 

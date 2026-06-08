@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Manual escape hatch: re-run the prod migration push without a code change
+  # (e.g. to reconcile drift). Only the deploy-migrations job acts on this.
+  workflow_dispatch:
 
 jobs:
   quality:
@@ -50,6 +53,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Dead code (knip)
+        # Ratchet guard: fails on NEW unused files or unused dependencies in the
+        # app (root) workspace. Pre-existing dead/parked code is frozen in
+        # knip.jsonc's ignore list (see .audit/DEAD-CODE-TRIAGE.md). Unused
+        # exports/types are advisory only — knip flags exports that merely don't
+        # need the `export` keyword, which is not dead code.
+        run: pnpm knip
+
       - name: Vendor coverage (privacy policy ↔ codebase)
         # Asserts every third-party SDK / vendor env var in the
         # codebase has an entry in docs/legal/vendors.yaml. The
@@ -65,8 +76,31 @@ jobs:
         # scripts/check-migration-prefixes.ts.
         run: pnpm exec tsx scripts/check-migration-prefixes.ts
 
+      - name: Migration grants on new public tables
+        # Since the no-auto-grant opt-in (20260527151331), a new public table
+        # is unreachable over the Data API until it issues an explicit GRANT —
+        # RLS policies alone are not enough (they sit on top of table privs).
+        # Fail any post-opt-in migration that CREATE TABLEs in public without
+        # one. See scripts/check-migration-grants.ts.
+        run: pnpm exec tsx scripts/check-migration-grants.ts
+
+      - name: Ops key_id polymorphic FK
+        # ops key_id / created_by_key_id holds an ops.api_keys.id OR an
+        # ops.oauth_tokens.id (OAuth/MCP path). A single-target FK to
+        # ops.api_keys silently 500s every OAuth-authed insert — it bricked the
+        # Command Center queue for 8 days. Fail any new migration that adds it.
+        # See scripts/check-migration-ops-key-id-fk.ts.
+        run: pnpm exec tsx scripts/check-migration-ops-key-id-fk.ts
+
       - name: Unit tests
         run: pnpm test
+
+      - name: Ops unit tests
+        # The ops workspace has its own vitest suite (the root `pnpm test` only
+        # covers the app workspace). Guards the MCP write-tool arg-forwarding
+        # path against a silent SDK/Zod-bump regression. See
+        # ops/tests/mcp-tools/write-tool-forwarding.test.ts.
+        run: pnpm --filter @heyhenry/ops test
 
       - name: Build
         run: pnpm build
@@ -98,12 +132,18 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Install Supabase CLI
+        id: setup-supabase
         # The supabase npm dep is a thin wrapper that doesn't always
         # install a usable binary in CI. setup-cli is the canonical
         # path and matches what supabase docs recommend.
+        #
+        # Version is pinned (not `latest`) because `latest` makes
+        # setup-cli call the GitHub API to resolve the release, and
+        # that lookup got rate-limited on 2026-05-28 and took the whole
+        # E2E job red. Bump deliberately when we want a newer CLI.
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.101.0
 
       - name: Reap leaked Supabase containers from prior job
         # GitHub runners are reused across jobs. If a previous run on
@@ -134,7 +174,10 @@ jobs:
         run: pnpm test:e2e
 
       - name: Stop Supabase local stack
-        if: always()
+        # Only run cleanup if the CLI actually installed. Otherwise a
+        # rate-limited / failed setup-cli step cascades into a second red
+        # step (`supabase: command not found`) for the same root cause.
+        if: always() && steps.setup-supabase.outcome == 'success'
         run: supabase stop --no-backup
 
       - name: Upload Playwright report
@@ -144,3 +187,97 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  migration-guard:
+    name: Migration guard
+    runs-on: ubuntu-latest
+    # Codified gate for the 2026-05-27 migration-drift incident (card c040760a):
+    # a PR that touches supabase/migrations/** must not merge without green
+    # quality + e2e. The rule lives in the workflow, not human attention.
+    #
+    # Runs on EVERY PR — a no-op pass when the diff has no migration, a hard
+    # fail when a migration is present and quality/e2e didn't pass. `if: always()`
+    # so it still runs (and reports the block) when an upstream job is red.
+    #
+    # TEETH: mark "Migration guard" a REQUIRED status check in branch protection.
+    # Until it's required, a red guard turns the PR red + blocks `gh pr merge
+    # --auto`, but a human could still merge past it. Required = can't.
+    needs: [quality, e2e]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce quality + e2e on migration-bearing PRs
+        run: |
+          set -uo pipefail
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          changed="$(git diff --name-only FETCH_HEAD HEAD)"
+          if echo "$changed" | grep -qE '^supabase/migrations/'; then
+            echo "Migration files in this PR:"
+            echo "$changed" | grep -E '^supabase/migrations/' | sed 's/^/  /'
+            ok=1
+            [ "${{ needs.quality.result }}" = "success" ] || { echo "::error::quality=${{ needs.quality.result }} — must be 'success' for a migration-bearing PR"; ok=0; }
+            [ "${{ needs.e2e.result }}" = "success" ]     || { echo "::error::e2e=${{ needs.e2e.result }} — must be 'success' for a migration-bearing PR"; ok=0; }
+            if [ "$ok" != "1" ]; then
+              echo "::error::Migration-bearing PR blocked — schema must ship on green e2e (card c040760a / AGENTS.md 'Database migrations')."
+              exit 1
+            fi
+            echo "✓ migration present; quality + e2e both green"
+          else
+            echo "No supabase/migrations/** changes — guard is a no-op pass."
+          fi
+
+  deploy-migrations:
+    name: Deploy migrations to prod
+    runs-on: ubuntu-latest
+    # The fix for the silent migration-drift class of bugs: prod migrations
+    # used to land ONLY via a manual `supabase db push` (the /ship step). When
+    # a merge skipped it, schema never applied — code shipped live with no DB
+    # behind it and surfaced later as "column not found in schema cache". This
+    # job makes the push automatic on every merge to main.
+    #
+    # Runs only on a direct push to main (post-merge) or a manual dispatch from
+    # main — never on PRs. Gated behind the full suite: if main is red, schema
+    # does not ship.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [quality, e2e]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        # Version pinned (not `latest`) — see the e2e job's setup-cli step
+        # for the rate-limit incident that prompted the pin. Bump deliberately.
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.101.0
+
+      - name: Push migrations to prod
+        # Applies every migration under supabase/migrations/ whose version is
+        # not yet in the remote supabase_migrations.schema_migrations ledger,
+        # in lexical order. Idempotent — a no-op when the ledger is in sync.
+        # Fails the job loudly (red main) if any migration errors: that signal
+        # is the whole point of this job.
+        #
+        # CONNECTION: we push over the SESSION-mode pooler (port 5432), not the
+        # direct db host. GitHub runners are IPv4-only and the direct host is
+        # IPv6-only, so a `supabase link` + direct push would fail with "no
+        # route to host". The session pooler is IPv4-reachable and holds the
+        # connection for the whole session, so the migration advisory lock
+        # works (transaction mode / 6543 would not). SUPABASE_DB_URL is that
+        # session-pooler connection string — the only secret this job needs.
+        #
+        # ORDERING NOTE: Vercel deploys code via its own native Git
+        # integration, independently of and in parallel with this job — so
+        # this does NOT strictly apply schema before the code goes live. New
+        # migrations must therefore stay backward-compatible with the
+        # currently-live code (expand → migrate → contract across separate
+        # ships). A breaking change (e.g. a table rename) must ship in the
+        # SAME merge as the code that depends on it and tolerate a few seconds'
+        # apply window. See AGENTS.md "Database migrations".
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

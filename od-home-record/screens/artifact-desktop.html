@@ -1,0 +1,1433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Home Record — public artifact (desktop) · HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───────────────────────────────────────────────────────────
+     HeyHenry Paper palette — the GC's letterhead, not the app.
+     Desktop is the spouse / realtor / insurer reading at home;
+     centered ~max-w-3xl single column, generous type, calm.
+     Rust is the ONLY accent. HeyHenry shows up exactly once,
+     in the muted footer.
+  ──────────────────────────────────────────────────────────── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --paper-soft:   #FBF6EC;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;
+    --warn:         #B45309;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #2B241A;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 40px 28px 80px;
+  }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  .ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ───── OD frame chrome (outside the product) ───── */
+  .frame-label {
+    width: 100%;
+    max-width: 1280px;
+    margin: 32px auto 16px;
+    color: #E8DEC9;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  .frame-label .num {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #C2A368;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .frame-label h2 {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.005em;
+    color: #F3EBDB;
+  }
+  .frame-label .hint {
+    font-size: 12px;
+    color: rgba(243,235,219,0.65);
+  }
+  .frame-label:first-child { margin-top: 0; }
+
+  /* ───── Browser window (the "real" container — clients open
+     this in Safari/Chrome from an email link on a laptop) */
+  .window {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    background: var(--bg);
+    border-radius: 14px;
+    border: 1px solid #1f1b13;
+    box-shadow: 0 32px 90px rgba(0,0,0,0.45);
+    overflow: hidden;
+  }
+  .window-chrome {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .window-chrome .lights {
+    display: flex; gap: 7px;
+  }
+  .window-chrome .lights span {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    display: block;
+  }
+  .window-chrome .lights .r { background: #EC6B5E; }
+  .window-chrome .lights .y { background: #F4BF50; }
+  .window-chrome .lights .g { background: #61C554; }
+  .window-chrome .urlbar {
+    flex: 1; min-width: 0;
+    height: 32px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .window-chrome .urlbar svg {
+    width: 12px; height: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .window-chrome .urlbar .host {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: 0.02em;
+  }
+  .window-chrome .urlbar .host b { color: var(--ink); font-weight: 700; }
+  .window-chrome .actions {
+    display: flex; gap: 6px;
+  }
+  .window-chrome .actions .ab {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .window-chrome .actions .ab svg { width: 13px; height: 13px; }
+
+  /* ═══════════════════════════════════════════════════════════
+     The artifact — centered max-w-3xl on cream paper.
+     Server-rendered. No JS. Print-friendly.
+     ═══════════════════════════════════════════════════════════ */
+  .pad {
+    padding: 56px 40px 48px;
+    background: var(--bg);
+  }
+  .doc {
+    max-width: 768px;
+    margin: 0 auto;
+  }
+
+  /* ── Letterhead — logo+name on top, eyebrow→h1→prepared
+        for→generated below; download row beneath */
+  .letterhead {
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rust);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 32px;
+    align-items: end;
+  }
+  .lh-left { min-width: 0; }
+  .lh-business {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .gc-logo {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(160deg, #2b3a45 0%, #0f1a23 100%);
+    color: #E8DEC9;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+  .gc-name {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.008em;
+    line-height: 1.2;
+  }
+  .gc-meta {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .gc-meta .sep { color: var(--faint); margin: 0 6px; }
+
+  .doc-eyebrow {
+    margin-top: 28px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .doc-h1 {
+    margin: 8px 0 0;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.028em;
+    line-height: 1.08;
+  }
+  .prepared-for {
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .prepared-for b { color: var(--ink); font-weight: 600; }
+  .generated-on {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Download cluster — right column on desktop */
+  .lh-right {
+    text-align: right;
+    align-self: end;
+  }
+  .dl-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .dl-stack {
+    display: flex; flex-direction: column;
+    gap: 8px;
+    min-width: 230px;
+  }
+  .dl-btn {
+    height: 48px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--rust);
+    color: var(--rust);
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    padding: 0 14px;
+  }
+  .dl-btn svg { width: 14px; height: 14px; }
+  .dl-btn.is-primary {
+    background: var(--rust);
+    color: #fff;
+  }
+  .dl-btn .sub {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    opacity: 0.78;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── Section scaffolding */
+  .section {
+    padding: 32px 0 0;
+    margin-top: 32px;
+    border-top: 1px solid var(--rust);
+  }
+  .section-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .section-h2 {
+    margin: 4px 0 18px;
+    font-size: 20px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    line-height: 1.2;
+  }
+
+  /* ── Project summary (plain prose — no ✦ on the client artifact) */
+  .summary-prose {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--ink-2);
+    max-width: 640px;
+  }
+  .summary-prose p { margin: 0 0 12px; }
+  .summary-prose p:last-child { margin-bottom: 0; }
+  .summary-dates {
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .summary-dates .sep { color: var(--faint); margin: 0 10px; }
+
+  /* ── Phases (status text, never color-only) */
+  .phases { display: flex; flex-direction: column; }
+  .phase {
+    padding: 16px 0;
+    border-top: 1px solid var(--hair);
+  }
+  .phase:first-child { border-top: 0; padding-top: 4px; }
+  .phase-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px;
+  }
+  .phase-name {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .phase-status {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .phase-status.is-complete { color: var(--ok); }
+  .phase-status.is-progress { color: var(--warn); }
+  .phase-status.is-upcoming { color: var(--faint); }
+
+  .phase-photos {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .ph {
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    position: relative;
+    overflow: hidden;
+  }
+  .ph::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(10,10,10,0.55));
+  }
+  .ph .cap {
+    position: absolute;
+    left: 8px; right: 8px; bottom: 7px;
+    font-size: 12px;
+    color: #fff;
+    z-index: 1;
+    line-height: 1.25;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    font-weight: 500;
+  }
+
+  .ph-1 { background: linear-gradient(135deg, #6b5d4a 0%, #3a3026 100%); }
+  .ph-2 { background: linear-gradient(135deg, #8a7a64 0%, #4d3f30 100%); }
+  .ph-3 { background: linear-gradient(135deg, #7d8a6e 0%, #485237 100%); }
+  .ph-4 { background: linear-gradient(135deg, #aa9678 0%, #61503a 100%); }
+  .ph-5 { background: linear-gradient(135deg, #b8a98a 0%, #6e5d44 100%); }
+  .ph-6 { background: linear-gradient(135deg, #95826a 0%, #564838 100%); }
+  .ph-wall-1 { background: linear-gradient(135deg, #c2b59a 0%, #8a7c5e 100%); }
+  .ph-wall-2 { background: linear-gradient(135deg, #d2c2a3 0%, #998558 100%); }
+  .ph-wall-3 { background: linear-gradient(135deg, #b7a684 0%, #7f6c4a 100%); }
+
+  /* ── Selections (grouped by room) */
+  .room {
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+  .room:first-of-type { margin-top: 0; }
+  .room-head {
+    padding: 12px 18px;
+    background: var(--chip-fill);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .sel {
+    padding: 14px 18px;
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    gap: 18px;
+    align-items: baseline;
+  }
+  .sel:first-of-type { border-top: 0; }
+  .sel-cat {
+    display: flex; align-items: center;
+  }
+  .cat-chip {
+    display: inline-flex; align-items: center;
+    height: 22px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .sel-body { min-width: 0; }
+  .sel-name {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .sel-meta {
+    margin-top: 4px;
+    display: flex; flex-wrap: wrap; gap: 4px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .sel-meta .sku {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: 0.04em;
+  }
+  .sel-warranty {
+    align-self: center;
+    text-align: right;
+    min-width: 130px;
+  }
+  .warranty-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 4px;
+    color: var(--rust);
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .warranty-link svg { width: 12px; height: 12px; }
+  .warranty-link span {
+    border-bottom: 1px solid rgba(194,65,12,0.32);
+    padding-bottom: 1px;
+  }
+
+  /* ── Photos by tag */
+  .photo-group { margin-top: 22px; }
+  .photo-group:first-of-type { margin-top: 0; }
+  .photo-group-head {
+    display: flex; align-items: baseline; gap: 12px;
+    margin-bottom: 10px;
+  }
+  .photo-group-name {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .photo-group-note {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .photo-grid .ph { aspect-ratio: 1 / 1; border-radius: 10px; }
+
+  /* Behind-the-wall — elevated as the signature section */
+  .wall {
+    margin-top: 28px;
+    padding: 22px 24px 24px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+  }
+  .wall-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 4px;
+  }
+  .wall-head svg { width: 16px; height: 16px; color: var(--rust); flex-shrink: 0; }
+  .wall-name {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .wall-note {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+    margin: 0 0 14px;
+    max-width: 540px;
+  }
+
+  /* ── Decisions */
+  .dlist { display: flex; flex-direction: column; }
+  .dec {
+    padding: 16px 0;
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 18px;
+  }
+  .dec:first-child { border-top: 0; padding-top: 4px; }
+  .dec-main { min-width: 0; }
+  .dec-label {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .dec-desc {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .dec-by {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .dec-state-col {
+    text-align: right;
+  }
+  .dec-state {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .dec-state.is-approved { color: var(--ok); }
+  .dec-state.is-declined { color: var(--muted); }
+
+  /* ── Change orders */
+  .colist { display: flex; flex-direction: column; }
+  .co {
+    padding: 16px 0;
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 18px;
+  }
+  .co:first-child { border-top: 0; padding-top: 4px; }
+  .co-main { min-width: 0; }
+  .co-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .co-desc {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .co-by {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .co-by .days { color: var(--warn); margin-left: 8px; }
+  .co-cost-col {
+    text-align: right;
+  }
+  .co-cost {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+  }
+  .co-cost .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+  .co-cad {
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── Documents */
+  .doc-group {
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+  .doc-group:first-of-type { margin-top: 0; }
+  .doc-group-head {
+    padding: 12px 18px;
+    background: var(--chip-fill);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: baseline; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .doc-group-head .ct {
+    color: var(--muted); font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .doc-row {
+    padding: 14px 18px;
+    border-top: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 14px;
+    min-height: 56px;
+  }
+  .doc-row:first-of-type { border-top: 0; }
+  .doc-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--muted);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .doc-icon svg { width: 14px; height: 14px; }
+  .doc-body { flex: 1; min-width: 0; }
+  .doc-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--rust);
+    letter-spacing: -0.005em;
+  }
+  .doc-title span {
+    border-bottom: 1px solid rgba(194,65,12,0.32);
+    padding-bottom: 1px;
+  }
+  .doc-expiry {
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .doc-expiry.is-warn { color: var(--warn); }
+  .doc-ext {
+    color: var(--muted);
+    width: 32px; height: 32px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .doc-ext svg { width: 14px; height: 14px; }
+
+  /* ── Footer */
+  .doc-footer {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rust);
+    text-align: center;
+  }
+  .doc-footer .save {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+  .doc-footer .save b { color: var(--ink); font-weight: 600; }
+  .powered {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .powered b { color: var(--muted); font-weight: 700; }
+
+  /* ── 404 / link expired ── */
+  .four-oh-four {
+    background: var(--bg);
+    min-height: 540px;
+    display: flex; flex-direction: column;
+  }
+  .four-oh-four .body {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 64px 40px;
+    text-align: center;
+  }
+  .four-oh-four .icon {
+    width: 80px; height: 80px;
+    border-radius: 20px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--muted);
+    display: grid; place-items: center;
+    margin-bottom: 24px;
+  }
+  .four-oh-four .icon svg { width: 36px; height: 36px; }
+  .four-oh-four .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .four-oh-four .h {
+    margin-top: 10px;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.024em;
+    line-height: 1.2;
+  }
+  .four-oh-four .lede {
+    margin-top: 14px;
+    max-width: 440px;
+    font-size: 16px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .four-oh-four .hint {
+    margin-top: 28px;
+    padding: 18px 22px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    text-align: left;
+    width: 100%;
+    max-width: 440px;
+  }
+  .four-oh-four .hint .lbl {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .four-oh-four .hint .row-h {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .four-oh-four .hint a {
+    color: var(--rust);
+    font-weight: 600;
+    border-bottom: 1px solid rgba(194,65,12,0.32);
+    padding-bottom: 1px;
+  }
+  .four-oh-four .foot {
+    padding: 18px;
+    border-top: 1px solid var(--hair);
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .four-oh-four .foot b { color: var(--muted); font-weight: 700; }
+
+  /* Tiny print hint at the bottom of the OD chrome */
+  .footnote {
+    max-width: 1280px;
+    margin: 32px auto 0;
+    color: rgba(243,235,219,0.5);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═════════════════════════════════════════════════════════════
+     FRAME 1 — The full branded artifact
+     Spouse / realtor / insurer opens the link on a laptop;
+     centered max-w-3xl single-column doc on cream paper,
+     generous type, contractor's letterhead, rust accent only.
+     ════════════════════════════════════════════════════════════ -->
+
+<div class="frame-label">
+  <span class="num">Frame 01 · Desktop · The artifact</span>
+  <h2>Branded Home Record — opened from email</h2>
+  <span class="hint">Centered max-w-3xl on cream · contractor letterhead · rust accent only · no HeyHenry chrome · no ✦ Henry · no internal-content counters</span>
+</div>
+
+<div class="window">
+  <div class="window-chrome">
+    <div class="lights">
+      <span class="r"></span><span class="y"></span><span class="g"></span>
+    </div>
+    <div class="urlbar">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      <span class="host">heyhenry.io/home-record/<b>hillcrest-kitchen-h2c8</b></span>
+    </div>
+    <div class="actions">
+      <span class="ab" aria-hidden><svg class="ico" viewBox="0 0 24 24"><path d="M14 4l5 5-5 5"/><path d="M19 9H8a5 5 0 0 0 0 10h2"/></svg></span>
+      <span class="ab" aria-hidden><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M5 18h14"/><path d="M5 6h14"/></svg></span>
+    </div>
+  </div>
+
+  <div class="pad">
+    <div class="doc">
+
+      <!-- Letterhead -->
+      <header class="letterhead">
+        <div class="lh-left">
+          <div class="lh-business">
+            <div class="gc-logo" aria-hidden>Nb</div>
+            <div>
+              <div class="gc-name">Northbeam Build Co.</div>
+              <div class="gc-meta">Abbotsford, BC <span class="sep">·</span> (604)&nbsp;555&nbsp;0188 <span class="sep">·</span> northbeam.build</div>
+            </div>
+          </div>
+
+          <p class="doc-eyebrow">Home Record</p>
+          <h1 class="doc-h1">Hillcrest Kitchen Remodel</h1>
+          <p class="prepared-for">Prepared for <b>Helen Chao</b> &nbsp;·&nbsp; 2918 Hillcrest Ave, Abbotsford</p>
+          <p class="generated-on">Generated May 22, 2026 · Pacific Time</p>
+        </div>
+
+        <div class="lh-right">
+          <p class="dl-label">Take this with you</p>
+          <div class="dl-stack">
+            <a class="dl-btn is-primary" href="#" aria-label="Download PDF">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+              <span>Download PDF</span>
+            </a>
+            <a class="dl-btn" href="#" aria-label="Download ZIP — everything">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M5 4h9l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M14 4v5h5"/><path d="M10 8v2"/><path d="M10 12v2"/></svg>
+              <span>Download ZIP <span class="sub">Everything</span></span>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <!-- Project summary — plain prose, no ✦ -->
+      <section class="section">
+        <p class="section-eyebrow">Project summary</p>
+        <h2 class="section-h2">What we built together</h2>
+        <div class="summary-prose">
+          <p>Over four months we transformed Helen's galley kitchen into an open, light-filled space anchored by a nine-foot maple island. The work included a full structural opening between kitchen and dining, new electrical and plumbing service to the island, custom shaker cabinetry painted in Benjamin Moore White Dove, and a Caesarstone Pure White countertop with a full-height handmade-tile backsplash.</p>
+          <p>Two change orders — adding island pendant lighting and upgrading the range hood for stronger ventilation — were approved partway through and finished in step. The project wrapped on May 15, on schedule with the two-day allowance added by the hood upgrade.</p>
+        </div>
+        <p class="summary-dates">Started Jan 18, 2026 <span class="sep">·</span> Wrapped May 15, 2026</p>
+      </section>
+
+      <!-- Project phases -->
+      <section class="section">
+        <p class="section-eyebrow">Project phases</p>
+        <h2 class="section-h2">How the work unfolded</h2>
+
+        <div class="phases">
+          <div class="phase">
+            <div class="phase-head">
+              <span class="phase-name">Demolition &amp; disposal</span>
+              <span class="phase-status is-complete">Completed Jan 24, 2026</span>
+            </div>
+            <div class="phase-photos">
+              <div class="ph ph-1"><span class="cap">Galley before</span></div>
+              <div class="ph ph-2"><span class="cap">Wall opening</span></div>
+              <div class="ph ph-1"><span class="cap">Cabinets out</span></div>
+              <div class="ph ph-2"><span class="cap">Disposal day</span></div>
+              <div class="ph ph-1"><span class="cap">Empty shell</span></div>
+            </div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-head">
+              <span class="phase-name">Rough-in — mechanical, electrical, plumbing</span>
+              <span class="phase-status is-complete">Completed Feb 14, 2026</span>
+            </div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-head">
+              <span class="phase-name">Insulation &amp; drywall</span>
+              <span class="phase-status is-complete">Completed Mar 3, 2026</span>
+            </div>
+            <div class="phase-photos">
+              <div class="ph ph-wall-1"><span class="cap">Wiring</span></div>
+              <div class="ph ph-wall-2"><span class="cap">Insulation</span></div>
+              <div class="ph ph-wall-3"><span class="cap">Vapour barrier</span></div>
+              <div class="ph ph-wall-1"><span class="cap">Pre-drywall</span></div>
+              <div class="ph ph-wall-2"><span class="cap">Mudded</span></div>
+            </div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-head">
+              <span class="phase-name">Cabinetry install</span>
+              <span class="phase-status is-complete">Completed Apr 6, 2026</span>
+            </div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-head">
+              <span class="phase-name">Countertop &amp; backsplash</span>
+              <span class="phase-status is-complete">Completed Apr 28, 2026</span>
+            </div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-head">
+              <span class="phase-name">Finishing &amp; punch list</span>
+              <span class="phase-status is-complete">Completed May 15, 2026</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Selections — by room -->
+      <section class="section">
+        <p class="section-eyebrow">What we used in your home</p>
+        <h2 class="section-h2">Materials &amp; finishes by room</h2>
+
+        <div class="room">
+          <div class="room-head">Kitchen</div>
+
+          <div class="sel">
+            <div class="sel-cat"><span class="cat-chip">Cabinetry</span></div>
+            <div class="sel-body">
+              <p class="sel-name">Northwood Shaker · White Dove</p>
+              <div class="sel-meta">
+                <span>Benjamin Moore OC-17 paint</span>
+                <span>Supplier: Northwood Custom</span>
+                <span class="sku">SKU NW-SHK-72</span>
+              </div>
+            </div>
+            <div class="sel-warranty">
+              <a class="warranty-link" href="#" aria-label="Warranty info — Northwood cabinetry">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg>
+                <span>Warranty &amp; care</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sel">
+            <div class="sel-cat"><span class="cat-chip">Countertop</span></div>
+            <div class="sel-body">
+              <p class="sel-name">Caesarstone Pure White, 3 cm</p>
+              <div class="sel-meta">
+                <span>Mitered edge</span>
+                <span>Supplier: Stoneworks Surrey</span>
+                <span class="sku">SKU CS-1141-3</span>
+              </div>
+            </div>
+            <div class="sel-warranty">
+              <a class="warranty-link" href="#">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg>
+                <span>10-yr warranty</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sel">
+            <div class="sel-cat"><span class="cat-chip">Backsplash</span></div>
+            <div class="sel-body">
+              <p class="sel-name">Fireclay Halifax 3×12 · Pearl</p>
+              <div class="sel-meta">
+                <span>Handmade ceramic, full height</span>
+                <span>Supplier: Fireclay Tile</span>
+                <span class="sku">SKU FC-HFX-PRL</span>
+              </div>
+            </div>
+            <div class="sel-warranty">
+              <a class="warranty-link" href="#">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg>
+                <span>Care guide</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sel">
+            <div class="sel-cat"><span class="cat-chip">Plumbing</span></div>
+            <div class="sel-body">
+              <p class="sel-name">Brizo Litze pull-down faucet · Luxe Gold</p>
+              <div class="sel-meta">
+                <span>Supplier: H&amp;H Plumbing</span>
+                <span class="sku">SKU RP104432-LGCO</span>
+              </div>
+            </div>
+            <div class="sel-warranty">
+              <a class="warranty-link" href="#">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg>
+                <span>Lifetime warranty</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sel">
+            <div class="sel-cat"><span class="cat-chip">Appliances</span></div>
+            <div class="sel-body">
+              <p class="sel-name">Zephyr Tempest III 36" · 900 CFM range hood</p>
+              <div class="sel-meta">
+                <span>Upgraded mid-project — see change orders</span>
+                <span>Supplier: Pacific Appliances</span>
+                <span class="sku">SKU ZTH-E36BS-900</span>
+              </div>
+            </div>
+            <div class="sel-warranty">
+              <a class="warranty-link" href="#">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg>
+                <span>3-yr warranty</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sel">
+            <div class="sel-cat"><span class="cat-chip">Lighting</span></div>
+            <div class="sel-body">
+              <p class="sel-name">Visual Comfort Goodman 7" · 3-pendant cluster</p>
+              <div class="sel-meta">
+                <span>Aged iron · clear glass</span>
+                <span>Supplier: Inform Interiors</span>
+                <span class="sku">SKU VC-TOB-5050</span>
+              </div>
+            </div>
+            <div class="sel-warranty">
+              <a class="warranty-link" href="#">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg>
+                <span>1-yr warranty</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sel">
+            <div class="sel-cat"><span class="cat-chip">Flooring</span></div>
+            <div class="sel-body">
+              <p class="sel-name">Mirage Maple Engineered · Cigar Brown</p>
+              <div class="sel-meta">
+                <span>5" plank, satin finish</span>
+                <span>Supplier: Jordans Flooring</span>
+                <span class="sku">SKU MR-MPL-CIG-5</span>
+              </div>
+            </div>
+            <div class="sel-warranty">
+              <a class="warranty-link" href="#">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M12 2l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10V6l8-4z"/></svg>
+                <span>25-yr warranty</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Photos by tag -->
+      <section class="section">
+        <p class="section-eyebrow">Photos</p>
+        <h2 class="section-h2">Through the project</h2>
+
+        <div class="photo-group">
+          <div class="photo-group-head">
+            <span class="photo-group-name">Hero</span>
+            <span class="photo-group-note">2 photos</span>
+          </div>
+          <div class="photo-grid">
+            <div class="ph ph-5"><span class="cap">Finished, looking south</span></div>
+            <div class="ph ph-6"><span class="cap">Island &amp; pendants</span></div>
+            <div class="ph ph-5"><span class="cap">Coffee corner</span></div>
+            <div class="ph ph-6"><span class="cap">Morning light</span></div>
+          </div>
+        </div>
+
+        <div class="photo-group">
+          <div class="photo-group-head">
+            <span class="photo-group-name">Before</span>
+            <span class="photo-group-note">6 photos</span>
+          </div>
+          <div class="photo-grid">
+            <div class="ph ph-1"><span class="cap">Galley, looking east</span></div>
+            <div class="ph ph-2"><span class="cap">Original cabinets</span></div>
+            <div class="ph ph-1"><span class="cap">Dining wall</span></div>
+            <div class="ph ph-2"><span class="cap">Soffit detail</span></div>
+          </div>
+        </div>
+
+        <div class="photo-group">
+          <div class="photo-group-head">
+            <span class="photo-group-name">During</span>
+            <span class="photo-group-note">12 photos</span>
+          </div>
+          <div class="photo-grid">
+            <div class="ph ph-3"><span class="cap">Demo, day 3</span></div>
+            <div class="ph ph-3"><span class="cap">Beam in place</span></div>
+            <div class="ph ph-4"><span class="cap">Cabinetry arrives</span></div>
+            <div class="ph ph-4"><span class="cap">Counter template</span></div>
+            <div class="ph ph-3"><span class="cap">Tile underway</span></div>
+            <div class="ph ph-4"><span class="cap">Pendants hung</span></div>
+            <div class="ph ph-3"><span class="cap">Floor &amp; trim</span></div>
+            <div class="ph ph-4"><span class="cap">Hood detail</span></div>
+          </div>
+        </div>
+
+        <div class="photo-group">
+          <div class="photo-group-head">
+            <span class="photo-group-name">After</span>
+            <span class="photo-group-note">8 photos</span>
+          </div>
+          <div class="photo-grid">
+            <div class="ph ph-5"><span class="cap">Hood &amp; tile</span></div>
+            <div class="ph ph-6"><span class="cap">Sink &amp; faucet</span></div>
+            <div class="ph ph-5"><span class="cap">Pantry interior</span></div>
+            <div class="ph ph-6"><span class="cap">Trim detail</span></div>
+          </div>
+        </div>
+
+        <!-- Behind-the-wall — elevated -->
+        <div class="wall">
+          <div class="wall-head">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h18"/><path d="M7 7v10"/><path d="M14 7v10"/></svg>
+            <span class="wall-name">Behind the wall</span>
+          </div>
+          <p class="wall-note">Useful for future repairs and resale — these show what's behind the drywall so the next plumber, electrician, or buyer doesn't have to guess where things run.</p>
+          <div class="photo-grid">
+            <div class="ph ph-wall-1"><span class="cap">Island electrical run</span></div>
+            <div class="ph ph-wall-2"><span class="cap">PEX line to sink</span></div>
+            <div class="ph ph-wall-3"><span class="cap">Steel header detail</span></div>
+            <div class="ph ph-wall-1"><span class="cap">Hood vent route</span></div>
+            <div class="ph ph-wall-2"><span class="cap">Pantry framing</span></div>
+            <div class="ph ph-wall-3"><span class="cap">Under-counter outlets</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Decisions -->
+      <section class="section">
+        <p class="section-eyebrow">Decisions</p>
+        <h2 class="section-h2">Choices you made on this project</h2>
+
+        <div class="dlist">
+          <div class="dec">
+            <div class="dec-main">
+              <p class="dec-label">Stay with shaker over slab door</p>
+              <p class="dec-desc">Northwood Custom presented three samples; you went with shaker for the timeless look and forgiving paint refresh down the road.</p>
+              <p class="dec-by">By Helen Chao · Feb 9, 2026</p>
+            </div>
+            <div class="dec-state-col">
+              <span class="dec-state is-approved">Approved</span>
+            </div>
+          </div>
+
+          <div class="dec">
+            <div class="dec-main">
+              <p class="dec-label">Upgrade backsplash to full height</p>
+              <p class="dec-desc">Extending the Fireclay Halifax tile from a 4" run to full height behind the cooktop, ceiling line included.</p>
+              <p class="dec-by">By Helen Chao · Mar 22, 2026</p>
+            </div>
+            <div class="dec-state-col">
+              <span class="dec-state is-approved">Approved</span>
+            </div>
+          </div>
+
+          <div class="dec">
+            <div class="dec-main">
+              <p class="dec-label">Add bar seating overhang</p>
+              <p class="dec-desc">Considered a 12" overhang for two stools; you preferred the cleaner unbroken counter line and kept the dining table as the main seating.</p>
+              <p class="dec-by">By Helen Chao · Mar 22, 2026</p>
+            </div>
+            <div class="dec-state-col">
+              <span class="dec-state is-declined">Declined</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Change orders — the only money on the page -->
+      <section class="section">
+        <p class="section-eyebrow">Change orders</p>
+        <h2 class="section-h2">Approved adjustments</h2>
+
+        <div class="colist">
+          <div class="co">
+            <div class="co-main">
+              <p class="co-title">Add island pendant electrical run</p>
+              <p class="co-desc">New 15A circuit pulled from the panel, mounted box rough-in, and three pendant boxes set on a switched leg with a dimmer.</p>
+              <p class="co-by">Approved by Helen Chao · Feb 28, 2026</p>
+            </div>
+            <div class="co-cost-col">
+              <p class="co-cost">$1,250<span class="cents">.00</span></p>
+              <p class="co-cad">CAD</p>
+            </div>
+          </div>
+
+          <div class="co">
+            <div class="co-main">
+              <p class="co-title">Upgrade range hood 600 → 900 CFM</p>
+              <p class="co-desc">Switched the spec to a Zephyr Tempest III 36" with the larger blower and matching 8" duct upgrade up through the roof.</p>
+              <p class="co-by">Approved by Helen Chao · Mar 12, 2026 <span class="days">+2 days</span></p>
+            </div>
+            <div class="co-cost-col">
+              <p class="co-cost">$850<span class="cents">.00</span></p>
+              <p class="co-cad">CAD</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Documents & warranties -->
+      <section class="section">
+        <p class="section-eyebrow">Documents &amp; warranties</p>
+        <h2 class="section-h2">Files we kept for you</h2>
+
+        <div class="doc-group">
+          <div class="doc-group-head">
+            <span>Warranties</span>
+            <span class="ct">4 files</span>
+          </div>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Northwood cabinetry — lifetime warranty &amp; care guide</span></p>
+              <p class="doc-expiry">Expires never · registered Apr 6, 2026</p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Caesarstone countertop — 10-year warranty</span></p>
+              <p class="doc-expiry">Expires Apr 28, 2036</p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Zephyr range hood — 3-year warranty</span></p>
+              <p class="doc-expiry is-warn">Expires May 15, 2029</p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Brizo Litze faucet — lifetime warranty</span></p>
+              <p class="doc-expiry">Expires never · registered May 8, 2026</p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+        </div>
+
+        <div class="doc-group">
+          <div class="doc-group-head">
+            <span>Permits &amp; inspections</span>
+            <span class="ct">3 files</span>
+          </div>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>City of Abbotsford — building permit BP-26-0413</span></p>
+              <p class="doc-expiry">Closed Apr 22, 2026</p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Electrical permit &amp; final pass — Technical Safety BC</span></p>
+              <p class="doc-expiry">Passed Mar 1, 2026</p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Final occupancy &amp; inspection report</span></p>
+              <p class="doc-expiry">Issued May 18, 2026</p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+        </div>
+
+        <div class="doc-group">
+          <div class="doc-group-head">
+            <span>Care &amp; maintenance</span>
+            <span class="ct">2 files</span>
+          </div>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Quartz countertop — daily &amp; deep-clean guide</span></p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+
+          <a class="doc-row" href="#">
+            <span class="doc-icon" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <div class="doc-body">
+              <p class="doc-title"><span>Engineered hardwood — seasonal humidity guide</span></p>
+            </div>
+            <span class="doc-ext" aria-hidden>
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+            </span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Footer — "save this link" + the only HeyHenry mark -->
+      <footer class="doc-footer">
+        <p class="save">A permanent record from <b>Northbeam Build Co.</b> &nbsp;·&nbsp; Save this link — it works forever.</p>
+        <p class="powered">Powered by <b>HeyHenry</b></p>
+      </footer>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════
+     FRAME 2 — 404 / link not found
+     Same cream Paper field, same quiet HeyHenry footer.
+     One calm message + one rust link to ask the contractor.
+     ════════════════════════════════════════════════════════════ -->
+
+<div class="frame-label">
+  <span class="num">Frame 02 · Desktop · 404</span>
+  <h2>Link not found or reset</h2>
+  <span class="hint">Server-rendered notFound() · no app chrome · one rust link · same Paper field, same quiet footer</span>
+</div>
+
+<div class="window">
+  <div class="window-chrome">
+    <div class="lights">
+      <span class="r"></span><span class="y"></span><span class="g"></span>
+    </div>
+    <div class="urlbar">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      <span class="host">heyhenry.io/home-record/<b>tjk9-old-link-x7</b></span>
+    </div>
+    <div class="actions">
+      <span class="ab" aria-hidden><svg class="ico" viewBox="0 0 24 24"><path d="M14 4l5 5-5 5"/><path d="M19 9H8a5 5 0 0 0 0 10h2"/></svg></span>
+      <span class="ab" aria-hidden><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M5 18h14"/><path d="M5 6h14"/></svg></span>
+    </div>
+  </div>
+
+  <div class="four-oh-four">
+    <div class="body">
+      <div class="icon" aria-hidden>
+        <svg class="ico" viewBox="0 0 24 24"><path d="M10 14L4 8m0 0l6-6M4 8h12a6 6 0 0 1 0 12h-3"/></svg>
+      </div>
+      <p class="eyebrow">Home Record</p>
+      <p class="h">We can't find this record.</p>
+      <p class="lede">This link isn't valid — it may have been replaced by a newer version, or the project was reset by your contractor.</p>
+
+      <div class="hint">
+        <p class="lbl">What to do</p>
+        <p class="row-h">Check the most recent email or text from your contractor for an updated link, or <a href="#">reply to ask them for a fresh one</a>. Home Record links don't expire on their own — but a new one is issued whenever the record is regenerated.</p>
+      </div>
+    </div>
+    <div class="foot">
+      Powered by <b>HeyHenry</b>
+    </div>
+  </div>
+</div>
+
+<p class="footnote">Open Design · od-home-record/screens/artifact-desktop.html · Surface B of 2 · public artifact only</p>
+
+</body>
+</html>

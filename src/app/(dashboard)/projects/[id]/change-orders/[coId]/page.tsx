@@ -4,6 +4,7 @@ import { DetailPageNav } from '@/components/layout/detail-page-nav';
 import { getChangeOrder, listChangeOrderLines } from '@/lib/db/queries/change-orders';
 import { getProject } from '@/lib/db/queries/projects';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function generateMetadata({
   params,
@@ -23,6 +24,7 @@ export default async function ChangeOrderDetailPage({
   params: Promise<{ id: string; coId: string }>;
 }) {
   const { id, coId } = await params;
+  if (!isUuid(id) || !isUuid(coId)) notFound();
   const [project, changeOrder] = await Promise.all([getProject(id), getChangeOrder(coId)]);
 
   if (!project || !changeOrder) notFound();
@@ -44,6 +46,20 @@ export default async function ChangeOrderDetailPage({
     }
   }
 
+  // Customer contact for the send-preview dialog (email + SMS recipients).
+  let customerEmail: string | null = null;
+  let customerPhone: string | null = null;
+  if (project.contact_id) {
+    const admin = createAdminClient();
+    const { data: cust } = await admin
+      .from('contacts')
+      .select('email, phone')
+      .eq('id', project.contact_id)
+      .maybeSingle();
+    customerEmail = (cust?.email as string | null) ?? null;
+    customerPhone = (cust?.phone as string | null) ?? null;
+  }
+
   return (
     <div className="mx-auto w-full max-w-5xl">
       <div className="mb-4">
@@ -58,6 +74,9 @@ export default async function ChangeOrderDetailPage({
           project.budget_categories.map((b) => [b.id, b.name]),
         )}
         diffLines={diffLines}
+        customerName={project.customer?.name ?? 'Customer'}
+        customerEmail={customerEmail}
+        customerPhone={customerPhone}
       />
     </div>
   );

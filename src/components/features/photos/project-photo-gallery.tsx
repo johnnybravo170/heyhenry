@@ -32,8 +32,10 @@ export async function ProjectPhotoGallery({
         data-slot="project-photo-gallery-empty"
       >
         <ImagePlus className="size-6 text-muted-foreground" aria-hidden />
-        <p className="text-sm font-medium">No photos for this project yet.</p>
-        <p className="text-xs text-muted-foreground">Upload some above to get started.</p>
+        <p className="text-sm font-medium">No photos yet.</p>
+        <p className="text-xs text-muted-foreground">
+          Add some from the field — capture above, tag and curate later.
+        </p>
       </div>
     );
   }

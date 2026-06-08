@@ -13,10 +13,10 @@
  * per-row (bookkeeper view hides per-row delete on project-linked rows).
  */
 
-import { Trash2, X } from 'lucide-react';
+import { Tag, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { type ReactNode, useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { DeleteExpenseButton } from '@/components/features/expenses/delete-expense-button';
 import { ReceiptPreviewButton } from '@/components/features/expenses/receipt-preview-button';
@@ -31,11 +31,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Money } from '@/components/ui/money';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import { formatDateShort } from '@/lib/date/format';
 import type { CategoryPickerOption } from '@/lib/db/queries/expense-categories';
 import type { OverheadExpenseRow } from '@/lib/db/queries/overhead-expenses';
 import type { PaymentSourceLite } from '@/lib/db/queries/payment-sources';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import {
   bulkDeleteExpensesAction,
   bulkRecategorizeExpensesAction,
@@ -50,6 +51,12 @@ type Props = {
   showProjectColumn?: boolean;
   /** true = link row to operator edit page. false = don't render links. */
   editHrefForOverhead?: (id: string) => string;
+  /** Optional count summary shown in the table strip ("12 of 37"). */
+  shownOf?: { shown: number; total: number };
+  /** Optional CSV export href for the table strip. */
+  exportHref?: string;
+  /** Optional footer (pager) rendered inside the table card. */
+  footer?: ReactNode;
 };
 
 export function ExpensesTable({
@@ -58,6 +65,9 @@ export function ExpensesTable({
   paymentSources,
   showProjectColumn,
   editHrefForOverhead,
+  shownOf,
+  exportHref,
+  footer,
 }: Props) {
   const router = useRouter();
   const tz = useTenantTimezone();
@@ -153,135 +163,186 @@ export function ExpensesTable({
 
   return (
     <>
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="w-10 px-3 py-3">
-                <input
-                  type="checkbox"
-                  aria-label="Select all"
-                  checked={allSelected}
-                  onChange={(e) => toggleAll(e.target.checked)}
-                  disabled={selectable.length === 0}
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-medium">Date</th>
-              <th className="px-4 py-3 text-left font-medium">Category</th>
-              <th className="px-4 py-3 text-left font-medium">Vendor</th>
-              <th className="px-4 py-3 text-left font-medium">Paid by</th>
-              {showProjectColumn ? (
-                <th className="px-4 py-3 text-left font-medium">Project</th>
-              ) : (
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-              )}
-              <th className="px-4 py-3 text-right font-medium">Tax</th>
-              <th className="px-4 py-3 text-right font-medium">Amount</th>
-              <th className="w-px px-2 py-3" aria-label="Receipt" />
-              <th className="w-px px-2 py-3" aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {expenses.map((e) => {
-              const editHref = e.project_id
-                ? `/projects/${e.project_id}?tab=costs`
-                : (editHrefForOverhead?.(e.id) ?? `/expenses/${e.id}/edit`);
-              const catLabel = e.parent_category_name
-                ? `${e.parent_category_name} › ${e.category_name}`
-                : (e.category_name ?? '—');
-              const isSelectable = !e.project_id;
-              return (
-                <tr key={e.id} className="group border-b last:border-0 hover:bg-muted/30">
-                  <td className="px-3 py-3">
-                    <input
-                      type="checkbox"
-                      aria-label="Select row"
-                      disabled={!isSelectable}
-                      checked={selected.has(e.id)}
-                      onChange={(ev) => toggleOne(e.id, ev.target.checked)}
-                    />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                    <Link href={editHref} className="hover:underline">
-                      {new Intl.DateTimeFormat('en-CA', {
-                        timeZone: tz,
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      }).format(new Date(e.expense_date))}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={editHref}
-                      className={
-                        e.category_id
-                          ? 'hover:underline'
-                          : 'font-medium text-amber-700 hover:underline dark:text-amber-300'
-                      }
-                    >
-                      {e.category_id ? catLabel : 'Uncategorized'}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{e.vendor ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    {e.payment_source ? (
-                      <PaymentSourcePill source={e.payment_source} />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  {showProjectColumn ? (
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {e.project_id ? (
-                        <Link
-                          href={`/projects/${e.project_id}`}
-                          className="text-xs hover:underline"
-                        >
-                          project →
+      <div className="overflow-hidden rounded-xl border bg-card">
+        {shownOf || exportHref ? (
+          <div className="flex items-center gap-3 border-b px-4 py-2.5">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Ledger
+            </span>
+            {shownOf ? (
+              <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground tabular-nums">
+                · showing {shownOf.shown} of {shownOf.total}
+              </span>
+            ) : null}
+            {exportHref ? (
+              <a
+                href={exportHref}
+                className="ml-auto font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+              >
+                Export CSV
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="w-10 px-3 py-2.5 pl-4">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all"
+                    checked={allSelected}
+                    onChange={(e) => toggleAll(e.target.checked)}
+                    disabled={selectable.length === 0}
+                  />
+                </th>
+                <th className="px-3 py-2.5 text-left font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Date
+                </th>
+                <th className="px-3 py-2.5 text-left font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Category
+                </th>
+                <th className="px-3 py-2.5 text-left font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Vendor
+                </th>
+                <th className="px-3 py-2.5 text-left font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Paid by
+                </th>
+                <th className="px-3 py-2.5 text-left font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {showProjectColumn ? 'Project' : 'Description'}
+                </th>
+                <th className="px-3 py-2.5 text-right font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Tax
+                </th>
+                <th className="px-3 py-2.5 text-right font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Amount
+                </th>
+                <th className="w-px px-2 py-2.5" aria-label="Receipt" />
+                <th className="w-px px-2 py-2.5 pr-4" aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.map((e) => {
+                const editHref = e.project_id
+                  ? `/projects/${e.project_id}?tab=costs`
+                  : (editHrefForOverhead?.(e.id) ?? `/expenses/${e.id}/edit`);
+                const catLabel = e.parent_category_name
+                  ? `${e.parent_category_name} › ${e.category_name}`
+                  : (e.category_name ?? '—');
+                const isSelectable = !e.project_id;
+                const isSelected = selected.has(e.id);
+                return (
+                  <tr
+                    key={e.id}
+                    className={`group border-b last:border-0 ${isSelected ? 'bg-brand/5' : 'hover:bg-muted/40'}`}
+                  >
+                    <td className="px-3 py-3 pl-4">
+                      <input
+                        type="checkbox"
+                        aria-label="Select row"
+                        disabled={!isSelectable}
+                        checked={isSelected}
+                        onChange={(ev) => toggleOne(e.id, ev.target.checked)}
+                      />
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      <Link
+                        href={editHref}
+                        className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                      >
+                        {formatDateShort(e.expense_date, { timezone: tz })}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3">
+                      {e.category_id ? (
+                        <Link href={editHref} className="hover:underline">
+                          {catLabel}
                         </Link>
                       ) : (
-                        <span className="text-xs">overhead</span>
+                        <Link
+                          href={editHref}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 hover:bg-amber-200/70 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                        >
+                          <Tag aria-hidden className="size-3" />
+                          Uncategorized
+                        </Link>
                       )}
                     </td>
-                  ) : (
-                    <td className="max-w-md truncate px-4 py-3 text-muted-foreground">
-                      {e.description ?? '—'}
+                    <td className="px-3 py-3">
+                      {e.vendor ? e.vendor : <span className="text-muted-foreground">—</span>}
                     </td>
-                  )}
-                  <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                    {e.tax_cents > 0 ? formatCurrency(e.tax_cents) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums font-medium">
-                    {formatCurrency(e.amount_cents)}
-                  </td>
-                  <td className="px-2 py-3 text-right">
-                    <ReceiptPreviewButton
-                      url={e.receipt_signed_url}
-                      mimeHint={e.receipt_mime_hint}
-                      vendor={e.vendor}
-                    />
-                  </td>
-                  <td className="px-2 py-3 text-right">
-                    {isSelectable ? (
-                      <DeleteExpenseButton
-                        id={e.id}
-                        label={e.vendor ?? e.description ?? 'this expense'}
+                    <td className="px-3 py-3">
+                      {e.payment_source ? (
+                        <PaymentSourcePill source={e.payment_source} />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    {showProjectColumn ? (
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {e.project_id ? (
+                          <Link
+                            href={`/projects/${e.project_id}`}
+                            className="text-xs hover:underline"
+                          >
+                            project →
+                          </Link>
+                        ) : (
+                          <span className="text-xs">general overhead</span>
+                        )}
+                      </td>
+                    ) : (
+                      <td className="max-w-md truncate px-3 py-3 text-muted-foreground">
+                        {e.description ?? '—'}
+                      </td>
+                    )}
+                    <td className="px-3 py-3 text-right">
+                      {e.tax_cents > 0 ? (
+                        <Money
+                          cents={e.tax_cents}
+                          symbol={false}
+                          className="text-muted-foreground"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <Money cents={e.amount_cents} emphasis />
+                    </td>
+                    <td className="px-2 py-3 text-right">
+                      <ReceiptPreviewButton
+                        url={e.receipt_signed_url}
+                        mimeHint={e.receipt_mime_hint}
+                        vendor={e.vendor}
                       />
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="px-2 py-3 pr-4 text-right">
+                      {isSelectable ? (
+                        <DeleteExpenseButton
+                          id={e.id}
+                          label={e.vendor ?? e.description ?? 'this expense'}
+                        />
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {footer}
       </div>
 
       {selected.size > 0 ? (
         <div className="sticky bottom-4 z-10 mx-auto flex w-fit items-center gap-2 rounded-full border bg-background px-4 py-2 shadow-lg">
-          <span className="text-sm font-medium">{selected.size} selected</span>
+          <span className="font-mono text-xs font-semibold uppercase tracking-wide tabular-nums">
+            {selected.size} selected
+          </span>
           <span className="text-muted-foreground">·</span>
           <Button size="sm" variant="outline" onClick={() => setRecatOpen(true)} disabled={pending}>
+            <Tag className="size-3.5" />
             Recategorize
           </Button>
           <Button

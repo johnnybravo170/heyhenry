@@ -8,11 +8,21 @@
  */
 
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useOptimistic, useState, useTransition } from 'react';
+import { useMemo, useOptimistic, useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Money } from '@/components/ui/money';
 import {
   Select,
   SelectContent,
@@ -21,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { OWNER_DRAW_TYPES, type OwnerDrawType } from '@/lib/db/schema/owner-draws';
-import { formatCurrency } from '@/lib/pricing/calculator';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import {
   createOwnerDrawAction,
@@ -33,8 +43,16 @@ import {
 const DRAW_TYPE_LABELS: Record<OwnerDrawType, string> = {
   salary: 'Salary',
   dividend: 'Dividend',
-  reimbursement: 'Reimbursement',
+  reimbursement: 'Reimburse',
   other: 'Other',
+};
+
+/** Draw-type chip tone — status-tokens soft pairs (no ad-hoc colour). */
+const DRAW_TYPE_TONE: Record<OwnerDrawType, string> = {
+  salary: statusToneClass.info,
+  dividend: statusToneClass.success,
+  reimbursement: statusToneClass.warning,
+  other: statusToneClass.neutral,
 };
 
 type OptimisticOp =
@@ -86,26 +104,52 @@ export function OwnerDrawsPanel({
 }) {
   const [rows, applyOptimistic] = useOptimistic<OwnerDrawRow[], OptimisticOp>(initialRows, applyOp);
 
+  const ytdCents = useMemo(() => rows.reduce((s, r) => s + r.amount_cents, 0), [rows]);
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-        <CardTitle className="text-base">Owner draws · {year}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <AddDrawForm applyOptimistic={applyOptimistic} />
-        {rows.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            No draws recorded for {year}. Add a salary or dividend payment above.
-          </p>
-        ) : (
-          <ul className="flex flex-col">
-            {rows.map((row) => (
-              <DrawRow key={row.id} row={row} applyOptimistic={applyOptimistic} />
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+    <section
+      aria-label="Owner draws"
+      className="overflow-hidden rounded-[14px] border border-border bg-card"
+    >
+      {/* Section head — title + YTD meta. */}
+      <div className="flex items-center gap-2 border-b border-border px-5 py-3">
+        <span className="text-base font-bold tracking-tight text-foreground">Owner draws</span>
+        <span className="text-sm font-medium text-muted-foreground">· {year}</span>
+        <span className="ml-auto font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          YTD{' '}
+          <strong className="font-sans text-sm font-bold tabular-nums text-foreground">
+            <Money cents={ytdCents} />
+          </strong>
+        </span>
+      </div>
+
+      <AddDrawForm applyOptimistic={applyOptimistic} />
+
+      {rows.length === 0 ? (
+        <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+          No draws recorded for {year}. Add a salary or dividend payment above.
+        </p>
+      ) : (
+        <ul className="flex flex-col">
+          {rows.map((row) => (
+            <DrawRow key={row.id} row={row} applyOptimistic={applyOptimistic} />
+          ))}
+        </ul>
+      )}
+
+      {/* Foot — YTD total + T-slips deferral note. */}
+      <div className="flex items-center justify-between border-t border-border bg-muted/40 px-5 py-3">
+        <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          YTD total{' '}
+          <strong className="font-sans text-sm font-bold tabular-nums text-foreground">
+            <Money cents={ytdCents} />
+          </strong>
+        </span>
+        <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          {rows.length} {rows.length === 1 ? 'draw' : 'draws'} · T-slips live in /bk
+        </span>
+      </div>
+    </section>
   );
 }
 
@@ -157,7 +201,7 @@ function AddDrawForm({ applyOptimistic }: { applyOptimistic: (op: OptimisticOp) 
   }
 
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_140px_140px_auto]">
+    <div className="grid grid-cols-1 gap-2 border-b border-border bg-muted/40 px-5 py-3.5 sm:grid-cols-[1fr_140px_140px_auto]">
       <Input
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
@@ -167,7 +211,7 @@ function AddDrawForm({ applyOptimistic }: { applyOptimistic: (op: OptimisticOp) 
             submit();
           }
         }}
-        placeholder="Amount (e.g. 5000.00)"
+        placeholder="Amount (e.g. 5,000.00)"
         inputMode="decimal"
         disabled={pending}
         aria-label="Amount"
@@ -234,9 +278,10 @@ function DrawRow({
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   function remove() {
-    if (!confirm('Delete this draw?')) return;
+    setConfirmOpen(false);
     startTransition(async () => {
       applyOptimistic({ kind: 'remove', id: row.id });
       const res = await deleteOwnerDrawAction(row.id);
@@ -266,21 +311,31 @@ function DrawRow({
   return (
     <li
       className={cn(
-        'grid grid-cols-[110px_120px_1fr_auto] items-center gap-2 border-b py-2 last:border-0 transition-opacity',
+        'grid grid-cols-[1fr_auto] items-center gap-3 border-b border-dashed border-border px-5 py-2.5 last:border-b-0 transition-opacity sm:grid-cols-[110px_120px_1fr_160px_auto]',
         pending && 'opacity-60',
       )}
     >
-      <span className="text-sm text-muted-foreground tabular-nums">{row.paid_at}</span>
-      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+      <span className="font-medium tabular-nums text-foreground order-1">{row.paid_at}</span>
+      <span
+        className={cn(
+          'order-3 inline-flex w-max items-center rounded px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide sm:order-2',
+          DRAW_TYPE_TONE[row.draw_type],
+        )}
+      >
         {DRAW_TYPE_LABELS[row.draw_type]}
       </span>
-      <div className="min-w-0 flex flex-col">
-        <span className="font-semibold tabular-nums">{formatCurrency(row.amount_cents)}</span>
-        {row.note ? (
-          <span className="truncate text-xs text-muted-foreground">{row.note}</span>
-        ) : null}
-      </div>
-      <div className="flex items-center gap-1">
+      <span
+        className={cn(
+          'order-4 min-w-0 truncate text-sm font-medium sm:order-3',
+          row.note ? 'text-foreground' : 'italic text-muted-foreground/70',
+        )}
+      >
+        {row.note ?? '—'}
+      </span>
+      <span className="order-2 text-right text-sm font-bold tabular-nums text-foreground sm:order-4">
+        <Money cents={row.amount_cents} />
+      </span>
+      <div className="order-5 flex items-center justify-end gap-1">
         <Button
           size="icon"
           variant="ghost"
@@ -290,10 +345,42 @@ function DrawRow({
         >
           <Pencil className="size-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" onClick={remove} disabled={pending} aria-label="Delete">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setConfirmOpen(true)}
+          disabled={pending}
+          aria-label="Delete"
+        >
           <Trash2 className="size-3.5" />
         </Button>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this draw?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the {DRAW_TYPE_LABELS[row.draw_type].toLowerCase()} draw of{' '}
+              {(row.amount_cents / 100).toLocaleString('en-CA', {
+                style: 'currency',
+                currency: 'CAD',
+              })}{' '}
+              dated {row.paid_at}. Your bookkeeper's records in QBO are unaffected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={remove}
+              disabled={pending}
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </li>
   );
 }

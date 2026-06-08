@@ -1,9 +1,16 @@
+import { Monitor } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BankReviewQueue } from '@/components/features/bank-review/bank-review-queue';
+import { RetryCard } from '@/components/features/bank-review/retry-card';
+import { OwnerOnlyPane } from '@/components/features/settings/owner-only-pane';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { listBankReviewQueue, listImportedStatements } from '@/lib/db/queries/bank-review-queue';
+import {
+  type BankReviewRow,
+  listBankReviewQueue,
+  listImportedStatements,
+} from '@/lib/db/queries/bank-review-queue';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,16 +26,43 @@ export default async function BankReviewPage({
   const tenant = await getCurrentTenant();
   if (!tenant) redirect('/login');
 
+  // Role gate — DECIDED owner+admin only. This surface WRITES paid-state
+  // (flips invoices/bills to paid), so it's gated tighter than read-only
+  // money views. Members get the calm refusal pane, not a crash.
+  // FLAG FOR OPS: loosen to members only by explicit decision — never below
+  // owner+admin, since confirming here mutates money state.
+  const role = tenant.member.role;
+  if (role !== 'owner' && role !== 'admin') {
+    return (
+      <OwnerOnlyPane
+        title="Bank match review"
+        description={`Reviewing bank matches marks invoices and bills paid for ${tenant.name}, so it's handled by the owner and admins.`}
+      />
+    );
+  }
+
   const params = await searchParams;
   const filters = {
     statement_id: params.statement,
     include_unmatched: params.include_unmatched === '1',
   };
 
-  const [{ rows, counts }, statements] = await Promise.all([
-    listBankReviewQueue(filters),
-    listImportedStatements(),
-  ]);
+  // listBankReviewQueue throws on query error; catch it and degrade to a
+  // calm retry card instead of bubbling to the route's 500 boundary.
+  let data: {
+    rows: BankReviewRow[];
+    counts: Awaited<ReturnType<typeof listBankReviewQueue>>['counts'];
+  } | null = null;
+  let statements: Awaited<ReturnType<typeof listImportedStatements>> = [];
+  let loadError = false;
+  try {
+    [data, statements] = await Promise.all([
+      listBankReviewQueue(filters),
+      listImportedStatements(),
+    ]);
+  } catch {
+    loadError = true;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,12 +84,29 @@ export default async function BankReviewPage({
         </p>
       </header>
 
-      <BankReviewQueue
-        initialRows={rows}
-        counts={counts}
-        statements={statements}
-        filters={filters}
-      />
+      {/* Mobile: thinking/admin work — redirect to desktop, don't force a
+          multi-column review grid onto a phone. */}
+      <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center lg:hidden">
+        <Monitor className="size-6 text-muted-foreground" aria-hidden />
+        <p className="text-sm font-medium">Review matches on a larger screen</p>
+        <p className="max-w-xs text-xs text-muted-foreground">
+          Confirming bank matches is multi-select desktop work. Open HeyHenry on a laptop or desktop
+          to review and bulk-confirm.
+        </p>
+      </div>
+
+      <div className="hidden lg:block">
+        {loadError || !data ? (
+          <RetryCard />
+        ) : (
+          <BankReviewQueue
+            initialRows={data.rows}
+            counts={data.counts}
+            statements={statements}
+            filters={filters}
+          />
+        )}
+      </div>
     </div>
   );
 }

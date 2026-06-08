@@ -74,7 +74,7 @@ export async function listProjectsForWorker(
   // name; this filter just scopes the "projects I can log against" list.
   const { data: projects, error: projErr } = await admin
     .from('projects')
-    .select('id, name, lifecycle_stage, target_end_date, customers:customer_id (name)')
+    .select('id, name, lifecycle_stage, target_end_date, contacts:contact_id (name)')
     .in('id', projectIds)
     .in('lifecycle_stage', ['planning', 'awaiting_approval', 'active'])
     .is('deleted_at', null);
@@ -88,7 +88,7 @@ export async function listProjectsForWorker(
 
   return ((projects ?? []) as unknown as Array<Record<string, unknown>>)
     .map((p) => {
-      const customersRaw = p.customers as { name?: string } | { name?: string }[] | null;
+      const customersRaw = p.contacts as { name?: string } | { name?: string }[] | null;
       const customer = Array.isArray(customersRaw) ? customersRaw[0] : customersRaw;
       return {
         project_id: p.id as string,
@@ -104,20 +104,6 @@ export async function listProjectsForWorker(
         (stageRank[a.lifecycle_stage] ?? 99) - (stageRank[b.lifecycle_stage] ?? 99) ||
         a.project_name.localeCompare(b.project_name),
     );
-}
-
-export async function getAssignment(
-  tenantId: string,
-  assignmentId: string,
-): Promise<ProjectAssignmentRow | null> {
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from('project_assignments')
-    .select(COLUMNS)
-    .eq('id', assignmentId)
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  return (data as ProjectAssignmentRow) ?? null;
 }
 
 export async function isWorkerAssignedToProject(

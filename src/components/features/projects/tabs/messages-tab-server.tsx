@@ -1,5 +1,8 @@
+import Link from 'next/link';
 import { MessagesThread } from '@/components/features/messages/messages-thread';
 import { createClient } from '@/lib/supabase/server';
+import { statusToneClass } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import type { MessageRow } from '@/server/actions/project-messages';
 
 export default async function MessagesTabServer({ projectId }: { projectId: string }) {
@@ -15,7 +18,7 @@ export default async function MessagesTabServer({ projectId }: { projectId: stri
       .order('created_at', { ascending: true }),
     supabase
       .from('projects')
-      .select('portal_slug, portal_enabled, customers:customer_id (name)')
+      .select('portal_slug, portal_enabled, contacts:contact_id (name)')
       .eq('id', projectId)
       .single(),
   ]);
@@ -23,7 +26,7 @@ export default async function MessagesTabServer({ projectId }: { projectId: stri
   const initialMessages = (messages ?? []) as MessageRow[];
   const portalEnabled = Boolean(portalData?.portal_enabled);
   const portalSlug = (portalData?.portal_slug as string | null) ?? null;
-  const customerRaw = portalData?.customers as
+  const customerRaw = portalData?.contacts as
     | { name?: string }
     | { name?: string }[]
     | null
@@ -34,9 +37,22 @@ export default async function MessagesTabServer({ projectId }: { projectId: stri
   return (
     <div className="space-y-4">
       {!portalEnabled ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          The customer portal is disabled. Messages still send notifications, but the customer can't
-          read them on the portal until you enable it on the Portal tab.
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-lg border px-3 py-2.5 text-[13px]',
+            statusToneClass.info,
+          )}
+        >
+          <span>
+            Portal is off — messages still notify the client, but they can&apos;t read the thread on
+            their portal.
+          </span>
+          <Link
+            href={`/projects/${projectId}?tab=client&client=portal`}
+            className="font-semibold underline underline-offset-2"
+          >
+            Enable portal →
+          </Link>
         </div>
       ) : null}
       <MessagesThread

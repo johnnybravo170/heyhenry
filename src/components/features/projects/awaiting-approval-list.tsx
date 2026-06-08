@@ -16,8 +16,8 @@
 import { ChevronRight, Eye, Mail, Send } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Money } from '@/components/ui/money';
 import type { AwaitingApprovalProject } from '@/lib/db/queries/awaiting-approval';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import { cn } from '@/lib/utils';
 
 function relativeTime(iso: string): string {
@@ -87,7 +87,9 @@ function Row({ project }: { project: AwaitingApprovalProject }) {
         </div>
       </div>
       <div className="flex items-center gap-2 text-right">
-        <span className="font-medium tabular-nums">{formatCurrency(project.total_cents)}</span>
+        <span className="font-medium tabular-nums">
+          <Money cents={project.total_cents} />
+        </span>
         <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
@@ -133,7 +135,11 @@ export function AwaitingApprovalList({ projects, variant = 'compact', limit = 5 
       <CardHeader className="pb-2">
         <div className="flex items-baseline justify-between gap-2">
           <div>
-            <CardTitle className="text-base">Awaiting approval</CardTitle>
+            <CardTitle className="text-base">
+              <Link href="/projects?view=awaiting_approval" className="hover:underline">
+                Awaiting approval
+              </Link>
+            </CardTitle>
             <CardDescription>
               {projects.length} estimate{projects.length === 1 ? '' : 's'} waiting on the customer
             </CardDescription>

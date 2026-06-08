@@ -1,12 +1,16 @@
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { taskStatusClass, taskStatusIcon } from '@/lib/ui/status-tokens';
 import { cn } from '@/lib/utils';
 import { type TaskStatus, taskStatusLabels, taskStatusShortLabels } from '@/lib/validators/task';
 
 /**
- * One-word status pill. The richer task palette (orange/purple/teal in
- * addition to the shared neutral/info/warning/etc.) lives in
- * `taskStatusClass` in status-tokens.ts.
+ * One-word status pill for task states. The richer task palette
+ * (orange/purple/teal in addition to the shared tones) lives in
+ * `taskStatusClass` in status-tokens.ts; that class string overrides
+ * the neutral base tone via className so no extra branch is needed.
+ *
+ * `hideLabelOnMobile` keeps the icon alone on small viewports while
+ * the full label sits in `title` for hover/a11y.
  */
 export function TaskStatusBadge({
   status,
@@ -19,21 +23,19 @@ export function TaskStatusBadge({
   hideLabelOnMobile?: boolean;
 }) {
   const Icon = taskStatusIcon[status];
-  // Compact label for the badge — the icon already conveys "this is a
-  // waiting state" so the "Waiting — " prefix is redundant. Full label
-  // sits on the tooltip for clarity.
   const fullLabel = taskStatusLabels[status];
   const shortLabel = taskStatusShortLabels[status];
   return (
-    <Badge
+    // tone=neutral is overridden by taskStatusClass[status] via className merge.
+    <StatusBadge
+      tone="neutral"
+      icon={Icon ?? undefined}
       data-slot="task-status-badge"
       data-status={status}
-      variant="outline"
-      className={cn('gap-1 font-medium border', taskStatusClass[status], className)}
       title={fullLabel}
+      className={cn(taskStatusClass[status], className)}
     >
-      {Icon ? <Icon aria-hidden="true" className="size-3" /> : null}
       <span className={hideLabelOnMobile ? 'hidden sm:inline' : undefined}>{shortLabel}</span>
-    </Badge>
+    </StatusBadge>
   );
 }

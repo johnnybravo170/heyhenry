@@ -9,11 +9,15 @@
  * creation land in v1 (kanban 6f110321).
  */
 
+import { ProjectCrewSlice } from '@/components/features/projects/project-crew-slice';
 import { ProjectStartDateEditor } from '@/components/features/projects/project-start-date-editor';
 import { ScheduleBootstrapPanel } from '@/components/features/projects/schedule-bootstrap-panel';
 import { ScheduleInteractive } from '@/components/features/projects/schedule-interactive';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { listScheduleTasksForProject } from '@/lib/db/queries/project-schedule';
+import {
+  listCoScheduleSuggestions,
+  listScheduleTasksForProject,
+} from '@/lib/db/queries/project-schedule';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function ScheduleTabServer({ projectId }: { projectId: string }) {
@@ -38,6 +42,7 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
     { data: tradeRows },
     { data: dependencyRows },
     { data: projectMeta },
+    coSuggestions,
   ] = await Promise.all([
     listScheduleTasksForProject(projectId),
     supabase.from('project_type_templates').select('id, slug, name, description'),
@@ -64,6 +69,9 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
       )
       .eq('id', projectId)
       .maybeSingle(),
+    // Approved, not-yet-dismissed change orders → the CO→schedule Henry
+    // prompt (brief touchpoint #3, vault gotcha #13).
+    listCoScheduleSuggestions(projectId),
   ]);
 
   const pn = projectMeta as Record<string, unknown> | null;
@@ -126,6 +134,7 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
     return (
       <div className="space-y-3">
         <ProjectStartDateEditor projectId={projectId} startDate={startDate} />
+        <ProjectCrewSlice projectId={projectId} />
         <ScheduleBootstrapPanel projectId={projectId} templates={templates} />
       </div>
     );
@@ -134,6 +143,7 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
   return (
     <div className="space-y-3">
       <ProjectStartDateEditor projectId={projectId} startDate={startDate} />
+      <ProjectCrewSlice projectId={projectId} />
       <ScheduleInteractive
         projectId={projectId}
         tasks={tasks}
@@ -141,6 +151,7 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
         tradeTypicalPhase={Object.fromEntries(tradeTypicalPhaseById)}
         pendingNotifyAt={pendingNotifyAt}
         predecessorsByTaskId={predecessorsByTaskId}
+        coSuggestions={coSuggestions}
       />
     </div>
   );

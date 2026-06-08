@@ -313,7 +313,7 @@ export function registerKanbanTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'kanban_launch_rollup',
-    'HeyHenry V1 launch readiness summary: percent complete, velocity, and ETA. Returns a one-paragraph human summary plus structured numbers. Read-only.',
+    'HeyHenry private-beta readiness summary: percent of must-do work complete, velocity, and a work-remaining estimate (NOT a launch date — HeyHenry is in private beta with no launch date). Returns a one-paragraph human summary plus structured numbers. Read-only.',
     {},
     withAudit(ctx, 'kanban_launch_rollup', 'read:kanban', async () => {
       const rollup = await getLaunchRollup();
@@ -325,11 +325,11 @@ export function registerKanbanTools(server: McpServer, ctx: McpToolCtx) {
           ? ` ${rollup.unsizedCards} cards are unsized, so % is an under-count.`
           : '';
       const etaText = eta
-        ? `At ${velocity.weeklyRate.toFixed(1)} pts/week, ETA ~${eta.weeks} weeks (around ${eta.date}).`
+        ? `At ${velocity.weeklyRate.toFixed(1)} pts/week, that's ~${eta.weeks} more weeks of must-do work at recent pace (work estimate, NOT a launch date).`
         : velocity.completedPoints === 0
-          ? 'No cards completed in last 28 days \u2014 velocity is zero, ETA unknown.'
-          : 'Remaining work is zero.';
-      const summary = `HeyHenry V1: ${rollup.percentDone}% ready (${rollup.donePoints}/${rollup.totalPoints} pts across ${rollup.blockerCardCount} launch-blocker cards).${unsizedNote} ${etaText}`;
+          ? 'No cards completed in last 28 days \u2014 velocity is zero.'
+          : 'Remaining must-do work is zero.';
+      const summary = `HeyHenry private beta: ${rollup.percentDone}% of must-do work done (${rollup.donePoints}/${rollup.totalPoints} pts, ${rollup.remainingCardCount} of ${rollup.blockerCardCount} must-do cards remaining).${unsizedNote} ${etaText}`;
       return jsonResult({ summary, rollup, velocity, eta });
     }),
   );

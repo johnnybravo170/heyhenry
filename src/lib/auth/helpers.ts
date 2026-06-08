@@ -127,14 +127,14 @@ async function getCurrentTenantUncached(): Promise<CurrentTenant | null> {
   Sentry.setUser({ id: user.id });
   Sentry.setTag('tenant_id', tenant.id);
   Sentry.setTag('tenant_plan', (tenant.plan ?? 'starter') as string);
-  Sentry.setTag('tenant_vertical', (tenant.vertical ?? 'pressure_washing') as string);
+  Sentry.setTag('tenant_vertical', (tenant.vertical ?? 'renovation') as string);
 
   return {
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,
     timezone: tenant.timezone ?? 'America/Vancouver',
-    vertical: tenant.vertical ?? 'pressure_washing',
+    vertical: tenant.vertical ?? 'renovation',
     plan: (tenant.plan ?? 'starter') as Plan,
     subscriptionStatus: (tenant.subscription_status ?? 'trialing') as SubscriptionStatus,
     trialEndsAt: (tenant.trial_ends_at as string | null) ?? null,

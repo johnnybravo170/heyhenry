@@ -791,7 +791,7 @@ export async function sendChangeOrderAction(
   const { data: co, error: coErr } = await supabase
     .from('change_orders')
     .select(
-      '*, projects:project_id (id, name, customer_id, management_fee_rate, customers:customer_id (name, email, phone)), jobs:job_id (id, customer_id, customers:customer_id (name, email, phone))',
+      '*, projects:project_id (id, name, contact_id, management_fee_rate, contacts:contact_id (name, email, phone)), jobs:job_id (id, contact_id, contacts:contact_id (name, email, phone))',
     )
     .eq('id', changeOrderId)
     .single();
@@ -810,7 +810,7 @@ export async function sendChangeOrderAction(
   const job = coData.jobs as Record<string, unknown> | null;
   const projectName = (project?.name as string) ?? 'Job';
   const projectId = (project?.id as string) ?? (job?.id as string) ?? '';
-  const customerRaw = (project?.customers ?? job?.customers) as Record<string, unknown> | null;
+  const customerRaw = (project?.contacts ?? job?.contacts) as Record<string, unknown> | null;
   const customerEmail = customerRaw?.email as string | null;
   const customerPhone = customerRaw?.phone as string | null;
   const customerName = (customerRaw?.name as string) ?? 'Customer';
@@ -1049,9 +1049,10 @@ export async function approveChangeOrderAction(
     byName: nameParsed.data.approved_by_name,
   }).catch((err) => console.error('[change-order] notification dispatch failed:', err));
 
-  // Henry suggestion: create tasks for the new scope items.
-  const { onChangeOrderApproved } = await import('@/server/ai/triggers');
-  await onChangeOrderApproved(coData.id as string);
+  // Henry surfaces the "draft tasks for the new scope?" offer inline on
+  // the Schedule tab (derived from this CO's approved + not-dismissed
+  // state — see listCoScheduleSuggestions), so no generic chat/briefing
+  // suggestion is written here.
 
   return { ok: true, id: coData.id as string };
 }

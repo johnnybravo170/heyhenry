@@ -97,68 +97,245 @@ export async function listOverheadExpenses(opts?: {
     }
   }
 
-  return (data ?? []).map((row) => {
-    const catRaw = (row as Record<string, unknown>).categories as
-      | { name?: string; parent?: { name?: string } | { name?: string }[] | null }
-      | { name?: string; parent?: { name?: string } | { name?: string }[] | null }[]
-      | null;
-    const cat = Array.isArray(catRaw) ? catRaw[0] : catRaw;
-    const parentRaw = cat?.parent;
-    const parent = Array.isArray(parentRaw) ? parentRaw[0] : parentRaw;
-    const receiptPath =
-      ((row as { attachment_storage_path?: string | null }).attachment_storage_path as
-        | string
-        | null) ?? null;
-    const isPdf = receiptPath?.toLowerCase().endsWith('.pdf') ?? false;
+  return (data ?? []).map((row) => mapExpenseRow(row, urlByPath));
+}
 
-    type RawSource = {
-      id?: string;
-      label?: string;
-      last4?: string | null;
-      paid_by?: OverheadExpenseRow['payment_source'] extends infer T
-        ? T extends { paid_by: infer P }
-          ? P
-          : never
-        : never;
-      kind?: OverheadExpenseRow['payment_source'] extends infer T
-        ? T extends { kind: infer K }
-          ? K
-          : never
-        : never;
-    };
-    const sourceRaw = (row as Record<string, unknown>).payment_source as
-      | RawSource
-      | RawSource[]
-      | null
-      | undefined;
-    const source = Array.isArray(sourceRaw) ? sourceRaw[0] : sourceRaw;
-    const paymentSource: OverheadExpenseRow['payment_source'] =
-      source && source.id && source.label && source.paid_by && source.kind
-        ? {
-            id: source.id,
-            label: source.label,
-            last4: source.last4 ?? null,
-            paid_by: source.paid_by,
-            kind: source.kind,
-          }
-        : null;
+// ---------------------------------------------------------------------------
+// Paginated + filtered ledger (the owner-facing /expenses surface).
+//
+// The legacy `listOverheadExpenses` above renders the WHOLE table unbounded —
+// fine for the bookkeeper triage twin, a real perf + scannability gap on the
+// owner ledger as the year fills in. This variant pushes filtering, search,
+// and pagination into Postgres (`.range()` + an exact head count) so the page
+// never materializes more than one page of rows.
+// ---------------------------------------------------------------------------
 
-    return {
-      id: row.id as string,
-      expense_date: (row as { cost_date: string }).cost_date,
-      amount_cents: row.amount_cents as number,
-      tax_cents: ((row as { gst_cents?: number }).gst_cents as number) ?? 0,
-      vendor: (row.vendor as string | null) ?? null,
-      description: (row.description as string | null) ?? null,
-      project_id: (row.project_id as string | null) ?? null,
-      receipt_storage_path: receiptPath,
-      receipt_signed_url: receiptPath ? (urlByPath.get(receiptPath) ?? null) : null,
-      receipt_mime_hint: receiptPath ? (isPdf ? 'pdf' : 'image') : null,
-      category_id: (row.category_id as string | null) ?? null,
-      category_name: (cat?.name as string | undefined) ?? null,
-      parent_category_name: (parent?.name as string | undefined) ?? null,
-      payment_source: paymentSource,
-      card_last4: (row.card_last4 as string | null) ?? null,
-    };
-  });
+export type OverheadLedgerFilters = {
+  from?: string;
+  to?: string;
+  categoryId?: string;
+  /** Match on the snapshotted vendor string (exact, from the facet list). */
+  vendor?: string;
+  paymentSourceId?: string;
+  uncategorizedOnly?: boolean;
+  /** Free-text over vendor + description (case-insensitive). */
+  search?: string;
+  /**
+   * Include project-linked receipts too (bookkeeper twin). Default false =
+   * overhead-only slice (`project_id IS NULL`), the owner-facing /expenses view.
+   */
+  includeProjectExpenses?: boolean;
+};
+
+export type OverheadLedgerPage = {
+  rows: OverheadExpenseRow[];
+  /** Total rows matching the filters (across all pages). */
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Sum of amount/tax across ALL matching rows, not just this page. */
+  summary: { amount_cents: number; tax_cents: number; uncategorized_count: number };
+  /** Distinct facet values for the filter selects (unfiltered by period/search). */
+  facets: { vendors: string[] };
+};
+
+export const OVERHEAD_LEDGER_PAGE_SIZE = 25;
+
+// biome-ignore lint/suspicious/noExplicitAny: the Supabase query builder type isn't generic-friendly across .select() shapes
+function applyLedgerFilters(query: any, filters: OverheadLedgerFilters): any {
+  let q = query;
+  // Overhead-only slice by default; the bookkeeper twin opts into project-linked rows.
+  if (!filters.includeProjectExpenses) q = q.is('project_id', null);
+  if (filters.uncategorizedOnly) q = q.is('category_id', null);
+  if (filters.from) q = q.gte('cost_date', filters.from);
+  if (filters.to) q = q.lte('cost_date', filters.to);
+  if (filters.categoryId) q = q.eq('category_id', filters.categoryId);
+  if (filters.vendor) q = q.eq('vendor', filters.vendor);
+  if (filters.paymentSourceId) q = q.eq('payment_source_id', filters.paymentSourceId);
+  if (filters.search) {
+    // Escape PostgREST `or` filter metacharacters then ILIKE both fields.
+    const term = filters.search.replace(/[%,()]/g, '').trim();
+    if (term) q = q.or(`vendor.ilike.%${term}%,description.ilike.%${term}%`);
+  }
+  return q;
+}
+
+export async function listOverheadExpensesPage(
+  filters: OverheadLedgerFilters,
+  page: number,
+  pageSize: number = OVERHEAD_LEDGER_PAGE_SIZE,
+): Promise<OverheadLedgerPage> {
+  const supabase = await createClient();
+  const safePage = Math.max(1, Math.floor(page) || 1);
+  const fromIdx = (safePage - 1) * pageSize;
+  const toIdx = fromIdx + pageSize - 1;
+
+  const baseSelect =
+    'id, cost_date, amount_cents, gst_cents, vendor, description, attachment_storage_path, project_id, category_id, card_last4, categories:category_id (name, parent:parent_id (name)), payment_source:payment_source_id (id, label, last4, paid_by, kind)';
+
+  // Page of rows. The project_id scoping (overhead-only vs. include-project)
+  // is applied inside applyLedgerFilters.
+  const rowsQuery = applyLedgerFilters(
+    supabase
+      .from('project_costs')
+      .select(baseSelect)
+      .eq('source_type', 'receipt')
+      .eq('status', 'active'),
+    filters,
+  )
+    .order('cost_date', { ascending: false })
+    .range(fromIdx, toIdx);
+
+  // Count + summary across ALL matching rows. We pull (amount, gst,
+  // category) for the matching set to total accurately — three narrow columns,
+  // no joins or URL signing, so it stays a bounded per-tenant scan even when
+  // the bookkeeper twin includes project rows. The summary strip needs the
+  // full-period figure, not the page's.
+  const summaryQuery = applyLedgerFilters(
+    supabase
+      .from('project_costs')
+      .select('amount_cents, gst_cents, category_id', { count: 'exact' })
+      .eq('source_type', 'receipt')
+      .eq('status', 'active'),
+    filters,
+  );
+
+  // Vendor facet — distinct non-null vendors on the whole slice (same
+  // project scoping as the rows), independent of the active period/search
+  // filters so the picker never hides an option the current filter excludes.
+  let vendorFacetQuery = supabase
+    .from('project_costs')
+    .select('vendor')
+    .eq('source_type', 'receipt')
+    .eq('status', 'active')
+    .not('vendor', 'is', null)
+    .order('vendor', { ascending: true });
+  if (!filters.includeProjectExpenses) vendorFacetQuery = vendorFacetQuery.is('project_id', null);
+
+  const [rowsRes, summaryRes, vendorRes] = await Promise.all([
+    rowsQuery,
+    summaryQuery,
+    vendorFacetQuery,
+  ]);
+
+  if (rowsRes.error) throw new Error(`Failed to list overhead expenses: ${rowsRes.error.message}`);
+  if (summaryRes.error)
+    throw new Error(`Failed to total overhead expenses: ${summaryRes.error.message}`);
+
+  const data = (rowsRes.data ?? []) as Array<Record<string, unknown>>;
+
+  const receiptPaths = data
+    .map((r) => (r as { attachment_storage_path?: string | null }).attachment_storage_path ?? null)
+    .filter((p): p is string => !!p);
+  const urlByPath = new Map<string, string>();
+  if (receiptPaths.length > 0) {
+    const admin = createAdminClient();
+    const { data: signed } = await admin.storage
+      .from('receipts')
+      .createSignedUrls(receiptPaths, RECEIPT_URL_TTL_SECONDS);
+    for (const row of signed ?? []) {
+      if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl);
+    }
+  }
+
+  const summaryRows = (summaryRes.data ?? []) as Array<{
+    amount_cents: number;
+    gst_cents: number | null;
+    category_id: string | null;
+  }>;
+  const summary = summaryRows.reduce(
+    (acc, r) => {
+      acc.amount_cents += r.amount_cents ?? 0;
+      acc.tax_cents += r.gst_cents ?? 0;
+      if (!r.category_id) acc.uncategorized_count += 1;
+      return acc;
+    },
+    { amount_cents: 0, tax_cents: 0, uncategorized_count: 0 },
+  );
+
+  const vendors = Array.from(
+    new Set(
+      ((vendorRes.data ?? []) as Array<{ vendor: string | null }>)
+        .map((r) => r.vendor)
+        .filter((v): v is string => !!v && v.trim().length > 0),
+    ),
+  );
+
+  return {
+    rows: data.map((row) => mapExpenseRow(row, urlByPath)),
+    total: summaryRes.count ?? summaryRows.length,
+    page: safePage,
+    pageSize,
+    summary,
+    facets: { vendors },
+  };
+}
+
+// Shared row → OverheadExpenseRow mapper (used by both list variants).
+function mapExpenseRow(
+  row: Record<string, unknown>,
+  urlByPath: Map<string, string>,
+): OverheadExpenseRow {
+  const catRaw = (row as Record<string, unknown>).categories as
+    | { name?: string; parent?: { name?: string } | { name?: string }[] | null }
+    | { name?: string; parent?: { name?: string } | { name?: string }[] | null }[]
+    | null;
+  const cat = Array.isArray(catRaw) ? catRaw[0] : catRaw;
+  const parentRaw = cat?.parent;
+  const parent = Array.isArray(parentRaw) ? parentRaw[0] : parentRaw;
+  const receiptPath =
+    ((row as { attachment_storage_path?: string | null }).attachment_storage_path as
+      | string
+      | null) ?? null;
+  const isPdf = receiptPath?.toLowerCase().endsWith('.pdf') ?? false;
+
+  type RawSource = {
+    id?: string;
+    label?: string;
+    last4?: string | null;
+    paid_by?: OverheadExpenseRow['payment_source'] extends infer T
+      ? T extends { paid_by: infer P }
+        ? P
+        : never
+      : never;
+    kind?: OverheadExpenseRow['payment_source'] extends infer T
+      ? T extends { kind: infer K }
+        ? K
+        : never
+      : never;
+  };
+  const sourceRaw = (row as Record<string, unknown>).payment_source as
+    | RawSource
+    | RawSource[]
+    | null
+    | undefined;
+  const source = Array.isArray(sourceRaw) ? sourceRaw[0] : sourceRaw;
+  const paymentSource: OverheadExpenseRow['payment_source'] =
+    source?.id && source.label && source.paid_by && source.kind
+      ? {
+          id: source.id,
+          label: source.label,
+          last4: source.last4 ?? null,
+          paid_by: source.paid_by,
+          kind: source.kind,
+        }
+      : null;
+
+  return {
+    id: row.id as string,
+    expense_date: (row as { cost_date: string }).cost_date,
+    amount_cents: row.amount_cents as number,
+    tax_cents: ((row as { gst_cents?: number }).gst_cents as number) ?? 0,
+    vendor: (row.vendor as string | null) ?? null,
+    description: (row.description as string | null) ?? null,
+    project_id: (row.project_id as string | null) ?? null,
+    receipt_storage_path: receiptPath,
+    receipt_signed_url: receiptPath ? (urlByPath.get(receiptPath) ?? null) : null,
+    receipt_mime_hint: receiptPath ? (isPdf ? 'pdf' : 'image') : null,
+    category_id: (row.category_id as string | null) ?? null,
+    category_name: (cat?.name as string | undefined) ?? null,
+    parent_category_name: (parent?.name as string | undefined) ?? null,
+    payment_source: paymentSource,
+    card_last4: (row.card_last4 as string | null) ?? null,
+  };
 }

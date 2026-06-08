@@ -1,0 +1,2477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Home Record — operator flow · Documents tab · HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+    --shadow-lift:  0 18px 60px rgba(10,10,10,0.16), 0 4px 14px rgba(10,10,10,0.08);
+    --shadow-sheet: -24px 0 60px rgba(10,10,10,0.18);
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Frame marker (between renders) ───── */
+  .frame-label {
+    max-width: 1440px;
+    margin: 36px auto 10px;
+    padding: 0 28px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .frame-label .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .frame-label h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .frame-label .hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .frame {
+    max-width: 1440px;
+    margin: 0 auto 12px;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 1px 0 rgba(10,10,10,0.04);
+  }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 920px; }
+
+  /* ───── Sidebar (lean — Documents tab is reached inside a project) ───── */
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .nav-item.active { background: var(--nav-active); color: var(--ink); font-weight: 600; }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; }
+  .org-avatar {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--rust); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted); font-size: 14px;
+  }
+  .topbar-search svg { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-input);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ───── Buttons (one scale: 34/28; 12px on sm) ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    border: 1px solid transparent;
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+  }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-quiet { background: transparent; color: var(--muted); border-color: transparent; }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A6360A; border-color: #A6360A; }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .btn-sm svg { width: 12px; height: 12px; }
+  .btn-link {
+    background: transparent; border: 0; padding: 0;
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: rgba(10,10,10,0.25);
+    text-underline-offset: 3px;
+  }
+
+  /* ───── Main ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 28px 48px;
+  }
+
+  /* ───── Project header ───── */
+  .project-head { display: flex; align-items: flex-start; gap: 16px; padding: 2px 0 14px; }
+  .project-head-text { flex: 1; min-width: 0; }
+  .crumbs {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .crumbs .sep { color: var(--faint); }
+  .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .project-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-closeout { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .customer-line .at { color: var(--faint); }
+
+  /* ───── Tab strip ───── */
+  .tab-strip {
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 0;
+  }
+  .tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+  }
+  .tab.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab-divider {
+    width: 1px; height: 18px;
+    background: var(--rule);
+    margin: 0 10px;
+    flex-shrink: 0;
+  }
+  .tab-count-soft {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+
+  /* ───── Section eyebrow ───── */
+  .section-eyebrow {
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 22px 0 10px;
+  }
+  .eyebrow-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .eyebrow-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Panel (the Home Record card) ───── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+  }
+  .hr-card {
+    padding: 18px 20px;
+  }
+  .hr-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .hr-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .hr-icon svg { width: 18px; height: 18px; }
+  .hr-head-text { flex: 1; min-width: 0; }
+  .hr-head-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hr-head-title {
+    margin: 2px 0 2px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .hr-head-sub {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+    max-width: 660px;
+  }
+  .hr-head-meta {
+    margin-left: auto;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .hr-head-meta .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .hr-head-meta .value {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ───── State strip — lifecycle moment + actions (PATTERNS §27) ───── */
+  .state-strip {
+    margin-top: 14px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px 12px 13px;
+    border-radius: 10px;
+    border: 1px solid var(--hair);
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .state-strip .ss-mark {
+    width: 24px; height: 24px; border-radius: 999px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+  }
+  .state-strip .ss-mark svg { width: 12px; height: 12px; }
+  .state-strip .ss-body { min-width: 0; flex: 1; }
+  .state-strip .ss-body strong { color: var(--ink); font-weight: 600; }
+  .state-strip .ss-body .sep { color: var(--faint); margin: 0 4px; }
+  .state-strip .ss-actions {
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
+  }
+  .state-strip .ss-actions .btn { height: 32px; padding: 0 12px; font-size: 14px; }
+  .state-strip .ss-actions .btn svg { width: 14px; height: 14px; }
+
+  .state-strip.is-empty {
+    border-left: 3px solid var(--rule);
+    padding-left: 13px;
+    background: var(--chrome);
+  }
+  .state-strip.is-empty .ss-mark { background: var(--chip-fill); color: var(--ink-2); }
+
+  .state-strip.is-pending {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.22);
+    border-left: 3px solid var(--rust);
+  }
+  .state-strip.is-pending .ss-mark { background: var(--rust); color: #fff; }
+  .state-strip.is-pending .ss-actions .btn-ghost {
+    background: transparent;
+    border-color: rgba(194,65,12,0.25);
+    color: var(--ink);
+  }
+
+  .state-strip.is-ready {
+    background: var(--card);
+    border-left: 3px solid var(--ok);
+  }
+  .state-strip.is-ready .ss-mark { background: var(--ok-soft); color: var(--ok); }
+
+  .state-strip.is-sent {
+    background: var(--ok-soft);
+    border-color: rgba(21,128,61,0.22);
+    border-left: 3px solid var(--ok);
+  }
+  .state-strip.is-sent .ss-mark { background: var(--ok); color: #fff; }
+
+  /* ───── Readiness chips (Web link · PDF · ZIP) — soft pairs ───── */
+  .readiness {
+    margin-top: 12px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+  }
+  .readiness .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-right: 6px;
+    border-right: 1px solid var(--rule);
+    margin-right: 4px;
+  }
+  .readiness-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px;
+    border-radius: 7px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .readiness-chip svg { width: 11px; height: 11px; }
+  .readiness-chip .name { font-weight: 700; }
+  .readiness-chip .state { font-weight: 500; opacity: .82; }
+  .readiness-chip.is-built {
+    background: var(--ok-soft);
+    color: var(--ok);
+    border-color: rgba(21,128,61,0.22);
+  }
+  .readiness-chip.is-pending-build {
+    background: var(--card);
+    color: var(--muted);
+    border-color: var(--hair);
+  }
+  .readiness-chip.is-stale {
+    background: var(--warn-soft);
+    color: var(--warn);
+    border-color: rgba(180,83,9,0.28);
+  }
+  .readiness .gap { flex: 1; }
+  .readiness .signed-line {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Empty-state shape (No record yet) — PATTERNS §6 ───── */
+  .empty-shape {
+    margin-top: 14px;
+    padding: 28px 24px;
+    background: var(--chrome);
+    border: 1px dashed var(--rule);
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .empty-shape .icn {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .empty-shape .icn svg { width: 22px; height: 22px; }
+  .empty-shape .txt { flex: 1; min-width: 0; }
+  .empty-shape .head {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .empty-shape .sub {
+    margin-top: 2px;
+    font-size: 14px; color: var(--muted);
+    max-width: 560px;
+  }
+  .empty-shape .right { flex-shrink: 0; }
+
+  /* ───── Stacked state demo: title above each card ───── */
+  .state-label {
+    display: flex; align-items: baseline; gap: 8px;
+    margin: 22px 0 8px;
+  }
+  .state-label .num {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .state-label .name {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .state-label .hint {
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ───── Documents tab: rest of tab shown as inert background ───── */
+  .docs-rest {
+    margin-top: 26px;
+    padding: 18px 20px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    color: var(--muted);
+  }
+  .docs-rest-head {
+    display: flex; align-items: baseline; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .docs-rest-head .title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .docs-rest-head .ct {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 0 6px; height: 16px; border-radius: 999px;
+    display: inline-flex; align-items: center;
+    letter-spacing: 0.04em;
+  }
+  .docs-rest-row {
+    display: grid;
+    grid-template-columns: 22px 1fr 90px 90px 16px;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid var(--hair);
+    font-size: 14px;
+  }
+  .docs-rest-row .ic {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .docs-rest-row .ic svg { width: 12px; height: 12px; }
+  .docs-rest-row .nm { color: var(--ink); font-weight: 600; }
+  .docs-rest-row .ty {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .docs-rest-row .dt {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .docs-rest-row .dot {
+    width: 16px; height: 16px; color: var(--faint);
+    display: grid; place-items: center;
+  }
+  .docs-rest-row .dot svg { width: 14px; height: 14px; }
+
+  /* ───── Preview drawer (sheet from right; trust gate) ───── */
+  .scrim {
+    position: absolute; inset: 0;
+    background: rgba(10,10,10,0.45);
+    z-index: 30;
+  }
+  .drawer {
+    position: absolute;
+    top: 0; right: 0;
+    width: 980px; max-width: calc(100% - 80px);
+    height: 100%;
+    background: var(--card);
+    box-shadow: var(--shadow-sheet);
+    z-index: 31;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+  }
+  .drawer-head .lead {
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .drawer-head .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .drawer-head .title {
+    margin-top: 2px;
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .drawer-head .spacer { flex: 1; }
+  .drawer-head .right { display: flex; gap: 6px; align-items: center; }
+  .drawer-head .close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .drawer-head .close svg { width: 14px; height: 14px; }
+
+  .drawer-body {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+  }
+  .preview-pane {
+    overflow: auto;
+    background: var(--bg);
+    padding: 18px;
+  }
+  .preview-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--info-soft);
+    border: 1px solid rgba(30,64,175,0.22);
+    border-left: 3px solid var(--info);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-bottom: 14px;
+  }
+  .preview-banner svg { width: 14px; height: 14px; color: var(--info); flex-shrink: 0; }
+  .preview-banner strong { color: var(--ink); font-weight: 600; }
+
+  .preview-doc {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 32px 32px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .preview-doc .gc-head {
+    display: flex; align-items: center; gap: 14px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .preview-doc .gc-logo {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(160deg, #2b3a45 0%, #0f1a23 100%);
+    color: #E8DEC9;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+  .preview-doc .gc-name {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .preview-doc .gc-meta {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px;
+  }
+  .preview-doc .doc-eyebrow {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .preview-doc .doc-title {
+    margin: 6px 0 4px;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+  .preview-doc .doc-recipient {
+    font-size: 14px; color: var(--ink-2);
+  }
+  .preview-doc .doc-recipient .muted { color: var(--muted); }
+  .preview-doc .doc-generated {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .preview-doc .doc-downloads {
+    display: flex; gap: 8px;
+    margin-top: 14px;
+  }
+  .preview-doc .doc-downloads .btn-ghost {
+    background: var(--card);
+    border-color: var(--rule);
+    color: var(--ink);
+  }
+
+  .doc-section {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+  }
+  .doc-section:first-of-type { border-top: 0; padding-top: 0; }
+  .doc-section .h {
+    margin: 0 0 10px;
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .doc-section .p {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  /* Henry summary block — left-border draft chrome */
+  .summary-draft {
+    background: var(--rust-soft);
+    border: 1px dashed rgba(194,65,12,0.35);
+    border-left: 3px solid var(--rust);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .summary-draft .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .summary-draft .badge .glyph { font-size: 12px; line-height: 1; }
+  .summary-draft .body {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+  .summary-approved {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--ok);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .summary-approved .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ok);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .summary-approved .badge svg { width: 11px; height: 11px; }
+  .summary-approved .body {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  /* Phase row */
+  .phase-row {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-top: 1px solid var(--hair);
+  }
+  .phase-row:first-child { border-top: 0; }
+  .phase-row .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--rule);
+    background: var(--card);
+  }
+  .phase-row .dot.is-done { background: var(--ok); border-color: var(--ok); }
+  .phase-row .name { color: var(--ink); font-weight: 600; }
+  .phase-row .dt {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Selection row */
+  .sel-room {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .sel-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 130px;
+    gap: 12px;
+    align-items: baseline;
+    padding: 7px 0;
+    border-top: 1px solid var(--hair);
+    font-size: 14px;
+  }
+  .sel-row:first-of-type { border-top: 0; }
+  .sel-row .cat {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .sel-row .nm { color: var(--ink); font-weight: 600; }
+  .sel-row .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sel-row .sku {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-align: right;
+  }
+
+  /* Photo grid (representative — 4-up) */
+  .photo-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .ph {
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    border: 1px solid var(--hair);
+    overflow: hidden;
+    position: relative;
+  }
+  .ph::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(10,10,10,0.45));
+  }
+  .ph .cap {
+    position: absolute;
+    left: 8px; right: 8px; bottom: 7px;
+    font-size: 12px;
+    color: #fff;
+    z-index: 1;
+    line-height: 1.25;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .ph .tag {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(255,255,255,0.95);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    padding: 3px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+  .ph .tag.is-bw { color: var(--info); }
+  .ph .tag.is-after { color: var(--ok); }
+  .ph .tag.is-progress { color: var(--warn); }
+  .img-1 { background: linear-gradient(170deg, #d4b48e 0%, #8a6840 100%); }
+  .img-2 { background: linear-gradient(165deg, #5a6f5b 0%, #2f3d2e 100%); }
+  .img-3 { background: linear-gradient(180deg, #c7c1b2 0%, #5d564a 100%); }
+  .img-4 { background: linear-gradient(160deg, #8c7c66 0%, #5e503e 100%);
+           background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 14px),
+                             linear-gradient(160deg, #8c7c66 0%, #5e503e 100%); }
+  .img-5 { background: linear-gradient(195deg, #b2bfa2 0%, #6c7864 100%); }
+  .img-6 { background: linear-gradient(180deg, #d3c1a3 0%, #8d7556 100%); }
+  .img-7 { background: linear-gradient(170deg, #c25a3e 0%, #5e2718 100%); }
+  .img-8 { background: linear-gradient(180deg, #a8927a 0%, #6b5640 100%);
+           background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 6px, transparent 6px 12px),
+                             linear-gradient(180deg, #a8927a 0%, #6b5640 100%); }
+
+  /* CO + decisions rows */
+  .co-row {
+    display: grid;
+    grid-template-columns: 1fr 90px 110px;
+    gap: 14px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px solid var(--hair);
+    font-size: 14px;
+  }
+  .co-row:first-of-type { border-top: 0; }
+  .co-row .ttl { color: var(--ink); font-weight: 600; }
+  .co-row .desc { font-size: 12px; color: var(--muted); margin-top: 2px; max-width: 380px; }
+  .co-row .cost {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .co-row .when {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: right;
+  }
+
+  .doc-row {
+    display: grid;
+    grid-template-columns: 32px 1fr 110px;
+    gap: 12px;
+    align-items: center;
+    padding: 9px 0;
+    border-top: 1px solid var(--hair);
+    font-size: 14px;
+  }
+  .doc-row:first-of-type { border-top: 0; }
+  .doc-row .ic {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--chip-fill); color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .doc-row .ic svg { width: 14px; height: 14px; }
+  .doc-row .nm { color: var(--ink); font-weight: 600; }
+  .doc-row .meta {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .doc-row .right {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .doc-footer {
+    margin-top: 26px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    display: flex; align-items: flex-end; gap: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .doc-footer .left { flex: 1; }
+  .doc-footer .right {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Drawer side rail: format-build + summary edit ───── */
+  .drawer-side {
+    border-left: 1px solid var(--hair);
+    background: var(--chrome);
+    display: flex; flex-direction: column;
+    overflow: auto;
+  }
+  .drawer-side .group {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .drawer-side .group:last-child { border-bottom: 0; }
+  .drawer-side .glabel {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .drawer-side .gtitle {
+    margin-top: 2px;
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .drawer-side .ghint {
+    margin-top: 6px;
+    font-size: 12px; color: var(--muted);
+    line-height: 1.45;
+  }
+
+  .format-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .format-row .ic {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .format-row .ic svg { width: 14px; height: 14px; }
+  .format-row .meta { flex: 1; min-width: 0; }
+  .format-row .nm { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .format-row .sub { font-size: 12px; color: var(--muted); }
+  .format-row .right { flex-shrink: 0; }
+
+  .henry-credit {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.18);
+    border-left: 3px solid var(--rust);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .henry-credit .head {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .henry-credit .head .glyph { margin-right: 4px; font-size: 12px; }
+
+  .summary-editor {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .summary-editor .head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--rust-soft);
+    color: var(--rust);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .summary-editor .head .glyph { font-size: 12px; line-height: 1; }
+  .summary-editor .head .spacer { flex: 1; }
+  .summary-editor .head .pill {
+    background: var(--card);
+    color: var(--rust);
+    border: 1px solid rgba(194,65,12,0.22);
+    padding: 2px 7px; border-radius: 999px;
+    font-size: 11px; letter-spacing: 0.04em;
+  }
+  .summary-editor textarea {
+    width: 100%;
+    border: 0;
+    background: var(--card);
+    padding: 12px 14px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.55;
+    resize: vertical;
+    min-height: 140px;
+    outline: none;
+  }
+  .summary-editor .actions {
+    display: flex; gap: 6px;
+    padding: 8px 10px;
+    border-top: 1px solid var(--hair);
+    background: var(--chrome);
+  }
+  .summary-editor .actions .left {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    align-self: center;
+    margin-right: auto;
+  }
+
+  .drawer-foot {
+    border-top: 1px solid var(--hair);
+    background: var(--chrome);
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .drawer-foot .left {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .drawer-foot .left svg { width: 12px; height: 12px; color: var(--ok); }
+  .drawer-foot .right { margin-left: auto; display: flex; gap: 6px; }
+
+  /* ───── Dialog (email + alert) ───── */
+  .dialog {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: var(--shadow-lift);
+    z-index: 31;
+    overflow: hidden;
+    width: 520px;
+    max-width: calc(100% - 40px);
+  }
+  .dialog.is-wide { width: 560px; }
+  .dialog-head {
+    padding: 18px 22px 8px;
+  }
+  .dialog-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .dialog-title {
+    margin: 2px 0 4px;
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .dialog-desc {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5;
+  }
+  .dialog-body { padding: 8px 22px 14px; display: flex; flex-direction: column; gap: 12px; }
+  .dialog-foot {
+    padding: 12px 18px;
+    border-top: 1px solid var(--hair);
+    background: var(--chrome);
+    display: flex; gap: 6px;
+    align-items: center;
+  }
+  .dialog-foot .left {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Form bits inside the dialog ───── */
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label {
+    font-size: 12px; font-weight: 600; color: var(--ink-2);
+  }
+  .input {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 12px;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .input.is-focus {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(10,10,10,0.06);
+  }
+  .input svg { width: 14px; height: 14px; color: var(--muted); }
+  .field-hint {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.45;
+  }
+  .field-hint.is-warn {
+    color: var(--warn);
+  }
+
+  .will-include {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .will-include .head {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .will-include ul {
+    margin: 6px 0 0; padding: 0;
+    list-style: none;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .will-include li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--ink-2);
+  }
+  .will-include li svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .will-include li.is-on { color: var(--ink); }
+  .will-include li.is-on svg { color: var(--ok); }
+  .will-include li.is-off { color: var(--faint); }
+  .will-include li.is-off svg { color: var(--faint); }
+  .will-include li.is-stale { color: var(--warn); }
+  .will-include li.is-stale svg { color: var(--warn); }
+  .will-include li .tail {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .stale-warn {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 12px;
+    background: var(--warn-soft);
+    border: 1px solid rgba(180,83,9,0.22);
+    border-left: 3px solid var(--warn);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .stale-warn svg { width: 14px; height: 14px; color: var(--warn); flex-shrink: 0; margin-top: 1px; }
+  .stale-warn strong { color: var(--ink); font-weight: 600; }
+
+  .last-sent {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .last-sent svg { width: 11px; height: 11px; color: var(--ok); }
+
+  /* ───── Loading / error / building / no-email tiles ───── */
+  .state-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .state-tile {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .state-tile .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .state-tile .title {
+    margin: 4px 0 6px;
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .state-tile .sub {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.5;
+    max-width: 460px;
+  }
+  .state-tile .body { margin-top: 12px; }
+
+  .skeleton {
+    background: var(--chip-fill);
+    border-radius: 6px;
+    height: 12px;
+    margin-bottom: 8px;
+  }
+  .skeleton.w-80 { width: 80%; }
+  .skeleton.w-60 { width: 60%; }
+  .skeleton.w-40 { width: 40%; }
+  .skeleton.is-pulse { animation: skel 1.6s ease-in-out infinite; }
+  @keyframes skel {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+
+  .progress-bar {
+    margin-top: 8px;
+    height: 6px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar .bar {
+    position: absolute; inset: 0 auto 0 0;
+    width: 38%;
+    background: var(--rust);
+    border-radius: 999px;
+  }
+  .progress-meta {
+    display: flex; justify-content: space-between;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .error-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px;
+    background: var(--danger-soft);
+    border: 1px solid rgba(185,28,28,0.22);
+    border-left: 3px solid var(--danger);
+    border-radius: 10px;
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+  .error-row svg { width: 14px; height: 14px; color: var(--danger); flex-shrink: 0; margin-top: 2px; }
+  .error-row strong { color: var(--ink); font-weight: 600; }
+
+  .toast {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: var(--shadow-pop);
+  }
+  .toast svg { width: 14px; height: 14px; color: var(--ok-soft); }
+
+  /* ───── Spinner ───── */
+  .spin {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    display: inline-block;
+    animation: spin .9s linear infinite;
+    vertical-align: -2px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 1 · State strip across the Home Record lifecycle
+     One project, four states — operator reads the spine at a glance.
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 01</span>
+  <h2>Home Record — operator flow on the Documents tab · state strip across its states</h2>
+  <span class="hint">No-record · Snapshot-pending · Ready · Sent. One primary action per state.</span>
+</div>
+<div class="frame">
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">H</div>
+        <div class="brand-name">HeyHenry</div>
+      </div>
+      <nav class="nav">
+        <div class="nav-section-label">Work</div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 14l2 2 4-4"/></svg>Dashboard</div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8V7l-3-2a4 4 0 0 0-8 0L7 7v1"/><rect x="3" y="8" width="18" height="13" rx="2"/></svg>Inbox</div>
+        <div class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>Projects</div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h18M3 16h18"/><path d="M9 4v16M15 4v16"/></svg>Calendar</div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><circle cx="17" cy="8" r="3"/><path d="M22 21a5 5 0 0 0-5-5"/></svg>Contacts</div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18l-2 12H5L3 9z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>Billing</div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H4z"/><path d="M15 4v5h5"/></svg>Expenses</div>
+        <div class="nav-section-label">Health</div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Business health</div>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="org-switcher">
+          <div class="org-avatar">MR</div>
+          <div class="org-meta">
+            <span class="org-name">Maple Ridge Renos</span>
+            <span class="org-sub">Owner</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Search projects, contacts, photos…</span>
+          <span class="chip-kbd">⌘K</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" aria-label="Help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg></button>
+          <button class="icon-btn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+        </div>
+      </div>
+
+      <div class="main-inner">
+        <!-- Project header -->
+        <div class="project-head">
+          <div class="project-head-text">
+            <div class="crumbs">
+              <span>Projects</span><span class="sep">›</span><span>Glenwood whole-home reno</span>
+            </div>
+            <div class="title-row">
+              <h1 class="project-title">Glenwood whole-home reno</h1>
+              <span class="status-pill status-closeout"><span class="dot"></span>Closeout</span>
+            </div>
+            <div class="customer-line">
+              <span>Daniel &amp; Priya Mehta</span><span class="at">·</span><span>3214 Glenwood Crescent</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab strip -->
+        <div class="tab-strip">
+          <button class="tab">Overview</button>
+          <button class="tab">Budget</button>
+          <button class="tab">Spend</button>
+          <button class="tab">Schedule</button>
+          <button class="tab">Billing</button>
+          <span class="tab-divider"></span>
+          <button class="tab">Photos <span class="tab-count-soft">218</span></button>
+          <button class="tab is-on">Documents <span class="tab-count-soft">14</span></button>
+          <button class="tab">Notes</button>
+          <button class="tab">Selections</button>
+        </div>
+
+        <!-- ──────────── State 1: NO RECORD ──────────── -->
+        <div class="state-label">
+          <span class="num">State 1</span>
+          <span class="name">No record yet</span>
+          <span class="hint">Empty-state shape (PATTERNS §6) — one CTA, no readiness line.</span>
+        </div>
+
+        <section class="panel hr-card" aria-label="Home Record">
+          <div class="hr-head">
+            <div class="hr-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+            </div>
+            <div class="hr-head-text">
+              <div class="hr-head-eyebrow">Home Record</div>
+              <h3 class="hr-head-title">The permanent handoff package</h3>
+              <div class="hr-head-sub">
+                Phases, photos, selections, decisions, change orders, warranties — frozen and shareable.
+                Regenerate anytime; the link stays the same.
+              </div>
+            </div>
+            <div class="hr-head-meta">
+              <div class="label">Last generated</div>
+              <div class="value">—</div>
+            </div>
+          </div>
+
+          <div class="empty-shape">
+            <div class="icn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+            </div>
+            <div class="txt">
+              <div class="head">No Home Record yet.</div>
+              <div class="sub">Assemble the finished job into one permanent package for your client — Daniel &amp; Priya keep the link forever for repairs, insurance, or the next reno.</div>
+            </div>
+            <div class="right">
+              <button class="btn btn-rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+                Generate Home Record
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ──────────── State 2: SNAPSHOT EXISTS, FORMATS PENDING ──────────── -->
+        <div class="state-label">
+          <span class="num">State 2</span>
+          <span class="name">Snapshot exists · web link live · PDF + ZIP pending</span>
+          <span class="hint">Primary moves to <strong style="color:var(--ink);font-weight:600;">Preview &amp; finish</strong>. Format-building happens inside the drawer.</span>
+        </div>
+
+        <section class="panel hr-card" aria-label="Home Record">
+          <div class="hr-head">
+            <div class="hr-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+            </div>
+            <div class="hr-head-text">
+              <div class="hr-head-eyebrow">Home Record</div>
+              <h3 class="hr-head-title">The permanent handoff package</h3>
+              <div class="hr-head-sub">
+                Phases, photos, selections, decisions, change orders, warranties — frozen and shareable.
+                Regenerate anytime; the link stays the same.
+              </div>
+            </div>
+            <div class="hr-head-meta">
+              <div class="label">Last generated</div>
+              <div class="value">Mar 24, 2026 · 4:18 PM</div>
+            </div>
+          </div>
+
+          <div class="state-strip is-pending" role="region" aria-label="Home Record state">
+            <span class="ss-mark" aria-hidden="true">2</span>
+            <span class="ss-body">
+              <strong>Snapshot ready.</strong>
+              <span class="sep">·</span>
+              Preview the document the way Daniel &amp; Priya will see it, then build the PDF + ZIP and send.
+            </span>
+            <span class="ss-actions">
+              <button class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M21 3l-9 9"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+                View live page
+              </button>
+              <button class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                Regenerate
+              </button>
+              <button class="btn btn-rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                Preview &amp; finish
+              </button>
+            </span>
+          </div>
+
+          <div class="readiness" role="status" aria-label="Format readiness">
+            <span class="label">Readiness</span>
+            <span class="readiness-chip is-built" title="Web link is live and re-signed on every request">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">Web link</span><span class="state">Live</span>
+            </span>
+            <span class="readiness-chip is-pending-build" title="PDF will be built in the preview step">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              <span class="name">PDF</span><span class="state">Not built</span>
+            </span>
+            <span class="readiness-chip is-pending-build" title="ZIP archive will be built in the preview step">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              <span class="name">ZIP</span><span class="state">Not built</span>
+            </span>
+            <span class="gap"></span>
+            <span class="signed-line">Link · /home-record/k7p2…q9</span>
+          </div>
+        </section>
+
+        <!-- ──────────── State 3: READY ──────────── -->
+        <div class="state-label">
+          <span class="num">State 3</span>
+          <span class="name">Ready · web link · PDF · ZIP all built</span>
+          <span class="hint">Primary moves to <strong style="color:var(--ink);font-weight:600;">Email to client</strong>. Calm, finished.</span>
+        </div>
+
+        <section class="panel hr-card" aria-label="Home Record">
+          <div class="hr-head">
+            <div class="hr-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+            </div>
+            <div class="hr-head-text">
+              <div class="hr-head-eyebrow">Home Record</div>
+              <h3 class="hr-head-title">The permanent handoff package</h3>
+              <div class="hr-head-sub">
+                Phases, photos, selections, decisions, change orders, warranties — frozen and shareable.
+                Regenerate anytime; the link stays the same.
+              </div>
+            </div>
+            <div class="hr-head-meta">
+              <div class="label">Last generated</div>
+              <div class="value">Mar 24, 2026 · 4:18 PM</div>
+            </div>
+          </div>
+
+          <div class="state-strip is-ready" role="region" aria-label="Home Record state">
+            <span class="ss-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span class="ss-body">
+              <strong>Ready to send.</strong>
+              <span class="sep">·</span>
+              All three formats built · the link works forever and the PDF + ZIP are tucked away in storage.
+            </span>
+            <span class="ss-actions">
+              <button class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                Preview as client
+              </button>
+              <button class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                Regenerate
+              </button>
+              <button class="btn btn-rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+                Email to client
+              </button>
+            </span>
+          </div>
+
+          <div class="readiness" role="status" aria-label="Format readiness">
+            <span class="label">Readiness</span>
+            <span class="readiness-chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">Web link</span><span class="state">Live</span>
+            </span>
+            <span class="readiness-chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">PDF</span><span class="state">Built</span>
+            </span>
+            <span class="readiness-chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">ZIP</span><span class="state">Built · 184 MB</span>
+            </span>
+            <span class="gap"></span>
+            <button class="btn btn-quiet btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download PDF
+            </button>
+            <button class="btn btn-quiet btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8h6v8H9z"/></svg>
+              Download ZIP
+            </button>
+          </div>
+        </section>
+
+        <!-- ──────────── State 4: SENT ──────────── -->
+        <div class="state-label">
+          <span class="num">State 4</span>
+          <span class="name">Sent — calm confirmation</span>
+          <span class="hint">Primary demotes to <strong style="color:var(--ink);font-weight:600;">Resend</strong>. Audit trail = the sent line.</span>
+        </div>
+
+        <section class="panel hr-card" aria-label="Home Record">
+          <div class="hr-head">
+            <div class="hr-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-4v-7H8v7H4a1 1 0 0 1-1-1z"/></svg>
+            </div>
+            <div class="hr-head-text">
+              <div class="hr-head-eyebrow">Home Record</div>
+              <h3 class="hr-head-title">The permanent handoff package</h3>
+              <div class="hr-head-sub">
+                Phases, photos, selections, decisions, change orders, warranties — frozen and shareable.
+                Regenerate anytime; the link stays the same.
+              </div>
+            </div>
+            <div class="hr-head-meta">
+              <div class="label">Last generated</div>
+              <div class="value">Mar 24, 2026 · 4:18 PM</div>
+            </div>
+          </div>
+
+          <div class="state-strip is-sent" role="region" aria-label="Home Record state">
+            <span class="ss-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span class="ss-body">
+              <strong>Sent to daniel.mehta@gmail.com</strong>
+              <span class="sep">·</span>
+              Mar 24, 2026 at 4:42 PM
+              <span class="sep">·</span>
+              <span style="color:var(--ok);font-weight:600;">Delivered</span>
+            </span>
+            <span class="ss-actions">
+              <button class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                Preview as client
+              </button>
+              <button class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                Regenerate
+              </button>
+              <button class="btn btn-rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 8L4 20l4-8z"/></svg>
+                Resend
+              </button>
+            </span>
+          </div>
+
+          <div class="readiness" role="status" aria-label="Format readiness">
+            <span class="label">Readiness</span>
+            <span class="readiness-chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">Web link</span><span class="state">Live</span>
+            </span>
+            <span class="readiness-chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">PDF</span><span class="state">Built</span>
+            </span>
+            <span class="readiness-chip is-built">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">ZIP</span><span class="state">Built · 184 MB</span>
+            </span>
+            <span class="gap"></span>
+            <span class="signed-line">Opened by client · 1 download</span>
+          </div>
+        </section>
+
+        <!-- The rest of the Documents tab — quiet context so reviewer sees where the card lives. -->
+        <div class="docs-rest">
+          <div class="docs-rest-head">
+            <span class="title">Project documents</span>
+            <span class="ct">14</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;">Client-visible · 11</span>
+          </div>
+          <div class="docs-rest-row">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+            <div><span class="nm">Cabinet warranty — Cliffside Joinery</span></div>
+            <div class="ty">Warranty</div>
+            <div class="dt">Mar 12</div>
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></div>
+          </div>
+          <div class="docs-rest-row">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+            <div><span class="nm">Plumbing rough-in inspection — pass</span></div>
+            <div class="ty">Permit</div>
+            <div class="dt">Feb 19</div>
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></div>
+          </div>
+          <div class="docs-rest-row">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+            <div><span class="nm">Bosch dishwasher receipt + warranty card</span></div>
+            <div class="ty">Receipt</div>
+            <div class="dt">Mar 02</div>
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 2 · Preview drawer (the trust gate)
+     Right-side sheet: the document as the client will see it + format-build + ✦ Henry summary editor.
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 02</span>
+  <h2>Preview drawer — the trust gate</h2>
+  <span class="hint">The document rendered as the client sees it · format-build controls · ✦ Henry closeout-summary editor (draft · edit · regenerate · keep).</span>
+</div>
+<div class="frame" style="min-height:920px;">
+  <div class="shell" aria-hidden="true">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">H</div>
+        <div class="brand-name">HeyHenry</div>
+      </div>
+      <nav class="nav">
+        <div class="nav-section-label">Work</div>
+        <div class="nav-item">Dashboard</div>
+        <div class="nav-item">Inbox</div>
+        <div class="nav-item active">Projects</div>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Search projects, contacts, photos…</span>
+          <span class="chip-kbd">⌘K</span>
+        </div>
+      </div>
+      <div class="main-inner" style="opacity:0.55;">
+        <div class="project-head">
+          <div class="project-head-text">
+            <div class="crumbs"><span>Projects</span><span class="sep">›</span><span>Glenwood whole-home reno</span></div>
+            <div class="title-row">
+              <h1 class="project-title">Glenwood whole-home reno</h1>
+              <span class="status-pill status-closeout"><span class="dot"></span>Closeout</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-strip">
+          <button class="tab">Overview</button>
+          <button class="tab">Budget</button>
+          <button class="tab">Spend</button>
+          <button class="tab">Schedule</button>
+          <button class="tab">Billing</button>
+          <span class="tab-divider"></span>
+          <button class="tab">Photos</button>
+          <button class="tab is-on">Documents</button>
+          <button class="tab">Notes</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="scrim" aria-hidden="true"></div>
+
+  <aside class="drawer" role="dialog" aria-label="Home Record preview">
+    <div class="drawer-head">
+      <div class="lead">
+        <div class="eyebrow">Home Record · Preview</div>
+        <div class="title">This is exactly what Daniel &amp; Priya will see</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="right">
+        <button class="btn btn-ghost btn-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M21 3l-9 9"/></svg>
+          Open live page
+        </button>
+        <button class="close" aria-label="Close preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="drawer-body">
+      <!-- PREVIEW PANE — the client view, representative -->
+      <div class="preview-pane">
+        <div class="preview-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/></svg>
+          <span><strong>This view shows only what's in the snapshot.</strong> Internal notes, supplier cost, pending decisions never enter it — that's enforced in the data layer, not in this preview.</span>
+        </div>
+
+        <article class="preview-doc">
+          <div class="gc-head">
+            <div class="gc-logo">MR</div>
+            <div>
+              <div class="gc-name">Maple Ridge Renos</div>
+              <div class="gc-meta">Vancouver · BC · GST #80213-4471</div>
+            </div>
+          </div>
+
+          <div class="doc-eyebrow">Home Record</div>
+          <h2 class="doc-title">Glenwood whole-home reno</h2>
+          <div class="doc-recipient">Prepared for <strong style="color:var(--ink);font-weight:600;">Daniel &amp; Priya Mehta</strong> <span class="muted">— 3214 Glenwood Crescent</span></div>
+          <div class="doc-generated">Generated Mar 24, 2026 · Frozen tz America/Vancouver</div>
+
+          <div class="doc-downloads">
+            <button class="btn btn-ghost btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download PDF
+            </button>
+            <button class="btn btn-ghost btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8h6v8H9z"/></svg>
+              Download ZIP (everything)
+            </button>
+          </div>
+
+          <!-- Henry-drafted summary as it appears in the document -->
+          <section class="doc-section">
+            <h4 class="h">Project summary</h4>
+            <div class="summary-approved">
+              <div class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Approved by you · client sees this as plain prose
+              </div>
+              <p class="body" style="margin:6px 0 0;">
+                Over fourteen weeks we took your Glenwood home down to studs and brought it back: a north-facing kitchen with quartz waterfall island, refinished oak floors throughout, an addition off the dining room with a four-pane Loewen sliding door, and a downstairs primary suite with heated tile. Two phases ran ahead of plan (demo + framing); the inspection-led plumbing rerun pushed finishes by nine days. Three change orders along the way — all approved by you before we ordered material.
+              </p>
+            </div>
+          </section>
+
+          <section class="doc-section">
+            <h4 class="h">Phases</h4>
+            <div class="phase-row">
+              <span class="dot is-done"></span><span class="name">Demo &amp; site prep</span>
+              <span class="dt">Completed Jan 14 → Jan 20</span>
+            </div>
+            <div class="phase-row">
+              <span class="dot is-done"></span><span class="name">Framing &amp; rough-in</span>
+              <span class="dt">Completed Jan 21 → Feb 12</span>
+            </div>
+            <div class="phase-row">
+              <span class="dot is-done"></span><span class="name">Insulation, drywall, paint</span>
+              <span class="dt">Completed Feb 13 → Mar 04</span>
+            </div>
+            <div class="phase-row">
+              <span class="dot is-done"></span><span class="name">Finishes &amp; fixtures</span>
+              <span class="dt">Completed Mar 05 → Mar 21</span>
+            </div>
+            <div class="phase-row">
+              <span class="dot is-done"></span><span class="name">Punch list &amp; final walkthrough</span>
+              <span class="dt">Completed Mar 22 → Mar 24</span>
+            </div>
+          </section>
+
+          <section class="doc-section">
+            <h4 class="h">What we used in your home</h4>
+            <div class="sel-room">Kitchen</div>
+            <div class="sel-row">
+              <span class="cat">Paint</span>
+              <div>
+                <div class="nm">Benjamin Moore — Decorator's White</div>
+                <div class="meta">OC-149 · Matte finish · Walls + trim · Cliffside Paint Co.</div>
+              </div>
+              <span class="sku">SKU 2078-CWM</span>
+            </div>
+            <div class="sel-row">
+              <span class="cat">Countertop</span>
+              <div>
+                <div class="nm">Caesarstone — Pure White 1141</div>
+                <div class="meta">Polished · 30mm waterfall island · Stone Source Vancouver</div>
+              </div>
+              <span class="sku">SKU 1141-PW-30</span>
+            </div>
+            <div class="sel-row">
+              <span class="cat">Faucet</span>
+              <div>
+                <div class="nm">Brizo — Litze Pull-Down</div>
+                <div class="meta">Luxe Gold finish · Lifetime warranty · Robinson Lighting &amp; Bath</div>
+              </div>
+              <span class="sku">SKU 63043LF-GL</span>
+            </div>
+            <div class="sel-room">Primary suite</div>
+            <div class="sel-row">
+              <span class="cat">Tile</span>
+              <div>
+                <div class="nm">Ann Sacks — Calacatta Gold mosaic</div>
+                <div class="meta">2×4 hex · Floor + niche · Heated underlay · Olympia Tile</div>
+              </div>
+              <span class="sku">SKU CG-2X4-HEX</span>
+            </div>
+            <div class="sel-row">
+              <span class="cat">Shower set</span>
+              <div>
+                <div class="nm">Kohler — Components Stem Trim</div>
+                <div class="meta">Brushed nickel · Lifetime · Robinson Lighting &amp; Bath</div>
+              </div>
+              <span class="sku">SKU TS78015-BN</span>
+            </div>
+          </section>
+
+          <section class="doc-section">
+            <h4 class="h">Photos</h4>
+            <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--info);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">
+              Behind the wall · useful for future repairs and resale
+            </div>
+            <div class="photo-grid">
+              <div class="ph img-2"><span class="tag is-bw">Behind wall</span><span class="cap">Plumbing rough-in · kitchen</span></div>
+              <div class="ph img-3"><span class="tag is-bw">Behind wall</span><span class="cap">Electrical · panel side</span></div>
+              <div class="ph img-4"><span class="tag is-bw">Behind wall</span><span class="cap">Joist + blocking · ensuite</span></div>
+              <div class="ph img-5"><span class="tag is-bw">Behind wall</span><span class="cap">Vapor barrier · north wall</span></div>
+            </div>
+            <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ok);letter-spacing:0.1em;text-transform:uppercase;margin:14px 0 6px;">
+              After · finished work
+            </div>
+            <div class="photo-grid">
+              <div class="ph img-1"><span class="tag is-after">After</span><span class="cap">Kitchen · morning light</span></div>
+              <div class="ph img-6"><span class="tag is-after">After</span><span class="cap">Primary suite vanity</span></div>
+              <div class="ph img-7"><span class="tag is-after">After</span><span class="cap">Dining room addition</span></div>
+              <div class="ph img-8"><span class="tag is-progress">Progress</span><span class="cap">Refinished floor cure day 3</span></div>
+            </div>
+          </section>
+
+          <section class="doc-section">
+            <h4 class="h">Change orders</h4>
+            <div class="co-row">
+              <div>
+                <div class="ttl">Add 9' Loewen sliding door to dining addition</div>
+                <div class="desc">Switched from the spec'd two-panel French door to a four-pane sliding unit at your request after the framing walk-through.</div>
+              </div>
+              <span class="cost">$4,820.00 CAD</span>
+              <span class="when">Approved Feb 02</span>
+            </div>
+            <div class="co-row">
+              <div>
+                <div class="ttl">Heated tile under primary ensuite floor</div>
+                <div class="desc">Added a Schluter Ditra-Heat mat across the full 38 sq ft of the ensuite floor — runs off a dedicated thermostat.</div>
+              </div>
+              <span class="cost">$1,610.00 CAD</span>
+              <span class="when">Approved Feb 19</span>
+            </div>
+            <div class="co-row">
+              <div>
+                <div class="ttl">Re-route kitchen drain after inspection</div>
+                <div class="desc">Inspector flagged the original drain slope on the rough-in. Rerouted with two additional cleanouts and re-inspected the next day.</div>
+              </div>
+              <span class="cost">$980.00 CAD</span>
+              <span class="when">Approved Feb 24</span>
+            </div>
+          </section>
+
+          <section class="doc-section">
+            <h4 class="h">Decisions</h4>
+            <div class="phase-row">
+              <span class="dot is-done"></span>
+              <span class="name">Quartz vs marble — kitchen counter <span style="color:var(--muted);font-weight:500;">→ Quartz</span></span>
+              <span class="dt">By Priya · Jan 28</span>
+            </div>
+            <div class="phase-row">
+              <span class="dot is-done"></span>
+              <span class="name">Sliding door panel count — 2 vs 4 <span style="color:var(--muted);font-weight:500;">→ 4-pane</span></span>
+              <span class="dt">By Daniel · Feb 02</span>
+            </div>
+          </section>
+
+          <section class="doc-section">
+            <h4 class="h">Documents &amp; warranties</h4>
+            <div class="doc-row">
+              <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+              <div>
+                <div class="nm">Cabinet warranty — Cliffside Joinery</div>
+                <div class="meta">Warranty · expires Mar 24, 2031</div>
+              </div>
+              <div class="right">Download</div>
+            </div>
+            <div class="doc-row">
+              <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+              <div>
+                <div class="nm">Plumbing rough-in inspection — pass</div>
+                <div class="meta">Permit · City of Vancouver</div>
+              </div>
+              <div class="right">Download</div>
+            </div>
+            <div class="doc-row">
+              <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+              <div>
+                <div class="nm">Bosch 800 dishwasher — receipt + warranty</div>
+                <div class="meta">Receipt · 2-yr Bosch warranty</div>
+              </div>
+              <div class="right">Download</div>
+            </div>
+          </section>
+
+          <div class="doc-footer">
+            <div class="left">A permanent record from Maple Ridge Renos. Save this link — it works forever.</div>
+            <div class="right">Powered by HeyHenry</div>
+          </div>
+        </article>
+      </div>
+
+      <!-- DRAWER SIDE — format-build + Henry summary editor + curation credit -->
+      <div class="drawer-side">
+        <div class="group">
+          <div class="glabel">Formats</div>
+          <div class="gtitle">Build PDF + ZIP before sending</div>
+          <div class="ghint">The web link is already live and re-signs on every visit. Build the dated PDF and the durable ZIP so Daniel &amp; Priya can tuck them away offline.</div>
+
+          <div class="format-row">
+            <div class="ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 14h8M8 18h5"/></svg>
+            </div>
+            <div class="meta">
+              <div class="nm">Branded PDF</div>
+              <div class="sub">Photos embedded as bytes · dated snapshot</div>
+            </div>
+            <span class="readiness-chip is-built" style="margin-right:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="name">Built</span>
+            </span>
+            <div class="right">
+              <button class="btn btn-ghost btn-sm">Rebuild</button>
+            </div>
+          </div>
+
+          <div class="format-row">
+            <div class="ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8h6v8H9z"/></svg>
+            </div>
+            <div class="meta">
+              <div class="nm">ZIP archive</div>
+              <div class="sub">Photos + docs + README · durable</div>
+            </div>
+            <span class="readiness-chip is-pending-build" style="margin-right:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              <span class="name">Not built</span>
+            </span>
+            <div class="right">
+              <button class="btn btn-rust btn-sm">Build ZIP</button>
+            </div>
+          </div>
+
+          <div class="henry-credit">
+            <div class="head"><span class="glyph">✦</span>Henry · auto-curated</div>
+            Henry picked the clearest <strong style="color:var(--ink);font-weight:600;">68 photos from 218</strong> so the record stays readable. All 218 are still in the ZIP archive — none were deleted.
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">Project summary</div>
+          <div class="gtitle">Edit the closeout paragraph</div>
+          <div class="ghint">This sits at the top of the document and is the first thing the client reads. Henry drafted it from the snapshot — read it, change it, regenerate it, keep it.</div>
+
+          <div class="summary-editor">
+            <div class="head">
+              <span class="glyph">✦</span>Henry drafted this
+              <span class="spacer"></span>
+              <span class="pill">1 of 3 drafts</span>
+            </div>
+            <textarea rows="7">Over fourteen weeks we took your Glenwood home down to studs and brought it back: a north-facing kitchen with quartz waterfall island, refinished oak floors throughout, an addition off the dining room with a four-pane Loewen sliding door, and a downstairs primary suite with heated tile. Two phases ran ahead of plan (demo + framing); the inspection-led plumbing rerun pushed finishes by nine days. Three change orders along the way — all approved by you before we ordered material.</textarea>
+            <div class="actions">
+              <span class="left">282 chars · ~52 sec read</span>
+              <button class="btn btn-ghost btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                Regenerate
+              </button>
+              <button class="btn btn-rust btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Keep
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">When you're ready</div>
+          <div class="gtitle">Send the Home Record</div>
+          <div class="ghint">One transactional email with the web link, the PDF, and the ZIP — sent from <strong style="color:var(--ink);font-weight:600;">Maple Ridge Renos via HeyHenry</strong> · reply-to your contact email.</div>
+          <div style="margin-top:10px;">
+            <button class="btn btn-rust" style="width:100%;justify-content:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+              Email to client
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-foot">
+      <span class="left">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Client-safe by construction
+      </span>
+      <div class="right">
+        <button class="btn btn-ghost">Close</button>
+        <button class="btn btn-rust">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+          Email to client
+        </button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 3 · Email-to-client dialog (normal + stale-format warning)
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 03</span>
+  <h2>Email to client · the send dialog</h2>
+  <span class="hint">Recipient · "Will include" checklist · stale-format warning when snapshot changed since the last build · last-sent line.</span>
+</div>
+<div class="frame" style="min-height:720px;">
+  <div class="shell" aria-hidden="true">
+    <aside class="sidebar"><div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div><nav class="nav"><div class="nav-section-label">Work</div><div class="nav-item active">Projects</div></nav></aside>
+    <main class="main">
+      <div class="topbar"><div class="topbar-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search…</span><span class="chip-kbd">⌘K</span></div></div>
+      <div class="main-inner" style="opacity:0.45;">
+        <h1 class="project-title">Glenwood whole-home reno</h1>
+        <div class="tab-strip"><button class="tab is-on">Documents</button></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="scrim"></div>
+
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;grid-template-columns:520px 520px;gap:24px;z-index:31;width:max-content;">
+
+    <!-- A · Normal email dialog -->
+    <div class="dialog" style="position:relative;top:auto;left:auto;transform:none;">
+      <div class="dialog-head">
+        <div class="dialog-eyebrow">Home Record</div>
+        <h3 class="dialog-title">Email Home Record to client</h3>
+        <p class="dialog-desc">Sends a single email with the permanent web link, the PDF, and the ZIP archive.</p>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label class="field-label" for="hr-to-1">Send to</label>
+          <div class="input is-focus">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+            <input id="hr-to-1" type="email" value="daniel.mehta@gmail.com" style="all:unset;flex:1;font-family:inherit;font-size:14px;color:var(--ink);" />
+          </div>
+          <div class="field-hint">From <strong style="color:var(--ink);font-weight:600;">Maple Ridge Renos via HeyHenry</strong> · reply-to your contact email.</div>
+        </div>
+
+        <div class="will-include">
+          <div class="head">Will include</div>
+          <ul>
+            <li class="is-on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Permanent web link
+              <span class="tail">Always</span>
+            </li>
+            <li class="is-on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Branded PDF (download link)
+              <span class="tail">Built Mar 24</span>
+            </li>
+            <li class="is-on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              ZIP archive (download link)
+              <span class="tail">184 MB</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="last-sent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Last sent to daniel.mehta@gmail.com · Mar 18, 2026 at 11:02 AM
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <span class="left">Casl · Transactional</span>
+        <button class="btn btn-quiet">Cancel</button>
+        <button class="btn btn-rust">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 8L4 20l4-8z"/></svg>
+          Resend
+        </button>
+      </div>
+    </div>
+
+    <!-- B · Stale-format warning variant + no-email-on-file -->
+    <div class="dialog" style="position:relative;top:auto;left:auto;transform:none;">
+      <div class="dialog-head">
+        <div class="dialog-eyebrow">Home Record · Variant</div>
+        <h3 class="dialog-title">Email Home Record to client</h3>
+        <p class="dialog-desc">No email on file for Daniel &amp; Priya · stale PDF + ZIP from before the last regenerate.</p>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label class="field-label" for="hr-to-2">Send to</label>
+          <div class="input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><polyline points="4 6 12 13 20 6"/></svg>
+            <input id="hr-to-2" type="email" placeholder="client@example.com" style="all:unset;flex:1;font-family:inherit;font-size:14px;color:var(--ink-2);" />
+          </div>
+          <div class="field-hint is-warn">No email on file for this client — type one to send.</div>
+        </div>
+
+        <div class="stale-warn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 1 22h22z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>
+          <div>
+            <strong>Snapshot was refreshed after the last build.</strong>
+            The PDF + ZIP are from Mar 18 — Daniel &amp; Priya would receive an older view of phases &amp; photos.
+            Build fresh formats first, or send the web link only.
+          </div>
+        </div>
+
+        <div class="will-include">
+          <div class="head">Will include</div>
+          <ul>
+            <li class="is-on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Permanent web link
+              <span class="tail">Always · current</span>
+            </li>
+            <li class="is-stale">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 1 22h22z"/><line x1="12" y1="9" x2="12" y2="14"/></svg>
+              Branded PDF (download link)
+              <span class="tail">Stale · Mar 18</span>
+            </li>
+            <li class="is-stale">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 1 22h22z"/><line x1="12" y1="9" x2="12" y2="14"/></svg>
+              ZIP archive (download link)
+              <span class="tail">Stale · Mar 18</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <span class="left">Casl · Transactional</span>
+        <button class="btn btn-quiet">Cancel</button>
+        <button class="btn btn-ghost">Send web link only</button>
+        <button class="btn btn-rust" disabled style="opacity:0.55;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 8L4 20l4-8z"/></svg>
+          Send
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 4 · Regenerate AlertDialog (PATTERNS §3)
+     One destructive-ish action, honestly explained.
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 04</span>
+  <h2>Regenerate · the AlertDialog</h2>
+  <span class="hint">Collapses Generate / Regenerate / Rebuild-PDF / Rebuild-ZIP into one button with an honest consequence.</span>
+</div>
+<div class="frame" style="min-height:520px;">
+  <div class="shell" aria-hidden="true">
+    <aside class="sidebar"><div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div></aside>
+    <main class="main"><div class="topbar"><div class="topbar-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search…</span><span class="chip-kbd">⌘K</span></div></div><div class="main-inner" style="opacity:0.45;"><h1 class="project-title">Glenwood whole-home reno</h1></div></main>
+  </div>
+  <div class="scrim"></div>
+  <div class="dialog is-wide">
+    <div class="dialog-head">
+      <div class="dialog-eyebrow">Confirm</div>
+      <h3 class="dialog-title">Refresh this Home Record with the latest data?</h3>
+      <p class="dialog-desc">Pulls in photos, selections, decisions, and change orders that landed since Mar 18 — and recomputes the ✦ Henry summary draft.</p>
+    </div>
+    <div class="dialog-body">
+      <div class="will-include">
+        <div class="head">What happens</div>
+        <ul>
+          <li class="is-on">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            The link stays the same — anything already shared keeps working.
+          </li>
+          <li class="is-stale">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+            You'll rebuild the PDF and ZIP after — that takes 30–60 seconds.
+          </li>
+          <li class="is-on">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Your edited summary stays — Henry won't overwrite it unless you regenerate inside the drawer.
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <span class="left">Last generated Mar 18, 2026</span>
+      <button class="btn btn-quiet">Cancel</button>
+      <button class="btn btn-rust">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        Refresh Home Record
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────
+     FRAME 5 · States: loading · generating · building formats · error · sent toast
+     ───────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 05</span>
+  <h2>States · loading · generating · building formats · error · sent toast</h2>
+  <span class="hint">Honest long-running labels, not bare spinners. ZIP is the slow one (maxDuration 60s).</span>
+</div>
+<div class="frame" style="min-height:540px;padding:24px 28px;">
+  <div class="state-grid">
+
+    <!-- Loading skeleton (the Documents-tab hub fallback) -->
+    <div class="state-tile">
+      <div class="label">State · Loading</div>
+      <div class="title">The Documents tab is loading</div>
+      <div class="sub">Tab body uses <code style="font-family:var(--mono);font-size:11px;background:var(--chip-fill);padding:1px 5px;border-radius:4px;">tab-skeleton.tsx</code> while the snapshot row resolves.</div>
+      <div class="body">
+        <div class="panel" style="padding:14px 16px;">
+          <div class="skeleton is-pulse w-40" style="height:14px;"></div>
+          <div class="skeleton is-pulse w-80"></div>
+          <div class="skeleton is-pulse w-60"></div>
+          <div class="skeleton is-pulse w-80" style="height:32px;margin-top:14px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generating snapshot -->
+    <div class="state-tile">
+      <div class="label">State · Generating snapshot</div>
+      <div class="title">Pulling photos, selections, decisions…</div>
+      <div class="sub">Denormalizing 8 tables into the frozen JSONB snapshot. Same slug on every regenerate.</div>
+      <div class="body">
+        <div class="format-row" style="margin-top:0;">
+          <div class="ic"><span class="spin" style="color:var(--rust);"></span></div>
+          <div class="meta">
+            <div class="nm">Generating snapshot</div>
+            <div class="sub">218 photos · 24 selections · 14 documents · 5 phases</div>
+          </div>
+        </div>
+        <div class="progress-bar" style="margin-top:12px;"><div class="bar" style="width:64%;"></div></div>
+        <div class="progress-meta"><span>Pulling photos</span><span>64% · ~6s</span></div>
+      </div>
+    </div>
+
+    <!-- Building ZIP (the slow one) -->
+    <div class="state-tile">
+      <div class="label">State · Building ZIP</div>
+      <div class="title">Bundling 218 photos + 14 documents…</div>
+      <div class="sub">ZIP is the slow one — durable file copies + README so the archive works forever offline. Up to 60 seconds on a big project.</div>
+      <div class="body">
+        <div class="format-row" style="margin-top:0;">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8h6v8H9z"/></svg></div>
+          <div class="meta">
+            <div class="nm">ZIP archive · in flight</div>
+            <div class="sub">Compressing photo 142 of 218 · estimated 184 MB</div>
+          </div>
+          <span class="readiness-chip is-pending-build">
+            <span class="spin" style="color:var(--muted);"></span>
+            <span class="name">Building</span>
+          </span>
+        </div>
+        <div class="progress-bar" style="margin-top:12px;"><div class="bar" style="width:48%;"></div></div>
+        <div class="progress-meta"><span>Photos · 142 of 218</span><span>48% · ~26s</span></div>
+      </div>
+    </div>
+
+    <!-- Error · email send failed -->
+    <div class="state-tile">
+      <div class="label">State · Error</div>
+      <div class="title">The email didn't send</div>
+      <div class="sub">Every action returns <code style="font-family:var(--mono);font-size:11px;background:var(--chip-fill);padding:1px 5px;border-radius:4px;">{ ok, error }</code> → a toast on the operator, never a silent failure. PATTERNS §5.</div>
+      <div class="body">
+        <div class="error-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 1 22h22z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>
+          <div>
+            <strong>Postmark rejected the address.</strong>
+            daniel.mehta@gmial.com — looks like a typo. Try again with the correct email.
+            <div style="margin-top:8px;">
+              <button class="btn btn-ghost btn-sm">Edit email</button>
+              <button class="btn btn-quiet btn-sm">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sent toast (success) -->
+  <div style="margin-top:20px;display:flex;align-items:center;gap:12px;">
+    <span class="toast">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      Sent to daniel.mehta@gmail.com
+    </span>
+    <span style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;">
+      State · success toast · auto-dismisses · Sent strip replaces Ready strip
+    </span>
+  </div>
+</div>
+
+</body>
+</html>

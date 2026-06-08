@@ -1,7 +1,7 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
-import { Pencil } from 'lucide-react';
+import { Pencil, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,8 +13,9 @@ import { formatCurrency } from '@/lib/pricing/calculator';
 import type { ChangeOrderStatus } from '@/lib/validators/change-order';
 import type { ManualApprovalMethod } from '@/lib/validators/manual-approval';
 import { manualApprovalMethodLabels } from '@/lib/validators/manual-approval';
-import { sendChangeOrderAction, voidChangeOrderAction } from '@/server/actions/change-orders';
+import { voidChangeOrderAction } from '@/server/actions/change-orders';
 import { ChangeOrderDiffView } from './change-order-diff-view';
+import { ChangeOrderSendBar } from './change-order-send-bar';
 import { ChangeOrderStatusBadge } from './change-order-status-badge';
 
 export function ChangeOrderDetail({
@@ -23,12 +24,19 @@ export function ChangeOrderDetail({
   proofSignedUrls = {},
   budgetCategoryNamesById = {},
   diffLines = [],
+  customerName = 'Customer',
+  customerEmail = null,
+  customerPhone = null,
 }: {
   changeOrder: ChangeOrderRow;
   projectId: string;
   proofSignedUrls?: Record<string, string>;
   budgetCategoryNamesById?: Record<string, string>;
   diffLines?: ChangeOrderLineRow[];
+  /** Customer contact for the send-preview dialog. */
+  customerName?: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
 }) {
   const tz = useTenantTimezone();
   const router = useRouter();
@@ -73,19 +81,6 @@ export function ChangeOrderDetail({
     };
   }, [co.id]);
 
-  async function handleSend() {
-    setLoading(true);
-    setError(null);
-    const result = await sendChangeOrderAction(co.id);
-    if (!result.ok) {
-      setError(result.error);
-      setLoading(false);
-      return;
-    }
-    router.refresh();
-    setLoading(false);
-  }
-
   async function handleVoid() {
     if (!confirm('Void this change order? This cannot be undone.')) return;
     setLoading(true);
@@ -126,14 +121,14 @@ export function ChangeOrderDetail({
             </Link>
           ) : null}
           {co.status === 'draft' ? (
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={loading}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              Send for Approval
-            </button>
+            <ChangeOrderSendBar
+              changeOrderId={co.id}
+              approvalCode={co.approval_code}
+              customerName={customerName}
+              customerEmail={customerEmail}
+              customerPhone={customerPhone}
+              totalImpactLabel={costFormatted}
+            />
           ) : null}
           {co.status === 'draft' ? (
             <button
@@ -268,6 +263,30 @@ export function ChangeOrderDetail({
               ))}
             </ul>
           ) : null}
+        </div>
+      ) : null}
+
+      {/* Now-billable nudge (peach). Approval updates the budget but does NOT
+       *  auto-bill — surface the approved-but-unbilled amount so it doesn't
+       *  silently leak. We can't determine "already on a draw" from the
+       *  schema (invoices have no CO linkage), so this fires whenever the CO
+       *  is approved with a positive cost impact; the operator decides. */}
+      {co.status === 'approved' && co.cost_impact_cents > 0 ? (
+        <div className="flex items-center gap-3 rounded-lg border-l-2 border-brand bg-brand/5 p-3">
+          <Sparkles className="size-4 shrink-0 text-brand" aria-hidden />
+          <div className="flex-1 text-sm">
+            <span className="mr-2 font-mono text-[0.6rem] font-bold uppercase tracking-wider text-brand">
+              Henry
+            </span>
+            <strong>{formatCurrency(co.cost_impact_cents)} now billable.</strong> Approved but not
+            yet billed — add it to the next draw?
+          </div>
+          <Link
+            href={`/projects/${projectId}?tab=invoices`}
+            className="shrink-0 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand/90"
+          >
+            Open Billing
+          </Link>
         </div>
       ) : null}
 

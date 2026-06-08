@@ -27,7 +27,7 @@ export type SeededDemo = {
   password: string;
   userId: string;
   tenantId: string;
-  customerId: string;
+  contactId: string;
   projectId: string;
   /** Two budget categories created on the project, indexed by name. */
   budgetCategoryIdsByName: Record<string, string>;
@@ -82,6 +82,11 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
     role: 'owner',
     phone: '+15551234567',
     phone_verified_at: new Date().toISOString(),
+    // Name is required since 2026-05. Without it the dashboard layout
+    // soft-blocks every route with NamePromptModal, whose overlay eats
+    // all pointer events and times out every click in the suite.
+    first_name: 'E2E',
+    last_name: 'Operator',
     // Default false — this is the user's only membership, so make it
     // active. Otherwise getCurrentTenant() returns null and project
     // pages render with no auth context.
@@ -95,7 +100,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
 
   // Customer + project.
   const { data: customer, error: customerErr } = await admin
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenantId,
       name: 'Jane Homeowner',
@@ -108,13 +113,13 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
     await tearDownDemo({ admin, userId, tenantId });
     throw new Error(`seedDemo: insert customer failed: ${customerErr?.message}`);
   }
-  const customerId = customer.id as string;
+  const contactId = customer.id as string;
 
   const { data: project, error: projectErr } = await admin
     .from('projects')
     .insert({
       tenant_id: tenantId,
-      customer_id: customerId,
+      contact_id: contactId,
       name: 'Kitchen reno',
       lifecycle_stage: 'active',
       management_fee_rate: 0.18,
@@ -130,6 +135,19 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
   }
   const projectId = project.id as string;
 
+  // Section is a real entity now — create the section row first, then point
+  // categories at it via section_id (the legacy `section` string is gone).
+  const { data: section, error: sectionErr } = await admin
+    .from('project_budget_sections')
+    .insert({ tenant_id: tenantId, project_id: projectId, name: 'interior', sort_order: 0 })
+    .select('id')
+    .single();
+  if (sectionErr || !section) {
+    await tearDownDemo({ admin, userId, tenantId });
+    throw new Error(`seedDemo: insert section failed: ${sectionErr?.message}`);
+  }
+  const sectionId = section.id as string;
+
   // Two budget categories with realistic envelopes.
   const { data: cats, error: catErr } = await admin
     .from('project_budget_categories')
@@ -138,7 +156,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
         tenant_id: tenantId,
         project_id: projectId,
         name: 'Cabinets',
-        section: 'interior',
+        section_id: sectionId,
         estimate_cents: 1500000,
         display_order: 1,
         is_visible_in_report: true,
@@ -147,7 +165,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
         tenant_id: tenantId,
         project_id: projectId,
         name: 'Plumbing',
-        section: 'interior',
+        section_id: sectionId,
         estimate_cents: 800000,
         display_order: 2,
         is_visible_in_report: true,
@@ -210,7 +228,7 @@ export async function seedDemo(opts: { label?: string } = {}): Promise<SeededDem
     password,
     userId,
     tenantId,
-    customerId,
+    contactId,
     projectId,
     budgetCategoryIdsByName,
     costLineIds,

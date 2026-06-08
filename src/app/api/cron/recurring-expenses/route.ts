@@ -12,6 +12,10 @@
  * Idempotent: if today's run already created an expense for a rule
  * (linked via recurring_rule_id + matching expense_date), we skip —
  * prevents double-creation if the cron runs twice on the same day.
+ *
+ * Auth: Bearer ${CRON_SECRET} (Vercel cron injects this header). Matches
+ * every other cron route — without it this data-mutating endpoint is open
+ * to the public internet.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -27,7 +31,13 @@ function addOneMonth(isoDate: string): string {
   return next.toISOString().slice(0, 10);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = request.headers.get('authorization');
+  const expected = `Bearer ${process.env.CRON_SECRET}`;
+  if (!process.env.CRON_SECRET || auth !== expected) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const admin = createAdminClient();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -48,17 +58,67 @@ export async function GET() {
   let skippedClosedBooks = 0;
   let skippedDuplicate = 0;
 
+  // Batch every per-rule read up front so the loop issues zero N+1 queries.
+  // (At 10k tenants this is the difference between ~4 queries/rule and 4 total.)
+  const tenantIds = [...new Set(rows.map((r) => r.tenant_id as string))];
+  const ruleIds = rows.map((r) => r.id as string);
+  const runDates = [...new Set(rows.map((r) => r.next_run_at as string))];
+  const createdByIds = [
+    ...new Set(rows.map((r) => r.created_by as string | null).filter((v): v is string => !!v)),
+  ];
+
+  const [tenantsRes, creatorsRes, ownersRes, existingRes] = await Promise.all([
+    tenantIds.length > 0
+      ? admin.from('tenants').select('id, books_closed_through').in('id', tenantIds)
+      : Promise.resolve({ data: [] as { id: string; books_closed_through: string | null }[] }),
+    createdByIds.length > 0
+      ? admin.from('tenant_members').select('id, user_id').in('id', createdByIds)
+      : Promise.resolve({ data: [] as { id: string; user_id: string }[] }),
+    tenantIds.length > 0
+      ? admin
+          .from('tenant_members')
+          .select('tenant_id, user_id')
+          .in('tenant_id', tenantIds)
+          .eq('role', 'owner')
+      : Promise.resolve({ data: [] as { tenant_id: string; user_id: string }[] }),
+    ruleIds.length > 0
+      ? admin
+          .from('project_costs')
+          .select('recurring_rule_id, cost_date')
+          .eq('source_type', 'receipt')
+          .in('recurring_rule_id', ruleIds)
+          .in('cost_date', runDates)
+      : Promise.resolve({ data: [] as { recurring_rule_id: string; cost_date: string }[] }),
+  ]);
+
+  const closedThroughByTenant = new Map<string, string | null>(
+    (tenantsRes.data ?? []).map((t) => [
+      t.id as string,
+      (t.books_closed_through as string | null) ?? null,
+    ]),
+  );
+  const userIdByMemberId = new Map<string, string>(
+    (creatorsRes.data ?? []).map((m) => [m.id as string, m.user_id as string]),
+  );
+  // First owner seen per tenant — fallback attribution when the creator is gone.
+  const ownerUserIdByTenant = new Map<string, string>();
+  for (const o of ownersRes.data ?? []) {
+    const tid = o.tenant_id as string;
+    if (!ownerUserIdByTenant.has(tid)) ownerUserIdByTenant.set(tid, o.user_id as string);
+  }
+  // Idempotency keys for receipts already materialized for (rule, date).
+  const existingCostKeys = new Set(
+    (existingRes.data ?? []).map(
+      (c) => `${c.recurring_rule_id as string}|${c.cost_date as string}`,
+    ),
+  );
+
   for (const rule of rows) {
     const tenantId = rule.tenant_id as string;
     const runDate = rule.next_run_at as string;
 
     // Honor the tenant's books-closed-through guard.
-    const { data: t } = await admin
-      .from('tenants')
-      .select('books_closed_through')
-      .eq('id', tenantId)
-      .single();
-    const closedThrough = (t?.books_closed_through as string | null) ?? null;
+    const closedThrough = closedThroughByTenant.get(tenantId) ?? null;
     if (closedThrough && runDate <= closedThrough) {
       skippedClosedBooks++;
       // Still advance the rule so we don't spin on the same locked date.
@@ -70,14 +130,7 @@ export async function GET() {
     }
 
     // Idempotency: skip if a receipt already exists for this rule on this date.
-    const { data: existing } = await admin
-      .from('project_costs')
-      .select('id')
-      .eq('source_type', 'receipt')
-      .eq('recurring_rule_id', rule.id as string)
-      .eq('cost_date', runDate)
-      .limit(1);
-    if (existing && existing.length > 0) {
+    if (existingCostKeys.has(`${rule.id as string}|${runDate}`)) {
       skippedDuplicate++;
       await admin
         .from('expense_recurring_rules')
@@ -91,22 +144,10 @@ export async function GET() {
     // first owner on the tenant if the creator member has been removed.
     let userId: string | null = null;
     if (rule.created_by) {
-      const { data: m } = await admin
-        .from('tenant_members')
-        .select('user_id')
-        .eq('id', rule.created_by as string)
-        .maybeSingle();
-      userId = (m?.user_id as string | null) ?? null;
+      userId = userIdByMemberId.get(rule.created_by as string) ?? null;
     }
     if (!userId) {
-      const { data: owner } = await admin
-        .from('tenant_members')
-        .select('user_id')
-        .eq('tenant_id', tenantId)
-        .eq('role', 'owner')
-        .limit(1)
-        .maybeSingle();
-      userId = (owner?.user_id as string | null) ?? null;
+      userId = ownerUserIdByTenant.get(tenantId) ?? null;
     }
     if (!userId) continue; // defensive — nobody to attribute to
 

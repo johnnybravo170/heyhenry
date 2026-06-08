@@ -42,7 +42,11 @@ export function RecentActivity({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Activity</CardTitle>
+        <CardTitle>
+          <Link href="/inbox" className="hover:underline">
+            Recent Activity
+          </Link>
+        </CardTitle>
         <Link href="/inbox" className="text-sm text-primary underline underline-offset-4">
           View all
         </Link>
@@ -78,7 +82,7 @@ export function RecentActivity({
                         </span>
                       ) : null}
                     </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="shrink-0 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                       {formatRelativeTime(entry.created_at, { timezone })}
                     </span>
                   </Link>

@@ -7,7 +7,9 @@
 import { Fragment } from 'react';
 import { RichTextDisplay } from '@/components/ui/rich-text-display';
 import { formatCurrency } from '@/lib/pricing/calculator';
+import type { StatusTone } from '@/lib/ui/status-tokens';
 import type { CustomerViewMode } from '@/lib/validators/project-customer-view';
+import { type CustomerDocTotalsRow, CustomerDocument } from './customer-document';
 import { EstimatePhotoLightbox } from './estimate-photo-lightbox';
 
 export type EstimateRenderLine = {
@@ -100,11 +102,12 @@ function formatDate(iso: string | null | undefined, tz: string | null | undefine
  * Customer view layout:
  *   - Section header: prominent (sm-base text, bold, distinct bar) so
  *     the operator's chosen divisions are obvious at a glance.
- *   - Category: native <details>, collapsed by default. The summary
- *     row shows the category name + the sum of its line prices —
- *     enough info that a customer can scan the full estimate without
- *     opening anything. Click to expand for individual line items,
- *     descriptions, and photos.
+ *   - Category (Detailed mode): native <details>, open by default so
+ *     every cost line is visible — that's the point of the "Detailed"
+ *     rung. The summary row shows the category name + the sum of its
+ *     line prices; a customer can collapse a category to scan, and the
+ *     expanded body carries individual line items, descriptions, and
+ *     photos. (The terser "Categories" rung shows name + total only.)
  *   - Print stylesheet at the bottom forces every <details> open
  *     when the page is printed/saved-as-PDF, so the printed
  *     estimate is always complete.
@@ -237,14 +240,10 @@ function renderCategories(lines: EstimateRenderLine[]) {
                 key={g.key}
                 className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-b px-4 py-3 last:border-0"
               >
-                <div>
-                  <p className="font-medium">{g.categoryName}</p>
-                  {g.description?.trim() ? (
-                    <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
-                      {g.description.trim()}
-                    </p>
-                  ) : null}
-                </div>
+                {/* One row per category — name + total only. Descriptions and
+                 *  cost lines live in the "Detailed" mode so this stays the
+                 *  terser rung on the ladder (Categories < Detailed). */}
+                <span className="font-medium">{g.categoryName}</span>
                 <span className="font-medium tabular-nums">{formatCurrency(categoryTotal)}</span>
               </div>
             );
@@ -292,8 +291,12 @@ function renderDetailed(lines: EstimateRenderLine[]) {
             {sec.categories.map((g) => {
               const categoryTotal = g.lines.reduce((s, l) => s + l.line_price_cents, 0);
               return (
+                // Open by default so "Detailed" actually shows every cost line
+                // (the rung's whole point). Operators/clients can still collapse
+                // a category; print forces all open via the stylesheet above.
                 <details
                   key={g.key}
+                  open
                   className="group border-b last:border-0 [&_summary]:list-none [&_summary::-webkit-details-marker]:hidden"
                 >
                   <summary className="grid cursor-pointer grid-cols-[1fr_auto] items-baseline gap-x-3 px-4 py-3 hover:bg-muted/30">
@@ -398,51 +401,58 @@ export function EstimateRender({
   const dateLabel =
     formatDate(quoteDate, timezone) ?? formatDate(new Date().toISOString(), timezone);
 
+  // Status chip — drive the shell chip from the estimate lifecycle. The
+  // detailed approved/declined/draft *banner* stays in the body (it carries
+  // who/when/why); the chip is the at-a-glance state.
+  const statusChip: { label: string; tone: StatusTone } | null =
+    status === 'approved'
+      ? { label: 'Approved', tone: 'success' }
+      : status === 'declined'
+        ? { label: 'Declined', tone: 'danger' }
+        : status === 'draft'
+          ? { label: 'Draft', tone: 'neutral' }
+          : { label: 'Pending', tone: 'warning' };
+
+  // Totals rows for the shell's unifying block. Lump-sum collapses to the
+  // single headline row in the body, so it passes no breakdown rows.
+  const totalsRows: CustomerDocTotalsRow[] = [];
+  if (customerViewMode !== 'lump_sum') {
+    totalsRows.push({ label: 'Subtotal', cents: subtotal });
+    if (mgmtFee > 0) {
+      totalsRows.push({
+        label: `Management fee (${Math.round(managementFeeRate * 100)}%)`,
+        cents: mgmtFee,
+      });
+    }
+  }
+  if (gst > 0) {
+    totalsRows.push({
+      label: taxLabel ?? `GST (${(gstRate * 100).toFixed(gstRate * 100 < 1 ? 2 : 0)}%)`,
+      cents: gst,
+    });
+  }
+  // Lump-sum mode shows only its single-line body total; suppress the
+  // shell totals block (it would otherwise show just "Total" twice).
+  const totals =
+    customerViewMode === 'lump_sum' && totalsRows.length === 0
+      ? null
+      : { rows: totalsRows, totalCents: total };
+
   return (
-    <>
-      {/* Branded header: logo + business name on the left, Estimate title + date on the right. */}
-      <header className="mb-8 flex items-start justify-between gap-6 border-b pb-6">
-        <div className="flex min-w-0 items-center gap-3">
-          {logoUrl ? (
-            // biome-ignore lint/performance/noImgElement: signed URLs don't flow through next/image
-            <img
-              src={logoUrl}
-              alt={businessName}
-              className="h-12 w-auto max-w-[240px] object-contain"
-            />
-          ) : (
-            <p className="truncate text-base font-semibold">{businessName}</p>
-          )}
-        </div>
-        <div className="text-right">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {docLabel}
-          </p>
-          {dateLabel ? <p className="mt-0.5 text-sm text-muted-foreground">{dateLabel}</p> : null}
-        </div>
-      </header>
-
-      {/* Customer + project block */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Prepared for
-          </p>
-          <p className="mt-1 text-sm font-medium">{customerName}</p>
-          {customerAddress ? (
-            <p className="mt-0.5 whitespace-pre-line text-sm text-muted-foreground">
-              {customerAddress}
-            </p>
-          ) : null}
-        </div>
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Project
-          </p>
-          <p className="mt-1 text-sm font-medium">{projectName}</p>
-        </div>
-      </div>
-
+    <CustomerDocument
+      logoUrl={logoUrl}
+      businessName={businessName}
+      docEyebrow={docLabel}
+      docDate={dateLabel}
+      status={statusChip}
+      customerName={customerName}
+      customerAddress={customerAddress ?? null}
+      projectName={projectName}
+      totals={totals}
+      termsText={termsText ?? null}
+      gstNumber={gstNumber ?? null}
+      wcbNumber={wcbNumber ?? null}
+    >
       {status === 'approved' && approvedByName && approvedAt ? (
         <div className="mb-6 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           Approved by {approvedByName} on {formatDate(approvedAt, timezone)}.
@@ -473,56 +483,6 @@ export function EstimateRender({
           : customerViewMode === 'categories'
             ? renderCategories(lines)
             : renderDetailed(lines)}
-
-      <div className="mt-4 space-y-1 text-sm">
-        {/* Subtotal stays visible on every mode except lump_sum, where it
-         *  would just repeat the single-line total above. */}
-        {customerViewMode !== 'lump_sum' ? (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatCurrency(subtotal)}</span>
-          </div>
-        ) : null}
-        {customerViewMode !== 'lump_sum' && mgmtFee > 0 ? (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">
-              Management fee ({Math.round(managementFeeRate * 100)}%)
-            </span>
-            <span>{formatCurrency(mgmtFee)}</span>
-          </div>
-        ) : null}
-        {gst > 0 ? (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">
-              {taxLabel ?? `GST (${(gstRate * 100).toFixed(gstRate * 100 < 1 ? 2 : 0)}%)`}
-            </span>
-            <span>{formatCurrency(gst)}</span>
-          </div>
-        ) : null}
-        <div className="flex justify-between border-t pt-2 text-base font-semibold">
-          <span>Total</span>
-          <span>{formatCurrency(total)}</span>
-        </div>
-      </div>
-
-      {termsText?.trim() ? (
-        <section className="mt-6 border-t pt-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Terms &amp; notes
-          </h3>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-            {termsText.trim()}
-          </p>
-        </section>
-      ) : null}
-
-      {gstNumber || wcbNumber ? (
-        <p className="mt-4 text-xs text-muted-foreground">
-          {[gstNumber ? `GST: ${gstNumber}` : null, wcbNumber ? `WCB: ${wcbNumber}` : null]
-            .filter(Boolean)
-            .join('  ·  ')}
-        </p>
-      ) : null}
-    </>
+    </CustomerDocument>
   );
 }

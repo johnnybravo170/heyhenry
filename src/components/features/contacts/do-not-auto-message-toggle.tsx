@@ -4,7 +4,7 @@ import { Ban, ShieldCheck } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { setDoNotAutoMessageAction } from '@/server/actions/customers';
+import { setDoNotAutoMessageAction } from '@/server/actions/contacts';
 
 const SOURCE_LABELS: Record<string, string> = {
   unsubscribe_link: 'clicked unsubscribe link',
@@ -15,13 +15,13 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export function DoNotAutoMessageToggle({
-  customerId,
+  contactId,
   enabled,
   setAt,
   source,
   timezone,
 }: {
-  customerId: string;
+  contactId: string;
   enabled: boolean;
   setAt: string | null;
   source: string | null;
@@ -32,7 +32,7 @@ export function DoNotAutoMessageToggle({
   const onToggle = () => {
     const next = !enabled;
     startTransition(async () => {
-      const res = await setDoNotAutoMessageAction(customerId, next);
+      const res = await setDoNotAutoMessageAction(contactId, next);
       if (!res.ok) {
         toast.error(res.error);
         return;

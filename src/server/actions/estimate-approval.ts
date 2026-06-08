@@ -93,7 +93,7 @@ export async function sendEstimateForApprovalAction(input: {
   const { data: project, error: projErr } = await supabase
     .from('projects')
     .select(
-      'id, name, estimate_status, estimate_approval_code, management_fee_rate, auto_followup_enabled, customers:customer_id (name, email, additional_emails, phone, tax_exempt)',
+      'id, name, estimate_status, estimate_approval_code, management_fee_rate, auto_followup_enabled, contacts:contact_id (name, email, additional_emails, phone, tax_exempt)',
     )
     .eq('id', input.projectId)
     .single();
@@ -101,7 +101,7 @@ export async function sendEstimateForApprovalAction(input: {
   if (projErr || !project) return { ok: false, error: 'Project not found.' };
 
   const p = project as Record<string, unknown>;
-  const customerRaw = p.customers as Record<string, unknown> | null;
+  const customerRaw = p.contacts as Record<string, unknown> | null;
   const customerEmail = customerRaw?.email as string | null;
   const customerAdditionalEmails = (customerRaw?.additional_emails as string[] | null) ?? [];
   const customerPhone = (customerRaw?.phone as string | null) ?? null;
@@ -323,50 +323,60 @@ export async function approveEstimateAction(
 
   if (updErr) return { ok: false, error: updErr.message };
 
-  await emitProjectEvent(admin, {
-    tenant_id: p.tenant_id as string,
-    project_id: p.id as string,
-    kind: 'estimate_approved',
-    meta: { approved_by: name },
-    actor: 'customer',
-  });
+  // Post-commit side effects: the approval has already committed above, so a
+  // failure here must NOT surface as an approval error. A thrown event/snapshot
+  // write was tripping the route error boundary AFTER the status flip — the
+  // approver saw an error even though the estimate was approved, and only a
+  // refresh revealed the truth (Charlie founding-member session; ops doc
+  // cd85d021). Best-effort: log and continue.
+  try {
+    await emitProjectEvent(admin, {
+      tenant_id: p.tenant_id as string,
+      project_id: p.id as string,
+      kind: 'estimate_approved',
+      meta: { approved_by: name },
+      actor: 'customer',
+    });
 
-  // Notify the operator who sent the estimate. Best-effort — failures
-  // don't block the customer-facing approval response.
-  notifyOperatorOfApproval({
-    admin,
-    tenantId: p.tenant_id as string,
-    projectId: p.id as string,
-    projectName: p.name as string,
-  }).catch((err) => {
-    console.warn('Failed to notify operator of estimate approval:', err);
-  });
+    // Notify the operator who sent the estimate. Best-effort — failures
+    // don't block the customer-facing approval response.
+    notifyOperatorOfApproval({
+      admin,
+      tenantId: p.tenant_id as string,
+      projectId: p.id as string,
+      projectName: p.name as string,
+    }).catch((err) => {
+      console.warn('Failed to notify operator of estimate approval:', err);
+    });
 
-  // Henry suggestion: seed tasks from estimate scope categories.
-  const { onEstimateApproved } = await import('@/server/ai/triggers');
-  await onEstimateApproved(p.id as string);
+    // Henry suggestion: seed tasks from estimate scope categories.
+    const { onEstimateApproved } = await import('@/server/ai/triggers');
+    await onEstimateApproved(p.id as string);
 
-  // Capture the v1 scope snapshot — baseline for the diff-tracked +
-  // intentional-send post-approval edit flow (decision 6790ef2b).
-  const { snapshotProjectScope } = await import('@/lib/db/queries/project-scope-snapshots');
-  await snapshotProjectScope({
-    projectId: p.id as string,
-    tenantId: p.tenant_id as string,
-    label: 'Original estimate',
-    signedAt: now,
-    signedByName: name,
-  });
+    // Capture the v1 scope snapshot — baseline for the diff-tracked +
+    // intentional-send post-approval edit flow (decision 6790ef2b).
+    const { snapshotProjectScope } = await import('@/lib/db/queries/project-scope-snapshots');
+    await snapshotProjectScope({
+      projectId: p.id as string,
+      tenantId: p.tenant_id as string,
+      label: 'Original estimate',
+      signedAt: now,
+      signedByName: name,
+    });
 
-  // No authenticated user on the customer-facing approval path — record as
-  // a customer-side event (userId null) with the typed name as evidence.
-  await audit({
-    tenantId: p.tenant_id as string,
-    userId: null,
-    action: 'estimate.approved',
-    resourceType: 'project',
-    resourceId: p.id as string,
-    metadata: { approved_by_name: name },
-  });
+    // No authenticated user on the customer-facing approval path — record as
+    // a customer-side event (userId null) with the typed name as evidence.
+    await audit({
+      tenantId: p.tenant_id as string,
+      userId: null,
+      action: 'estimate.approved',
+      resourceType: 'project',
+      resourceId: p.id as string,
+      metadata: { approved_by_name: name },
+    });
+  } catch (e) {
+    console.error('[approveEstimate] post-commit side effect failed:', e);
+  }
 
   return { ok: true, id: p.id as string };
 }
@@ -521,10 +531,10 @@ async function notifyOperatorOfFirstView(params: {
 
   // Customer + tenant context for the email body.
   const [{ data: projectFull }, { data: tenant }] = await Promise.all([
-    admin.from('projects').select('customers:customer_id (name)').eq('id', projectId).maybeSingle(),
+    admin.from('projects').select('contacts:contact_id (name)').eq('id', projectId).maybeSingle(),
     admin.from('tenants').select('name').eq('id', tenantId).maybeSingle(),
   ]);
-  const customerRaw = projectFull?.customers as { name?: string } | { name?: string }[] | null;
+  const customerRaw = projectFull?.contacts as { name?: string } | { name?: string }[] | null;
   const customerName = Array.isArray(customerRaw)
     ? (customerRaw[0]?.name ?? null)
     : (customerRaw?.name ?? null);
@@ -553,9 +563,13 @@ async function notifyOperatorOfFirstView(params: {
 }
 
 /**
- * Email the operator who sent the estimate when the customer approves it.
- * Mirrors `notifyOperatorOfFirstView` — same actor/email lookup chain,
- * different subject + template.
+ * Notify the tenant's operators (owner/admin) when a customer approves an
+ * estimate. Mirrors `dispatchChangeOrderNotifications` / the feedback
+ * dispatcher: iterate owner/admin members and honour each one's
+ * `notify_prefs.estimate_approved` (defaults to email + SMS on — this is
+ * the headline customer event). Estimate approval is the biggest moment in
+ * the funnel, so the SMS is on by default where the older event types
+ * default it off.
  */
 async function notifyOperatorOfApproval(params: {
   admin: ReturnType<typeof createAdminClient>;
@@ -565,37 +579,36 @@ async function notifyOperatorOfApproval(params: {
 }): Promise<void> {
   const { admin, tenantId, projectId, projectName } = params;
 
-  const { data: sentEvent } = await admin
-    .from('project_events')
-    .select('actor')
-    .eq('project_id', projectId)
-    .eq('kind', 'estimate_sent')
-    .order('occurred_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const actorMemberId = (sentEvent?.actor as string | null) ?? null;
-  if (!actorMemberId) return;
-
-  const { data: member } = await admin
+  const { data: members } = await admin
     .from('tenant_members')
-    .select('user_id')
-    .eq('id', actorMemberId)
+    .select('user_id, notification_phone, notify_prefs, role')
+    .eq('tenant_id', tenantId)
+    .in('role', ['owner', 'admin']);
+
+  const userIds = (members ?? []).map((m) => m.user_id as string).filter(Boolean);
+  if (userIds.length === 0) return;
+
+  const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  const emailByUserId = new Map<string, string>();
+  for (const u of users?.users ?? []) {
+    if (u.id && u.email) emailByUserId.set(u.id, u.email);
+  }
+
+  const { data: projectFull } = await admin
+    .from('projects')
+    .select('contacts:contact_id (name)')
+    .eq('id', projectId)
     .maybeSingle();
-  if (!member?.user_id) return;
-
-  const { data: authUser } = await admin.auth.admin.getUserById(member.user_id as string);
-  const operatorEmail = authUser?.user?.email;
-  if (!operatorEmail) return;
-
-  const [{ data: projectFull }, { data: tenant }] = await Promise.all([
-    admin.from('projects').select('customers:customer_id (name)').eq('id', projectId).maybeSingle(),
-    admin.from('tenants').select('name').eq('id', tenantId).maybeSingle(),
-  ]);
-  const customerRaw = projectFull?.customers as { name?: string } | { name?: string }[] | null;
+  const customerRaw = projectFull?.contacts as { name?: string } | { name?: string }[] | null;
   const customerName = Array.isArray(customerRaw)
     ? (customerRaw[0]?.name ?? null)
     : (customerRaw?.name ?? null);
+
+  const { data: tenant } = await admin
+    .from('tenants')
+    .select('name')
+    .eq('id', tenantId)
+    .maybeSingle();
   const businessName = (tenant?.name as string | undefined) ?? 'Your team';
 
   // MUST be app.heyhenry.io (not heyhenry.io — that's the marketing site).
@@ -603,21 +616,44 @@ async function notifyOperatorOfApproval(params: {
   const projectUrl = `${appUrl}/projects/${projectId}?tab=budget`;
 
   const who = customerName ?? 'Your customer';
-  await sendEmail({
-    tenantId,
-    to: operatorEmail,
-    subject: `🎉 ${who} approved your estimate!`,
-    html: estimateAcceptedEmailHtml({
-      customerName,
-      projectName,
-      projectUrl,
-      businessName,
-    }),
-    caslCategory: 'transactional',
-    relatedType: 'estimate',
-    relatedId: projectId,
-    caslEvidence: { kind: 'estimate_accepted_internal', projectId },
-  });
+  const subject = `🎉 ${who} approved your estimate!`;
+  const html = estimateAcceptedEmailHtml({ customerName, projectName, projectUrl, businessName });
+  const smsBody = `🎉 ${who} approved your estimate for ${projectName}! ${projectUrl}`;
+
+  for (const m of members ?? []) {
+    const prefs = (m.notify_prefs as Record<string, Record<string, boolean> | undefined>) ?? {};
+    const want = prefs.estimate_approved ?? { email: true, sms: true };
+
+    if (want.email) {
+      const email = emailByUserId.get(m.user_id as string);
+      if (email) {
+        await sendEmail({
+          tenantId,
+          to: email,
+          subject,
+          html,
+          caslCategory: 'transactional',
+          relatedType: 'estimate',
+          relatedId: projectId,
+          caslEvidence: { kind: 'estimate_accepted_internal', projectId },
+        }).catch((err) => console.error('[estimate-approval] email failed:', err));
+      }
+    }
+
+    if (want.sms) {
+      const phone = (m.notification_phone as string | null) ?? '';
+      if (phone) {
+        await sendSms({
+          tenantId,
+          to: phone,
+          body: smsBody,
+          relatedType: 'platform',
+          caslCategory: 'transactional',
+          caslEvidence: { kind: 'estimate_accepted_internal', projectId },
+        }).catch((err) => console.error('[estimate-approval] sms failed:', err));
+      }
+    }
+  }
 }
 
 // ============================================================================
@@ -657,7 +693,7 @@ export async function submitEstimateFeedbackAction(
 
   const { data: project } = await admin
     .from('projects')
-    .select('id, tenant_id, name, estimate_status, customers:customer_id (name)')
+    .select('id, tenant_id, name, estimate_status, contacts:contact_id (name)')
     .eq('estimate_approval_code', approvalCode)
     .maybeSingle();
 
@@ -688,7 +724,7 @@ export async function submitEstimateFeedbackAction(
   // Fire notifications per tenant member prefs. Best-effort — one bad
   // member shouldn't block the others.
   const customerName =
-    ((p.customers as Record<string, unknown> | null)?.name as string | undefined) ?? 'the customer';
+    ((p.contacts as Record<string, unknown> | null)?.name as string | undefined) ?? 'the customer';
   const projectName = (p.name as string) ?? 'their project';
 
   await dispatchFeedbackNotifications({

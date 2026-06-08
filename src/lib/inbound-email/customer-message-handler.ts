@@ -23,7 +23,6 @@
  * to log.
  */
 
-import { sendUnknownSenderBounce } from '@/lib/inbound-email/bounce';
 import { normaliseEmail } from '@/lib/inbound-email/sender-resolver';
 import { resolveProjectForCustomerReply } from '@/lib/messaging/email-customer-router';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -173,15 +172,4 @@ export async function handleCustomerInboundMessage(
     tenantId: resolved.tenantId,
     projectId: resolved.projectId,
   };
-}
-
-/** Wrapper around the existing bounce sender for the unresolved case. */
-export async function bounceUnresolvedCustomerReply(args: {
-  to: string;
-  originalSubject: string;
-}): Promise<void> {
-  await sendUnknownSenderBounce({
-    to: args.to,
-    originalSubject: args.originalSubject,
-  });
 }

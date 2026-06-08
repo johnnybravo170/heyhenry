@@ -22,6 +22,8 @@ export type TeamMemberRow = {
     default_hourly_rate_cents: number | null;
     default_charge_rate_cents: number | null;
     display_name: string | null;
+    business_name: string | null;
+    gst_number: string | null;
   } | null;
 };
 
@@ -58,7 +60,7 @@ export async function listTeamMembers(tenantId: string): Promise<TeamMemberRow[]
   const { data: profiles } = await admin
     .from('worker_profiles')
     .select(
-      'id, tenant_member_id, worker_type, can_log_expenses, can_invoice, default_hourly_rate_cents, default_charge_rate_cents, display_name',
+      'id, tenant_member_id, worker_type, can_log_expenses, can_invoice, default_hourly_rate_cents, default_charge_rate_cents, display_name, business_name, gst_number',
     )
     .eq('tenant_id', tenantId);
   const profilesByMember = new Map((profiles ?? []).map((p) => [p.tenant_member_id as string, p]));
@@ -83,6 +85,8 @@ export async function listTeamMembers(tenantId: string): Promise<TeamMemberRow[]
             default_hourly_rate_cents: wp.default_hourly_rate_cents as number | null,
             default_charge_rate_cents: wp.default_charge_rate_cents as number | null,
             display_name: wp.display_name as string | null,
+            business_name: wp.business_name as string | null,
+            gst_number: wp.gst_number as string | null,
           }
         : null,
     });

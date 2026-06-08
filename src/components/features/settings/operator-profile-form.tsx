@@ -20,6 +20,10 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
   const [notifySms, setNotifySms] = useState(profile.notifyCustomerFeedbackSms);
   const [notifyCoEmail, setNotifyCoEmail] = useState(profile.notifyChangeOrderResponseEmail);
   const [notifyCoSms, setNotifyCoSms] = useState(profile.notifyChangeOrderResponseSms);
+  const [notifyApprovedEmail, setNotifyApprovedEmail] = useState(
+    profile.notifyEstimateApprovedEmail,
+  );
+  const [notifyApprovedSms, setNotifyApprovedSms] = useState(profile.notifyEstimateApprovedSms);
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
@@ -35,6 +39,8 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
         notifyCustomerFeedbackSms: notifySms,
         notifyChangeOrderResponseEmail: notifyCoEmail,
         notifyChangeOrderResponseSms: notifyCoSms,
+        notifyEstimateApprovedEmail: notifyApprovedEmail,
+        notifyEstimateApprovedSms: notifyApprovedSms,
       });
       if (result.ok) toast.success('Your info saved.');
       else toast.error(result.error);
@@ -103,7 +109,7 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
         <div className="mb-3">
           <h3 className="text-sm font-semibold">Notifications</h3>
           <p className="text-xs text-muted-foreground">
-            Choose how you'd like to be notified when a customer leaves feedback on an estimate.
+            Choose how you'd like to be notified about customer activity on your estimates.
           </p>
         </div>
 
@@ -123,6 +129,34 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
         </div>
 
         <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Customer approved your estimate
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={notifyApprovedEmail}
+              onChange={(e) => setNotifyApprovedEmail(e.target.checked)}
+              className="size-4"
+            />
+            Email me
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={notifyApprovedSms}
+              onChange={(e) => setNotifyApprovedSms(e.target.checked)}
+              className="size-4"
+              disabled={!notificationPhone.trim()}
+            />
+            Text me
+            {!notificationPhone.trim() ? (
+              <span className="text-xs text-muted-foreground">(add a phone number first)</span>
+            ) : null}
+          </label>
+        </div>
+
+        <div className="mt-4 space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Customer feedback on estimates
           </p>

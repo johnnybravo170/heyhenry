@@ -71,7 +71,7 @@ export async function listWorkerTasks(userId: string): Promise<WorkerTaskRow[]> 
   const { data } = await supabase
     .from('tasks')
     .select(
-      `${SELECT_COLS}, jobs:job_id (id, customers:customer_id (name, address_line1, city, province))`,
+      `${SELECT_COLS}, jobs:job_id (id, contacts:contact_id (name, address_line1, city, province))`,
     )
     .eq('assignee_id', userId)
     .not('status', 'in', '(done,verified)')
@@ -82,7 +82,7 @@ export async function listWorkerTasks(userId: string): Promise<WorkerTaskRow[]> 
       jobs:
         | {
             id: string;
-            customers:
+            contacts:
               | {
                   name: string;
                   address_line1: string | null;
@@ -99,7 +99,7 @@ export async function listWorkerTasks(userId: string): Promise<WorkerTaskRow[]> 
           }
         | {
             id: string;
-            customers:
+            contacts:
               | {
                   name: string;
                   address_line1: string | null;
@@ -120,7 +120,7 @@ export async function listWorkerTasks(userId: string): Promise<WorkerTaskRow[]> 
 
   return rows.map((r) => {
     const job = Array.isArray(r.jobs) ? r.jobs[0] : r.jobs;
-    const customer = job ? (Array.isArray(job.customers) ? job.customers[0] : job.customers) : null;
+    const customer = job ? (Array.isArray(job.contacts) ? job.contacts[0] : job.contacts) : null;
     const addrParts = customer
       ? [customer.address_line1, customer.city, customer.province].filter(Boolean)
       : [];
@@ -252,7 +252,7 @@ export async function getJobTaskHealth(): Promise<JobTaskHealth[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('tasks')
-    .select('job_id, status, due_date, jobs:job_id (id, customers:customer_id (name))')
+    .select('job_id, status, due_date, jobs:job_id (id, contacts:contact_id (name))')
     .eq('scope', 'project')
     .not('status', 'in', '(done,verified)');
 
@@ -261,8 +261,8 @@ export async function getJobTaskHealth(): Promise<JobTaskHealth[]> {
     status: TaskStatus;
     due_date: string | null;
     jobs:
-      | { id: string; customers: { name: string } | { name: string }[] | null }
-      | { id: string; customers: { name: string } | { name: string }[] | null }[]
+      | { id: string; contacts: { name: string } | { name: string }[] | null }
+      | { id: string; contacts: { name: string } | { name: string }[] | null }[]
       | null;
   }>;
 
@@ -274,9 +274,9 @@ export async function getJobTaskHealth(): Promise<JobTaskHealth[]> {
     if (!r.job_id) continue;
     const jobObj = Array.isArray(r.jobs) ? r.jobs[0] : r.jobs;
     const customerObj = jobObj
-      ? Array.isArray(jobObj.customers)
-        ? jobObj.customers[0]
-        : jobObj.customers
+      ? Array.isArray(jobObj.contacts)
+        ? jobObj.contacts[0]
+        : jobObj.contacts
       : null;
     const customerName = customerObj?.name ?? null;
 

@@ -40,7 +40,9 @@ export function SubscriptionStatusPoller() {
         const result = await checkSubscriptionStatusAction();
         if (cancelled) return;
         if (result.active) {
-          router.replace('/dashboard');
+          // → first-run setup pass; it self-redirects to /dashboard if the
+          // tenant is already onboarded, so this never loops.
+          router.replace('/onboarding');
           return;
         }
       } catch {

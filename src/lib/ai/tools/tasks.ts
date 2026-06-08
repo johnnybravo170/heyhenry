@@ -246,7 +246,7 @@ export const taskTools: AiTool[] = [
         const { data, error } = await supabase
           .from('tasks')
           .select(
-            'id, title, description, status, scope, phase, due_date, blocker_reason, required_photos, created_by, assignee_id, job_id, completed_at, verified_at, jobs:job_id (id, customers:customer_id (name))',
+            'id, title, description, status, scope, phase, due_date, blocker_reason, required_photos, created_by, assignee_id, job_id, completed_at, verified_at, jobs:job_id (id, contacts:contact_id (name))',
           )
           .eq('id', input.id as string)
           .maybeSingle();
@@ -257,13 +257,13 @@ export const taskTools: AiTool[] = [
           ? (data as { jobs: unknown[] }).jobs[0]
           : (data as { jobs: unknown }).jobs;
         const jobObj = job as
-          | { id: string; customers: { name: string } | { name: string }[] | null }
+          | { id: string; contacts: { name: string } | { name: string }[] | null }
           | null
           | undefined;
         const customerObj = jobObj
-          ? Array.isArray(jobObj.customers)
-            ? jobObj.customers[0]
-            : jobObj.customers
+          ? Array.isArray(jobObj.contacts)
+            ? jobObj.contacts[0]
+            : jobObj.contacts
           : null;
 
         // Resolve assignee name if present.

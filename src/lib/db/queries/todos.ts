@@ -75,25 +75,6 @@ export async function listTodos(filters: TodoListFilters = {}): Promise<TodoRow[
   return (data ?? []) as TodoRow[];
 }
 
-export async function getTodo(id: string): Promise<TodoRow | null> {
-  const userId = await getAuthUserId();
-  if (!userId) return null;
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('todos')
-    .select(TODO_COLUMNS)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to load todo: ${error.message}`);
-  }
-  return (data as TodoRow | null) ?? null;
-}
-
 export async function countTodos(filters: Pick<TodoListFilters, 'done'> = {}): Promise<number> {
   const userId = await getAuthUserId();
   if (!userId) return 0;

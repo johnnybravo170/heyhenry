@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Money } from '@/components/ui/money';
 import type { AttentionItem } from '@/lib/db/queries/dashboard';
-import { formatCurrency } from '@/lib/pricing/calculator';
 
 const MAX_VISIBLE = 5;
 
@@ -34,7 +34,9 @@ function AttentionRow({ item }: { item: AttentionItem }) {
         <li className="text-sm">
           <Link href={`/invoices/${item.id}`} className="hover:underline">
             Invoice for <span className="font-medium">{item.customerName}</span>{' '}
-            <span className="text-muted-foreground">({formatCurrency(item.totalCents)})</span>
+            <span className="text-muted-foreground">
+              (<Money cents={item.totalCents} />)
+            </span>
           </Link>{' '}
           <span className="text-muted-foreground">
             unpaid for {item.daysSinceSent} {item.daysSinceSent === 1 ? 'day' : 'days'}
@@ -51,7 +53,11 @@ export function NeedsAttention({ items }: { items: AttentionItem[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Needs Attention</CardTitle>
+        <CardTitle>
+          <Link href="/inbox" className="hover:underline">
+            Needs Attention
+          </Link>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {visible.length === 0 ? (

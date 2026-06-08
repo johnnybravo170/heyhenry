@@ -10,6 +10,7 @@ import {
 } from '@/lib/db/queries/project-assignments';
 import { getOrCreateWorkerProfile } from '@/lib/db/queries/worker-profiles';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ export default async function WorkerProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { tenant } = await requireWorker();
   const profile = await getOrCreateWorkerProfile(tenant.id, tenant.member.id);
 
@@ -29,7 +31,7 @@ export default async function WorkerProjectDetailPage({
   const { data: project } = await admin
     .from('projects')
     .select(
-      'id, tenant_id, name, status, target_end_date, description, customers:customer_id (name, address)',
+      'id, tenant_id, name, status, target_end_date, description, contacts:contact_id (name, address)',
     )
     .eq('id', id)
     .eq('tenant_id', tenant.id)
@@ -40,7 +42,7 @@ export default async function WorkerProjectDetailPage({
 
   const { data: categories } = await admin
     .from('project_budget_categories')
-    .select('id, name, section, description')
+    .select('id, name, description')
     .eq('project_id', id)
     .order('display_order', { ascending: true });
 
@@ -50,7 +52,7 @@ export default async function WorkerProjectDetailPage({
     .filter((a) => a.scheduled_date && a.scheduled_date >= new Date().toISOString().slice(0, 10))
     .sort((a, b) => (a.scheduled_date ?? '').localeCompare(b.scheduled_date ?? ''));
 
-  const customersRaw = project.customers as
+  const customersRaw = project.contacts as
     | { name?: string; address?: string }
     | { name?: string; address?: string }[]
     | null;

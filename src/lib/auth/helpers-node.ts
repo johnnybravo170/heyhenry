@@ -66,7 +66,7 @@ export async function getCurrentTenantFromReq(req: IncomingMessage): Promise<Cur
     name: tenant.name,
     slug: tenant.slug,
     timezone: (tenant.timezone as string | null) ?? 'America/Vancouver',
-    vertical: (tenant.vertical as string | null) ?? 'pressure_washing',
+    vertical: (tenant.vertical as string | null) ?? 'renovation',
     plan: (tenant.plan ?? 'starter') as CurrentTenant['plan'],
     subscriptionStatus: (tenant.subscription_status ??
       'trialing') as CurrentTenant['subscriptionStatus'],

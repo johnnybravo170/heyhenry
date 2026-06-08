@@ -1,7 +1,8 @@
-import { Info } from 'lucide-react';
+import { Info, Monitor } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BankImportFlow } from '@/components/features/bank-import/bank-import-flow';
+import { OwnerOnlyPane } from '@/components/features/settings/owner-only-pane';
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 
@@ -14,6 +15,20 @@ export const metadata = {
 export default async function BankImportPage() {
   const tenant = await getCurrentTenant();
   if (!tenant) redirect('/login');
+
+  // Role gate — DECIDED owner+admin only. Import feeds the review queue,
+  // which writes paid-state; gate the whole flow to match.
+  // FLAG FOR OPS: loosen to members only by explicit decision — never below
+  // owner+admin.
+  const role = tenant.member.role;
+  if (role !== 'owner' && role !== 'admin') {
+    return (
+      <OwnerOnlyPane
+        title="Import bank statement"
+        description={`Importing statements and confirming matches marks invoices paid for ${tenant.name}, so it's handled by the owner and admins.`}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -31,9 +46,9 @@ export default async function BankImportPage() {
         </p>
       </header>
 
-      <aside className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-        <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
-          <Info className="size-3.5" />
+      <aside className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-200">
+        <div className="mb-1 flex items-center gap-1.5 font-medium">
+          <Info className="size-3.5" aria-hidden />
           What this is (and isn't)
         </div>
         <ul className="ml-4 list-disc space-y-1">
@@ -52,7 +67,20 @@ export default async function BankImportPage() {
         </ul>
       </aside>
 
-      <BankImportFlow />
+      {/* Mobile: file-pick + column-mapping are hostile on a phone — this is
+          desktop work. Redirect, don't force it. */}
+      <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center lg:hidden">
+        <Monitor className="size-6 text-muted-foreground" aria-hidden />
+        <p className="text-sm font-medium">Import on a larger screen</p>
+        <p className="max-w-xs text-xs text-muted-foreground">
+          Picking a CSV and mapping columns works best on a laptop or desktop. Open HeyHenry there
+          to import a statement.
+        </p>
+      </div>
+
+      <div className="hidden lg:block">
+        <BankImportFlow />
+      </div>
     </div>
   );
 }

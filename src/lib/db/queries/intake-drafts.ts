@@ -9,7 +9,18 @@
 import type { ParsedIntake } from '@/lib/ai/intake-prompt';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import type { IntakeArtifact, IntakeAugmentation } from '@/server/actions/intake';
+import { isUuid } from '@/lib/validators/uuid';
+import type {
+  IntakeArtifact,
+  IntakeArtifactKind,
+  IntakeAugmentation,
+} from '@/server/actions/intake';
+
+/** Where this draft entered the system (intake_drafts.source). */
+export type IntakeSource = 'email' | 'project_drop' | 'lead_form' | 'voice' | 'web_share';
+
+/** Operator-action lifecycle (intake_drafts.disposition). */
+export type IntakeDisposition = 'pending_review' | 'applied' | 'dismissed' | 'error';
 
 export type IntakeDraftStatus =
   | 'pending'
@@ -31,6 +42,8 @@ export type IntakeArtifactWithUrl = IntakeArtifact & {
 export type IntakeDraftRow = {
   id: string;
   status: IntakeDraftStatus;
+  source: IntakeSource;
+  disposition: IntakeDisposition;
   customer_name: string | null;
   pasted_text: string | null;
   transcript: string | null;
@@ -58,11 +71,12 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
  * row can render thumbnails.
  */
 export async function loadIntakeDraft(id: string): Promise<IntakeDraftRow | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('intake_drafts')
     .select(
-      'id, status, customer_name, pasted_text, transcript, artifacts, augmentations, ai_extraction, parsed_by, error_message, recognized_customer_id, accepted_project_id, created_at, updated_at',
+      'id, status, source, disposition, customer_name, pasted_text, transcript, artifacts, augmentations, ai_extraction, parsed_by, error_message, recognized_customer_id, accepted_project_id, created_at, updated_at',
     )
     .eq('id', id)
     .maybeSingle();
@@ -92,4 +106,146 @@ export async function loadIntakeDraft(id: string): Promise<IntakeDraftRow | null
   }));
 
   return { ...(data as unknown as IntakeDraftRow), artifacts };
+}
+
+/**
+ * Compact row for the universal /inbox/intake list view. One per draft.
+ * Includes envelope info from inbound_emails (when source='email') and
+ * the FIRST visual artifact's signed URL for thumbnail rendering. The
+ * full artifact list lives on the per-draft view.
+ */
+export type InboxIntakeRow = {
+  id: string;
+  source: IntakeSource;
+  disposition: IntakeDisposition;
+  status: IntakeDraftStatus;
+  customer_name: string | null;
+  primary_kind: IntakeArtifactKind | null;
+  /** First artifact path (in intake-audio bucket). Used by per-intent
+   * apply dialogs that need to copy the file into a destination bucket. */
+  primary_artifact_path: string | null;
+  primary_artifact_mime: string | null;
+  primary_artifact_bytes: number | null;
+  thumbnail_url: string | null;
+  artifact_count: number;
+  email_subject: string | null;
+  email_from: string | null;
+  accepted_project_id: string | null;
+  recognized_customer_id: string | null;
+  applied_destination_kind: string | null;
+  applied_destination_id: string | null;
+  applied_at: string | null;
+  created_at: string;
+};
+
+export type InboxIntakeFilter = {
+  source?: IntakeSource;
+  /** Default: pending_review + error. Pass 'all' to disable the filter. */
+  disposition?: IntakeDisposition | 'all';
+  /** Filter to drafts already accepted into a specific project. */
+  projectId?: string;
+  /** Free-text search against pasted_text + customer_name. */
+  search?: string;
+  /** Capped at 50 since each visual artifact gets a signed URL. */
+  limit?: number;
+};
+
+/**
+ * List drafts for the universal /inbox/intake view. LEFT-joins
+ * inbound_emails for envelope preview (subject/from); non-email-source
+ * drafts have nulls there.
+ */
+export async function listInboxIntake(filter: InboxIntakeFilter = {}): Promise<InboxIntakeRow[]> {
+  const supabase = await createClient();
+  const limit = Math.min(filter.limit ?? 50, 50);
+
+  let query = supabase
+    .from('intake_drafts')
+    .select(
+      `id, source, disposition, status, customer_name, pasted_text,
+       artifacts, accepted_project_id, recognized_customer_id,
+       applied_destination_kind, applied_destination_id,
+       applied_at, created_at,
+       inbound_emails!intake_draft_id ( subject, from_address, from_name )`,
+    )
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (filter.source) query = query.eq('source', filter.source);
+
+  if (filter.disposition && filter.disposition !== 'all') {
+    query = query.eq('disposition', filter.disposition);
+  } else if (!filter.disposition) {
+    query = query.in('disposition', ['pending_review', 'error']);
+  }
+
+  if (filter.projectId) query = query.eq('accepted_project_id', filter.projectId);
+
+  if (filter.search?.trim()) {
+    const s = `%${filter.search.trim().replace(/[%_]/g, (c) => `\\${c}`)}%`;
+    query = query.or(`pasted_text.ilike.${s},customer_name.ilike.${s}`);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  // Sign one thumbnail URL per row (the first visual artifact).
+  const admin = createAdminClient();
+  const firstVisualPaths: string[] = [];
+  const draftToFirstVisual = new Map<string, string>();
+  for (const row of data as Array<Record<string, unknown>>) {
+    const artifacts = (row.artifacts as IntakeArtifact[] | null) ?? [];
+    // Only IMAGE artifacts get a thumbnail — a signed PDF URL can't render
+    // in an <img> (shows a broken-image icon). PDFs fall back to the
+    // FileText icon in IntakeRow via primary_artifact_mime.
+    const visual = artifacts.find((a) => a?.path && a.mime?.startsWith('image/'));
+    if (visual?.path) {
+      firstVisualPaths.push(visual.path);
+      draftToFirstVisual.set(row.id as string, visual.path);
+    }
+  }
+  const urlByPath = new Map<string, string>();
+  if (firstVisualPaths.length > 0) {
+    const { data: signed } = await admin.storage
+      .from('intake-audio')
+      .createSignedUrls(firstVisualPaths, SIGNED_URL_TTL_SECONDS);
+    for (const entry of signed ?? []) {
+      if (entry.path && entry.signedUrl) urlByPath.set(entry.path, entry.signedUrl);
+    }
+  }
+
+  return (data as Array<Record<string, unknown>>).map((row) => {
+    const artifacts = (row.artifacts as IntakeArtifact[] | null) ?? [];
+    const primaryArtifact = artifacts[0] ?? null;
+    const visualPath = draftToFirstVisual.get(row.id as string);
+    const env =
+      (row.inbound_emails as {
+        subject: string | null;
+        from_address: string | null;
+        from_name: string | null;
+      } | null) ?? null;
+    return {
+      id: row.id as string,
+      source: row.source as IntakeSource,
+      disposition: row.disposition as IntakeDisposition,
+      status: row.status as IntakeDraftStatus,
+      customer_name: (row.customer_name as string | null) ?? null,
+      primary_kind: (primaryArtifact?.kind as IntakeArtifactKind | null) ?? null,
+      primary_artifact_path: (primaryArtifact?.path as string | null) ?? null,
+      primary_artifact_mime: (primaryArtifact?.mime as string | null) ?? null,
+      primary_artifact_bytes: (primaryArtifact?.size as number | null) ?? null,
+      thumbnail_url: visualPath ? (urlByPath.get(visualPath) ?? null) : null,
+      artifact_count: artifacts.length,
+      email_subject: env?.subject ?? null,
+      email_from: env?.from_name
+        ? `${env.from_name} <${env.from_address ?? ''}>`
+        : (env?.from_address ?? null),
+      accepted_project_id: (row.accepted_project_id as string | null) ?? null,
+      recognized_customer_id: (row.recognized_customer_id as string | null) ?? null,
+      applied_destination_kind: (row.applied_destination_kind as string | null) ?? null,
+      applied_destination_id: (row.applied_destination_id as string | null) ?? null,
+      applied_at: (row.applied_at as string | null) ?? null,
+      created_at: row.created_at as string,
+    };
+  });
 }

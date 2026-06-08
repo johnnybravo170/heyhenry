@@ -24,7 +24,7 @@ Code-level plumbing is in. To go live, complete these in order:
    `BACKUP_DATABASE_URL`, `BACKUP_ENCRYPTION_KEY` (generate with
    `openssl rand -base64 48` — store a copy in 1Password),
    `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`,
-   `R2_SECRET_ACCESS_KEY`, `RESEND_API_KEY`.
+   `R2_SECRET_ACCESS_KEY`, `POSTMARK_SERVER_TOKEN`.
 5. **Trigger `nightly-backup.yml` manually** via Actions → Run workflow
    to verify the first dump lands in R2.
 6. **Trigger `restore-drill.yml` manually** to confirm the restore path
@@ -68,7 +68,7 @@ lose everything.
    Runs 03:00 UTC. Installs Postgres 17 client, dumps with
    `--format=custom --no-owner --no-acl --clean --if-exists`, encrypts
    with `openssl aes-256-cbc` (pbkdf2, 100k iter), uploads to R2 under
-   `daily/`. Failure alert via Resend → `OPS_ALERTS_TO_EMAIL`.
+   `daily/`. Failure alert via Postmark → `OPS_ALERTS_TO_EMAIL`.
 3. **Retention.** ❌ Pending — configure R2 lifecycle rules (see
    activation checklist). Phase 1 ships with `daily/` only; weekly and
    monthly promotion is Phase 2.

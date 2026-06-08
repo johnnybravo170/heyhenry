@@ -28,7 +28,7 @@ import { dispatchCustomerMessageToOperators } from '@/lib/portal/customer-messag
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type SmsCustomerCandidate = {
-  customerId: string;
+  contactId: string;
   tenantId: string;
   projectId: string;
   customerName: string;
@@ -37,7 +37,7 @@ export type SmsCustomerCandidate = {
 export type SmsResolvedProject = {
   tenantId: string;
   projectId: string;
-  customerId: string;
+  contactId: string;
   customerName: string;
 };
 
@@ -48,10 +48,8 @@ export type SmsResolvedProject = {
 async function listCustomerCandidatesForPhone(phone: string): Promise<SmsCustomerCandidate[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from('customers')
-    .select(
-      'id, name, tenant_id, projects:projects!projects_customer_id_fkey (id, lifecycle_stage)',
-    )
+    .from('contacts')
+    .select('id, name, tenant_id, projects:projects!projects_contact_id_fkey (id, lifecycle_stage)')
     .eq('phone', phone)
     .is('deleted_at', null);
 
@@ -60,14 +58,14 @@ async function listCustomerCandidatesForPhone(phone: string): Promise<SmsCustome
   const out: SmsCustomerCandidate[] = [];
   for (const row of data as Array<Record<string, unknown>>) {
     const tenantId = row.tenant_id as string;
-    const customerId = row.id as string;
+    const contactId = row.id as string;
     const customerName = (row.name as string) ?? 'Customer';
     const projects = (row.projects as Array<Record<string, unknown>> | null) ?? [];
     for (const p of projects) {
       const stage = p.lifecycle_stage as string;
       if (stage === 'cancelled') continue;
       out.push({
-        customerId,
+        contactId,
         tenantId,
         projectId: p.id as string,
         customerName,
@@ -100,7 +98,7 @@ export async function resolveProjectForSmsReply(
     return {
       tenantId: candidates[0].tenantId,
       projectId: candidates[0].projectId,
-      customerId: candidates[0].customerId,
+      contactId: candidates[0].contactId,
       customerName: candidates[0].customerName,
     };
   }
@@ -135,7 +133,7 @@ export async function resolveProjectForSmsReply(
       return {
         tenantId: c.tenantId,
         projectId: c.projectId,
-        customerId: c.customerId,
+        contactId: c.contactId,
         customerName: c.customerName,
       };
     }
@@ -157,7 +155,7 @@ export async function resolveProjectForSmsReply(
       return {
         tenantId: matched.tenantId,
         projectId: matched.projectId,
-        customerId: matched.customerId,
+        contactId: matched.contactId,
         customerName: matched.customerName,
       };
     }
@@ -168,7 +166,7 @@ export async function resolveProjectForSmsReply(
     return {
       tenantId: first.tenantId,
       projectId: first.projectId,
-      customerId: first.customerId,
+      contactId: first.contactId,
       customerName: first.customerName,
     };
   }

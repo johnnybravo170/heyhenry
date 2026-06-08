@@ -12,7 +12,22 @@ import { upsertCostLineAction } from '@/server/actions/project-cost-control';
 import { CostLinePhotoStrip } from './cost-line-photo-strip';
 import { LastUsedPriceHints } from './last-used-price-hints';
 
-const CATEGORIES = ['material', 'labour', 'sub', 'equipment', 'overhead'] as const;
+const CATEGORIES = [
+  'material',
+  'labour',
+  'sub',
+  'equipment',
+  'overhead',
+  'supply_install',
+] as const;
+const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
+  material: 'material',
+  labour: 'labour',
+  sub: 'sub',
+  equipment: 'equipment',
+  overhead: 'overhead',
+  supply_install: 'Supply & install',
+};
 
 function centsToDisplay(cents: number) {
   return (cents / 100).toFixed(2);
@@ -26,6 +41,7 @@ export function CostLineForm({
   initial,
   catalog,
   defaultCategoryId,
+  seedPriceCents,
   onDone,
   photoUrls,
 }: {
@@ -33,6 +49,10 @@ export function CostLineForm({
   initial?: CostLineRow;
   catalog: MaterialsCatalogRow[];
   defaultCategoryId?: string;
+  /** When adding the FIRST line to a flat (manually-priced) category, seed
+   *  the price with the category's estimate so itemizing preserves the
+   *  number instead of collapsing it. Ignored when editing an existing line. */
+  seedPriceCents?: number;
   onDone: () => void;
   /** Path → signed URL map for any existing photos on this line. */
   photoUrls?: Record<string, string>;
@@ -47,7 +67,13 @@ export function CostLineForm({
   const [qty, setQty] = useState(initial ? String(initial.qty) : '1');
   const [unit, setUnit] = useState(initial?.unit ?? 'item');
   const [costRaw, setCostRaw] = useState(initial ? centsToDisplay(initial.unit_cost_cents) : '');
-  const [priceRaw, setPriceRaw] = useState(initial ? centsToDisplay(initial.unit_price_cents) : '');
+  const [priceRaw, setPriceRaw] = useState(
+    initial
+      ? centsToDisplay(initial.unit_price_cents)
+      : seedPriceCents && seedPriceCents > 0
+        ? centsToDisplay(seedPriceCents)
+        : '',
+  );
   const [markupRaw, setMarkupRaw] = useState(
     initial ? (Number(initial.markup_pct) || 0).toFixed(2) : '',
   );
@@ -207,7 +233,7 @@ export function CostLineForm({
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {CATEGORY_LABELS[c]}
               </option>
             ))}
           </select>

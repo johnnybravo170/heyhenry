@@ -24,6 +24,7 @@ import {
 import { type AttachedFile, gateway, isAiError } from '@/lib/ai-gateway';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { type ContactMatch, findContactMatches } from '@/lib/db/queries/contact-matches';
+import { normalizePhone } from '@/lib/phone';
 import { createClient } from '@/lib/supabase/server';
 import type { ContactKind } from '@/lib/validators/customer';
 
@@ -135,7 +136,7 @@ export async function acceptInboundContactAction(input: {
 
   const supabase = await createClient();
   const { data: contact, error: contactErr } = await supabase
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenant.id,
       kind: input.kind,
@@ -143,7 +144,7 @@ export async function acceptInboundContactAction(input: {
       type: null,
       name,
       email: draft.email?.trim() || null,
-      phone: draft.phone?.trim() || null,
+      phone: normalizePhone(draft.phone),
       address_line1: draft.address?.trim() || null,
       city: draft.city?.trim() || null,
       province: draft.province?.trim() || null,
@@ -194,7 +195,7 @@ export async function attachIntakeToContactAction(input: {
   const supabase = await createClient();
 
   const { data: existing, error: loadErr } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, email, phone, address_line1, city, province, postal_code')
     .eq('id', input.contactId)
     .is('deleted_at', null)
@@ -220,7 +221,7 @@ export async function attachIntakeToContactAction(input: {
   if (Object.keys(patch).length > 0) {
     patch.updated_at = new Date().toISOString();
     const { error: patchErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .update(patch)
       .eq('id', input.contactId);
     if (patchErr) {

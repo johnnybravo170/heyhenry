@@ -44,8 +44,8 @@ type ProvisionedTenant = {
   tenantId: string;
   email: string;
   // Optional helper rows seeded via the admin client so child tables can
-  // FK against them (customer_id, project_id, etc).
-  customerId: string;
+  // FK against them (contact_id, project_id, etc).
+  contactId: string;
   projectId: string;
   quoteId: string;
   jobId: string;
@@ -77,10 +77,10 @@ type RlsCase = {
 
 const RLS_TABLE_CASES: RlsCase[] = [
   {
-    table: 'customers',
+    table: 'contacts',
     seed: async ({ admin, tenant, stamp }) => {
       const r = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: tenant.tenantId,
           name: `cust-${stamp}`,
@@ -106,7 +106,7 @@ const RLS_TABLE_CASES: RlsCase[] = [
     insertAcrossTenants: ({ tenant, stamp }) => ({
       tenant_id: tenant.tenantId,
       name: `proj-inject-${stamp}`,
-      customer_id: tenant.customerId,
+      contact_id: tenant.contactId,
     }),
   },
   {
@@ -256,7 +256,7 @@ const RLS_TABLE_CASES: RlsCase[] = [
     updatePayload: { notes: 'cross-tenant tamper' },
     insertAcrossTenants: ({ tenant }) => ({
       tenant_id: tenant.tenantId,
-      customer_id: tenant.customerId,
+      contact_id: tenant.contactId,
       status: 'draft',
       subtotal_cents: 0,
       tax_cents: 0,
@@ -269,7 +269,7 @@ const RLS_TABLE_CASES: RlsCase[] = [
     updatePayload: { notes: 'cross-tenant tamper' },
     insertAcrossTenants: ({ tenant }) => ({
       tenant_id: tenant.tenantId,
-      customer_id: tenant.customerId,
+      contact_id: tenant.contactId,
       status: 'booked',
     }),
   },
@@ -555,6 +555,36 @@ const RLS_TABLE_CASES: RlsCase[] = [
       notes: `pibi-inject-${stamp}`,
     }),
   },
+  {
+    // Append-only ledger: SELECT/INSERT policies only (no UPDATE/DELETE), so
+    // the tamper-UPDATE assertion passes by affecting zero rows (no policy =
+    // no access), and the WITH-CHECK insert is rejected by the tenant+self
+    // predicate.
+    table: 'agreement_acceptances',
+    seed: async ({ admin, tenant, stamp }) => {
+      const { data, error } = await admin
+        .from('agreement_acceptances')
+        .insert({
+          tenant_id: tenant.tenantId,
+          user_id: tenant.userId,
+          agreement_type: 'founding_member',
+          agreement_version: `v-${stamp}`,
+          signature_name: `signer-${stamp}`,
+        })
+        .select('id')
+        .single();
+      if (error || !data) throw new Error(error?.message ?? 'agreement_acceptances seed failed');
+      return data.id as string;
+    },
+    updatePayload: { signature_name: 'cross-tenant tamper' },
+    insertAcrossTenants: ({ tenant, stamp }) => ({
+      tenant_id: tenant.tenantId,
+      user_id: tenant.userId,
+      agreement_type: 'founding_member',
+      agreement_version: `v-inject-${stamp}`,
+      signature_name: `inject-${stamp}`,
+    }),
+  },
 ];
 
 async function provisionTenant(
@@ -589,15 +619,15 @@ async function provisionTenant(
   // child-table cases can FK against real rows. We do this once per tenant
   // up front so each table case can read these via tenant.<id>.
   const customer = await admin
-    .from('customers')
+    .from('contacts')
     .insert({ tenant_id: tenantId, name: `cust-seed-${tag}-${stamp}`, type: 'residential' })
     .select('id')
     .single();
-  const customerId = customer.data?.id as string;
+  const contactId = customer.data?.id as string;
 
   const project = await admin
     .from('projects')
-    .insert({ tenant_id: tenantId, customer_id: customerId, name: `proj-seed-${tag}-${stamp}` })
+    .insert({ tenant_id: tenantId, contact_id: contactId, name: `proj-seed-${tag}-${stamp}` })
     .select('id')
     .single();
   const projectId = project.data?.id as string;
@@ -606,7 +636,7 @@ async function provisionTenant(
     .from('quotes')
     .insert({
       tenant_id: tenantId,
-      customer_id: customerId,
+      contact_id: contactId,
       status: 'draft',
       subtotal_cents: 0,
       tax_cents: 0,
@@ -620,7 +650,7 @@ async function provisionTenant(
     .from('jobs')
     .insert({
       tenant_id: tenantId,
-      customer_id: customerId,
+      contact_id: contactId,
       quote_id: quoteId,
       status: 'booked',
     })
@@ -632,7 +662,7 @@ async function provisionTenant(
     .from('invoices')
     .insert({
       tenant_id: tenantId,
-      customer_id: customerId,
+      contact_id: contactId,
       job_id: jobId,
       status: 'draft',
       amount_cents: 0,
@@ -653,7 +683,7 @@ async function provisionTenant(
     userId,
     tenantId,
     email,
-    customerId,
+    contactId,
     projectId,
     quoteId,
     jobId,
@@ -755,18 +785,18 @@ describe.skipIf(!canRun)('cross-tenant RLS isolation (integration)', () => {
       }
     });
 
-    async function customerIdsVisible(client: SupabaseClient): Promise<string[]> {
-      const r = await client.from('customers').select('id, tenant_id');
+    async function contactIdsVisible(client: SupabaseClient): Promise<string[]> {
+      const r = await client.from('contacts').select('id, tenant_id');
       if (r.error) throw new Error(`select failed: ${r.error.message}`);
       return (r.data ?? []).map((row) => (row as { id: string }).id);
     }
 
     it('sees only active tenant before/after switch', async () => {
       // Active = A. Should see A's seeded customer, not B's.
-      let visible = await customerIdsVisible(anonMulti);
-      expect(visible, 'multi-user (active=A) should see A.customer').toContain(tenantA.customerId);
+      let visible = await contactIdsVisible(anonMulti);
+      expect(visible, 'multi-user (active=A) should see A.customer').toContain(tenantA.contactId);
       expect(visible, 'multi-user (active=A) should NOT see B.customer').not.toContain(
-        tenantB.customerId,
+        tenantB.contactId,
       );
 
       // Switch to B via the SECURITY DEFINER RPC.
@@ -775,10 +805,10 @@ describe.skipIf(!canRun)('cross-tenant RLS isolation (integration)', () => {
       });
       expect(switchToB.error, 'switch to B should succeed').toBeNull();
 
-      visible = await customerIdsVisible(anonMulti);
-      expect(visible, 'multi-user (active=B) should see B.customer').toContain(tenantB.customerId);
+      visible = await contactIdsVisible(anonMulti);
+      expect(visible, 'multi-user (active=B) should see B.customer').toContain(tenantB.contactId);
       expect(visible, 'multi-user (active=B) should NOT see A.customer').not.toContain(
-        tenantA.customerId,
+        tenantA.contactId,
       );
 
       // Switch back to A.
@@ -787,12 +817,12 @@ describe.skipIf(!canRun)('cross-tenant RLS isolation (integration)', () => {
       });
       expect(switchToA.error, 'switch back to A should succeed').toBeNull();
 
-      visible = await customerIdsVisible(anonMulti);
+      visible = await contactIdsVisible(anonMulti);
       expect(visible, 'multi-user (active=A again) should see A.customer').toContain(
-        tenantA.customerId,
+        tenantA.contactId,
       );
       expect(visible, 'multi-user (active=A again) should NOT see B.customer').not.toContain(
-        tenantB.customerId,
+        tenantB.contactId,
       );
     }, 30_000);
 

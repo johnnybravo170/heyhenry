@@ -113,19 +113,3 @@ export async function listExpenses(filters: ExpenseFilters = {}): Promise<Expens
   }
   return ((data ?? []) as unknown as ProjectCostRow[]).map(toExpenseRow);
 }
-
-export async function getExpense(id: string): Promise<ExpenseRow | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('project_costs')
-    .select(SELECT)
-    .eq('id', id)
-    .eq('source_type', 'receipt')
-    .maybeSingle();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`Failed to load expense: ${error.message}`);
-  }
-  return data ? toExpenseRow(data as unknown as ProjectCostRow) : null;
-}

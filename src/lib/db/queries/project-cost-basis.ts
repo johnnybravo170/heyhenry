@@ -177,11 +177,20 @@ export async function getProjectCostBasisRollup(
     // the legacy implicit-active behavior of `expenses` (which has no
     // status column) and the no-void state of `project_bills` (which
     // only flips to 'paid').
+    //
+    // is_billable = false rows are project overhead the contractor absorbs
+    // (e.g. a sub's WCB bill — card #11). They MUST NOT reach the cost-plus
+    // invoice base: the customer is never billed (and no markup applied)
+    // for them. They still hit margin via get_project_variance_aggregates,
+    // which intentionally sums every active row regardless of this flag.
+    // Column is NOT NULL DEFAULT TRUE, so eq(true) cleanly excludes the
+    // non-billable rows without a null-handling branch.
     supabase
       .from('project_costs')
       .select('source_type, amount_cents, pre_tax_amount_cents, gst_cents')
       .eq('project_id', projectId)
-      .eq('status', 'active'),
+      .eq('status', 'active')
+      .eq('is_billable', true),
   ]);
 
   const { expenseRows, billRows } = splitProjectCostRows((costRes.data ?? []) as ProjectCostRow[]);

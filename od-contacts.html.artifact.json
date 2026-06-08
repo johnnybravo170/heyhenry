@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "Contacts — HeyHenry · OD launcher",
+  "entry": "od-contacts.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-05-21T03:58:50.430Z",
+  "updatedAt": "2026-05-21T03:58:50.498Z",
+  "sourceSkillId": "agent-browser",
+  "metadata": {
+    "identifier": "od-contacts",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}

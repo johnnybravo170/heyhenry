@@ -132,7 +132,7 @@ export async function importEstimatePage(
   type Insert = {
     qbo_estimate_id: string;
     qbo_sync_token: string;
-    customer_id: string;
+    contact_id: string;
     row: ReturnType<typeof mapQboEstimateToRow>['row'];
   };
   type Update = {
@@ -147,8 +147,8 @@ export async function importEstimatePage(
 
   for (const qbo of page) {
     const { qbo_customer_id, row } = mapQboEstimateToRow(qbo);
-    const customerId = ctx.qboCustomerIdToHhId.get(qbo_customer_id);
-    if (!customerId) {
+    const contactId = ctx.qboCustomerIdToHhId.get(qbo_customer_id);
+    if (!contactId) {
       skipped += 1;
       continue;
     }
@@ -159,7 +159,7 @@ export async function importEstimatePage(
       toInsert.push({
         qbo_estimate_id: qbo.Id,
         qbo_sync_token: qbo.SyncToken,
-        customer_id: customerId,
+        contact_id: contactId,
         row,
       });
     }
@@ -170,7 +170,7 @@ export async function importEstimatePage(
     const now = new Date().toISOString();
     const rows = toInsert.map((r) => ({
       tenant_id: ctx.tenantId,
-      customer_id: r.customer_id,
+      contact_id: r.contact_id,
       status: r.row.status,
       subtotal_cents: r.row.subtotal_cents,
       tax_cents: r.row.tax_cents,
@@ -237,7 +237,7 @@ export async function loadEstimateImportContext(
   const supabase = createAdminClient();
   const [customerRes, estimateRes] = await Promise.all([
     supabase
-      .from('customers')
+      .from('contacts')
       .select('id, qbo_customer_id')
       .eq('tenant_id', tenantId)
       .not('qbo_customer_id', 'is', null)

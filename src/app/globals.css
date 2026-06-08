@@ -27,6 +27,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -39,6 +41,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-chrome: var(--chrome);
+  --color-paper-soft: var(--paper-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,39 +52,92 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+  /* Paper closed type scale (DESIGN.md §Typography; ratified 2026-05-26,
+     Ops decision "Paper design-system enforcement rulings"). Body/label tier
+     is named by intent so edits reach for a token, not an arbitrary `text-[Npx]`.
+     13 and 15 are intentionally absent — they're near-duplicates of 12/14/16 that
+     the eye can't resolve but the keyboard easily types, the exact adjacency that
+     breeds strays. The design-lint (tests/unit/design-tokens.test.ts) holds the
+     floor; these tokens are the migration target. Additive — Tailwind's default
+     text-* sizes still resolve. */
+  --text-eyebrow: 11px; /* JetBrains-mono uppercase eyebrows / labels / counts / pills */
+  --text-eyebrow--line-height: 1.3;
+  --text-meta: 12px; /* captions, meta, secondary labels */
+  --text-meta--line-height: 1.4;
+  --text-body: 14px; /* default body / UI text */
+  --text-body--line-height: 1.5;
+  --text-lead: 16px; /* lead body / emphasis */
+  --text-lead--line-height: 1.5;
+  /* Display tier — page headlines + big stat numbers only, used sparingly. */
+  --text-display-xs: 20px;
+  --text-display-xs--line-height: 1.2;
+  --text-display-sm: 24px;
+  --text-display-sm--line-height: 1.2;
+  --text-display-md: 28px;
+  --text-display-md--line-height: 1.15;
+  --text-display-lg: 36px;
+  --text-display-lg--line-height: 1.1;
+}
+
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.48 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* HeyHenry "Paper" palette — deepened 2026-05-20 for warmth + contrast on
+     low-quality displays: deeper/warmer paper, solid warm borders (the old
+     8%-alpha hairlines vanished on cheap monitors), white cards that visibly
+     float, ink text. Kept in sync with DESIGN.md.
+     Rust is an accent, not a theme: primary buttons and focus rings stay ink. */
+  --background: #f3ebdb; /* warm paper — deeper + warmer so white cards float */
+  --foreground: #0a0a0a; /* ink */
+  --card: #ffffff; /* white cards float on the deeper paper */
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #0a0a0a; /* primary buttons are ink */
+  --primary-foreground: #ffffff;
+  --secondary: #efe7d6; /* warm cream fill */
+  --secondary-foreground: #0a0a0a;
+  --muted: #ece3d0; /* deeper cream fill; also drives active nav (bg-muted) */
+  --muted-foreground: #57534b; /* warm + deeper — holds on low-contrast displays */
+  --accent: #e8dec9; /* deeper cream hover/active fill */
+  --accent-foreground: #0a0a0a;
+  --destructive: #b91c1c; /* brand danger */
+  --border: #e2d7c0; /* solid warm hairline — visible on poor monitors */
+  --input: #d8cbb0; /* stronger warm border on input fields */
+  --ring: #0a0a0a; /* focus ring is ink (applied at /50 in base layer) */
+  --brand: #c2410c; /* rust accent — use sparingly via bg-brand/text-brand */
+  --brand-foreground: #ffffff;
+  --chrome: #f7f1e6; /* nav/header chrome — lighter than body paper */
+  --paper-soft: #fbf6ec; /* softest paper tint — inset fills, card feet */
+  --chart-1: #c2410c; /* rust */
+  --chart-2: #1e40af; /* blue */
+  --chart-3: #15803d; /* green */
+  --chart-4: #b45309; /* amber */
+  --chart-5: #57534b; /* muted ink */
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f7f1e6; /* lighter than body, still warm */
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #0a0a0a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8dec9; /* deeper cream — active nav */
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #e2d7c0;
+  --sidebar-ring: #0a0a0a;
+
+  /* Source-tint palette — distinct *kind* family (Labour / Bill / Expense /
+     PO), parallel to but separate from the status-tone palette. Used by
+     <SourcePill> to identify the cost source on ledger rows. PO inherits the
+     bill family (both are billable commitments); quote also maps to bill
+     (vendor pricing not yet committed). Values verbatim from the OD render. */
+  --src-bill-bg:    #E6EDFA;
+  --src-bill-ink:   #1E40AF;
+  --src-expense-bg: #FBEFD2;
+  --src-expense-ink:#92580E;
+  --src-labour-bg:  #E8E4F2;
+  --src-labour-ink: #4F427A;
+  /* PO = bill family, slightly lighter to disambiguate "committed" from
+     "billed". OD render uses opacity on the bill colour. */
+  --src-po-bg:      #EFF3FB;
+  --src-po-ink:     #2A4FAE;
 }
 
 .dark {
@@ -102,6 +159,10 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  --brand: #c2410c; /* rust — light + dark share the accent for now (dark palette TBD) */
+  --brand-foreground: #ffffff;
+  --chrome: oklch(0.205 0 0); /* dark chrome shares card surface (worker app is light-only) */
+  --paper-soft: oklch(0.225 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -131,12 +192,26 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Paper typographic baseline (DESIGN.md §Typography): Inter at a 500
+       default weight reads more substantial on screen, tight tracking on
+       body, and Inter's cv11/ss01 stylistic sets. Without these the whole
+       app rendered Inter 400 with loose default tracking — visibly "off"
+       from the design system. */
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    font-feature-settings: 'cv11', 'ss01';
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: none;
     width: 100%;
     max-width: 100%;
     height: 100%;
+  }
+  /* Headings tighten further (DESIGN.md: −0.02–0.025em ≥20px). */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
   }
 }
 

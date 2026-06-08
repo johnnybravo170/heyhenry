@@ -80,19 +80,16 @@ export async function getAffiliateTierAction(): Promise<ReferralActionResult<Aff
  * Get referral stats for the current tenant.
  */
 export async function getReferralStatsAction(): Promise<
-  ReferralActionResult<{ total: number; signed_up: number; converted: number; rewards: number }>
+  ReferralActionResult<{ total: number; signed_up: number; converted: number }>
 > {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
 
+  // NOTE: no `rewards` field. The payout pipeline (signed_up→converted,
+  // reward_status advancement, the $300 credit) is a separate graduated
+  // workstream — the UI shows an honest "coming" tile, never a fake $0 balance.
   const stats = await getStats(tenant.id);
-  return {
-    ok: true,
-    data: {
-      ...stats,
-      rewards: 0, // Placeholder until reward system is built.
-    },
-  };
+  return { ok: true, data: stats };
 }
 
 /**
@@ -130,6 +127,13 @@ export async function getReferralHistoryAction(): Promise<
  */
 export async function sendReferralEmailAction(
   email: string,
+  /**
+   * Optional personal note (the editable, Henry-draftable peer-to-peer
+   * message). When present it replaces the canned email body so the invite
+   * reads in the operator's own voice. The operator always reviews + sends
+   * — nothing is auto-sent.
+   */
+  note?: string,
 ): Promise<ReferralActionResult<{ sent: true }>> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
@@ -157,6 +161,7 @@ export async function sendReferralEmailAction(
     html: referralInviteHtml({
       referrerName: tenant.name,
       referralUrl,
+      note,
     }),
     // Referrer-initiated invitation. Implied consent under CASL personal-relationship
     // exemption (referrer + referee are real-world contacts). Phase B: capture
@@ -187,6 +192,8 @@ export async function sendReferralEmailAction(
  */
 export async function sendReferralSMSAction(
   phone: string,
+  /** Optional personal note (Henry-draftable). Replaces the canned SMS body when set. */
+  note?: string,
 ): Promise<ReferralActionResult<{ sent: true }>> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
@@ -208,7 +215,7 @@ export async function sendReferralSMSAction(
   const result = await sendSms({
     tenantId: tenant.id,
     to: parsed.data.phone,
-    body: referralInviteSms({ referrerName: tenant.name, referralUrl }),
+    body: referralInviteSms({ referrerName: tenant.name, referralUrl, note }),
     relatedType: 'referral',
     relatedId: refCode.id,
     caslCategory: 'response_to_request',

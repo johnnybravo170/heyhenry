@@ -74,6 +74,7 @@ export function AssignWorkersDialog({
   initialProjectId,
   initialStartDate,
   initialEndDate,
+  initialWorkerId = null,
   skipWeekends: parentSkipWeekends,
 }: {
   open: boolean;
@@ -85,10 +86,15 @@ export function AssignWorkersDialog({
   initialProjectId: string | null;
   initialStartDate: string;
   initialEndDate: string;
+  /** Pre-select this worker — set when the dialog is opened from a
+   * by-worker grid cell so the operator doesn't re-pick the person. */
+  initialWorkerId?: string | null;
   skipWeekends: boolean;
 }) {
   const [projectId, setProjectId] = useState(initialProjectId ?? '');
-  const [workerIds, setWorkerIds] = useState<Set<string>>(new Set());
+  const [workerIds, setWorkerIds] = useState<Set<string>>(
+    initialWorkerId ? new Set([initialWorkerId]) : new Set(),
+  );
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
   const [skipWeekends, setSkipWeekends] = useState(parentSkipWeekends);
@@ -98,12 +104,19 @@ export function AssignWorkersDialog({
   useEffect(() => {
     if (open) {
       setProjectId(initialProjectId ?? '');
-      setWorkerIds(new Set());
+      setWorkerIds(initialWorkerId ? new Set([initialWorkerId]) : new Set());
       setStartDate(initialStartDate);
       setEndDate(initialEndDate);
       setSkipWeekends(parentSkipWeekends);
     }
-  }, [open, initialProjectId, initialStartDate, initialEndDate, parentSkipWeekends]);
+  }, [
+    open,
+    initialProjectId,
+    initialStartDate,
+    initialEndDate,
+    initialWorkerId,
+    parentSkipWeekends,
+  ]);
 
   const dates = rangeDates(startDate, endDate, skipWeekends);
   const dateSet = new Set(dates);

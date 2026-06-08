@@ -1,3 +1,11 @@
+import {
+  Calendar,
+  Home,
+  Image as ImageIcon,
+  MessageSquare,
+  MoreHorizontal,
+  Shield,
+} from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DecisionPanel, type PortalDecision } from '@/components/features/portal/decision-panel';
@@ -19,7 +27,9 @@ import {
 } from '@/components/features/portal/portal-schedule-gantt';
 import { PortalSelectionsPanel } from '@/components/features/portal/portal-selections-panel';
 import { TradeContactsList } from '@/components/features/portal/trade-contacts-list';
+import { PublicBrandHeader } from '@/components/features/public/public-brand-header';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { TenantProvider } from '@/lib/auth/tenant-context';
 import {
@@ -32,6 +42,7 @@ import type { ProjectPhase } from '@/lib/db/queries/project-phases';
 import type { ProjectSelection } from '@/lib/db/queries/project-selections';
 import { signIdeaBoardImageUrls } from '@/lib/storage/idea-board';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { projectStageTone } from '@/lib/ui/status-tokens';
 import { isPortalPhotoTag, type PortalPhotoTag } from '@/lib/validators/portal-photo';
 import type { IdeaBoardItem } from '@/server/actions/project-idea-board';
 import type { MessageRow } from '@/server/actions/project-messages';
@@ -114,7 +125,7 @@ export default async function PortalPage({
       `id, name, tenant_id, lifecycle_stage, percent_complete, start_date, target_end_date,
        portal_slug, portal_enabled, portal_show_budget,
        tenants:tenant_id (name, logo_storage_path, portal_show_budget, timezone),
-       customers:customer_id (name)`,
+       contacts:contact_id (name)`,
     )
     .eq('portal_slug', slug)
     .is('deleted_at', null)
@@ -145,7 +156,7 @@ export default async function PortalPage({
   const portalTenantObj = Array.isArray(portalTenantNode) ? portalTenantNode[0] : portalTenantNode;
   const tenantTz = portalTenantObj?.timezone ?? undefined;
   const tenant = p.tenants as Record<string, unknown> | null;
-  const customer = p.customers as Record<string, unknown> | null;
+  const customer = p.contacts as Record<string, unknown> | null;
   const businessName = (tenant?.name as string) ?? 'Your Contractor';
   const customerName = (customer?.name as string) ?? '';
   const projectId = p.id as string;
@@ -375,7 +386,7 @@ export default async function PortalPage({
           : Promise.resolve({ data: [] as Array<{ path: string | null; signedUrl: string }> }),
         subIds.length > 0
           ? admin
-              .from('customers')
+              .from('contacts')
               .select('id, name, kind, email, phone')
               .in('id', subIds)
               .is('deleted_at', null)
@@ -561,7 +572,7 @@ export default async function PortalPage({
       admin
         .from('project_idea_board_items')
         .select(
-          'id, project_id, customer_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
+          'id, project_id, contact_id, kind, image_storage_path, source_url, thumbnail_url, title, notes, room, read_by_operator_at, promoted_to_selection_id, promoted_at, created_at',
         )
         .eq('project_id', projectId)
         .order('created_at', { ascending: false }),
@@ -639,7 +650,7 @@ export default async function PortalPage({
       admin
         .from('project_schedule_tasks')
         .select(
-          'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes',
+          'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, duration_basis, works_weekends, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes',
         )
         .eq('project_id', projectId)
         .eq('client_visible', true)
@@ -709,370 +720,406 @@ export default async function PortalPage({
 
   const hasPendingItems = (pendingCOs ?? []).length > 0;
 
+  // Tab destinations in the brief's intentional order. `key` doubles as the
+  // ?tab= query value ('project' is the bare /portal/[slug]). The bottom
+  // sheet bar surfaces the thumb-reachable primaries; the full strip up top
+  // keeps every tab reachable with no client JS.
+  const TABS: Array<{
+    key: typeof tab;
+    label: string;
+    badge?: number;
+  }> = [
+    { key: 'project', label: 'Project' },
+    { key: 'budget', label: 'Budget' },
+    { key: 'schedule', label: 'Schedule' },
+    { key: 'photos', label: 'Photos' },
+    { key: 'selections', label: 'Selections' },
+    { key: 'ideas', label: 'Ideas' },
+    { key: 'messages', label: 'Messages', badge: unreadFromBusiness },
+  ];
+  const tabHref = (key: typeof tab) =>
+    key === 'project' ? `/portal/${slug}` : `/portal/${slug}?tab=${key}`;
+
   return (
     <TenantProvider timezone={tenantTz ?? 'America/Vancouver'}>
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {isOperatorPreview ? (
-          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            <strong>Preview mode.</strong> The portal is currently disabled — your customer
-            can&rsquo;t see this page. Turn the toggle on from the project&rsquo;s Portal tab to
-            share with them.
-          </div>
-        ) : (
-          <PublicViewLogger resourceType="portal" identifier={slug} />
-        )}
-        {/* Header */}
-        <header className="mb-8 text-center">
-          {logoUrl ? (
-            // Container gives every contractor's logo the same visual mass
-            // regardless of aspect — square badges, wide wordmarks, and tall
-            // crests all fill h-16 / max-w-[260px] without distortion.
-            <div className="mx-auto mb-3 flex h-20 max-w-[280px] items-center justify-center">
-              {/* biome-ignore lint/performance/noImgElement: signed URL bypasses next/image */}
-              <img
-                src={logoUrl}
-                alt={businessName}
-                className="max-h-full max-w-full object-contain"
-              />
+      {/* Warm Paper surface behind the floating white cards — the GC's
+          letterhead, not flat white. pb-24 leaves room for the bottom bar. */}
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-4xl px-4 pt-8 pb-24 sm:pb-8">
+          {isOperatorPreview ? (
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <strong>Preview mode.</strong> The portal is currently disabled — your customer
+              can&rsquo;t see this page. Turn the toggle on from the project&rsquo;s Portal tab to
+              share with them.
             </div>
           ) : (
-            <p className="text-sm font-medium text-muted-foreground">{businessName}</p>
+            <PublicViewLogger resourceType="portal" identifier={slug} />
           )}
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{p.name as string}</h1>
-          {customerName ? (
-            <p className="mt-1 text-sm text-muted-foreground">{customerName}</p>
-          ) : null}
-        </header>
 
-        {/* Tab nav — Project / Budget / Photos / Selections / Ideas / Messages. */}
-        <div className="mb-6 flex gap-1 border-b">
-          <Link
-            href={`/portal/${slug}`}
-            prefetch={false}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'project'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
-            }`}
-          >
-            Project
-          </Link>
-          <Link
-            href={`/portal/${slug}?tab=budget`}
-            prefetch={false}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'budget'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
-            }`}
-          >
-            Budget
-          </Link>
-          <Link
-            href={`/portal/${slug}?tab=schedule`}
-            prefetch={false}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'schedule'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
-            }`}
-          >
-            Schedule
-          </Link>
-          <Link
-            href={`/portal/${slug}?tab=photos`}
-            prefetch={false}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'photos'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
-            }`}
-          >
-            Photos
-          </Link>
-          <Link
-            href={`/portal/${slug}?tab=selections`}
-            prefetch={false}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'selections'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
-            }`}
-          >
-            Selections
-          </Link>
-          <Link
-            href={`/portal/${slug}?tab=ideas`}
-            prefetch={false}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'ideas'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
-            }`}
-          >
-            Ideas
-          </Link>
-          <Link
-            href={`/portal/${slug}?tab=messages`}
-            prefetch={false}
-            className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'messages'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:border-gray-300 hover:text-foreground'
-            }`}
-          >
-            Messages
-            {tab !== 'messages' && unreadFromBusiness > 0 ? (
-              <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                {unreadFromBusiness > 9 ? '9+' : unreadFromBusiness}
-              </span>
-            ) : null}
-          </Link>
-        </div>
+          {/* GC letterhead — the contractor's brand, never HeyHenry's. */}
+          <div className="mb-5 overflow-hidden rounded-2xl border bg-card shadow-sm">
+            <PublicBrandHeader
+              logoUrl={logoUrl}
+              businessName={businessName}
+              context={customerName ? `${p.name as string} · ${customerName}` : (p.name as string)}
+            />
+            <div className="px-4 py-4">
+              <h1 className="text-xl font-semibold tracking-tight">{p.name as string}</h1>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {statusLabel} · {percentComplete}% complete
+              </p>
+            </div>
+          </div>
 
-        {tab === 'messages' ? (
-          <PortalMessagesPanel
-            portalSlug={slug}
-            initialMessages={initialMessages}
-            customerName={customerName || 'You'}
-            businessName={businessName}
-          />
-        ) : tab === 'ideas' ? (
-          <PortalIdeaBoard
-            portalSlug={slug}
-            initialItems={initialIdeaItems}
-            roomSuggestions={roomSuggestions}
-          />
-        ) : tab === 'selections' ? (
-          <PortalSelectionsPanel
-            portalSlug={slug}
-            initialSelections={selectionsForPanel}
-            roomSuggestions={roomSuggestions}
-          />
-        ) : tab === 'photos' ? (
-          galleryPhotos.length > 0 ? (
-            <PortalPhotoGallery photos={galleryPhotos} />
-          ) : (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              No photos yet. Your contractor will add them as work progresses.
-            </p>
-          )
-        ) : tab === 'budget' ? (
-          <>
-            {/* Three-number summary always shows. The per-bucket breakdown
+          {/* Top tab strip — every tab reachable, scrolls horizontally on phones.
+              `overflow-y-hidden` paired with `overflow-x-auto` kills the phantom
+              vertical scrollbar (CSS spec computes overflow-y to auto when the
+              other axis is auto, so any 1px of vertical overflow — the border-b
+              underline, line-height, focus ring — would otherwise trip the bar). */}
+          <div className="mb-6 flex gap-1 overflow-x-auto overflow-y-hidden border-b">
+            {TABS.map((t) => (
+              <Link
+                key={t.key}
+                href={tabHref(t.key)}
+                prefetch={false}
+                className={`-mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+                  tab === t.key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
+                }`}
+              >
+                {t.label}
+                {t.badge && tab !== t.key && t.badge > 0 ? (
+                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
+                    {t.badge > 9 ? '9+' : t.badge}
+                  </span>
+                ) : null}
+              </Link>
+            ))}
+          </div>
+
+          {tab === 'messages' ? (
+            <PortalMessagesPanel
+              portalSlug={slug}
+              initialMessages={initialMessages}
+              customerName={customerName || 'You'}
+              businessName={businessName}
+            />
+          ) : tab === 'ideas' ? (
+            <PortalIdeaBoard
+              portalSlug={slug}
+              initialItems={initialIdeaItems}
+              roomSuggestions={roomSuggestions}
+            />
+          ) : tab === 'selections' ? (
+            <PortalSelectionsPanel
+              portalSlug={slug}
+              initialSelections={selectionsForPanel}
+              roomSuggestions={roomSuggestions}
+            />
+          ) : tab === 'photos' ? (
+            galleryPhotos.length > 0 ? (
+              <PortalPhotoGallery photos={galleryPhotos} />
+            ) : (
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No photos yet. Your contractor will add them as work progresses.
+              </p>
+            )
+          ) : tab === 'budget' ? (
+            <>
+              {/* Three-number summary always shows. The per-bucket breakdown
               below shows only when the operator has opted in via
               portal_show_budget. */}
-            <div className="mb-8 grid grid-cols-3 gap-3">
-              <div className="rounded-lg border p-3 text-center">
-                <p className="text-xs text-muted-foreground">Original Estimate</p>
-                <p className="text-sm font-semibold tabular-nums">
-                  {cadFormat.format(originalEstimate / 100)}
-                </p>
+              <div className="mb-8 grid grid-cols-3 gap-3">
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Original Estimate</p>
+                  <p className="text-sm font-semibold tabular-nums">
+                    {cadFormat.format(originalEstimate / 100)}
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Change Orders</p>
+                  <p className="text-sm font-semibold tabular-nums">
+                    {approvedCOTotal >= 0 ? '+' : ''}
+                    {cadFormat.format(approvedCOTotal / 100)}
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Current Total</p>
+                  <p className="text-sm font-semibold tabular-nums">
+                    {cadFormat.format(totalBudget / 100)}
+                  </p>
+                </div>
               </div>
-              <div className="rounded-lg border p-3 text-center">
-                <p className="text-xs text-muted-foreground">Change Orders</p>
-                <p className="text-sm font-semibold tabular-nums">
-                  {approvedCOTotal >= 0 ? '+' : ''}
-                  {cadFormat.format(approvedCOTotal / 100)}
-                </p>
-              </div>
-              <div className="rounded-lg border p-3 text-center">
-                <p className="text-xs text-muted-foreground">Current Total</p>
-                <p className="text-sm font-semibold tabular-nums">
-                  {cadFormat.format(totalBudget / 100)}
-                </p>
-              </div>
-            </div>
 
-            {portalBudgetSummary.customer_contract_total_cents > totalBudget ? (
-              <p className="-mt-6 mb-8 text-center text-xs text-muted-foreground">
-                Your contract total:{' '}
-                <span className="font-medium text-foreground">
-                  {cadFormat.format(portalBudgetSummary.customer_contract_total_cents / 100)}
-                </span>{' '}
-                (incl. management fee + {portalBudgetSummary.tax_label})
-              </p>
-            ) : null}
+              {portalBudgetSummary.customer_contract_total_cents > totalBudget ? (
+                <p className="-mt-6 mb-8 text-center text-xs text-muted-foreground">
+                  Your contract total:{' '}
+                  <span className="font-medium text-foreground">
+                    {cadFormat.format(portalBudgetSummary.customer_contract_total_cents / 100)}
+                  </span>{' '}
+                  (incl. management fee + {portalBudgetSummary.tax_label})
+                </p>
+              ) : null}
 
-            {portalShowBudget ? <PortalBudgetDetail summary={portalBudgetSummary} /> : null}
-          </>
-        ) : tab === 'schedule' ? (
-          scheduleTasks.length > 0 ? (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Dates are estimates and may shift. ⚠ marks days you may want to plan to be out.
+              {portalShowBudget ? <PortalBudgetDetail summary={portalBudgetSummary} /> : null}
+            </>
+          ) : tab === 'schedule' ? (
+            scheduleTasks.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Dates are estimates and may shift. ⚠ marks days you may want to plan to be out.
+                </p>
+                <PortalScheduleGantt tasks={scheduleTasks} />
+              </div>
+            ) : (
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No schedule yet. Your contractor will publish one as the project firms up.
               </p>
-              <PortalScheduleGantt tasks={scheduleTasks} />
-            </div>
+            )
           ) : (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              No schedule yet. Your contractor will publish one as the project firms up.
-            </p>
-          )
-        ) : (
-          <>
-            {/* Decision queue — pinned to the top because urgent ask. */}
-            <DecisionPanel decisions={portalDecisions} defaultCustomerName={customerName} />
+            <>
+              {/* Intentional order (brief): decisions pinned above the fold →
+                status/progress → approvals → phases → docs → trades → updates. */}
 
-            {/* Phase rail — homeowner-facing milestone tracker. Read-only here;
-          operator advances/regresses from the project detail Portal tab. */}
-            {phases.length > 0 ? (
-              <div className="mb-8">
-                <PhaseRail phases={phases} phasePhotos={phasePhotos} />
-              </div>
-            ) : null}
+              {/* Decision queue — pinned to the top because urgent ask. */}
+              <DecisionPanel decisions={portalDecisions} defaultCustomerName={customerName} />
 
-            {/* Status bar */}
-            <div className="mb-8 rounded-lg border p-4 space-y-3">
-              <div className="flex items-center justify-between">
+              {/* Status + progress — the money/status anchor under the decisions. */}
+              <div className="mb-8 space-y-3 rounded-lg border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <StatusBadge
+                      tone={
+                        projectStageTone[p.lifecycle_stage as keyof typeof projectStageTone] ??
+                        'neutral'
+                      }
+                      label={statusLabel}
+                    />
+                  </div>
+                  {hasPendingItems ? (
+                    <StatusBadge tone="warning" label="Waiting on you" />
+                  ) : (
+                    <StatusBadge tone="success" label="Waiting on us" />
+                  )}
+                </div>
+
+                {/* Progress bar */}
                 <div>
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                    {statusLabel}
-                  </span>
-                </div>
-                {hasPendingItems ? (
-                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                    Waiting on you
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                    Waiting on us
-                  </span>
-                )}
-              </div>
-
-              {/* Progress bar */}
-              <div>
-                <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                  <span>Progress</span>
-                  <span>{percentComplete}%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-gray-100">
-                  <div
-                    className="h-2 rounded-full bg-primary transition-all"
-                    style={{ width: `${percentComplete}%` }}
-                  />
+                  <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                    <span>Progress</span>
+                    <span>{percentComplete}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted">
+                    <div
+                      className="h-2 rounded-full bg-primary transition-all"
+                      style={{ width: `${percentComplete}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Pending Approvals */}
-            {(pendingCOs ?? []).length > 0 ? (
-              <div className="mb-8">
-                <h2 className="mb-3 text-sm font-semibold">Needs Your Approval</h2>
-                <div className="space-y-2">
-                  {(pendingCOs ?? []).map((co) => {
-                    const coRow = co as Record<string, unknown>;
-                    const costCents = coRow.cost_impact_cents as number;
-                    return (
-                      <a
-                        key={coRow.id as string}
-                        href={`/approve/${coRow.approval_code}`}
-                        className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 hover:bg-amber-100 transition-colors"
-                      >
-                        <span className="text-sm font-medium">{coRow.title as string}</span>
-                        <span className="text-sm tabular-nums">
-                          {costCents >= 0 ? '+' : ''}
-                          {cadFormat.format(costCents / 100)}
-                        </span>
-                      </a>
-                    );
-                  })}
+              {/* Pending Approvals */}
+              {(pendingCOs ?? []).length > 0 ? (
+                <div className="mb-8">
+                  <h2 className="mb-3 text-sm font-semibold">Needs Your Approval</h2>
+                  <div className="space-y-2">
+                    {(pendingCOs ?? []).map((co) => {
+                      const coRow = co as Record<string, unknown>;
+                      const costCents = coRow.cost_impact_cents as number;
+                      return (
+                        <a
+                          key={coRow.id as string}
+                          href={`/approve/${coRow.approval_code}`}
+                          className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 transition-colors hover:bg-amber-100"
+                        >
+                          <span className="text-sm font-medium">{coRow.title as string}</span>
+                          <span className="text-sm tabular-nums">
+                            {costCents >= 0 ? '+' : ''}
+                            {cadFormat.format(costCents / 100)}
+                          </span>
+                        </a>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {/* Photo gallery moved to its own tab (`?tab=photos`).
+              {/* Phase rail — milestone tracker. Read-only here; operator
+          advances/regresses from the project detail Portal tab. */}
+              {phases.length > 0 ? (
+                <div className="mb-8">
+                  <PhaseRail phases={phases} phasePhotos={phasePhotos} />
+                </div>
+              ) : null}
+
+              {/* Photo gallery moved to its own tab (`?tab=photos`).
           Selections moved to its own tab (`?tab=selections`) where the
           customer can both browse the operator-authored install spec and
           add their own picks. */}
 
-            {/* Documents & warranties — permanent files. */}
-            {portalDocuments.length > 0 ? (
-              <div className="mb-8">
-                <PortalDocuments
-                  documents={portalDocuments}
-                  timezone={tenantTz ?? 'America/Vancouver'}
-                />
-              </div>
-            ) : null}
-
-            {/* Trade contacts — sub-trades + vendors who worked on the job */}
-            {tradeContacts.length > 0 ? (
-              <div className="mb-8">
-                <TradeContactsList contacts={tradeContacts} heading="Trade contacts" />
-              </div>
-            ) : null}
-
-            {/* Updates feed */}
-            <div>
-              <h2 className="mb-4 text-sm font-semibold">Updates</h2>
-              {(updates ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">No updates yet.</p>
+              {/* Documents & warranties — permanent files. */}
+              {portalDocuments.length > 0 ? (
+                <div className="mb-8">
+                  <PortalDocuments
+                    documents={portalDocuments}
+                    timezone={tenantTz ?? 'America/Vancouver'}
+                  />
+                </div>
               ) : null}
-              <div className="space-y-6">
-                {Array.from(updatesByDate.entries()).map(([dateLabel, dateUpdates]) => (
-                  <div key={dateLabel}>
-                    <p className="mb-2 text-xs font-medium text-muted-foreground">{dateLabel}</p>
-                    <div className="space-y-3">
-                      {(dateUpdates ?? []).map((u) => {
-                        const ud = u as Record<string, unknown>;
-                        const uType = (ud.type as string) ?? 'system';
-                        return (
-                          <div key={ud.id as string} className="flex gap-3">
-                            <div
-                              className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${typeIcons[uType] ?? typeIcons.system}`}
-                            >
-                              {uType === 'progress'
-                                ? 'P'
-                                : uType === 'photo'
-                                  ? 'Ph'
-                                  : uType === 'milestone'
-                                    ? 'M'
-                                    : uType === 'message'
-                                      ? 'Msg'
-                                      : 'S'}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium">{ud.title as string}</p>
-                              {ud.body ? (
-                                <p className="mt-0.5 text-sm text-muted-foreground whitespace-pre-wrap">
-                                  {ud.body as string}
+
+              {/* Trade contacts — sub-trades + vendors who worked on the job */}
+              {tradeContacts.length > 0 ? (
+                <div className="mb-8">
+                  <TradeContactsList contacts={tradeContacts} heading="Trade contacts" />
+                </div>
+              ) : null}
+
+              {/* Updates feed */}
+              <div>
+                <h2 className="mb-4 text-sm font-semibold">Updates</h2>
+                {(updates ?? []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">No updates yet.</p>
+                ) : null}
+                <div className="space-y-6">
+                  {Array.from(updatesByDate.entries()).map(([dateLabel, dateUpdates]) => (
+                    <div key={dateLabel}>
+                      <p className="mb-2 text-xs font-medium text-muted-foreground">{dateLabel}</p>
+                      <div className="space-y-3">
+                        {(dateUpdates ?? []).map((u) => {
+                          const ud = u as Record<string, unknown>;
+                          const uType = (ud.type as string) ?? 'system';
+                          return (
+                            <div key={ud.id as string} className="flex gap-3">
+                              <div
+                                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${typeIcons[uType] ?? typeIcons.system}`}
+                              >
+                                {uType === 'progress'
+                                  ? 'P'
+                                  : uType === 'photo'
+                                    ? 'Ph'
+                                    : uType === 'milestone'
+                                      ? 'M'
+                                      : uType === 'message'
+                                        ? 'Msg'
+                                        : 'S'}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium">{ud.title as string}</p>
+                                {ud.body ? (
+                                  <p className="mt-0.5 text-sm text-muted-foreground whitespace-pre-wrap">
+                                    {ud.body as string}
+                                  </p>
+                                ) : null}
+                                {(() => {
+                                  const storagePath = ud.photo_storage_path as string | null;
+                                  const signed = storagePath
+                                    ? photoSignedUrls.get(storagePath)
+                                    : null;
+                                  const src = signed ?? (ud.photo_url as string | null);
+                                  return src ? (
+                                    // biome-ignore lint/performance/noImgElement: signed URLs bypass next/image optimizer
+                                    <img
+                                      src={src}
+                                      alt=""
+                                      className="mt-2 max-h-64 rounded-md object-cover"
+                                    />
+                                  ) : null;
+                                })()}
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {new Intl.DateTimeFormat('en-CA', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    timeZone: tenantTz ?? 'America/Vancouver',
+                                  }).format(new Date(ud.created_at as string))}
                                 </p>
-                              ) : null}
-                              {(() => {
-                                const storagePath = ud.photo_storage_path as string | null;
-                                const signed = storagePath
-                                  ? photoSignedUrls.get(storagePath)
-                                  : null;
-                                const src = signed ?? (ud.photo_url as string | null);
-                                return src ? (
-                                  // biome-ignore lint/performance/noImgElement: signed URLs bypass next/image optimizer
-                                  <img
-                                    src={src}
-                                    alt=""
-                                    className="mt-2 max-h-64 rounded-md object-cover"
-                                  />
-                                ) : null;
-                              })()}
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {new Intl.DateTimeFormat('en-CA', {
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                  timeZone: tenantTz ?? 'America/Vancouver',
-                                }).format(new Date(ud.created_at as string))}
-                              </p>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+
+              {/* Calm boundary note — reassures without spotlighting markup by
+                enumerating what's withheld (a margin tell). */}
+              <p className="mt-8 flex items-start gap-1.5 border-t pt-4 text-xs text-muted-foreground">
+                <Shield aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>
+                  Your portal shows everything we&rsquo;ve shared on your project — schedule,
+                  photos, decisions, and contract figures.
+                </span>
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Mobile bottom-sheet tab bar — thumb-reachable primaries + More
+          (Budget/Selections/Ideas live in the scrollable top strip). Pure
+          links, no client JS. Hidden on sm+ where the top strip suffices. */}
+        <nav
+          aria-label="Portal sections"
+          className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
+        >
+          {(() => {
+            const bottomItems: Array<{
+              key: typeof tab;
+              label: string;
+              Icon: typeof Home;
+              badge?: number;
+            }> = [
+              { key: 'project', label: 'Project', Icon: Home },
+              { key: 'schedule', label: 'Schedule', Icon: Calendar },
+              { key: 'photos', label: 'Photos', Icon: ImageIcon },
+              {
+                key: 'messages',
+                label: 'Messages',
+                Icon: MessageSquare,
+                badge: unreadFromBusiness,
+              },
+            ];
+            const moreActive = tab === 'budget' || tab === 'selections' || tab === 'ideas';
+            return (
+              <>
+                {bottomItems.map((item) => {
+                  const active = tab === item.key;
+                  return (
+                    <Link
+                      key={item.key}
+                      href={tabHref(item.key)}
+                      prefetch={false}
+                      aria-current={active ? 'page' : undefined}
+                      className={`relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
+                        active ? 'text-foreground' : 'text-muted-foreground'
+                      }`}
+                    >
+                      <item.Icon aria-hidden className="h-[18px] w-[18px]" />
+                      {item.label}
+                      {item.badge && !active && item.badge > 0 ? (
+                        <span className="absolute right-[22%] top-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
+                          {item.badge > 9 ? '9+' : item.badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+                <Link
+                  href={tabHref('budget')}
+                  prefetch={false}
+                  aria-current={moreActive ? 'page' : undefined}
+                  className={`flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
+                    moreActive ? 'text-foreground' : 'text-muted-foreground'
+                  }`}
+                >
+                  <MoreHorizontal aria-hidden className="h-[18px] w-[18px]" />
+                  More
+                </Link>
+              </>
+            );
+          })()}
+        </nav>
       </div>
     </TenantProvider>
   );

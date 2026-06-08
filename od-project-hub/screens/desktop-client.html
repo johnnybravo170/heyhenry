@@ -1,0 +1,2492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Client · HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette — Client hub ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --bubble-out:   #EAE0CB;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Shell (mirror of sibling screens) ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink); font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .org-switcher:hover { background: rgba(232,222,201,.5); }
+  .org-avatar { width: 24px; height: 24px; border-radius: 6px; background: var(--rust); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Topbar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: inherit;
+  }
+  .btn-primary { background: var(--card); color: var(--ink); border-color: var(--hair); }
+  .btn-primary:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn .icon { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-input);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 22px 28px 80px;
+    display: flex; flex-direction: column;
+  }
+
+  /* ───── Project head ───── */
+  .project-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 2px 0 14px;
+  }
+  .project-head-text { flex: 1; min-width: 0; position: relative; }
+  .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .project-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .details-trigger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .details-trigger:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .details-trigger svg { width: 14px; height: 14px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-pill .check { width: 10px; height: 10px; display: grid; place-items: center; }
+  .status-pill .check svg { width: 10px; height: 10px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+  .customer-line {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+  .head-actions { display: flex; gap: 6px; flex-shrink: 0; padding-top: 6px; }
+  .btn-add {
+    background: transparent;
+    border-color: var(--hair);
+    color: var(--ink-2);
+    height: 34px;
+  }
+  .btn-add:hover {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.3);
+    color: var(--rust);
+  }
+  .btn-add .henry-glyph { color: var(--rust); }
+
+  /* ───── Tab strip ───── */
+  .tab-strip {
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center;
+    overflow-x: auto;
+  }
+  .tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 14px;
+    font-size: 14px; font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab.is-secondary { color: var(--faint); font-weight: 500; }
+  .tab.is-secondary:hover { color: var(--ink-2); }
+  .tab-divider { width: 1px; height: 18px; background: var(--rule); margin: 0 10px; flex-shrink: 0; }
+  .tab-count {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--rust);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .tab-count-soft {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--warn);
+    background: var(--warn-soft);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+
+  /* ───── Client hub sub-nav (the inner Messages / Selections / Portal&Updates row) ───── */
+  .subhub {
+    margin-top: 18px;
+    display: flex; align-items: center; gap: 4px;
+    flex-wrap: wrap;
+  }
+  .subhub-tabs {
+    display: inline-flex; align-items: center;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .subhub-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .subhub-tab:hover { color: var(--ink); }
+  .subhub-tab.is-on {
+    background: var(--nav-active);
+    color: var(--ink);
+  }
+  .subhub-tab .b {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .subhub-tab .b.rust   { color: #fff; background: var(--rust); }
+  .subhub-tab .b.warn   { color: var(--warn);  background: var(--warn-soft); }
+
+  /* Portal status chip (right side of subhub) */
+  .portal-chip {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 34px;
+    padding: 0 4px 0 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    color: var(--ink-2);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .portal-chip .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 3px var(--ok-soft);
+    flex-shrink: 0;
+  }
+  .portal-chip.is-off .dot { background: var(--faint); box-shadow: 0 0 0 3px var(--chip-fill); }
+  .portal-chip .state { color: var(--ink); }
+  .portal-chip.is-off .state { color: var(--muted); }
+  .portal-chip .sep { color: var(--faint); }
+  .portal-chip .quiet-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    color: var(--ink-2);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+  }
+  .portal-chip .quiet-link:hover { background: var(--chip-fill); color: var(--ink); }
+  .portal-chip .quiet-link svg { width: 11px; height: 11px; color: var(--muted); }
+  .portal-chip .url-link {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 2px;
+  }
+
+  /* ───── Frame divider — labels each rendered state for the OD handoff ───── */
+  .frame-label {
+    margin: 36px 0 14px;
+    padding: 10px 14px;
+    background: var(--chip-fill);
+    border-left: 3px solid var(--ink);
+    border-radius: 0 8px 8px 0;
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .frame-label .kind {
+    background: var(--ink); color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+  .frame-label .meta {
+    margin-left: auto;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--sans);
+    font-size: 12px;
+  }
+  .frame-label.is-variant { border-left-color: var(--rust); }
+  .frame-label.is-variant .kind { background: var(--rust); }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     MESSAGES SUBTAB
+     ═══════════════════════════════════════════════════════════════════ */
+  .messages-stage {
+    margin-top: 18px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    min-height: 600px;
+  }
+  .msg-stage-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .msg-stage-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .msg-stage-meta {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-left: 8px;
+  }
+  .msg-stage-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+
+  .thread {
+    flex: 1;
+    padding: 22px 28px 18px;
+    display: flex; flex-direction: column; justify-content: flex-end; gap: 16px;
+    background: linear-gradient(180deg, #FBF7EE 0%, #FFFFFF 60%);
+    overflow-y: auto;
+  }
+  .day-rule {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 2px 0;
+  }
+  .day-rule::before,
+  .day-rule::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+  .bubble-row {
+    display: flex;
+    gap: 10px;
+  }
+  .bubble-row.is-in  { justify-content: flex-start; }
+  .bubble-row.is-out { justify-content: flex-end; }
+  .bubble-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .bubble-row.is-out .bubble-meta { justify-content: flex-end; }
+  .bubble-meta .name { color: var(--ink-2); font-weight: 700; }
+  .bubble-meta .sep { color: var(--faint); }
+  .bubble-meta .time { color: var(--muted); }
+
+  .channel-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+  }
+  .channel-chip svg { width: 9px; height: 9px; }
+  .channel-chip.is-portal { color: var(--info); background: var(--info-soft); }
+  .channel-chip.is-email  { color: var(--ink-2); background: var(--chip-fill); }
+  .channel-chip.is-sms    { color: var(--ok); background: var(--ok-soft); }
+
+  .bubble-col {
+    display: flex; flex-direction: column;
+    max-width: 60%;
+    min-width: 0;
+  }
+  .bubble {
+    padding: 11px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    word-wrap: break-word;
+  }
+  .bubble.is-in {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.is-out {
+    background: var(--bubble-out);
+    color: var(--ink);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble .b-foot {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* Composer pinned bottom */
+  .composer {
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 12px 18px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .composer-head {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .composer-channel {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .composer-channel:hover { background: var(--chip-fill); border-color: var(--rule); color: var(--ink); }
+  .composer-channel .lab-pre { color: var(--muted); font-weight: 500; }
+  .composer-channel svg { width: 10px; height: 10px; color: var(--muted); }
+  .composer-channel .ch-icon { display: inline-flex; align-items: center; }
+  .composer-channel .ch-icon svg { width: 12px; height: 12px; color: var(--ink-2); }
+  .composer-channel .chev { width: 10px; height: 10px; color: var(--muted); }
+  .composer-hint {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .composer-hint .glyph { color: var(--rust); font-size: 12px; line-height: 1; }
+  .composer-debounce {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .composer-henry {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px;
+    background: transparent;
+    color: var(--rust);
+    font-size: 12px; font-weight: 700;
+    border-radius: 7px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    letter-spacing: -0.005em;
+  }
+  .composer-henry:hover { background: var(--rust-soft); border-color: rgba(194,65,12,0.2); }
+  .composer-henry .glyph { font-size: 14px; }
+
+  .composer-input {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .composer-textarea {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    resize: none;
+    min-height: 48px;
+    line-height: 1.5;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .composer-textarea:focus { outline: none; border-color: var(--ink); }
+  .composer-attach {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .composer-attach:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--rule); }
+  .composer-attach svg { width: 16px; height: 16px; }
+  .composer-send {
+    height: 44px; min-width: 96px;
+    padding: 0 16px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    letter-spacing: -0.005em;
+  }
+  .composer-send:hover { background: #A8390B; border-color: #A8390B; }
+  .composer-send svg { width: 13px; height: 13px; }
+
+  /* Portal-off info strip (variant) */
+  .portal-off-strip {
+    margin-bottom: 0;
+    padding: 12px 18px;
+    background: var(--info-soft);
+    border-bottom: 1px solid rgba(30,64,175,0.16);
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .portal-off-strip .lab {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    background: rgba(30,64,175,0.10);
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .portal-off-strip strong { color: var(--ink); font-weight: 700; }
+  .portal-off-strip .enable-link {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--info);
+    font-weight: 700;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(30,64,175,0.3);
+    padding-bottom: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .portal-off-strip .enable-link:hover { color: #142d80; }
+  .portal-off-strip .enable-link svg { width: 11px; height: 11px; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     SELECTIONS SUBTAB
+     ═══════════════════════════════════════════════════════════════════ */
+  .selections { margin-top: 18px; display: flex; flex-direction: column; gap: 22px; }
+
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .eyebrow-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .eyebrow-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .eyebrow-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    background: transparent;
+    border: 0;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: auto;
+    letter-spacing: -0.005em;
+  }
+  .eyebrow-link:hover { background: var(--chip-fill); color: var(--ink); }
+  .eyebrow-link svg { width: 11px; height: 11px; color: var(--muted); }
+
+  /* Client ideas — small horizontal scrolling board on desktop (3-up grid).
+     Wide data exception NOT in play here; we keep them in a grid to avoid horizontal scroll. */
+  .ideas-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .idea-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .idea-thumb {
+    aspect-ratio: 16 / 11;
+    background:
+      linear-gradient(135deg, #E8DEC9 0%, #C9B898 50%, #8E7B5C 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .idea-thumb.is-tile {
+    background:
+      repeating-linear-gradient(45deg, #F0E6D4 0 16px, #E8DEC9 16px 32px),
+      #DFD2B5;
+  }
+  .idea-thumb.is-vanity {
+    background:
+      radial-gradient(60% 80% at 50% 70%, #4A3920 0%, #2E2417 100%);
+  }
+  .idea-thumb.is-link {
+    background: linear-gradient(180deg, #FAF5EA 0%, #ECE3D0 100%);
+    display: grid; place-items: center;
+  }
+  .idea-thumb .url-glyph {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-align: center;
+    padding: 0 12px;
+    text-transform: lowercase;
+  }
+  .idea-thumb .url-glyph .domain { color: var(--ink); font-weight: 700; }
+  .idea-body { padding: 11px 14px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .idea-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .idea-meta .sep { color: var(--faint); }
+  .idea-meta .source { color: var(--ink-2); font-weight: 700; }
+  .idea-meta .kind-chip {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-size: 9px;
+  }
+  .idea-quote {
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .idea-quote .quote-mark { color: var(--faint); }
+  .idea-foot {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .idea-promote {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: transparent;
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 5px 10px;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .idea-promote:hover { background: var(--rust-soft); border-color: rgba(194,65,12,0.3); color: var(--rust); }
+  .idea-promote .glyph { color: var(--rust); font-size: 11px; }
+  .idea-quiet {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  .idea-quiet:hover { background: var(--chip-fill); color: var(--ink); }
+  .idea-quiet svg { width: 11px; height: 11px; }
+
+  /* Selections list — grouped by room */
+  .room-group {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .room-group + .room-group { margin-top: 12px; }
+  .room-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: #FBF6EC;
+  }
+  .room-title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .room-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .room-meta strong { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
+  .room-add {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: transparent;
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 5px 10px;
+    color: var(--ink-2);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .room-add:hover { background: var(--card); border-color: var(--rule); color: var(--ink); }
+  .room-add svg { width: 10px; height: 10px; color: var(--muted); }
+
+  .selection-row {
+    display: grid;
+    grid-template-columns: 56px 1fr 220px 110px;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 18px;
+    border-top: 1px dashed var(--rule);
+  }
+  .selection-row:first-of-type { border-top: 0; }
+  .selection-thumb {
+    width: 56px; height: 56px;
+    border-radius: 8px;
+    background: var(--chip-fill);
+    flex-shrink: 0;
+  }
+  .selection-thumb.is-paint-white { background: #FAF8F2; border: 1px solid var(--rule); }
+  .selection-thumb.is-tile-carrara {
+    background:
+      linear-gradient(120deg, #F2EFE7 0%, #E1DDD2 50%, #F5F2EA 100%);
+  }
+  .selection-thumb.is-vanity-walnut { background: linear-gradient(160deg, #6E5436 0%, #3F2F1C 100%); }
+  .selection-thumb.is-pulls { background: linear-gradient(135deg, #C5C2BC 0%, #807C72 100%); }
+  .selection-thumb.is-floor-oak { background: linear-gradient(180deg, #C29A6B 0%, #8A6437 100%); }
+  .selection-thumb.is-paint-greige { background: #D7CFBE; border: 1px solid var(--rule); }
+  .selection-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .selection-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .selection-spec {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+  .selection-spec .sep { color: var(--faint); }
+  .selection-source {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .selection-source .source-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .selection-source .source-chip.is-client { background: var(--info-soft); color: var(--info); }
+  .selection-source .source-chip.is-henry  { background: var(--rust-soft); color: var(--rust); }
+  .selection-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .selection-actions .iconlet {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .selection-actions .iconlet:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .selection-actions .iconlet svg { width: 13px; height: 13px; }
+
+  .home-record-foot {
+    padding: 10px 18px;
+    border-top: 1px solid var(--hair);
+    background: #FBF6EC;
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .home-record-foot a {
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--rule);
+  }
+  .home-record-foot a:hover { color: var(--ink); }
+  .home-record-foot svg { width: 12px; height: 12px; color: var(--muted); }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     PORTAL & UPDATES SUBTAB
+     ═══════════════════════════════════════════════════════════════════ */
+  .portal-updates { margin-top: 18px; display: flex; flex-direction: column; gap: 22px; }
+
+  .zone {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .zone-head {
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .zone-num {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #fff;
+    background: var(--ink);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .zone-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink); letter-spacing: -0.01em;
+  }
+  .zone-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Pulse Henry card — the headline ✦ moment */
+  .pulse-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 14px 14px 0;
+    overflow: hidden;
+  }
+  .pulse-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 18px 11px;
+    background: var(--rust-soft);
+    border-bottom: 1px solid rgba(194,65,12,0.15);
+  }
+  .pulse-eyebrow {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .pulse-eyebrow .glyph { font-size: 12px; }
+  .pulse-title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .pulse-since {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-left: auto;
+  }
+  .pulse-body { padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .pulse-signal {
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .signal-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .signal-chip svg { width: 10px; height: 10px; color: var(--muted); }
+  .signal-chip .source { color: var(--muted); margin-right: 2px; }
+
+  .pulse-subject {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .pulse-field-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .pulse-subject-input {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 8px 11px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .pulse-subject-input:focus { outline: none; border-color: var(--ink); background: var(--card); }
+
+  .pulse-draft {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    min-height: 170px;
+    white-space: pre-wrap;
+  }
+  .pulse-draft strong { font-weight: 700; }
+  .pulse-draft .edit-mark {
+    background: linear-gradient(180deg, transparent 65%, rgba(194,65,12,0.18) 65%);
+  }
+
+  .pulse-actions {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn-rust {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 38px;
+    padding: 0 16px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-rust:hover { background: #A8390B; border-color: #A8390B; }
+  .btn-rust svg { width: 13px; height: 13px; }
+  .btn-quiet {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 38px;
+    padding: 0 14px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-quiet:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-quiet svg { width: 12px; height: 12px; }
+  .btn-write-own {
+    background: transparent;
+    border-color: transparent;
+    color: var(--muted);
+  }
+  .btn-write-own:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+
+  .pulse-recipients {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pulse-recipients strong { color: var(--ink-2); font-weight: 700; }
+  .pulse-recipients .sep { color: var(--faint); }
+
+  /* Past updates feed */
+  .past-feed {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .feed-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 14px;
+    padding: 13px 18px;
+    border-top: 1px dashed var(--rule);
+    align-items: flex-start;
+  }
+  .feed-row:first-of-type { border-top: 0; }
+  .feed-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    margin-top: 1px;
+  }
+  .feed-icon svg { width: 12px; height: 12px; }
+  .feed-icon.is-ok { background: var(--ok-soft); color: var(--ok); }
+  .feed-icon.is-rust { background: var(--rust-soft); color: var(--rust); }
+  .feed-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .feed-title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .feed-prev { font-size: 14px; color: var(--muted); line-height: 1.4; }
+  .feed-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+  .feed-meta .sep { color: var(--faint); }
+
+  /* Decisions queue */
+  .decisions-stack { display: flex; flex-direction: column; gap: 10px; }
+  .decision-row {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--warn);
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: center;
+  }
+  .decision-row.is-pinned {
+    background: linear-gradient(180deg, var(--warn-soft) 0%, var(--card) 50%);
+  }
+  .decision-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .decision-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .decision-eyebrow .pin {
+    background: var(--warn-soft);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--warn);
+  }
+  .decision-title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .decision-meta { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; font-weight: 500; }
+  .decision-meta strong { color: var(--ink-2); font-weight: 700; }
+  .decision-meta .sep { color: var(--faint); }
+  .decision-actions { display: flex; gap: 6px; }
+
+  .henry-suggest {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 12px 12px 0;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .henry-suggest .h-mark {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+  .henry-suggest .h-mark .glyph { font-size: 12px; }
+  .henry-suggest .h-text {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .henry-suggest .h-text strong { color: var(--ink); font-weight: 700; }
+  .henry-suggest .h-cta {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--rust);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(194,65,12,0.32);
+    padding-bottom: 1px;
+    letter-spacing: -0.005em;
+  }
+  .henry-suggest .h-cta svg { width: 11px; height: 11px; }
+
+  /* Collapsed portal-setup accordion */
+  .portal-setup {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .setup-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+  }
+  .setup-head:hover { background: #FBF6EC; }
+  .setup-chev {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .setup-chev svg { width: 11px; height: 11px; }
+  .setup-title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .setup-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .setup-sub .sep { color: var(--faint); }
+  .setup-sub strong { color: var(--ink-2); font-weight: 700; }
+  .setup-keys {
+    margin-left: auto;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .setup-key {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    background: var(--chip-fill);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .setup-key strong { color: var(--ink-2); font-weight: 700; }
+
+  /* Expanded setup (in variant frame) */
+  .setup-body {
+    padding: 0 18px 18px;
+    border-top: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding-top: 14px;
+  }
+  .setup-block {
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .setup-block-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .setup-block-value {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .setup-block-helper {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 4px;
+  }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .toggle .switch {
+    width: 32px; height: 18px;
+    background: var(--ink);
+    border-radius: 999px;
+    position: relative;
+  }
+  .toggle .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .toggle.is-off .switch { background: var(--chip-fill); }
+  .toggle.is-off .switch::after { right: auto; left: 2px; background: var(--faint); }
+
+  /* ───── Empty composer state ───── */
+  .write-own-strip {
+    margin-top: 6px;
+    padding: 11px 14px;
+    background: var(--card);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .write-own-strip .lab {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .write-own-strip .start-link {
+    margin-left: auto;
+    color: var(--ink);
+    font-weight: 700;
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+  }
+  .write-own-strip .start-link:hover { color: var(--rust); border-bottom-color: var(--rust); }
+
+  /* ───── Pulse-drill variant: side-by-side review + signals ───── */
+  .pulse-drill {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .signals-panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .signals-head {
+    padding: 12px 16px;
+    background: #FBF6EC;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .signals-title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .signals-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-left: auto; }
+  .signal-row {
+    padding: 10px 16px;
+    border-top: 1px dashed var(--rule);
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .signal-row:first-of-type { border-top: 0; }
+  .signal-row .s-icon {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .signal-row .s-icon svg { width: 11px; height: 11px; }
+  .signal-row .s-icon.is-ok { background: var(--ok-soft); color: var(--ok); }
+  .signal-row .s-icon.is-info { background: var(--info-soft); color: var(--info); }
+  .signal-row .s-text { font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+  .signal-row .s-text strong { color: var(--ink); font-weight: 700; }
+  .signal-row .s-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+
+  /* ───── Empty + loading states ───── */
+  .empty-state {
+    margin: auto;
+    padding: 28px 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    text-align: center;
+    max-width: 360px;
+  }
+  .empty-state .glyph {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    margin-bottom: 4px;
+  }
+  .empty-state .glyph svg { width: 18px; height: 18px; }
+  .empty-state .title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .empty-state .sub { font-size: 14px; color: var(--muted); line-height: 1.45; }
+
+  .empty-card {
+    background: var(--card);
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius-card);
+    padding: 26px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    text-align: center;
+  }
+  .empty-card .title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+  .empty-card .sub { font-size: 14px; color: var(--muted); line-height: 1.45; }
+
+  .skel-stack { display: flex; flex-direction: column; gap: 10px; }
+  .skel-line {
+    height: 12px;
+    background: linear-gradient(90deg, var(--chip-fill) 0%, #F4EBD7 50%, var(--chip-fill) 100%);
+    background-size: 200% 100%;
+    border-radius: 4px;
+    animation: skel-shimmer 1.6s ease-in-out infinite;
+  }
+  .skel-line.w-95 { width: 95%; }
+  .skel-line.w-85 { width: 85%; }
+  .skel-line.w-70 { width: 70%; }
+  .skel-line.w-55 { width: 55%; }
+  @keyframes skel-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/><path d="M19 14l.7 1.9 1.9.7-1.9.7L19 19l-.7-1.7-1.9-.7 1.9-.7z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.39 1.9.81 2.78a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.3-1.38a2 2 0 0 1 2.11-.45c.88.41 1.82.69 2.78.81a2 2 0 0 1 1.72 2z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></symbol>
+    <symbol id="i-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.36 1 .8 1.3 1.4l.7 1.7h3l.7-1.7c.3-.6.8-1.04 1.3-1.4A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07L11.59 5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07L12.41 19"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <!-- ═════ Sidebar ═════ -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Construction</span>
+          <span class="org-sub">Langley, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═════ Main column ═════ -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices&hellip;</span>
+        <span class="chip-kbd">&#8984; K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-plus"/></svg>New project</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <!-- ─── Project header ─── -->
+      <section class="project-head">
+        <div class="project-head-text">
+          <div class="title-row">
+            <h1 class="project-title">Glenwood Heights Master Suite Addition</h1>
+            <button class="details-trigger" aria-label="Project details"><svg><use href="#i-chevron-down"/></svg></button>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line"><a href="#">Daniel &amp; Priya Mohan</a></div>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-add">
+            <span class="henry-glyph" aria-hidden="true">&#10022;</span>
+            Add
+          </button>
+          <button class="icon-btn" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </div>
+      </section>
+
+      <!-- ─── Tab strip (Client is on; rust count = unread messages 2 + idea 1) ─── -->
+      <nav class="tab-strip" aria-label="Project sections">
+        <button class="tab">Budget</button>
+        <button class="tab">Spend</button>
+        <button class="tab">Labour</button>
+        <button class="tab">Schedule</button>
+        <button class="tab">Billing</button>
+        <button class="tab">Overview</button>
+        <span class="tab-divider" aria-hidden="true"></span>
+        <button class="tab is-on">Client <span class="tab-count" title="2 unread messages + 1 idea">3</span></button>
+        <button class="tab is-secondary">Photos</button>
+        <button class="tab is-secondary">Documents</button>
+      </nav>
+
+      <!-- ─── Client hub sub-nav — Messages · Selections · Portal & Updates ─── -->
+      <div class="subhub" role="navigation" aria-label="Client hub">
+        <div class="subhub-tabs" role="tablist">
+          <button class="subhub-tab is-on" role="tab" aria-selected="true">
+            Messages <span class="b rust" aria-label="2 unread">2</span>
+          </button>
+          <button class="subhub-tab" role="tab" aria-selected="false">
+            Selections <span class="b warn" aria-label="1 new idea">1</span>
+          </button>
+          <button class="subhub-tab" role="tab" aria-selected="false">
+            Portal &amp; Updates
+          </button>
+        </div>
+        <div class="portal-chip" aria-label="Portal status">
+          <span class="dot" aria-hidden="true"></span>
+          <span><span class="state">Portal on</span> <span class="url-link">/portal/glenwood-mohan</span></span>
+          <span class="sep">&middot;</span>
+          <span class="quiet-link"><svg><use href="#i-eye"/></svg>Preview</span>
+          <span class="quiet-link"><svg><use href="#i-share"/></svg>Share</span>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  FRAME 1 — MESSAGES SUBTAB (default)                             ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <section class="messages-stage" aria-label="Messages thread">
+        <div class="msg-stage-head">
+          <span class="msg-stage-title">Thread with Daniel &amp; Priya</span>
+          <span class="msg-stage-meta">P&#8209;4F2A91 &middot; 1 scrollback across Portal / Email / SMS</span>
+          <div class="msg-stage-actions">
+            <button class="icon-btn" aria-label="Search thread"><svg><use href="#i-search"/></svg></button>
+            <button class="icon-btn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <div class="thread" role="log" aria-live="polite">
+
+          <div class="day-rule">Apr 24</div>
+
+          <div class="bubble-row is-out">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="time">Apr 24 &middot; 4:18 PM</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-portal"><svg><use href="#i-eye"/></svg>Portal</span>
+                <span class="sep">&middot;</span>
+                <span class="name">You</span>
+              </div>
+              <div class="bubble is-out">
+                Framing wrapped today &mdash; ahead of schedule. Drywall starts next Tuesday. I'll send a few photos once the inspector signs off.
+                <div class="b-foot">
+                  <svg style="width:9px;height:9px;"><use href="#i-check"/></svg>
+                  Read on portal &middot; Apr 24
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bubble-row is-in">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="name">Daniel Mohan</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-email"><svg><use href="#i-mail"/></svg>Email</span>
+                <span class="sep">&middot;</span>
+                <span class="time">Apr 25 &middot; 9:02 AM</span>
+              </div>
+              <div class="bubble is-in">
+                Looks great. Priya was asking about the closet shelving &mdash; can we get the maple option you mentioned?
+              </div>
+            </div>
+          </div>
+
+          <div class="day-rule">May 18</div>
+
+          <div class="bubble-row is-out">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="time">May 18 &middot; 11:40 AM</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-portal"><svg><use href="#i-eye"/></svg>Portal</span>
+                <span class="sep">&middot;</span>
+                <span class="name">You</span>
+              </div>
+              <div class="bubble is-out">
+                Quick update &mdash; rough-in inspection passed this morning. 12 photos in the gallery if you want a peek. Tile selection is up next; happy to walk you through samples on site this week.
+              </div>
+            </div>
+          </div>
+
+          <div class="day-rule">Today &middot; May 22</div>
+
+          <div class="bubble-row is-in">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="name">Daniel Mohan</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-sms"><svg><use href="#i-phone"/></svg>SMS</span>
+                <span class="sep">&middot;</span>
+                <span class="time">2h ago</span>
+              </div>
+              <div class="bubble is-in">
+                Any chance we can swap to the brushed nickel pulls? Saw a few in a magazine Priya bookmarked.
+              </div>
+            </div>
+          </div>
+
+          <div class="bubble-row is-out">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="time">1h ago</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-email"><svg><use href="#i-mail"/></svg>Email</span>
+                <span class="sep">&middot;</span>
+                <span class="name">You</span>
+              </div>
+              <div class="bubble is-out">
+                Great choice &mdash; I'll price the difference and send a quick change order so we keep the budget aligned. Should land in your portal by end of day.
+                <div class="b-foot">
+                  <svg style="width:9px;height:9px;"><use href="#i-check"/></svg>
+                  Delivered &middot; 1h ago
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Composer pinned bottom -->
+        <div class="composer">
+          <div class="composer-head">
+            <button class="composer-channel" aria-haspopup="listbox" aria-label="Send via — Portal, Email, or SMS">
+              <span class="lab-pre">Send via</span>
+              <span class="ch-icon"><svg><use href="#i-phone"/></svg></span><strong>SMS</strong>
+              <svg class="chev"><use href="#i-chevron-down"/></svg>
+            </button>
+            <span class="composer-hint"><span class="glyph">&#10022;</span> Daniel usually replies fastest on SMS.</span>
+            <span class="composer-debounce">Outbound debounced 30s &middot; you can undo</span>
+            <button class="composer-henry">
+              <span class="glyph">&#10022;</span> Draft a reply
+            </button>
+          </div>
+          <div class="composer-input">
+            <textarea class="composer-textarea" placeholder="Write to Daniel &amp; Priya&hellip;"></textarea>
+            <button class="composer-attach" aria-label="Attach"><svg><use href="#i-paperclip"/></svg></button>
+            <button class="composer-send"><svg><use href="#i-send"/></svg>Send</button>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  FRAME 2 — SELECTIONS SUBTAB                                     ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <div class="frame-label">
+        <span class="kind">Subtab</span>
+        Selections &middot; client ideas + room-grouped selections
+        <span class="meta">Sub-nav state: <strong style="color:var(--ink);">Selections</strong> is on (warn-soft &lsquo;1&rsquo; on ideas)</span>
+      </div>
+
+      <section class="selections" aria-label="Selections subtab">
+
+        <!-- Client ideas board -->
+        <section aria-label="Client ideas">
+          <div class="section-eyebrow">
+            <span class="eyebrow-label">Client ideas</span>
+            <span class="eyebrow-meta">3 posted &middot; 1 new since you opened the tab</span>
+            <button class="eyebrow-link">All ideas <svg><use href="#i-arrow-right"/></svg></button>
+          </div>
+
+          <div class="ideas-grid">
+
+            <article class="idea-card">
+              <div class="idea-thumb is-tile"></div>
+              <div class="idea-body">
+                <div class="idea-meta">
+                  <span class="source">Priya</span>
+                  <span class="sep">&middot;</span>
+                  <span class="kind-chip">Photo</span>
+                  <span class="sep">&middot;</span>
+                  <span>2d ago</span>
+                </div>
+                <div class="idea-quote"><span class="quote-mark">&ldquo;</span>Saw this in a magazine &mdash; would love this in the ensuite shower.<span class="quote-mark">&rdquo;</span></div>
+                <div class="idea-foot">
+                  <button class="idea-promote"><span class="glyph">&#10022;</span>Promote to selection</button>
+                  <button class="idea-quiet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </div>
+            </article>
+
+            <article class="idea-card">
+              <div class="idea-thumb is-vanity"></div>
+              <div class="idea-body">
+                <div class="idea-meta">
+                  <span class="source">Daniel</span>
+                  <span class="sep">&middot;</span>
+                  <span class="kind-chip">Photo</span>
+                  <span class="sep">&middot;</span>
+                  <span>5d ago</span>
+                </div>
+                <div class="idea-quote"><span class="quote-mark">&ldquo;</span>Walnut vanity option &mdash; like the drawer pulls on this one.<span class="quote-mark">&rdquo;</span></div>
+                <div class="idea-foot">
+                  <button class="idea-promote"><span class="glyph">&#10022;</span>Promote to selection</button>
+                  <button class="idea-quiet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </div>
+            </article>
+
+            <article class="idea-card">
+              <div class="idea-thumb is-link">
+                <span class="url-glyph"><svg style="width:14px;height:14px;color:var(--muted);margin-bottom:4px;"><use href="#i-link"/></svg><br/><span class="domain">cb2.com</span>/sconce-brushed-nickel</span>
+              </div>
+              <div class="idea-body">
+                <div class="idea-meta">
+                  <span class="source">Priya</span>
+                  <span class="sep">&middot;</span>
+                  <span class="kind-chip">Link</span>
+                  <span class="sep">&middot;</span>
+                  <span>1w ago</span>
+                </div>
+                <div class="idea-quote"><span class="quote-mark">&ldquo;</span>Sconces for either side of the vanity mirror.<span class="quote-mark">&rdquo;</span></div>
+                <div class="idea-foot">
+                  <button class="idea-promote"><span class="glyph">&#10022;</span>Promote to selection</button>
+                  <button class="idea-quiet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+                </div>
+              </div>
+            </article>
+
+          </div>
+        </section>
+
+        <!-- Room-grouped selections -->
+        <section aria-label="Selections by room">
+          <div class="section-eyebrow">
+            <span class="eyebrow-label">Selections</span>
+            <span class="eyebrow-meta">2 rooms &middot; 6 items &middot; rolls into the Home Record</span>
+            <button class="eyebrow-link"><svg style="width:11px;height:11px;color:var(--rust);"><use href="#i-plus"/></svg>Selection</button>
+          </div>
+
+          <!-- Primary Bath -->
+          <div class="room-group">
+            <div class="room-head">
+              <span class="room-title">Primary Bath</span>
+              <span class="room-meta"><strong>4</strong>&nbsp;items</span>
+              <button class="room-add"><svg><use href="#i-plus"/></svg>Item</button>
+            </div>
+
+            <div class="selection-row">
+              <span class="selection-thumb is-paint-white"></span>
+              <div class="selection-body">
+                <span class="selection-name">Paint &middot; Walls &amp; ceiling</span>
+                <span class="selection-spec">BM Chantilly Lace OC&#8209;65 <span class="sep">&middot;</span> matte</span>
+              </div>
+              <div class="selection-source">
+                <span class="source-chip">Operator</span> set Apr 14
+              </div>
+              <div class="selection-actions">
+                <button class="iconlet" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="iconlet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+            <div class="selection-row">
+              <span class="selection-thumb is-tile-carrara"></span>
+              <div class="selection-body">
+                <span class="selection-name">Floor tile</span>
+                <span class="selection-spec">Carrara honed 12&times;24 <span class="sep">&middot;</span> 1/8&Prime; grout, charcoal</span>
+              </div>
+              <div class="selection-source">
+                <span class="source-chip is-client">From client</span> Apr 30
+              </div>
+              <div class="selection-actions">
+                <button class="iconlet" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="iconlet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+            <div class="selection-row">
+              <span class="selection-thumb is-vanity-walnut"></span>
+              <div class="selection-body">
+                <span class="selection-name">Vanity</span>
+                <span class="selection-spec">60&Prime; double, walnut <span class="sep">&middot;</span> quartz top, undermount</span>
+              </div>
+              <div class="selection-source">
+                <span class="source-chip">Operator</span> Apr 18
+              </div>
+              <div class="selection-actions">
+                <button class="iconlet" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="iconlet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+            <div class="selection-row">
+              <span class="selection-thumb is-pulls"></span>
+              <div class="selection-body">
+                <span class="selection-name">Cabinet pulls</span>
+                <span class="selection-spec">Schaub Versa 5&Prime; <span class="sep">&middot;</span> <strong style="color:var(--ink); font-weight: 700;">brushed nickel</strong> <span style="color:var(--faint);">(was: chrome)</span></span>
+              </div>
+              <div class="selection-source">
+                <span class="source-chip is-client">From client</span> 2h ago
+              </div>
+              <div class="selection-actions">
+                <button class="iconlet" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="iconlet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Primary Bedroom -->
+          <div class="room-group">
+            <div class="room-head">
+              <span class="room-title">Primary Bedroom</span>
+              <span class="room-meta"><strong>2</strong>&nbsp;items</span>
+              <button class="room-add"><svg><use href="#i-plus"/></svg>Item</button>
+            </div>
+
+            <div class="selection-row">
+              <span class="selection-thumb is-paint-greige"></span>
+              <div class="selection-body">
+                <span class="selection-name">Paint &middot; Walls</span>
+                <span class="selection-spec">BM Edgecomb Gray HC&#8209;173 <span class="sep">&middot;</span> eggshell</span>
+              </div>
+              <div class="selection-source">
+                <span class="source-chip">Operator</span> Apr 14
+              </div>
+              <div class="selection-actions">
+                <button class="iconlet" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="iconlet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+            <div class="selection-row">
+              <span class="selection-thumb is-floor-oak"></span>
+              <div class="selection-body">
+                <span class="selection-name">Floor</span>
+                <span class="selection-spec">5&Prime; engineered white oak <span class="sep">&middot;</span> matte clear seal</span>
+              </div>
+              <div class="selection-source">
+                <span class="source-chip">Operator</span> Apr 18
+              </div>
+              <div class="selection-actions">
+                <button class="iconlet" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="iconlet" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+            <div class="home-record-foot">
+              <svg><use href="#i-help"/></svg>
+              <span>All selections roll into the <a href="#">Home Record</a> at closeout &mdash; the client keeps the spec book.</span>
+            </div>
+          </div>
+
+        </section>
+
+      </section>
+
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  FRAME 3 — PORTAL & UPDATES SUBTAB                                ║
+           ║  Two zones: ① client activity (Pulse + decisions) ② setup (collapsed) ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <div class="frame-label">
+        <span class="kind">Subtab</span>
+        Portal &amp; Updates &middot; ① client activity (top) + ② portal setup (collapsed)
+        <span class="meta">Sub-nav state: <strong style="color:var(--ink);">Portal &amp; Updates</strong> is on</span>
+      </div>
+
+      <section class="portal-updates" aria-label="Portal & Updates subtab">
+
+        <!-- ZONE 1 — client activity -->
+        <div class="zone">
+          <div class="zone-head">
+            <span class="zone-num">1</span>
+            <span class="zone-title">Client activity</span>
+            <span class="zone-meta">The daily work &middot; updates + decisions</span>
+          </div>
+
+          <!-- Updates header -->
+          <div class="section-eyebrow">
+            <span class="eyebrow-label">Updates</span>
+            <span class="eyebrow-meta">Last sent Apr 24 &middot; 28 days ago</span>
+          </div>
+
+          <!-- Pulse Henry draft (the headline ✦ moment) -->
+          <article class="pulse-card" aria-label="Henry Pulse draft">
+            <div class="pulse-head">
+              <span class="pulse-eyebrow"><span class="glyph">&#10022;</span>Henry &middot; Pulse draft</span>
+              <span class="pulse-title">Here's a progress update from this week. Review &amp; send?</span>
+              <span class="pulse-since">From 6 signals &middot; May 16&ndash;22</span>
+            </div>
+            <div class="pulse-body">
+
+              <div class="pulse-signal" aria-label="Signals Henry used">
+                <span class="signal-chip"><svg><use href="#i-check"/></svg>Phase &rarr; Rough-in complete</span>
+                <span class="signal-chip"><svg><use href="#i-camera"/></svg>12 photos &middot; ensuite + closet</span>
+                <span class="signal-chip"><svg><use href="#i-check"/></svg>Inspection passed May 18</span>
+                <span class="signal-chip"><svg><use href="#i-calendar"/></svg>Drywall starts Tue</span>
+                <span class="signal-chip"><svg><use href="#i-message"/></svg>1 client question</span>
+                <span class="signal-chip"><svg><use href="#i-zap"/></svg>2d &middot; ahead of plan</span>
+              </div>
+
+              <div class="pulse-subject">
+                <span class="pulse-field-label">Subject</span>
+                <input class="pulse-subject-input" type="text" value="Week 8 update &mdash; rough-in's done, drywall next" />
+              </div>
+
+              <div class="pulse-subject">
+                <span class="pulse-field-label">Body &middot; drafted by Henry, editable</span>
+                <div class="pulse-draft" contenteditable="true" spellcheck="false">Hi Daniel &amp; Priya &mdash;
+
+Quick update from this week:
+
+<strong>Drywall went up in the primary bath</strong>, and <strong>electrical rough-in passed inspection</strong> on Monday. The shower niche is framed exactly where we'd planned for the Carrara tile. Closet framing is also done &mdash; ready for the maple shelving package.
+
+Next up: drywall in the rest of the suite starts Tuesday, then we're into paint by mid-June. We're <span class="edit-mark">tracking about 2 days ahead</span> of the original schedule.
+
+I've added <strong>12 photos to the portal gallery</strong>. One thing I'd love your eyes on this week is the <strong>tile selection</strong> &mdash; we'll need to confirm before drywall finishes so we can order in time.
+
+&mdash; Mike, Northbeam</div>
+              </div>
+
+              <div class="pulse-actions">
+                <button class="btn-rust"><svg><use href="#i-send"/></svg>Send to client</button>
+                <button class="btn-quiet"><svg><use href="#i-eye"/></svg>Preview</button>
+                <button class="btn-quiet btn-write-own"><svg><use href="#i-pen"/></svg>Write your own instead</button>
+                <span class="pulse-recipients">
+                  <span>&rarr; Portal</span><span class="sep">+</span><strong>Daniel</strong><span class="sep">+</span><strong>Priya</strong>
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Past updates feed -->
+          <div class="section-eyebrow" style="margin-top: 8px;">
+            <span class="eyebrow-label">Past updates</span>
+            <span class="eyebrow-meta">3 sent</span>
+          </div>
+          <div class="past-feed">
+            <div class="feed-row">
+              <span class="feed-icon is-ok"><svg><use href="#i-check"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-title">Progress &middot; Framing complete</span>
+                <span class="feed-prev">&ldquo;Framing's wrapped a day early &mdash; drywall starts Tuesday. A few photos in the gallery.&rdquo;</span>
+              </div>
+              <span class="feed-meta">Sent Apr 24 <span class="sep">&middot;</span> Portal + Email</span>
+            </div>
+            <div class="feed-row">
+              <span class="feed-icon is-rust"><svg><use href="#i-sparkles"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-title">Pulse &middot; Foundation poured &amp; cured</span>
+                <span class="feed-prev">&ldquo;Foundation is in &mdash; we passed inspection on Wednesday. Lumber package landed Friday.&rdquo;</span>
+              </div>
+              <span class="feed-meta">Sent Apr 10 <span class="sep">&middot;</span> Portal + Email</span>
+            </div>
+            <div class="feed-row">
+              <span class="feed-icon"><svg><use href="#i-message"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-title">Kickoff &middot; Demo + site prep</span>
+                <span class="feed-prev">&ldquo;Crew on site Monday at 7. Driveway's open; we'll be tarping the old roofline.&rdquo;</span>
+              </div>
+              <span class="feed-meta">Sent Mar 3 <span class="sep">&middot;</span> Portal + Email</span>
+            </div>
+          </div>
+
+          <!-- Decisions -->
+          <div class="section-eyebrow" style="margin-top: 14px;">
+            <span class="eyebrow-label">Decisions</span>
+            <span class="eyebrow-meta">1 pending &middot; pinned to client portal</span>
+            <button class="eyebrow-link"><svg style="width:11px;height:11px;color:var(--rust);"><use href="#i-plus"/></svg>Decision</button>
+          </div>
+
+          <div class="decisions-stack">
+            <div class="decision-row is-pinned">
+              <div class="decision-body">
+                <span class="decision-eyebrow">
+                  <span>Pending</span>
+                  <span class="pin">Pinned to portal</span>
+                </span>
+                <span class="decision-title">Tile selection &mdash; awaiting client approval</span>
+                <span class="decision-meta">Asked Daniel &amp; Priya <strong>2 days ago</strong> <span class="sep">&middot;</span> 3 options shown <span class="sep">&middot;</span> needed by <strong>May 26</strong></span>
+              </div>
+              <div class="decision-actions">
+                <button class="btn-quiet"><svg><use href="#i-eye"/></svg>View on portal</button>
+                <button class="btn-quiet"><svg><use href="#i-message"/></svg>Nudge</button>
+              </div>
+            </div>
+
+            <div class="henry-suggest">
+              <span class="h-mark"><span class="glyph">&#10022;</span>Henry</span>
+              <span class="h-text">Tile is on the <strong>critical path</strong> &mdash; drywall finishes May 28. Ask them to confirm <strong>this week</strong> so the order has lead time.</span>
+              <button class="h-cta">Compose decision <svg><use href="#i-arrow-right"/></svg></button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ZONE 2 — portal setup (collapsed by default) -->
+        <div class="zone">
+          <div class="zone-head">
+            <span class="zone-num">2</span>
+            <span class="zone-title">Portal setup</span>
+            <span class="zone-meta">Set-once config &middot; collapse after</span>
+          </div>
+
+          <div class="portal-setup" aria-label="Portal setup, collapsed">
+            <div class="setup-head">
+              <span class="setup-chev"><svg><use href="#i-chevron-right"/></svg></span>
+              <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                <span class="setup-title">Portal setup</span>
+                <span class="setup-sub">
+                  <strong>On</strong> <span class="sep">&middot;</span>
+                  view mode <strong>Sections</strong> <span class="sep">&middot;</span>
+                  budget <strong>visible</strong> <span class="sep">&middot;</span>
+                  shared with <strong>2 recipients</strong>
+                </span>
+              </div>
+              <div class="setup-keys">
+                <span class="setup-key"><strong>Sections</strong> view</span>
+                <span class="setup-key"><strong>Phase rail</strong> on</span>
+                <span class="setup-key"><strong>2</strong> recipients</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  VARIANT A — MESSAGES with PORTAL DISABLED                       ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <div class="frame-label is-variant">
+        <span class="kind">Variant</span>
+        Messages with portal disabled &middot; calm info strip, notify-only mode
+        <span class="meta">Portal chip flips to <strong style="color:var(--muted);">&#9675; Portal off</strong> &middot; Enable inline</span>
+      </div>
+
+      <!-- Re-render the sub-nav with the chip in OFF state -->
+      <div class="subhub" role="navigation" aria-label="Client hub — portal off">
+        <div class="subhub-tabs" role="tablist">
+          <button class="subhub-tab is-on" role="tab" aria-selected="true">
+            Messages <span class="b rust" aria-label="2 unread">2</span>
+          </button>
+          <button class="subhub-tab" role="tab" aria-selected="false">
+            Selections <span class="b warn" aria-label="1 new idea">1</span>
+          </button>
+          <button class="subhub-tab" role="tab" aria-selected="false">
+            Portal &amp; Updates
+          </button>
+        </div>
+        <div class="portal-chip is-off" aria-label="Portal status">
+          <span class="dot" aria-hidden="true"></span>
+          <span><span class="state">Portal off</span></span>
+          <span class="sep">&middot;</span>
+          <span class="quiet-link" style="color:var(--info);"><svg><use href="#i-zap"/></svg>Enable</span>
+        </div>
+      </div>
+
+      <section class="messages-stage" aria-label="Messages thread, portal off" style="min-height: 420px;">
+        <div class="msg-stage-head">
+          <span class="msg-stage-title">Thread with Daniel &amp; Priya</span>
+          <span class="msg-stage-meta">Portal off &middot; notify-only mode</span>
+          <div class="msg-stage-actions">
+            <button class="icon-btn" aria-label="Search thread"><svg><use href="#i-search"/></svg></button>
+            <button class="icon-btn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <!-- The calm info strip — info-soft, NOT warn -->
+        <div class="portal-off-strip">
+          <span class="lab">Portal off</span>
+          <span>Messages still <strong>notify the client</strong> by email and SMS &mdash; but they can't read the thread until you enable the portal.</span>
+          <a class="enable-link">Enable portal <svg><use href="#i-arrow-right"/></svg></a>
+        </div>
+
+        <div class="thread" role="log" aria-live="polite">
+
+          <div class="day-rule">Today &middot; May 22</div>
+
+          <div class="bubble-row is-in">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="name">Daniel Mohan</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-sms"><svg><use href="#i-phone"/></svg>SMS</span>
+                <span class="sep">&middot;</span>
+                <span class="time">2h ago</span>
+              </div>
+              <div class="bubble is-in">
+                Any chance we can swap to the brushed nickel pulls? Saw a few in a magazine Priya bookmarked.
+              </div>
+            </div>
+          </div>
+
+          <div class="bubble-row is-out">
+            <div class="bubble-col">
+              <div class="bubble-meta">
+                <span class="time">1h ago</span>
+                <span class="sep">&middot;</span>
+                <span class="channel-chip is-email"><svg><use href="#i-mail"/></svg>Email</span>
+                <span class="sep">&middot;</span>
+                <span class="name">You</span>
+              </div>
+              <div class="bubble is-out">
+                Great choice &mdash; I'll price the difference and send a quick change order so we keep the budget aligned.
+                <div class="b-foot">
+                  <svg style="width:9px;height:9px;"><use href="#i-check"/></svg>
+                  Delivered via Email + SMS &middot; not visible on portal
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="composer">
+          <div class="composer-head">
+            <button class="composer-channel" aria-haspopup="listbox" aria-label="Send via — Email or SMS (portal disabled)">
+              <span class="lab-pre">Send via</span>
+              <span class="ch-icon"><svg><use href="#i-phone"/></svg></span><strong>SMS</strong>
+              <svg class="chev"><use href="#i-chevron-down"/></svg>
+            </button>
+            <span class="composer-hint"><span class="glyph">&#10022;</span> Daniel usually replies fastest on SMS.</span>
+            <span class="composer-debounce">Outbound debounced 30s &middot; you can undo</span>
+            <button class="composer-henry">
+              <span class="glyph">&#10022;</span> Draft a reply
+            </button>
+          </div>
+          <div class="composer-input">
+            <textarea class="composer-textarea" placeholder="Write to Daniel &amp; Priya&hellip;"></textarea>
+            <button class="composer-attach" aria-label="Attach"><svg><use href="#i-paperclip"/></svg></button>
+            <button class="composer-send"><svg><use href="#i-send"/></svg>Send</button>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  VARIANT B — PULSE DRAFT, prominent close-up with side signals   ║
+           ║  Same composition; expanded "Signals Henry drew from" alongside  ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <div class="frame-label is-variant">
+        <span class="kind">Variant</span>
+        Pulse draft &mdash; prominent at top of Updates &middot; with signal panel
+        <span class="meta">The "drafted from these signals" expanded view &middot; review &amp; send</span>
+      </div>
+
+      <section class="portal-updates" aria-label="Pulse drill-in" style="margin-top: 0;">
+        <div class="zone">
+          <div class="zone-head">
+            <span class="zone-num">1</span>
+            <span class="zone-title">Pulse review</span>
+            <span class="zone-meta">Draft + the activity Henry pulled from</span>
+          </div>
+
+          <div class="pulse-drill">
+            <!-- Left: the draft (same Pulse card, focused) -->
+            <article class="pulse-card" aria-label="Henry Pulse draft">
+              <div class="pulse-head">
+                <span class="pulse-eyebrow"><span class="glyph">&#10022;</span>Henry &middot; Pulse draft</span>
+                <span class="pulse-title">Week 8 update &mdash; rough-in's done</span>
+                <span class="pulse-since">Drafted just now</span>
+              </div>
+              <div class="pulse-body">
+                <div class="pulse-subject">
+                  <span class="pulse-field-label">Subject</span>
+                  <input class="pulse-subject-input" type="text" value="Week 8 update &mdash; rough-in's done, drywall next" />
+                </div>
+                <div class="pulse-subject">
+                  <span class="pulse-field-label">Body &middot; drafted by Henry, editable</span>
+                  <div class="pulse-draft" contenteditable="true" spellcheck="false">Hi Daniel &amp; Priya &mdash;
+
+Quick update from this week:
+
+<strong>Drywall went up in the primary bath</strong>, and <strong>electrical rough-in passed inspection</strong> on Monday. The shower niche is framed exactly where we'd planned for the Carrara tile.
+
+Next up: drywall in the rest of the suite starts Tuesday, then we're into paint by mid-June. We're tracking about 2 days ahead of the original schedule.
+
+I've added 12 photos to the portal gallery. One thing I'd love your eyes on this week is the <strong>tile selection</strong> &mdash; we'll need to confirm before drywall finishes.
+
+&mdash; Mike, Northbeam</div>
+                </div>
+
+                <div class="pulse-actions">
+                  <button class="btn-rust"><svg><use href="#i-send"/></svg>Send to client</button>
+                  <button class="btn-quiet"><svg><use href="#i-eye"/></svg>Preview</button>
+                  <button class="btn-quiet btn-write-own"><svg><use href="#i-pen"/></svg>Start over, write your own</button>
+                </div>
+
+                <div class="write-own-strip">
+                  <span class="lab">No auto-send</span>
+                  <span>Henry never sends to the client without your tap. Edit freely &mdash; the draft updates as you type.</span>
+                </div>
+              </div>
+            </article>
+
+            <!-- Right: the signals panel -->
+            <aside class="signals-panel" aria-label="Signals Henry drew from">
+              <div class="signals-head">
+                <span class="signals-title">Drafted from these signals</span>
+                <span class="signals-sub">6 from May 16&ndash;22</span>
+              </div>
+              <div class="signal-row">
+                <span class="s-icon is-ok"><svg><use href="#i-check"/></svg></span>
+                <span class="s-text">Phase advanced &rarr; <strong>Rough-in complete</strong></span>
+                <span class="s-time">May 18</span>
+              </div>
+              <div class="signal-row">
+                <span class="s-icon is-ok"><svg><use href="#i-check"/></svg></span>
+                <span class="s-text">Inspection passed &mdash; <strong>Electrical rough-in</strong>, by Mike Reyes</span>
+                <span class="s-time">May 18</span>
+              </div>
+              <div class="signal-row">
+                <span class="s-icon is-info"><svg><use href="#i-camera"/></svg></span>
+                <span class="s-text"><strong>12 photos</strong> added &mdash; ensuite + closet, by Mike Reyes</span>
+                <span class="s-time">May 18</span>
+              </div>
+              <div class="signal-row">
+                <span class="s-icon"><svg><use href="#i-calendar"/></svg></span>
+                <span class="s-text">Schedule firmed &mdash; <strong>Drywall start May 27</strong></span>
+                <span class="s-time">May 19</span>
+              </div>
+              <div class="signal-row">
+                <span class="s-icon"><svg><use href="#i-message"/></svg></span>
+                <span class="s-text"><strong>1 client question</strong> &mdash; brushed nickel pulls (Daniel)</span>
+                <span class="s-time">2h ago</span>
+              </div>
+              <div class="signal-row">
+                <span class="s-icon is-ok"><svg><use href="#i-zap"/></svg></span>
+                <span class="s-text"><strong>2 days ahead of plan</strong> &mdash; vs target schedule</span>
+                <span class="s-time">Today</span>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  STATE A — MESSAGES with EMPTY THREAD (no messages yet)          ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <div class="frame-label is-variant">
+        <span class="kind">State</span>
+        Messages &middot; empty thread (before first message)
+        <span class="meta">Calm empty state above the composer &middot; composer still active</span>
+      </div>
+
+      <section class="messages-stage" aria-label="Messages thread, empty" style="min-height: 460px;">
+        <div class="msg-stage-head">
+          <span class="msg-stage-title">Thread with Daniel &amp; Priya</span>
+          <span class="msg-stage-meta">No messages yet</span>
+          <div class="msg-stage-actions">
+            <button class="icon-btn" aria-label="Search thread"><svg><use href="#i-search"/></svg></button>
+            <button class="icon-btn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <div class="thread" role="log" aria-live="polite">
+          <div class="empty-state">
+            <span class="glyph"><svg><use href="#i-message"/></svg></span>
+            <span class="title">No messages yet</span>
+            <span class="sub">Start the conversation with <strong style="color:var(--ink); font-weight:700;">Daniel &amp; Priya</strong> &mdash; they'll get a notification via portal, email, and SMS.</span>
+          </div>
+        </div>
+
+        <div class="composer">
+          <div class="composer-head">
+            <span class="composer-channel">
+              <span class="lab-pre">Send via</span><strong>Portal + Email + SMS</strong>
+              <svg><use href="#i-chevron-down"/></svg>
+            </span>
+            <span class="composer-debounce">Outbound debounced 30s &middot; you can undo</span>
+            <button class="composer-henry">
+              <span class="glyph">&#10022;</span> Draft an intro
+            </button>
+          </div>
+          <div class="composer-input">
+            <textarea class="composer-textarea" placeholder="Write the first message to Daniel &amp; Priya&hellip;"></textarea>
+            <button class="composer-attach" aria-label="Attach"><svg><use href="#i-paperclip"/></svg></button>
+            <button class="composer-send"><svg><use href="#i-send"/></svg>Send</button>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  STATE B — SELECTIONS with EMPTY IDEAS + EMPTY ROOMS             ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <div class="frame-label is-variant">
+        <span class="kind">State</span>
+        Selections &middot; empty ideas board + empty room list
+        <span class="meta">Pre-population &middot; both sections show a dashed empty card</span>
+      </div>
+
+      <section class="selections" aria-label="Selections subtab, empty">
+
+        <section aria-label="Client ideas, empty">
+          <div class="section-eyebrow">
+            <span class="eyebrow-label">Client ideas</span>
+            <span class="eyebrow-meta">0 posted</span>
+          </div>
+          <div class="empty-card">
+            <span class="title">No ideas posted yet</span>
+            <span class="sub">They'll show here when the client shares one &mdash; a photo, a link, or a note from the portal.</span>
+          </div>
+        </section>
+
+        <section aria-label="Selections by room, empty">
+          <div class="section-eyebrow">
+            <span class="eyebrow-label">Selections</span>
+            <span class="eyebrow-meta">0 rooms &middot; 0 items</span>
+            <button class="eyebrow-link"><svg style="width:11px;height:11px;color:var(--rust);"><use href="#i-plus"/></svg>Selection</button>
+          </div>
+          <div class="empty-card">
+            <span class="title">No selections yet &mdash; add the first</span>
+            <span class="sub">Paint, tile, fixtures, finishes &mdash; all rolled into the <a href="#" style="color:var(--ink-2); border-bottom:1px solid var(--rule);">Home Record</a> at closeout.</span>
+          </div>
+        </section>
+
+      </section>
+
+
+      <!-- ╔═══════════════════════════════════════════════════════════════════╗
+           ║  STATE C — PORTAL & UPDATES with PULSE LOADING + NO DECISION    ║
+           ╚═══════════════════════════════════════════════════════════════════╝ -->
+      <div class="frame-label is-variant">
+        <span class="kind">State</span>
+        Portal &amp; Updates &middot; Pulse draft loading + no pending decision
+        <span class="meta">Henry assembling the draft &middot; decisions queue empty</span>
+      </div>
+
+      <section class="portal-updates" aria-label="Portal & Updates, loading + empty">
+
+        <div class="zone">
+          <div class="zone-head">
+            <span class="zone-num">1</span>
+            <span class="zone-title">Client activity</span>
+            <span class="zone-meta">Pulse drafting &middot; nothing else pending</span>
+          </div>
+
+          <div class="section-eyebrow">
+            <span class="eyebrow-label">Updates</span>
+            <span class="eyebrow-meta">Drafting&hellip;</span>
+          </div>
+
+          <!-- Pulse draft loading skeleton -->
+          <article class="pulse-card" aria-label="Henry Pulse draft, loading" aria-busy="true">
+            <div class="pulse-head">
+              <span class="pulse-eyebrow"><span class="glyph">&#10022;</span>Henry &middot; Pulse draft</span>
+              <span class="pulse-title">Henry is drafting this week's update&hellip;</span>
+              <span class="pulse-since">Pulling signals from May 16&ndash;22</span>
+            </div>
+            <div class="pulse-body">
+              <div class="skel-stack">
+                <div class="skel-line w-95"></div>
+                <div class="skel-line w-85"></div>
+                <div class="skel-line w-95"></div>
+                <div class="skel-line w-70"></div>
+                <div class="skel-line w-85"></div>
+                <div class="skel-line w-55"></div>
+              </div>
+              <div class="pulse-actions">
+                <button class="btn-rust" disabled style="opacity:0.5; cursor:default;"><svg><use href="#i-send"/></svg>Send to client</button>
+                <button class="btn-quiet" disabled style="opacity:0.5; cursor:default;"><svg><use href="#i-eye"/></svg>Preview</button>
+                <span class="pulse-recipients">
+                  <span>&rarr; Portal</span><span class="sep">+</span><strong>Daniel</strong><span class="sep">+</span><strong>Priya</strong>
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Empty decisions queue -->
+          <div class="section-eyebrow" style="margin-top: 14px;">
+            <span class="eyebrow-label">Decisions</span>
+            <span class="eyebrow-meta">0 pending</span>
+            <button class="eyebrow-link"><svg style="width:11px;height:11px;color:var(--rust);"><use href="#i-plus"/></svg>Decision</button>
+          </div>
+          <div class="empty-card">
+            <span class="title">Nothing awaiting the client right now</span>
+            <span class="sub">When you need an answer &mdash; a colour, a finish, a pivot &mdash; ask here and it'll be pinned to the portal.</span>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

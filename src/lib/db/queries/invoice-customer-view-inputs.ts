@@ -69,7 +69,9 @@ export async function loadInvoiceCustomerViewInputs(
         .order('created_at'),
       supabase
         .from('project_budget_categories')
-        .select('id, name, description_md, section')
+        .select(
+          'id, name, description_md, section_row:project_budget_sections!section_id(name), estimate_cents',
+        )
         .eq('project_id', projectId)
         .order('display_order')
         .order('name'),
@@ -179,7 +181,13 @@ export async function loadInvoiceCustomerViewInputs(
     mgmtRate,
     priorBilledCents,
     costLines: (costLineRows ?? []) as CustomerViewCostLine[],
-    categories: (categoryRows ?? []) as CustomerViewCategory[],
+    categories: (categoryRows ?? []).map((c) => ({
+      id: c.id as string,
+      name: c.name as string,
+      description_md: (c.description_md as string | null) ?? null,
+      estimate_cents: (c.estimate_cents as number) ?? 0,
+      section: (c.section_row as unknown as { name: string } | null)?.name ?? '',
+    })) satisfies CustomerViewCategory[],
     costPlusBreakdown,
   };
 }

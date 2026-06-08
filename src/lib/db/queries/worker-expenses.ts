@@ -59,10 +59,3 @@ export async function listWorkerExpenses(
     };
   });
 }
-
-export async function canWorkerLogExpenses(args: {
-  tenantDefault: boolean;
-  profileOverride: boolean | null;
-}): Promise<boolean> {
-  return args.profileOverride ?? args.tenantDefault;
-}

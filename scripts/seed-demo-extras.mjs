@@ -20,14 +20,14 @@ const TENANT_ID = '1f3ee53d-3767-4a10-abfb-e2c06b36fc12';
 
 // Find the demo project + job + customer
 const [project] = await sql`
-  SELECT id, customer_id FROM public.projects
+  SELECT id, contact_id FROM public.projects
   WHERE tenant_id = ${TENANT_ID}
     AND name = 'Master Bathroom Reno + Outdoor Sauna'
   ORDER BY created_at DESC LIMIT 1
 `;
 const [job] = await sql`
   SELECT id FROM public.jobs
-  WHERE tenant_id = ${TENANT_ID} AND customer_id = ${project.customer_id}
+  WHERE tenant_id = ${TENANT_ID} AND contact_id = ${project.contact_id}
   ORDER BY created_at DESC LIMIT 1
 `;
 const [admin] = await sql`
@@ -77,10 +77,10 @@ if (Number(existingPhotoCount) >= 10) {
   const takenAt = new Date(Date.now() - spec.daysAgo * 86400_000).toISOString();
   const [row] = await sql`
     INSERT INTO public.photos
-      (tenant_id, job_id, project_id, customer_id, storage_path, tag, caption,
+      (tenant_id, job_id, project_id, contact_id, storage_path, tag, caption,
        taken_at, uploaded_at, uploader_user_id, source, mime, bytes,
        width, height, ai_caption, ai_tag, caption_source)
-    VALUES (${TENANT_ID}, ${job.id}, ${project.id}, ${project.customer_id},
+    VALUES (${TENANT_ID}, ${job.id}, ${project.id}, ${project.contact_id},
             ${path}, ${spec.tag}, ${spec.caption},
             ${takenAt}, ${takenAt}, ${admin.user_id}, 'web', 'image/jpeg', ${buf.length},
             1200, 900, ${'AI: ' + spec.caption}, ${spec.tag}, 'user')
@@ -124,9 +124,9 @@ console.log('change orders:', coApproved.id.slice(0,8), '(accepted) +', coPendin
 // === SECOND QUOTE — sent state ===
 const [quote2] = await sql`
   INSERT INTO public.quotes
-    (tenant_id, customer_id, status, subtotal_cents, tax_cents, total_cents,
+    (tenant_id, contact_id, status, subtotal_cents, tax_cents, total_cents,
      notes, sent_at, approval_code)
-  VALUES (${TENANT_ID}, ${project.customer_id}, 'sent',
+  VALUES (${TENANT_ID}, ${project.contact_id}, 'sent',
           485000, 24250, 509250,
           'Phase 2 add-on: stone walkway from back door to sauna + low-voltage path lighting. Quote valid 30 days.',
           NOW() - INTERVAL '3 days',

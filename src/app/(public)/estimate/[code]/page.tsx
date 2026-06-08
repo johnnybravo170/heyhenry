@@ -25,7 +25,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
        estimate_status, estimate_approved_at, estimate_approved_by_name,
        estimate_declined_reason, terms_text, document_type,
        customer_view_mode, customer_summary_md,
-       customers:customer_id (name, address_line1, tax_exempt),
+       contacts:contact_id (name, address_line1, tax_exempt),
        tenants:tenant_id (name, logo_storage_path, gst_number, wcb_number, timezone)`,
     )
     .eq('estimate_approval_code', code)
@@ -44,7 +44,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
 
   const p = project as Record<string, unknown>;
   const tenantRaw = p.tenants as Record<string, unknown> | null;
-  const customerRaw = p.customers as Record<string, unknown> | null;
+  const customerRaw = p.contacts as Record<string, unknown> | null;
 
   // Sign the tenant logo (private `photos` storage bucket).
   let logoUrl: string | null = null;
@@ -66,7 +66,9 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
       .order('created_at', { ascending: true }),
     admin
       .from('project_budget_categories')
-      .select('id, name, section, description, display_order')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), description, display_order',
+      )
       .eq('project_id', p.id as string),
   ]);
   const categoryInfo = new Map<
@@ -76,7 +78,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
   for (const b of categories ?? []) {
     categoryInfo.set(b.id as string, {
       name: (b.name as string) ?? '',
-      section: (b.section as string | null) ?? null,
+      section: (b.section_row as unknown as { name: string } | null)?.name ?? null,
       description: (b.description as string | null) ?? null,
       order: (b.display_order as number) ?? 0,
     });

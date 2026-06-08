@@ -28,6 +28,7 @@ import type {
 } from '../types';
 import { computeCostMicros, lookupRates, type ModelRates, usdPerMillionToMicros } from './cost';
 import { type ApiKey, parseKeyEnv, pickKey } from './keys';
+import { toOpenAiStrictSchema } from './openai-strict-schema';
 
 // USD per million tokens. Output rates are typically 4-5× input.
 const RATES: Record<string, ModelRates> = {
@@ -158,7 +159,10 @@ export class OpenAiProvider implements AiProvider {
         json_schema: {
           name: 'gateway_response',
           strict: true,
-          schema: req.schema,
+          // Gateway schemas are authored for Gemini (forgiving). OpenAI
+          // strict mode 400s unless every object has additionalProperties:
+          // false + all keys required, so normalize before sending.
+          schema: toOpenAiStrictSchema(req.schema),
         },
       },
       temperature: req.temperature,

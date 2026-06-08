@@ -1,0 +1,2641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project secondary tabs · Photos · Documents · Notes — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+    --shadow-lift:  0 18px 60px rgba(10,10,10,0.16), 0 4px 14px rgba(10,10,10,0.08);
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Frame marker (between renders) ───── */
+  .frame-label {
+    max-width: 1440px;
+    margin: 36px auto 10px;
+    padding: 0 28px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .frame-label .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .frame-label h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .frame-label .hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .frame {
+    max-width: 1440px;
+    margin: 0 auto 12px;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(10,10,10,0.04);
+  }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 920px; position: relative; }
+
+  /* ───── Sidebar ───── */
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .nav-item.active { background: var(--nav-active); color: var(--ink); font-weight: 600; }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 8px;
+  }
+  .org-avatar {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--rust); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted); font-size: 14px;
+  }
+  .topbar-search svg { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    border: 1px solid transparent;
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-quiet { background: transparent; color: var(--muted); border-color: transparent; }
+  .btn svg { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .btn-xs { height: 24px; padding: 0 8px; font-size: 11px; gap: 4px; border-radius: 7px; }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-henry {
+    background: var(--card);
+    border-color: var(--hair);
+    color: var(--ink);
+  }
+  .btn-henry .henry-glyph { color: var(--rust); font-size: 14px; line-height: 1; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-input);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ───── Main content ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 28px 64px;
+    display: flex; flex-direction: column;
+  }
+
+  /* ───── Project header (lean) ───── */
+  .project-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 2px 0 14px;
+  }
+  .project-head-text { flex: 1; min-width: 0; }
+  .title-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .project-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .customer-line .at { color: var(--faint); }
+  .head-actions { display: flex; gap: 6px; flex-shrink: 0; padding-top: 6px; }
+
+  /* ───── Tab strip ───── */
+  .tab-strip {
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 0;
+    overflow-x: auto;
+  }
+  .tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab.is-on {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+  .tab.is-secondary { color: var(--faint); font-weight: 500; }
+  .tab.is-secondary.is-on { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .tab-divider {
+    width: 1px; height: 18px;
+    background: var(--rule);
+    margin: 0 10px;
+    flex-shrink: 0;
+  }
+  .tab-count {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--rust);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .tab-count-soft {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+
+  /* ───── Section eyebrow ───── */
+  .section-eyebrow {
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 22px 0 10px;
+  }
+  .eyebrow-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .eyebrow-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Cards (generic) ───── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .panel-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .panel-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .panel-body { padding: 16px 18px; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     PHOTOS TAB
+     ───────────────────────────────────────────────────────────────── */
+
+  /* Upload + filter strip */
+  .photos-strip {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: stretch;
+    margin-top: 14px;
+  }
+  .uploader {
+    background: var(--card);
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius-card);
+    padding: 18px 22px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .uploader .icn {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .uploader .icn svg { width: 18px; height: 18px; }
+  .uploader-text { display: flex; flex-direction: column; min-width: 0; }
+  .uploader-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .uploader-sub { font-size: 12px; color: var(--muted); }
+  .uploader .right { margin-left: auto; display: flex; gap: 6px; }
+
+  /* Tag filter row */
+  .filter-row {
+    display: flex; gap: 6px; align-items: center;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .filter-chip.is-on {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .filter-chip .ct { color: var(--faint); margin-left: 2px; font-weight: 500; }
+  .filter-chip.is-on .ct { color: rgba(255,255,255,0.6); }
+  .filter-chip.is-concern { color: var(--danger); border-color: rgba(185,28,28,0.25); }
+  .filter-chip.is-concern.is-on { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .filter-meta {
+    margin-left: auto;
+    display: flex; gap: 10px; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .filter-meta button {
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .filter-meta button:hover { background: var(--chip-fill); }
+
+  /* Photo grid */
+  .photo-grid {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .photo {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .photo.is-concern {
+    border: 2px solid rgba(185,28,28,0.4);
+    box-shadow: 0 0 0 3px rgba(185,28,28,0.08);
+  }
+  .photo.is-selected {
+    box-shadow: 0 0 0 3px var(--ink);
+  }
+  .photo-img {
+    aspect-ratio: 1 / 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--chip-fill);
+  }
+  /* Generated paper-feel placeholder images — abstract field photography stand-ins */
+  .img-a { background:
+    radial-gradient(circle at 30% 20%, #d4b48e 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, #a17a4f 0%, transparent 60%),
+    linear-gradient(170deg, #c69e6b 0%, #8a6840 100%); }
+  .img-b { background:
+    linear-gradient(165deg, #5a6f5b 0%, #2f3d2e 100%),
+    radial-gradient(circle at 70% 40%, #88a18a 0%, transparent 50%); }
+  .img-c { background:
+    linear-gradient(180deg, #c7c1b2 0%, #8d8472 60%, #5d564a 100%); }
+  .img-d { background:
+    linear-gradient(160deg, #8c7c66 0%, #5e503e 100%);
+    background-image:
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 14px),
+      linear-gradient(160deg, #8c7c66 0%, #5e503e 100%); }
+  .img-e { background:
+    radial-gradient(circle at 40% 60%, #9aa698 0%, transparent 55%),
+    linear-gradient(190deg, #b2bfa2 0%, #6c7864 100%); }
+  .img-f { background:
+    linear-gradient(170deg, #c25a3e 0%, #5e2718 100%),
+    radial-gradient(circle at 70% 30%, rgba(255,200,160,0.4) 0%, transparent 50%); }
+  .img-g { background:
+    linear-gradient(180deg, #d3c1a3 0%, #8d7556 100%); }
+  .img-h { background:
+    linear-gradient(165deg, #4a5a6e 0%, #1f2735 100%); }
+  .img-i { background:
+    linear-gradient(180deg, #a8927a 0%, #6b5640 100%);
+    background-image:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 6px, transparent 6px 12px),
+      linear-gradient(180deg, #a8927a 0%, #6b5640 100%); }
+  .img-j { background:
+    radial-gradient(ellipse at 50% 40%, #e0d6c3 0%, #b8a587 50%, #7a6549 100%); }
+  .img-k { background:
+    linear-gradient(180deg, #7e6c54 0%, #443628 100%);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 3px, transparent 3px 18px),
+      linear-gradient(180deg, #7e6c54 0%, #443628 100%); }
+  .img-l { background:
+    linear-gradient(195deg, #d6c8a9 0%, #968057 100%); }
+
+  /* Photo overlays */
+  .photo-overlay-tl {
+    position: absolute; top: 8px; left: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+    align-items: flex-start;
+    max-width: calc(100% - 80px);
+  }
+  .photo-overlay-tr {
+    position: absolute; top: 8px; right: 8px;
+    display: flex; gap: 4px;
+  }
+  .photo-overlay-bl {
+    position: absolute; bottom: 8px; left: 8px;
+    display: flex; gap: 4px;
+  }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.95);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.06);
+  }
+  .tag-chip.is-before { color: var(--info); }
+  .tag-chip.is-after { color: var(--ok); }
+  .tag-chip.is-progress { color: var(--warn); }
+  .tag-chip.is-concern { color: var(--danger); background: var(--danger-soft); }
+  .tag-chip.is-other { color: var(--muted); }
+
+  /* Visibility badge — label + glyph, NEVER colour-only */
+  .vis-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 7px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.95);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.06);
+  }
+  .vis-badge svg { width: 11px; height: 11px; }
+  .vis-internal { color: var(--ink-2); background: rgba(255,255,255,0.95); }
+  .vis-client { color: var(--info); background: var(--info-soft); }
+
+  /* Henry suggestion chip (overlay) — labeled action, undoable */
+  .henry-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 7px;
+    border-radius: 7px;
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.3);
+    color: var(--rust);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.08);
+    cursor: pointer;
+  }
+  .henry-chip .glyph { font-size: 11px; line-height: 1; }
+  .henry-chip .conf { color: rgba(194,65,12,0.65); font-weight: 500; margin-left: 2px; }
+
+  /* Round icon button on photo (favourite, share) */
+  .photo-icn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.08);
+    cursor: pointer;
+    border: 0;
+  }
+  .photo-icn svg { width: 14px; height: 14px; }
+  .photo-icn.is-fav { color: var(--rust); }
+
+  /* Caption strip */
+  .photo-caption {
+    padding: 9px 12px;
+    border-top: 1px solid var(--hair);
+    background: var(--card);
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  .photo-caption .henry-glyph { color: var(--rust); font-size: 12px; line-height: 1; }
+  .photo-caption .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+  /* Select-mode check overlay */
+  .photo-check {
+    position: absolute; top: 8px; right: 8px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    border: 2px solid var(--rule);
+    display: grid; place-items: center;
+  }
+  .photo-check.is-on {
+    background: var(--ink); color: #fff;
+    border-color: var(--ink);
+  }
+  .photo-check.is-on svg { width: 14px; height: 14px; }
+
+  /* Bulk bar */
+  .bulk-bar {
+    margin-top: 14px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 6px 24px rgba(10,10,10,0.18);
+  }
+  .bulk-bar .count {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.04em;
+  }
+  .bulk-bar .count .num { font-size: 14px; }
+  .bulk-bar .sep { color: rgba(255,255,255,0.3); }
+  .bulk-bar button {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .bulk-bar button:hover { background: rgba(255,255,255,0.08); }
+  .bulk-bar button svg { width: 13px; height: 13px; }
+  .bulk-bar button.is-danger:hover { color: #FCA5A5; }
+  .bulk-bar .right { margin-left: auto; display: flex; gap: 2px; }
+
+  /* Phase divider in grid */
+  .phase-divider {
+    grid-column: 1 / -1;
+    display: flex; align-items: baseline; gap: 10px;
+    margin-top: 10px; margin-bottom: -4px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--rule);
+  }
+  .phase-divider:first-child { border-top: 0; padding-top: 0; }
+  .phase-divider .num {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .phase-divider .name {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .phase-divider .ct {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Lightbox modal ───── */
+  .scrim {
+    position: absolute; inset: 0;
+    background: rgba(10,10,10,0.55);
+    z-index: 30;
+  }
+  .lightbox {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 920px; max-width: calc(100% - 80px);
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lift);
+    z-index: 31;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+  }
+  .lightbox-img {
+    aspect-ratio: 4 / 3;
+    background: #2a2622;
+    position: relative;
+  }
+  .lightbox-side {
+    border-left: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .lightbox-head {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .lightbox-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .lightbox-title {
+    margin: 8px 0 0;
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .lightbox-meta {
+    margin-top: 4px;
+    font-size: 12px; color: var(--muted);
+  }
+  .lightbox-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+  .lb-section { display: flex; flex-direction: column; gap: 6px; }
+  .lb-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .lb-visibility-toggle {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .lb-visibility-toggle .label { font-weight: 600; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .lb-visibility-toggle .label.internal { color: var(--ink-2); }
+  .lb-visibility-toggle .pill {
+    margin-left: auto;
+    width: 36px; height: 20px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    position: relative;
+  }
+  .lb-visibility-toggle .pill::after {
+    content: '';
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--rule);
+  }
+  /* Henry caption-suggest action — labeled, requires confirm before client-visible */
+  .henry-action {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 11px 12px;
+    border: 1px dashed rgba(194,65,12,0.35);
+    background: var(--rust-soft);
+    border-radius: 10px;
+  }
+  .henry-action-head {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .henry-action-head .glyph { font-size: 12px; line-height: 1; }
+  .henry-action-text {
+    font-size: 14px; color: var(--ink);
+    line-height: 1.4;
+  }
+  .henry-action-buttons { display: flex; gap: 6px; }
+  .henry-action .note {
+    font-size: 11px; color: var(--muted);
+    line-height: 1.4;
+    font-style: italic;
+  }
+  .lb-foot {
+    padding: 12px 18px;
+    border-top: 1px solid var(--hair);
+    display: flex; gap: 6px;
+    background: var(--chrome);
+  }
+  .lb-foot .right { margin-left: auto; display: flex; gap: 6px; }
+  .lb-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    color: var(--ink);
+    border: 0; cursor: pointer;
+    display: grid; place-items: center;
+    z-index: 1;
+  }
+  .lb-close svg { width: 14px; height: 14px; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     DOCUMENTS TAB
+     ───────────────────────────────────────────────────────────────── */
+  .docs-head {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin: 16px 0 14px;
+  }
+  .docs-head h1 {
+    margin: 0;
+    font-size: 20px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+  .docs-head p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 620px;
+  }
+
+  /* Home Record entry-point card (graduated — opens full flow) */
+  .home-record {
+    margin-top: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .home-record-body {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    padding: 18px 22px;
+    align-items: center;
+  }
+  .hr-eyebrow {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .hr-eyebrow .glyph { font-size: 12px; line-height: 1; }
+  .home-record h3 {
+    margin: 0;
+    font-size: 18px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+  .home-record p {
+    margin: 4px 0 0;
+    font-size: 14px; color: var(--muted);
+    max-width: 620px;
+  }
+  .hr-meta {
+    margin-top: 10px;
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .hr-meta strong { color: var(--ink-2); font-weight: 700; }
+  .hr-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; min-width: 200px; }
+  .home-record-foot {
+    border-top: 1px dashed var(--rule);
+    padding: 11px 22px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--muted);
+    background: #FCFAF4;
+  }
+  .home-record-foot strong { color: var(--ink); font-weight: 600; }
+  .home-record-foot .sep { color: var(--faint); }
+  .home-record-foot .right {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .home-record-foot .right svg { width: 12px; height: 12px; }
+
+  /* Document group cards */
+  .doc-groups { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+  .doc-group {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .doc-group-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: #FCFAF4;
+  }
+  .doc-group-head .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .doc-group-head .ct {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .doc-group-head .desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+  .doc-row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 18px;
+    border-top: 1px solid var(--hair);
+  }
+  .doc-row:first-child { border-top: 0; }
+  .doc-file {
+    width: 24px; height: 24px;
+    color: var(--muted);
+  }
+  .doc-file svg { width: 18px; height: 18px; }
+  .doc-meta { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+  .doc-title {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  }
+  .doc-sub {
+    font-size: 12px; color: var(--muted);
+    display: flex; gap: 8px;
+  }
+  .doc-sub .sep { color: var(--faint); }
+  .doc-sub .expires { color: var(--warn); font-weight: 600; }
+  .doc-vis-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px;
+    border-radius: 7px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .doc-vis-badge svg { width: 11px; height: 11px; }
+  .doc-vis-client { color: var(--info); background: var(--info-soft); }
+  .doc-vis-internal { color: var(--muted); background: var(--chip-fill); }
+  .doc-actions { display: flex; gap: 2px; align-items: center; }
+  .doc-icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .doc-icon-btn:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .doc-icon-btn svg { width: 15px; height: 15px; }
+
+  /* Trade contacts card */
+  .trade-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--hair);
+  }
+  .trade-card {
+    background: var(--card);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .trade-avatar {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .trade-meta { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .trade-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .trade-role { font-size: 12px; color: var(--muted); }
+  .trade-contact-icns { display: flex; gap: 2px; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     NOTES TAB
+     ───────────────────────────────────────────────────────────────── */
+
+  .internal-banner {
+    margin-top: 14px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .internal-banner svg { width: 12px; height: 12px; }
+
+  /* Ask Henry — an ACTION, not a chat */
+  .ask-henry {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.25);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: flex-end;
+  }
+  .ask-henry-head {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .ask-henry-head .glyph { font-size: 12px; line-height: 1; }
+  .ask-henry-head .hint {
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    margin-left: 8px;
+  }
+  .ask-henry-input {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    padding: 4px 0;
+    resize: none;
+    outline: none;
+  }
+  .ask-henry-input::placeholder { color: var(--faint); }
+
+  .composer {
+    margin-top: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .composer-input {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    padding: 4px 0;
+    min-height: 38px;
+  }
+  .composer-input::placeholder { color: var(--faint); }
+  .composer-foot {
+    display: flex; align-items: center;
+    margin-top: 4px;
+  }
+  .composer-foot .right { margin-left: auto; }
+
+  /* Notes feed */
+  .feed { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .feed-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .feed-card.is-event { background: #FCFAF4; }
+  .feed-icon {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    margin-top: 1px;
+  }
+  .feed-icon svg { width: 12px; height: 12px; }
+  .feed-icon.is-memo { background: var(--ok-soft); color: var(--ok); }
+  .feed-icon.is-henry-q { background: var(--card); border: 1px solid var(--hair); color: var(--muted); }
+  .feed-icon.is-henry-a { background: var(--rust-soft); color: var(--rust); }
+  .feed-icon.is-draft { background: var(--rust-soft); color: var(--rust); }
+  .feed-icon.is-artifact { background: var(--info-soft); color: var(--info); }
+  .feed-icon.is-event { background: var(--chip-fill); color: var(--muted); }
+
+  .feed-body { min-width: 0; }
+  .feed-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .feed-eyebrow .glyph { color: var(--rust); font-size: 12px; line-height: 1; }
+  .feed-eyebrow.is-henry { color: var(--rust); }
+  .feed-eyebrow.is-memo { color: var(--ok); }
+  .feed-eyebrow.is-draft { color: var(--rust); }
+  .feed-eyebrow.is-info { color: var(--info); }
+  .feed-card.is-henry-a {
+    border-color: rgba(194,65,12,0.25);
+  }
+  .feed-card.is-draft {
+    border-color: rgba(194,65,12,0.25);
+  }
+  .feed-text {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .feed-meta {
+    margin-top: 6px;
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .feed-meta .sep { color: var(--faint); }
+  .feed-meta .author { font-weight: 600; color: var(--ink-2); text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 12px; }
+  .feed-actions { display: flex; gap: 2px; }
+  .feed-icon-btn {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: transparent;
+    border: 0;
+    color: var(--faint);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .feed-icon-btn:hover { color: var(--ink); background: var(--chip-fill); }
+  .feed-icon-btn svg { width: 13px; height: 13px; }
+
+  /* Memo transcript chrome */
+  .memo-transcript {
+    margin-top: 8px;
+    background: #FCFAF4;
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--ink-2);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .memo-meta {
+    margin-top: 6px;
+    display: flex; gap: 10px; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .memo-meta .play {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .memo-meta .play svg { width: 10px; height: 10px; }
+
+  /* Reply draft body */
+  .draft-body {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.5;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194,65,12,0.18);
+    border-radius: 9px;
+    padding: 10px 12px;
+    margin-top: 6px;
+  }
+  .draft-actions {
+    margin-top: 8px;
+    display: flex; gap: 6px; align-items: center;
+  }
+
+  /* Artifact card body */
+  .artifact-body {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 4px;
+  }
+  .artifact-thumb {
+    width: 84px; height: 84px;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    overflow: hidden;
+  }
+  .artifact-title {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .artifact-desc {
+    font-size: 12px; color: var(--muted); line-height: 1.4;
+  }
+
+  /* Q/A pair connector */
+  .feed-pair { display: flex; flex-direction: column; gap: 6px; }
+  .feed-pair .connector {
+    margin-left: 11px;
+    width: 1px;
+    height: 8px;
+    background: var(--rule);
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     STATES (empty / loading) — bottom of page
+     ───────────────────────────────────────────────────────────────── */
+
+  .states-frame { padding: 24px 28px 36px; max-width: 1440px; margin: 0 auto; }
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .state-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 22px 22px;
+    display: flex; flex-direction: column;
+    gap: 8px;
+    min-height: 260px;
+  }
+  .state-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .state-empty-body {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    gap: 8px;
+    color: var(--muted);
+    padding: 20px 0;
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+  }
+  .state-empty-body .icn {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .state-empty-body .icn svg { width: 16px; height: 16px; }
+  .state-empty-body h4 {
+    margin: 4px 0 0;
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .state-empty-body p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 280px;
+    line-height: 1.5;
+  }
+  .state-empty-body .btn { margin-top: 4px; }
+
+  /* Skeleton */
+  .sk { background: linear-gradient(90deg, var(--chip-fill) 0%, #F3EBD2 50%, var(--chip-fill) 100%); border-radius: 6px; }
+  .sk-bar { height: 14px; }
+  .sk-tile { aspect-ratio: 1 / 1; border-radius: 12px; }
+  .sk-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px dashed var(--rule); }
+  .sk-row:first-child { border-top: 0; }
+
+  /* Footer */
+  .build-foot {
+    max-width: 1440px;
+    margin: 36px auto 30px;
+    padding: 20px 28px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px dashed var(--rule);
+  }
+  .build-foot b { color: var(--ink); font-weight: 700; }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ────────── ICON LIBRARY ────────── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-star-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+    <symbol id="i-image-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="18" y1="3" x2="18" y2="9"/><line x1="15" y1="6" x2="21" y2="6"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+    <symbol id="i-file-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 14l2 2 4-4"/></symbol>
+    <symbol id="i-file-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/></symbol>
+    <symbol id="i-sticky" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M15 3v5h5"/></symbol>
+    <symbol id="i-message-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6.26a3 3 0 0 0 .83 2.07L17 14H7l1.17-1.17A3 3 0 0 0 9 10.76z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-cloud-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 19 7"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  </defs>
+</svg>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 1 — Photos tab · hero state
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 01</span>
+  <h2>Photos · hero · grouped by phase, mixed visibility</h2>
+  <span class="hint">Every photo carries a <b>label + glyph</b> visibility badge — never colour-only. Concern photo flagged.</span>
+</div>
+<div class="frame">
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">H</span>
+        <span class="brand-name">HeyHenry</span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></a>
+        <a class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects<span class="nav-count">12</span></a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Billing</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Expenses</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</a>
+        <div class="nav-section-label">Setup</div>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="org-switcher">
+          <span class="org-avatar">NW</span>
+          <span class="org-meta">
+            <span class="org-name">Northwood Build</span>
+            <span class="org-sub">Daniel · Owner</span>
+          </span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-search">
+          <svg><use href="#i-search"/></svg>
+          <span>Search projects, customers, photos…</span>
+          <span class="chip-kbd">⌘K</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-quiet"><svg><use href="#i-clock"/></svg>Log time</button>
+          <button class="btn btn-quiet"><svg><use href="#i-receipt"/></svg>Log expense</button>
+          <button class="btn btn-rust"><svg><use href="#i-plus"/></svg>New</button>
+        </div>
+      </header>
+
+      <div class="main-inner">
+        <!-- Project head -->
+        <section class="project-head">
+          <div class="project-head-text">
+            <div class="title-row">
+              <h1 class="project-title">Glenwood Heights</h1>
+              <span class="status-pill status-active"><span class="dot"></span>Active</span>
+            </div>
+            <div class="customer-line">
+              <a>Daniel &amp; Mei Chen</a> <span class="at">·</span> 2418 Glenwood Hts Pl, Langley BC
+            </div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-henry"><span class="henry-glyph">&#10022;</span> Add</button>
+            <button class="icon-btn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </section>
+
+        <!-- Tab strip (Notes added) -->
+        <nav class="tab-strip">
+          <button class="tab">Budget <span class="tab-count-soft">2</span></button>
+          <button class="tab">Spend</button>
+          <button class="tab">Labour</button>
+          <button class="tab">Schedule</button>
+          <button class="tab">Billing</button>
+          <button class="tab">Overview</button>
+          <span class="tab-divider"></span>
+          <button class="tab is-secondary">Client <span class="tab-count">2</span></button>
+          <button class="tab is-secondary is-on">Photos <span class="tab-count-soft">186</span></button>
+          <button class="tab is-secondary">Documents <span class="tab-count-soft">14</span></button>
+          <button class="tab is-secondary">Notes <span class="tab-count-soft">28</span></button>
+        </nav>
+
+        <!-- Upload strip -->
+        <div class="photos-strip">
+          <div class="uploader">
+            <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+            <div class="uploader-text">
+              <span class="uploader-title">Drop photos or take a shot from the field</span>
+              <span class="uploader-sub">JPG / HEIC / PNG up to 25 MB. Mobile uploads go straight to this grid.</span>
+            </div>
+            <div class="right">
+              <button class="btn btn-ghost btn-sm"><svg><use href="#i-upload"/></svg>Choose files</button>
+              <button class="btn btn-primary btn-sm"><svg><use href="#i-camera"/></svg>Open camera</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter row -->
+        <div class="filter-row">
+          <button class="filter-chip is-on">All <span class="ct">186</span></button>
+          <button class="filter-chip">Before <span class="ct">22</span></button>
+          <button class="filter-chip">After <span class="ct">38</span></button>
+          <button class="filter-chip">Progress <span class="ct">119</span></button>
+          <button class="filter-chip is-concern">Concern <span class="ct">3</span></button>
+          <button class="filter-chip">Other <span class="ct">4</span></button>
+          <div class="filter-meta">
+            <span>Default · all private</span>
+            <button><svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:3px"><use href="#i-check"/></svg> Select photos</button>
+          </div>
+        </div>
+
+        <!-- Photo grid -->
+        <div class="photo-grid">
+          <!-- Phase divider -->
+          <div class="phase-divider">
+            <span class="num">Phase 04</span>
+            <span class="name">Rough-in &amp; mechanical</span>
+            <span class="ct">12 photos · last shot 2 hr ago</span>
+          </div>
+
+          <!-- Photo 1 — internal default, with Henry tag-suggest (operator confirms) -->
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-c"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-other">Other</span>
+              <span class="henry-chip" title="Tap to accept Henry's suggested tag">
+                <span class="glyph">&#10022;</span> Henry: Progress <span class="conf">92%</span>
+              </span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-internal" title="Internal only — client cannot see this photo"><svg><use href="#i-lock"/></svg> Internal</span>
+            </div>
+          </figure>
+
+          <!-- Photo 2 — shared with client -->
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-a"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-progress">Progress</span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn is-fav"><svg><use href="#i-star"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-client" title="Visible on the client's portal"><svg><use href="#i-globe"/></svg> Client visible</span>
+            </div>
+            <figcaption class="photo-caption">
+              <span class="henry-glyph">&#10022;</span>
+              <span class="txt">Plumbing rough-in complete, ready for inspection</span>
+            </figcaption>
+          </figure>
+
+          <!-- Photo 3 — concern (danger ring) -->
+          <figure class="photo is-concern">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-h"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-concern">Concern</span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span>
+            </div>
+            <figcaption class="photo-caption">
+              <span class="txt" style="color:var(--danger); font-weight:600">Moisture behind sub-floor near NE corner</span>
+            </figcaption>
+          </figure>
+
+          <!-- Photo 4 — progress + favourite -->
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-d"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-progress">Progress</span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span>
+            </div>
+          </figure>
+
+          <!-- Phase divider -->
+          <div class="phase-divider">
+            <span class="num">Phase 03</span>
+            <span class="name">Framing</span>
+            <span class="ct">36 photos</span>
+          </div>
+
+          <!-- Photo 5 — after, client visible -->
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-e"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-after">After</span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn is-fav"><svg><use href="#i-star"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+            </div>
+            <figcaption class="photo-caption">
+              <span class="txt">Master bedroom framed, view east</span>
+            </figcaption>
+          </figure>
+
+          <!-- Photo 6 -->
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-i"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-progress">Progress</span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span>
+            </div>
+          </figure>
+
+          <!-- Photo 7 -->
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-b"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-before">Before</span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+            </div>
+          </figure>
+
+          <!-- Photo 8 — Henry caption + client visible + favourite -->
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-j"></div></div>
+            <div class="photo-overlay-tl">
+              <span class="tag-chip is-after">After</span>
+            </div>
+            <div class="photo-overlay-tr">
+              <button class="photo-icn is-fav"><svg><use href="#i-star"/></svg></button>
+            </div>
+            <div class="photo-overlay-bl">
+              <span class="vis-badge vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+            </div>
+            <figcaption class="photo-caption">
+              <span class="henry-glyph">&#10022;</span>
+              <span class="txt">Finished entry — engineered oak, custom millwork</span>
+            </figcaption>
+          </figure>
+
+          <!-- Phase divider -->
+          <div class="phase-divider">
+            <span class="num">Phase 02</span>
+            <span class="name">Demo</span>
+            <span class="ct">28 photos</span>
+          </div>
+
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-g"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-before">Before</span></div>
+            <div class="photo-overlay-tr"><button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button></div>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-client"><svg><use href="#i-globe"/></svg> Client visible</span></div>
+          </figure>
+
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-k"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-progress">Progress</span></div>
+            <div class="photo-overlay-tr"><button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button></div>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-l"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-progress">Progress</span></div>
+            <div class="photo-overlay-tr"><button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button></div>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-f"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-concern">Concern</span></div>
+            <div class="photo-overlay-tr"><button class="photo-icn"><svg><use href="#i-star-outline"/></svg></button></div>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+            <figcaption class="photo-caption">
+              <span class="txt" style="color:var(--danger); font-weight:600">Hairline crack in slab — flagged for review</span>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 2 — Photos · bulk-select state + lightbox
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 02</span>
+  <h2>Photos · bulk-select state + lightbox</h2>
+  <span class="hint">Bulk bar pins to top of grid. Lightbox includes a labeled <b>Henry caption-suggest action</b> — operator confirms before anything goes client-visible.</span>
+</div>
+<div class="frame">
+  <div class="shell">
+    <!-- Sidebar (same) -->
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">H</span><span class="brand-name">HeyHenry</span></div>
+      <nav class="nav">
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></a>
+        <a class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects<span class="nav-count">12</span></a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Billing</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Expenses</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</a>
+        <div class="nav-section-label">Setup</div>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="org-switcher">
+          <span class="org-avatar">NW</span>
+          <span class="org-meta"><span class="org-name">Northwood Build</span><span class="org-sub">Daniel · Owner</span></span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-search"><svg><use href="#i-search"/></svg><span>Search…</span><span class="chip-kbd">⌘K</span></div>
+        <div class="topbar-actions">
+          <button class="btn btn-quiet"><svg><use href="#i-clock"/></svg>Log time</button>
+          <button class="btn btn-quiet"><svg><use href="#i-receipt"/></svg>Log expense</button>
+          <button class="btn btn-rust"><svg><use href="#i-plus"/></svg>New</button>
+        </div>
+      </header>
+
+      <div class="main-inner">
+        <section class="project-head">
+          <div class="project-head-text">
+            <div class="title-row">
+              <h1 class="project-title">Glenwood Heights</h1>
+              <span class="status-pill status-active"><span class="dot"></span>Active</span>
+            </div>
+            <div class="customer-line"><a>Daniel &amp; Mei Chen</a> <span class="at">·</span> 2418 Glenwood Hts Pl, Langley BC</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-henry"><span class="henry-glyph">&#10022;</span> Add</button>
+            <button class="icon-btn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </section>
+
+        <nav class="tab-strip">
+          <button class="tab">Budget <span class="tab-count-soft">2</span></button>
+          <button class="tab">Spend</button>
+          <button class="tab">Labour</button>
+          <button class="tab">Schedule</button>
+          <button class="tab">Billing</button>
+          <button class="tab">Overview</button>
+          <span class="tab-divider"></span>
+          <button class="tab is-secondary">Client <span class="tab-count">2</span></button>
+          <button class="tab is-secondary is-on">Photos <span class="tab-count-soft">186</span></button>
+          <button class="tab is-secondary">Documents <span class="tab-count-soft">14</span></button>
+          <button class="tab is-secondary">Notes <span class="tab-count-soft">28</span></button>
+        </nav>
+
+        <!-- Bulk bar (select mode on) -->
+        <div class="bulk-bar">
+          <span class="count"><span class="num">4</span> selected</span>
+          <span class="sep">|</span>
+          <button><svg><use href="#i-tag"/></svg>Tag</button>
+          <button><svg><use href="#i-globe"/></svg>Share with client</button>
+          <button><svg><use href="#i-pin"/></svg>Pin to phase</button>
+          <button class="is-danger"><svg><use href="#i-trash"/></svg>Delete</button>
+          <div class="right">
+            <button>Select all (186)</button>
+            <button><svg><use href="#i-x"/></svg>Cancel</button>
+          </div>
+        </div>
+
+        <!-- Photo grid in select mode -->
+        <div class="photo-grid" style="margin-top: 12px;">
+
+          <figure class="photo is-selected">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-a"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-progress">Progress</span></div>
+            <span class="photo-check is-on"><svg><use href="#i-check"/></svg></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-client"><svg><use href="#i-globe"/></svg> Client visible</span></div>
+          </figure>
+
+          <figure class="photo is-selected">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-c"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-other">Other</span></div>
+            <span class="photo-check is-on"><svg><use href="#i-check"/></svg></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-d"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-progress">Progress</span></div>
+            <span class="photo-check"></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+          <figure class="photo is-selected">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-e"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-after">After</span></div>
+            <span class="photo-check is-on"><svg><use href="#i-check"/></svg></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+          <figure class="photo is-selected">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-j"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-after">After</span></div>
+            <span class="photo-check is-on"><svg><use href="#i-check"/></svg></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-g"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-before">Before</span></div>
+            <span class="photo-check"></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-client"><svg><use href="#i-globe"/></svg> Client visible</span></div>
+          </figure>
+
+          <figure class="photo">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-i"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-progress">Progress</span></div>
+            <span class="photo-check"></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+          <figure class="photo is-concern">
+            <div class="photo-img"><div style="position:absolute;inset:0" class="img-h"></div></div>
+            <div class="photo-overlay-tl"><span class="tag-chip is-concern">Concern</span></div>
+            <span class="photo-check"></span>
+            <div class="photo-overlay-bl"><span class="vis-badge vis-internal"><svg><use href="#i-lock"/></svg> Internal</span></div>
+          </figure>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- Lightbox -->
+    <div class="scrim"></div>
+    <div class="lightbox" role="dialog" aria-modal="true" aria-label="Photo detail">
+      <div class="lightbox-img">
+        <div style="position:absolute;inset:0" class="img-a"></div>
+        <button class="lb-close" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+      </div>
+      <div class="lightbox-side">
+        <div class="lightbox-head">
+          <span class="lightbox-tag" style="background: var(--warn-soft); color: var(--warn)">Progress</span>
+          <h3 class="lightbox-title">Plumbing rough-in, ensuite</h3>
+          <div class="lightbox-meta">Phase 04 · Rough-in · captured today, 2:14 PM · Mike Reyes</div>
+        </div>
+        <div class="lightbox-body">
+
+          <div class="lb-section">
+            <span class="lb-section-label">Visibility</span>
+            <div class="lb-visibility-toggle" title="Click to share with the client">
+              <svg style="width:14px;height:14px;color:var(--ink-2)"><use href="#i-lock"/></svg>
+              <span class="label internal">Internal only</span>
+              <span class="pill"></span>
+            </div>
+          </div>
+
+          <div class="lb-section">
+            <span class="lb-section-label">Henry suggests</span>
+            <div class="henry-action">
+              <div class="henry-action-head">
+                <span class="glyph">&#10022;</span> Client-safe caption
+              </div>
+              <div class="henry-action-text">"Plumbing rough-in complete for the ensuite — ready for inspection."</div>
+              <div class="henry-action-buttons">
+                <button class="btn btn-primary btn-xs"><svg><use href="#i-check"/></svg>Use it</button>
+                <button class="btn btn-ghost btn-xs"><svg><use href="#i-pen"/></svg>Edit first</button>
+                <button class="btn btn-quiet btn-xs">Dismiss</button>
+              </div>
+              <div class="note">Henry never publishes a caption on its own. You confirm before the client sees anything.</div>
+            </div>
+          </div>
+
+          <div class="lb-section">
+            <span class="lb-section-label">Caption</span>
+            <div style="font-size: 14px; color: var(--ink); line-height: 1.5;">Plumbing rough-in complete, ready for inspection</div>
+          </div>
+
+          <div class="lb-section">
+            <span class="lb-section-label">Tag &amp; phase</span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn btn-ghost btn-xs">Change tag</button>
+              <button class="btn btn-ghost btn-xs"><svg><use href="#i-pin"/></svg>Phase 04</button>
+              <button class="btn btn-ghost btn-xs"><svg><use href="#i-star-outline"/></svg>Favourite</button>
+            </div>
+          </div>
+
+        </div>
+        <div class="lb-foot">
+          <button class="btn btn-quiet btn-sm" style="color: var(--danger)"><svg><use href="#i-trash"/></svg>Delete</button>
+          <div class="right">
+            <button class="btn btn-ghost btn-sm"><svg><use href="#i-download"/></svg>Download</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 3 — Documents tab · hero
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 03</span>
+  <h2>Documents · hero — file drawer + Home Record entry-point</h2>
+  <span class="hint">Copy uses <b>"client"</b> not homeowner. Each doc carries a label+glyph visibility badge. Home Record graduates to its own flow.</span>
+</div>
+<div class="frame">
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">H</span><span class="brand-name">HeyHenry</span></div>
+      <nav class="nav">
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></a>
+        <a class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects<span class="nav-count">12</span></a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Billing</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Expenses</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</a>
+        <div class="nav-section-label">Setup</div>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="org-switcher">
+          <span class="org-avatar">NW</span>
+          <span class="org-meta"><span class="org-name">Northwood Build</span><span class="org-sub">Daniel · Owner</span></span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-search"><svg><use href="#i-search"/></svg><span>Search…</span><span class="chip-kbd">⌘K</span></div>
+        <div class="topbar-actions">
+          <button class="btn btn-quiet"><svg><use href="#i-clock"/></svg>Log time</button>
+          <button class="btn btn-quiet"><svg><use href="#i-receipt"/></svg>Log expense</button>
+          <button class="btn btn-rust"><svg><use href="#i-plus"/></svg>New</button>
+        </div>
+      </header>
+
+      <div class="main-inner">
+        <section class="project-head">
+          <div class="project-head-text">
+            <div class="title-row">
+              <h1 class="project-title">Glenwood Heights</h1>
+              <span class="status-pill status-active"><span class="dot"></span>Active</span>
+            </div>
+            <div class="customer-line"><a>Daniel &amp; Mei Chen</a> <span class="at">·</span> 2418 Glenwood Hts Pl, Langley BC</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-henry"><span class="henry-glyph">&#10022;</span> Add</button>
+            <button class="icon-btn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </section>
+
+        <nav class="tab-strip">
+          <button class="tab">Budget <span class="tab-count-soft">2</span></button>
+          <button class="tab">Spend</button>
+          <button class="tab">Labour</button>
+          <button class="tab">Schedule</button>
+          <button class="tab">Billing</button>
+          <button class="tab">Overview</button>
+          <span class="tab-divider"></span>
+          <button class="tab is-secondary">Client <span class="tab-count">2</span></button>
+          <button class="tab is-secondary">Photos <span class="tab-count-soft">186</span></button>
+          <button class="tab is-secondary is-on">Documents <span class="tab-count-soft">14</span></button>
+          <button class="tab is-secondary">Notes <span class="tab-count-soft">28</span></button>
+        </nav>
+
+        <!-- Page heading -->
+        <div class="docs-head">
+          <div style="flex: 1">
+            <h1>Documents &amp; warranties</h1>
+            <p>Per-project drawer for contracts, permits, COIs, warranties, manuals, inspections. Each doc is visible to the client unless you hide it — and rolls into the Home Record at closeout.</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-ghost"><svg><use href="#i-upload"/></svg>Upload</button>
+          </div>
+        </div>
+
+        <!-- Home Record card (entry-point to graduated flow) -->
+        <section class="home-record">
+          <div class="home-record-body">
+            <div>
+              <div class="hr-eyebrow"><span class="glyph">&#10022;</span> Closeout package · graduated flow</div>
+              <h3>Home Record</h3>
+              <p>The permanent handoff: phases, favourited photos, selections, decisions, change orders, warranties — frozen into a PDF + ZIP at a stable link. Regenerate anytime; the link doesn't change.</p>
+              <div class="hr-meta">
+                <span>Slug · <strong>chen-glenwood-may26</strong></span>
+                <span>Last built · <strong>May 21, 2:08 PM</strong></span>
+                <span>Status · <strong style="color:var(--warn)">Not yet emailed</strong></span>
+              </div>
+            </div>
+            <div class="hr-actions">
+              <button class="btn btn-primary"><svg><use href="#i-arrow-up-right"/></svg>Open Home Record</button>
+              <button class="btn btn-ghost btn-sm"><svg><use href="#i-mail"/></svg>Email to client</button>
+              <button class="btn btn-quiet btn-sm"><svg><use href="#i-rotate"/></svg>Regenerate</button>
+            </div>
+          </div>
+          <div class="home-record-foot">
+            <svg style="width:13px;height:13px;color:var(--info)"><use href="#i-link"/></svg>
+            <strong>heyhenry.app/h/chen-glenwood-may26</strong>
+            <span class="sep">·</span>
+            <span>PDF ready (4.2 MB)</span>
+            <span class="sep">·</span>
+            <span>ZIP ready (38.7 MB)</span>
+            <a class="right">Preview <svg><use href="#i-arrow-right"/></svg></a>
+          </div>
+        </section>
+
+        <!-- Upload zone (compact) -->
+        <div style="margin-top: 14px;">
+          <div class="uploader">
+            <span class="icn"><svg><use href="#i-upload"/></svg></span>
+            <div class="uploader-text">
+              <span class="uploader-title">Drop a contract, permit, warranty, or COI</span>
+              <span class="uploader-sub">PDF, DOC, image. We'll auto-type it — change the type if Henry guesses wrong.</span>
+            </div>
+            <div class="right">
+              <button class="btn btn-ghost btn-sm">Choose files</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document groups -->
+        <div class="doc-groups">
+
+          <!-- Contracts -->
+          <div class="doc-group">
+            <div class="doc-group-head">
+              <span class="label">Contract</span>
+              <span class="ct">· 2</span>
+              <span class="desc">Master agreement &amp; signed change orders</span>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-text"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">Construction Agreement — Chen Glenwood (signed).pdf</span>
+                <span class="doc-sub"><span>1.8 MB</span><span class="sep">·</span><span>Added Mar 8, 2026</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-text"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">CO-002 Brushed-nickel pull-out (signed).pdf</span>
+                <span class="doc-sub"><span>620 KB</span><span class="sep">·</span><span>Added May 14, 2026</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Permits -->
+          <div class="doc-group">
+            <div class="doc-group-head">
+              <span class="label">Permit</span>
+              <span class="ct">· 3</span>
+              <span class="desc">Building / electrical / plumbing</span>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-check"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">Building permit BP-19842.pdf</span>
+                <span class="doc-sub"><span>842 KB</span><span class="sep">·</span><span>Added Mar 12</span><span class="sep">·</span><span class="expires">Expires Sep 12, 2026</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-check"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">Electrical permit EP-7321.pdf</span>
+                <span class="doc-sub"><span>540 KB</span><span class="sep">·</span><span>Added Mar 18</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-check"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">Plumbing permit PP-2204.pdf</span>
+                <span class="doc-sub"><span>418 KB</span><span class="sep">·</span><span>Added Mar 21</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+          </div>
+
+          <!-- COI (kept internal — sub compliance) -->
+          <div class="doc-group">
+            <div class="doc-group-head">
+              <span class="label">Certificate of insurance</span>
+              <span class="ct">· 3</span>
+              <span class="desc">Sub compliance — usually internal</span>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-shield"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">COI — Tomic Framing Ltd.pdf</span>
+                <span class="doc-sub"><span>312 KB</span><span class="sep">·</span><span>Added Mar 22</span><span class="sep">·</span><span class="expires">Expires Aug 12, 2026</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-internal"><svg><use href="#i-lock"/></svg> Internal</span>
+              <button class="doc-icon-btn" aria-label="Show to client"><svg><use href="#i-eye-off"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-shield"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">COI — Skyline Electric.pdf</span>
+                <span class="doc-sub"><span>288 KB</span><span class="sep">·</span><span>Added Apr 02</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-internal"><svg><use href="#i-lock"/></svg> Internal</span>
+              <button class="doc-icon-btn" aria-label="Show to client"><svg><use href="#i-eye-off"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-shield"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">COI — Westland Mechanical.pdf</span>
+                <span class="doc-sub"><span>302 KB</span><span class="sep">·</span><span>Added Apr 14</span><span class="sep">·</span><span class="expires" style="color:var(--danger)">Expired May 1</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-internal"><svg><use href="#i-lock"/></svg> Internal</span>
+              <button class="doc-icon-btn" aria-label="Show to client"><svg><use href="#i-eye-off"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Warranty -->
+          <div class="doc-group">
+            <div class="doc-group-head">
+              <span class="label">Warranty</span>
+              <span class="ct">· 4</span>
+              <span class="desc">Manufacturer + GC warranties</span>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-shield"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">Northwood Build · 2-year workmanship warranty.pdf</span>
+                <span class="doc-sub"><span>184 KB</span><span class="sep">·</span><span>Added today</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-shield"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">Bosch dishwasher · 5-yr extended warranty.pdf</span>
+                <span class="doc-sub"><span>240 KB</span><span class="sep">·</span><span>Added Apr 30</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Inspection -->
+          <div class="doc-group">
+            <div class="doc-group-head">
+              <span class="label">Inspection</span>
+              <span class="ct">· 2</span>
+            </div>
+            <div class="doc-row">
+              <span class="doc-file"><svg><use href="#i-file-check"/></svg></span>
+              <div class="doc-meta">
+                <span class="doc-title">Rough-in inspection · electrical · Mar 28 pass.pdf</span>
+                <span class="doc-sub"><span>118 KB</span><span class="sep">·</span><span>Added Mar 28</span></span>
+              </div>
+              <span class="doc-vis-badge doc-vis-client"><svg><use href="#i-globe"/></svg> Client visible</span>
+              <button class="doc-icon-btn" aria-label="Hide from client"><svg><use href="#i-eye"/></svg></button>
+              <button class="doc-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trade contacts -->
+        <div class="section-eyebrow">
+          <span class="eyebrow-label">Trade contacts on this project</span>
+          <span class="eyebrow-meta">4 subs · directory only</span>
+        </div>
+        <div class="trade-grid">
+          <div class="trade-card">
+            <span class="trade-avatar">TF</span>
+            <div class="trade-meta">
+              <span class="trade-name">Dave Tomic</span>
+              <span class="trade-role">Tomic Framing Ltd · Framing &amp; finish</span>
+            </div>
+            <div class="trade-contact-icns">
+              <button class="doc-icon-btn"><svg><use href="#i-phone"/></svg></button>
+              <button class="doc-icon-btn"><svg><use href="#i-mail"/></svg></button>
+            </div>
+          </div>
+          <div class="trade-card">
+            <span class="trade-avatar">SE</span>
+            <div class="trade-meta">
+              <span class="trade-name">Eric Lin</span>
+              <span class="trade-role">Skyline Electric · Lic. 8842</span>
+            </div>
+            <div class="trade-contact-icns">
+              <button class="doc-icon-btn"><svg><use href="#i-phone"/></svg></button>
+              <button class="doc-icon-btn"><svg><use href="#i-mail"/></svg></button>
+            </div>
+          </div>
+          <div class="trade-card">
+            <span class="trade-avatar">WM</span>
+            <div class="trade-meta">
+              <span class="trade-name">Sam Brar</span>
+              <span class="trade-role">Westland Mechanical · plumbing/heating</span>
+            </div>
+            <div class="trade-contact-icns">
+              <button class="doc-icon-btn"><svg><use href="#i-phone"/></svg></button>
+              <button class="doc-icon-btn"><svg><use href="#i-mail"/></svg></button>
+            </div>
+          </div>
+          <div class="trade-card">
+            <span class="trade-avatar">RT</span>
+            <div class="trade-meta">
+              <span class="trade-name">Maja Tahiri</span>
+              <span class="trade-role">Ridge Tile &amp; Stone · finishes</span>
+            </div>
+            <div class="trade-contact-icns">
+              <button class="doc-icon-btn"><svg><use href="#i-phone"/></svg></button>
+              <button class="doc-icon-btn"><svg><use href="#i-mail"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 4 — Notes tab · hero (resolved Ask Henry tension)
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 04</span>
+  <h2>Notes · hero — internal memory + Ask-Henry-as-action</h2>
+  <span class="hint">Ask Henry is a <b>labeled action</b>, not a chat thread. Answers land in the feed below. Internal-only banner makes the boundary explicit.</span>
+</div>
+<div class="frame">
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">H</span><span class="brand-name">HeyHenry</span></div>
+      <nav class="nav">
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></a>
+        <a class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects<span class="nav-count">12</span></a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Billing</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Expenses</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</a>
+        <div class="nav-section-label">Setup</div>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="org-switcher">
+          <span class="org-avatar">NW</span>
+          <span class="org-meta"><span class="org-name">Northwood Build</span><span class="org-sub">Daniel · Owner</span></span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-search"><svg><use href="#i-search"/></svg><span>Search…</span><span class="chip-kbd">⌘K</span></div>
+        <div class="topbar-actions">
+          <button class="btn btn-quiet"><svg><use href="#i-clock"/></svg>Log time</button>
+          <button class="btn btn-quiet"><svg><use href="#i-receipt"/></svg>Log expense</button>
+          <button class="btn btn-rust"><svg><use href="#i-plus"/></svg>New</button>
+        </div>
+      </header>
+
+      <div class="main-inner" style="max-width: 880px;">
+        <section class="project-head">
+          <div class="project-head-text">
+            <div class="title-row">
+              <h1 class="project-title">Glenwood Heights</h1>
+              <span class="status-pill status-active"><span class="dot"></span>Active</span>
+            </div>
+            <div class="customer-line"><a>Daniel &amp; Mei Chen</a> <span class="at">·</span> 2418 Glenwood Hts Pl, Langley BC</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-henry"><span class="henry-glyph">&#10022;</span> Add</button>
+            <button class="icon-btn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </section>
+
+        <nav class="tab-strip">
+          <button class="tab">Budget <span class="tab-count-soft">2</span></button>
+          <button class="tab">Spend</button>
+          <button class="tab">Labour</button>
+          <button class="tab">Schedule</button>
+          <button class="tab">Billing</button>
+          <button class="tab">Overview</button>
+          <span class="tab-divider"></span>
+          <button class="tab is-secondary">Client <span class="tab-count">2</span></button>
+          <button class="tab is-secondary">Photos <span class="tab-count-soft">186</span></button>
+          <button class="tab is-secondary">Documents <span class="tab-count-soft">14</span></button>
+          <button class="tab is-secondary is-on">Notes <span class="tab-count-soft">28</span></button>
+        </nav>
+
+        <!-- Internal-only banner — makes the visibility boundary unmistakable -->
+        <div class="internal-banner">
+          <svg><use href="#i-lock"/></svg>
+          Notes are <strong style="color:var(--ink); margin: 0 4px;">internal only</strong> · never visible to the client
+        </div>
+
+        <!-- Composer -->
+        <div class="composer">
+          <textarea class="composer-input" placeholder="Add a note about this project…"></textarea>
+          <div class="composer-foot">
+            <button class="btn btn-quiet btn-sm"><svg><use href="#i-mic"/></svg>Voice memo</button>
+            <div class="right">
+              <button class="btn btn-primary btn-sm">Add note</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ask Henry — explicitly an ACTION, not a chat -->
+        <div class="ask-henry">
+          <div>
+            <div class="ask-henry-head">
+              <span class="glyph">&#10022;</span> Ask Henry about this project
+              <span class="hint">· answer drops into the feed below</span>
+            </div>
+            <textarea class="ask-henry-input" rows="1" placeholder="e.g. What's the biggest variance risk on this job?"></textarea>
+          </div>
+          <div>
+            <button class="btn btn-rust" style="height: 36px;">
+              <svg><use href="#i-send"/></svg>Ask
+            </button>
+          </div>
+        </div>
+
+        <!-- Feed -->
+        <div class="section-eyebrow">
+          <span class="eyebrow-label">Feed · most recent first</span>
+          <span class="eyebrow-meta">28 entries · this project</span>
+        </div>
+        <ol class="feed" style="list-style: none; padding: 0; margin: 0;">
+
+          <!-- Q/A pair — most recent at top -->
+          <li class="feed-pair">
+            <div class="feed-card">
+              <span class="feed-icon is-henry-q"><svg><use href="#i-user"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow">You asked Henry</span>
+                <div class="feed-text">What's the biggest variance risk on this job right now?</div>
+                <div class="feed-meta"><span>Today</span><span class="sep">·</span><span>2:42 PM</span></div>
+              </div>
+              <div class="feed-actions">
+                <button class="feed-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+            <div class="connector"></div>
+            <div class="feed-card is-henry-a">
+              <span class="feed-icon is-henry-a"><span style="font-size:12px; line-height:1">&#10022;</span></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow is-henry"><span class="glyph">&#10022;</span> Henry answered</span>
+                <div class="feed-text">Framing labour. Mike's been over the per-day budget for 4 of the last 5 days — total slip $4,800 (38% over the line). If you bill draw 3 against rough-in completion today, you've still got ~6% margin on the project. Beyond that the variance compounds. Want me to draft a scope-snapshot showing the slip to the client?</div>
+                <div class="feed-meta">
+                  <span>2:42 PM</span><span class="sep">·</span><span>Based on labour entries · budget vs actual</span>
+                </div>
+              </div>
+              <div class="feed-actions">
+                <button class="feed-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+          </li>
+
+          <!-- Reply draft (was raw amber-50 — now soft pair) -->
+          <li>
+            <div class="feed-card is-draft">
+              <span class="feed-icon is-draft"><svg><use href="#i-message-square"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow is-draft"><span class="glyph">&#10022;</span> Henry drafted a reply · ready to copy</span>
+                <div class="draft-body">Hi Daniel — yes, swapping to the brushed nickel pulls is no problem. I'll put together a one-line change order so we capture the cost difference (about $180), then I'll order them in for the cabinet install next Thursday. Let me know if you'd like to see the actual pull before I order. — Daniel @ Northwood</div>
+                <div class="draft-actions">
+                  <button class="btn btn-primary btn-xs"><svg><use href="#i-copy"/></svg>Copy reply</button>
+                  <button class="btn btn-ghost btn-xs"><svg><use href="#i-pen"/></svg>Edit</button>
+                  <span class="feed-meta" style="margin-top: 0;"><span>Today</span><span class="sep">·</span><span>11:20 AM</span></span>
+                </div>
+              </div>
+              <div class="feed-actions">
+                <button class="feed-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+          </li>
+
+          <!-- Operator note -->
+          <li>
+            <div class="feed-card">
+              <span class="feed-icon"><svg><use href="#i-sticky"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow">Note</span>
+                <div class="feed-text">Daniel mentioned they want to add a beverage fridge under the island. Need to confirm with Skyline on the dedicated 20A — and order the cab insert by next Mon at the latest.</div>
+                <div class="feed-meta"><span class="author">Daniel Northwood</span><span class="sep">·</span><span>Yesterday · 4:18 PM</span></div>
+              </div>
+              <div class="feed-actions">
+                <button class="feed-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+          </li>
+
+          <!-- Voice memo -->
+          <li>
+            <div class="feed-card">
+              <span class="feed-icon is-memo"><svg><use href="#i-mic"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow is-memo">Voice memo · transcribed</span>
+                <div class="memo-transcript">"Just got off the phone with Mei. She's worried about the tile delivery — saw something online about a vendor shortage. Told her we ordered three weeks ago and it's on the truck. Going to swing by Monday morning to confirm with Ridge Tile. Also — Mike said the framing's almost done up top, he's thinking another two days max."</div>
+                <div class="memo-meta">
+                  <button class="play"><svg><use href="#i-play"/></svg>Play · 0:48</button>
+                  <span>Today · 8:22 AM</span><span class="sep">·</span><span>Mike Reyes</span>
+                </div>
+              </div>
+              <div class="feed-actions">
+                <button class="feed-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+          </li>
+
+          <!-- Worklog event (system) -->
+          <li>
+            <div class="feed-card is-event">
+              <span class="feed-icon is-event"><svg><use href="#i-receipt"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow">System event · expense</span>
+                <div class="feed-text"><span style="color: var(--ink); font-weight: 600;">$842.30</span> · Home Depot · framing lumber + brackets · matched to Phase 03</div>
+                <div class="feed-meta"><span>Yesterday · 2:14 PM</span></div>
+              </div>
+            </div>
+          </li>
+
+          <!-- Artifact (sketch from intake) -->
+          <li>
+            <div class="feed-card">
+              <span class="feed-icon is-artifact"><svg><use href="#i-image"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow is-info">Artifact · sketch from intake</span>
+                <div class="artifact-body">
+                  <div class="artifact-thumb"><div style="position:absolute;inset:0; width:100%; height:100%;" class="img-c"></div></div>
+                  <div>
+                    <div class="artifact-title">Mei's master suite layout sketch</div>
+                    <div class="artifact-desc">Dropped from intake on Mar 3 — has the original window placement, walk-in dimensions, and the "no en-suite door" preference.</div>
+                  </div>
+                </div>
+                <div class="feed-meta" style="margin-top: 8px;"><span>Mar 3 · 11:08 AM</span></div>
+              </div>
+              <div class="feed-actions">
+                <button class="feed-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+          </li>
+
+          <!-- Operator note -->
+          <li>
+            <div class="feed-card">
+              <span class="feed-icon"><svg><use href="#i-sticky"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow">Note</span>
+                <div class="feed-text">Talked through the plumbing rough-in with Sam (Westland) on site. He's flagging a potential drop in pressure on the master ensuite shower — wants to add a booster. Let's get a quote before committing.</div>
+                <div class="feed-meta"><span class="author">Daniel Northwood</span><span class="sep">·</span><span>Mar 24 · 1:42 PM</span></div>
+              </div>
+              <div class="feed-actions">
+                <button class="feed-icon-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+              </div>
+            </div>
+          </li>
+
+          <!-- Worklog event (intake) -->
+          <li>
+            <div class="feed-card is-event">
+              <span class="feed-icon is-event"><svg><use href="#i-inbox"/></svg></span>
+              <div class="feed-body">
+                <span class="feed-eyebrow">System event · intake</span>
+                <div class="feed-text">Project created from email intake · "Re: Glenwood — quote follow-up" from daniel.chen@gmail.com</div>
+                <div class="feed-meta"><span>Mar 3 · 11:04 AM</span></div>
+              </div>
+            </div>
+          </li>
+
+        </ol>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 5 — States row (empty + loading)
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 05</span>
+  <h2>States — empty (per tab) + loading skeleton</h2>
+  <span class="hint">Mobile-only: <b>offline capture queue</b> ships in mobile.html.</span>
+</div>
+<div class="states-frame">
+  <div class="states-grid">
+
+    <div class="state-card">
+      <span class="state-label">Photos · empty</span>
+      <div class="state-empty-body">
+        <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+        <h4>No photos for this project yet</h4>
+        <p>Take a few from the field — before/after, progress, and anything you might flag as a concern.</p>
+        <button class="btn btn-primary btn-sm"><svg><use href="#i-camera"/></svg>Open camera</button>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <span class="state-label">Documents · empty</span>
+      <div class="state-empty-body">
+        <span class="icn"><svg><use href="#i-file-text"/></svg></span>
+        <h4>No documents yet</h4>
+        <p>Contracts, permits, COIs, warranties, manuals — they all live here. They'll roll into the Home Record at closeout.</p>
+        <button class="btn btn-ghost btn-sm"><svg><use href="#i-upload"/></svg>Upload</button>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <span class="state-label">Notes · empty</span>
+      <div class="state-empty-body">
+        <span class="icn"><svg><use href="#i-sticky"/></svg></span>
+        <h4>Nothing logged yet</h4>
+        <p>Add a note, record a voice memo, or drop a sketch via "Add to project." Ask Henry anything — the answer lands here.</p>
+        <button class="btn btn-ghost btn-sm">Add a note</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-eyebrow" style="margin-top: 18px;">
+    <span class="eyebrow-label">Loading skeleton — Photos &amp; Documents</span>
+    <span class="eyebrow-meta">First paint, signed URLs in flight</span>
+  </div>
+  <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px;">
+
+    <!-- Photo grid skeleton -->
+    <div style="background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 16px;">
+      <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+        <span class="sk sk-bar" style="width: 60px; height: 22px; border-radius: 999px;"></span>
+        <span class="sk sk-bar" style="width: 70px; height: 22px; border-radius: 999px;"></span>
+        <span class="sk sk-bar" style="width: 80px; height: 22px; border-radius: 999px;"></span>
+        <span class="sk sk-bar" style="width: 65px; height: 22px; border-radius: 999px;"></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+        <span class="sk sk-tile"></span>
+        <span class="sk sk-tile"></span>
+        <span class="sk sk-tile"></span>
+        <span class="sk sk-tile"></span>
+        <span class="sk sk-tile"></span>
+        <span class="sk sk-tile"></span>
+        <span class="sk sk-tile"></span>
+        <span class="sk sk-tile"></span>
+      </div>
+    </div>
+
+    <!-- Document list skeleton -->
+    <div style="background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+        <span class="sk sk-bar" style="width: 80px;"></span>
+        <span class="sk sk-bar" style="width: 24px; height: 11px;"></span>
+      </div>
+      <div class="sk-row">
+        <span class="sk" style="width: 18px; height: 22px; border-radius: 3px;"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+          <span class="sk sk-bar" style="width: 75%; height: 13px;"></span>
+          <span class="sk sk-bar" style="width: 40%; height: 11px;"></span>
+        </div>
+        <span class="sk sk-bar" style="width: 78px; height: 22px; border-radius: 7px;"></span>
+      </div>
+      <div class="sk-row">
+        <span class="sk" style="width: 18px; height: 22px; border-radius: 3px;"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+          <span class="sk sk-bar" style="width: 65%; height: 13px;"></span>
+          <span class="sk sk-bar" style="width: 50%; height: 11px;"></span>
+        </div>
+        <span class="sk sk-bar" style="width: 78px; height: 22px; border-radius: 7px;"></span>
+      </div>
+      <div class="sk-row">
+        <span class="sk" style="width: 18px; height: 22px; border-radius: 3px;"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+          <span class="sk sk-bar" style="width: 80%; height: 13px;"></span>
+          <span class="sk sk-bar" style="width: 35%; height: 11px;"></span>
+        </div>
+        <span class="sk sk-bar" style="width: 78px; height: 22px; border-radius: 7px;"></span>
+      </div>
+      <div class="sk-row">
+        <span class="sk" style="width: 18px; height: 22px; border-radius: 3px;"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+          <span class="sk sk-bar" style="width: 60%; height: 13px;"></span>
+          <span class="sk sk-bar" style="width: 45%; height: 11px;"></span>
+        </div>
+        <span class="sk sk-bar" style="width: 78px; height: 22px; border-radius: 7px;"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="build-foot">
+  <div><b>Project secondary tabs · Photos · Documents · Notes</b> — operator surfaces, Paper restyle, client-visibility legibility, Ask-Henry-as-action.</div>
+  <div style="margin-top: 4px;">Renders the secondary tab inside the existing Project Hub shell — hub chrome unchanged. Heavy Home Record flow is an entry-point only (graduates to its own render). Mobile capture-first story in <b>mobile.html</b>.</div>
+</div>
+
+</body>
+</html>

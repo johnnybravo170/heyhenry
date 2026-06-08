@@ -37,20 +37,32 @@ import {
   enrichPhotoForPortalAction,
 } from '@/server/actions/portal-photos';
 import { PhotoPortalButton } from '../portal/photo-portal-button';
+import { VisibilityBadge } from '../projects/visibility-badge';
 import { DeletePhotoButton } from './delete-photo-button';
 import { PhotoFavoriteButton } from './photo-favorite-button';
 
+// Tag chips lean on the status-tokens soft-pair palette (PATTERNS.md §7) so a
+// photo's tag reads in the same hue language as the rest of the app:
+//   before → info-blue, after → success-emerald, progress → warning-amber,
+//   concern → danger-red. The non-OD field tags (damage/materials/equipment/
+//   serial) stay calm neutrals — a category isn't an action.
 const TAG_CLASS: Record<PhotoTag, string> = {
-  before: 'bg-sky-100 text-sky-800 border-sky-200 hover:bg-sky-100',
+  before: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100',
   after: 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100',
   progress: 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100',
-  damage: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100',
-  materials: 'bg-stone-100 text-stone-800 border-stone-200 hover:bg-stone-100',
-  equipment: 'bg-zinc-100 text-zinc-800 border-zinc-200 hover:bg-zinc-100',
-  serial: 'bg-violet-100 text-violet-800 border-violet-200 hover:bg-violet-100',
+  damage: 'bg-muted text-muted-foreground border-border hover:bg-muted',
+  materials: 'bg-muted text-muted-foreground border-border hover:bg-muted',
+  equipment: 'bg-muted text-muted-foreground border-border hover:bg-muted',
+  serial: 'bg-muted text-muted-foreground border-border hover:bg-muted',
   concern: 'bg-red-100 text-red-800 border-red-300 hover:bg-red-100',
-  other: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100',
+  other: 'bg-muted text-muted-foreground border-border hover:bg-muted',
 };
+
+// Henry suggestion chip — labeled "✦ Henry", rust accent (the app's Henry
+// voice), on a calm card fill. One tap accepts; the toast confirms what
+// changed so the operator can undo by re-tagging.
+const HENRY_CHIP_CLASS =
+  'flex items-center gap-1 rounded-md border border-brand/30 bg-card px-1.5 py-0.5 text-[10px] font-medium text-brand shadow-sm transition-colors hover:bg-brand/5 disabled:opacity-50';
 
 function qualityWarning(flags: PhotoQualityFlags): string | null {
   const issues: string[] = [];
@@ -208,7 +220,10 @@ export function PhotoCard({
         </DialogTrigger>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{photoTagLabels[photo.tag]}</DialogTitle>
+            <div className="flex items-center gap-2">
+              <DialogTitle>{photoTagLabels[photo.tag]}</DialogTitle>
+              <VisibilityBadge clientVisible={photo.client_visible ?? false} />
+            </div>
             <DialogDescription>{caption || 'No caption.'}</DialogDescription>
           </DialogHeader>
           {hasUrl ? (
@@ -250,8 +265,8 @@ export function PhotoCard({
             type="button"
             onClick={acceptSuggestion}
             disabled={pending}
-            className="flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100 disabled:opacity-50 dark:border-violet-900/50 dark:bg-violet-950 dark:text-violet-300"
-            title={`Tap to accept Henry's suggestion (${Math.round(confidence * 100)}% confident)`}
+            className={HENRY_CHIP_CLASS}
+            title={`Tap to accept Henry's suggested tag (${Math.round(confidence * 100)}% confident). You can re-tag any time.`}
           >
             <Sparkles className="size-3" aria-hidden />
             Henry: {photoTagLabels[photo.ai_tag as PhotoTag]}
@@ -263,8 +278,11 @@ export function PhotoCard({
             type="button"
             onClick={applyHenry}
             disabled={pending}
-            className="flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100 disabled:opacity-50 dark:border-violet-900/50 dark:bg-violet-950 dark:text-violet-300"
-            title={photo.ai_portal_caption ?? "Apply Henry's portal tags"}
+            className={HENRY_CHIP_CLASS}
+            title={
+              photo.ai_portal_caption ??
+              "Apply Henry's suggested caption — you confirm before it goes client-visible"
+            }
           >
             <Sparkles className="size-3" aria-hidden />
             Henry: {aiPortalTags.slice(0, 2).join(', ')}
@@ -276,8 +294,11 @@ export function PhotoCard({
             type="button"
             onClick={askHenry}
             disabled={pending}
-            className="flex items-center gap-1 rounded-md border border-dashed border-violet-200 bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-violet-50 disabled:opacity-50 dark:border-violet-900/50 dark:hover:bg-violet-950"
-            title="Ask Henry to suggest portal tags"
+            className={cn(
+              HENRY_CHIP_CLASS,
+              'border-dashed bg-card/80 opacity-0 transition-opacity group-hover:opacity-100',
+            )}
+            title="Ask Henry to suggest a tag + client-safe caption"
           >
             <Sparkles className="size-3" aria-hidden />
             Ask Henry
@@ -285,7 +306,7 @@ export function PhotoCard({
         ) : null}
         {showcaseHintVisible ? (
           <span
-            className="flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 shadow-sm dark:border-amber-900/50 dark:bg-amber-950 dark:text-amber-300"
+            className={cn(HENRY_CHIP_CLASS, 'pointer-events-none')}
             title={showcaseReason || 'Henry thinks this is a great shot.'}
           >
             <Sparkles className="size-3" aria-hidden />
@@ -294,7 +315,7 @@ export function PhotoCard({
         ) : null}
         {qualityNote ? (
           <span
-            className="flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 shadow-sm dark:border-amber-900/50 dark:bg-amber-950 dark:text-amber-300"
+            className="flex items-center gap-1 rounded-md border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 shadow-sm dark:border-amber-900/50 dark:bg-amber-900/30 dark:text-amber-300"
             title={`Quality issue: ${qualityNote}`}
           >
             <AlertTriangle className="size-3" aria-hidden />
@@ -321,13 +342,20 @@ export function PhotoCard({
         />
         <DeletePhotoButton photoId={photo.id} />
       </div>
+      {/* Client-visibility badge — label + glyph, never colour-only. Photos
+          default to internal (private); sharing is an explicit per-photo act. */}
+      {!selectMode ? (
+        <div className="pointer-events-none absolute bottom-2 left-2">
+          <VisibilityBadge clientVisible={photo.client_visible ?? false} />
+        </div>
+      ) : null}
       {caption ? (
         <figcaption
           className="flex items-center gap-1 truncate border-t bg-card/95 px-3 py-2 text-xs text-muted-foreground"
           title={caption}
         >
           {captionByHenry ? (
-            <Sparkles className="size-3 shrink-0 text-violet-500" aria-label="Caption by Henry" />
+            <Sparkles className="size-3 shrink-0 text-brand" aria-label="Caption by Henry" />
           ) : null}
           <span className="truncate">{caption}</span>
         </figcaption>

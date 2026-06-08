@@ -207,21 +207,22 @@ export default async function DashboardPage() {
         className="block rounded-md border border-[var(--border)] p-6 hover:border-[var(--foreground)]"
       >
         <div className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
-          HeyHenry V1 launch
+          HeyHenry private beta
         </div>
         <div className="mt-1 flex items-baseline gap-3">
           <span className="text-5xl font-bold tabular-nums">{launchRollup.percentDone}%</span>
           <span className="text-sm text-[var(--muted-foreground)]">
             {launchEta
-              ? `ETA ~${launchEta.weeks}w · ${launchEta.date}`
+              ? `~${launchEta.weeks}w of work left`
               : launchVelocity.completedPoints === 0
                 ? 'no velocity (last 28d)'
                 : 'complete'}
           </span>
         </div>
         <div className="mt-1 text-xs text-[var(--muted-foreground)]">
-          {launchRollup.donePoints}/{launchRollup.totalPoints} pts · {launchRollup.blockerCardCount}{' '}
-          launch-blocker cards
+          {launchRollup.donePoints}/{launchRollup.totalPoints} pts ·{' '}
+          {launchRollup.remainingCardCount} of {launchRollup.blockerCardCount} must-do cards
+          remaining
           {launchRollup.unsizedCards > 0 ? ` · ${launchRollup.unsizedCards} unsized` : ''}
         </div>
       </Link>

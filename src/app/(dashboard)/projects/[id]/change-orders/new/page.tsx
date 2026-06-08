@@ -5,6 +5,7 @@ import { ChangeOrderDiffForm } from '@/components/features/change-orders/change-
 import { ChangeOrderForm } from '@/components/features/change-orders/change-order-form';
 import { listCostLines } from '@/lib/db/queries/cost-lines';
 import { getProject } from '@/lib/db/queries/projects';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,6 +25,7 @@ export default async function NewChangeOrderPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const sp = await searchParams;
   const project = await getProject(id);
   if (!project) notFound();
@@ -32,6 +34,15 @@ export default async function NewChangeOrderPage({
   // and estimate-page guard (kanban 0f042025) are live, closing the loop.
   // Legacy even-distribute form still reachable via ?v2=0 as an escape hatch.
   const useDiffForm = sp.v2 !== '0';
+
+  // Light prefill from an over-allowance Selection ("Start CO"). The
+  // Selections tab passes a title + reason so the operator starts from
+  // context; the cost-impact lines stay empty for them to author. Strings
+  // only — the operator still approves/sends every CO. (kanban 97627958)
+  const prefillTitle = typeof sp.title === 'string' ? sp.title : undefined;
+  const prefillReason = typeof sp.reason === 'string' ? sp.reason : undefined;
+  const createPrefill =
+    prefillTitle || prefillReason ? { title: prefillTitle, reason: prefillReason } : undefined;
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -52,6 +63,7 @@ export default async function NewChangeOrderPage({
           budgetCategories={project.budget_categories}
           existingLines={await listCostLines(id)}
           defaultManagementFeeRate={project.management_fee_rate}
+          mode={{ kind: 'create', prefill: createPrefill }}
         />
       ) : (
         <ChangeOrderForm

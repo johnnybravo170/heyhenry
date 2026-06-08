@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { findStarterTemplate } from '@/data/starter-templates';
 import type { StarterTemplate } from '@/data/starter-templates/types';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type SaveAsTemplateResult = { ok: true; id: string } | { ok: false; error: string };
@@ -64,7 +65,9 @@ export async function saveProjectAsTemplateAction(
   const [categoriesRes, linesRes] = await Promise.all([
     admin
       .from('project_budget_categories')
-      .select('id, name, section, description, display_order')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), description, display_order',
+      )
       .eq('project_id', projectId)
       .order('display_order', { ascending: true }),
     admin
@@ -81,7 +84,7 @@ export async function saveProjectAsTemplateAction(
   type CategoryRow = {
     id: string;
     name: string;
-    section: string;
+    section_row: { name: string } | null;
     description: string | null;
     display_order: number;
   };
@@ -97,7 +100,7 @@ export async function saveProjectAsTemplateAction(
     sort_order: number;
   };
 
-  const categories = (categoriesRes.data ?? []) as CategoryRow[];
+  const categories = (categoriesRes.data ?? []) as unknown as CategoryRow[];
   const lines = (linesRes.data ?? []) as LineRow[];
 
   if (categories.length === 0 && lines.length === 0) {
@@ -119,11 +122,17 @@ export async function saveProjectAsTemplateAction(
     description: description ?? '',
     categories: categories.map((b) => ({
       name: b.name,
-      section: b.section,
+      section: b.section_row?.name ?? '',
       description: b.description ?? undefined,
       lines: (linesByCategory.get(b.id) ?? []).map((l) => ({
         label: l.label,
-        category: l.category as 'material' | 'labour' | 'sub' | 'equipment' | 'overhead',
+        category: l.category as
+          | 'material'
+          | 'labour'
+          | 'sub'
+          | 'equipment'
+          | 'overhead'
+          | 'supply_install',
         qty: l.qty,
         unit: l.unit,
         // Per-row "include prices" toggle: when off, store unit_price_cents=0
@@ -301,11 +310,21 @@ export async function applyTemplateAction(input: {
 
   // Insert categories + lines. Snapshot may use legacy `buckets` key.
   const templateCategories = snapshotCategories(template);
+  // Resolve distinct template section names → section row ids in the target
+  // project; set section_id and let the DB trigger mirror the legacy string.
+  const sectionIdByName = new Map<string, string>();
+  for (const b of templateCategories) {
+    const name = b.section?.trim() || 'General';
+    if (sectionIdByName.has(name)) continue;
+    const resolved = await resolveBudgetSectionId(admin, tenant.id, input.projectId, name);
+    if ('error' in resolved) return { ok: false, error: resolved.error };
+    sectionIdByName.set(name, resolved.id);
+  }
   const categoryRows = templateCategories.map((b, i) => ({
     project_id: input.projectId,
     tenant_id: tenant.id,
     name: b.name,
-    section: b.section,
+    section_id: sectionIdByName.get(b.section?.trim() || 'General') ?? null,
     description: b.description ?? null,
     estimate_cents: 0,
     display_order: i,

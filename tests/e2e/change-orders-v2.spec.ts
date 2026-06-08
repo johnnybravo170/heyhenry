@@ -106,7 +106,16 @@ test.describe
       await signInAsOwner(page, seed);
       await page.goto(`/projects/${seed.projectId}/change-orders/${co?.id}`);
 
+      // The redesign (#310) routes send through a confirm dialog
+      // (ChangeOrderSendBar): the "Send for approval" button is now an
+      // AlertDialog trigger that opens a send-preview (recipients +
+      // copyable approval link), and the action only fires when the
+      // operator confirms with "Send now" in the dialog footer. Clicking
+      // the trigger alone no longer flips the status.
       await page.getByRole('button', { name: /send for approval/i }).click();
+      const sendDialog = page.getByRole('alertdialog');
+      await expect(sendDialog.getByText(/send change order\?/i)).toBeVisible();
+      await sendDialog.getByRole('button', { name: /send now/i }).click();
 
       // Server action revalidates; status badge flips. Poll DB rather
       // than UI to avoid waiting on the realtime subscription.

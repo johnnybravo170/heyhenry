@@ -133,9 +133,9 @@ export default function TermsPage() {
       <h2>8. Third-party services</h2>
       <p>
         The Service relies on third-party providers (e.g. Stripe for payments, Twilio for SMS,
-        Resend for email, Supabase for hosting). Your use of features that depend on those providers
-        is also subject to their terms. The list of sub-processors and what data they receive is
-        published on the <Link href="/privacy">Privacy Policy</Link> page.
+        Postmark for email, Supabase for hosting). Your use of features that depend on those
+        providers is also subject to their terms. The list of sub-processors and what data they
+        receive is published on the <Link href="/privacy">Privacy Policy</Link> page.
       </p>
 
       <h2>9. Suspension and termination</h2>

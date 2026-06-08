@@ -127,7 +127,7 @@ export function DecisionForm({ projectId }: { projectId: string }) {
               placeholder={'Simply White\nChantilly Lace\nDecorator\u2019s White'}
               rows={3}
             />
-            <p className="mt-1 text-[10px] text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               Leave blank for a binary Approve / Decline. Listing options shows the homeowner radio
               buttons + a Confirm button.
             </p>

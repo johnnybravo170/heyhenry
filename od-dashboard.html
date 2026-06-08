@@ -1,0 +1,174 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OD — Dashboard — HeyHenry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 28px 80px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--rust);
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; color: var(--ink); }
+  .lede { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 56ch; line-height: 1.55; }
+  .meta { margin-top: 22px; display: flex; gap: 18px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; flex-wrap: wrap; }
+  .meta span strong { color: var(--ink); font-weight: 700; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .screen-card { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform 120ms, border-color 120ms; text-decoration: none; color: inherit; }
+  .screen-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .screen-thumb { aspect-ratio: 16/10; background: var(--bg); border-bottom: 1px solid var(--hair); position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px; }
+  .screen-thumb iframe { width: 1440px; height: 900px; transform: scale(0.32); transform-origin: top left; border: 0; pointer-events: none; position: absolute; top: 0; left: 0; }
+  .screen-thumb.mobile iframe { width: 390px; height: 844px; transform: scale(0.45); transform-origin: center; position: static; }
+  .screen-thumb.mobile { background: #ECE3D0; }
+  .screen-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .screen-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .screen-title { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; color: var(--ink); }
+  .screen-desc { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.5; }
+  .notes { margin-top: 48px; background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 22px 24px; }
+  .notes h2 { margin: 0 0 12px; font-size: 14px; font-weight: 700; letter-spacing: -0.01em; font-family: var(--mono); text-transform: uppercase; color: var(--ink); }
+  .notes ul { margin: 0; padding-left: 16px; color: var(--ink-2); font-size: 14px; line-height: 1.6; }
+  .notes li + li { margin-top: 6px; }
+  .notes code { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--hair); border-radius: 4px; padding: 1px 5px; color: var(--ink); }
+  .notes strong { color: var(--ink); font-weight: 600; }
+  .notes .open-q { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--hair); color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OD · HeyHenry · Paper palette (deepened 2026-05-20)</div>
+  <h1>Owner Dashboard</h1>
+  <p class="lede">The contractor's home cockpit. Answers <em>what needs me today</em> + <em>where does the business stand</em> — every element earns its place by prompting an action or being a number you'd actually act on. No vanity tiles, no duplicate KPIs, no carryover service-job branches.</p>
+  <div class="meta">
+    <span><strong>Object</strong> · The business at a glance</span>
+    <span><strong>Roles</strong> · owner / admin</span>
+    <span><strong>Primary action</strong> · act on what needs you</span>
+    <span><strong>States</strong> · 3 desktop · 1 mobile</span>
+  </div>
+  <div class="grid">
+    <a class="screen-card" href="screens/desktop.html"><div class="screen-thumb"><iframe src="screens/desktop.html" loading="lazy"></iframe></div><div class="screen-body"><div class="screen-eyebrow">01 · Desktop · Default</div><div class="screen-title">Populated · 1280 wide</div><div class="screen-desc">Greeting + Henry briefing + Graham-accepted banner + Needs-You 3-col grid + chase list + 6-tile metric strip + Recent Activity at 5 with "View all".</div></div></a>
+    <a class="screen-card" href="screens/desktop-henry-empty.html"><div class="screen-thumb"><iframe src="screens/desktop-henry-empty.html" loading="lazy"></iframe></div><div class="screen-body"><div class="screen-eyebrow">02 · Desktop · Quiet morning</div><div class="screen-title">Henry briefing — all clear</div><div class="screen-desc">"Nothing needs you right now." Briefing accent flips rust→green; chase list and Needs-You collapse. Metric strip + Recent Activity stay. Don't fake urgency.</div></div></a>
+    <a class="screen-card" href="screens/desktop-recent-expanded.html"><div class="screen-thumb"><iframe src="screens/desktop-recent-expanded.html" loading="lazy"></iframe></div><div class="screen-body"><div class="screen-eyebrow">03 · Desktop · Activity expanded</div><div class="screen-title">After "View all" tap</div><div class="screen-desc">Recent Activity expanded to 18 items across 14 days. Toggle inverts to "Collapse". Audit trail demoted but accessible.</div></div></a>
+    <a class="screen-card" href="screens/mobile.html"><div class="screen-thumb mobile"><iframe src="screens/mobile.html" loading="lazy"></iframe></div><div class="screen-body"><div class="screen-eyebrow">04 · Mobile · 390 (iPhone)</div><div class="screen-title">Action-first stack</div><div class="screen-desc">Briefing → banner → Today (leads) → Needs-you → chase → Blocked → 2-col vertical metric grid (no horizontal scroll) → activity collapsed. Bottom tab nav.</div></div></a>
+  </div>
+  <div class="notes">
+    <h2>Brief alignment</h2>
+    <ul>
+      <li><strong>Action-first ordering</strong> — briefing → needs-you → chase → status → audit. Status and audit never lead.</li>
+      <li><strong>Henry daily briefing</strong> replaces the "coming soon" placeholders. 3 decision-attached lines, each linking to its surface.</li>
+      <li><strong>One chase list, money first</strong> — Needs Attention + Money-at-risk merged. Patel overdue with "Henry chased · no reply" pill + "I called them" dismiss.</li>
+      <li><strong>One de-duped metric strip</strong>: Planning · Awaiting · Active · Complete (funnel) + Revenue · Outstanding (outcomes). 6 tiles, zero duplication.</li>
+      <li><strong>Mobile</strong> — no horizontal scroll. The metric grid is 2-col vertical, grouped funnel + outcomes with a hairline.</li>
+      <li><strong>Removed</strong> — <code>TodaysJobs</code>, job-task health, generic <code>PipelineSummary</code>, all "coming soon", duplicate Active/Awaiting tiles. GCFiles written to `od-dashboard/`:
+
+- **`index.html`** — launcher with all four screen previews + brief-alignment notes
+- **`screens/desktop.html`** — default populated state (greeting → Henry briefing → Graham-accepted banner → Needs-You 3-col grid → chase list → 6-tile metric strip → Recent Activity collapsed)
+- **`screens/desktop-henry-empty.html`** — quiet morning ("Nothing needs you right now"). Briefing flips to green accent, chase list disappears, Needs-You cards collapse to empty-state lines, metric strip + activity remain
+- **`screens/desktop-recent-expanded.html`** — same default with Recent Activity in its expanded state (18 items / 14 days; toggle inverts to "Collapse")
+- **`screens/mobile.html`** — 390px iPhone, action-first stack (briefing → Graham banner → **Today first** → Needs-You decisions → chase → Blocked → metric grid → activity), bottom tab nav
+
+**Brief decisions honored end-to-end:**
+- All non-reno carryovers removed (no `TodaysJobs`, no `getJobTaskHealth`, no generic `PipelineSummary`, no "coming soon" placeholders).
+- Pipeline + KeyMetrics double-render replaced by ONE 6-tile strip — Active and Awaiting each appear once.
+- Outstanding $2,016 reads the same canonical AR number that shows on the Patel chase row and the Outstanding metric tile (no triple-defined money).
+- Henry-prompt color rule: working-day briefing is white with rust left-border; quiet-morning briefing flips to green to signal "all clear." Never red on a positive.
+- Mobile metric strip is a vertical 2-col grid (no horizontal scroll, per the memory rule).
+
+**Single decisive flourish:** the Henry briefing's three decision-attached lines, each with its own dotted-divider rhythm and arrow handoff to its destination — the screen's one orchestrated moment of personality, then back to calm working chrome.
+
+<artifact identifier="od-dashboard" type="text/html" title="Owner Dashboard — HeyHenry · OD launcher">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OD — Dashboard — HeyHenry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #F3EBDB; --chrome: #F7F1E6; --card: #FFFFFF;
+    --ink: #0A0A0A; --ink-2: #3A3A3A; --muted: #57534B; --faint: #A8A8A8;
+    --hair: #E2D7C0; --rust: #C2410C; --rust-soft: #FEF0E3;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; padding: 0; font-family: var(--sans); background: var(--bg); color: var(--ink-2); font-weight: 500; font-size: 14px; line-height: 1.5; min-height: 100vh; letter-spacing: -0.005em; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 28px 80px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; color: var(--rust); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 12px; }
+  h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.025em; color: var(--ink); }
+  .lede { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 56ch; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .card { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 22px 24px; }
+  .card h2 { margin: 0 0 12px; font-size: 14px; font-weight: 700; font-family: var(--mono); text-transform: uppercase; color: var(--ink); }
+  .card ul { margin: 0; padding-left: 16px; font-size: 14px; line-height: 1.6; }
+  .card li + li { margin-top: 6px; }
+  .card code { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--hair); border-radius: 4px; padding: 1px 5px; color: var(--ink); }
+  .card strong { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OD &middot; HeyHenry &middot; Paper palette</div>
+  <h1>Owner Dashboard</h1>
+  <p class="lede">Action-first cockpit for a renovation GC. Four state mocks — desktop default, quiet-morning empty Henry briefing, Recent Activity expanded, and mobile. Files: <code>od-dashboard/index.html</code>, <code>screens/desktop.html</code>, <code>screens/desktop-henry-empty.html</code>, <code>screens/desktop-recent-expanded.html</code>, <code>screens/mobile.html</code>.</p>
+  <div class="grid">
+    <div class="card">
+      <h2>What the dashboard does</h2>
+      <ul>
+        <li>Henry daily briefing — 3 decision-attached lines, each linking to its surface.</li>
+        <li>Needs You — Today / Blocked (tagged Client/Material/Sub) / Needs You decisions.</li>
+        <li>One chase list, money first — Patel overdue with Henry-chased pill + "I called them" dismiss.</li>
+        <li>One de-duped metric strip — funnel (Planning / Awaiting / Active / Complete) + outcomes (Revenue / Outstanding).</li>
+        <li>Recent Activity at 5, "View all" expander; expanded variant shows 18 items.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>What's removed (per brief)</h2>
+      <ul>
+        <li><code>TodaysJobs</code>, <code>getJobTaskHealth</code>, generic <code>PipelineSummary</code> — gone.</li>
+        <li>Every "coming soon" placeholder — replaced by the real Henry briefing.</li>
+        <li>Duplicate Active / Awaiting tiles — they live in the funnel now.</li>
+        <li>All <code>isRenovation</code> branching — GC-only path.</li>
+        <li>No chat bubble emphasis — Henry is the briefing card only.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</body>
+</html>

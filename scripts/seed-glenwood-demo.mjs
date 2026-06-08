@@ -53,9 +53,9 @@ console.log('worker profile:', worker.id);
 // ── idempotency check ───────────────────────────────────────────────────────
 const CUST_EMAIL = 'glenwood.demo@example.com';
 const existing = await sql`
-  SELECT c.id AS customer_id, p.id AS project_id, p.name
-  FROM public.customers c
-  LEFT JOIN public.projects p ON p.customer_id = c.id AND p.tenant_id = c.tenant_id
+  SELECT c.id AS contact_id, p.id AS project_id, p.name
+  FROM public.contacts c
+  LEFT JOIN public.projects p ON p.contact_id = c.id AND p.tenant_id = c.tenant_id
   WHERE c.tenant_id = ${TENANT_ID} AND c.email = ${CUST_EMAIL}
   LIMIT 1
 `;
@@ -68,7 +68,7 @@ if (existing.length > 0 && existing[0].project_id) {
 
 // ── customer ────────────────────────────────────────────────────────────────
 const [customer] = await sql`
-  INSERT INTO public.customers
+  INSERT INTO public.contacts
     (tenant_id, type, kind, name, email, phone,
      address_line1, city, province, postal_code, notes, tax_exempt)
   VALUES (${TENANT_ID}, 'residential', 'customer',
@@ -85,7 +85,7 @@ const START_OFFSET = -56;
 const END_OFFSET = 24;
 const [project] = await sql`
   INSERT INTO public.projects
-    (tenant_id, customer_id, name, description, management_fee_rate,
+    (tenant_id, contact_id, name, description, management_fee_rate,
      start_date, target_end_date, percent_complete,
      portal_enabled, estimate_status, estimate_sent_at, estimate_approved_at,
      estimate_approved_by_name, estimate_approval_method, estimate_approval_proof_paths,
@@ -119,13 +119,23 @@ const categorySpecs = [
   { name: 'Paint + trim', est: 380000 },
 ];
 
+// Sections are a real entity — create the section row first, then reference
+// section_id (the legacy `section` string column no longer exists).
+const [sectionRow] = await sql`
+  INSERT INTO public.project_budget_sections (project_id, tenant_id, name, sort_order)
+  VALUES (${projectId}, ${TENANT_ID}, ${SECTION}, 0)
+  ON CONFLICT (project_id, name) DO UPDATE SET name = EXCLUDED.name
+  RETURNING id
+`;
+const SECTION_ID = sectionRow.id;
+
 const categories = {};
 for (let i = 0; i < categorySpecs.length; i++) {
   const b = categorySpecs[i];
   const [row] = await sql`
     INSERT INTO public.project_budget_categories
-      (project_id, tenant_id, name, section, estimate_cents, display_order, is_visible_in_report)
-    VALUES (${projectId}, ${TENANT_ID}, ${b.name}, ${SECTION}, ${b.est}, ${i + 1}, true)
+      (project_id, tenant_id, name, section_id, estimate_cents, display_order, is_visible_in_report)
+    VALUES (${projectId}, ${TENANT_ID}, ${b.name}, ${SECTION_ID}, ${b.est}, ${i + 1}, true)
     RETURNING id, name
   `;
   categories[b.name] = row.id;
@@ -654,7 +664,7 @@ for (const p of photoSpecs) {
   const takenAt = ts(-p.daysAgo);
   await sql`
     INSERT INTO public.photos
-      (tenant_id, project_id, customer_id, storage_path, tag, caption,
+      (tenant_id, project_id, contact_id, storage_path, tag, caption,
        taken_at, uploaded_at, uploader_user_id, source, mime, bytes,
        width, height, caption_source, portal_tags, client_visible)
     VALUES (${TENANT_ID}, ${projectId}, ${customer.id},

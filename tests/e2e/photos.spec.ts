@@ -132,7 +132,7 @@ test.describe
 
       // --- 2. Seed customer + job ---
       const { data: customer } = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: createdTenantId,
           type: 'residential',
@@ -146,7 +146,7 @@ test.describe
         .from('jobs')
         .insert({
           tenant_id: createdTenantId,
-          customer_id: customer?.id,
+          contact_id: customer?.id,
           status: 'booked',
         })
         .select('id')

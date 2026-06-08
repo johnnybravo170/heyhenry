@@ -9,14 +9,18 @@ import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, Hourglass } f
 import Link from 'next/link';
 import { TaskStatusBadge } from '@/components/features/tasks/task-status-badge';
 import { VerifyTaskButtons } from '@/components/features/tasks/verify-task-buttons';
+import { Money } from '@/components/ui/money';
 import { formatDateShort } from '@/lib/date/format';
 import type { DashboardTaskBuckets, JobTaskHealth, TaskRow } from '@/lib/db/queries/tasks';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import { cn } from '@/lib/utils';
+
+/** Mono eyebrow — small uppercase label used on section sub-heads across the Paper surfaces. */
+const EYEBROW = 'font-mono text-[11px] uppercase tracking-wide text-muted-foreground';
 
 type ChangeOrderRow = {
   id: string;
   job_id: string | null;
+  project_id: string | null;
   total_cents: number;
   customer_name: string | null;
 };
@@ -108,7 +112,7 @@ export function CommandCenter({
       >
         {overdue.length > 0 ? (
           <div className="mb-3">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">
+            <p className="mb-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">
               Overdue · {overdue.length}
             </p>
             <ul className="divide-y">
@@ -120,9 +124,7 @@ export function CommandCenter({
         ) : null}
         {today.length > 0 ? (
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Due today
-            </p>
+            <p className={cn('mb-1', EYEBROW)}>Due today</p>
             <ul className="divide-y">
               {today.map((t) => (
                 <TaskLine key={t.id} task={t} />
@@ -149,9 +151,7 @@ export function CommandCenter({
       >
         {tasksToVerify.length > 0 ? (
           <div className="mb-3">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              To verify · {tasksToVerify.length}
-            </p>
+            <p className={cn('mb-1', EYEBROW)}>To verify · {tasksToVerify.length}</p>
             <ul className="divide-y">
               {tasksToVerify.slice(0, 6).map((t) => (
                 <li
@@ -172,9 +172,7 @@ export function CommandCenter({
         ) : null}
         {changeOrdersPending.length > 0 ? (
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Change orders · {changeOrdersPending.length}
-            </p>
+            <p className={cn('mb-1', EYEBROW)}>Change orders · {changeOrdersPending.length}</p>
             <ul className="divide-y">
               {changeOrdersPending.slice(0, 6).map((co) => (
                 <li
@@ -182,11 +180,19 @@ export function CommandCenter({
                   className="flex min-w-0 items-center justify-between gap-3 py-1.5 text-sm"
                 >
                   <Link
-                    href={co.job_id ? `/jobs/${co.job_id}` : '#'}
+                    href={
+                      co.job_id
+                        ? `/jobs/${co.job_id}`
+                        : co.project_id
+                          ? `/projects/${co.project_id}`
+                          : '#'
+                    }
                     className="min-w-0 flex-1 truncate hover:underline"
                   >
                     {co.customer_name ?? 'Change order'} ·{' '}
-                    <span className="text-muted-foreground">{formatCurrency(co.total_cents)}</span>
+                    <span className="text-muted-foreground">
+                      <Money cents={co.total_cents} />
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -247,7 +253,11 @@ export function PersonalTasksCard({ tasks }: { tasks: TaskRow[] }) {
   return (
     <section className="min-w-0 rounded-xl border bg-card p-4">
       <header className="flex items-center justify-between pb-2">
-        <h3 className="text-sm font-semibold">Your to-do</h3>
+        <h3 className="text-sm font-semibold">
+          <Link href="/todos" className="hover:underline">
+            Your to-do
+          </Link>
+        </h3>
         <Link href="/todos" className="text-xs text-primary hover:underline">
           See all
         </Link>

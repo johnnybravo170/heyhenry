@@ -51,7 +51,7 @@ export async function createDecisionAction(input: {
     .from('projects')
     .select(
       `tenant_id, name,
-       customers:customer_id (name, email, phone)`,
+       contacts:contact_id (name, email, phone)`,
     )
     .eq('id', input.projectId)
     .single();
@@ -62,7 +62,7 @@ export async function createDecisionAction(input: {
   const p = project as Record<string, unknown>;
   const tenantId = p.tenant_id as string;
   const projectName = (p.name as string) ?? 'your project';
-  const customer = (p.customers as Record<string, unknown> | null) ?? null;
+  const customer = (p.contacts as Record<string, unknown> | null) ?? null;
   const customerPhone = (customer?.phone as string | null) ?? null;
   const customerFirst = String(customer?.name ?? '').split(/\s+/)[0] || 'there';
 

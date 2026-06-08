@@ -1,3 +1,4 @@
+import { Mail } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,10 @@ export default async function CheckEmailPage({
   return (
     <Card>
       <CardHeader>
+        {/* Rust-soft icon circle — 44px, rounded-xl per OD spec */}
+        <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-brand/10">
+          <Mail className="size-5 text-brand" aria-hidden="true" />
+        </div>
         <CardTitle className="text-2xl">Check your inbox</CardTitle>
         <CardDescription>
           {email ? (

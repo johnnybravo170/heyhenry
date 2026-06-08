@@ -4,27 +4,31 @@ import { MobileNav } from './mobile-nav';
 import { MoreMenu } from './more-menu';
 import { SignOutButton } from './sign-out-button';
 
-// Primary nav: day-to-day items. Stays in the main bar so it's
-// always one click away. Six-ish entries fit comfortably; resist the
-// urge to grow this list — push lower-frequency surfaces into
-// MORE_NAV instead.
+// Primary nav: the human-facing surfaces Jonathan actually steers from.
+// Command Center is the daily landing spot, so it sits first after the
+// dashboard. The agent-operational surfaces (kanban, worklog, ideas,
+// knowledge, decisions) are where agents write — they live in MORE_NAV,
+// reachable but out of the way. Resist growing this list.
 const PRIMARY_NAV = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/worklog', label: 'Worklog' },
-  { href: '/ideas', label: 'Ideas' },
-  { href: '/admin/kanban', label: 'Kanban' },
-  { href: '/decisions', label: 'Decisions' },
-  { href: '/knowledge', label: 'Knowledge' },
+  { href: '/admin/queue', label: 'Command Center' },
   { href: '/agents', label: 'Agents' },
   { href: '/board', label: 'Board' },
+  { href: '/message-lab', label: 'Message Lab' },
 ];
 
-// Less-frequent admin surfaces. Behind a "More" disclosure so they
-// don't crowd the bar. `memory-guide` is intentionally NOT here —
-// it's a Claude/MCP surface (via `ops_memory_guide`), not a human
-// one. The page still exists at /admin/memory-guide for direct
-// access if needed.
+// Agent-operational + lower-frequency admin surfaces, behind a "More"
+// disclosure. The first group is where agents do their reading/writing
+// (you dip in to inspect, not to drive). `memory-guide` is intentionally
+// NOT here — it's a Claude/MCP surface (via `ops_memory_guide`), not a
+// human one; the page still exists at /admin/memory-guide for direct access.
 const MORE_NAV = [
+  { href: '/admin/kanban', label: 'Kanban' },
+  { href: '/worklog', label: 'Worklog' },
+  { href: '/ideas', label: 'Ideas' },
+  { href: '/admin/scout-policy', label: 'Scout Policy' },
+  { href: '/knowledge', label: 'Knowledge' },
+  { href: '/decisions', label: 'Decisions' },
   { href: '/admin/launch', label: 'Launch' },
   { href: '/admin/stats', label: 'Stats' },
   { href: '/admin/slo', label: 'SLO' },

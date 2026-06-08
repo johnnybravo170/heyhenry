@@ -13,7 +13,22 @@ import {
   upsertMaterialAction,
 } from '@/server/actions/cost-catalog';
 
-const CATEGORIES = ['material', 'labour', 'sub', 'equipment', 'overhead'] as const;
+const CATEGORIES = [
+  'material',
+  'labour',
+  'sub',
+  'equipment',
+  'overhead',
+  'supply_install',
+] as const;
+const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
+  material: 'material',
+  labour: 'labour',
+  sub: 'sub',
+  equipment: 'equipment',
+  overhead: 'overhead',
+  supply_install: 'Supply & install',
+};
 const UNITS = ['item', 'sqft', 'lf', 'hr', 'ea', 'lot', 'bag', 'sheet', 'lb'];
 
 function centsToDisplay(cents: number) {
@@ -102,7 +117,7 @@ function MaterialForm({ initial, onDone }: { initial?: MaterialsCatalogRow; onDo
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {CATEGORY_LABELS[c]}
               </option>
             ))}
           </select>

@@ -9,14 +9,14 @@ import { createClient } from '@/lib/supabase/server';
 import type { JobWithCustomer } from './jobs';
 
 const JOB_COLUMNS =
-  'id, tenant_id, customer_id, quote_id, status, scheduled_at, started_at, completed_at, notes, created_at, updated_at, deleted_at';
+  'id, tenant_id, contact_id, quote_id, status, scheduled_at, started_at, completed_at, notes, created_at, updated_at, deleted_at';
 
-const JOB_WITH_CUSTOMER_SELECT = `${JOB_COLUMNS}, customers:customer_id (id, name, type)`;
+const JOB_WITH_CUSTOMER_SELECT = `${JOB_COLUMNS}, contacts:contact_id (id, name, type)`;
 
 type CustomerRaw = { id: string; name: string; type: string } | null;
 
 function normalizeJob(row: Record<string, unknown>): JobWithCustomer {
-  const { customers: customerRaw, ...rest } = row;
+  const { contacts: customerRaw, ...rest } = row;
   const candidate = Array.isArray(customerRaw)
     ? (customerRaw[0] as CustomerRaw)
     : (customerRaw as CustomerRaw);

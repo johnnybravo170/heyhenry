@@ -9,7 +9,9 @@
  * without having to navigate to /portal/<slug>. No login.
  */
 
+import { Shield } from 'lucide-react';
 import { DecisionPanel, type PortalDecision } from '@/components/features/portal/decision-panel';
+import { PublicBrandHeader } from '@/components/features/public/public-brand-header';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { formatDate } from '@/lib/date/format';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -17,6 +19,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export const metadata = {
   title: 'Decision Request — HeyHenry',
 };
+
+const LOGO_SIGN_SECONDS = 60 * 60 * 24 * 30;
 
 export default async function DecidePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
@@ -27,17 +31,21 @@ export default async function DecidePage({ params }: { params: Promise<{ code: s
     .select(
       `id, approval_code, label, description, due_date, status, photo_refs, options, decided_value,
        decided_by_customer, decided_at,
-       projects:project_id (name, customers:customer_id (name)),
-       tenants:tenant_id (name, timezone)`,
+       projects:project_id (name, contacts:contact_id (name)),
+       tenants:tenant_id (name, logo_storage_path, timezone)`,
     )
     .eq('approval_code', code)
     .single();
 
   if (!decision) {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <h1 className="text-2xl font-semibold">Decision request not found</h1>
-        <p className="mt-2 text-muted-foreground">This link may have expired or been dismissed.</p>
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-lg px-4 py-20 text-center">
+          <h1 className="text-2xl font-semibold">Decision request not found</h1>
+          <p className="mt-2 text-muted-foreground">
+            This link may have expired or been dismissed.
+          </p>
+        </div>
       </div>
     );
   }
@@ -45,38 +53,62 @@ export default async function DecidePage({ params }: { params: Promise<{ code: s
   const d = decision as Record<string, unknown>;
   const project = d.projects as Record<string, unknown> | null;
   const tenant = d.tenants as Record<string, unknown> | null;
-  const customer = project?.customers as Record<string, unknown> | null;
+  const customer = project?.contacts as Record<string, unknown> | null;
   const businessName = (tenant?.name as string) ?? 'Your Contractor';
   const tenantTz = (tenant?.timezone as string | null) ?? undefined;
   const projectName = (project?.name as string) ?? 'Project';
   const customerName = (customer?.name as string) ?? '';
   const status = d.status as string;
 
+  // Sign the GC logo (private `photos` bucket) for the branded letterhead —
+  // brand chrome only, never project data.
+  let logoUrl: string | null = null;
+  const logoPath = tenant?.logo_storage_path as string | null;
+  if (logoPath) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrl(logoPath, LOGO_SIGN_SECONDS);
+    logoUrl = signed?.signedUrl ?? null;
+  }
+  const firstName = customerName.trim().split(/\s+/)[0] || '';
+  const brandContext = firstName ? `A quick decision for ${firstName}` : projectName;
+
+  // Branded shell shared by the terminal notices + the live decide page,
+  // so a re-opened link still reads as the GC's letterhead, never a bare page.
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <div className="min-h-screen bg-background px-4 py-8">
+      <div className="mx-auto max-w-lg overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <PublicBrandHeader logoUrl={logoUrl} businessName={businessName} context={brandContext} />
+        <div className="px-5 py-6">{children}</div>
+      </div>
+    </div>
+  );
+
   // Already responded.
   if (status === 'decided') {
     const value = d.decided_value as string;
     const who = (d.decided_by_customer as string) ?? 'You';
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
+      <Shell>
         <PublicViewLogger resourceType="decision" identifier={code} />
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-xl font-semibold">
           Already {value === 'approved' ? 'approved' : 'declined'}
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground">
           {who} {value} this on{' '}
           {formatDate(d.decided_at as string, { timezone: tenantTz, style: 'long' })}.
         </p>
-      </div>
+      </Shell>
     );
   }
   if (status === 'dismissed') {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <h1 className="text-2xl font-semibold">No longer needed</h1>
-        <p className="mt-2 text-muted-foreground">
+      <Shell>
+        <h1 className="text-xl font-semibold">No longer needed</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           {businessName} dismissed this decision request.
         </p>
-      </div>
+      </Shell>
     );
   }
 
@@ -109,13 +141,18 @@ export default async function DecidePage({ params }: { params: Promise<{ code: s
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="min-h-screen bg-background px-4 py-8">
       <PublicViewLogger resourceType="decision" identifier={code} />
-      <header className="mb-6 text-center">
-        <p className="text-sm font-medium text-muted-foreground">{businessName}</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{projectName}</h1>
-      </header>
-      <DecisionPanel decisions={[portalDecision]} defaultCustomerName={customerName} />
+      <div className="mx-auto max-w-lg overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <PublicBrandHeader logoUrl={logoUrl} businessName={businessName} context={brandContext} />
+        <div className="px-4 py-5">
+          <DecisionPanel decisions={[portalDecision]} defaultCustomerName={customerName} />
+          <p className="mt-4 flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Shield aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
+            <span>This link only lets you answer this one question — no login required.</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

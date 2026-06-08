@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Settings ▸ QuickBooks — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --intuit:       #2CA01C;
+    --intuit-2:     #1F8418;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Frame row ───── */
+  .frames {
+    display: flex; flex-wrap: wrap; gap: 36px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .frame { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .frame-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    max-width: 390px;
+    padding: 0 4px;
+  }
+  .frame-label .frame-num { color: var(--ink); }
+  .frame-label .frame-sep { color: var(--faint); margin: 0 6px; }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── App header ───── */
+  .app-header {
+    padding: 14px 18px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .app-title-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .app-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: inline-grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .app-back svg { width: 14px; height: 14px; }
+  .app-title-block { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .app-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .app-title {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  /* ───── Scroll area ───── */
+  .scroll {
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 14px 16px 24px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* ───── Boundary aside (mobile, compact) ───── */
+  .boundary {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 12px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--ink);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .boundary .boundary-mark {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 6px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+  .boundary strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Status pills ───── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .pill svg { width: 11px; height: 11px; }
+  .pill-success { background: var(--ok-soft); color: var(--ok); border-color: rgba(21,128,61,.20); }
+  .pill-warning { background: var(--warn-soft); color: var(--warn); border-color: rgba(180,83,9,.22); }
+  .pill-danger  { background: var(--danger-soft); color: var(--danger); border-color: rgba(185,28,28,.22); }
+  .pill-info    { background: var(--info-soft); color: var(--info); border-color: rgba(30,64,175,.20); }
+  .pill-neutral { background: var(--chip-fill); color: var(--muted); border-color: var(--hair); }
+
+  /* ───── Cockpit (mobile, stacked) ───── */
+  .cockpit {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .cockpit-top {
+    padding: 14px 16px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .cockpit-mark-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cockpit-mark {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    display: grid; place-items: center;
+    border: 1px solid rgba(21,128,61,.22);
+    flex-shrink: 0;
+  }
+  .cockpit-mark svg { width: 16px; height: 16px; }
+  .cockpit-mark.is-failed { background: var(--danger-soft); color: var(--danger); border-color: rgba(185,28,28,.22); }
+  .cockpit-mark.is-disconnected { background: var(--chip-fill); color: var(--muted); border-color: var(--hair); }
+  .cockpit-name {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+    flex: 1; min-width: 0;
+  }
+  .cockpit-pills {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .cockpit-realm {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .cockpit-realm .realm {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .cockpit-realm strong { color: var(--ink-2); font-weight: 600; }
+
+  /* Needs-you strip — full width, ≥44px tap zone */
+  .needs-you {
+    display: flex; align-items: center; gap: 10px;
+    min-height: 56px;
+    padding: 11px 16px;
+    background: var(--warn-soft);
+    border-top: 1px solid rgba(180,83,9,.18);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .needs-you .needs-icon {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--warn);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .needs-you .needs-icon svg { width: 12px; height: 12px; }
+  .needs-you strong { color: var(--ink); font-weight: 600; }
+  .needs-you .needs-mid { flex: 1; line-height: 1.4; font-size: 12px; }
+  .needs-you .needs-link {
+    color: var(--warn);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .needs-you.is-danger { background: var(--danger-soft); border-color: rgba(185,28,28,.18); }
+  .needs-you.is-danger .needs-icon { color: var(--danger); }
+  .needs-you.is-danger .needs-link { color: var(--danger); }
+
+  /* Import primary action (mobile — full-width, ≥44px) */
+  .import-zone {
+    padding: 14px 16px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .import-zone .import-copy { display: flex; flex-direction: column; gap: 2px; }
+  .import-zone .import-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .import-zone .import-headline {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .import-zone .import-meta {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.5;
+  }
+  .import-zone .import-meta .mono { font-family: var(--mono); color: var(--ink-2); }
+
+  /* ───── Buttons (mobile-sized, ≥44px primary) ───── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; padding: 0 14px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 120ms, border-color 120ms;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn-danger-ghost { background: var(--card); border-color: var(--hair); color: var(--danger); }
+  .btn .icon { width: 14px; height: 14px; }
+  .btn-block { width: 100%; }
+  .btn-lg { height: 48px; font-size: 14px; padding: 0 16px; }
+
+  /* Intuit CTA */
+  .btn-intuit {
+    display: inline-flex; align-items: center; gap: 10px;
+    min-height: 48px; padding: 0 18px 0 12px;
+    border-radius: var(--radius-input);
+    background: var(--intuit);
+    color: #fff;
+    font-family: var(--sans);
+    font-weight: 600; font-size: 14px;
+    border: 1px solid var(--intuit);
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-intuit:hover { background: var(--intuit-2); border-color: var(--intuit-2); }
+  .btn-intuit .qb-glyph {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--intuit);
+    font-weight: 800; font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+    letter-spacing: -0.04em;
+  }
+  .btn-intuit .btn-intuit-text { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.1; gap: 1px; }
+  .btn-intuit .btn-intuit-text .lbl-top {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    opacity: .85;
+  }
+  .btn-intuit .btn-intuit-text .lbl-main { font-size: 14px; font-weight: 700; }
+
+  /* ───── Sub-route cards (mobile — full-width stacked list) ───── */
+  .sr-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .sr-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    min-height: 64px;
+  }
+  .sr-card .sr-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--bg);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    border: 1px solid var(--hair);
+  }
+  .sr-card .sr-icon svg { width: 16px; height: 16px; }
+  .sr-card .sr-body { flex: 1; min-width: 0; }
+  .sr-card .sr-title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .sr-card .sr-sub {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+  .sr-card .sr-sub .mono { font-family: var(--mono); }
+  .sr-card .sr-trail {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    flex-shrink: 0;
+  }
+  .sr-card .sr-arrow {
+    color: var(--faint);
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  /* Idle last-import line */
+  .last-import {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 2px;
+  }
+  .last-import .li-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+  .last-import strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Disconnected hero ───── */
+  .hero-disco {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 18px 18px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .hero-disco .hd-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hero-disco h2 {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+    color: var(--ink); margin: 0; line-height: 1.15;
+  }
+  .hero-disco p {
+    font-size: 14px; color: var(--ink-2);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .hero-disco .hd-list {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .hero-disco .hd-list li {
+    display: flex; align-items: flex-start; gap: 8px;
+    line-height: 1.5;
+  }
+  .hero-disco .hd-list svg { width: 12px; height: 12px; color: var(--ok); flex-shrink: 0; margin-top: 4px; }
+  .hero-disco .hd-reconnect {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding-top: 4px;
+    border-top: 1px solid var(--hair);
+  }
+  .hero-disco .hd-reconnect a { color: var(--ink-2); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .hero-disco .hd-reconnect strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ───── Class-mapping (mobile — stacked rows) ───── */
+  .cm-head {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .cm-head .cm-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    margin: 0; letter-spacing: -0.01em;
+  }
+  .cm-head .cm-desc {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .cm-head .cm-desc strong { color: var(--ink); font-weight: 600; }
+  .overwrite {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--hair);
+    background: var(--bg);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .overwrite .cb {
+    width: 16px; height: 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+  }
+  .overwrite.is-on .cb { background: var(--ink); border-color: var(--ink); }
+  .overwrite.is-on .cb::after {
+    content: '';
+    position: absolute;
+    left: 4px; top: 1px;
+    width: 5px; height: 9px;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(45deg);
+  }
+  .overwrite .ow-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .overwrite .ow-main { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .overwrite .ow-sub { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+  /* Class row — stacked on mobile */
+  .cm-row {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .cm-row.is-suggested { background: var(--rust-soft); border-color: rgba(194,65,12,.22); }
+  .cm-row .cm-class {
+    display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  }
+  .cm-row .cm-class-name {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .cm-row .cm-meta-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .cm-row .meta-spend {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+  }
+  .cm-row .meta-spend .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .cm-row .meta-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .cm-row .meta-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .cm-row .cm-suggest {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cm-row .cm-suggest .sparkle { font-size: 12px; line-height: 1; }
+
+  .cm-row .cm-select {
+    appearance: none;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 44px;
+    padding: 0 36px 0 14px;
+    font: inherit; font-weight: 500;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .cm-row .cm-select.is-suggested { border-color: var(--rust); }
+  .cm-row .cm-apply {
+    height: 44px;
+    border-radius: var(--radius-input);
+    background: var(--ink);
+    color: #fff;
+    font: inherit;
+    font-size: 14px; font-weight: 600;
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .cm-row .cm-apply svg { width: 14px; height: 14px; }
+
+  /* Reserved */
+  .reserved {
+    background: var(--bg);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 11px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .reserved .res-tag {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+  .reserved.henry-credit {
+    background: var(--rust-soft);
+    border-style: solid;
+    border-color: rgba(194,65,12,.18);
+    color: var(--ink-2);
+  }
+  .reserved.henry-credit .res-tag { color: var(--rust); }
+  .reserved strong { color: var(--ink); font-weight: 600; }
+  .reserved em { color: var(--muted); font-style: normal; }
+
+  /* ───── Bottom tab nav ───── */
+  .tabbar {
+    flex-shrink: 0;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 6px 8px 22px;
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 4px;
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+  }
+  .tab svg { width: 18px; height: 18px; }
+  .tab.is-active { color: var(--ink); }
+
+  /* Live job rows on mobile (used in connected frame as a compact summary) */
+  .entity-mini {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    padding: 9px 12px;
+    background: var(--card);
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    font-size: 12px;
+    align-items: center;
+  }
+  .entity-mini .em-label { font-weight: 600; color: var(--ink); }
+  .entity-mini .em-stat {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .entity-mini .em-stat.cell-warn { color: var(--warn); font-weight: 700; }
+
+  /* ───── Misc ───── */
+  .mono { font-family: var(--mono); }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.34a4 4 0 0 0-1.17-2.83L12 11l-3.83 3.83A4 4 0 0 0 7 17.66V22"/><path d="M7 2v4.34a4 4 0 0 0 1.17 2.83L12 13l3.83-3.83A4 4 0 0 0 17 6.34V2"/></symbol>
+    <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+    <symbol id="i-list-checks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></symbol>
+    <symbol id="i-folder-tree" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M3 5a2 2 0 0 0 2 2h3"/><path d="M3 3v13a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  </defs>
+</svg>
+
+<div class="frames">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 1 — Hub · Connected · 3 need review                       -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 1</span>
+    <span class="frame-sep">·</span>
+    settings ▸ QuickBooks · connected · 3 need review · sandbox
+  </div>
+  <div class="phone">
+    <div class="screen">
+      <div class="status-bar">
+        <span>9:41</span>
+        <span class="island"></span>
+        <span class="right">
+          <svg width="14" height="11" viewBox="0 0 18 11" fill="none"><path d="M2 7v3M6 5v5M10 3v7M14 1v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="14" height="11" viewBox="0 0 16 12" fill="none"><path d="M8 2.5c2 0 3.8.8 5.2 2M8 2.5c-2 0-3.8.8-5.2 2M8 6.5c1 0 1.8.4 2.5 1M8 6.5c-1 0-1.8.4-2.5 1M8 10v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="battery"></span>
+        </span>
+      </div>
+
+      <header class="app-header">
+        <div class="app-title-row">
+          <button class="app-back" aria-label="Back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-title-block">
+            <div class="app-crumb">Settings ▸ Money</div>
+            <div class="app-title">QuickBooks</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="scroll">
+
+        <div class="boundary">
+          <span class="boundary-mark">Boundary</span>
+          <span><strong>QuickBooks is your books.</strong> HeyHenry reads from it today — never writes back.</span>
+        </div>
+
+        <!-- Cockpit -->
+        <section class="cockpit">
+          <div class="cockpit-top">
+            <div class="cockpit-mark-row">
+              <div class="cockpit-mark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 2 2 4-4"/></svg>
+              </div>
+              <span class="cockpit-name">Northbeam Build Co.</span>
+            </div>
+            <div class="cockpit-pills">
+              <span class="pill pill-success"><svg><use href="#i-check"/></svg>Connected</span>
+              <span class="pill pill-warning"><svg><use href="#i-alert-triangle"/></svg>Sandbox · not your real books</span>
+            </div>
+            <div class="cockpit-realm">
+              <span class="realm">realm 9341 4531 7723 6088</span>
+            </div>
+            <div class="cockpit-realm">
+              <span>Last import <strong>2 hours ago</strong> · today 11:42 PT</span>
+            </div>
+          </div>
+
+          <!-- Needs-you (≥56px tap zone) -->
+          <div class="needs-you">
+            <div class="needs-icon"><svg><use href="#i-hourglass"/></svg></div>
+            <div class="needs-mid">
+              <strong>3 customers need review.</strong> Resolve, then re-run to chain 12 skipped invoices.
+            </div>
+            <span class="needs-link">Resolve →</span>
+          </div>
+
+          <!-- Import zone (≥48px primary button) -->
+          <div class="import-zone">
+            <div class="import-copy">
+              <span class="import-eyebrow">Primary action</span>
+              <span class="import-headline">Import from QuickBooks</span>
+              <span class="import-meta">Pull customers, invoices, bills, &amp; more. <span class="mono">Re-running is safe</span> — keyed on QBO id.</span>
+            </div>
+            <button class="btn btn-rust btn-lg btn-block"><svg class="icon"><use href="#i-play"/></svg>Import from QuickBooks</button>
+            <button class="btn btn-ghost btn-block"><svg class="icon"><use href="#i-history"/></svg>View import history</button>
+          </div>
+        </section>
+
+        <!-- Last-import idle line -->
+        <div class="last-import">
+          <span class="li-dot"></span>
+          <span><strong>Last import:</strong> 312 records · <span class="mono">28 API calls</span></span>
+        </div>
+
+        <!-- Sub-route cards (stacked list) -->
+        <div class="sr-list" role="list">
+
+          <a class="sr-card" href="#" role="listitem">
+            <div class="sr-icon"><svg><use href="#i-list-checks"/></svg></div>
+            <div class="sr-body">
+              <div class="sr-title">Review queue</div>
+              <div class="sr-sub">Customers Henry couldn't match strongly.</div>
+            </div>
+            <div class="sr-trail">
+              <span class="pill pill-warning"><svg><use href="#i-hourglass"/></svg>3 pending</span>
+              <span class="sr-arrow">›</span>
+            </div>
+          </a>
+
+          <a class="sr-card" href="#" role="listitem">
+            <div class="sr-icon"><svg><use href="#i-folder-tree"/></svg></div>
+            <div class="sr-body">
+              <div class="sr-title">Class mapping</div>
+              <div class="sr-sub">QBO Class → HeyHenry Project.</div>
+            </div>
+            <div class="sr-trail">
+              <span class="pill pill-warning"><svg><use href="#i-hourglass"/></svg>4 unmapped</span>
+              <span class="sr-arrow">›</span>
+            </div>
+          </a>
+
+          <a class="sr-card" href="#" role="listitem">
+            <div class="sr-icon"><svg><use href="#i-history"/></svg></div>
+            <div class="sr-body">
+              <div class="sr-title">Import history</div>
+              <div class="sr-sub">Last run today 11:42 PT · rollback available.</div>
+            </div>
+            <div class="sr-trail">
+              <span class="pill pill-success"><svg><use href="#i-check"/></svg>completed</span>
+              <span class="sr-arrow">›</span>
+            </div>
+          </a>
+
+        </div>
+
+        <!-- Reserved -->
+        <div class="reserved">
+          <span class="res-tag">Reserved</span>
+          <span>Full <span class="mono" style="color:var(--ink-2);font-weight:600">qbo_sync_log</span> view + per-row sync badges land with the push epic.</span>
+        </div>
+
+      </div><!-- /scroll -->
+
+      <nav class="tabbar" aria-label="Bottom navigation">
+        <button class="tab"><svg><use href="#i-dashboard"/></svg>Home</button>
+        <button class="tab"><svg><use href="#i-inbox"/></svg>Inbox</button>
+        <button class="tab"><svg><use href="#i-folder"/></svg>Projects</button>
+        <button class="tab"><svg><use href="#i-receipt"/></svg>Billing</button>
+        <button class="tab is-active"><svg><use href="#i-settings"/></svg>Settings</button>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 2 — Hub · Disconnected · Intuit Connect CTA                -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 2</span>
+    <span class="frame-sep">·</span>
+    settings ▸ QuickBooks · disconnected · Intuit brand CTA · reconnect line
+  </div>
+  <div class="phone">
+    <div class="screen">
+      <div class="status-bar">
+        <span>9:41</span>
+        <span class="island"></span>
+        <span class="right">
+          <svg width="14" height="11" viewBox="0 0 18 11" fill="none"><path d="M2 7v3M6 5v5M10 3v7M14 1v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="14" height="11" viewBox="0 0 16 12" fill="none"><path d="M8 2.5c2 0 3.8.8 5.2 2M8 2.5c-2 0-3.8.8-5.2 2M8 6.5c1 0 1.8.4 2.5 1M8 6.5c-1 0-1.8.4-2.5 1M8 10v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="battery"></span>
+        </span>
+      </div>
+
+      <header class="app-header">
+        <div class="app-title-row">
+          <button class="app-back" aria-label="Back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-title-block">
+            <div class="app-crumb">Settings ▸ Money</div>
+            <div class="app-title">QuickBooks</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="scroll">
+
+        <div class="boundary">
+          <span class="boundary-mark">Boundary</span>
+          <span><strong>QuickBooks is your books.</strong> HeyHenry reads from it; pushing out is coming.</span>
+        </div>
+
+        <section class="hero-disco">
+          <span class="hd-eyebrow">Not connected</span>
+          <h2>Connect your QuickBooks file.</h2>
+          <p>One handshake on Intuit. We pull your customers, invoices, payments, bills, and purchases so your history shows up in HeyHenry from day one.</p>
+
+          <ul class="hd-list">
+            <li><svg><use href="#i-check"/></svg>Strong matches auto-merge — Henry asks about the ambiguous few.</li>
+            <li><svg><use href="#i-check"/></svg>Tax stays QBO's job. Frozen historical, never recomputed.</li>
+            <li><svg><use href="#i-check"/></svg>Re-running is safe — every record is keyed on its QBO id.</li>
+          </ul>
+
+          <button class="btn-intuit">
+            <span class="qb-glyph">qb</span>
+            <span class="btn-intuit-text">
+              <span class="lbl-top">Connect to</span>
+              <span class="lbl-main">QuickBooks</span>
+            </span>
+          </button>
+
+          <div class="hd-reconnect">
+            Previously connected to <strong>Northbeam Build Co.</strong> — last disconnected May 11. <a href="#">Reconnect to the same file →</a>
+          </div>
+        </section>
+
+        <!-- OAuth error reflection -->
+        <div class="needs-you is-danger" style="border-radius:10px;border:1px solid rgba(185,28,28,.18)">
+          <div class="needs-icon"><svg><use href="#i-x-circle"/></svg></div>
+          <div class="needs-mid">
+            <strong>Last attempt didn't complete.</strong>
+            Intuit consent link expired — try again.
+          </div>
+          <span class="needs-link">Retry →</span>
+        </div>
+
+      </div><!-- /scroll -->
+
+      <nav class="tabbar" aria-label="Bottom navigation">
+        <button class="tab"><svg><use href="#i-dashboard"/></svg>Home</button>
+        <button class="tab"><svg><use href="#i-inbox"/></svg>Inbox</button>
+        <button class="tab"><svg><use href="#i-folder"/></svg>Projects</button>
+        <button class="tab"><svg><use href="#i-receipt"/></svg>Billing</button>
+        <button class="tab is-active"><svg><use href="#i-settings"/></svg>Settings</button>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 3 — Class mapping sub-route · stacked rows                  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 3</span>
+    <span class="frame-sep">·</span>
+    settings ▸ QuickBooks ▸ Class mapping · stacked rows · Overwrite control · ✦ suggestion
+  </div>
+  <div class="phone">
+    <div class="screen">
+      <div class="status-bar">
+        <span>9:41</span>
+        <span class="island"></span>
+        <span class="right">
+          <svg width="14" height="11" viewBox="0 0 18 11" fill="none"><path d="M2 7v3M6 5v5M10 3v7M14 1v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="14" height="11" viewBox="0 0 16 12" fill="none"><path d="M8 2.5c2 0 3.8.8 5.2 2M8 2.5c-2 0-3.8.8-5.2 2M8 6.5c1 0 1.8.4 2.5 1M8 6.5c-1 0-1.8.4-2.5 1M8 10v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="battery"></span>
+        </span>
+      </div>
+
+      <header class="app-header">
+        <div class="app-title-row">
+          <button class="app-back" aria-label="Back to QuickBooks hub"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-title-block">
+            <div class="app-crumb">QuickBooks ▸ Sub-route</div>
+            <div class="app-title">Class mapping</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="scroll">
+
+        <!-- Compact shared connection line -->
+        <div class="boundary" style="border-left-color:var(--ok)">
+          <span class="boundary-mark" style="color:var(--ok)">Live</span>
+          <span><strong>Northbeam Build Co.</strong> · <span class="mono" style="font-size:11px">realm 9341…6088</span></span>
+        </div>
+
+        <!-- Card head + Overwrite -->
+        <section class="cm-head">
+          <h2 class="cm-title">Map QBO Classes to projects</h2>
+          <p class="cm-desc"><strong>QuickBooks Class</strong> = the job-cost tag from your bookkeeper. Point each one at the HeyHenry project so spend rolls up under the right job.</p>
+          <label class="overwrite is-on" aria-pressed="true">
+            <span class="cb"></span>
+            <span class="ow-text">
+              <span class="ow-main">Overwrite existing</span>
+              <span class="ow-sub">Re-tag rows already on another project. Default off — keeps manual classifications safe.</span>
+            </span>
+          </label>
+        </section>
+
+        <!-- Row 1 — ✦ suggestion -->
+        <article class="cm-row is-suggested">
+          <div class="cm-class">
+            <span class="cm-class-name">Smith Kitchen Reno</span>
+            <span class="cm-meta-row">
+              <span class="meta-spend">$84,210<span class="cents">.00</span></span>
+              <span class="meta-count">18 bills · 32 receipts</span>
+            </span>
+            <span class="cm-suggest"><span class="sparkle">✦</span>Suggested · 96% match</span>
+          </div>
+          <select class="cm-select is-suggested" aria-label="Project for Smith Kitchen Reno">
+            <option>Smith Kitchen — Burnaby</option>
+            <option>— No project —</option>
+            <option>Donahue Basement Suite</option>
+            <option>Mercer Deck Build</option>
+          </select>
+          <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+        </article>
+
+        <!-- Row 2 — already mapped -->
+        <article class="cm-row">
+          <div class="cm-class">
+            <span class="cm-class-name">Donahue Basement</span>
+            <span class="cm-meta-row">
+              <span class="meta-spend">$41,680<span class="cents">.00</span></span>
+              <span class="meta-count">12 bills · 24 receipts</span>
+            </span>
+            <span class="meta-chip">currently → Donahue Basement Suite</span>
+          </div>
+          <select class="cm-select" aria-label="Project for Donahue Basement">
+            <option>Donahue Basement Suite</option>
+            <option>— No project —</option>
+            <option>Smith Kitchen — Burnaby</option>
+            <option>Mercer Deck Build</option>
+          </select>
+          <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+        </article>
+
+        <!-- Row 3 — unmapped, ambiguous -->
+        <article class="cm-row">
+          <div class="cm-class">
+            <span class="cm-class-name">2024 — Overhead</span>
+            <span class="cm-meta-row">
+              <span class="meta-spend">$22,140<span class="cents">.00</span></span>
+              <span class="meta-count">8 bills · 71 receipts</span>
+            </span>
+          </div>
+          <select class="cm-select" aria-label="Project for 2024 — Overhead">
+            <option>— No project —</option>
+            <option>Smith Kitchen — Burnaby</option>
+            <option>Donahue Basement Suite</option>
+            <option>Mercer Deck Build</option>
+          </select>
+          <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+        </article>
+
+        <!-- Row 4 — ✦ suggestion -->
+        <article class="cm-row is-suggested">
+          <div class="cm-class">
+            <span class="cm-class-name">Mercer Deck</span>
+            <span class="cm-meta-row">
+              <span class="meta-spend">$18,360<span class="cents">.00</span></span>
+              <span class="meta-count">5 bills · 42 receipts</span>
+            </span>
+            <span class="cm-suggest"><span class="sparkle">✦</span>Suggested · 89% match</span>
+          </div>
+          <select class="cm-select is-suggested" aria-label="Project for Mercer Deck">
+            <option>Mercer Deck Build</option>
+            <option>— No project —</option>
+            <option>Smith Kitchen — Burnaby</option>
+          </select>
+          <button class="cm-apply"><svg><use href="#i-check"/></svg>Apply</button>
+        </article>
+
+        <!-- Henry credit line -->
+        <div class="reserved henry-credit">
+          <span class="res-tag">✦ Henry</span>
+          <span>Matched <strong>2 of 9 classes</strong> to projects by name — pre-staged your pick. <em>Confirm on Apply, never auto-applies.</em></span>
+        </div>
+
+      </div><!-- /scroll -->
+
+      <nav class="tabbar" aria-label="Bottom navigation">
+        <button class="tab"><svg><use href="#i-dashboard"/></svg>Home</button>
+        <button class="tab"><svg><use href="#i-inbox"/></svg>Inbox</button>
+        <button class="tab"><svg><use href="#i-folder"/></svg>Projects</button>
+        <button class="tab"><svg><use href="#i-receipt"/></svg>Billing</button>
+        <button class="tab is-active"><svg><use href="#i-settings"/></svg>Settings</button>
+      </nav>
+    </div>
+  </div>
+</div>
+
+</div><!-- /frames -->
+</body>
+</html>

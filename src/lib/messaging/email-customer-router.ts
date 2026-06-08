@@ -20,7 +20,7 @@ import { parseProjectRefFromBody, projectRefMatches } from '@/lib/messaging/proj
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type CustomerCandidate = {
-  customerId: string;
+  contactId: string;
   tenantId: string;
   projectId: string;
 };
@@ -28,7 +28,7 @@ export type CustomerCandidate = {
 export type ResolvedProject = {
   tenantId: string;
   projectId: string;
-  customerId: string;
+  contactId: string;
   /** The matching outbound row, when resolved via In-Reply-To. */
   inReplyToMessageId: string | null;
 };
@@ -41,8 +41,8 @@ export type ResolvedProject = {
 export async function listCustomerCandidatesForEmail(email: string): Promise<CustomerCandidate[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from('customers')
-    .select('id, tenant_id, projects:projects!projects_customer_id_fkey (id, lifecycle_stage)')
+    .from('contacts')
+    .select('id, tenant_id, projects:projects!projects_contact_id_fkey (id, lifecycle_stage)')
     .ilike('email', email)
     .is('deleted_at', null);
 
@@ -51,13 +51,13 @@ export async function listCustomerCandidatesForEmail(email: string): Promise<Cus
   const out: CustomerCandidate[] = [];
   for (const row of data as Array<Record<string, unknown>>) {
     const tenantId = row.tenant_id as string;
-    const customerId = row.id as string;
+    const contactId = row.id as string;
     const projects = (row.projects as Array<Record<string, unknown>> | null) ?? [];
     for (const p of projects) {
       const stage = p.lifecycle_stage as string;
       if (stage === 'cancelled') continue;
       out.push({
-        customerId,
+        contactId,
         tenantId,
         projectId: p.id as string,
       });
@@ -111,7 +111,7 @@ export async function resolveProjectForCustomerReply(args: {
         return {
           tenantId,
           projectId,
-          customerId: customer?.customerId ?? '',
+          contactId: customer?.contactId ?? '',
           inReplyToMessageId: m.external_id as string,
         };
       }
@@ -127,7 +127,7 @@ export async function resolveProjectForCustomerReply(args: {
         return {
           tenantId: c.tenantId,
           projectId: c.projectId,
-          customerId: c.customerId,
+          contactId: c.contactId,
           inReplyToMessageId: null,
         };
       }
@@ -151,7 +151,7 @@ export async function resolveProjectForCustomerReply(args: {
     return {
       tenantId: recents[0].tenantId,
       projectId: recents[0].projectId,
-      customerId: recents[0].customerId,
+      contactId: recents[0].contactId,
       inReplyToMessageId: null,
     };
   }

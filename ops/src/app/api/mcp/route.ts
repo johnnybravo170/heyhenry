@@ -15,12 +15,13 @@
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { authenticateOAuthToken } from '@/lib/api-auth';
+import { authenticateMcpRequest } from '@/lib/api-auth';
 import { enforceRateLimit } from '@/lib/mcp-rate-limit';
 import { registerScopedTools } from '@/server/mcp-tools';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 const CORS_HEADERS: Record<string, string> = {
   'access-control-allow-origin': '*',
@@ -36,7 +37,7 @@ function withCors(res: Response): Response {
 }
 
 async function handle(req: Request): Promise<Response> {
-  const auth = await authenticateOAuthToken(req);
+  const auth = await authenticateMcpRequest(req);
   if (!auth.ok) return withCors(auth.response);
 
   const limited = await enforceRateLimit(auth.token.id);
@@ -86,6 +87,18 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  // Keep-warm ping (Vercel cron — see vercel.json). Returns 200 immediately
+  // without auth/DB/audit so the /api/mcp lambda stays warm; otherwise the
+  // first real call after the function scales to zero eats a cold start and
+  // the MCP client reports the connector as unresponsive. Exposes nothing.
+  if (new URL(req.url).searchParams.get('warm') === '1') {
+    return withCors(
+      new Response(JSON.stringify({ ok: true, warm: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+  }
   return handle(req);
 }
 

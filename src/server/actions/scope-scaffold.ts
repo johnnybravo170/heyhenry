@@ -22,6 +22,7 @@ import { z } from 'zod';
 import type { StarterTemplate } from '@/data/starter-templates/types';
 import { generateScopeScaffold, type ScaffoldDetailLevel } from '@/lib/ai/scope-scaffold';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { applyScopeToProject } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ScaffoldGenerateResult =
@@ -98,7 +99,14 @@ const applySchema = z.object({
         lines: z.array(
           z.object({
             label: z.string(),
-            category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead']),
+            category: z.enum([
+              'material',
+              'labour',
+              'sub',
+              'equipment',
+              'overhead',
+              'supply_install',
+            ]),
             qty: z.number(),
             unit: z.string(),
             notes: z.string().optional(),
@@ -154,74 +162,25 @@ export async function applyScaffoldAction(
     };
   }
 
-  const categoryRows = scaffold.categories.map((b, i) => ({
-    project_id: projectId,
-    tenant_id: tenant.id,
-    name: b.name,
-    section: b.section,
-    description: b.description ?? null,
-    estimate_cents: 0,
-    display_order: i,
-  }));
-  const { data: insertedCategories, error: categoryErr } = await admin
-    .from('project_budget_categories')
-    .insert(categoryRows)
-    .select('id, name');
-  if (categoryErr) return { ok: false, error: categoryErr.message };
-
-  const categoryIdByName = new Map<string, string>();
-  for (const b of insertedCategories ?? []) {
-    categoryIdByName.set(b.name as string, b.id as string);
-  }
-
-  type LineToInsert = {
-    project_id: string;
-    tenant_id: string;
-    budget_category_id: string;
-    category: string;
-    label: string;
-    qty: number;
-    unit: string;
-    unit_cost_cents: number;
-    unit_price_cents: number;
-    line_cost_cents: number;
-    line_price_cents: number;
-    sort_order: number;
-    notes: string | null;
-  };
-  const lineRows: LineToInsert[] = [];
-  let sortOrder = 0;
-  for (const category of scaffold.categories) {
-    const categoryId = categoryIdByName.get(category.name);
-    if (!categoryId) continue;
-    for (const line of category.lines) {
-      lineRows.push({
-        project_id: projectId,
-        tenant_id: tenant.id,
-        budget_category_id: categoryId,
-        category: line.category,
-        label: line.label,
-        qty: line.qty,
-        unit: line.unit,
-        unit_cost_cents: 0,
-        unit_price_cents: 0,
-        line_cost_cents: 0,
-        line_price_cents: 0,
-        sort_order: sortOrder++,
-        notes: line.notes ?? null,
-      });
-    }
-  }
-
-  if (lineRows.length > 0) {
-    const { error: linesErr } = await admin.from('project_cost_lines').insert(lineRows);
-    if (linesErr) return { ok: false, error: linesErr.message };
-  }
+  // Structure only — no prices. Shared insert path with intake + templates.
+  const applied = await applyScopeToProject(admin, {
+    tenantId: tenant.id,
+    projectId,
+    categories: scaffold.categories.map((b) => ({
+      name: b.name,
+      section: b.section,
+      description: b.description ?? null,
+      lines: b.lines.map((l) => ({
+        label: l.label,
+        category: l.category,
+        qty: l.qty,
+        unit: l.unit,
+        notes: l.notes ?? null,
+      })),
+    })),
+  });
+  if (!applied.ok) return { ok: false, error: applied.error };
 
   revalidatePath(`/projects/${projectId}`);
-  return {
-    ok: true,
-    categoryCount: insertedCategories?.length ?? 0,
-    lineCount: lineRows.length,
-  };
+  return { ok: true, categoryCount: applied.categoryCount, lineCount: applied.lineCount };
 }

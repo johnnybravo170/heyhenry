@@ -48,6 +48,12 @@ export type ImportHistoryEntry = {
   active_batch_count: number;
   /** Total rows currently still tagged with this job's batches (cheap roll-up). */
   rolled_back: boolean;
+  /**
+   * Failed *pull* attempts from qbo_sync_log for this run — surfaced so a
+   * stuck import is diagnosable, not a dead end. Import-only today; push
+   * rows are out of scope (see settings-quickbooks brief).
+   */
+  failed_syncs: Array<{ entity_type: string; error_message: string | null }>;
 };
 
 export type ListImportHistoryResult =
@@ -98,6 +104,35 @@ export async function listImportHistoryAction(): Promise<ListImportHistoryResult
     );
   }
 
+  // Pull the failed-pull qbo_sync_log rows for these runs in one query, then
+  // fan back out per job. Failed-only (the index `qbo_sync_log_failed_idx`
+  // covers it); direction='pull' since push is unbuilt.
+  const jobIds = (jobs ?? []).map((j) => j.id as string);
+  const failedByJob = new Map<
+    string,
+    Array<{ entity_type: string; error_message: string | null }>
+  >();
+  if (jobIds.length > 0) {
+    const { data: syncRows } = await supabase
+      .from('qbo_sync_log')
+      .select('import_job_id, entity_type, error_message, started_at')
+      .eq('tenant_id', tenant.id)
+      .eq('direction', 'pull')
+      .eq('status', 'failed')
+      .in('import_job_id', jobIds)
+      .order('started_at', { ascending: false });
+    for (const r of syncRows ?? []) {
+      const jobId = r.import_job_id as string | null;
+      if (!jobId) continue;
+      const list = failedByJob.get(jobId) ?? [];
+      list.push({
+        entity_type: r.entity_type as string,
+        error_message: (r.error_message as string | null) ?? null,
+      });
+      failedByJob.set(jobId, list);
+    }
+  }
+
   const out: ImportHistoryEntry[] = [];
   for (const row of jobs ?? []) {
     const r = row as {
@@ -123,6 +158,7 @@ export async function listImportHistoryAction(): Promise<ListImportHistoryResult
       batch_ids: r.batch_ids ?? {},
       active_batch_count: stillActive,
       rolled_back: batchIds.length > 0 && stillActive === 0,
+      failed_syncs: failedByJob.get(r.id) ?? [],
     });
   }
   return { ok: true, jobs: out };
@@ -141,7 +177,10 @@ export type RollbackJobResult =
  * table"; current epic doesn't hit that branch.
  */
 const ROLLBACK_ORDER: Array<{ kind: string; table: string }> = [
-  { kind: 'expenses', table: 'expenses' },
+  // 'expenses' batch_id now lands in project_costs (PR #200 retired
+  // the legacy expenses table). Kind stays 'expenses' so existing job
+  // batch_ids keep resolving.
+  { kind: 'expenses', table: 'project_costs' },
   { kind: 'bills', table: 'bills' },
   { kind: 'payments', table: 'payments' },
   { kind: 'quotes', table: 'quotes' },
