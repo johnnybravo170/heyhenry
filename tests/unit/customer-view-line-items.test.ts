@@ -13,32 +13,39 @@ import {
 
 // ─── Fixtures ───────────────────────────────────────────────────────────────
 
-// Section labels live as a text col on project_budget_categories.section.
-// "Bathroom" and "Kitchen" are the operator's section headers (the Budget
-// tab groups categories under these labels).
+// Section labels come from the project_budget_sections entity (the helper
+// receives the resolved name on CustomerViewCategory.section). "Bathroom" and
+// "Kitchen" are the operator's section headers (the Budget tab groups
+// categories under these labels).
+// estimate_cents mirrors each category's line sum (the invariant the
+// upsert/delete actions maintain once a category is itemized).
 const CAT_PLUMBING = {
   id: 'cat-plumbing',
   name: 'Plumbing',
   description_md: 'Rough-in + fixtures',
   section: 'Bathroom',
+  estimate_cents: 400000,
 };
 const CAT_TILE = {
   id: 'cat-tile',
   name: 'Tile',
   description_md: null,
   section: 'Bathroom',
+  estimate_cents: 320000,
 };
 const CAT_CABINETS = {
   id: 'cat-cabinets',
   name: 'Cabinets',
   description_md: null,
   section: 'Kitchen',
+  estimate_cents: 450000,
 };
 const CAT_UNCATEGORIZED_NO_SECTION = {
   id: 'cat-extras',
   name: 'Extras',
   description_md: null,
   section: '',
+  estimate_cents: 30000,
 };
 
 const LINE_PLUMBING_ROUGHIN = {
@@ -245,12 +252,14 @@ describe('buildCustomerViewLineItems — fixed-price sections mode', () => {
         mode: 'sections',
         categories: [
           ...baseArgs().categories,
-          // A category in a Garage section with no priced lines.
+          // A category in a Garage section with no priced lines and no
+          // estimate — a truly empty bucket, which stays hidden.
           {
             id: 'cat-garage',
             name: 'Garage',
             description_md: null,
             section: 'Garage',
+            estimate_cents: 0,
           },
         ],
       }),
@@ -289,11 +298,76 @@ describe('buildCustomerViewLineItems — fixed-price categories mode', () => {
             name: 'Unused',
             description_md: null,
             section: '',
+            estimate_cents: 0,
           },
         ],
       }),
     );
     expect(items.find((i) => i.description === 'Unused')).toBeUndefined();
+  });
+});
+
+// ─── Flat categories (priced at the category level, no cost lines) ──────────
+
+describe('buildCustomerViewLineItems — flat categories', () => {
+  // A flat category: operator typed an amount, never itemized.
+  const CAT_PRESSURE_WASH = {
+    id: 'cat-pw',
+    name: 'Pressure Wash',
+    description_md: 'Full house wash',
+    section: 'Bathroom',
+    estimate_cents: 120000,
+  };
+
+  it('detailed mode emits a flat category as a single line at its estimate', () => {
+    const { items } = buildCustomerViewLineItems(
+      baseArgs({
+        mode: 'detailed',
+        categories: [...baseArgs().categories, CAT_PRESSURE_WASH],
+      }),
+    );
+    const pw = items.find((i) => i.description.startsWith('Pressure Wash'));
+    expect(pw).toBeDefined();
+    expect(pw?.total_cents).toBe(120000);
+    // Subtotal now includes the flat category, and mgmt fee is charged on it.
+    const expectedSubtotal = TOTAL_COST_LINES + 120000;
+    const expectedTotal = expectedSubtotal + Math.round(expectedSubtotal * 0.12);
+    expect(sumTotals(items)).toBe(expectedTotal);
+  });
+
+  it('lump_sum folds the flat category into the single total', () => {
+    const { items } = buildCustomerViewLineItems(
+      baseArgs({
+        mode: 'lump_sum',
+        mgmtFeeInline: true,
+        categories: [...baseArgs().categories, CAT_PRESSURE_WASH],
+      }),
+    );
+    const expectedSubtotal = TOTAL_COST_LINES + 120000;
+    const expectedTotal = expectedSubtotal + Math.round(expectedSubtotal * 0.12);
+    expect(items).toHaveLength(1);
+    expect(items[0].total_cents).toBe(expectedTotal);
+  });
+
+  it('categories mode lists the flat category by name at its estimate', () => {
+    const { items } = buildCustomerViewLineItems(
+      baseArgs({
+        mode: 'categories',
+        categories: [...baseArgs().categories, CAT_PRESSURE_WASH],
+      }),
+    );
+    expect(items.find((i) => i.description.startsWith('Pressure Wash'))?.total_cents).toBe(120000);
+  });
+
+  it('subtotal is identical across modes with a flat category present', () => {
+    const cats = [...baseArgs().categories, CAT_PRESSURE_WASH];
+    const detailed = buildCustomerViewLineItems(baseArgs({ mode: 'detailed', categories: cats }));
+    const lump = buildCustomerViewLineItems(baseArgs({ mode: 'lump_sum', categories: cats }));
+    const categories = buildCustomerViewLineItems(
+      baseArgs({ mode: 'categories', categories: cats }),
+    );
+    expect(sumTotals(detailed.items)).toBe(sumTotals(lump.items));
+    expect(sumTotals(lump.items)).toBe(sumTotals(categories.items));
   });
 });
 

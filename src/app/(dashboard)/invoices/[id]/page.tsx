@@ -1,9 +1,11 @@
-import { Briefcase, Copy, User } from 'lucide-react';
+import { Briefcase, CheckCircle2, Copy, Hourglass, User, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { CostBasisDriftBanner } from '@/components/features/invoices/cost-basis-drift-banner';
 import { InvoiceActions } from '@/components/features/invoices/invoice-actions';
 import { InvoiceDefaultsSetupBanner } from '@/components/features/invoices/invoice-defaults-setup-banner';
+import { InvoiceDocumentDetails } from '@/components/features/invoices/invoice-document-details';
 import { InvoiceLineItems } from '@/components/features/invoices/invoice-line-items';
 import { InvoiceNote } from '@/components/features/invoices/invoice-note';
 import { InvoiceOverridesEditor } from '@/components/features/invoices/invoice-overrides-editor';
@@ -13,16 +15,20 @@ import { MissingGstNotice } from '@/components/features/invoices/missing-gst-not
 import { PrintButton } from '@/components/features/shared/print-button';
 import { DetailPageNav } from '@/components/layout/detail-page-nav';
 import { Button } from '@/components/ui/button';
+import { Money } from '@/components/ui/money';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { formatDateTime } from '@/lib/date/format';
 import { loadInvoiceCustomerViewInputs } from '@/lib/db/queries/invoice-customer-view-inputs';
 import { getInvoice } from '@/lib/db/queries/invoices';
 import { getProjectCostBasisRollup } from '@/lib/db/queries/project-cost-basis';
-import { formatCurrency } from '@/lib/pricing/calculator';
+import { invoiceDocNumber } from '@/lib/invoices/totals';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 import { getSignedUrls } from '@/lib/storage/photos';
 import { createClient } from '@/lib/supabase/server';
+import { statusToneClass } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
+import { isUuid } from '@/lib/validators/uuid';
 import { duplicateInvoiceAction } from '@/server/actions/invoices';
 
 function shortId(id: string) {
@@ -31,6 +37,7 @@ function shortId(id: string) {
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const [invoice, tenant] = await Promise.all([getInvoice(id), getCurrentTenant()]);
   if (!invoice) notFound();
@@ -91,6 +98,25 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const ratePct = taxCtx ? Math.round(taxCtx.totalRate * 100) : 5;
   const taxLabel = taxInclusive ? `GST (${ratePct}%, included)` : `GST (${ratePct}%)`;
   const isDraft = invoice.status === 'draft';
+  // Friendly, non-UUID doc number — rides the existing `code` (mig
+  // 20260523194840), the same scheme the public pay surface renders.
+  const docNumber = invoiceDocNumber({ code: invoice.code, id: invoice.id });
+
+  // "Document details" disclosure summary. Open on first paint when a
+  // tenant default is blank (customer won't know how to pay) or a
+  // per-invoice override is active; calm "using defaults" otherwise.
+  const missingDefault = !docFields.payment_instructions || !docFields.terms || !docFields.policies;
+  const overrideCount = [
+    invoice.payment_instructions_override,
+    invoice.terms_override,
+    invoice.policies_override,
+  ].filter((v) => (v ?? '').trim().length > 0).length;
+  const docNeedsAttention = missingDefault || overrideCount > 0;
+  const docStatusLabel = missingDefault
+    ? 'Missing defaults'
+    : overrideCount > 0
+      ? `${overrideCount} override${overrideCount > 1 ? 's' : ''}`
+      : 'Using tenant defaults';
 
   // Cost-basis drift check (cost-plus drafts only). The action freezes
   // labour + materials into line_items at creation; we re-roll the same
@@ -141,10 +167,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       <DetailPageNav homeHref="/invoices" homeLabel="All invoices" />
 
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span>Invoice</span>
+            <span className="rounded bg-muted px-1.5 py-0.5 text-foreground">{docNumber}</span>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Invoice #{shortId(invoice.id)}
+            <h1 className="text-base font-semibold tracking-tight">
+              {invoice.job ? `Job #${shortId(invoice.job.id)}` : 'Invoice'}
             </h1>
             <InvoiceStatusBadge status={invoice.status as InvoiceStatus} />
           </div>
@@ -156,6 +186,37 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <DuplicateInvoiceButton invoiceId={invoice.id} />
         )}
       </header>
+
+      {/* Status posture strip — sent = awaiting-payment (warn-soft);
+       *  void = neutral closed; paid handled by PaidSection (success-soft)
+       *  just below so it carries the receipt detail. */}
+      {invoice.status === 'sent' && invoice.sent_at ? (
+        <PostureStrip
+          tone="warning"
+          icon={<Hourglass className="size-4" aria-hidden />}
+          primary="Awaiting payment"
+          secondary={`Sent ${formatTimestamp(invoice.sent_at)}. Record the payment below once it lands.`}
+        />
+      ) : null}
+
+      {invoice.status === 'void' ? (
+        <PostureStrip
+          tone="neutral"
+          icon={<XCircle className="size-4" aria-hidden />}
+          primary="This invoice has been voided"
+          secondary="Closed — no further action. Duplicate it from the header to start a fresh draft."
+        />
+      ) : null}
+
+      {invoice.status === 'paid' && invoice.paid_at ? (
+        <PaidSection
+          paidAt={formatTimestamp(invoice.paid_at)}
+          method={invoice.payment_method}
+          reference={invoice.payment_reference}
+          notes={invoice.payment_notes}
+          receiptPaths={invoice.payment_receipt_paths ?? []}
+        />
+      ) : null}
 
       {/* Customer-view preview — drafts only */}
       {viewPreviewInputs ? (
@@ -183,27 +244,29 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
        *  is showing, since the preview IS the breakdown there. Sent / paid
        *  / void invoices always show the persisted breakdown. */}
       {!viewPreviewInputs ? (
-        <section className="rounded-xl border bg-card p-5">
+        <section className="rounded-xl border bg-card p-5" aria-label="Amount breakdown">
           <div className="flex flex-col gap-2">
             {showSubtotalRow ? (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatCurrency(subtotalCents)}</span>
+                <Money cents={subtotalCents} />
               </div>
             ) : null}
             <InvoiceLineItems invoiceId={invoice.id} lineItems={lineItems} isDraft={isDraft} />
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{taxLabel}</span>
-              <span>{formatCurrency(invoice.tax_cents)}</span>
+              <Money cents={invoice.tax_cents} />
             </div>
-            <div className="border-t pt-2">
-              <div className="flex items-center justify-between text-base font-semibold">
+            <div className="mt-1 border-t pt-2">
+              <div className="flex items-baseline justify-between text-base font-semibold">
                 <span>Total</span>
-                <span>{formatCurrency(totalCents)}</span>
+                <Money cents={totalCents} emphasis className="text-lg" />
               </div>
             </div>
             {regParts.length > 0 ? (
-              <p className="mt-1 text-xs text-muted-foreground">{regParts.join('  ·  ')}</p>
+              <p className="mt-1 font-mono text-[11px] tracking-wide text-muted-foreground">
+                {regParts.join('  ·  ')}
+              </p>
             ) : null}
           </div>
         </section>
@@ -218,7 +281,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
             <User className="mt-0.5 size-4 text-muted-foreground" />
             <div>
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Customer
               </span>
               <p className="text-sm font-medium">
@@ -236,7 +299,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
             <Briefcase className="mt-0.5 size-4 text-muted-foreground" />
             <div>
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">Job</span>
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Job
+              </span>
               <p className="text-sm font-medium">
                 <Link
                   href={`/jobs/${invoice.job.id}`}
@@ -250,35 +315,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         )}
       </section>
 
-      {/* Status-specific info */}
-      {invoice.status === 'paid' && invoice.paid_at && (
-        <PaidSection
-          paidAt={formatTimestamp(invoice.paid_at)}
-          method={invoice.payment_method}
-          reference={invoice.payment_reference}
-          notes={invoice.payment_notes}
-          receiptPaths={invoice.payment_receipt_paths ?? []}
-        />
-      )}
-
-      {invoice.status === 'void' && (
-        <section className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-          <p className="text-sm font-medium text-destructive">This invoice has been voided.</p>
-        </section>
-      )}
-
-      {invoice.sent_at && invoice.status === 'sent' && (
-        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
-          <p className="text-sm text-amber-800 dark:text-amber-200">
-            Sent on {formatTimestamp(invoice.sent_at)}. Awaiting payment.
-          </p>
-        </section>
-      )}
-
-      {/* Cost-basis drift warning — cost-plus drafts where the frozen
-       *  Labour + Materials lines no longer match the project's live
-       *  cost rollup. Catches both stale drafts and a future missing-
-       *  source bug like c617fad. */}
+      {/* Cautions (inline, not stacked banners): cost-basis drift +
+       *  missing-GST. Restyled to warn/danger-soft inline strips so the
+       *  preview/breakdown stays the hero. */}
       {driftBanner ? (
         <CostBasisDriftBanner
           projectId={driftBanner.projectId}
@@ -293,20 +332,22 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
        *  without bouncing to settings. */}
       {showSetupBanner && !gstNumber ? <MissingGstNotice /> : null}
 
-      {/* Inline default-fields setup — pops a dialog, no Settings detour */}
-      {showSetupBanner ? <InvoiceDefaultsSetupBanner current={docFields} /> : null}
-
-      {/* Per-invoice override of payment instructions / terms / policies */}
+      {/* Document details — defaults-setup nudge + per-invoice overrides
+       *  folded into ONE disclosure (config, not the main task). Opens on
+       *  first paint only when something needs attention. */}
       {showSetupBanner ? (
-        <InvoiceOverridesEditor
-          invoiceId={invoice.id}
-          override={{
-            payment_instructions: invoice.payment_instructions_override ?? null,
-            terms: invoice.terms_override ?? null,
-            policies: invoice.policies_override ?? null,
-          }}
-          tenant={docFields}
-        />
+        <InvoiceDocumentDetails needsAttention={docNeedsAttention} statusLabel={docStatusLabel}>
+          <InvoiceDefaultsSetupBanner current={docFields} />
+          <InvoiceOverridesEditor
+            invoiceId={invoice.id}
+            override={{
+              payment_instructions: invoice.payment_instructions_override ?? null,
+              terms: invoice.terms_override ?? null,
+              policies: invoice.policies_override ?? null,
+            }}
+            tenant={docFields}
+          />
+        </InvoiceDocumentDetails>
       ) : null}
 
       {/* Actions */}
@@ -327,7 +368,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       {worklog && worklog.length > 0 && (
         <section className="rounded-xl border bg-card p-5">
           <header className="pb-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               History
             </h2>
           </header>
@@ -352,6 +393,44 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   );
 }
 
+/**
+ * Status posture strip — the calm, status-tokens soft-pair band that
+ * replaces the old raw amber/emerald/destructive sections. Same soft-pair
+ * + left-border chrome family as the inline cautions, but a fuller block
+ * (icon chip + primary/secondary) for the page-level posture read.
+ */
+function PostureStrip({
+  tone,
+  icon,
+  primary,
+  secondary,
+  children,
+}: {
+  tone: 'warning' | 'success' | 'neutral';
+  icon: ReactNode;
+  primary: string;
+  secondary?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <section
+      className={cn(
+        'flex flex-col gap-2 rounded-xl border border-l-2 border-l-brand p-4',
+        statusToneClass[tone],
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        <div className="flex flex-1 flex-col gap-0.5 text-sm leading-snug">
+          <span className="font-semibold">{primary}</span>
+          {secondary ? <span className="text-[13px] opacity-90">{secondary}</span> : null}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 async function PaidSection({
   paidAt,
   method,
@@ -368,26 +447,22 @@ async function PaidSection({
   const urlMap = receiptPaths.length > 0 ? await getSignedUrls(receiptPaths) : new Map();
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
-      <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-        Paid on {paidAt}
-        {method ? ` via ${method}` : ''}
-        {reference ? ` (ref ${reference})` : ''}
-      </p>
-      {notes ? (
-        <p className="whitespace-pre-line text-sm text-emerald-900/80 dark:text-emerald-200/80">
-          {notes}
-        </p>
-      ) : null}
+    <PostureStrip
+      tone="success"
+      icon={<CheckCircle2 className="size-4" aria-hidden />}
+      primary={`Paid ${paidAt}${method ? ` · via ${method}` : ''}`}
+      secondary={reference ? `Reference ${reference}` : undefined}
+    >
+      {notes ? <p className="whitespace-pre-line pl-7 text-[13px] opacity-90">{notes}</p> : null}
       {receiptPaths.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 pl-7">
           {receiptPaths.map((path) => {
             const url = urlMap.get(path);
             if (!url) {
               return (
                 <div
                   key={path}
-                  className="flex size-20 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground"
+                  className="flex size-16 items-center justify-center rounded-md border bg-background text-xs text-muted-foreground"
                 >
                   Missing
                 </div>
@@ -399,7 +474,7 @@ async function PaidSection({
                 href={url}
                 target="_blank"
                 rel="noreferrer"
-                className="block size-20 overflow-hidden rounded-md border bg-background"
+                className="block size-16 overflow-hidden rounded-md border bg-background"
               >
                 {/* biome-ignore lint/performance/noImgElement: signed URLs bypass next/image optimizer */}
                 <img
@@ -412,7 +487,7 @@ async function PaidSection({
           })}
         </div>
       ) : null}
-    </section>
+    </PostureStrip>
   );
 }
 

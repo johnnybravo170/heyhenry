@@ -109,7 +109,7 @@ export function DecisionSuggestions({ projectId }: { projectId: string }) {
                   <p className="mt-0.5 text-xs text-muted-foreground">{s.description}</p>
                 ) : null}
                 {s.options.length > 0 ? (
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Options: {s.options.join(' • ')}
                   </p>
                 ) : null}

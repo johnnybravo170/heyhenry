@@ -5,8 +5,26 @@
  * filter on `tenant_id` in application code.
  */
 
+import { type DashboardSectionKey, normalizeSectionOrder } from '@/lib/dashboard/sections';
+import { AR_OVERDUE_DAYS, arOutstanding } from '@/lib/invoices/ar';
 import { createClient } from '@/lib/supabase/server';
 import { invoiceTotalCents } from './invoices';
+
+/**
+ * The current user's saved owner-dashboard section order for their active
+ * tenant, normalized to the full current key set. Returns the default order
+ * when the user has never customized it. RLS scopes the row to the caller.
+ */
+export async function getDashboardSectionOrder(userId: string): Promise<DashboardSectionKey[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('tenant_members')
+    .select('dashboard_section_order')
+    .eq('user_id', userId)
+    .eq('is_active_for_user', true)
+    .maybeSingle();
+  return normalizeSectionOrder((data?.dashboard_section_order as string[] | null) ?? null);
+}
 
 type InvoiceTotalRow = {
   amount_cents: number | null;
@@ -35,8 +53,14 @@ export type TodaysJob = {
 export type KeyMetrics = {
   revenueThisMonthCents: number;
   outstandingCents: number;
+  /** PW: jobs booked/in-progress. */
   openJobsCount: number;
+  /** PW: quotes sent, awaiting response. */
   pendingQuotesCount: number;
+  /** GC (renovation/tile): projects with lifecycle_stage = active (in progress). */
+  activeProjectsCount: number;
+  /** GC (renovation/tile): projects with the estimate sent, awaiting the customer. */
+  awaitingApprovalCount: number;
 };
 
 export type AttentionItem =
@@ -70,7 +94,7 @@ export type RecentWorklogEntry = {
 // ---------------------------------------------------------------------------
 
 /** Return the start and end of "today" in the given IANA timezone as ISO strings. */
-export function todayBounds(timezone: string): { start: string; end: string } {
+function todayBounds(timezone: string): { start: string; end: string } {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
@@ -165,9 +189,7 @@ export async function getTodaysJobs(timezone: string): Promise<TodaysJob[]> {
 
   const { data, error } = await supabase
     .from('jobs')
-    .select(
-      'id, status, scheduled_at, notes, customers:customer_id (id, name, address_line1, city)',
-    )
+    .select('id, status, scheduled_at, notes, contacts:contact_id (id, name, address_line1, city)')
     .is('deleted_at', null)
     .gte('scheduled_at', bounds.start)
     .lte('scheduled_at', bounds.end)
@@ -176,7 +198,7 @@ export async function getTodaysJobs(timezone: string): Promise<TodaysJob[]> {
   if (error) throw new Error(`Failed to load today's jobs: ${error.message}`);
 
   return (data ?? []).map((row) => {
-    const { customers: customerRaw, ...rest } = row as Record<string, unknown>;
+    const { contacts: customerRaw, ...rest } = row as Record<string, unknown>;
     return {
       ...(rest as Omit<TodaysJob, 'customer'>),
       customer: extractCustomer(customerRaw),
@@ -184,11 +206,37 @@ export async function getTodaysJobs(timezone: string): Promise<TodaysJob[]> {
   });
 }
 
-export async function getKeyMetrics(timezone: string): Promise<KeyMetrics> {
+export async function getKeyMetrics(timezone: string, isRenovation = false): Promise<KeyMetrics> {
   const supabase = await createClient();
   const monthStart = monthStartIso(timezone);
 
-  const [paidThisMonth, sentInvoices, openJobs, pendingQuotes] = await Promise.all([
+  // The third/fourth tiles swap by vertical: PW counts jobs + sent quotes,
+  // while renovation/tile GCs (who don't use the quoting tool — see
+  // quotes/page.tsx) count active projects + estimates awaiting approval.
+  const countA = isRenovation
+    ? supabase
+        .from('projects')
+        .select('id', { count: 'exact', head: true })
+        .eq('lifecycle_stage', 'active')
+        .is('deleted_at', null)
+    : supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['booked', 'in_progress'])
+        .is('deleted_at', null);
+  const countB = isRenovation
+    ? supabase
+        .from('projects')
+        .select('id', { count: 'exact', head: true })
+        .eq('lifecycle_stage', 'awaiting_approval')
+        .is('deleted_at', null)
+    : supabase
+        .from('quotes')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'sent')
+        .is('deleted_at', null);
+
+  const [paidThisMonth, sentInvoices, a, b] = await Promise.all([
     // Revenue this month: sum of paid invoices
     supabase
       .from('invoices')
@@ -196,46 +244,37 @@ export async function getKeyMetrics(timezone: string): Promise<KeyMetrics> {
       .eq('status', 'paid')
       .gte('paid_at', monthStart)
       .is('deleted_at', null),
-    // Outstanding: sent but unpaid invoices
+    // Outstanding: sent but unpaid invoices (canonical AR filter — see ar.ts)
     supabase
       .from('invoices')
-      .select('amount_cents, tax_cents, tax_inclusive, line_items')
+      .select('status, paid_at, deleted_at, amount_cents, tax_cents, tax_inclusive, line_items')
       .eq('status', 'sent')
+      .is('paid_at', null)
       .is('deleted_at', null),
-    // Open jobs count
-    supabase
-      .from('jobs')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['booked', 'in_progress'])
-      .is('deleted_at', null),
-    // Pending quotes count
-    supabase
-      .from('quotes')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'sent')
-      .is('deleted_at', null),
+    countA,
+    countB,
   ]);
 
   if (paidThisMonth.error) throw new Error(`Metrics: ${paidThisMonth.error.message}`);
   if (sentInvoices.error) throw new Error(`Metrics: ${sentInvoices.error.message}`);
-  if (openJobs.error) throw new Error(`Metrics: ${openJobs.error.message}`);
-  if (pendingQuotes.error) throw new Error(`Metrics: ${pendingQuotes.error.message}`);
+  if (a.error) throw new Error(`Metrics: ${a.error.message}`);
+  if (b.error) throw new Error(`Metrics: ${b.error.message}`);
 
   const revenueThisMonthCents = (paidThisMonth.data ?? []).reduce(
     (sum, inv) => sum + invoiceTotalCents(inv as InvoiceTotalRow),
     0,
   );
 
-  const outstandingCents = (sentInvoices.data ?? []).reduce(
-    (sum, inv) => sum + invoiceTotalCents(inv as InvoiceTotalRow),
-    0,
-  );
+  // Canonical AR definition (tax-aware total + sent/unpaid/non-deleted filter).
+  const outstandingCents = arOutstanding(sentInvoices.data ?? []);
 
   return {
     revenueThisMonthCents,
     outstandingCents,
-    openJobsCount: openJobs.count ?? 0,
-    pendingQuotesCount: pendingQuotes.count ?? 0,
+    openJobsCount: isRenovation ? 0 : (a.count ?? 0),
+    pendingQuotesCount: isRenovation ? 0 : (b.count ?? 0),
+    activeProjectsCount: isRenovation ? (a.count ?? 0) : 0,
+    awaitingApprovalCount: isRenovation ? (b.count ?? 0) : 0,
   };
 }
 
@@ -398,12 +437,32 @@ export async function getRenovationPipelineMetrics(
   };
 }
 
-export async function getAttentionItems(timezone: string): Promise<AttentionItem[]> {
+export async function getAttentionItems(
+  timezone: string,
+  isRenovation = false,
+): Promise<AttentionItem[]> {
   const supabase = await createClient();
   const now = new Date();
   const today = todayDateStr(timezone);
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  // Overdue threshold shared with the canonical AR helper (ar.ts).
+  const arOverdueCutoff = new Date(
+    now.getTime() - AR_OVERDUE_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  // Renovation/tile GCs don't use the quoting tool (estimates live on
+  // projects — see quotes/page.tsx), so the stale-quote signal is dead for
+  // them. Skip the query entirely rather than surface empty PW logic.
+  const staleQuotesQuery = isRenovation
+    ? null
+    : supabase
+        .from('quotes')
+        .select('id, sent_at, contacts:contact_id (name)')
+        .eq('status', 'sent')
+        .lt('sent_at', threeDaysAgo)
+        .is('deleted_at', null)
+        .order('sent_at', { ascending: true })
+        .limit(10);
 
   const [overdueTodos, staleQuotes, overdueInvoices] = await Promise.all([
     // Overdue todos
@@ -414,30 +473,23 @@ export async function getAttentionItems(timezone: string): Promise<AttentionItem
       .lt('due_date', today)
       .order('due_date', { ascending: true })
       .limit(10),
-    // Stale quotes (sent > 3 days ago, no response)
-    supabase
-      .from('quotes')
-      .select('id, sent_at, customers:customer_id (name)')
-      .eq('status', 'sent')
-      .lt('sent_at', threeDaysAgo)
-      .is('deleted_at', null)
-      .order('sent_at', { ascending: true })
-      .limit(10),
-    // Overdue invoices (sent > 14 days ago, unpaid)
+    staleQuotesQuery,
+    // Overdue invoices (sent past the AR overdue threshold, unpaid)
     supabase
       .from('invoices')
       .select(
-        'id, amount_cents, tax_cents, tax_inclusive, line_items, sent_at, customers:customer_id (name)',
+        'id, amount_cents, tax_cents, tax_inclusive, line_items, sent_at, contacts:contact_id (name)',
       )
       .eq('status', 'sent')
-      .lt('sent_at', fourteenDaysAgo)
+      .is('paid_at', null)
+      .lt('sent_at', arOverdueCutoff)
       .is('deleted_at', null)
       .order('sent_at', { ascending: true })
       .limit(10),
   ]);
 
   if (overdueTodos.error) throw new Error(`Attention: ${overdueTodos.error.message}`);
-  if (staleQuotes.error) throw new Error(`Attention: ${staleQuotes.error.message}`);
+  if (staleQuotes?.error) throw new Error(`Attention: ${staleQuotes.error.message}`);
   if (overdueInvoices.error) throw new Error(`Attention: ${overdueInvoices.error.message}`);
 
   const items: AttentionItem[] = [];
@@ -452,12 +504,12 @@ export async function getAttentionItems(timezone: string): Promise<AttentionItem
     });
   }
 
-  for (const quote of staleQuotes.data ?? []) {
+  for (const quote of staleQuotes?.data ?? []) {
     const row = quote as Record<string, unknown>;
     items.push({
       kind: 'stale_quote',
       id: row.id as string,
-      customerName: extractCustomerName(row.customers),
+      customerName: extractCustomerName(row.contacts),
       daysSinceSent: daysBetween(row.sent_at as string, now),
     });
   }
@@ -467,7 +519,7 @@ export async function getAttentionItems(timezone: string): Promise<AttentionItem
     items.push({
       kind: 'overdue_invoice',
       id: row.id as string,
-      customerName: extractCustomerName(row.customers),
+      customerName: extractCustomerName(row.contacts),
       totalCents: invoiceTotalCents({
         amount_cents: row.amount_cents as number | null,
         tax_cents: row.tax_cents as number | null,
@@ -514,12 +566,12 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
 
   const nameById = new Map<string, string>();
 
-  const customerIds = idsByType.get('customer');
-  if (customerIds?.size) {
+  const contactIds = idsByType.get('customer');
+  if (contactIds?.size) {
     const { data: rows } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name')
-      .in('id', Array.from(customerIds));
+      .in('id', Array.from(contactIds));
     for (const row of rows ?? []) nameById.set(row.id as string, (row as { name: string }).name);
   }
 
@@ -536,10 +588,10 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
   if (jobIds?.size) {
     const { data: rows } = await supabase
       .from('jobs')
-      .select('id, customers:customer_id (name)')
+      .select('id, contacts:contact_id (name)')
       .in('id', Array.from(jobIds));
     for (const row of rows ?? []) {
-      const customerRaw = (row as { customers?: unknown }).customers;
+      const customerRaw = (row as { contacts?: unknown }).contacts;
       const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
       const name =
         customer && typeof customer === 'object' && 'name' in customer
@@ -553,10 +605,10 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
   if (quoteIds?.size) {
     const { data: rows } = await supabase
       .from('quotes')
-      .select('id, customers:customer_id (name)')
+      .select('id, contacts:contact_id (name)')
       .in('id', Array.from(quoteIds));
     for (const row of rows ?? []) {
-      const customerRaw = (row as { customers?: unknown }).customers;
+      const customerRaw = (row as { contacts?: unknown }).contacts;
       const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
       const name =
         customer && typeof customer === 'object' && 'name' in customer
@@ -570,10 +622,10 @@ export async function getRecentActivity(): Promise<RecentWorklogEntry[]> {
   if (invoiceIds?.size) {
     const { data: rows } = await supabase
       .from('invoices')
-      .select('id, customers:customer_id (name)')
+      .select('id, contacts:contact_id (name)')
       .in('id', Array.from(invoiceIds));
     for (const row of rows ?? []) {
-      const customerRaw = (row as { customers?: unknown }).customers;
+      const customerRaw = (row as { contacts?: unknown }).contacts;
       const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
       const name =
         customer && typeof customer === 'object' && 'name' in customer

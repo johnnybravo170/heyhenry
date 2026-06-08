@@ -53,18 +53,18 @@ vendors:
       Supabase ca-central-1; Vercel processes data in transit only
       (request/response, logs). PIPEDA cross-border disclosure applies.
 
-  - slug: resend
-    name: Resend
-    purpose: Transactional + marketing email delivery.
-    url: https://resend.com
+  - slug: postmark
+    name: Postmark
+    purpose: Transactional email delivery (estimates, invoices, change orders, closeout, ops alerts).
+    url: https://postmarkapp.com
     region: US
     data_types:
       - recipient email + name
       - email body (estimate, invoice, change order content)
-    subprocessor_url: https://resend.com/legal/dpa
+    subprocessor_url: https://postmarkapp.com/dpa
     detection:
-      packages: ['^resend$']
-      env: ['^RESEND_']
+      packages: ['^postmark$']
+      env: ['^POSTMARK_']
 
   - slug: twilio
     name: Twilio

@@ -22,6 +22,7 @@ import { hasFeature } from '@/lib/billing/features';
 import { formatDateTime, formatRelativeTime } from '@/lib/date/format';
 import { getQuote, listWorklogForQuote } from '@/lib/db/queries/quotes';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { isUuid } from '@/lib/validators/uuid';
 import { duplicateQuoteAction } from '@/server/actions/quotes';
 
 function shortId(id: string) {
@@ -30,6 +31,7 @@ function shortId(id: string) {
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const [quote, tenant] = await Promise.all([getQuote(id), getCurrentTenant()]);
   if (!quote) notFound();

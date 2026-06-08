@@ -40,7 +40,7 @@ type InvoiceLineItem = {
 /**
  * Map QBO Invoice → HH row shape, including denormalized line_items.
  * Returns the row plus the QBO customer id we need to resolve to an
- * HH customer_id before insert.
+ * HH contact_id before insert.
  */
 export function mapQboInvoiceToRow(qbo: QboInvoice): {
   qbo_customer_id: string;
@@ -144,21 +144,21 @@ export async function importInvoicePage(
   const toInsert: Array<{
     qbo_invoice_id: string;
     qbo_sync_token: string;
-    customer_id: string;
+    contact_id: string;
     row: ReturnType<typeof mapQboInvoiceToRow>['row'];
   }> = [];
   const toUpdate: Array<{
     id: string;
     qbo: QboInvoice;
-    customer_id: string;
+    contact_id: string;
     row: ReturnType<typeof mapQboInvoiceToRow>['row'];
   }> = [];
   let skipped = 0;
 
   for (const qbo of page) {
     const { qbo_customer_id, row } = mapQboInvoiceToRow(qbo);
-    const customerId = ctx.qboCustomerIdToHhId.get(qbo_customer_id);
-    if (!customerId) {
+    const contactId = ctx.qboCustomerIdToHhId.get(qbo_customer_id);
+    if (!contactId) {
       // Customer not in HH — likely not imported yet, or skipped to
       // the review queue. Skip the invoice; user can re-run after
       // resolving the customer review queue.
@@ -168,12 +168,12 @@ export async function importInvoicePage(
 
     const existingHhId = ctx.qboInvoiceIdToHhId.get(qbo.Id);
     if (existingHhId) {
-      toUpdate.push({ id: existingHhId, qbo, customer_id: customerId, row });
+      toUpdate.push({ id: existingHhId, qbo, contact_id: contactId, row });
     } else {
       toInsert.push({
         qbo_invoice_id: qbo.Id,
         qbo_sync_token: qbo.SyncToken,
-        customer_id: customerId,
+        contact_id: contactId,
         row,
       });
     }
@@ -184,7 +184,7 @@ export async function importInvoicePage(
     const now = new Date().toISOString();
     const rows = toInsert.map((r) => ({
       tenant_id: ctx.tenantId,
-      customer_id: r.customer_id,
+      contact_id: r.contact_id,
       status: r.row.status,
       amount_cents: r.row.amount_cents,
       tax_cents: r.row.tax_cents,
@@ -214,15 +214,16 @@ export async function importInvoicePage(
     }
   }
 
-  for (const u of toUpdate) {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('invoices')
-      .update({
-        // Imported invoices have FROZEN money math (see migration
-        // 0187_invoices_import_batch.sql) — but the source of truth is
-        // QBO, so on re-import we refresh status / line_items / notes.
-        // amount_cents and tax_cents only change if QBO recomputed them.
+  if (toUpdate.length > 0) {
+    // One set-based UPDATE for the whole page instead of one round trip per
+    // row. Imported invoices have FROZEN money math (see migration
+    // 0187_invoices_import_batch.sql) — but the source of truth is QBO, so on
+    // re-import we refresh status / line_items / notes. amount_cents and
+    // tax_cents only change if QBO recomputed them.
+    const { error } = await supabase.rpc('qbo_bulk_update_invoices', {
+      p_rows: toUpdate.map((u) => ({
+        id: u.id,
+        tenant_id: ctx.tenantId,
         status: u.row.status,
         amount_cents: u.row.amount_cents,
         tax_cents: u.row.tax_cents,
@@ -231,13 +232,10 @@ export async function importInvoicePage(
         sent_at: u.row.sent_at,
         paid_at: u.row.paid_at,
         qbo_sync_token: u.qbo.SyncToken,
-        qbo_sync_status: 'synced',
-        qbo_synced_at: now,
-        updated_at: now,
-      })
-      .eq('id', u.id);
+      })),
+    });
     if (error) {
-      throw new Error(`Failed to update invoice ${u.id}: ${error.message}`);
+      throw new Error(`Failed to update invoices page: ${error.message}`);
     }
   }
 
@@ -259,7 +257,7 @@ export async function loadInvoiceImportContext(
   // every previously-imported one.
   const [customerRes, invoiceRes] = await Promise.all([
     supabase
-      .from('customers')
+      .from('contacts')
       .select('id, qbo_customer_id')
       .eq('tenant_id', tenantId)
       .not('qbo_customer_id', 'is', null)

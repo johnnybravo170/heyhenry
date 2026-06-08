@@ -1,9 +1,9 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { ContactForm } from '@/components/features/contacts/contact-form';
 import { ContactIntakeForm } from '@/components/features/contacts/contact-intake-form';
-import { CustomerForm } from '@/components/features/customers/customer-form';
 import { type ContactKind, contactKinds } from '@/lib/validators/customer';
-import { createCustomerAction } from '@/server/actions/customers';
+import { createCustomerAction } from '@/server/actions/contacts';
 
 export const metadata = {
   title: 'New contact — HeyHenry',
@@ -39,7 +39,7 @@ export default async function NewContactPage({
           <ArrowLeft className="size-3.5" />
           Back to contacts
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Add a contact</h1>
+        <h1 className="text-[28px] font-bold tracking-tight">Add a contact</h1>
         <p className="text-sm text-muted-foreground">
           Drop a business card, screenshot, PDF, or paste contact info. Henry extracts what it can —
           or fill it in by hand below.
@@ -53,7 +53,7 @@ export default async function NewContactPage({
           Or enter manually (no artifacts)
         </summary>
         <div className="mt-4">
-          <CustomerForm mode="create" action={createCustomerAction} cancelHref="/contacts" />
+          <ContactForm mode="create" action={createCustomerAction} cancelHref="/contacts" />
         </div>
       </details>
     </div>

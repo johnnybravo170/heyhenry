@@ -23,5 +23,3 @@ export const workerSignupSchema = z.object({
   password: passwordRule,
   inviteCode: z.string().min(1, { message: 'Invite code is required.' }),
 });
-
-export type WorkerSignupInput = z.infer<typeof workerSignupSchema>;

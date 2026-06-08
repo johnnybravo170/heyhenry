@@ -60,7 +60,7 @@ export async function findContactMatches(input: {
   if (phone) {
     const last7 = phone.slice(-7);
     const { data } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name, kind, email, phone')
       .ilike('phone', `%${last7}%`)
       .is('deleted_at', null)
@@ -81,7 +81,7 @@ export async function findContactMatches(input: {
   // Strong: email match.
   if (email) {
     const { data } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name, kind, email, phone')
       .eq('email', email)
       .is('deleted_at', null)
@@ -101,7 +101,7 @@ export async function findContactMatches(input: {
   // Strong: exact name match (case-insensitive).
   if (name) {
     const { data } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name, kind, email, phone')
       .ilike('name', name)
       .is('deleted_at', null)

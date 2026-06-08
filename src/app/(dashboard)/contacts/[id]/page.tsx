@@ -2,9 +2,9 @@ import { Calendar, FileText, Mail, MapPin, Pencil, Phone, Receipt } from 'lucide
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ContactNotesFeed } from '@/components/features/contacts/contact-notes-feed';
+import { ContactTypeBadge } from '@/components/features/contacts/contact-type-badge';
+import { DeleteContactButton } from '@/components/features/contacts/delete-contact-button';
 import { DoNotAutoMessageToggle } from '@/components/features/contacts/do-not-auto-message-toggle';
-import { CustomerTypeBadge } from '@/components/features/customers/customer-type-badge';
-import { DeleteCustomerButton } from '@/components/features/customers/delete-customer-button';
 import { InvoiceStatusBadge } from '@/components/features/invoices/invoice-status-badge';
 import { JobStatusBadge } from '@/components/features/jobs/job-status-badge';
 import { QuoteStatusBadge } from '@/components/features/quotes/quote-status-badge';
@@ -21,13 +21,16 @@ import {
   type RelatedInvoice,
   type RelatedJob,
   type RelatedQuote,
-} from '@/lib/db/queries/customers';
+} from '@/lib/db/queries/contacts';
 import { invoiceTotalCents } from '@/lib/db/queries/invoices';
 import { listTasksForLead } from '@/lib/db/queries/tasks';
+import { formatPhone } from '@/lib/phone';
 import type { CustomerType } from '@/lib/validators/customer';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
 import type { JobStatus } from '@/lib/validators/job';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { formatGstNumber } from '@/lib/validators/tax-id';
+import { isUuid } from '@/lib/validators/uuid';
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', {
   style: 'currency',
@@ -73,6 +76,7 @@ function addressLines(customer: CustomerRow): string | null {
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const [customer, tenant] = await Promise.all([getCustomer(id), getCurrentTenant()]);
   if (!customer) notFound();
@@ -108,7 +112,11 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
-            <CustomerTypeBadge type={customer.type as CustomerType} kind={customer.kind} />
+            <ContactTypeBadge
+              type={customer.type as CustomerType}
+              kind={customer.kind}
+              withSubtype
+            />
           </div>
           <p className="text-sm text-muted-foreground">Added {formatDate(customer.created_at)}</p>
         </div>
@@ -119,14 +127,17 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               Edit
             </Link>
           </Button>
-          <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
+          <DeleteContactButton contactId={customer.id} customerName={customer.name} />
         </div>
       </header>
 
       <section className="grid gap-4 rounded-xl border bg-card p-5 md:grid-cols-3">
         <ContactRow icon={Mail} label="Email" value={customer.email} />
-        <ContactRow icon={Phone} label="Phone" value={customer.phone} />
+        <ContactRow icon={Phone} label="Phone" value={formatPhone(customer.phone)} />
         <ContactRow icon={MapPin} label="Address" value={addressLines(customer)} />
+        {customer.gst_number ? (
+          <ContactRow icon={Receipt} label="GST/HST" value={formatGstNumber(customer.gst_number)} />
+        ) : null}
         {!customer.email && !customer.phone && !addressLines(customer) ? (
           <p className="md:col-span-3 text-sm text-muted-foreground">
             No contact details yet.{' '}
@@ -142,7 +153,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
       {customer.email || customer.phone ? (
         <DoNotAutoMessageToggle
-          customerId={customer.id}
+          contactId={customer.id}
           enabled={customer.do_not_auto_message}
           setAt={customer.do_not_auto_message_at}
           source={customer.do_not_auto_message_source}
@@ -156,8 +167,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
       {isCustomerKind ? (
         <div className="grid gap-4 md:grid-cols-3">
-          <RelatedQuotesCard quotes={related.quotes} timezone={tz} customerId={customer.id} />
-          <RelatedJobsCard jobs={related.jobs} timezone={tz} customerId={customer.id} />
+          <RelatedQuotesCard quotes={related.quotes} timezone={tz} contactId={customer.id} />
+          <RelatedJobsCard jobs={related.jobs} timezone={tz} contactId={customer.id} />
           <RelatedInvoicesCard invoices={related.invoices} timezone={tz} />
         </div>
       ) : (
@@ -260,18 +271,18 @@ function SectionCard({
 function RelatedQuotesCard({
   quotes,
   timezone,
-  customerId,
+  contactId,
 }: {
   quotes: RelatedQuote[];
   timezone: string;
-  customerId: string;
+  contactId: string;
 }) {
   return (
     <SectionCard
       title="Recent quotes"
       icon={FileText}
       count={quotes.length}
-      actionHref={`/quotes/new?customer_id=${customerId}`}
+      actionHref={`/quotes/new?contact_id=${contactId}`}
       actionLabel="New quote"
     >
       {quotes.length === 0 ? (
@@ -306,18 +317,18 @@ function RelatedQuotesCard({
 function RelatedJobsCard({
   jobs,
   timezone,
-  customerId,
+  contactId,
 }: {
   jobs: RelatedJob[];
   timezone: string;
-  customerId: string;
+  contactId: string;
 }) {
   return (
     <SectionCard
       title="Recent jobs"
       icon={Calendar}
       count={jobs.length}
-      actionHref={`/jobs/new?customer_id=${customerId}`}
+      actionHref={`/jobs/new?contact_id=${contactId}`}
       actionLabel="New job"
     >
       {jobs.length === 0 ? (

@@ -4,11 +4,20 @@
  * Plan-change UI: pick a plan + cycle, preview proration, confirm. Server
  * action calls `subscriptions.update` with `proration_behavior:
  * 'create_prorations'`. Webhook flips local plan once Stripe acks.
+ *
+ * Seat-silent: the Select shows plan name + flat $/mo only. PLAN_CATALOG
+ * still carries `seatBand` strings — they are NEVER rendered here (flat-rate,
+ * intent-led positioning; per-seat language is banned on this screen).
+ *
+ * Grandfather-honest: for founding members, a ✦ Henry guard fires the moment
+ * a different tier is picked — it warns (reassuringly, reversibly) that
+ * switching moves them to current pricing, with the exact number shown at
+ * Preview before anything changes.
  */
 
-import { Sparkles } from 'lucide-react';
+import { Info, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,20 +45,38 @@ const PLANS: Plan[] = ['starter', 'growth', 'pro', 'scale'];
 export function ChangePlanCard({
   currentPlan,
   currentCycle,
+  foundingMember = false,
+  upgradeTier = null,
 }: {
   currentPlan: Plan;
   currentCycle: BillingCycle;
+  /** Grandfathered member — fires the ✦ Henry grandfather guard on tier change. */
+  foundingMember?: boolean;
+  /** `?upgrade=<tier>` deep-link — pre-selects this tier and scrolls into view. */
+  upgradeTier?: Plan | null;
 }) {
   const tz = useTenantTimezone();
-  const [plan, setPlan] = useState<Plan>(currentPlan);
+  const [plan, setPlan] = useState<Plan>(upgradeTier ?? currentPlan);
   const [cycle, setCycle] = useState<BillingCycle>(currentCycle);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewing, startPreview] = useTransition();
   const [confirming, startConfirm] = useTransition();
   const router = useRouter();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Inbound `?upgrade=<tier>` — scroll the card into view so the deep-link
+  // from a LockedFeature CTA lands on the pre-selected tier.
+  useEffect(() => {
+    if (upgradeTier) {
+      cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [upgradeTier]);
 
   const isUnchanged = plan === currentPlan && cycle === currentCycle;
+  // Guard fires for founding members the moment they pick a different tier —
+  // switching tiers is the one moment the grandfathered rate is at risk.
+  const showGrandfatherGuard = foundingMember && plan !== currentPlan;
 
   function handlePreview() {
     setPreview(null);
@@ -78,21 +105,16 @@ export function ChangePlanCard({
   }
 
   return (
-    <Card>
+    <Card className="shadow-none" ref={cardRef}>
       <CardHeader>
-        <div className="flex items-start gap-2">
-          <Sparkles className="size-5 mt-0.5" />
-          <div>
-            <CardTitle>Change plan</CardTitle>
-            <CardDescription>
-              Switch tier or billing cycle. Upgrades charge a prorated difference now; downgrades
-              credit the unused portion against the next invoice.
-            </CardDescription>
-          </div>
-        </div>
+        <CardTitle>Change plan</CardTitle>
+        <CardDescription>
+          Switch tier or billing cycle. Upgrades charge a prorated difference now; downgrades credit
+          the unused portion against the next invoice.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
             <Label htmlFor="plan-select">Plan</Label>
             <Select
@@ -109,6 +131,7 @@ export function ChangePlanCard({
               <SelectContent>
                 {PLANS.map((p) => {
                   const copy = PLAN_CATALOG[p];
+                  // Seat-silent: name + flat $/mo only. NEVER copy.seatBand.
                   return (
                     <SelectItem key={p} value={p}>
                       {copy.name} — {formatCad(copy.monthlyCadCents)}/mo
@@ -139,8 +162,28 @@ export function ChangePlanCard({
           </div>
         </div>
 
+        {showGrandfatherGuard ? (
+          <div
+            role="note"
+            className="flex items-start gap-3 rounded-lg border border-brand/25 border-l-[3px] border-l-brand bg-[#FEF0E3] p-3 text-sm leading-relaxed text-foreground/90"
+          >
+            <span className="grid size-6 shrink-0 place-items-center rounded-md bg-card text-brand">
+              <Sparkles aria-hidden className="size-3.5" />
+            </span>
+            <p className="flex-1">
+              <span className="mr-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-brand">
+                Henry
+              </span>
+              You're on your founding rate, locked. Switching to{' '}
+              <strong className="font-semibold">{PLAN_CATALOG[plan].name}</strong> moves you to
+              today's pricing — we'll show the exact number below before anything changes. Hit{' '}
+              <em>Back</em> any time and your founding rate stays put.
+            </p>
+          </div>
+        ) : null}
+
         {preview ? (
-          <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
+          <div className="space-y-1 rounded-lg border bg-muted/30 p-3 text-sm">
             {preview.immediateChargeCents > 0 ? (
               <p>
                 Charging{' '}
@@ -167,7 +210,7 @@ export function ChangePlanCard({
           <p className="text-sm text-destructive">{previewError}</p>
         ) : null}
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2">
           {preview ? (
             <>
               <Button type="button" onClick={handleConfirm} disabled={confirming}>
@@ -181,6 +224,10 @@ export function ChangePlanCard({
               >
                 Back
               </Button>
+              <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Info aria-hidden className="size-3.5" />
+                Plan updates after Stripe acks the change.
+              </span>
             </>
           ) : (
             <Button

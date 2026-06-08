@@ -57,6 +57,8 @@ function SignupForm() {
     const form = new FormData(e.currentTarget);
     const email = String(form.get('email') ?? '');
     const password = String(form.get('password') ?? '');
+    const firstName = String(form.get('firstName') ?? '');
+    const lastName = String(form.get('lastName') ?? '');
     const businessName = String(form.get('businessName') ?? '');
     const phone = String(form.get('phone') ?? '');
 
@@ -64,6 +66,8 @@ function SignupForm() {
       const result = await signupAction({
         email,
         password,
+        firstName,
+        lastName,
         businessName,
         phone,
         acceptedPolicies,
@@ -81,7 +85,10 @@ function SignupForm() {
         toast.error(result.error);
         return;
       }
-      router.push('/dashboard');
+      // signupAction redirects server-side (→ /onboarding, or /onboarding/plan
+      // on the paid path). This push is only a fallback if that redirect ever
+      // doesn't propagate; keep it pointed at the first-run setup pass.
+      router.push('/onboarding');
     });
   }
 
@@ -90,24 +97,51 @@ function SignupForm() {
       <CardHeader>
         <CardTitle className="text-2xl">Get started with HeyHenry</CardTitle>
         <CardDescription>Run your jobs from the truck. We handle the paperwork.</CardDescription>
+        {/* Trial pill — always shown; rust-soft mono chip */}
+        <div className="mt-2 inline-flex items-center gap-1.5 self-start rounded-full bg-brand/10 px-3 py-1 font-mono text-eyebrow font-bold uppercase tracking-[0.06em] text-brand">
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-brand" />
+          14-day free trial · no card
+        </div>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
           {referralCode ? (
-            <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            <div className="rounded-md border border-emerald-200 bg-emerald-100 p-3 text-sm text-emerald-800">
               You were referred by a fellow contractor — your trial gets bumped to 14 days.
             </div>
           ) : null}
           {selectedPlan ? (
-            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+            <div className="rounded-md border border-blue-200 bg-blue-100 p-3 text-sm text-blue-800">
               You&apos;re starting on{' '}
               <span className="font-medium">{PLAN_CATALOG[selectedPlan].name}</span>
-              {selectedBilling ? (
-                <span className="text-muted-foreground"> · {selectedBilling}</span>
-              ) : null}
-              <span className="text-muted-foreground"> · 14-day free trial, no card required</span>
+              {selectedBilling ? <span className="opacity-75"> · {selectedBilling}</span> : null}
+              <span className="opacity-75"> · 14-day free trial, no card required</span>
             </div>
           ) : null}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First name</Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                required
+                disabled={pending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last name</Label>
+              <Input
+                id="lastName"
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                required
+                disabled={pending}
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="businessName">Business name</Label>
             <Input
@@ -192,7 +226,7 @@ function SignupForm() {
           </div>
           {alreadyRegisteredEmail ? (
             <div
-              className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+              className="space-y-2 rounded-md border border-amber-200 bg-amber-100 p-3 text-sm text-amber-800"
               role="alert"
             >
               <p>An account with this email already exists.</p>
@@ -221,7 +255,7 @@ function SignupForm() {
             Already have an account? Sign in
           </Link>
           <p className="w-full text-center text-xs text-muted-foreground">
-            14-day free trial. Cancel any time — see{' '}
+            Cancel any time. See{' '}
             <Link href="/refund-policy" className="underline underline-offset-2">
               refund policy
             </Link>

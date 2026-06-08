@@ -82,7 +82,7 @@ export function SelectionPhotoPicker({ selectionId, projectId, photos, initialId
           <DialogTitle>Photos for this selection</DialogTitle>
           <DialogDescription>
             Pick from the project gallery. Photos appear under this selection on the
-            homeowner&rsquo;s portal and in the Home Record.
+            homeowner&rsquo;s portal and in the Property Record.
           </DialogDescription>
         </DialogHeader>
 

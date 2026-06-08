@@ -13,7 +13,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export type PrefsNamespace = 'photos' | 'email_voice' | 'social' | 'invoicing';
+export type PrefsNamespace = 'photos' | 'email_voice' | 'social' | 'invoicing' | 'intake';
 
 export async function getPrefs<T extends Record<string, unknown> = Record<string, unknown>>(
   tenantId: string,

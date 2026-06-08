@@ -1,22 +1,23 @@
 'use client';
 
 /**
- * Sortable table for the Projects list. Click a column header to sort;
- * click again to flip direction. Sort state lives in component state —
- * no URL round-trip, no server re-fetch (the list is capped at 200 rows
- * upstream, so client-side is plenty).
+ * Projects list — desktop table + mobile cards.
  *
- * Status sort uses a rank from most-active → most-terminal so "sorting
- * by status" feels like "show me what's alive first."
+ * Sort is server-side and URL-driven (`?sort=&dir=`) so it's correct across
+ * paginated result sets: clicking a sortable header (Project, Start) navigates.
+ * Status is a filter (not a sort); % complete is computed per page (display
+ * only). One progress number + an "over budget" flag — no second burn metric.
  */
 
-import { ChevronDown, ChevronsUpDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronsUpDown, ChevronUp, MapPin } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { type ReactNode, useTransition } from 'react';
 import { CloneProjectDialog } from '@/components/features/projects/clone-project-dialog';
 import { ProjectNameEditor } from '@/components/features/projects/project-name-editor';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import type { ProjectListSort } from '@/lib/db/queries/projects';
 import { cn } from '@/lib/utils';
 import type { LifecycleStage } from '@/lib/validators/project';
 
@@ -25,234 +26,272 @@ type ProjectRow = {
   name: string;
   lifecycle_stage: LifecycleStage;
   start_date: string | null;
-  // Derived: cost-to-cost capped at 99 for active, 100 for complete, 0 for cancelled.
+  estimate_sent_at: string | null;
   work_status_pct: number;
-  // Derived: uncapped cost / est revenue. >100 = over budget.
-  cost_burn_pct: number;
+  over_budget: boolean;
   customer: { id: string; name: string } | null;
+  /** Job-site locale ("Abbotsford · BC") shown under the project name. */
+  region: string | null;
 };
 
-type CustomerOption = { id: string; name: string };
+type ContactOption = { id: string; name: string };
 
-type SortKey = 'name' | 'customer' | 'status' | 'start' | 'complete';
-type SortDir = 'asc' | 'desc';
+function daysSince(iso: string, nowMs: number): number {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 0;
+  return Math.max(0, Math.floor((nowMs - then) / 86_400_000));
+}
 
-// Active-first ordering for the Status column.
-const STAGE_RANK: Record<LifecycleStage, number> = {
-  active: 0,
-  awaiting_approval: 1,
-  planning: 2,
-  on_hold: 3,
-  declined: 4,
-  complete: 5,
-  cancelled: 6,
-};
+/** Progress cell: one % complete + a mini bar; over-budget rows lead with the flag. */
+function Progress({ pct, overBudget }: { pct: number; overBudget: boolean }) {
+  const width = `${Math.min(100, Math.max(0, pct))}%`;
+  const isZero = pct === 0;
+  return (
+    <span className="inline-flex flex-col items-end gap-1">
+      {overBudget ? (
+        // Text-only flag (no leading icon, no border) — OD `.over-flag`:
+        // soft red fill, ink red text, semibold.
+        <span className="inline-flex items-center rounded-full bg-[#FEE2E2] px-2 py-0.5 text-xs font-semibold text-[#B91C1C]">
+          Over budget
+        </span>
+      ) : null}
+      <span
+        className={cn(
+          'tabular-nums',
+          // Over-budget demotes the % to a secondary cue; zero reads faintest.
+          overBudget ? 'text-xs font-semibold text-muted-foreground' : 'text-base font-bold',
+          isZero && !overBudget && 'text-muted-foreground/60',
+        )}
+      >
+        {pct}
+        <span
+          className={cn(
+            'text-xs',
+            overBudget
+              ? 'font-semibold text-muted-foreground'
+              : isZero
+                ? 'text-muted-foreground/60'
+                : 'text-muted-foreground',
+          )}
+        >
+          %
+        </span>
+      </span>
+      <span className="h-1 w-16 overflow-hidden rounded-full bg-[#ECE3D0]">
+        <span
+          className={cn('block h-full rounded-full', overBudget ? 'bg-[#B91C1C]' : 'bg-[#3A3A3A]')}
+          style={{ width }}
+        />
+      </span>
+    </span>
+  );
+}
 
 export function ProjectsTable({
   projects,
+  sort,
+  dir,
+  nowMs,
   customerOptions,
+  footer,
 }: {
   projects: ProjectRow[];
-  customerOptions: CustomerOption[];
+  sort: ProjectListSort;
+  dir: 'asc' | 'desc';
+  /** Server-stable timestamp for "sent Nd ago" (avoids hydration drift). */
+  nowMs: number;
+  customerOptions: ContactOption[];
+  /** Card footer row (pager + range count) rendered inside the table card. */
+  footer?: ReactNode;
 }) {
   const tz = useTenantTimezone();
-  const [sortKey, setSortKey] = useState<SortKey>('name');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [hydrated, setHydrated] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
-  // Hydrate sort preference from localStorage on mount. Per-browser; sort
-  // prefs are personal + volatile, no value in syncing across devices.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('heyhenry.projects.sort');
-      if (raw) {
-        const parsed = JSON.parse(raw) as { key?: SortKey; dir?: SortDir };
-        if (parsed.key) setSortKey(parsed.key);
-        if (parsed.dir) setSortDir(parsed.dir);
-      }
-    } catch {
-      // Corrupted entry — ignore and fall back to defaults.
-    }
-    setHydrated(true);
-  }, []);
-
-  // Persist after hydration so we don't overwrite the saved value on first
-  // render with the component's defaults.
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(
-        'heyhenry.projects.sort',
-        JSON.stringify({ key: sortKey, dir: sortDir }),
-      );
-    } catch {
-      // localStorage may be unavailable (private mode, quota) — best-effort only.
-    }
-  }, [hydrated, sortKey, sortDir]);
-
-  function toggleSort(key: SortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
+  function sortHref(key: ProjectListSort): string {
+    const params = new URLSearchParams(searchParams?.toString());
+    const nextDir = sort === key && dir === 'asc' ? 'desc' : 'asc';
+    params.set('sort', key);
+    params.set('dir', nextDir);
+    params.delete('page');
+    return `/projects?${params.toString()}`;
+  }
+  function navigateSort(key: ProjectListSort) {
+    startTransition(() => router.replace(sortHref(key)));
   }
 
-  const sorted = [...projects].sort((a, b) => {
-    const dir = sortDir === 'asc' ? 1 : -1;
-    switch (sortKey) {
-      case 'name':
-        return a.name.localeCompare(b.name) * dir;
-      case 'customer':
-        return (a.customer?.name ?? '').localeCompare(b.customer?.name ?? '') * dir;
-      case 'status':
-        return (STAGE_RANK[a.lifecycle_stage] - STAGE_RANK[b.lifecycle_stage]) * dir;
-      case 'start': {
-        // Projects without a start_date sort last regardless of direction
-        // — "no date" isn't meaningfully earlier or later than anything.
-        if (!a.start_date && !b.start_date) return 0;
-        if (!a.start_date) return 1;
-        if (!b.start_date) return -1;
-        return a.start_date.localeCompare(b.start_date) * dir;
-      }
-      case 'complete':
-        return (a.work_status_pct - b.work_status_pct) * dir;
-      default:
-        return 0;
-    }
-  });
+  function startLabel(iso: string | null): string {
+    if (!iso) return '—';
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(new Date(iso));
+  }
+
+  function sentCue(p: ProjectRow): string | null {
+    if (p.lifecycle_stage !== 'awaiting_approval' || !p.estimate_sent_at) return null;
+    const d = daysSince(p.estimate_sent_at, nowMs);
+    return d === 0 ? 'sent today' : `sent ${d}d ago`;
+  }
 
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/50">
-            <SortHeader
-              label="Project"
-              sortKey="name"
-              activeKey={sortKey}
-              dir={sortDir}
-              onClick={toggleSort}
-            />
-            <SortHeader
-              label="Customer"
-              sortKey="customer"
-              activeKey={sortKey}
-              dir={sortDir}
-              onClick={toggleSort}
-            />
-            <SortHeader
-              label="Status"
-              sortKey="status"
-              activeKey={sortKey}
-              dir={sortDir}
-              onClick={toggleSort}
-            />
-            <SortHeader
-              label="Start"
-              sortKey="start"
-              activeKey={sortKey}
-              dir={sortDir}
-              onClick={toggleSort}
-            />
-            <SortHeader
-              label="Complete"
-              sortKey="complete"
-              activeKey={sortKey}
-              dir={sortDir}
-              onClick={toggleSort}
-              align="right"
-            />
-            <th className="w-px px-2 py-3" aria-label="Actions" />
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((p) => (
-            <tr key={p.id} className="group border-b last:border-0 hover:bg-muted/30">
-              <td className="px-4 py-3">
-                <span className="inline-flex items-center gap-1">
-                  <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
-                    {p.name}
-                  </Link>
-                  <ProjectNameEditor projectId={p.id} name={p.name} variant="inline" />
-                </span>
-              </td>
-              <td className="px-4 py-3 text-muted-foreground">
-                {p.customer ? (
-                  <Link href={`/contacts/${p.customer.id}`} className="hover:underline">
-                    {p.customer.name}
-                  </Link>
-                ) : (
-                  '—'
-                )}
-              </td>
-              <td className="px-4 py-3">
-                <ProjectStatusBadge stage={p.lifecycle_stage} />
-              </td>
-              <td className="px-4 py-3 text-muted-foreground">
-                {p.start_date
-                  ? new Intl.DateTimeFormat('en-CA', {
-                      timeZone: tz,
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    }).format(new Date(p.start_date))
-                  : '—'}
-              </td>
-              <td className="px-4 py-3 text-right tabular-nums">
-                <div>{p.work_status_pct}%</div>
-                <div
-                  className={cn(
-                    'text-xs',
-                    p.cost_burn_pct > 100 ? 'text-destructive' : 'text-muted-foreground',
-                  )}
-                  title="Cost burn: cost incurred / estimated revenue"
-                >
-                  burn {p.cost_burn_pct}%
-                </div>
-              </td>
-              <td className="px-2 py-3 text-right">
-                <CloneProjectDialog
-                  projectId={p.id}
-                  projectName={p.name}
-                  defaultCustomerId={p.customer?.id ?? null}
-                  customers={customerOptions}
+    <>
+      {/* Desktop table */}
+      <div className="hidden rounded-xl border bg-card md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <SortHeader
+                  label="Project"
+                  sortKey="name"
+                  sort={sort}
+                  dir={dir}
+                  onClick={navigateSort}
                 />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Customer
+                </th>
+                <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Status
+                </th>
+                <SortHeader
+                  label="Start"
+                  sortKey="start"
+                  sort={sort}
+                  dir={dir}
+                  onClick={navigateSort}
+                />
+                <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  % complete
+                </th>
+                <th className="w-px px-2 py-3" aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((p) => {
+                const cue = sentCue(p);
+                return (
+                  <tr key={p.id} className="group border-b last:border-0 hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1">
+                        <Link href={`/projects/${p.id}`} className="font-bold hover:underline">
+                          {p.name}
+                        </Link>
+                        <ProjectNameEditor projectId={p.id} name={p.name} variant="inline" />
+                      </span>
+                      {p.region ? (
+                        <span className="mt-0.5 flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                          <MapPin className="size-3" aria-hidden />
+                          {p.region}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {p.customer ? (
+                        <Link href={`/contacts/${p.customer.id}`} className="hover:underline">
+                          {p.customer.name}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col items-start gap-1">
+                        <ProjectStatusBadge stage={p.lifecycle_stage} />
+                        {cue ? <span className="text-xs text-muted-foreground">{cue}</span> : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      {startLabel(p.start_date)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Progress pct={p.work_status_pct} overBudget={p.over_budget} />
+                    </td>
+                    <td className="px-2 py-3 text-right">
+                      <CloneProjectDialog
+                        projectId={p.id}
+                        projectName={p.name}
+                        defaultContactId={p.customer?.id ?? null}
+                        contacts={customerOptions}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {footer}
+      </div>
+
+      {/* Mobile cards */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {projects.map((p) => {
+          const cue = sentCue(p);
+          return (
+            <div key={p.id} className="relative flex flex-col gap-2 rounded-xl border bg-card p-4">
+              <div className="flex items-start justify-between gap-2">
+                <Link
+                  href={`/projects/${p.id}`}
+                  className="font-semibold after:absolute after:inset-0 after:rounded-[inherit] focus-visible:outline-none"
+                >
+                  {p.name}
+                </Link>
+                <ProjectStatusBadge stage={p.lifecycle_stage} />
+              </div>
+              {p.region ? (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="size-3" aria-hidden />
+                  {p.region}
+                </span>
+              ) : null}
+              {p.customer ? (
+                <Link
+                  href={`/contacts/${p.customer.id}`}
+                  className="relative z-10 w-fit text-sm text-muted-foreground hover:underline"
+                >
+                  {p.customer.name}
+                </Link>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <span>{startLabel(p.start_date)}</span>
+                <Progress pct={p.work_status_pct} overBudget={p.over_budget} />
+                {cue ? <span className="text-xs">{cue}</span> : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
 function SortHeader({
   label,
   sortKey,
-  activeKey,
+  sort,
   dir,
   onClick,
-  align = 'left',
 }: {
   label: string;
-  sortKey: SortKey;
-  activeKey: SortKey;
-  dir: SortDir;
-  onClick: (key: SortKey) => void;
-  align?: 'left' | 'right';
+  sortKey: ProjectListSort;
+  sort: ProjectListSort;
+  dir: 'asc' | 'desc';
+  onClick: (key: ProjectListSort) => void;
 }) {
-  const isActive = activeKey === sortKey;
+  const isActive = sort === sortKey;
   const Icon = !isActive ? ChevronsUpDown : dir === 'asc' ? ChevronUp : ChevronDown;
   return (
-    <th className={cn('px-4 py-3 font-medium', align === 'right' ? 'text-right' : 'text-left')}>
+    <th className="px-4 py-3 text-left">
       <button
         type="button"
         onClick={() => onClick(sortKey)}
         className={cn(
-          'inline-flex items-center gap-1 hover:text-foreground',
-          align === 'right' && 'flex-row-reverse',
+          'inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide hover:text-foreground',
           isActive ? 'text-foreground' : 'text-muted-foreground',
         )}
       >

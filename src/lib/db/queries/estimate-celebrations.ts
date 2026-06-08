@@ -116,12 +116,12 @@ export async function getPendingEstimateCelebration(): Promise<EstimateCelebrati
 
   const { data: project } = await supabase
     .from('projects')
-    .select('id, name, customers:customer_id (name)')
+    .select('id, name, contacts:contact_id (name)')
     .eq('id', chosen.projectId)
     .maybeSingle();
   if (!project) return null;
 
-  const customerRaw = project.customers as { name?: string } | { name?: string }[] | null;
+  const customerRaw = project.contacts as { name?: string } | { name?: string }[] | null;
   const customerName = Array.isArray(customerRaw)
     ? (customerRaw[0]?.name ?? null)
     : (customerRaw?.name ?? null);

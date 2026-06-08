@@ -2,8 +2,11 @@ import { GoogleGenAI } from '@google/genai';
 import { type NextRequest, NextResponse } from 'next/server';
 import { finishAgentRun, recordAgentRun } from '@/lib/agents';
 import { env } from '@/lib/env';
+import { generateContentWithRetry } from '@/lib/llm/gemini-retry';
 import { geminiFlashCostCents, trackOpsAiCall } from '@/lib/llm/telemetry';
 import { createServiceClient } from '@/lib/supabase';
+import { fmtDate } from '@/lib/tz';
+import { sendOpsEmail } from '@/server/ops-services/email';
 
 /**
  * Weekly maintenance run. Triggered by Vercel Cron (Mondays 14:00 UTC,
@@ -156,7 +159,7 @@ Raw data (JSON):
 ${JSON.stringify(context).slice(0, 40000)}`;
 
       const t0 = Date.now();
-      const response = await ai.models.generateContent({
+      const response = await generateContentWithRetry(ai, {
         model: 'gemini-2.5-flash',
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: { temperature: 0.2 },
@@ -178,7 +181,7 @@ ${JSON.stringify(context).slice(0, 40000)}`;
       digestMarkdown = `_Digest LLM call failed: ${e instanceof Error ? e.message : String(e)}_`;
     }
 
-    const digestTitle = `Weekly digest — ${new Date().toLocaleDateString('en-CA')}`;
+    const digestTitle = `Weekly digest — ${fmtDate(new Date())}`;
     const { error: digestErr } = await service
       .schema('ops')
       .from('worklog_entries')
@@ -198,25 +201,18 @@ ${JSON.stringify(context).slice(0, 40000)}`;
     };
 
     // Best-effort email to Jonathan so he sees it in his inbox too.
-    if (env.resendApiKey) {
-      try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${env.resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: env.alertsFromEmail,
-            to: env.alertsToEmail,
-            subject: digestTitle,
-            html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${digestMarkdown.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c] ?? c)}</pre><p style="color:#666;font-size:12px">See the full entry at <a href="https://ops.heyhenry.io/worklog">ops.heyhenry.io/worklog</a>.</p>`,
-          }),
-        });
-      } catch {
-        // non-fatal
-      }
-    }
+    // Routed through sendOpsEmail (Postmark) like every other ops send; the
+    // call is non-fatal and self-audits, so no provider guard needed here.
+    const digestHtml = `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${digestMarkdown.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c] ?? c)}</pre><p style="color:#666;font-size:12px">See the full entry at <a href="https://ops.heyhenry.io/worklog">ops.heyhenry.io/worklog</a>.</p>`;
+    await sendOpsEmail(
+      {
+        from: env.alertsFromEmail,
+        to: env.alertsToEmail,
+        subject: digestTitle,
+        html: digestHtml,
+      },
+      { keyId: null, path: '/api/ops/maintenance/run', method: 'POST' },
+    );
   } catch (e) {
     tasks.weekly_digest = { error: e instanceof Error ? e.message : String(e) };
   }

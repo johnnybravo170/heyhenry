@@ -6,6 +6,7 @@
  * page and the AI budget tool.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 
@@ -14,20 +15,50 @@ export type BudgetCategoryRow = {
   project_id: string;
   tenant_id: string;
   name: string;
-  section: string;
+  /**
+   * FK to project_budget_sections — the authoritative grouping key. Nullable:
+   * categories not linked to a section group under "Other".
+   */
+  section_id: string | null;
   description: string | null;
   estimate_cents: number;
   display_order: number;
   is_visible_in_report: boolean;
   created_at: string;
   updated_at: string;
+  /** Joined section entity (null when section_id is null). */
+  section_row: {
+    id: string;
+    name: string;
+    sort_order: number;
+    description_md: string | null;
+  } | null;
+};
+
+/** The section entity carried alongside each budget line for grouping. */
+export type BudgetSection = {
+  /** null id = the synthetic "Other" bucket for unlinked categories. */
+  id: string | null;
+  name: string;
+  sort_order: number;
+  description_md: string | null;
 };
 
 export type BudgetLine = {
   budget_category_id: string;
   budget_category_name: string;
   budget_category_description: string | null;
+  /**
+   * Section name, derived from the `section_entity` below (the authoritative
+   * source). Kept as a convenience for consumers that key on the string (e.g.
+   * the budget table's drag grouping); empty string when unsectioned.
+   */
   section: string;
+  /**
+   * Authoritative section grouping for the budget page. id is null for
+   * categories with no section_id (rendered under "Other").
+   */
+  section_entity: BudgetSection;
   estimate_cents: number;
   labor_cents: number;
   expense_cents: number;
@@ -61,6 +92,12 @@ export type BudgetLine = {
 
 export type BudgetSummary = {
   lines: BudgetLine[];
+  /**
+   * Sections in render order (project_budget_sections.sort_order), with the
+   * synthetic "Other" bucket (id null) last when any unlinked category
+   * exists. Empty sections (no categories) ARE included so they render.
+   */
+  sections: BudgetSection[];
   total_estimate_cents: number;
   total_actual_cents: number;
   total_committed_cents: number;
@@ -72,7 +109,9 @@ export const listBudgetCategoriesForProject = cache(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('project_budget_categories')
-      .select('*')
+      .select(
+        '*, section_row:project_budget_sections!section_id(id, name, sort_order, description_md)',
+      )
       .eq('project_id', projectId)
       .order('display_order', { ascending: true })
       .order('name', { ascending: true });
@@ -84,35 +123,259 @@ export const listBudgetCategoriesForProject = cache(
   },
 );
 
+/**
+ * All sections for a project in render order. Includes EMPTY sections (no
+ * categories) so they still render on the budget page now that sections are
+ * a real entity.
+ */
+const listBudgetSectionsForProject = cache(async (projectId: string): Promise<BudgetSection[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('project_budget_sections')
+    .select('id, name, sort_order, description_md')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to list sections: ${error.message}`);
+  }
+  return (data ?? []) as BudgetSection[];
+});
+
+/**
+ * Resolve a budget section by name on a project, creating it if missing.
+ * Returns the section row id. Shared by every writer that arrives with a
+ * section *name* (intake, scaffolds, templates, quotes) so they can set
+ * `section_id` directly rather than relying on the legacy `section` string +
+ * sync trigger. Accepts either the RLS server client or the service-role
+ * admin client (both are structurally `SupabaseClient`).
+ */
+export async function resolveBudgetSectionId(
+  supabase: SupabaseClient,
+  tenantId: string,
+  projectId: string,
+  name: string,
+): Promise<{ id: string } | { error: string }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: 'Section name cannot be empty.' };
+
+  const { data: existing } = await supabase
+    .from('project_budget_sections')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('name', trimmed)
+    .maybeSingle();
+  if (existing) return { id: (existing as { id: string }).id };
+
+  const { data: maxRow } = await supabase
+    .from('project_budget_sections')
+    .select('sort_order')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: false })
+    .limit(1);
+  const nextOrder = maxRow?.[0] ? (maxRow[0] as { sort_order: number }).sort_order + 1 : 0;
+
+  const { data, error } = await supabase
+    .from('project_budget_sections')
+    .insert({ project_id: projectId, tenant_id: tenantId, name: trimmed, sort_order: nextOrder })
+    .select('id')
+    .single();
+  if (error || !data) return { error: error?.message ?? 'Failed to resolve section.' };
+  return { id: (data as { id: string }).id };
+}
+
+/** A single cost line in a normalized scope. */
+type ScopeLineInput = {
+  label: string;
+  /** Cost-line bucket; defaults to 'material'. */
+  category?: string;
+  qty: number;
+  unit: string;
+  unit_cost_cents?: number;
+  unit_price_cents?: number;
+  notes?: string | null;
+};
+
+/** A budget category in a normalized scope, with its lines. */
+export type ScopeCategoryInput = {
+  name: string;
+  /** Section name; resolved to a section_id. Falsy → defaultSectionName. */
+  section?: string | null;
+  description?: string | null;
+  lines: ScopeLineInput[];
+};
+
+/**
+ * Apply a normalized scope (sections → categories → cost lines) to a project's
+ * budget. The single insert path shared by every "structured scope → budget"
+ * writer — inbound-lead intake accept, AI scope scaffold, and starter templates
+ * — so section resolution and category/line shaping live in ONE place.
+ *
+ * The caller owns everything around the insert: tenant/project ownership
+ * checks, any "project already has scope" guard, worklog entries, and
+ * revalidatePath. Pass the client the writes should run under — the RLS server
+ * client or the service-role admin client (matches `resolveBudgetSectionId`).
+ */
+export async function applyScopeToProject(
+  supabase: SupabaseClient,
+  args: {
+    tenantId: string;
+    projectId: string;
+    categories: ScopeCategoryInput[];
+    /** Section for categories with no section of their own. Default 'General'. */
+    defaultSectionName?: string;
+  },
+): Promise<{ ok: true; categoryCount: number; lineCount: number } | { ok: false; error: string }> {
+  const { tenantId, projectId, categories } = args;
+  const defaultSectionName = args.defaultSectionName ?? 'General';
+  const sectionNameFor = (c: ScopeCategoryInput) => (c.section ?? '').trim() || defaultSectionName;
+
+  // Resolve distinct section names → ids; set section_id and let the DB trigger
+  // mirror the legacy `section` string for not-yet-migrated readers.
+  const sectionIdByName = new Map<string, string>();
+  for (const c of categories) {
+    const name = sectionNameFor(c);
+    if (sectionIdByName.has(name)) continue;
+    const resolved = await resolveBudgetSectionId(supabase, tenantId, projectId, name);
+    if ('error' in resolved) return { ok: false, error: `Sections: ${resolved.error}` };
+    sectionIdByName.set(name, resolved.id);
+  }
+
+  // Insert categories with explicit display_order so lines map back to their
+  // parent by order (robust against insert-return reordering).
+  const categoryRows = categories.map((c, i) => ({
+    project_id: projectId,
+    tenant_id: tenantId,
+    name: c.name,
+    section_id: sectionIdByName.get(sectionNameFor(c)) ?? null,
+    description: c.description ?? null,
+    estimate_cents: 0,
+    display_order: i,
+  }));
+
+  const idByOrder = new Map<number, string>();
+  if (categoryRows.length) {
+    const { data: inserted, error: catErr } = await supabase
+      .from('project_budget_categories')
+      .insert(categoryRows)
+      .select('id, display_order');
+    if (catErr) return { ok: false, error: `Categories: ${catErr.message}` };
+    for (const row of inserted ?? []) {
+      idByOrder.set((row as { display_order: number }).display_order, (row as { id: string }).id);
+    }
+  }
+
+  const lineRows: Array<Record<string, unknown>> = [];
+  let sortOrder = 0;
+  categories.forEach((c, i) => {
+    const categoryId = idByOrder.get(i);
+    if (!categoryId) return;
+    for (const l of c.lines) {
+      const qty = Number(l.qty) || 1;
+      const unitCost = Number(l.unit_cost_cents ?? 0) || 0;
+      const unitPrice = Number(l.unit_price_cents ?? 0) || 0;
+      lineRows.push({
+        // NB: project_cost_lines has no tenant_id column (tenant scoping is via
+        // project_id → projects.tenant_id). Do not add one here.
+        project_id: projectId,
+        budget_category_id: categoryId,
+        category: l.category || 'material',
+        label: l.label,
+        notes: l.notes ?? null,
+        qty,
+        unit: l.unit || 'lot',
+        unit_cost_cents: unitCost,
+        unit_price_cents: unitPrice,
+        line_cost_cents: Math.round(qty * unitCost),
+        line_price_cents: Math.round(qty * unitPrice),
+        markup_pct:
+          unitCost > 0 ? Math.round(((unitPrice - unitCost) / unitCost) * 10000) / 100 : 0,
+        sort_order: sortOrder++,
+      });
+    }
+  });
+  if (lineRows.length) {
+    const { error: lineErr } = await supabase.from('project_cost_lines').insert(lineRows);
+    if (lineErr) return { ok: false, error: `Cost lines: ${lineErr.message}` };
+  }
+
+  return { ok: true, categoryCount: categoryRows.length, lineCount: lineRows.length };
+}
+
 export async function getBudgetVsActual(projectId: string): Promise<BudgetSummary> {
   const supabase = await createClient();
 
-  // 1. Load all categories for this project
-  const categories = await listBudgetCategoriesForProject(projectId);
+  // 1. Load all categories + all sections (incl. empty) for this project.
+  const [categories, allSections] = await Promise.all([
+    listBudgetCategoriesForProject(projectId),
+    listBudgetSectionsForProject(projectId),
+  ]);
 
-  // 2. Load time entries for this project, grouped by budget_category_id
-  const { data: timeData, error: timeErr } = await supabase
-    .from('time_entries')
-    .select('budget_category_id, hours, hourly_rate_cents')
-    .eq('project_id', projectId);
+  // Synthetic bucket for categories with no section_id.
+  const OTHER: BudgetSection = {
+    id: null,
+    name: 'Other',
+    sort_order: Infinity,
+    description_md: null,
+  };
+
+  // 2-5. Load every per-project cost input in parallel. These five reads are
+  // independent (each filtered only by projectId), so a single Promise.all
+  // round-trip replaces what was a 5-query sequential waterfall on the hot
+  // Budget tab. Semantics of each result are documented at its aggregation
+  // point below.
+  //   3+4. project_costs: receipts contribute gross amount_cents; vendor bills
+  //        contribute the pre-GST subtotal (GST is an ITC, not a project cost).
+  //        The split below preserves the pre-unification mixed semantics so
+  //        variance numbers don't shift.
+  //   4a.  project_cost_lines: fallback when a category's stored envelope is 0
+  //        but priced lines exist under it (AI-scaffolded projects insert
+  //        categories with estimate_cents=0).
+  //   5.   committed = accepted vendor-quote allocations + active PO line items
+  //        (POs carry budget_category_id indirectly via cost_lines).
+  const [
+    { data: timeData, error: timeErr },
+    { data: costData, error: costErr },
+    { data: costLineData, error: costLineErr },
+    { data: subQuoteAllocs },
+    { data: poItems },
+  ] = await Promise.all([
+    supabase
+      .from('time_entries')
+      .select('budget_category_id, hours, hourly_rate_cents')
+      .eq('project_id', projectId),
+    supabase
+      .from('project_costs')
+      .select('budget_category_id, source_type, amount_cents, pre_tax_amount_cents')
+      .eq('project_id', projectId)
+      .eq('status', 'active'),
+    supabase
+      .from('project_cost_lines')
+      .select('budget_category_id, line_price_cents')
+      .eq('project_id', projectId),
+    supabase
+      .from('project_sub_quote_allocations')
+      .select('allocated_cents, budget_category_id, project_sub_quotes!inner(project_id, status)')
+      .eq('project_sub_quotes.project_id', projectId)
+      .eq('project_sub_quotes.status', 'accepted'),
+    supabase
+      .from('purchase_order_items')
+      .select(
+        'line_total_cents, project_cost_lines(budget_category_id), purchase_orders!inner(project_id, status)',
+      )
+      .eq('purchase_orders.project_id', projectId)
+      .in('purchase_orders.status', ['sent', 'acknowledged', 'received']),
+  ]);
 
   if (timeErr) {
     throw new Error(`Failed to load time entries: ${timeErr.message}`);
   }
-
-  // 3+4. Load receipts + vendor bills from the unified project_costs
-  // table, grouped by budget_category_id. Receipts contribute gross
-  // amount_cents; vendor bills contribute the pre-GST subtotal (GST is
-  // an ITC, not a project cost). The split below preserves the
-  // pre-unification mixed semantics so variance numbers don't shift.
-  const { data: costData, error: costErr } = await supabase
-    .from('project_costs')
-    .select('budget_category_id, source_type, amount_cents, pre_tax_amount_cents')
-    .eq('project_id', projectId)
-    .eq('status', 'active');
-
   if (costErr) {
     throw new Error(`Failed to load project costs: ${costErr.message}`);
+  }
+  if (costLineErr) {
+    throw new Error(`Failed to load cost lines: ${costLineErr.message}`);
   }
 
   const expenseData = (costData ?? [])
@@ -130,39 +393,6 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
         (r as { amount_cents: number }).amount_cents ??
         0,
     }));
-
-  // 4a. Load cost lines summed per category. Used as a fallback when a
-  // category's stored envelope is 0 but priced lines exist under it
-  // (e.g. AI-scaffolded projects always insert categories with
-  // estimate_cents=0; if the operator prices the lines and never sets
-  // an envelope, the Budget tab would otherwise display $0 totals
-  // while the Estimate tab + project Overview correctly show the lines
-  // sum via scope_subtotal_cents in cost-lines.ts).
-  const { data: costLineData, error: costLineErr } = await supabase
-    .from('project_cost_lines')
-    .select('budget_category_id, line_price_cents')
-    .eq('project_id', projectId);
-
-  if (costLineErr) {
-    throw new Error(`Failed to load cost lines: ${costLineErr.message}`);
-  }
-
-  // 5. Committed: accepted vendor quote allocations + active PO line items.
-  // Vendor quotes have direct budget_category_id on allocations. POs have
-  // it indirectly via PO line items → cost_lines.budget_category_id.
-  const { data: subQuoteAllocs } = await supabase
-    .from('project_sub_quote_allocations')
-    .select('allocated_cents, budget_category_id, project_sub_quotes!inner(project_id, status)')
-    .eq('project_sub_quotes.project_id', projectId)
-    .eq('project_sub_quotes.status', 'accepted');
-
-  const { data: poItems } = await supabase
-    .from('purchase_order_items')
-    .select(
-      'line_total_cents, project_cost_lines(budget_category_id), purchase_orders!inner(project_id, status)',
-    )
-    .eq('purchase_orders.project_id', projectId)
-    .in('purchase_orders.status', ['sent', 'acknowledged', 'received']);
 
   // Aggregate labor by budget_category_id
   const laborByBudgetCategory = new Map<string, number>();
@@ -261,11 +491,22 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
     // where envelope and lines could disagree on the same screen.
     const lines_total_cents = linesByBudgetCategory.get(b.id) ?? 0;
     const estimate_cents = lines_total_cents > 0 ? lines_total_cents : b.estimate_cents;
+    const section_entity: BudgetSection = b.section_row
+      ? {
+          id: b.section_row.id,
+          name: b.section_row.name,
+          sort_order: b.section_row.sort_order,
+          description_md: b.section_row.description_md,
+        }
+      : OTHER;
     return {
       budget_category_id: b.id,
       budget_category_name: b.name,
       budget_category_description: b.description,
-      section: b.section,
+      // Derived from the section entity; '' when the category has no section
+      // (matches the legacy denormalized-string behaviour for "Other").
+      section: b.section_row?.name ?? '',
+      section_entity,
       estimate_cents,
       labor_cents,
       expense_cents,
@@ -285,8 +526,21 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
   const total_actual_cents = lines.reduce((sum, l) => sum + l.actual_cents, 0);
   const total_committed_cents = lines.reduce((sum, l) => sum + l.committed_cents, 0);
 
+  // Section render order: real sections by sort_order (incl. empty ones),
+  // then the synthetic "Other" bucket last iff any unlinked category exists.
+  const sections: BudgetSection[] = allSections.map((s) => ({
+    id: s.id,
+    name: s.name,
+    sort_order: s.sort_order,
+    description_md: s.description_md,
+  }));
+  if (lines.some((l) => l.section_entity.id === null)) {
+    sections.push(OTHER);
+  }
+
   return {
     lines,
+    sections,
     total_estimate_cents,
     total_actual_cents,
     total_committed_cents,

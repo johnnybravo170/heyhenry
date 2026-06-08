@@ -9,6 +9,7 @@
  * keeps the schema-validated call site consistent with signup.
  */
 
+import { Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState, useTransition } from 'react';
@@ -75,9 +76,9 @@ function LoginForm() {
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">
           {recoveryUsed ? (
-            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+            <div className="rounded-md border border-amber-200 bg-amber-100 p-3 text-sm text-amber-800">
               Two-factor authentication was removed from your account. Sign in, then set it up again
-              from Settings → Security.
+              from Settings &rsaquo; Security.
             </div>
           ) : null}
           <div className="space-y-2">
@@ -113,12 +114,30 @@ function LoginForm() {
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? 'Signing in…' : 'Sign in'}
           </Button>
+
+          {/* — or — divider */}
+          <div className="flex w-full items-center gap-2">
+            <span className="h-px flex-1 bg-border" />
+            <span className="font-mono text-eyebrow uppercase tracking-[0.06em] text-muted-foreground">
+              or
+            </span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          {/* Co-equal magic-link path */}
+          <Button asChild variant="outline" className="w-full" disabled={pending}>
+            <Link href="/magic-link">
+              <Mail className="size-4" />
+              Email me a sign-in link
+            </Link>
+          </Button>
+
           <div className="flex w-full justify-between text-sm">
             <Link href="/magic-link" className="text-muted-foreground hover:underline">
-              Forgot? Use magic link
+              Forgot your password?
             </Link>
             <Link href="/signup" className="text-muted-foreground hover:underline">
-              No account? Sign up
+              No account? <strong>Sign up</strong>
             </Link>
           </div>
         </CardFooter>

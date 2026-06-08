@@ -8,7 +8,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { getCustomer } from '@/lib/db/queries/customers';
+import { getCustomer } from '@/lib/db/queries/contacts';
 import { getJob } from '@/lib/db/queries/jobs';
 import { listPhotosByJob, type PhotoWithUrl } from '@/lib/db/queries/photos';
 import { getQuote } from '@/lib/db/queries/quotes';
@@ -205,8 +205,8 @@ export async function POST(request: Request) {
 
   // 5. Load customer city (if available)
   let customerCity: string | null = null;
-  if (job.customer_id) {
-    const customer = await getCustomer(job.customer_id);
+  if (job.contact_id) {
+    const customer = await getCustomer(job.contact_id);
     customerCity = customer?.city ?? null;
   }
 

@@ -21,7 +21,7 @@
  * Hidden entirely when the estimate isn't approved yet.
  */
 
-import { ChevronDown, ChevronUp, ExternalLink, FileEdit, Info } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, ExternalLink, FileEdit } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -36,65 +36,102 @@ export function AppliedChangeOrdersBanner({
   appliedCount,
   projectId,
   versions,
+  customerName,
+  approvedAt,
+  baselineVersion,
+  approvalCode,
 }: {
   estimateStatus: string;
   appliedCount: number;
   projectId: string;
   versions: ProjectVersionListItem[];
+  /** Who signed (customer). */
+  customerName?: string | null;
+  /** When the estimate was approved (ISO). */
+  approvedAt?: string | null;
+  /** Contract-baseline version number → "v{n}". */
+  baselineVersion?: number | null;
+  /** Public estimate code → "View signed PDF" deep-link. */
+  approvalCode?: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const tz = useTenantTimezone();
 
   // Banner only meaningful once the estimate is signed. Pre-approval
   // states have their own banners (EstimateSentBanner for pending).
   if (estimateStatus !== 'approved') return null;
 
   const hasHistory = appliedCount > 0;
-  // Once the estimate is signed, the operator can author a CO at any
-  // time — show the CTA whenever this banner renders.
-  const showCta = true;
+  const approvedText = approvedAt
+    ? new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }).format(new Date(approvedAt))
+    : null;
+  const signedHref = approvalCode
+    ? `/estimate/${approvalCode}`
+    : `/projects/${projectId}/estimate/preview`;
 
   return (
-    <div className="overflow-hidden rounded-md border border-blue-200 bg-blue-50/60 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-        <Info className="size-3.5 shrink-0" />
-        <span className="flex-1 min-w-0">
-          <span className="font-semibold">Estimate signed</span>
+    <div className="overflow-hidden rounded-xl border border-l-[3px] border-l-emerald-600 bg-card text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5">
+        <span className="grid size-[18px] shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+          <Check className="size-2.5" aria-hidden />
+        </span>
+        <span className="min-w-0">
+          <strong className="font-semibold text-foreground">
+            Estimate signed{customerName ? ` by ${customerName}` : ''}
+          </strong>
+          {approvedText ? `, ${approvedText}` : ''}
           {hasHistory ? (
             <>
-              {' · '}
-              <span className="font-semibold">{appliedCount}</span> applied change{' '}
+              <span className="mx-1.5 text-muted-foreground/50">·</span>
+              <span className="font-semibold text-foreground">{appliedCount}</span> applied change{' '}
               {appliedCount === 1 ? 'order' : 'orders'}
             </>
           ) : null}
-          {showCta ? (
-            <span className="hidden text-blue-800/80 sm:inline dark:text-blue-200/80">
-              {' · '}edits update the working budget; scope changes go through a Change Order
-            </span>
+          {baselineVersion ? (
+            <>
+              <span className="mx-1.5 text-muted-foreground/50">·</span>contract baseline{' '}
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wide text-foreground">
+                v{baselineVersion}
+              </span>
+            </>
           ) : null}
         </span>
-        {hasHistory ? (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide hover:bg-blue-100/60 dark:hover:bg-blue-950/60"
+        <div className="ml-auto flex items-center gap-2">
+          {hasHistory ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide hover:bg-muted hover:text-foreground"
+            >
+              {expanded ? 'Hide history' : 'See history'}
+              {expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+            </button>
+          ) : null}
+          <Link
+            href={signedHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-foreground hover:underline"
           >
-            {expanded ? 'Hide history' : 'See history'}
-            {expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-          </button>
-        ) : null}
-        {showCta ? (
+            View signed PDF <ExternalLink className="size-2.5 text-muted-foreground" />
+          </Link>
           <Button asChild size="xs" variant="outline" className="bg-background">
             <Link href={`/projects/${projectId}/change-orders/new`}>
               <FileEdit className="size-3" />
               Change Order
             </Link>
           </Button>
-        ) : null}
+        </div>
       </div>
 
       {expanded && hasHistory ? (
-        <div className="border-t border-blue-200/60 bg-blue-50/30 px-3 py-2 dark:border-blue-900/60 dark:bg-blue-950/20">
+        <div className="border-t bg-muted/20 px-4 py-2">
           {versions.length === 0 ? (
             <p className="py-2 text-blue-800 dark:text-blue-200">
               No signed versions yet on this project.

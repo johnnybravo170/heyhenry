@@ -4,9 +4,10 @@ import { notFound } from 'next/navigation';
 import { QuoteForm } from '@/components/features/quotes/quote-form';
 import { requireTenant } from '@/lib/auth/helpers';
 import { listMapQuoteCatalog } from '@/lib/db/queries/catalog-items';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { getQuote } from '@/lib/db/queries/quotes';
 import { canadianTax } from '@/lib/providers/tax/canadian';
+import { isUuid } from '@/lib/validators/uuid';
 import { updateQuoteAction } from '@/server/actions/quotes';
 
 export const metadata = {
@@ -15,13 +16,15 @@ export const metadata = {
 
 export default async function EditQuotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const { tenant } = await requireTenant();
   const [quote, customers, catalog, taxCtx] = await Promise.all([
     getQuote(id),
-    listCustomers({ limit: 500 }),
+    listContacts({ limit: 500 }),
     listMapQuoteCatalog(),
-    canadianTax.getContext(tenant.id),
+    // Customer-facing: the rate here must match the total the customer signs.
+    canadianTax.getCustomerFacingContext(tenant.id),
   ]);
 
   if (!quote) notFound();
@@ -45,12 +48,12 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
 
       <QuoteForm
         mode="edit"
-        customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
         catalog={catalog}
         taxRate={taxCtx.totalRate}
         defaults={{
           id: quote.id,
-          customer_id: quote.customer_id,
+          contact_id: quote.contact_id,
           notes: quote.notes ?? '',
           surfaces: quote.surfaces.map((s) => ({
             id: s.id,

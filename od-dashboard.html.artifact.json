@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "Owner Dashboard — HeyHenry · OD launcher",
+  "entry": "od-dashboard.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-05-21T20:23:41.658Z",
+  "updatedAt": "2026-05-21T20:23:41.773Z",
+  "sourceSkillId": "agent-browser",
+  "metadata": {
+    "identifier": "od-dashboard",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}

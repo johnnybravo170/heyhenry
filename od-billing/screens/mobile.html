@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Billing — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── App header ───── */
+  .app-header {
+    padding: 14px 18px 10px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .app-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .app-title {
+    font-size: 26px; font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .app-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 3px;
+  }
+  .app-sub .mono { font-family: var(--mono); color: var(--ink-2); font-weight: 600; }
+  .app-sub .dot { margin: 0 5px; color: var(--faint); }
+
+  .app-actions { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: grid; place-items: center;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .icon-btn .ico { width: 18px; height: 18px; }
+
+  /* ───── Cockpit (3 tiles) ───── */
+  .cockpit {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 12px 14px 8px;
+    background: var(--chrome);
+  }
+  .kpi {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 10px 10px;
+    display: flex; flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    min-height: 76px;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .kpi-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+  .kpi-value {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .kpi-value .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .kpi-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .kpi--accent {
+    background: var(--rust-soft);
+    border-color: rgba(194, 65, 12, 0.25);
+  }
+  .kpi--accent .kpi-label { color: var(--rust); }
+  .kpi--accent .kpi-value { color: var(--rust); }
+  .kpi--accent .kpi-value .cents { color: rgba(194, 65, 12, 0.6); }
+  .kpi--accent .kpi-sub { color: var(--rust); font-weight: 600; }
+  .kpi--danger .kpi-value { color: var(--danger); }
+  .kpi--danger .kpi-value .cents { color: rgba(185, 28, 28, 0.55); }
+
+  /* ───── Filter buttons (open sheets) ───── */
+  .filter-buttons {
+    display: flex;
+    gap: 8px;
+    padding: 8px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .filter-pill {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: left;
+  }
+  .filter-pill .pill-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .filter-pill .pill-label strong {
+    color: var(--ink);
+    font-weight: 600;
+    margin-left: 2px;
+  }
+  .filter-pill .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 6px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .filter-pill .chev {
+    width: 12px; height: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .filter-pill:active { background: var(--chip-fill); }
+
+  /* ───── Bottom sheet ───── */
+  .sheet-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .sheet-overlay[hidden] { display: none; }
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.35);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    animation: fade-in 180ms ease-out;
+  }
+  .sheet {
+    position: relative;
+    background: var(--chrome);
+    border-radius: 18px 18px 0 0;
+    padding: 8px 0 20px;
+    box-shadow: 0 -10px 30px -10px rgba(0, 0, 0, 0.25);
+    border-top: 1px solid var(--hair);
+    max-height: 72%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: slide-up 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--rule);
+    border-radius: 999px;
+    margin: 4px auto 12px;
+    flex-shrink: 0;
+  }
+  .sheet-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px 12px;
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .sheet-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .sheet-cancel {
+    background: none;
+    border: none;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--rust);
+    padding: 6px 4px;
+    cursor: pointer;
+  }
+  .sheet-list {
+    display: flex; flex-direction: column;
+    padding: 4px 0 0;
+  }
+  .sheet-option {
+    display: flex; align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 0 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: var(--sans);
+    text-align: left;
+    border-bottom: 1px solid var(--hair);
+  }
+  .sheet-option:last-child { border-bottom: none; }
+  .sheet-option:active { background: var(--chip-fill); }
+  .opt-label {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    flex: 1;
+  }
+  .opt-count {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .opt-count-zero { color: var(--faint); }
+  .opt-check {
+    width: 18px; height: 18px;
+    color: var(--rust);
+    opacity: 0;
+    flex-shrink: 0;
+  }
+  .sheet-option.is-on .opt-check { opacity: 1; }
+  .sheet-option.is-on .opt-label { font-weight: 600; }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  /* ───── Card collapse toggle ───── */
+  .card-toggle {
+    appearance: none;
+    border: none;
+    border-top: 1px solid var(--hair);
+    background: var(--card);
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 14px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .card-toggle:active { background: var(--chip-fill); }
+  .card-toggle .chev {
+    width: 12px; height: 12px;
+    transition: transform 200ms;
+  }
+  .card.is-expanded .card-toggle .chev { transform: rotate(180deg); }
+  .card:not(.is-expanded) .draws { display: none; }
+  .card.is-expanded .toggle-label-collapsed,
+  .card:not(.is-expanded) .toggle-label-expanded { display: none; }
+  .card-toggle-static {
+    border-top: 1px solid var(--hair);
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+
+  /* ───── Scroll area (cockpit + filters + list all scroll together) ───── */
+  .scroll-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    margin-bottom: 88px;
+  }
+
+  /* ───── List body ───── */
+  .list {
+    padding: 12px 14px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .list > * { flex-shrink: 0; }
+
+  /* ───── Project card ───── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: clip;
+  }
+  .card-head {
+    padding: 14px 14px 10px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--card);
+    transition: box-shadow 160ms ease, border-color 160ms ease;
+  }
+  .card-head.is-stuck {
+    box-shadow: 0 6px 10px -8px rgba(10, 10, 10, 0.18);
+    border-bottom: 1px solid var(--hair);
+  }
+  .card.is-pinned > .card-head {
+    box-shadow: 0 6px 10px -8px rgba(10, 10, 10, 0.18);
+    border-bottom: 1px solid var(--hair);
+  }
+  .card-id {
+    min-width: 0; flex: 1;
+  }
+  .card-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    color: var(--ink);
+  }
+  .card-customer {
+    font-size: 14px;
+    color: var(--ink-2);
+    margin-top: 3px;
+    font-weight: 500;
+  }
+  .card-customer .sep { color: var(--faint); margin: 0 5px; }
+
+  /* Position grid (5 rows of label + value) */
+  .position {
+    border-top: 1px solid var(--hair);
+    padding: 10px 14px 12px;
+    display: flex; flex-direction: column;
+    gap: 6px;
+  }
+  .pos-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 8px;
+  }
+  .pos-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .pos-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .pos-value .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .pos-row--zero .pos-value { color: var(--faint); font-weight: 500; }
+  .pos-row--highlight .pos-label { color: var(--ink-2); }
+  .pos-row--highlight .pos-value { color: var(--ink); font-weight: 700; }
+
+  /* Rollup chip (top-right of card head) */
+  .rollup {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .rollup-ready {
+    background: var(--rust-soft);
+    color: var(--rust);
+    border-color: rgba(194, 65, 12, 0.18);
+  }
+  .rollup-overdue { background: var(--danger-soft); color: var(--danger); }
+  .rollup-paid { background: var(--ok-soft); color: var(--ok); }
+  .rollup-draft { background: var(--chip-fill); color: var(--muted); }
+
+  /* Henry inline prompt (Donahue ready-to-bill) — peach, ready-to-bill family */
+  .henry-inline {
+    margin: 0 14px 14px;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+    border-left: 3px solid var(--rust);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .henry-inline-top {
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .henry-mark {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .henry-mark svg { width: 12px; height: 12px; }
+  .henry-inline-text {
+    font-size: 14px;
+    color: var(--ink-2);
+    flex: 1;
+    line-height: 1.4;
+  }
+  .henry-inline-text strong { color: var(--ink); font-weight: 600; }
+  .henry-inline-text .henry-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-right: 6px;
+  }
+  .btn-bill-draw {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--rust);
+    color: #fff;
+    border: none;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-bill-draw:hover { background: #A8370A; }
+
+  /* ───── Draws (expanded) ───── */
+  .draws {
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 4px 14px 8px;
+  }
+  .draws-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 0 4px;
+  }
+  .draws-empty {
+    border-top: 1px dashed var(--rule);
+    padding: 12px 0;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .draw-block {
+    border-top: 1px dashed var(--rule);
+    padding: 10px 0;
+    display: flex; flex-direction: column;
+    gap: 4px;
+  }
+  .draw-block:last-child { padding-bottom: 6px; }
+  .draw-line-1 {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .draw-label-block { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+  .draw-num {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .draw-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .draw-amount {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .draw-amount .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .draw-line-2 {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .draw-meta {
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .draw-meta .sep { color: var(--faint); margin: 0 5px; }
+  .draw-meta .info-method { color: var(--muted); }
+  .draw-meta-mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .status-paid { background: var(--ok-soft); color: var(--ok); }
+  .status-sent { background: var(--info-soft); color: var(--info); }
+  .status-overdue { background: var(--danger-soft); color: var(--danger); }
+  .status .age {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding-left: 4px;
+    border-left: 1px solid rgba(185, 28, 28, 0.3);
+    margin-left: 1px;
+    letter-spacing: 0.02em;
+  }
+  .btn-remind {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .btn-remind svg { width: 12px; height: 12px; }
+  .henry-trace {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 2px;
+  }
+  .henry-trace svg { width: 11px; height: 11px; color: var(--rust); flex-shrink: 0; }
+  .henry-trace strong { color: var(--rust); font-weight: 600; }
+
+  .gst-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin-top: -2px;
+  }
+
+  /* ───── Bottom tab bar ───── */
+  .tabbar {
+    position: absolute; left: 12px; right: 12px; bottom: 12px;
+    height: 64px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    border-radius: 0 0 36px 36px;
+    z-index: 50;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    padding-bottom: 8px;
+  }
+  .tab {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    flex: 1;
+    cursor: pointer;
+    position: relative;
+  }
+  .tab .ico { width: 20px; height: 20px; }
+  .tab.active { color: var(--ink); }
+  .tab.active::before {
+    content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 3px; background: var(--ink); border-radius: 999px;
+  }
+  .tab .pill {
+    position: absolute; top: 6px; right: 18%;
+    background: var(--rust); color: #fff;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+  }
+
+  .home-indicator {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: 18px;
+    width: 120px; height: 4px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 999px;
+  }
+
+  .mono { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-more-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="8" y2="12.01"/><line x1="12" y1="12" x2="12" y2="12.01"/><line x1="16" y1="12" x2="16" y2="12.01"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone" role="img" aria-label="HeyHenry Billing mobile">
+  <div class="screen">
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="mono">9:41</span>
+      <div class="island"></div>
+      <div class="right">
+        <svg style="width:14px;height:10px;"><use href="#i-signal"/></svg>
+        <svg style="width:14px;height:10px;"><use href="#i-wifi"/></svg>
+        <span class="battery"></span>
+      </div>
+    </div>
+
+    <!-- App header -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div>
+          <h1 class="app-title">Billing</h1>
+          <div class="app-sub">
+            What you&rsquo;re owed <span class="dot">&middot;</span> what&rsquo;s ready to bill
+          </div>
+        </div>
+        <div class="app-actions">
+          <button class="icon-btn" aria-label="Search"><svg class="ico"><use href="#i-search"/></svg></button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scroll area: cockpit + filters + cards all scroll together; only card heads pin -->
+    <div class="scroll-area">
+
+    <!-- Cockpit (3 KPI) -->
+    <section class="cockpit" aria-label="Billing cockpit">
+      <button class="kpi kpi--accent" data-filter="ready">
+        <div class="kpi-label">Ready to bill</div>
+        <div class="kpi-value">$18,000<span class="cents">.00</span></div>
+        <div class="kpi-sub">1 project</div>
+      </button>
+      <button class="kpi" data-filter="outstanding">
+        <div class="kpi-label">Outstanding</div>
+        <div class="kpi-value">$40,000<span class="cents">.00</span></div>
+        <div class="kpi-sub">2 draws</div>
+      </button>
+      <button class="kpi kpi--danger" data-filter="overdue">
+        <div class="kpi-label">Overdue</div>
+        <div class="kpi-value">$20,000<span class="cents">.00</span></div>
+        <div class="kpi-sub">28d late</div>
+      </button>
+    </section>
+
+    <!-- Filter buttons — each opens a bottom sheet -->
+    <div class="filter-buttons" aria-label="Filter">
+      <button class="filter-pill" type="button" data-open-sheet="status" aria-haspopup="dialog">
+        <span class="pill-label">Status: <strong>All</strong></span>
+        <span class="badge">4</span>
+        <svg class="chev"><use href="#i-chevron-down"/></svg>
+      </button>
+      <button class="filter-pill" type="button" data-open-sheet="sort" aria-haspopup="dialog">
+        <span class="pill-label">Sort: <strong>Ready first</strong></span>
+        <svg class="chev"><use href="#i-chevron-down"/></svg>
+      </button>
+    </div>
+
+    <!-- Card list -->
+    <div class="list">
+
+      <!-- ── Donahue (ready-to-bill — sorts first) ── -->
+      <article class="card" tabindex="0">
+        <div class="card-head">
+          <div class="card-id">
+            <div class="card-name">Basement Suite</div>
+            <div class="card-customer">The Donahue Family<span class="sep">&middot;</span>Chilliwack</div>
+          </div>
+          <span class="rollup rollup-ready">Ready $18,000</span>
+        </div>
+        <div class="position">
+          <div class="pos-row">
+            <span class="pos-label">Contract</span>
+            <span class="pos-value">$96,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row">
+            <span class="pos-label">Billed</span>
+            <span class="pos-value">$24,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row">
+            <span class="pos-label">Paid</span>
+            <span class="pos-value">$24,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--zero">
+            <span class="pos-label">Outstanding</span>
+            <span class="pos-value">$0<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--highlight">
+            <span class="pos-label">Remaining</span>
+            <span class="pos-value">$72,000<span class="cents">.00</span></span>
+          </div>
+        </div>
+        <div class="draws">
+          <div class="draws-label">Draws &middot; 1</div>
+
+          <div class="draw-block">
+            <div class="draw-line-1">
+              <div class="draw-label-block">
+                <span class="draw-num">Draw 1</span>
+                <span class="draw-sub">Deposit</span>
+              </div>
+              <span class="draw-amount">$24,000<span class="cents">.00</span></span>
+            </div>
+            <div class="draw-line-2">
+              <div class="draw-meta">paid May 2<span class="sep">&middot;</span><span class="info-method">Interac</span></div>
+              <span class="status status-paid">Paid</span>
+            </div>
+            <div class="draw-meta-mono">#a4f1c83d</div>
+          </div>
+        </div>
+        <div class="henry-inline">
+          <div class="henry-inline-top">
+            <div class="henry-mark"><svg><use href="#i-sparkles"/></svg></div>
+            <div class="henry-inline-text">
+              <span class="henry-label">Henry</span><strong>Framing complete</strong> &mdash; bill draw 2?
+            </div>
+          </div>
+          <button class="btn-bill-draw">Bill draw &mdash; $18,000</button>
+        </div>
+        <button class="card-toggle" type="button" aria-expanded="false">
+          <span class="toggle-label-collapsed">View draw history</span>
+          <span class="toggle-label-expanded">Hide history</span>
+          <svg class="chev"><use href="#i-chevron-down"/></svg>
+        </button>
+      </article>
+
+      <!-- ── Hillcrest (expanded — has overdue) ── -->
+      <article class="card is-expanded" tabindex="0">
+        <div class="card-head">
+          <div class="card-id">
+            <div class="card-name">Hillcrest Kitchen Remodel</div>
+            <div class="card-customer">Helen Chao<span class="sep">&middot;</span>Abbotsford</div>
+          </div>
+          <span class="rollup rollup-overdue">1 overdue</span>
+        </div>
+        <div class="position">
+          <div class="pos-row">
+            <span class="pos-label">Contract</span>
+            <span class="pos-value">$164,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row">
+            <span class="pos-label">Billed</span>
+            <span class="pos-value">$85,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row">
+            <span class="pos-label">Paid</span>
+            <span class="pos-value">$45,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row">
+            <span class="pos-label">Outstanding</span>
+            <span class="pos-value">$40,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--highlight">
+            <span class="pos-label">Remaining</span>
+            <span class="pos-value">$79,000<span class="cents">.00</span></span>
+          </div>
+        </div>
+        <div class="draws">
+          <div class="draws-label">Draws &middot; 4</div>
+
+          <!-- Draw 1 -->
+          <div class="draw-block">
+            <div class="draw-line-1">
+              <div class="draw-label-block">
+                <span class="draw-num">Draw 1</span>
+                <span class="draw-sub">Deposit</span>
+              </div>
+              <span class="draw-amount">$25,000<span class="cents">.00</span></span>
+            </div>
+            <div class="gst-note">incl. $1,190 GST</div>
+            <div class="draw-line-2">
+              <div class="draw-meta">paid May 6<span class="sep">&middot;</span><span class="info-method">Interac</span></div>
+              <span class="status status-paid">Paid</span>
+            </div>
+            <div class="draw-meta-mono">#9d9bae4b</div>
+          </div>
+
+          <!-- Draw 2 -->
+          <div class="draw-block">
+            <div class="draw-line-1">
+              <div class="draw-label-block">
+                <span class="draw-num">Draw 2</span>
+              </div>
+              <span class="draw-amount">$20,000<span class="cents">.00</span></span>
+            </div>
+            <div class="draw-line-2">
+              <div class="draw-meta">paid May 7<span class="sep">&middot;</span><span class="info-method">Cheque</span></div>
+              <span class="status status-paid">Paid</span>
+            </div>
+            <div class="draw-meta-mono">#83a35f75</div>
+          </div>
+
+          <!-- Draw 3 (sent) -->
+          <div class="draw-block">
+            <div class="draw-line-1">
+              <div class="draw-label-block">
+                <span class="draw-num">Draw 3</span>
+              </div>
+              <span class="draw-amount">$20,000<span class="cents">.00</span></span>
+            </div>
+            <div class="draw-line-2">
+              <div class="draw-meta">sent May 7<span class="sep">&middot;</span><span class="info-method">awaiting payment</span></div>
+              <span class="status status-sent">Sent</span>
+            </div>
+            <div class="draw-meta-mono">#084a8b29</div>
+            <button class="btn-remind"><svg><use href="#i-send"/></svg>Send reminder</button>
+          </div>
+
+          <!-- Draw 4 (overdue) -->
+          <div class="draw-block">
+            <div class="draw-line-1">
+              <div class="draw-label-block">
+                <span class="draw-num">Draw 4</span>
+              </div>
+              <span class="draw-amount">$20,000<span class="cents">.00</span></span>
+            </div>
+            <div class="draw-line-2">
+              <div class="draw-meta">sent Apr 22<span class="sep">&middot;</span><span class="info-method">no payment</span></div>
+              <span class="status status-overdue">Overdue<span class="age">28d</span></span>
+            </div>
+            <div class="draw-meta-mono">#2d88d373</div>
+            <button class="btn-remind"><svg><use href="#i-send"/></svg>Send reminder</button>
+            <div class="henry-trace">
+              <svg><use href="#i-sparkles"/></svg>
+              <span><strong>Henry</strong> sent a reminder 3d ago.</span>
+            </div>
+          </div>
+
+        </div>
+        <button class="card-toggle" type="button" aria-expanded="true">
+          <span class="toggle-label-collapsed">View 4 draws</span>
+          <span class="toggle-label-expanded">Hide draws</span>
+          <svg class="chev"><use href="#i-chevron-down"/></svg>
+        </button>
+      </article>
+
+      <!-- ── Bandsma (draft, empty state visible) ── -->
+      <article class="card is-expanded" tabindex="0">
+        <div class="card-head">
+          <div class="card-id">
+            <div class="card-name">Cedar Deck + Pergola</div>
+            <div class="card-customer">Graham Bandsma<span class="sep">&middot;</span>Langley</div>
+          </div>
+          <span class="rollup rollup-draft">Draft</span>
+        </div>
+        <div class="position">
+          <div class="pos-row">
+            <span class="pos-label">Contract</span>
+            <span class="pos-value">$20,500<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--zero">
+            <span class="pos-label">Billed</span>
+            <span class="pos-value">$0<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--zero">
+            <span class="pos-label">Paid</span>
+            <span class="pos-value">$0<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--zero">
+            <span class="pos-label">Outstanding</span>
+            <span class="pos-value">$0<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--highlight">
+            <span class="pos-label">Remaining</span>
+            <span class="pos-value">$20,500<span class="cents">.00</span></span>
+          </div>
+        </div>
+        <div class="draws">
+          <div class="draws-label">Draws &middot; 0</div>
+          <div class="draws-empty">No draws yet &mdash; bill the first draw to start.</div>
+        </div>
+      </article>
+
+      <!-- ── Petrov (paid in full — sinks) ── -->
+      <article class="card" tabindex="0">
+        <div class="card-head">
+          <div class="card-id">
+            <div class="card-name">Bathroom Reno</div>
+            <div class="card-customer">Marcus &amp; Aisha Petrov<span class="sep">&middot;</span>Chilliwack</div>
+          </div>
+          <span class="rollup rollup-paid">Paid in full</span>
+        </div>
+        <div class="position">
+          <div class="pos-row">
+            <span class="pos-label">Contract</span>
+            <span class="pos-value">$32,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row">
+            <span class="pos-label">Billed</span>
+            <span class="pos-value">$32,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row">
+            <span class="pos-label">Paid</span>
+            <span class="pos-value">$32,000<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--zero">
+            <span class="pos-label">Outstanding</span>
+            <span class="pos-value">$0<span class="cents">.00</span></span>
+          </div>
+          <div class="pos-row pos-row--zero">
+            <span class="pos-label">Remaining</span>
+            <span class="pos-value">$0<span class="cents">.00</span></span>
+          </div>
+        </div>
+        <div class="draws">
+          <div class="draws-label">Draws &middot; 1</div>
+
+          <div class="draw-block">
+            <div class="draw-line-1">
+              <div class="draw-label-block">
+                <span class="draw-num">Invoice</span>
+                <span class="draw-sub">Single-pay</span>
+              </div>
+              <span class="draw-amount">$32,000<span class="cents">.00</span></span>
+            </div>
+            <div class="draw-line-2">
+              <div class="draw-meta">paid Apr 18<span class="sep">&middot;</span><span class="info-method">e-Transfer</span></div>
+              <span class="status status-paid">Paid</span>
+            </div>
+            <div class="draw-meta-mono">#bd027e1f</div>
+          </div>
+        </div>
+        <button class="card-toggle" type="button" aria-expanded="false">
+          <span class="toggle-label-collapsed">View invoice</span>
+          <span class="toggle-label-expanded">Hide invoice</span>
+          <svg class="chev"><use href="#i-chevron-down"/></svg>
+        </button>
+      </article>
+
+    </div>
+    </div><!-- /.scroll-area -->
+
+    <!-- Bottom sheets (Status + Sort) -->
+    <div class="sheet-overlay" data-sheet="status" hidden>
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title-status">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h2 class="sheet-title" id="sheet-title-status">Filter by status</h2>
+          <button class="sheet-cancel" type="button" data-close-sheet>Cancel</button>
+        </div>
+        <div class="sheet-list">
+          <button class="sheet-option is-on" type="button">
+            <span class="opt-label">All</span>
+            <span class="opt-count">4</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Draft</span>
+            <span class="opt-count">1</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Sent</span>
+            <span class="opt-count">1</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Overdue</span>
+            <span class="opt-count">1</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Paid</span>
+            <span class="opt-count">1</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Void</span>
+            <span class="opt-count opt-count-zero">0</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-overlay" data-sheet="sort" hidden>
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title-sort">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h2 class="sheet-title" id="sheet-title-sort">Sort by</h2>
+          <button class="sheet-cancel" type="button" data-close-sheet>Cancel</button>
+        </div>
+        <div class="sheet-list">
+          <button class="sheet-option is-on" type="button">
+            <span class="opt-label">Ready first</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Outstanding (highest)</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Overdue (oldest)</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Recently sent</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+          <button class="sheet-option" type="button">
+            <span class="opt-label">Customer A&ndash;Z</span>
+            <svg class="opt-check"><use href="#i-check"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom tab bar -->
+    <nav class="tabbar" aria-label="Primary">
+      <div class="tab"><svg class="ico"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="tab"><svg class="ico"><use href="#i-inbox"/></svg>Inbox<span class="pill">7</span></div>
+      <div class="tab"><svg class="ico"><use href="#i-folder"/></svg>Projects</div>
+      <div class="tab active"><svg class="ico"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="tab"><svg class="ico"><use href="#i-more-circle"/></svg>More</div>
+    </nav>
+
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  function closeSheet(overlay) {
+    if (!overlay) return;
+    overlay.hidden = true;
+    var which = overlay.getAttribute('data-sheet');
+    var trigger = document.querySelector('[data-open-sheet="' + which + '"]');
+    if (trigger) trigger.focus();
+  }
+
+  document.querySelectorAll('[data-open-sheet]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var which = btn.getAttribute('data-open-sheet');
+      var overlay = document.querySelector('.sheet-overlay[data-sheet="' + which + '"]');
+      if (overlay) overlay.hidden = false;
+    });
+  });
+
+  document.querySelectorAll('[data-close-sheet]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      closeSheet(el.closest('.sheet-overlay'));
+    });
+  });
+
+  document.querySelectorAll('.sheet-option').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var list = opt.closest('.sheet-list');
+      if (!list) return;
+      list.querySelectorAll('.sheet-option').forEach(function (o) { o.classList.remove('is-on'); });
+      opt.classList.add('is-on');
+
+      var overlay = opt.closest('.sheet-overlay');
+      var which = overlay && overlay.getAttribute('data-sheet');
+      var trigger = which && document.querySelector('[data-open-sheet="' + which + '"]');
+      var strong = trigger && trigger.querySelector('.pill-label strong');
+      var labelEl = opt.querySelector('.opt-label');
+      if (strong && labelEl) strong.textContent = labelEl.textContent;
+
+      if (which === 'status') {
+        var badge = trigger && trigger.querySelector('.badge');
+        var count = opt.querySelector('.opt-count');
+        if (badge && count) badge.textContent = count.textContent;
+      }
+
+      setTimeout(function () { closeSheet(overlay); }, 160);
+    });
+  });
+
+  document.querySelectorAll('.card-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var card = btn.closest('.card');
+      if (!card) return;
+      var nowExpanded = card.classList.toggle('is-expanded');
+      btn.setAttribute('aria-expanded', nowExpanded ? 'true' : 'false');
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.sheet-overlay:not([hidden])').forEach(closeSheet);
+    }
+  });
+
+  var scrollArea = document.querySelector('.scroll-area');
+  if (scrollArea && 'IntersectionObserver' in window) {
+    document.querySelectorAll('.card').forEach(function (card) {
+      var head = card.querySelector('.card-head');
+      if (!head) return;
+      var sentinel = document.createElement('div');
+      sentinel.setAttribute('aria-hidden', 'true');
+      sentinel.style.cssText = 'height:1px; margin-bottom:-1px;';
+      card.insertBefore(sentinel, head);
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var stuck = !entry.isIntersecting && entry.boundingClientRect.top < entry.rootBounds.top;
+          head.classList.toggle('is-stuck', stuck);
+        });
+      }, { root: scrollArea, threshold: 0 });
+      io.observe(sentinel);
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

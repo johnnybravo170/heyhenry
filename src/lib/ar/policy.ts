@@ -191,10 +191,10 @@ export async function checkSendPolicy(
   const dnamRows =
     params.channel === 'email'
       ? await db.execute(
-          sql`SELECT 1 FROM public.customers WHERE lower(email) = ${address.toLowerCase()} AND do_not_auto_message = true LIMIT 1`,
+          sql`SELECT 1 FROM public.contacts WHERE lower(email) = ${address.toLowerCase()} AND do_not_auto_message = true LIMIT 1`,
         )
       : await db.execute(
-          sql`SELECT 1 FROM public.customers WHERE phone = ${address} AND do_not_auto_message = true LIMIT 1`,
+          sql`SELECT 1 FROM public.contacts WHERE phone = ${address} AND do_not_auto_message = true LIMIT 1`,
         );
   if ((dnamRows as unknown as Array<unknown>).length > 0) {
     return { send: false, defer: false, reason: 'customer_do_not_auto_message' };

@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Bank reconciliation — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: start center;
+    padding: 40px 0;
+    gap: 28px;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; }
+
+  .cap {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .cap strong { color: var(--ink); }
+
+  /* Phone frame */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar::after {
+    content: '';
+    position: absolute;
+    top: 6px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 28px;
+    background: #0A0A0A;
+    border-radius: 999px;
+  }
+  .sb-right {
+    display: flex; align-items: center; gap: 5px;
+  }
+  .sb-right .bars { width: 16px; height: 10px; }
+  .sb-right .wifi { width: 14px; height: 10px; }
+  .sb-right .batt {
+    width: 22px; height: 11px;
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    position: relative;
+  }
+  .sb-right .batt::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 5px;
+    background: var(--ink);
+    border-radius: 0 1px 1px 0;
+  }
+  .sb-right .batt-fill {
+    position: absolute; left: 1px; top: 1px; bottom: 1px;
+    width: 70%;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+
+  /* App chrome */
+  .app-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+  }
+  .app-back {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: inline-grid; place-items: center;
+  }
+  .app-back svg { width: 16px; height: 16px; }
+  .app-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .app-title .crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .body-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px 24px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* Redirect hero card */
+  .redirect-hero {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 22px 20px 20px;
+    display: flex; flex-direction: column; gap: 14px;
+    text-align: left;
+  }
+  .redirect-mark {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    display: grid; place-items: center;
+  }
+  .redirect-mark svg { width: 28px; height: 28px; }
+  .redirect-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .redirect-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .redirect-sub {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .redirect-sub strong { color: var(--ink); font-weight: 600; }
+
+  /* Why-on-desktop list */
+  .why-list {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .why-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .why-row {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .why-row .mark {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .why-row .mark svg { width: 12px; height: 12px; }
+  .why-row strong { color: var(--ink); font-weight: 600; }
+
+  /* Trust aside (info-soft, three lines like desktop) */
+  .trust {
+    background: var(--info-soft);
+    border: 1px solid rgba(30, 64, 175, 0.18);
+    border-left: 3px solid var(--info);
+    border-radius: var(--radius-card);
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .trust-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .trust-line {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .trust-line .lbl {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-top: 2px;
+  }
+  .trust-line .lbl.muted { color: var(--muted); }
+  .trust-line strong { color: var(--ink); font-weight: 600; }
+
+  /* Glance preview card — what they're missing */
+  .glance {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .glance-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 8px;
+    background: var(--chrome);
+  }
+  .glance-head .title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+  }
+  .glance-head .count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .glance-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .glance-row:last-child { border-bottom: 0; }
+  .glance-row .info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .glance-row .desc {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .glance-row .sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .glance-row .amt {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  }
+  .glance-row .amt .glyph {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ok);
+    background: var(--ok-soft);
+    border: 1px solid rgba(21, 128, 61, 0.22);
+    border-radius: 4px;
+    padding: 0 5px;
+    line-height: 16px;
+    height: 16px;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+  }
+  .glance-row .amt.out .glyph {
+    color: var(--ink-2);
+    background: var(--chip-fill);
+    border-color: var(--rule);
+  }
+  .glance-row .band {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    width: max-content;
+  }
+  .glance-row .band.high {
+    background: var(--ok-soft); color: var(--ok);
+    border: 1px solid rgba(21, 128, 61, 0.22);
+  }
+  .glance-row .band.medium {
+    background: var(--warn-soft); color: var(--warn);
+    border: 1px solid rgba(180, 83, 9, 0.25);
+  }
+  .glance-row .band svg { width: 11px; height: 11px; }
+  .glance-foot {
+    padding: 11px 14px;
+    background: var(--chrome);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+
+  /* Email-yourself nudge */
+  .nudge {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 12px 14px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .nudge .mark {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .nudge .mark svg { width: 14px; height: 14px; }
+  .nudge strong { color: var(--ink); font-weight: 600; }
+
+  /* CTA stack */
+  .cta-stack { display: flex; flex-direction: column; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 48px;
+    padding: 0 18px;
+    border-radius: 12px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-quiet { background: transparent; color: var(--muted); border-color: transparent; }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* Henry mark */
+  .henry-mark {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+    padding: 2px 7px 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .henry-mark .star { color: var(--rust); font-size: 12px; }
+
+  .frame-cap-row {
+    display: flex; align-items: center; gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: -10px;
+  }
+  .frame-cap-row .cap strong { color: var(--ink); }
+  .frame-cap-row .dot {
+    width: 4px; height: 4px;
+    border-radius: 999px;
+    background: var(--faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="frame-cap-row">
+    <span class="cap"><strong>Bank reconciliation</strong> · mobile</span>
+    <span class="dot"></span>
+    <span class="cap">Do this on desktop · CSV upload + multi-column review aren't a phone job</span>
+  </div>
+
+  <div class="phone" aria-label="iPhone — Bank reconciliation redirect">
+    <div class="screen">
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <span class="sb-right">
+          <svg class="bars" viewBox="0 0 16 10" fill="currentColor">
+            <rect x="0" y="6" width="3" height="4" rx="0.5"/>
+            <rect x="4.5" y="4" width="3" height="6" rx="0.5"/>
+            <rect x="9" y="2" width="3" height="8" rx="0.5"/>
+            <rect x="13.5" y="0" width="3" height="10" rx="0.5" opacity=".35"/>
+          </svg>
+          <svg class="wifi" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <path d="M1 4a9 9 0 0112 0"/>
+            <path d="M3 6a6 6 0 018 0"/>
+            <path d="M5 8a3 3 0 014 0"/>
+          </svg>
+          <span class="batt"><span class="batt-fill"></span></span>
+        </span>
+      </div>
+
+      <!-- App bar -->
+      <div class="app-bar">
+        <span class="app-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </span>
+        <div class="app-title">
+          <span class="crumb">Business Health</span>
+          <span>Bank reconciliation</span>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="body-scroll">
+
+        <!-- Redirect hero -->
+        <div class="redirect-hero">
+          <div class="redirect-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="13" rx="2"/>
+              <path d="M3 9h18"/>
+              <path d="M7 18v3M17 18v3"/>
+            </svg>
+          </div>
+          <span class="redirect-eyebrow">Open this on desktop</span>
+          <div class="redirect-title">A statement isn't a phone job.</div>
+          <div class="redirect-sub">
+            Bank reconciliation needs <strong>file upload</strong> and a <strong>wide multi-column review grid</strong>. Both are hostile on a phone — and one mis-tap here flips invoices to paid. Hop over to your laptop and Henry will pre-check the obvious wins for you.
+          </div>
+        </div>
+
+        <!-- Why list -->
+        <div class="why-list">
+          <span class="why-eyebrow">What's waiting on desktop</span>
+          <div class="why-row">
+            <span class="mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></svg>
+            </span>
+            <span><strong>Import a CSV</strong> — drop your RBC / TD / BMO / Scotia / CIBC / Amex statement; Henry parses + scores every line.</span>
+          </div>
+          <div class="why-row">
+            <span class="mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+            </span>
+            <span><strong>Review + bulk-confirm</strong> — high-confidence matches pre-checked; one click flips the paid pile.</span>
+          </div>
+          <div class="why-row">
+            <span class="mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0015.5-6.3M21 5v5h-5"/></svg>
+            </span>
+            <span><strong>Re-run matching</strong> — rescores still-unmatched rows after you enter the invoices Henry missed.</span>
+          </div>
+        </div>
+
+        <!-- Glance preview — what's waiting -->
+        <div class="glance">
+          <div class="glance-head">
+            <span class="henry-mark"><span class="star">✦</span>&nbsp;Henry</span>
+            <span class="title">Waiting on desktop</span>
+            <span class="count">17 matches</span>
+          </div>
+          <div class="glance-row">
+            <div class="info">
+              <span class="band high">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                high
+              </span>
+              <span class="desc">E-TRF from J. Robertson</span>
+              <span class="sub">INV-2046 · Mar 02</span>
+            </div>
+            <span class="amt in">
+              <span class="glyph">← IN</span>
+              $3,250.00
+            </span>
+          </div>
+          <div class="glance-row">
+            <div class="info">
+              <span class="band high">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                high
+              </span>
+              <span class="desc">CHQ 1042 — Northwest Electric</span>
+              <span class="sub">Bill · Mar 04</span>
+            </div>
+            <span class="amt out">
+              <span class="glyph">→ OUT</span>
+              $1,892.50
+            </span>
+          </div>
+          <div class="glance-row">
+            <div class="info">
+              <span class="band medium">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+                medium
+              </span>
+              <span class="desc">Cheque deposit — 4811</span>
+              <span class="sub">INV-2051 · Mar 09</span>
+            </div>
+            <span class="amt in">
+              <span class="glyph">← IN</span>
+              $4,520.00
+            </span>
+          </div>
+          <div class="glance-foot">+14 more — 12 high · 4 medium · 1 low</div>
+        </div>
+
+        <!-- Trust aside (compressed three-line) -->
+        <div class="trust">
+          <span class="trust-eyebrow">What this is (and isn't)</span>
+          <div class="trust-line">
+            <span class="lbl">Is</span>
+            <span>A <strong>payment shortcut</strong> — bulk-marks paid what's already in HeyHenry.</span>
+          </div>
+          <div class="trust-line">
+            <span class="lbl muted">Isn't</span>
+            <span>Bank reconciliation. Your book of record stays in <strong>QuickBooks</strong>.</span>
+          </div>
+          <div class="trust-line">
+            <span class="lbl muted">Skips</span>
+            <span>Transfers, fees, interest, ATM — left for QBO.</span>
+          </div>
+        </div>
+
+        <!-- Email-yourself nudge -->
+        <div class="nudge">
+          <span class="mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          </span>
+          <span>Got the statement on your phone? <strong>Email it to yourself</strong> and open it on your laptop.</span>
+        </div>
+
+        <!-- CTAs -->
+        <div class="cta-stack">
+          <button class="btn btn-rust">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 21h6"/><path d="M12 17v4"/></svg>
+            Send desktop link to my email
+          </button>
+          <button class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 5-7"/></svg>
+            Back to Business Health
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="cap" style="max-width: 390px; text-align: center; padding: 0 16px;">
+    Inherits the parent's "do this on desktop" decision for bank tools. A minimal mobile review (stacked one-card-per-tx confirm) is a deferred V2 — not V1.
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,1618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Refer &amp; Earn — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --rust-edge:    rgba(194,65,12,.22);
+
+    /* status-tokens (badge meanings only — never decoration) */
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Frame stack ───── */
+  .frame-stack {
+    display: flex; flex-direction: column;
+    gap: 36px;
+    padding: 32px;
+  }
+  .frame { display: flex; flex-direction: column; gap: 10px; }
+  .frame-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 4px;
+  }
+  .frame-label .frame-num,
+  .frame-label .frame-role { color: var(--ink); }
+  .frame-label .frame-sep { color: var(--faint); margin: 0 6px; }
+  .frame-body {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    box-shadow: 0 20px 40px -22px rgba(10,10,10,.22);
+  }
+
+  /* ───── Shell (operator frames) ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 1180px; background: var(--bg); }
+
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
+  .org-avatar {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 12px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+  .user-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 34px;
+    padding: 0 12px 0 6px;
+    border-radius: var(--radius-input);
+    border: 1px solid var(--hair);
+    background: var(--card);
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .user-avatar {
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .user-name { font-size: 14px; font-weight: 600; }
+  .user-role {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-left: 8px;
+    border-left: 1px solid var(--hair);
+    margin-left: 2px;
+  }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn-text { background: transparent; border: 0; color: var(--muted); padding: 0 8px; }
+  .btn-text:hover { color: var(--ink); }
+  .btn .icon { width: 14px; height: 14px; }
+  .btn-sq {
+    width: 34px; padding: 0; justify-content: center;
+  }
+  .btn-lg { height: 40px; padding: 0 16px; }
+
+  /* ───── Main column ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 920px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 80px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  /* ───── Page header ───── */
+  .page-head { display: flex; flex-direction: column; gap: 4px; }
+  .page-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-bottom: 4px;
+  }
+  .page-eyebrow .eyebrow-sep { color: var(--faint); }
+  .page-title {
+    font-size: 28px; font-weight: 700;
+    letter-spacing: -0.025em; line-height: 1.15;
+    color: var(--ink); margin: 0;
+  }
+  .page-sub { color: var(--muted); font-size: 14px; max-width: 620px; }
+
+  /* ───── Card primitive ───── */
+  .pane-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .card-head {
+    padding: 16px 22px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px;
+  }
+  .card-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .card-eyebrow .eyebrow-strong { color: var(--ink-2); }
+  .card-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    margin: 0; letter-spacing: -0.01em; line-height: 1.3;
+  }
+  .card-sub {
+    font-size: 12px; color: var(--muted);
+    margin: 4px 0 0; font-weight: 500;
+    line-height: 1.5;
+  }
+  .card-body {
+    padding: 18px 22px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .card-foot {
+    border-top: 1px solid var(--hair);
+    padding: 11px 22px;
+    background: var(--bg);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+
+  /* ───── Share hero (the cockpit) ───── */
+  .share-hero {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .share-hero-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  }
+  .share-hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .share-hero-eyebrow .dot {
+    width: 5px; height: 5px; border-radius: 999px; background: var(--rust);
+  }
+  .share-hero-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    margin: 0; letter-spacing: -0.01em; line-height: 1.3;
+  }
+  .share-hero-sub {
+    font-size: 14px; color: var(--muted);
+    margin: 4px 0 0; font-weight: 500;
+    line-height: 1.5;
+    max-width: 540px;
+  }
+  .share-hero-body {
+    padding: 18px 22px 20px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+
+  /* link row */
+  .link-block { display: flex; flex-direction: column; gap: 8px; }
+  .field-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .field-label svg { width: 12px; height: 12px; color: var(--muted); }
+  .link-row { display: flex; gap: 8px; align-items: center; }
+  .link-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 40px;
+    padding: 0 12px;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.02em;
+    display: flex; align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .link-input .link-faint { color: var(--muted); }
+  .link-input .link-ink { color: var(--ink); }
+  .link-row .btn { height: 40px; padding: 0 14px; }
+  .link-row .btn-sq { width: 40px; padding: 0; }
+  .link-code-caption {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .link-code-caption .code-ink { color: var(--ink-2); }
+
+  /* invite block */
+  .invite-block {
+    border-top: 1px solid var(--hair);
+    margin-top: 4px;
+    padding-top: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .invite-block-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .invite-block-title {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .channel-toggle {
+    display: inline-flex;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    padding: 2px;
+    gap: 2px;
+  }
+  .channel-toggle button {
+    appearance: none; border: 0;
+    background: transparent;
+    padding: 4px 12px;
+    font: inherit; font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    border-radius: 7px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .channel-toggle button svg { width: 12px; height: 12px; }
+  .channel-toggle button.is-on {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(10,10,10,.06);
+  }
+  .invite-row { display: flex; gap: 8px; align-items: center; }
+  .input {
+    flex: 1;
+    appearance: none;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 40px;
+    padding: 0 12px;
+    font: inherit; font-weight: 500;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+  }
+  .input::placeholder { color: var(--faint); font-weight: 500; }
+  .input:focus { border-color: var(--ink); }
+  .input.is-empty { color: var(--faint); }
+  .invite-row .btn { height: 40px; padding: 0 14px; }
+
+  .invite-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .henry-affordance {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--rust-edge);
+    background: var(--rust-soft);
+    color: var(--rust);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .henry-affordance .sparkle {
+    width: 12px; height: 12px;
+  }
+  .henry-affordance .label-ink { color: var(--rust); }
+  .invite-caption {
+    font-size: 12px; color: var(--muted); line-height: 1.4;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .invite-caption svg { width: 12px; height: 12px; color: var(--faint); }
+
+  /* Henry draft expanded */
+  .henry-draft {
+    background: var(--rust-soft);
+    border: 1px solid var(--rust-edge);
+    border-left: 3px solid var(--rust);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .henry-draft-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .henry-draft-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .henry-draft-label .henry-mark {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+  }
+  .henry-draft-label .henry-mark svg { width: 11px; height: 11px; }
+  .henry-draft-meta {
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .henry-textarea {
+    background: var(--card);
+    border: 1px solid var(--rust-edge);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font: inherit; font-size: 14px;
+    color: var(--ink);
+    line-height: 1.55;
+    min-height: 92px;
+    outline: none;
+    resize: vertical;
+  }
+  .henry-textarea:focus { border-color: var(--rust); }
+  .henry-draft-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .henry-draft-caption {
+    font-size: 12px; color: var(--ink-2); line-height: 1.4;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .henry-draft-caption strong { color: var(--ink); font-weight: 600; }
+  .henry-draft-actions { display: inline-flex; gap: 6px; }
+  .btn-text-rust {
+    background: transparent;
+    border: 0;
+    color: var(--rust);
+    font: inherit; font-size: 12px; font-weight: 600;
+    padding: 0 6px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-text-rust svg { width: 12px; height: 12px; }
+
+  /* ───── Offer card (demoted — calm neutral) ───── */
+  .offer-card { background: var(--card); }
+  .offer-head {
+    padding: 16px 22px 12px;
+    display: flex; align-items: flex-start; gap: 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .offer-mark {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--chip-fill);
+    color: var(--ink);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .offer-mark svg { width: 16px; height: 16px; }
+  .offer-titles { flex: 1; min-width: 0; }
+  .offer-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .offer-title {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em; line-height: 1.3;
+    margin: 0;
+  }
+  .offer-sub {
+    font-size: 12px; color: var(--muted);
+    margin: 4px 0 0; line-height: 1.5;
+  }
+  .offer-amount {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid var(--rust-edge);
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .offer-body { padding: 14px 22px 16px; }
+  .offer-bullets {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .offer-bullets li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px; color: var(--ink-2); line-height: 1.45;
+  }
+  .offer-bullets .glyph {
+    width: 14px; height: 14px;
+    color: var(--ink);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .offer-fineprint {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--hair);
+    font-size: 12px; color: var(--muted);
+    line-height: 1.55;
+  }
+  .offer-fineprint strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ───── Honest stats ───── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stat-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .stat-eyebrow svg { width: 12px; height: 12px; color: var(--faint); }
+  .stat-value {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .stat-meta {
+    font-size: 12px; color: var(--muted);
+    line-height: 1.4;
+  }
+  .stat-card.is-coming {
+    background: var(--bg);
+    border-style: dashed;
+    border-color: var(--rule);
+  }
+  .stat-card.is-coming .stat-eyebrow { color: var(--muted); }
+  .stat-card.is-coming .stat-value-coming {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: -0.005em;
+    line-height: 1.35;
+  }
+  .stat-card.is-coming .stat-coming-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+  .stat-card.is-coming .stat-meta { color: var(--muted); max-width: none; }
+
+  /* ───── History table ───── */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .history-table thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: left;
+    padding: 12px 22px 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--hair);
+  }
+  .history-table thead th.last { text-align: right; }
+  .history-table tbody td {
+    padding: 13px 22px;
+    border-bottom: 1px solid var(--hair);
+    color: var(--ink-2);
+    vertical-align: middle;
+  }
+  .history-table tbody tr:last-child td { border-bottom: 0; }
+  .history-contact {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .history-contact.is-link {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 500;
+    font-style: italic;
+  }
+  .history-date {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ───── Status pills (status-tokens) ───── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .pill svg { width: 11px; height: 11px; }
+  .pill-info    { background: var(--info-soft);  color: var(--info);   border-color: rgba(30,64,175,.18); }
+  .pill-success { background: var(--ok-soft);    color: var(--ok);     border-color: rgba(21,128,61,.18); }
+  .pill-neutral { background: var(--chip-fill);  color: var(--muted);  border-color: var(--hair); }
+
+  /* graduate-note card */
+  .graduate-note {
+    background: var(--bg);
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius-card);
+    padding: 12px 16px;
+    display: flex; align-items: flex-start; gap: 12px;
+    font-size: 12px; color: var(--muted);
+    line-height: 1.5;
+  }
+  .graduate-note svg { width: 14px; height: 14px; color: var(--muted); margin-top: 2px; flex-shrink: 0; }
+  .graduate-note strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ───── Public landing (brand-light) ───── */
+  .public {
+    background: #FFFFFF;
+    min-height: 1180px;
+    display: flex; flex-direction: column;
+  }
+  .public-nav {
+    height: 64px;
+    border-bottom: 1px solid #ECECEC;
+    display: flex; align-items: center;
+    padding: 0 32px;
+  }
+  .wordmark {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: #0A0A0A;
+  }
+  .wordmark .wm-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: #0A0A0A; color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .wordmark .wm-name {
+    font-weight: 700; font-size: 16px; letter-spacing: -0.02em;
+  }
+  .public-main {
+    flex: 1;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 96px 32px 80px;
+  }
+  .public-content {
+    width: 100%;
+    max-width: 580px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+  .social-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px 6px 10px;
+    border-radius: 999px;
+    background: #F4ECDB;
+    color: #0A0A0A;
+    border: 1px solid #E2D7C0;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .social-pill .pill-tenant { font-weight: 700; }
+  .social-pill .pill-dot {
+    width: 6px; height: 6px; border-radius: 999px; background: #C2410C;
+  }
+  .public-h1 {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #0A0A0A;
+    line-height: 1.1;
+    margin: 16px 0 0;
+    text-wrap: balance;
+  }
+  .public-sub {
+    font-size: 14px;
+    color: #57534B;
+    margin: 16px 0 0;
+    line-height: 1.55;
+    max-width: 460px;
+  }
+  .public-sub strong { color: #0A0A0A; font-weight: 600; }
+  .public-bullets {
+    list-style: none; padding: 0;
+    margin: 28px 0 0;
+    display: flex; flex-direction: column; gap: 12px;
+    text-align: left;
+    max-width: 420px;
+  }
+  .public-bullets li {
+    display: flex; align-items: flex-start; gap: 12px;
+    font-size: 14px;
+    color: #0A0A0A;
+    line-height: 1.45;
+  }
+  .public-bullets .glyph {
+    width: 18px; height: 18px;
+    border-radius: 999px;
+    background: #F4ECDB;
+    color: #0A0A0A;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .public-bullets .glyph svg { width: 11px; height: 11px; }
+  .public-cta-row {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    margin: 32px 0 0;
+  }
+  .public-cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: #C2410C;
+    color: #fff;
+    height: 48px;
+    padding: 0 28px;
+    border-radius: 10px;
+    font: inherit; font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    border: 0;
+    cursor: pointer;
+  }
+  .public-cta:hover { background: #A8370A; }
+  .public-cta svg { width: 14px; height: 14px; }
+  .public-cta-meta {
+    font-size: 12px;
+    color: #57534B;
+    line-height: 1.4;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .public-cta-meta svg { width: 12px; height: 12px; color: #A8A8A8; }
+  .public-footer {
+    border-top: 1px solid #ECECEC;
+    padding: 16px;
+    text-align: center;
+  }
+  .public-footer a {
+    font-size: 12px;
+    color: #57534B;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* Invalid-code variant */
+  .public-content.is-invalid {
+    max-width: 520px;
+  }
+  .invalid-mark {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: #F4ECDB;
+    color: #57534B;
+    display: grid; place-items: center;
+  }
+  .invalid-mark svg { width: 24px; height: 24px; }
+  .invalid-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: #57534B;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 18px;
+  }
+
+  /* helper for the dashed divider in offer */
+  .dashed-divider { border-top: 1px dashed var(--hair); margin: 12px 0; }
+
+</style>
+</head>
+<body>
+
+<div class="frame-stack">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       FRAME 1 — Operator · Refer & Earn (default — share-first)
+       ════════════════════════════════════════════════════════════════ -->
+  <section class="frame">
+    <div class="frame-label">
+      <span class="frame-num">01</span>
+      <span class="frame-sep">·</span>
+      Operator
+      <span class="frame-sep">·</span>
+      <span class="frame-role">Refer &amp; Earn</span>
+      <span class="frame-sep">·</span>
+      share-first cockpit · demoted offer · honest stats · history
+    </div>
+
+    <div class="frame-body">
+      <div class="shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="brand">
+            <div class="brand-mark">H</div>
+            <div class="brand-name">HeyHenry</div>
+          </div>
+          <nav class="nav">
+            <div class="nav-section-label">Work</div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+              Dashboard
+            </div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Inbox
+            </div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+              Projects
+            </div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Calendar
+            </div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
+              Contacts
+            </div>
+
+            <div class="nav-section-label">Money</div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              Billing
+            </div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/></svg>
+              Business health
+            </div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><circle cx="16" cy="14" r="2"/></svg>
+              Expenses
+            </div>
+
+            <div class="nav-section-label">Personal</div>
+            <div class="nav-item active">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+              Refer &amp; Earn
+            </div>
+            <div class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Settings
+            </div>
+          </nav>
+          <div class="sidebar-foot">
+            <div class="org-switcher">
+              <div class="org-avatar">M</div>
+              <div class="org-meta">
+                <div class="org-name">Maple Ridge Renos</div>
+                <div class="org-sub">Renovation · BC</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main -->
+        <div class="main">
+          <div class="topbar">
+            <div class="topbar-search">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>Search projects, contacts, invoices…</span>
+              <span class="chip-kbd">⌘K</span>
+            </div>
+            <div class="topbar-actions">
+              <button class="btn btn-ghost">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+              <button class="user-chip">
+                <span class="user-avatar">JM</span>
+                <span class="user-name">Jamie M.</span>
+                <span class="user-role">Owner</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="main-inner">
+
+            <!-- Page header -->
+            <header class="page-head">
+              <div class="page-eyebrow">
+                Personal
+                <span class="eyebrow-sep">/</span>
+                Refer &amp; Earn
+              </div>
+              <h1 class="page-title">Refer &amp; Earn</h1>
+              <p class="page-sub">
+                Know another contractor who'd get something out of HeyHenry? Send them your link. If they stick around 90 days, we'll send you $300 CAD as a thank-you.
+              </p>
+            </header>
+
+            <!-- SHARE HERO (the cockpit — the one job) -->
+            <section class="share-hero">
+              <div class="share-hero-head">
+                <div>
+                  <div class="share-hero-eyebrow">
+                    <span class="dot"></span>
+                    The one job · share
+                  </div>
+                  <h2 class="share-hero-title">Your link is ready</h2>
+                  <p class="share-hero-sub">
+                    Copy it, share it from your phone, or send it to a specific contractor by email or text. No quotas, no leaderboard — just your link.
+                  </p>
+                </div>
+              </div>
+              <div class="share-hero-body">
+
+                <!-- Link row -->
+                <div class="link-block">
+                  <label class="field-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Your referral link
+                  </label>
+                  <div class="link-row">
+                    <div class="link-input">
+                      <span class="link-faint">app.heyhenry.io/r/</span><span class="link-ink">maple-ridge-renos</span>
+                    </div>
+                    <button class="btn btn-ghost">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      Copy
+                    </button>
+                    <button class="btn btn-rust">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                      Share
+                    </button>
+                  </div>
+                  <div class="link-code-caption">
+                    Code: <span class="code-ink">maple-ridge-renos</span>
+                  </div>
+                </div>
+
+                <!-- Invite block (calmed: one row + channel toggle) -->
+                <div class="invite-block">
+                  <div class="invite-block-head">
+                    <div class="invite-block-title">Send an invite</div>
+                    <div class="channel-toggle" role="tablist" aria-label="Invite channel">
+                      <button class="is-on" type="button" role="tab" aria-selected="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email
+                      </button>
+                      <button type="button" role="tab" aria-selected="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Text
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="invite-row">
+                    <input class="input is-empty" type="email" placeholder="contractor@example.com" value="" readonly />
+                    <button class="btn btn-ghost">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      Send
+                    </button>
+                  </div>
+
+                  <div class="invite-foot">
+                    <button class="henry-affordance" type="button">
+                      <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L19 9.5l-3.9 3.3.9 5.2L12 15.8 8 18l.9-5.2L5 9.5l5.1-1.9z"/></svg>
+                      ✦ Draft a note for me
+                    </button>
+                    <div class="invite-caption">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      We only contact people you personally know — your invite, your words.
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- Demoted offer card (calm neutral — NO emerald) -->
+            <section class="pane-card offer-card">
+              <div class="offer-head">
+                <div class="offer-mark">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                </div>
+                <div class="offer-titles">
+                  <div class="offer-eyebrow">The offer</div>
+                  <h3 class="offer-title">$300 CAD for every contractor who signs up and sticks</h3>
+                  <p class="offer-sub">Flat thank-you, no cap. Paid once they've been a paying customer for 90 days.</p>
+                </div>
+                <div class="offer-amount">$300 · CAD</div>
+              </div>
+              <div class="offer-body">
+                <ul class="offer-bullets">
+                  <li>
+                    <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Flat $300 CAD per converted paying customer — no tiers, no climb.
+                  </li>
+                  <li>
+                    <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Paid once the referred business has been paid and current for 90 days.
+                  </li>
+                  <li>
+                    <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    No cap. Refer as many as you like, whenever it feels right.
+                  </li>
+                </ul>
+                <p class="offer-fineprint">
+                  <strong>Fine print:</strong> the referred business must be operationally distinct from yours (different owner, address, and payment method). Refunds or chargebacks inside the 90-day window claw back the bounty.
+                </p>
+              </div>
+            </section>
+
+            <!-- Honest stats — 2 wired + 1 "coming" tile -->
+            <section class="stats-row">
+              <div class="stat-card">
+                <div class="stat-eyebrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Referrals sent
+                </div>
+                <div class="stat-value">4</div>
+                <div class="stat-meta">Across email, text, and shared links.</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-eyebrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+                  Signups
+                </div>
+                <div class="stat-value">2</div>
+                <div class="stat-meta">Contractors who started a HeyHenry trial from your link.</div>
+              </div>
+              <div class="stat-card is-coming">
+                <div class="stat-eyebrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Conversions &amp; rewards
+                </div>
+                <div class="stat-coming-pill">Coming</div>
+                <div class="stat-meta">We're still building the payout pipeline. We won't show a fake balance here — when it ships, you'll see real numbers.</div>
+              </div>
+            </section>
+
+            <!-- History table -->
+            <section class="pane-card">
+              <div class="card-head">
+                <div>
+                  <div class="card-eyebrow">Activity</div>
+                  <h3 class="card-title">Referral history</h3>
+                  <p class="card-sub">Who you've invited, and where they're at. Dates in your time zone (America/Vancouver).</p>
+                </div>
+              </div>
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th class="last">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="history-contact">mike@coastlinebuilds.ca</td>
+                    <td>
+                      <span class="pill pill-success">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Signed up
+                      </span>
+                    </td>
+                    <td class="history-date">May 18, 2026</td>
+                  </tr>
+                  <tr>
+                    <td class="history-contact">+1 (604) 555-0142</td>
+                    <td>
+                      <span class="pill pill-info">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Sent
+                      </span>
+                    </td>
+                    <td class="history-date">May 15, 2026</td>
+                  </tr>
+                  <tr>
+                    <td class="history-contact">jen@craftsmancabinets.ca</td>
+                    <td>
+                      <span class="pill pill-info">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Sent
+                      </span>
+                    </td>
+                    <td class="history-date">May 12, 2026</td>
+                  </tr>
+                  <tr>
+                    <td class="history-contact is-link">Link signup</td>
+                    <td>
+                      <span class="pill pill-success">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Signed up
+                      </span>
+                    </td>
+                    <td class="history-date">Apr 28, 2026</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="card-foot">
+                <span>Showing 4 of 4. Status updates as referees move through signup.</span>
+                <span>You only see your own referrals.</span>
+              </div>
+            </section>
+
+            <!-- Graduate note -->
+            <div class="graduate-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <div>
+                <strong>About "Conversions &amp; rewards."</strong> The 90-day payout pipeline (when a signup flips to converted, how a $300 reward credits or pays out) is a separate workstream — we're not faking those states here. When it ships, this section gets a real balance and Henry will explain each step.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       FRAME 2 — Operator · ✦ Henry "draft a note" expanded state
+       ════════════════════════════════════════════════════════════════ -->
+  <section class="frame">
+    <div class="frame-label">
+      <span class="frame-num">02</span>
+      <span class="frame-sep">·</span>
+      Operator
+      <span class="frame-sep">·</span>
+      <span class="frame-role">✦ Henry · draft a note</span>
+      <span class="frame-sep">·</span>
+      editable peer-to-peer message · never auto-sent
+    </div>
+
+    <div class="frame-body">
+      <div class="shell">
+
+        <!-- (sidebar/topbar identical — reusing same markup compressed) -->
+        <aside class="sidebar">
+          <div class="brand">
+            <div class="brand-mark">H</div>
+            <div class="brand-name">HeyHenry</div>
+          </div>
+          <nav class="nav">
+            <div class="nav-section-label">Work</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Inbox</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>Projects</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>Contacts</div>
+            <div class="nav-section-label">Money</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Billing</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/></svg>Business health</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><circle cx="16" cy="14" r="2"/></svg>Expenses</div>
+            <div class="nav-section-label">Personal</div>
+            <div class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>Refer &amp; Earn</div>
+            <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
+          </nav>
+          <div class="sidebar-foot">
+            <div class="org-switcher">
+              <div class="org-avatar">M</div>
+              <div class="org-meta">
+                <div class="org-name">Maple Ridge Renos</div>
+                <div class="org-sub">Renovation · BC</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="main">
+          <div class="topbar">
+            <div class="topbar-search">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>Search projects, contacts, invoices…</span>
+              <span class="chip-kbd">⌘K</span>
+            </div>
+            <div class="topbar-actions">
+              <button class="btn btn-ghost">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+              <button class="user-chip">
+                <span class="user-avatar">JM</span>
+                <span class="user-name">Jamie M.</span>
+                <span class="user-role">Owner</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="main-inner">
+
+            <header class="page-head">
+              <div class="page-eyebrow">
+                Personal
+                <span class="eyebrow-sep">/</span>
+                Refer &amp; Earn
+                <span class="eyebrow-sep">/</span>
+                Drafting an invite
+              </div>
+              <h1 class="page-title">Refer &amp; Earn</h1>
+              <p class="page-sub">
+                Henry drafted a short note in your voice — peer-to-peer, no marketing pitch. Edit it, then send. We never send anything without you hitting the button.
+              </p>
+            </header>
+
+            <!-- SHARE HERO with Henry draft expanded -->
+            <section class="share-hero">
+              <div class="share-hero-head">
+                <div>
+                  <div class="share-hero-eyebrow">
+                    <span class="dot"></span>
+                    Drafting · email
+                  </div>
+                  <h2 class="share-hero-title">Inviting mike@coastlinebuilds.ca</h2>
+                  <p class="share-hero-sub">
+                    Your link rides along automatically. Tweak the message, or send as-is.
+                  </p>
+                </div>
+              </div>
+              <div class="share-hero-body">
+
+                <!-- Link row (compressed echo for context) -->
+                <div class="link-block">
+                  <label class="field-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Your referral link
+                  </label>
+                  <div class="link-row">
+                    <div class="link-input">
+                      <span class="link-faint">app.heyhenry.io/r/</span><span class="link-ink">maple-ridge-renos</span>
+                    </div>
+                    <button class="btn btn-ghost btn-sq" title="Copy link">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <button class="btn btn-ghost btn-sq" title="Native share">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Invite block: filled email + draft expanded -->
+                <div class="invite-block">
+                  <div class="invite-block-head">
+                    <div class="invite-block-title">Send an invite</div>
+                    <div class="channel-toggle" role="tablist" aria-label="Invite channel">
+                      <button class="is-on" type="button" role="tab" aria-selected="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email
+                      </button>
+                      <button type="button" role="tab" aria-selected="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Text
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="invite-row">
+                    <input class="input" type="email" value="mike@coastlinebuilds.ca" readonly />
+                  </div>
+
+                  <!-- Henry-drafted note (editable) -->
+                  <div class="henry-draft">
+                    <div class="henry-draft-head">
+                      <div class="henry-draft-label">
+                        <span class="henry-mark">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L19 9.5l-3.9 3.3.9 5.2L12 15.8 8 18l.9-5.2L5 9.5l5.1-1.9z"/></svg>
+                        </span>
+                        ✦ Henry drafted this
+                      </div>
+                      <div class="henry-draft-meta">Peer-to-peer, in your voice · editable</div>
+                    </div>
+
+                    <textarea class="henry-textarea" aria-label="Invite note">Hey Mike,
+
+You should check out HeyHenry — it's the tool I switched to for running quotes, invoices, and the client portal stuff. Way less time fighting spreadsheets. Figured you'd get something out of it too.
+
+Here's my link if you want a 14-day extended trial: app.heyhenry.io/r/maple-ridge-renos
+
+— Jamie</textarea>
+
+                    <div class="henry-draft-foot">
+                      <div class="henry-draft-caption">
+                        <strong>Never auto-sent.</strong> Edit freely, or rewrite from scratch. Henry won't change a word once you've touched it.
+                      </div>
+                      <div class="henry-draft-actions">
+                        <button class="btn-text-rust" type="button">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                          Try another draft
+                        </button>
+                        <button class="btn-text-rust" type="button">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+                          Discard
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="invite-foot">
+                    <div class="invite-caption">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      We only contact people you personally know — your invite, your words.
+                    </div>
+                    <div style="display: inline-flex; gap: 6px;">
+                      <button class="btn btn-ghost">Cancel</button>
+                      <button class="btn btn-rust btn-lg">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Send invite
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- Honest stats (same row) -->
+            <section class="stats-row">
+              <div class="stat-card">
+                <div class="stat-eyebrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Referrals sent
+                </div>
+                <div class="stat-value">4</div>
+                <div class="stat-meta">Across email, text, and shared links.</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-eyebrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+                  Signups
+                </div>
+                <div class="stat-value">2</div>
+                <div class="stat-meta">Contractors who started a HeyHenry trial from your link.</div>
+              </div>
+              <div class="stat-card is-coming">
+                <div class="stat-eyebrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Conversions &amp; rewards
+                </div>
+                <div class="stat-coming-pill">Coming</div>
+                <div class="stat-meta">We're still building the payout pipeline. We won't show a fake balance here.</div>
+              </div>
+            </section>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       FRAME 3 — Public landing · /r/maple-ridge-renos · valid code
+       ════════════════════════════════════════════════════════════════ -->
+  <section class="frame">
+    <div class="frame-label">
+      <span class="frame-num">03</span>
+      <span class="frame-sep">·</span>
+      Public landing
+      <span class="frame-sep">·</span>
+      <span class="frame-role">/r/maple-ridge-renos</span>
+      <span class="frame-sep">·</span>
+      brand-light · valid code · leaks only the business name
+    </div>
+
+    <div class="frame-body" style="background: #FFFFFF; border-color: #ECECEC;">
+      <div class="public">
+
+        <header class="public-nav">
+          <a class="wordmark" href="#">
+            <span class="wm-mark">H</span>
+            <span class="wm-name">HeyHenry</span>
+          </a>
+        </header>
+
+        <main class="public-main">
+          <div class="public-content">
+            <div class="social-pill">
+              <span class="pill-dot"></span>
+              <span class="pill-tenant">Maple Ridge Renos</span>
+              <span>uses HeyHenry</span>
+            </div>
+
+            <h1 class="public-h1">Run your contracting business smarter.</h1>
+            <p class="public-sub">
+              <strong>Maple Ridge Renos</strong> invited you to try HeyHenry. Manage quotes, jobs, invoices, and clients in one place — start your free <strong>14-day extended trial</strong>.
+            </p>
+
+            <ul class="public-bullets">
+              <li>
+                <span class="glyph">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                Instant quote builder with your real pricing.
+              </li>
+              <li>
+                <span class="glyph">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                Scheduling, site photos, and crew logs from the truck.
+              </li>
+              <li>
+                <span class="glyph">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                One-click invoicing — clients pay online by card or e-Transfer.
+              </li>
+              <li>
+                <span class="glyph">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                Henry — the AI assistant that knows your business.
+              </li>
+            </ul>
+
+            <div class="public-cta-row">
+              <a class="public-cta" href="/signup?ref=maple-ridge-renos">
+                Start your free 14-day trial
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+              <p class="public-cta-meta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                No credit card required · set up in under 5 minutes.
+              </p>
+            </div>
+          </div>
+        </main>
+
+        <footer class="public-footer">
+          <a href="https://heyhenry.io">Powered by HeyHenry</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       FRAME 4 — Public landing · invalid / expired code (graceful fallback)
+       ════════════════════════════════════════════════════════════════ -->
+  <section class="frame">
+    <div class="frame-label">
+      <span class="frame-num">04</span>
+      <span class="frame-sep">·</span>
+      Public landing
+      <span class="frame-sep">·</span>
+      <span class="frame-role">/r/{unknown-code}</span>
+      <span class="frame-sep">·</span>
+      graceful invalid/expired state · no silent fallback
+    </div>
+
+    <div class="frame-body" style="background: #FFFFFF; border-color: #ECECEC; min-height: auto;">
+      <div class="public" style="min-height: 720px;">
+
+        <header class="public-nav">
+          <a class="wordmark" href="#">
+            <span class="wm-mark">H</span>
+            <span class="wm-name">HeyHenry</span>
+          </a>
+        </header>
+
+        <main class="public-main" style="padding-top: 88px;">
+          <div class="public-content is-invalid">
+            <div class="invalid-mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            </div>
+            <div class="invalid-eyebrow">Referral link · not active</div>
+            <h1 class="public-h1" style="font-size: 32px; margin-top: 12px;">This referral link isn't active anymore.</h1>
+            <p class="public-sub">
+              The contractor who shared this link may have changed it, or the link expired. No worries — you can still try HeyHenry free for 14 days.
+            </p>
+
+            <div class="public-cta-row">
+              <a class="public-cta" href="/signup">
+                Start your free trial
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+              <p class="public-cta-meta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                No credit card required · set up in under 5 minutes.
+              </p>
+            </div>
+          </div>
+        </main>
+
+        <footer class="public-footer">
+          <a href="https://heyhenry.io">Powered by HeyHenry</a>
+        </footer>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

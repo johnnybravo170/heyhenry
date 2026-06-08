@@ -94,14 +94,14 @@ export async function submitLeadAction(input: {
     return { ...s, price_cents };
   });
 
-  // Per-tenant rate (HST tenants get 13%/15%). Lead's customer doesn't
-  // exist yet, so no tax-exempt branching here.
-  const taxCtx = await canadianTax.getContext(tenant.id);
+  // Per-tenant customer-facing rate (HST tenants get 13%/15%; PST stripped).
+  // Lead's customer doesn't exist yet, so no tax-exempt branching here.
+  const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
   const totals = calculateQuoteTotal(pricedSurfaces, taxCtx.totalRate);
 
   // 4. Create customer in the operator's tenant.
   const { data: customer, error: custErr } = await admin
-    .from('customers')
+    .from('contacts')
     .insert({
       tenant_id: tenant.id,
       type: 'residential',
@@ -122,7 +122,7 @@ export async function submitLeadAction(input: {
     .from('quotes')
     .insert({
       tenant_id: tenant.id,
-      customer_id: customer.id,
+      contact_id: customer.id,
       status: 'draft',
       subtotal_cents: totals.subtotal_cents,
       tax_cents: totals.tax_cents,

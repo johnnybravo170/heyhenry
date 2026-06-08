@@ -55,7 +55,7 @@ export const todoTools: AiTool[] = [
     definition: {
       name: 'create_todo',
       description:
-        "Adds an item to the legacy /inbox 'Todos' tab. Prefer add_task with scope='personal' for the operator's regular personal task list. Only use this when the operator explicitly says 'add to my inbox'.",
+        "Adds an item to the legacy /inbox 'Todos' tab. Prefer create_task with scope='personal' for the operator's regular personal task list. Only use this when the operator explicitly says 'add to my inbox'.",
       input_schema: {
         type: 'object',
         properties: {
@@ -106,7 +106,7 @@ export const todoTools: AiTool[] = [
     definition: {
       name: 'complete_todo',
       description:
-        "Mark a legacy /inbox 'Todos' tab item done. For ordinary personal tasks (anything created via add_task or shown on /todos), use complete_task instead.",
+        "Mark a legacy /inbox 'Todos' tab item done. For ordinary personal tasks (anything created via create_task or shown on /todos), use complete_task instead.",
       input_schema: {
         type: 'object',
         properties: {

@@ -1,0 +1,2911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Import / Export data — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) — verbatim from od-settings-billing ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Frame stack ───── */
+  .frame-stack { display: flex; flex-direction: column; gap: 36px; padding: 32px; }
+  .frame { display: flex; flex-direction: column; gap: 10px; }
+  .frame-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 4px;
+  }
+  .frame-label .frame-num { color: var(--ink); }
+  .frame-label .frame-role { color: var(--ink); }
+  .frame-label .frame-sep { color: var(--faint); margin: 0 6px; }
+  .frame-body {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    box-shadow: 0 20px 40px -22px rgba(10,10,10,.22);
+  }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 980px; background: var(--bg); }
+  .shell.shell-tall { min-height: 1220px; }
+  .shell.shell-short { min-height: 820px; }
+
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; }
+  .org-avatar {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--rust); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 12px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+  .user-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 34px;
+    padding: 0 12px 0 6px;
+    border-radius: var(--radius-input);
+    border: 1px solid var(--hair);
+    background: var(--card);
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink);
+  }
+  .user-avatar {
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .user-name { font-size: 14px; font-weight: 600; }
+  .user-role {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-left: 8px;
+    border-left: 1px solid var(--hair);
+    margin-left: 2px;
+  }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 120ms, border-color 120ms, color 120ms;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-primary[disabled] { background: var(--chip-fill); color: var(--faint); cursor: default; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn-rust[disabled] { background: var(--chip-fill); color: var(--faint); border-color: var(--hair); cursor: default; }
+  .btn-text { background: transparent; border: 0; color: var(--muted); padding: 0 8px; }
+  .btn-text:hover { color: var(--ink); }
+  .btn-destructive {
+    background: var(--danger-soft);
+    border-color: var(--danger-soft);
+    color: var(--danger);
+  }
+  .btn-destructive:hover { background: #FBCFCF; }
+  .btn .icon { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 9px; font-size: 12px; }
+  .btn-lg { height: 38px; padding: 0 14px; font-size: 14px; }
+
+  /* ───── Main column ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 80px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .main-narrow {
+    max-width: 880px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 80px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .main-wide {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 80px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+
+  /* ───── Page header ───── */
+  .page-head { display: flex; flex-direction: column; gap: 4px; }
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); margin: 0; }
+  .page-sub { color: var(--muted); font-size: 14px; }
+  .page-sub a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .page-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .page-eyebrow .henry-mark-sm {
+    width: 14px; height: 14px;
+    border-radius: 4px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+  }
+  .page-eyebrow .henry-mark-sm svg { width: 9px; height: 9px; }
+  .page-eyebrow .eyebrow-strong { color: var(--ink); }
+
+  /* ───── DetailPageNav back-link ───── */
+  .detail-nav {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500;
+    color: var(--muted);
+    margin-bottom: -8px;
+  }
+  .detail-nav svg { width: 13px; height: 13px; }
+  .detail-nav:hover { color: var(--ink); }
+
+  /* ───── Settings sub-layout (for list + export frame) ───── */
+  .settings-layout { display: grid; grid-template-columns: 244px 1fr; gap: 32px; align-items: start; }
+  .settings-nav { align-self: start; }
+  .settings-search {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    padding: 0 10px;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 16px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .settings-search .icon { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+  .settings-search .kbd {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); background: var(--chip-fill);
+    padding: 2px 6px; border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .settings-group { margin-bottom: 14px; }
+  .group-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 8px 6px;
+  }
+  .group-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+  .settings-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .settings-item:hover { background: rgba(232, 222, 201, .55); }
+  .settings-item.is-active { background: var(--ink); color: #fff; font-weight: 600; }
+  .item-icon { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+  .settings-item.is-active .item-icon { color: #fff; }
+  .item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .settings-item.is-active .item-pill { color: rgba(255,255,255,.75); background: rgba(255,255,255,.12); }
+  .item-arrow { width: 11px; height: 11px; color: var(--faint); flex-shrink: 0; }
+  .settings-item.is-active .item-arrow { color: rgba(255,255,255,.6); }
+  .item-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+
+  /* ───── Pane ───── */
+  .settings-pane { display: flex; flex-direction: column; gap: 16px; min-width: 0; max-width: 760px; }
+  .pane-card { background: var(--card); border: 1px solid var(--hair); border-radius: var(--radius-card); overflow: hidden; }
+  .card-head { padding: 18px 22px 16px; border-bottom: 1px solid var(--hair); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--ink); margin: 0; letter-spacing: -0.01em; line-height: 1.3; }
+  .card-sub { font-size: 14px; color: var(--muted); margin: 4px 0 0; font-weight: 500; line-height: 1.45; }
+  .card-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .card-foot {
+    border-top: 1px solid var(--hair);
+    padding: 12px 22px;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ───── Status pills (status-tokens: tone + glyph + text) ───── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+  }
+  .pill svg { width: 11px; height: 11px; }
+  .pill-ok      { background: var(--ok-soft);    color: var(--ok);     border-color: rgba(21,128,61,.18); }
+  .pill-warn    { background: var(--warn-soft);  color: var(--warn);   border-color: rgba(180,83,9,.18); }
+  .pill-info    { background: var(--info-soft);  color: var(--info);   border-color: rgba(30,64,175,.18); }
+  .pill-danger  { background: var(--danger-soft); color: var(--danger); border-color: rgba(185,28,28,.18); }
+  .pill-neutral { background: var(--chip-fill);  color: var(--muted);  border-color: var(--hair); }
+  .pill-rust {
+    background: var(--rust-soft); color: var(--rust);
+    border-color: rgba(194,65,12,.22);
+  }
+  .pill-count {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    border: 1px solid var(--hair);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .pill-count.is-danger {
+    background: var(--danger-soft); color: var(--danger); border-color: rgba(185,28,28,.22);
+  }
+  .pill-count.is-warn {
+    background: var(--warn-soft); color: var(--warn); border-color: rgba(180,83,9,.22);
+  }
+  .pill-count.is-ok {
+    background: var(--ok-soft); color: var(--ok); border-color: rgba(21,128,61,.22);
+  }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+  /*  IMPORT HUB — tile grid                                              */
+  /* ─────────────────────────────────────────────────────────────────── */
+
+  .tile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tile {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 18px 18px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    cursor: pointer;
+    transition: border-color 120ms, background 120ms;
+  }
+  .tile:hover { background: var(--chrome); border-color: var(--rule); }
+  .tile.is-recommended { border-color: rgba(194,65,12,.35); box-shadow: inset 0 0 0 1px rgba(194,65,12,.18); }
+  .tile-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tile-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .tile-icon svg { width: 17px; height: 17px; }
+  .tile.is-recommended .tile-icon { background: var(--rust-soft); color: var(--rust); }
+  .tile-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; flex: 1; }
+  .tile-arrow {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .tile-arrow svg { width: 13px; height: 13px; }
+  .tile-blurb { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+  .tile-formats {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin-top: 2px;
+  }
+  .tile-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px dashed var(--hair);
+    margin-top: 4px;
+  }
+  .tile-stat {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .tile-stat .tile-stat-num { color: var(--ink); }
+
+  .hub-strip {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+  }
+  .hub-strip-meta { display: flex; align-items: flex-start; gap: 12px; }
+  .hub-strip-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .hub-strip-icon svg { width: 15px; height: 15px; }
+  .hub-strip-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .hub-strip-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .hub-strip-link {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    border-radius: var(--radius-input);
+    background: var(--chip-fill);
+  }
+  .hub-strip-link:hover { background: var(--nav-active); }
+
+  .hub-promise {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .hub-promise .henry-mark-md {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .hub-promise .henry-mark-md svg { width: 15px; height: 15px; }
+  .hub-promise-body { flex: 1; }
+  .hub-promise-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .hub-promise-sub { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+  .hub-promise-sub strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+  /*  WIZARD — input stage (dropzone + paste)                             */
+  /* ─────────────────────────────────────────────────────────────────── */
+
+  .wizard-head {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .wizard-title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin: 0; }
+  .wizard-sub { font-size: 14px; color: var(--muted); }
+
+  .wizard-stage-rail {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+  }
+  .stage-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--faint);
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+  }
+  .stage-chip .dot {
+    width: 5px; height: 5px; border-radius: 999px; background: var(--faint);
+  }
+  .stage-chip.is-done { color: var(--ok); border-color: rgba(21,128,61,.22); background: var(--ok-soft); }
+  .stage-chip.is-done .dot { background: var(--ok); }
+  .stage-chip.is-now { color: var(--ink); border-color: var(--ink); background: var(--card); }
+  .stage-chip.is-now .dot { background: var(--rust); }
+  .stage-rail-sep { width: 14px; height: 1px; background: var(--rule); flex-shrink: 0; }
+
+  .dropzone {
+    background: var(--card);
+    border: 1.5px dashed var(--rule);
+    border-radius: var(--radius-card);
+    padding: 28px 22px;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .dropzone.is-warm {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,.4);
+  }
+  .dropzone-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    margin-bottom: 2px;
+  }
+  .dropzone-icon svg { width: 22px; height: 22px; }
+  .dropzone.is-warm .dropzone-icon { background: var(--card); color: var(--rust); }
+  .dropzone-headline { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .dropzone-sub { font-size: 12px; color: var(--muted); }
+  .dropzone-accept {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+  }
+
+  .dropzone-files {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 12px;
+  }
+  .dropzone-files-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .dropzone-files-count {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--ink); letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .dropzone-file-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--hair);
+  }
+  .dropzone-file-row:last-child { border-bottom: 0; }
+  .dropzone-file-row .ico { width: 12px; height: 12px; color: var(--muted); flex-shrink: 0; }
+  .dropzone-file-row .name { font-size: 12px; color: var(--ink-2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dropzone-file-row .size { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .dropzone-file-row .x {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .dropzone-file-row .x svg { width: 10px; height: 10px; }
+
+  .or-divider {
+    display: flex; align-items: center; gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .or-divider::before, .or-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--rule);
+  }
+
+  .paste-card { background: var(--card); border: 1px solid var(--hair); border-radius: var(--radius-card); padding: 18px 20px; }
+  .paste-label {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+  .paste-textarea {
+    width: 100%; min-height: 130px;
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    background: var(--card);
+    padding: 12px 14px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink-2);
+    outline: none;
+    resize: vertical;
+    line-height: 1.55;
+  }
+  .paste-textarea:focus { border-color: var(--ink); }
+  .paste-textarea.is-mono { font-family: var(--mono); font-size: 12px; }
+  .paste-sub {
+    font-size: 12px; color: var(--muted);
+    margin-top: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .paste-sub .ico { width: 12px; height: 12px; }
+
+  .input-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .input-foot .reassure {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .input-foot .reassure svg { width: 12px; height: 12px; }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+  /*  WIZARD — preview + decide                                          */
+  /* ─────────────────────────────────────────────────────────────────── */
+
+  .summary-strip {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .summary-strip-left {
+    display: flex; align-items: center; gap: 10px;
+    flex: 1; min-width: 0;
+  }
+  .summary-headline { font-size: 14px; color: var(--ink); }
+  .summary-headline strong { font-weight: 700; }
+  .summary-source {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); letter-spacing: 0.04em;
+  }
+  .summary-counts { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  .decision-table-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .dt { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .dt thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: left;
+    padding: 11px 12px 9px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--bg);
+    vertical-align: bottom;
+  }
+  .dt thead th.num { text-align: right; }
+  .dt thead th.dec { text-align: right; }
+  .dt tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--hair);
+    font-size: 14px;
+    color: var(--ink-2);
+    vertical-align: middle;
+  }
+  .dt tbody tr:last-child td { border-bottom: 0; }
+  .dt tbody tr.row-skip td { opacity: .55; }
+  .dt tbody tr.row-error td { background: rgba(185,28,28,.04); }
+  .dt tbody tr.row-error td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+  .dt tbody tr.row-block td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+
+  .cell-edit {
+    width: 100%; height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0 6px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+  }
+  .cell-edit:hover { border-color: var(--hair); background: var(--bg); }
+  .cell-edit:focus { border-color: var(--ink); background: var(--card); }
+  .cell-edit.is-num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cell-edit.is-empty { color: var(--faint); }
+  .cell-edit.is-danger { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+  .cell-meta {
+    font-size: 12px; color: var(--muted);
+    margin-top: 1px;
+    padding-left: 6px;
+  }
+  .cell-meta-error { color: var(--danger); font-weight: 600; }
+
+  .cell-money {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .cell-money.is-empty { color: var(--danger); font-weight: 600; }
+
+  .cell-cat {
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .cell-cat-select {
+    height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0 6px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    padding-right: 18px;
+  }
+  .cell-cat-select:hover { border-color: var(--hair); background-color: var(--bg); }
+  .cell-cat-suggest {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    padding-left: 6px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .cell-cat-suggest svg { width: 11px; height: 11px; color: var(--ink); }
+
+  /* Match column — warning tone for strong matches, neutral for new */
+  .match-strong {
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .match-tier {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .match-tier svg { width: 11px; height: 11px; }
+  .match-existing { font-size: 12px; color: var(--ink-2); }
+  .match-none {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .match-rule {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .match-rule svg { width: 10px; height: 10px; }
+
+  /* 3-segment decision toggle (rust on active) */
+  .decision-toggle {
+    display: inline-flex;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--card);
+    height: 28px;
+  }
+  .decision-seg {
+    border: 0;
+    background: transparent;
+    padding: 0 10px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    border-right: 1px solid var(--rule);
+  }
+  .decision-seg:last-child { border-right: 0; }
+  .decision-seg svg { width: 11px; height: 11px; }
+  .decision-seg:hover { background: var(--bg); }
+  .decision-seg.is-active-create,
+  .decision-seg.is-active-merge {
+    background: var(--rust);
+    color: #fff;
+    border-color: var(--rust);
+  }
+  .decision-seg.is-active-skip {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .decision-seg.is-disabled {
+    background: var(--chip-fill);
+    color: var(--faint);
+    cursor: not-allowed;
+  }
+
+  /* File cell for receipts */
+  .file-cell { display: flex; align-items: center; gap: 8px; }
+  .file-cell .file-thumb {
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .file-cell .file-thumb svg { width: 13px; height: 13px; }
+  .file-cell .file-name { font-size: 12px; color: var(--ink-2); font-family: var(--mono); letter-spacing: 0.02em; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Paid by / payment source cell */
+  .source-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid var(--hair);
+    background: var(--chip-fill);
+    color: var(--ink-2);
+  }
+  .source-pill .pill-card-mark {
+    width: 18px; height: 12px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #1A1F71 0%, #2B3A8F 100%);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    line-height: 1;
+    display: grid; place-items: center;
+  }
+  .source-pill .pill-dotty { font-family: var(--mono); letter-spacing: 0.08em; font-size: 12px; }
+  .source-pill.is-personal {
+    background: var(--warn-soft); color: var(--warn); border-color: rgba(180,83,9,.22);
+  }
+  .source-pill.is-petty {
+    background: var(--info-soft); color: var(--info); border-color: rgba(30,64,175,.22);
+  }
+  .label-card-affordance {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    border: 1px dashed rgba(180,83,9,.5);
+    background: var(--warn-soft);
+    color: var(--warn);
+    cursor: pointer;
+  }
+  .label-card-affordance:hover { background: #FEEFC6; }
+  .label-card-affordance svg { width: 11px; height: 11px; }
+
+  .audit-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .audit-label { font-size: 14px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+  .audit-label .opt { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .audit-input {
+    width: 100%; height: 36px;
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    background: var(--card);
+    padding: 0 12px;
+    font: inherit; font-size: 14px;
+    color: var(--ink);
+    outline: none;
+  }
+  .audit-input:focus { border-color: var(--ink); }
+  .audit-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .audit-foot .block-msg {
+    color: var(--danger);
+    font-size: 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .audit-foot .block-msg svg { width: 12px; height: 12px; }
+  .audit-foot .reassure-mono {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+  /*  WIZARD — processing (receipt fan-out)                              */
+  /* ─────────────────────────────────────────────────────────────────── */
+
+  .proc-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 18px 20px;
+  }
+  .proc-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .proc-status {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .proc-spinner {
+    width: 16px; height: 16px;
+    border-radius: 999px;
+    border: 2px solid var(--chip-fill);
+    border-top-color: var(--rust);
+    animation: spin 800ms linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .proc-status .proc-mono {
+    font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.02em;
+  }
+  .proc-bar {
+    height: 8px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .proc-bar-fill {
+    position: absolute; inset: 0;
+    background: var(--rust);
+    border-radius: 999px;
+  }
+  .proc-bar-meta {
+    display: flex; justify-content: space-between;
+    margin-top: 6px;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .proc-bar-meta .pct { color: var(--ink); }
+
+  .stream-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .stream-head {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .stream-list { list-style: none; margin: 0; padding: 0; }
+  .stream-row {
+    display: grid;
+    grid-template-columns: 22px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--hair);
+    font-size: 12px;
+  }
+  .stream-row:last-child { border-bottom: 0; }
+  .stream-row.is-now { background: rgba(194,65,12,.045); }
+  .stream-row .stream-icon {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .stream-row .stream-icon svg { width: 11px; height: 11px; }
+  .stream-row.is-error .stream-icon { background: var(--danger-soft); color: var(--danger); }
+  .stream-row.is-now .stream-icon { background: var(--rust-soft); color: var(--rust); }
+  .stream-row .stream-name {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-2); letter-spacing: 0.02em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .stream-row.is-error .stream-name { color: var(--danger); }
+  .stream-row .stream-vendor {
+    font-size: 12px; color: var(--ink); font-weight: 600;
+  }
+  .stream-row .stream-amount {
+    font-family: var(--mono); font-size: 12px; color: var(--ink); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .stream-row.is-error .stream-vendor,
+  .stream-row.is-error .stream-amount {
+    font-family: var(--sans);
+    font-weight: 600;
+    color: var(--danger);
+    font-size: 12px;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+  /*  IMPORTS LIST                                                       */
+  /* ─────────────────────────────────────────────────────────────────── */
+
+  .batch-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px;
+  }
+  .batch-card.is-rolled-back { opacity: .65; }
+  .batch-card.is-rolled-back .batch-kind { color: var(--muted); }
+  .batch-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .batch-row-1 {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .batch-kind {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+  }
+  .batch-side-effect {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--info); background: var(--info-soft);
+    border: 1px solid rgba(30,64,175,.22);
+    padding: 2px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+  .batch-note { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+  .batch-foot {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .batch-foot .ink { color: var(--ink-2); }
+  .batch-foot .sep { color: var(--faint); }
+  .batch-foot-rb {
+    color: var(--warn);
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.02em;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .batch-foot-rb svg { width: 11px; height: 11px; }
+  .batch-action { flex-shrink: 0; }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+  /*  EXPORT CARD                                                        */
+  /* ─────────────────────────────────────────────────────────────────── */
+
+  .export-card .card-head { padding-bottom: 14px; }
+  .export-head-row {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .export-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .export-icon svg { width: 17px; height: 17px; }
+  .export-cta {
+    width: 100%;
+    height: 42px;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    border-radius: var(--radius-input);
+    font: inherit; font-size: 14px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+  }
+  .export-cta:hover { background: #222; }
+  .export-cta svg { width: 14px; height: 14px; }
+  .export-last {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .export-last svg { width: 12px; height: 12px; }
+  .export-last a {
+    color: var(--ink); text-decoration: underline; text-underline-offset: 3px;
+    font-weight: 600;
+  }
+  .export-meta-row {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .export-meta-row .meta-chip {
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    display: inline-flex; align-items: center; gap: 5px;
+    text-transform: none; letter-spacing: 0.02em;
+  }
+  .export-meta-row .meta-chip svg { width: 11px; height: 11px; }
+  .export-meta-row .meta-chip.is-ok { background: var(--ok-soft); color: var(--ok); border-color: rgba(21,128,61,.22); }
+  .export-meta-row .meta-chip.is-owner { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+
+  /* ─────────────────────────────────────────────────────────────────── */
+  /*  STATES ROW — dialogs + DONE card                                   */
+  /* ─────────────────────────────────────────────────────────────────── */
+
+  .states-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 22px;
+    padding: 28px;
+    background: var(--bg);
+  }
+  .state-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .state-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--bg);
+  }
+  .state-eyebrow .eyebrow-strong { color: var(--ink); }
+
+  .dialog {
+    padding: 22px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .dialog-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; margin: 0; }
+  .dialog-desc { font-size: 14px; color: var(--ink-2); line-height: 1.55; margin: 0; }
+  .dialog-desc strong { color: var(--ink); font-weight: 600; }
+  .dialog-reassure {
+    font-size: 12px; color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    padding: 9px 12px;
+    display: flex; align-items: flex-start; gap: 8px;
+    line-height: 1.5;
+  }
+  .dialog-reassure svg { width: 12px; height: 12px; color: var(--ok); margin-top: 2px; flex-shrink: 0; }
+  .dialog-foot {
+    display: flex; justify-content: flex-end; gap: 8px;
+    padding-top: 4px;
+    border-top: 1px solid var(--hair);
+    margin: 4px -22px -22px;
+    padding: 14px 22px;
+    background: var(--bg);
+  }
+
+  .done-card {
+    padding: 32px 22px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    text-align: center;
+  }
+  .done-disc {
+    width: 56px; height: 56px;
+    border-radius: 999px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    display: grid; place-items: center;
+    border: 1.5px solid rgba(21,128,61,.22);
+  }
+  .done-disc svg { width: 26px; height: 26px; }
+  .done-title { font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; margin: 0; }
+  .done-counts { font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+  .done-counts strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .done-actions {
+    display: flex; gap: 8px;
+    margin-top: 4px;
+  }
+
+  /* utilities */
+  .mono { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .grow { flex: 1; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/><polyline points="12 7 12 12 16 14"/></symbol>
+    <symbol id="i-file-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="10" y1="12" x2="10" y2="12"/><line x1="10" y1="16" x2="10" y2="16"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="i-import" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="7.5 4.21 12 6.81 16.5 4.21"/><polyline points="7.5 19.79 7.5 14.6 3 12"/><polyline points="21 12 16.5 14.6 16.5 19.79"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+  </defs>
+</svg>
+
+<div class="frame-stack">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 1 — Import hub /import (mounted in shell)                  -->
+<!-- The Settings nav's "Import data" jumps here. Six tiles, one rust -->
+<!-- "Start here" pill (the only rust on the hub).                     -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 1</span><span class="frame-sep">·</span>/import
+    <span class="frame-sep">·</span><span class="frame-role">Owner · Day-1 hub</span>
+    <span class="frame-sep">·</span>six entity tiles · recommended-next · the only rust is the &ldquo;Start here&rdquo; pill
+  </div>
+  <div class="frame-body">
+<div class="shell">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-import"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <span class="page-eyebrow">
+          <span class="henry-mark-sm"><svg><use href="#i-sparkles"/></svg></span>
+          <span class="eyebrow-strong">Day-1 onboarding</span>
+          <span>·</span>
+          <span>Henry-classified, operator-confirmed</span>
+        </span>
+        <h1 class="page-title">Bring your data in</h1>
+        <div class="page-sub">
+          Drop whatever shape your data is in — a QuickBooks export, a Jobber CSV,
+          a pasted list, a pile of receipt photos. Henry reads it; you confirm
+          every row before anything saves. Get it wrong? Roll the batch back from
+          <a href="#">Settings ▸ Imports</a>.
+        </div>
+      </section>
+
+      <div class="hub-promise">
+        <div class="henry-mark-md"><svg><use href="#i-sparkles"/></svg></div>
+        <div class="hub-promise-body">
+          <div class="hub-promise-title">Henry handles whatever shape your data is in.</div>
+          <div class="hub-promise-sub">
+            <strong>No column mapping.</strong> A CSV with mixed headers, a half-formatted
+            spreadsheet, a plain-text list, a folder of receipt photos — Henry classifies
+            each row and you edit anything that looks off. <strong>Soft-delete rollback</strong>
+            is one click from <a href="#" style="color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-weight:600;">Settings ▸ Imports</a>.
+          </div>
+        </div>
+      </div>
+
+      <section class="tile-grid" aria-label="What to bring in">
+
+        <!-- 1. Customers — already added -->
+        <div class="tile">
+          <div class="tile-row">
+            <div class="tile-icon"><svg><use href="#i-users"/></svg></div>
+            <div class="tile-title">Customers</div>
+            <span class="pill pill-ok"><svg><use href="#i-check"/></svg>Already added</span>
+            <div class="tile-arrow"><svg><use href="#i-arrow-right"/></svg></div>
+          </div>
+          <div class="tile-blurb">A list of names with whatever contact info you have. Henry sorts the rest.</div>
+          <div class="tile-foot">
+            <span class="tile-formats">QuickBooks · Jobber · Google Sheets · plain text</span>
+            <span class="tile-stat"><span class="tile-stat-num">128</span> · in account</span>
+          </div>
+        </div>
+
+        <!-- 2. Projects — Start here (the one rust) -->
+        <div class="tile is-recommended">
+          <div class="tile-row">
+            <div class="tile-icon"><svg><use href="#i-briefcase"/></svg></div>
+            <div class="tile-title">Projects</div>
+            <span class="pill pill-rust"><svg><use href="#i-arrow-right"/></svg>Start here</span>
+            <div class="tile-arrow" style="background:var(--rust);color:#fff;border-color:var(--rust);"><svg><use href="#i-arrow-right"/></svg></div>
+          </div>
+          <div class="tile-blurb">Quotes and jobs. Any new customers come along automatically — no setup order.</div>
+          <div class="tile-foot">
+            <span class="tile-formats">Google Sheets · Excel-as-CSV · plain text</span>
+            <span class="tile-stat" style="color:var(--rust);"><span class="tile-stat-num" style="color:var(--rust);">0</span> · none yet</span>
+          </div>
+        </div>
+
+        <!-- 3. Invoices -->
+        <div class="tile">
+          <div class="tile-row">
+            <div class="tile-icon"><svg><use href="#i-file"/></svg></div>
+            <div class="tile-title">Invoices</div>
+            <div class="tile-arrow"><svg><use href="#i-arrow-right"/></svg></div>
+          </div>
+          <div class="tile-blurb">Historical invoices land with their original tax math frozen — no recompute.</div>
+          <div class="tile-foot">
+            <span class="tile-formats">QuickBooks · Jobber · Excel-as-CSV</span>
+            <span class="tile-stat">CAD · frozen tax</span>
+          </div>
+        </div>
+
+        <!-- 4. Receipts -->
+        <div class="tile">
+          <div class="tile-row">
+            <div class="tile-icon"><svg><use href="#i-receipt"/></svg></div>
+            <div class="tile-title">Receipts</div>
+            <div class="tile-arrow"><svg><use href="#i-arrow-right"/></svg></div>
+          </div>
+          <div class="tile-blurb">Drop a stack of PDFs or photos. Henry reads each one and pre-files it by category.</div>
+          <div class="tile-foot">
+            <span class="tile-formats">Scanned PDFs · phone photos · drop 50 at once</span>
+            <span class="tile-stat">OCR · GST · &ldquo;Paid by&rdquo;</span>
+          </div>
+        </div>
+
+        <!-- 5. Project photos -->
+        <div class="tile">
+          <div class="tile-row">
+            <div class="tile-icon"><svg><use href="#i-image"/></svg></div>
+            <div class="tile-title">Project photos</div>
+            <div class="tile-arrow"><svg><use href="#i-arrow-right"/></svg></div>
+          </div>
+          <div class="tile-blurb">Drop a folder of historical project photos. Henry tags them in the background.</div>
+          <div class="tile-foot">
+            <span class="tile-formats">JPEG · PNG · HEIC · WebP</span>
+            <span class="tile-stat">Pick project · drop the lot</span>
+          </div>
+        </div>
+
+        <!-- 6. Time entries -->
+        <div class="tile">
+          <div class="tile-row">
+            <div class="tile-icon"><svg><use href="#i-clock"/></svg></div>
+            <div class="tile-title">Time entries</div>
+            <div class="tile-arrow"><svg><use href="#i-arrow-right"/></svg></div>
+          </div>
+          <div class="tile-blurb">Historical hours by worker / project / date. Henry matches workers to your team.</div>
+          <div class="tile-foot">
+            <span class="tile-formats">Payroll CSV · time-tracker export · Google Sheets</span>
+            <span class="tile-stat">Worker · project · date</span>
+          </div>
+        </div>
+
+      </section>
+
+      <div class="hub-strip">
+        <div class="hub-strip-meta">
+          <div class="hub-strip-icon"><svg><use href="#i-history"/></svg></div>
+          <div>
+            <div class="hub-strip-title">Already brought something in?</div>
+            <div class="hub-strip-sub">Every batch is logged. Roll one back if it went wrong &mdash; rollback is soft-delete, never destructive.</div>
+          </div>
+        </div>
+        <a href="#" class="hub-strip-link">3 active <svg style="width:11px;height:11px;"><use href="#i-arrow-right"/></svg></a>
+      </div>
+
+    </main>
+  </div>
+</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 2 — Customer wizard · INPUT stage                          -->
+<!-- The text/single-shot shape (customer canonical).                  -->
+<!-- Upload card + "or" + paste card + ✦ Read it (rust primary CTA).  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 2</span><span class="frame-sep">·</span>/contacts/import
+    <span class="frame-sep">·</span><span class="frame-role">Text shape · INPUT</span>
+    <span class="frame-sep">·</span>drop a file or paste a list · &ldquo;Henry sorts it out&rdquo;
+  </div>
+  <div class="frame-body">
+<div class="shell shell-short">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-import"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-narrow">
+      <a href="#" class="detail-nav"><svg><use href="#i-arrow-left"/></svg>Back to Import with Henry</a>
+
+      <section class="wizard-head">
+        <span class="page-eyebrow">
+          <span class="henry-mark-sm"><svg><use href="#i-sparkles"/></svg></span>
+          <span class="eyebrow-strong">Customers</span>
+          <span>·</span>
+          <span>Day-1 onboarding · Phase A</span>
+        </span>
+        <h1 class="wizard-title">Bring in your customers</h1>
+        <p class="wizard-sub">A list of names with whatever contact info you have. Henry classifies it, you confirm every row, no row saves until you say <em>bring them in</em>.</p>
+        <div class="wizard-stage-rail" role="list" aria-label="Wizard stage">
+          <span class="stage-chip is-now" role="listitem"><span class="dot"></span>Input</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip" role="listitem"><span class="dot"></span>Preview &amp; decide</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip" role="listitem"><span class="dot"></span>Done</span>
+        </div>
+      </section>
+
+      <div class="dropzone" role="button" tabindex="0" aria-label="Drop a CSV, TSV, or text file">
+        <div class="dropzone-icon"><svg><use href="#i-upload"/></svg></div>
+        <div class="dropzone-headline">Drop a file here, or click to browse</div>
+        <div class="dropzone-sub">CSV, TSV, or plain text from QuickBooks / Jobber / Houzz / Excel-as-CSV.</div>
+        <div class="dropzone-accept">accepts: .csv · .tsv · .txt &nbsp;·&nbsp; up to 25 MB</div>
+      </div>
+
+      <div class="or-divider">or</div>
+
+      <div class="paste-card">
+        <label class="paste-label" for="paste"><svg style="width:13px;height:13px;color:var(--muted);"><use href="#i-pencil"/></svg>Paste a list</label>
+        <textarea id="paste" class="paste-textarea is-mono" placeholder="Sarah Patel — sarah@example.com — 604-555-1234&#10;The Hendersons, 132 Spruce, Vancouver BC&#10;Marc Chen · marc@chen-build.ca · 778-555-0117&#10;Aisha O'Brien · 604-555-9921&#10;…">Sarah Patel — sarah@example.com — 604-555-1234
+The Hendersons, 132 Spruce, Vancouver BC
+Marc Chen · marc@chen-build.ca · 778-555-0117
+Aisha O'Brien · 604-555-9921
+Hardip &amp; Jas Sandhu — 7042 Boundary Rd, Burnaby — hardip.sandhu@gmail.com
+Westcoast Drywall Ltd. · billing@wcdrywall.ca
+Joanne McCready · 604.555.2210 · Kits</textarea>
+        <div class="paste-sub">
+          <svg class="ico"><use href="#i-info"/></svg>
+          Names, emails, phones, addresses &mdash; any shape. Henry sorts it out.
+        </div>
+      </div>
+
+      <div class="input-foot">
+        <div class="reassure">
+          <svg><use href="#i-shield"/></svg>
+          Nothing saves until you confirm row-by-row on the next screen.
+        </div>
+        <button class="btn btn-rust btn-lg">
+          <svg class="icon"><use href="#i-sparkles"/></svg>
+          Read it
+          <svg class="icon" style="margin-left:2px;"><use href="#i-arrow-right"/></svg>
+        </button>
+      </div>
+
+    </main>
+  </div>
+</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 3 — Customer wizard · PREVIEW + DECIDE                     -->
+<!-- The heart. Inline-editable cells, match column (rules-based,     -->
+<!-- warn tone), 3-segment decision toggle (rust on active).          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 3</span><span class="frame-sep">·</span>/contacts/import
+    <span class="frame-sep">·</span><span class="frame-role">Text shape · PREVIEW + DECIDE</span>
+    <span class="frame-sep">·</span>Henry-classified, operator-confirmed · deterministic dedup (not ✦) · rust only on active toggle &amp; commit
+  </div>
+  <div class="frame-body">
+<div class="shell shell-tall">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-import"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-wide">
+      <a href="#" class="detail-nav"><svg><use href="#i-arrow-left"/></svg>Back to Import with Henry</a>
+
+      <section class="wizard-head">
+        <span class="page-eyebrow">
+          <span class="henry-mark-sm"><svg><use href="#i-sparkles"/></svg></span>
+          <span class="eyebrow-strong">Customers</span>
+          <span>·</span>
+          <span>Day-1 onboarding · Phase A</span>
+        </span>
+        <h1 class="wizard-title">Bring in your customers</h1>
+        <div class="wizard-stage-rail" role="list">
+          <span class="stage-chip is-done"><span class="dot"></span><svg style="width:10px;height:10px;"><use href="#i-check"/></svg>Input</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip is-now"><span class="dot"></span>Preview &amp; decide</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip"><span class="dot"></span>Done</span>
+        </div>
+      </section>
+
+      <div class="summary-strip">
+        <div class="summary-strip-left">
+          <span class="page-eyebrow">
+            <span class="henry-mark-sm"><svg><use href="#i-sparkles"/></svg></span>
+            <span class="eyebrow-strong">Henry classified</span>
+          </span>
+          <span class="summary-headline"><strong>24 customers</strong> in your paste &mdash; review every row before commit.</span>
+        </div>
+        <div class="summary-counts">
+          <span class="pill-count is-ok">18 new</span>
+          <span class="pill-count is-warn">5 merged</span>
+          <span class="pill-count">1 skipped</span>
+        </div>
+      </div>
+
+      <div class="decision-table-card">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th style="width:30%">Customer</th>
+              <th style="width:23%">Contact</th>
+              <th style="width:13%">City</th>
+              <th style="width:18%">Match <span style="text-transform:none;font-family:var(--mono);font-size:11px;color:var(--faint);">· rule-based</span></th>
+              <th class="dec" style="width:16%">Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Row 1 — new -->
+            <tr>
+              <td>
+                <input class="cell-edit" value="Sarah Patel" />
+                <div class="cell-meta">Mentioned a deck rebuild &mdash; spring 2026.</div>
+              </td>
+              <td>
+                <div style="font-size:14px;color:var(--ink);">sarah@example.com</div>
+                <div style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;">604-555-1234</div>
+              </td>
+              <td><input class="cell-edit" value="Vancouver" /></td>
+              <td><span class="match-none">— new to you —</span></td>
+              <td>
+                <div class="decision-toggle" role="group" aria-label="Decision for Sarah Patel">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2 — strong match by email -> merge -->
+            <tr>
+              <td>
+                <input class="cell-edit" value="The Hendersons" />
+                <div class="cell-meta">132 Spruce, Vancouver BC</div>
+              </td>
+              <td>
+                <div style="font-size:14px;color:var(--ink);">marc.henderson@gmail.com</div>
+                <div style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;">604-555-7711</div>
+              </td>
+              <td><input class="cell-edit" value="Vancouver" /></td>
+              <td>
+                <div class="match-strong">
+                  <span class="match-tier"><svg><use href="#i-link"/></svg>Strong · email</span>
+                  <span class="match-existing">→ Henderson, Marc &amp; Anne</span>
+                </div>
+              </td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg">Create</button>
+                  <button class="decision-seg is-active-merge"><svg><use href="#i-check"/></svg>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3 — new (phone-only, no match) -->
+            <tr>
+              <td>
+                <input class="cell-edit" value="Marc Chen" />
+                <div class="cell-meta">Chen Build &mdash; light commercial GC.</div>
+              </td>
+              <td>
+                <div style="font-size:14px;color:var(--ink);">marc@chen-build.ca</div>
+                <div style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;">778-555-0117</div>
+              </td>
+              <td><input class="cell-edit" value="Burnaby" /></td>
+              <td><span class="match-none">— new to you —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4 — weak match (name+city) -->
+            <tr>
+              <td>
+                <input class="cell-edit" value="Aisha O'Brien" />
+              </td>
+              <td>
+                <div style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;">604-555-9921</div>
+              </td>
+              <td><input class="cell-edit" value="Vancouver" /></td>
+              <td>
+                <div class="match-strong">
+                  <span class="match-rule"><svg><use href="#i-info"/></svg>Maybe · name + city</span>
+                  <span class="match-existing" style="color:var(--muted);">→ O'Brien, Aisha</span>
+                </div>
+              </td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg">Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 5 — merge by phone -->
+            <tr>
+              <td>
+                <input class="cell-edit" value="Hardip & Jas Sandhu" />
+                <div class="cell-meta">7042 Boundary Rd, Burnaby</div>
+              </td>
+              <td>
+                <div style="font-size:14px;color:var(--ink);">hardip.sandhu@gmail.com</div>
+                <div style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;">604-555-8841</div>
+              </td>
+              <td><input class="cell-edit" value="Burnaby" /></td>
+              <td>
+                <div class="match-strong">
+                  <span class="match-tier"><svg><use href="#i-link"/></svg>Strong · phone</span>
+                  <span class="match-existing">→ Sandhu, H. (kitchen 2024)</span>
+                </div>
+              </td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg">Create</button>
+                  <button class="decision-seg is-active-merge"><svg><use href="#i-check"/></svg>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 6 — skip (rolled-back via operator decision) -->
+            <tr class="row-skip">
+              <td>
+                <input class="cell-edit is-empty" value="Westcoast Drywall Ltd." />
+                <div class="cell-meta">Already a vendor &mdash; not a customer.</div>
+              </td>
+              <td>
+                <div style="font-size:12px;color:var(--muted);">billing@wcdrywall.ca</div>
+              </td>
+              <td>—</td>
+              <td><span class="match-none">— new to you —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg">Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg is-active-skip"><svg><use href="#i-check"/></svg>Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 7 — new, lighter info -->
+            <tr>
+              <td>
+                <input class="cell-edit" value="Joanne McCready" />
+              </td>
+              <td>
+                <div style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;">604.555.2210</div>
+              </td>
+              <td><input class="cell-edit" value="Vancouver (Kits)" /></td>
+              <td><span class="match-none">— new to you —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <div class="audit-card">
+        <div class="audit-label">
+          <svg style="width:13px;height:13px;color:var(--muted);"><use href="#i-pencil"/></svg>
+          Note for the audit trail <span class="opt">— optional, shows on the Imports list</span>
+        </div>
+        <input class="audit-input" value="2025 referral list from Houzz + manual cleanup" />
+        <div class="audit-foot">
+          <span class="reassure-mono">
+            <svg style="width:11px;height:11px;color:var(--muted);vertical-align:-1px;margin-right:4px;"><use href="#i-shield"/></svg>
+            Soft-delete rollback &mdash; never destructive
+          </span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost"><svg class="icon"><use href="#i-arrow-left"/></svg>Back</button>
+            <button class="btn btn-rust">
+              Bring them in
+              <svg class="icon"><use href="#i-arrow-right"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 4 — Receipt wizard · INPUT + PROCESSING (side by side)     -->
+<!-- The file-pile fan-out shape. Drop-a-pile is the mobile-first      -->
+<!-- moment; PROCESSING is the unique receipt stage (per-file fan-out, -->
+<!-- per-file failure never fails the batch).                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 4</span><span class="frame-sep">·</span>/expenses/import
+    <span class="frame-sep">·</span><span class="frame-role">File-pile shape · INPUT &rarr; PROCESSING</span>
+    <span class="frame-sep">·</span>per-file OCR fan-out · per-file failure never fails the batch · streaming list
+  </div>
+  <div class="frame-body">
+<div class="shell shell-short">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-import"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-wide">
+      <a href="#" class="detail-nav"><svg><use href="#i-arrow-left"/></svg>Back to Import with Henry</a>
+
+      <section class="wizard-head">
+        <span class="page-eyebrow">
+          <span class="henry-mark-sm"><svg><use href="#i-sparkles"/></svg></span>
+          <span class="eyebrow-strong">Receipts</span>
+          <span>·</span>
+          <span>Day-1 onboarding · Phase D · OCR fan-out</span>
+        </span>
+        <h1 class="wizard-title">Bring in your receipts</h1>
+        <p class="wizard-sub">Drop a stack of PDFs or phone photos. Henry pulls <strong style="color:var(--ink);">vendor · amount · GST · date · category</strong> per file. A receipt that won't read becomes one red row &mdash; the rest of the batch keeps going.</p>
+        <div class="wizard-stage-rail" role="list">
+          <span class="stage-chip is-done"><span class="dot"></span><svg style="width:10px;height:10px;"><use href="#i-check"/></svg>Input</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip is-now"><span class="dot"></span>Processing &mdash; 32 of 47</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip"><span class="dot"></span>Preview &amp; decide</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip"><span class="dot"></span>Done</span>
+        </div>
+      </section>
+
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:18px;align-items:start;">
+
+        <!-- LEFT: collapsed Input recap with file-pile -->
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="pane-card">
+            <header class="card-head">
+              <div>
+                <h2 class="card-title">Files in this batch</h2>
+                <p class="card-sub">47 files, 38 MB total &mdash; 32 read so far.</p>
+              </div>
+              <span class="pill pill-neutral"><svg><use href="#i-paperclip"/></svg>47</span>
+            </header>
+            <div class="card-body" style="padding:14px 18px 16px;">
+              <div class="dropzone-files">
+                <div class="dropzone-files-head">
+                  <span class="dropzone-files-count">Pile · 47 receipts</span>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.04em;">PDFs · phone JPGs</span>
+                </div>
+                <div class="dropzone-file-row">
+                  <svg class="ico"><use href="#i-file"/></svg>
+                  <span class="name">home-depot-2025-03-14.pdf</span>
+                  <span class="size">218 KB</span>
+                </div>
+                <div class="dropzone-file-row">
+                  <svg class="ico"><use href="#i-image"/></svg>
+                  <span class="name">IMG_4421.HEIC</span>
+                  <span class="size">2.1 MB</span>
+                </div>
+                <div class="dropzone-file-row">
+                  <svg class="ico"><use href="#i-image"/></svg>
+                  <span class="name">IMG_4422.HEIC</span>
+                  <span class="size">1.8 MB</span>
+                </div>
+                <div class="dropzone-file-row">
+                  <svg class="ico"><use href="#i-file"/></svg>
+                  <span class="name">rona-2025-04-02.pdf</span>
+                  <span class="size">412 KB</span>
+                </div>
+                <div class="dropzone-file-row" style="color:var(--faint);">
+                  <svg class="ico"><use href="#i-paperclip"/></svg>
+                  <span class="name">…and 43 more</span>
+                  <span class="size"></span>
+                </div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5;">
+                Henry resizes images client-side before sending. PDFs go through as-is. If your phone is the source, drop straight from the
+                <a href="#" style="color:var(--ink);text-decoration:underline;text-underline-offset:3px;">mobile app</a>.
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);line-height:1.5;">
+            <svg style="width:13px;height:13px;color:var(--muted);"><use href="#i-info"/></svg>
+            You can leave this tab open or come back later &mdash; processing keeps going if you wait, but you stay on this screen until Preview lands.
+          </div>
+        </div>
+
+        <!-- RIGHT: PROCESSING stage -->
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div class="proc-card">
+            <div class="proc-head">
+              <div class="proc-status">
+                <span class="proc-spinner" aria-hidden="true"></span>
+                <span>Reading receipt 32 of 47…</span>
+                <span class="proc-mono">·  IMG_4453.HEIC</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="pill-count is-ok">29 read</span>
+                <span class="pill-count is-warn">1 retrying</span>
+                <span class="pill-count is-danger"><svg style="width:10px;height:10px;vertical-align:-1px;margin-right:3px;"><use href="#i-alert"/></svg>2 couldn't read</span>
+              </div>
+            </div>
+            <div class="proc-bar" role="progressbar" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100" aria-label="68% done">
+              <div class="proc-bar-fill" style="width:68%;"></div>
+            </div>
+            <div class="proc-bar-meta">
+              <span class="pct">68% done</span>
+              <span>est. 32s remaining</span>
+            </div>
+          </div>
+
+          <div class="stream-card" aria-label="Live OCR results">
+            <div class="stream-head">
+              <span><span class="eyebrow-strong" style="color:var(--ink);">Live</span> · vendor · amount per file</span>
+              <span>showing last 9</span>
+            </div>
+            <ul class="stream-list">
+              <li class="stream-row">
+                <div class="stream-icon"><svg><use href="#i-check"/></svg></div>
+                <span class="stream-name">home-depot-2025-03-14.pdf</span>
+                <span class="stream-vendor">Home Depot</span>
+                <span class="stream-amount">$284.71</span>
+              </li>
+              <li class="stream-row">
+                <div class="stream-icon"><svg><use href="#i-check"/></svg></div>
+                <span class="stream-name">IMG_4421.HEIC</span>
+                <span class="stream-vendor">Petro-Canada</span>
+                <span class="stream-amount">$92.14</span>
+              </li>
+              <li class="stream-row">
+                <div class="stream-icon"><svg><use href="#i-check"/></svg></div>
+                <span class="stream-name">IMG_4422.HEIC</span>
+                <span class="stream-vendor">Rona</span>
+                <span class="stream-amount">$1,418.06</span>
+              </li>
+              <li class="stream-row is-error">
+                <div class="stream-icon"><svg><use href="#i-x"/></svg></div>
+                <span class="stream-name">IMG_4429.HEIC</span>
+                <span class="stream-vendor">Couldn't read</span>
+                <span class="stream-amount">retry on Preview</span>
+              </li>
+              <li class="stream-row">
+                <div class="stream-icon"><svg><use href="#i-check"/></svg></div>
+                <span class="stream-name">telus-business-2025-04.pdf</span>
+                <span class="stream-vendor">Telus Business</span>
+                <span class="stream-amount">$184.20</span>
+              </li>
+              <li class="stream-row">
+                <div class="stream-icon"><svg><use href="#i-check"/></svg></div>
+                <span class="stream-name">IMG_4438.JPG</span>
+                <span class="stream-vendor">Pacific Building Supplies</span>
+                <span class="stream-amount">$847.33</span>
+              </li>
+              <li class="stream-row is-error">
+                <div class="stream-icon"><svg><use href="#i-x"/></svg></div>
+                <span class="stream-name">scan-blurry-001.pdf</span>
+                <span class="stream-vendor">Timed out · 30s</span>
+                <span class="stream-amount">retry on Preview</span>
+              </li>
+              <li class="stream-row">
+                <div class="stream-icon"><svg><use href="#i-check"/></svg></div>
+                <span class="stream-name">ICBC-renewal-2025.pdf</span>
+                <span class="stream-vendor">ICBC</span>
+                <span class="stream-amount">$1,612.00</span>
+              </li>
+              <li class="stream-row is-now">
+                <div class="stream-icon"><svg class="proc-spinner" style="width:11px;height:11px;border-width:1.5px;"></svg></div>
+                <span class="stream-name">IMG_4453.HEIC</span>
+                <span class="stream-vendor">Reading…</span>
+                <span class="stream-amount">—</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 5 — Receipt wizard · PREVIEW + DECIDE                      -->
+<!-- 9-column decision table: payment-source labelling, Henry-         -->
+<!-- suggested category, missing-money danger row → commit disabled.   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 5</span><span class="frame-sep">·</span>/expenses/import
+    <span class="frame-sep">·</span><span class="frame-role">File-pile shape · PREVIEW + DECIDE</span>
+    <span class="frame-sep">·</span>per-field extraction · &ldquo;Paid by&rdquo; label-card affordance · missing-money hard-block disables commit
+  </div>
+  <div class="frame-body">
+<div class="shell shell-tall">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-import"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+      <a href="#" class="detail-nav"><svg><use href="#i-arrow-left"/></svg>Back to Import with Henry</a>
+
+      <section class="wizard-head">
+        <span class="page-eyebrow">
+          <span class="henry-mark-sm"><svg><use href="#i-sparkles"/></svg></span>
+          <span class="eyebrow-strong">Receipts</span>
+          <span>·</span>
+          <span>Day-1 onboarding · Phase D</span>
+        </span>
+        <h1 class="wizard-title">Bring in your receipts</h1>
+        <div class="wizard-stage-rail" role="list">
+          <span class="stage-chip is-done"><span class="dot"></span><svg style="width:10px;height:10px;"><use href="#i-check"/></svg>Input</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip is-done"><span class="dot"></span><svg style="width:10px;height:10px;"><use href="#i-check"/></svg>Processing &mdash; 47 of 47</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip is-now"><span class="dot"></span>Preview &amp; decide</span>
+          <span class="stage-rail-sep"></span>
+          <span class="stage-chip"><span class="dot"></span>Done</span>
+        </div>
+      </section>
+
+      <div class="summary-strip">
+        <div class="summary-strip-left">
+          <span class="page-eyebrow">
+            <span class="henry-mark-sm"><svg><use href="#i-sparkles"/></svg></span>
+            <span class="eyebrow-strong">Henry read</span>
+          </span>
+          <span class="summary-headline"><strong>45 of 47 receipts</strong> &mdash; <span style="color:var(--danger);font-weight:600;">2 couldn't parse</span>, see the red rows below.</span>
+        </div>
+        <div class="summary-counts">
+          <span class="pill-count is-ok">38 new</span>
+          <span class="pill-count is-warn">4 merged</span>
+          <span class="pill-count">5 skipped</span>
+          <span class="pill-count is-danger"><svg style="width:10px;height:10px;vertical-align:-1px;margin-right:3px;"><use href="#i-alert"/></svg>1 missing money</span>
+        </div>
+      </div>
+
+      <div class="decision-table-card">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th style="width:14%">File</th>
+              <th style="width:12%">Vendor</th>
+              <th style="width:9%">Date</th>
+              <th class="num" style="width:9%">Amount</th>
+              <th class="num" style="width:8%">GST</th>
+              <th style="width:13%">Category</th>
+              <th style="width:14%">Paid by</th>
+              <th style="width:9%">Match</th>
+              <th class="dec" style="width:12%">Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Row 1 — clean, Henry-suggested category, labelled Visa -->
+            <tr>
+              <td>
+                <div class="file-cell">
+                  <div class="file-thumb"><svg><use href="#i-file"/></svg></div>
+                  <span class="file-name">home-depot-2025-03-14.pdf</span>
+                </div>
+              </td>
+              <td><input class="cell-edit" value="Home Depot" /></td>
+              <td><input class="cell-edit" value="2025-03-14" style="font-variant-numeric:tabular-nums;" /></td>
+              <td class="num"><span class="cell-money">$284.71</span></td>
+              <td class="num"><span class="cell-money">$13.56</span></td>
+              <td>
+                <div class="cell-cat">
+                  <select class="cell-cat-select"><option>Materials &mdash; Lumber &amp; sheet</option></select>
+                  <span class="cell-cat-suggest"><svg><use href="#i-sparkles"/></svg>Suggested by Henry</span>
+                </div>
+              </td>
+              <td>
+                <span class="source-pill"><span class="pill-card-mark">V</span><span class="pill-dotty">····4242</span></span>
+              </td>
+              <td><span class="match-none">— new —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2 — fuel, labelled Visa -->
+            <tr>
+              <td>
+                <div class="file-cell">
+                  <div class="file-thumb"><svg><use href="#i-image"/></svg></div>
+                  <span class="file-name">IMG_4421.HEIC</span>
+                </div>
+              </td>
+              <td><input class="cell-edit" value="Petro-Canada" /></td>
+              <td><input class="cell-edit" value="2025-03-15" style="font-variant-numeric:tabular-nums;" /></td>
+              <td class="num"><span class="cell-money">$92.14</span></td>
+              <td class="num"><span class="cell-money">$4.39</span></td>
+              <td>
+                <div class="cell-cat">
+                  <select class="cell-cat-select"><option>Vehicle &mdash; Fuel</option></select>
+                  <span class="cell-cat-suggest"><svg><use href="#i-sparkles"/></svg>Suggested by Henry</span>
+                </div>
+              </td>
+              <td>
+                <span class="source-pill"><span class="pill-card-mark">V</span><span class="pill-dotty">····4242</span></span>
+              </td>
+              <td><span class="match-none">— new —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3 — unlabelled card (·8841) → amber Label-card affordance -->
+            <tr>
+              <td>
+                <div class="file-cell">
+                  <div class="file-thumb"><svg><use href="#i-image"/></svg></div>
+                  <span class="file-name">IMG_4422.HEIC</span>
+                </div>
+              </td>
+              <td><input class="cell-edit" value="Rona" /></td>
+              <td><input class="cell-edit" value="2025-03-15" style="font-variant-numeric:tabular-nums;" /></td>
+              <td class="num"><span class="cell-money">$1,418.06</span></td>
+              <td class="num"><span class="cell-money">$67.53</span></td>
+              <td>
+                <div class="cell-cat">
+                  <select class="cell-cat-select"><option>Materials &mdash; Hardware</option></select>
+                  <span class="cell-cat-suggest"><svg><use href="#i-sparkles"/></svg>Suggested by Henry</span>
+                </div>
+              </td>
+              <td>
+                <button class="label-card-affordance" title="OCR saw last 4 8841 but no card with that number is labelled yet. Click to label this card; we'll splice it across every receipt that paid with ····8841.">
+                  <svg><use href="#i-tag"/></svg>
+                  Label ····8841
+                </button>
+              </td>
+              <td><span class="match-none">— new —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4 — petty cash, no Henry suggestion -->
+            <tr>
+              <td>
+                <div class="file-cell">
+                  <div class="file-thumb"><svg><use href="#i-image"/></svg></div>
+                  <span class="file-name">IMG_4438.JPG</span>
+                </div>
+              </td>
+              <td><input class="cell-edit" value="Trading Post Café" /></td>
+              <td><input class="cell-edit" value="2025-03-18" style="font-variant-numeric:tabular-nums;" /></td>
+              <td class="num"><span class="cell-money">$42.18</span></td>
+              <td class="num"><span class="cell-money">$2.01</span></td>
+              <td>
+                <div class="cell-cat">
+                  <select class="cell-cat-select" style="color:var(--muted);"><option>— pick a category —</option></select>
+                </div>
+              </td>
+              <td>
+                <span class="source-pill is-petty">Petty cash</span>
+              </td>
+              <td><span class="match-none">— new —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 5 — personal-reimbursable, merge by amount+date+vendor -->
+            <tr>
+              <td>
+                <div class="file-cell">
+                  <div class="file-thumb"><svg><use href="#i-file"/></svg></div>
+                  <span class="file-name">telus-business-2025-04.pdf</span>
+                </div>
+              </td>
+              <td><input class="cell-edit" value="Telus Business" /></td>
+              <td><input class="cell-edit" value="2025-04-01" style="font-variant-numeric:tabular-nums;" /></td>
+              <td class="num"><span class="cell-money">$184.20</span></td>
+              <td class="num"><span class="cell-money">$8.77</span></td>
+              <td>
+                <div class="cell-cat">
+                  <select class="cell-cat-select"><option>Overhead &mdash; Phone &amp; internet</option></select>
+                  <span class="cell-cat-suggest"><svg><use href="#i-sparkles"/></svg>Suggested by Henry</span>
+                </div>
+              </td>
+              <td>
+                <span class="source-pill is-personal">Personal · reimburse</span>
+              </td>
+              <td>
+                <div class="match-strong">
+                  <span class="match-tier"><svg><use href="#i-link"/></svg>Strong · amount + date</span>
+                  <span class="match-existing">→ Telus · Apr 1</span>
+                </div>
+              </td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg">Create</button>
+                  <button class="decision-seg is-active-merge"><svg><use href="#i-check"/></svg>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 6 — HARD BLOCK: missing amount → red ring, must fill or skip -->
+            <tr class="row-block">
+              <td>
+                <div class="file-cell">
+                  <div class="file-thumb" style="background:var(--danger-soft);color:var(--danger);"><svg><use href="#i-alert"/></svg></div>
+                  <span class="file-name">IMG_4429.HEIC</span>
+                </div>
+                <div class="cell-meta cell-meta-error">Amount unreadable &mdash; fill or skip</div>
+              </td>
+              <td><input class="cell-edit" value="Home Depot" /></td>
+              <td><input class="cell-edit" value="2025-04-04" style="font-variant-numeric:tabular-nums;" /></td>
+              <td class="num"><input class="cell-edit is-num is-danger" value="" placeholder="—" /></td>
+              <td class="num"><input class="cell-edit is-num" value="" placeholder="—" /></td>
+              <td>
+                <div class="cell-cat">
+                  <select class="cell-cat-select" style="color:var(--muted);"><option>— pick a category —</option></select>
+                </div>
+              </td>
+              <td>
+                <button class="label-card-affordance"><svg><use href="#i-tag"/></svg>Label ····8841</button>
+              </td>
+              <td><span class="match-none">— new —</span></td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg is-active-create"><svg><use href="#i-check"/></svg>Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg">Skip</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 7 — parse-error (couldn't read at all), forced Skip -->
+            <tr class="row-error row-skip">
+              <td>
+                <div class="file-cell">
+                  <div class="file-thumb" style="background:var(--danger-soft);color:var(--danger);"><svg><use href="#i-x"/></svg></div>
+                  <span class="file-name">scan-blurry-001.pdf</span>
+                </div>
+                <div class="cell-meta cell-meta-error">Timed out · 30s &mdash; retry one file</div>
+              </td>
+              <td colspan="6" style="color:var(--danger);font-size:12px;font-weight:600;">
+                Couldn't read this receipt. Retry just this file, fill the row manually, or skip.
+              </td>
+              <td>
+                <div class="decision-toggle">
+                  <button class="decision-seg">Create</button>
+                  <button class="decision-seg is-disabled" disabled>Merge</button>
+                  <button class="decision-seg is-active-skip"><svg><use href="#i-check"/></svg>Skip</button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <div class="audit-card">
+        <div class="audit-label">
+          <svg style="width:13px;height:13px;color:var(--muted);"><use href="#i-pencil"/></svg>
+          Note for the audit trail <span class="opt">— optional</span>
+        </div>
+        <input class="audit-input" value="Q1 2025 receipts pile — pre-HeyHenry" />
+        <div class="audit-foot">
+          <span class="block-msg">
+            <svg><use href="#i-alert"/></svg>
+            Fill the missing amount on 1 row (or skip it) before committing.
+          </span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost"><svg class="icon"><use href="#i-arrow-left"/></svg>Start over</button>
+            <button class="btn btn-rust" disabled>
+              Bring them in
+              <svg class="icon"><use href="#i-arrow-right"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FRAME 6 — /settings/imports list + /settings/data-export card    -->
+<!-- Mounted in the settings shell. Five batch rows (one rolled-back) -->
+<!-- + the export card below, owner-only with MFA.                     -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">Frame 6</span><span class="frame-sep">·</span>/settings/imports + /settings/data-export
+    <span class="frame-sep">·</span><span class="frame-role">Owner · audit trail · PIPEDA export</span>
+    <span class="frame-sep">·</span>provenance per batch · soft-delete rollback (always available) · MFA-gated owner export
+  </div>
+  <div class="frame-body">
+<div class="shell shell-tall">
+
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-import"/></svg>Import with Henry</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="user-chip">
+          <span class="user-avatar">JD</span>
+          <span class="user-name">Jess Donahue</span>
+          <span class="user-role">Owner</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <section class="page-head">
+        <h1 class="page-title">Settings</h1>
+        <div class="page-sub">Every import batch and your full data export. See the <a href="#">audit log</a> for everything else.</div>
+      </section>
+
+      <section class="settings-layout">
+
+        <nav class="settings-nav" aria-label="Settings sections">
+          <div class="settings-search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <span>Search settings…</span>
+            <span class="kbd">/</span>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Account</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-folder"/></svg><span class="item-name">Business profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-users"/></svg><span class="item-name">Your profile</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-shield"/></svg><span class="item-name">Security</span><span class="item-pill">Owner</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-clock"/></svg><span class="item-name">Audit log</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-users"/></svg><span class="item-name">Team &amp; workers</span><svg class="item-arrow"><use href="#i-arrow-up-right"/></svg></li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Data &amp; tools</div>
+            <ul class="group-items">
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-import"/></svg>
+                <span class="item-name">Import with Henry</span>
+                <svg class="item-arrow"><use href="#i-arrow-up-right"/></svg>
+              </li>
+              <li class="settings-item is-active">
+                <svg class="item-icon"><use href="#i-history"/></svg>
+                <span class="item-name">Imports</span>
+                <span class="item-pill">3</span>
+              </li>
+              <li class="settings-item">
+                <svg class="item-icon"><use href="#i-file-archive"/></svg>
+                <span class="item-name">Data export</span>
+                <span class="item-pill">Owner</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="settings-group">
+            <div class="group-label">Money &amp; integrations</div>
+            <ul class="group-items">
+              <li class="settings-item"><svg class="item-icon"><use href="#i-credit-card"/></svg><span class="item-name">Billing &amp; subscription</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-database"/></svg><span class="item-name">QuickBooks</span><svg class="item-arrow"><use href="#i-arrow-up-right"/></svg></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-credit-card"/></svg><span class="item-name">Payment sources</span></li>
+              <li class="settings-item"><svg class="item-icon"><use href="#i-file"/></svg><span class="item-name">Invoicing</span></li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="settings-pane">
+
+          <!-- Imports list -->
+          <section class="pane-card" aria-labelledby="imports-title">
+            <header class="card-head">
+              <div>
+                <h2 class="card-title" id="imports-title">Imports</h2>
+                <p class="card-sub">Every batch Henry has brought into your account, newest first. Roll one back if it went wrong &mdash; soft-delete, always recoverable.</p>
+              </div>
+              <span class="pill-count">3 active · 1 rolled back</span>
+            </header>
+            <div class="card-body" style="padding:14px 18px 16px;">
+
+              <!-- Batch 1 — receipts -->
+              <div class="batch-card">
+                <div class="batch-meta">
+                  <div class="batch-row-1">
+                    <span class="batch-kind">Receipts</span>
+                    <span class="pill-count is-ok">38 new</span>
+                    <span class="pill-count is-warn">4 merged</span>
+                    <span class="pill-count">5 skipped</span>
+                  </div>
+                  <div class="batch-note">Q1 2025 receipts pile — pre-HeyHenry</div>
+                  <div class="batch-foot">
+                    <span class="ink">q1-2025-receipts.zip · 47 files</span>
+                    <span class="sep">·</span>
+                    <span>Today · 2:48 PM</span>
+                    <span class="sep">·</span>
+                    <span>by jess@northbeam.ca</span>
+                  </div>
+                </div>
+                <div class="batch-action">
+                  <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-undo"/></svg>Roll back</button>
+                </div>
+              </div>
+
+              <!-- Batch 2 — customers -->
+              <div class="batch-card">
+                <div class="batch-meta">
+                  <div class="batch-row-1">
+                    <span class="batch-kind">Customers</span>
+                    <span class="pill-count is-ok">128 new</span>
+                    <span class="pill-count is-warn">12 merged</span>
+                  </div>
+                  <div class="batch-note">2025 referral list from Houzz + manual cleanup</div>
+                  <div class="batch-foot">
+                    <span class="ink">houzz-2025-export.csv · 2.1 MB</span>
+                    <span class="sep">·</span>
+                    <span>Yesterday · 4:17 PM</span>
+                    <span class="sep">·</span>
+                    <span>by jess@northbeam.ca</span>
+                  </div>
+                </div>
+                <div class="batch-action">
+                  <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-undo"/></svg>Roll back</button>
+                </div>
+              </div>
+
+              <!-- Batch 3 — invoices (with side-effect chips) -->
+              <div class="batch-card">
+                <div class="batch-meta">
+                  <div class="batch-row-1">
+                    <span class="batch-kind">Invoices</span>
+                    <span class="pill-count is-ok">62 new</span>
+                    <span class="pill-count is-warn">3 merged</span>
+                    <span class="batch-side-effect">+ 8 projects</span>
+                    <span class="batch-side-effect">+ 4 customers</span>
+                  </div>
+                  <div class="batch-note">2024 closed-out invoices · frozen GST/PST at 12% (BC)</div>
+                  <div class="batch-foot">
+                    <span class="ink">qbo-invoices-2024.csv · 1.4 MB</span>
+                    <span class="sep">·</span>
+                    <span>May 18, 2026 · 11:02 AM</span>
+                    <span class="sep">·</span>
+                    <span>by jess@northbeam.ca</span>
+                  </div>
+                </div>
+                <div class="batch-action">
+                  <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-undo"/></svg>Roll back</button>
+                </div>
+              </div>
+
+              <!-- Batch 4 — ROLLED BACK -->
+              <div class="batch-card is-rolled-back">
+                <div class="batch-meta">
+                  <div class="batch-row-1">
+                    <span class="batch-kind">Time entries</span>
+                    <span class="pill-count">217 attempted</span>
+                    <span class="pill pill-warn"><svg><use href="#i-undo"/></svg>Rolled back</span>
+                  </div>
+                  <div class="batch-note">Payroll CSV export — Jan–Mar 2025</div>
+                  <div class="batch-foot">
+                    <span class="ink">payroll-q1-2025.csv · 84 KB</span>
+                    <span class="sep">·</span>
+                    <span>May 14, 2026 · 9:48 AM</span>
+                    <span class="sep">·</span>
+                    <span>by jess@northbeam.ca</span>
+                  </div>
+                  <div class="batch-foot-rb">
+                    <svg><use href="#i-undo"/></svg>
+                    Rolled back May 14, 2026 · 9:55 AM by jess@northbeam.ca &mdash; wrong period
+                  </div>
+                </div>
+              </div>
+
+              <!-- Batch 5 — photos -->
+              <div class="batch-card">
+                <div class="batch-meta">
+                  <div class="batch-row-1">
+                    <span class="batch-kind">Photos</span>
+                    <span class="pill-count is-ok">412 new</span>
+                  </div>
+                  <div class="batch-note">Sandhu kitchen 2024 — before/during/after</div>
+                  <div class="batch-foot">
+                    <span class="ink">sandhu-kitchen-2024.zip · 218 MB</span>
+                    <span class="sep">·</span>
+                    <span>May 10, 2026 · 7:30 PM</span>
+                    <span class="sep">·</span>
+                    <span>by jess@northbeam.ca</span>
+                    <span class="sep">·</span>
+                    <span style="color:var(--info);"><svg style="width:11px;height:11px;vertical-align:-1px;margin-right:3px;"><use href="#i-sparkles"/></svg>Henry tagged in background</span>
+                  </div>
+                </div>
+                <div class="batch-action">
+                  <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-undo"/></svg>Roll back</button>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- Export card -->
+          <section class="pane-card export-card" aria-labelledby="export-title">
+            <header class="card-head">
+              <div class="export-head-row">
+                <div class="export-icon"><svg><use href="#i-file-archive"/></svg></div>
+                <div>
+                  <h2 class="card-title" id="export-title">Data export</h2>
+                  <p class="card-sub">Download every tenant-scoped table as CSV in one ZIP &mdash; PIPEDA portability. Owner-only and MFA-gated.</p>
+                </div>
+              </div>
+            </header>
+            <div class="card-body">
+              <button class="export-cta">
+                <svg><use href="#i-download"/></svg>
+                Export all my data
+              </button>
+              <div class="export-meta-row">
+                <span class="meta-chip is-ok"><svg><use href="#i-shield"/></svg>MFA confirmed for this session</span>
+                <span class="meta-chip">All-tables ZIP · CSV · CAD</span>
+                <span class="meta-chip is-owner"><svg><use href="#i-lock"/></svg>Owner-only</span>
+              </div>
+              <div class="export-last">
+                <svg><use href="#i-clock"/></svg>
+                Last export: <a href="#">May 18, 2026 · 11:14 AM</a> &mdash; signed link expires in 5 days.
+              </div>
+            </div>
+            <div class="card-foot">
+              <span>For selective export (one entity, a date range), open an <a href="#" style="color:var(--ink);text-decoration:underline;">accountant package</a> &mdash; coming Q3.</span>
+              <span>PIPEDA · Personal Information Protection and Electronic Documents Act</span>
+            </div>
+          </section>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- STATES ROW — rollback confirm · label-card dialog · DONE card    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="frame">
+  <div class="frame-label">
+    <span class="frame-num">States</span>
+    <span class="frame-sep">·</span>rollback AlertDialog (kind-specific consequence)
+    <span class="frame-sep">·</span>Label-card dialog (§17)
+    <span class="frame-sep">·</span>Wizard DONE
+  </div>
+  <div class="frame-body">
+
+    <div class="states-row">
+
+      <!-- A — Rollback confirm (invoices: shows side-effects) -->
+      <div class="state-card">
+        <div class="state-eyebrow">A · <span class="eyebrow-strong">Rollback</span> confirm · kind = invoices</div>
+        <div class="dialog">
+          <h3 class="dialog-title">Roll this batch back?</h3>
+          <p class="dialog-desc">
+            We'll soft-delete the <strong>62 invoices</strong> Henry created in this batch,
+            plus the <strong>8 side-effect projects</strong> and
+            <strong>4 side-effect customers</strong>. Existing rows (anything marked
+            <em>merged</em>) stay put.
+          </p>
+          <div class="dialog-reassure">
+            <svg><use href="#i-shield"/></svg>
+            <span><strong style="color:var(--ink);font-weight:600;">Soft-delete &mdash; recoverable.</strong> Rows are hidden but never destroyed &mdash; get in touch if you need to undo a rollback.</span>
+          </div>
+          <div class="dialog-foot">
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-destructive"><svg class="icon"><use href="#i-undo"/></svg>Roll back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- B — Label-card dialog (§17) -->
+      <div class="state-card">
+        <div class="state-eyebrow">B · <span class="eyebrow-strong">Label-card</span> dialog · §17 · splices across batch</div>
+        <div class="dialog">
+          <h3 class="dialog-title">Label the card ending in ····8841</h3>
+          <p class="dialog-desc">
+            Henry saw 14 receipts in this batch paid with this card. Name it once and we'll splice the label across all 14.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="font-size:12px;color:var(--ink-2);font-weight:600;margin-bottom:5px;">Card name</div>
+              <input class="audit-input" value="BMO Business · ops Visa" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <div style="font-size:12px;color:var(--ink-2);font-weight:600;margin-bottom:5px;">Network</div>
+                <select class="audit-input" style="appearance:none;background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;">
+                  <option>Visa</option>
+                  <option>Mastercard</option>
+                  <option>American Express</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:12px;color:var(--ink-2);font-weight:600;margin-bottom:5px;">Paid by</div>
+                <select class="audit-input" style="appearance:none;background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;">
+                  <option>Business</option>
+                  <option>Personal · reimburse</option>
+                  <option>Petty cash</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="dialog-reassure">
+            <svg><use href="#i-info"/></svg>
+            <span>Saving will splice this label across <strong style="color:var(--ink);font-weight:600;">14 receipts</strong> in the current batch and add the card to your payment sources.</span>
+          </div>
+          <div class="dialog-foot">
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-primary">Save &amp; splice</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- C — Wizard DONE card -->
+      <div class="state-card">
+        <div class="state-eyebrow">C · <span class="eyebrow-strong">DONE</span> · Customer wizard</div>
+        <div class="done-card">
+          <div class="done-disc"><svg><use href="#i-check"/></svg></div>
+          <h3 class="done-title">All done.</h3>
+          <p class="done-counts">
+            <strong>18 new</strong>, <strong>5 merged</strong>, <strong>1 skipped</strong>.<br>
+            Henry tagged this batch <span class="mono" style="font-size:12px;color:var(--muted);">#ib_2026_05_23_14:48</span> &mdash; visible on
+            <a href="#" style="color:var(--ink);text-decoration:underline;text-underline-offset:3px;">Settings ▸ Imports</a> for rollback.
+          </p>
+          <div class="done-actions">
+            <button class="btn btn-rust">
+              See your contacts
+              <svg class="icon"><use href="#i-arrow-right"/></svg>
+            </button>
+            <button class="btn btn-ghost"><svg class="icon"><use href="#i-upload"/></svg>Import another</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /frame-stack -->
+
+</body>
+</html>

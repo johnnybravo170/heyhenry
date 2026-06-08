@@ -36,7 +36,7 @@ export function SiteSwitcher({
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-1" align="end">
-        <p className="px-2 pt-1 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="px-2 pt-1 pb-1 font-mono text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           Switch site
         </p>
         {options.map((o) => (
@@ -50,7 +50,7 @@ export function SiteSwitcher({
           >
             <span className="truncate">{o.project_name}</span>
             {o.customer_name ? (
-              <span className="truncate text-[11px] text-muted-foreground">{o.customer_name}</span>
+              <span className="truncate text-xs text-muted-foreground">{o.customer_name}</span>
             ) : null}
           </Link>
         ))}

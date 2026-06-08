@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "Projects (list) — HeyHenry · OD launcher",
+  "entry": "od-projects-list.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-05-20T18:05:12.857Z",
+  "updatedAt": "2026-05-20T18:05:12.908Z",
+  "sourceSkillId": "agent-browser",
+  "metadata": {
+    "identifier": "od-projects-list",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}

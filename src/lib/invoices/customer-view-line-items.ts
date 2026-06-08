@@ -65,10 +65,16 @@ export type CustomerViewCategory = {
   id: string;
   name: string;
   description_md: string | null;
-  /** Section label from `project_budget_categories.section`. This is the
-   *  text-col header the operator uses to group categories in the Budget
-   *  tab (e.g. "Master suite addition", "Pizza Oven"). Empty string =
-   *  ungrouped. Sections mode aggregates categories by this value. */
+  /** The category's own estimate. When the category has no cost lines this
+   *  is its flat (manually-priced) value and must still appear on the
+   *  customer estimate. When it has lines, the upsert/delete invariant keeps
+   *  this equal to their sum (see project-cost-control.syncCategoryEstimate). */
+  estimate_cents: number;
+  /** Section label sourced from the `project_budget_sections` entity (the
+   *  category's `section_id` → row name). This is the header the operator
+   *  uses to group categories in the Budget tab (e.g. "Master suite
+   *  addition", "Pizza Oven"). Empty string = ungrouped. Sections mode
+   *  aggregates categories by this value. */
   section: string;
 };
 
@@ -214,11 +220,19 @@ function buildFixedPrice(args: BuildCustomerViewArgs): Row[] {
       ? 'detailed'
       : args.mode;
 
+  // Flat categories — priced at the category level with no cost lines —
+  // must still count toward the customer total. Mirror the variance
+  // rollup's `catLines>0 ? sum(lines) : estimate_cents` rule
+  // (cost-lines.ts) so the estimate document, the budget table, and revenue
+  // all agree. The Part-1 invariant keeps itemized categories' estimate ==
+  // sum(lines), so only no-line categories are added here.
   const costLinesSubtotal = args.costLines.reduce((s, l) => s + l.line_price_cents, 0);
-  const mgmtFeeCents = Math.round(costLinesSubtotal * args.mgmtRate);
+  const flatSubtotal = flatCategoriesOf(args).reduce((s, c) => s + c.estimate_cents, 0);
+  const subtotal = costLinesSubtotal + flatSubtotal;
+  const mgmtFeeCents = Math.round(subtotal * args.mgmtRate);
 
   if (mode === 'lump_sum') {
-    const total = costLinesSubtotal + (args.mgmtFeeInline ? mgmtFeeCents : 0);
+    const total = subtotal + (args.mgmtFeeInline ? mgmtFeeCents : 0);
     const summary = args.customerSummaryMd?.trim() ?? null;
     const rows: Row[] = [
       {
@@ -261,6 +275,20 @@ function buildFixedPrice(args: BuildCustomerViewArgs): Row[] {
   return rows;
 }
 
+/** Set of budget_category_ids that have at least one cost line. */
+function categoryIdsWithLines(args: BuildCustomerViewArgs): Set<string> {
+  return new Set(
+    args.costLines.map((l) => l.budget_category_id).filter((x): x is string => Boolean(x)),
+  );
+}
+
+/** Categories priced flat (no cost lines) with a non-zero estimate. These
+ *  render as a single line on the customer estimate at their estimate. */
+function flatCategoriesOf(args: BuildCustomerViewArgs): CustomerViewCategory[] {
+  const withLines = categoryIdsWithLines(args);
+  return args.categories.filter((c) => !withLines.has(c.id) && c.estimate_cents > 0);
+}
+
 function buildDetailedGroupedRows(args: BuildCustomerViewArgs): Row[] {
   const byCat = new Map<string, CustomerViewCostLine[]>();
   const uncategorized: CustomerViewCostLine[] = [];
@@ -284,7 +312,22 @@ function buildDetailedGroupedRows(args: BuildCustomerViewArgs): Row[] {
 
   for (const cat of args.categories) {
     const lines = byCat.get(cat.id) ?? [];
-    if (lines.length === 0) continue;
+    if (lines.length === 0) {
+      // Flat category — no lines but priced at the category level. Emit a
+      // single line so the scope (and total) reaches the customer instead of
+      // silently vanishing. $0 categories are still skipped.
+      if (cat.estimate_cents > 0) {
+        out.push({
+          title: cat.name,
+          body_md: cat.description_md,
+          quantity: 1,
+          unit_price_cents: cat.estimate_cents,
+          total_cents: cat.estimate_cents,
+          kind: 'work',
+        });
+      }
+      continue;
+    }
     const subtotal = lines.reduce((s, l) => s + l.line_price_cents, 0);
     out.push({
       title: cat.name,
@@ -339,7 +382,9 @@ function buildCategoriesRows(args: BuildCustomerViewArgs): Row[] {
 
   const rows: Row[] = [];
   for (const cat of args.categories) {
-    const total = byCat.get(cat.id) ?? 0;
+    // Itemized → sum of lines; flat (no lines) → the category estimate.
+    const lineTotal = byCat.get(cat.id) ?? 0;
+    const total = lineTotal > 0 ? lineTotal : cat.estimate_cents;
     if (total <= 0) continue;
     rows.push({
       title: cat.name,
@@ -391,6 +436,14 @@ function buildSectionsRows(args: BuildCustomerViewArgs): Row[] {
     const key = section.trim() === '' ? '' : section;
     if (!bySection.has(key)) sectionOrder.push(key);
     bySection.set(key, (bySection.get(key) ?? 0) + line.line_price_cents);
+  }
+
+  // Flat categories (no cost lines) contribute their estimate to their
+  // section so section totals match the budget rollup.
+  for (const cat of flatCategoriesOf(args)) {
+    const key = (cat.section ?? '').trim() === '' ? '' : cat.section;
+    if (!bySection.has(key)) sectionOrder.push(key);
+    bySection.set(key, (bySection.get(key) ?? 0) + cat.estimate_cents);
   }
 
   const rows: Row[] = [];

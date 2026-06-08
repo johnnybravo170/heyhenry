@@ -31,7 +31,7 @@ export const projectTools: AiTool[] = [
             ],
             description: 'Filter by lifecycle stage',
           },
-          customer_id: {
+          contact_id: {
             type: 'string',
             description: 'Filter by customer UUID',
           },
@@ -47,7 +47,7 @@ export const projectTools: AiTool[] = [
         const nameFilter = input.name as string | undefined;
         const rows = await listProjects({
           stage: input.stage as import('@/lib/validators/project').LifecycleStage | undefined,
-          customer_id: input.customer_id as string | undefined,
+          contact_id: input.contact_id as string | undefined,
           name: nameFilter,
           limit: Math.min((input.limit as number) || 20, 100),
         });
@@ -136,7 +136,7 @@ export const projectTools: AiTool[] = [
       input_schema: {
         type: 'object',
         properties: {
-          customer_id: { type: 'string', description: 'Customer UUID' },
+          contact_id: { type: 'string', description: 'Customer UUID' },
           name: { type: 'string', description: 'Project name' },
           description: { type: 'string', description: 'Project description' },
           start_date: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
@@ -146,7 +146,7 @@ export const projectTools: AiTool[] = [
             description: 'Management fee rate as decimal (default 0.12 = 12%)',
           },
         },
-        required: ['customer_id', 'name'],
+        required: ['contact_id', 'name'],
       },
     },
     handler: async (input) => {
@@ -154,7 +154,7 @@ export const projectTools: AiTool[] = [
         // Dynamic import to avoid circular deps
         const { createProjectAction } = await import('@/server/actions/projects');
         const result = await createProjectAction({
-          customer_id: input.customer_id as string,
+          contact_id: input.contact_id as string,
           name: input.name as string,
           description: input.description as string | undefined,
           start_date: input.start_date as string | undefined,
@@ -231,7 +231,7 @@ export const projectTools: AiTool[] = [
           const { updateProjectAction } = await import('@/server/actions/projects');
           const res = await updateProjectAction({
             id,
-            customer_id: project.customer?.id ?? '',
+            contact_id: project.customer?.id ?? '',
             name: name ?? project.name,
             description: description ?? project.description ?? '',
             start_date: project.start_date ?? '',

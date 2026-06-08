@@ -7,9 +7,11 @@
  * `tools/list`.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { registerAdminSqlTools } from './admin_sql';
 import { registerAgentTools } from './agents';
 import { registerCompetitorTools } from './competitors';
 import type { McpToolCtx } from './context';
+import { registerDecisionBundleTools } from './decision_bundles';
 import { registerDecisionTools } from './decisions';
 import { registerDocsTools } from './docs';
 import { registerEmailTools } from './email';
@@ -19,9 +21,11 @@ import { registerIdeaTools } from './ideas';
 import { registerIncidentTools } from './incidents';
 import { registerKanbanTools } from './kanban';
 import { registerKnowledgeTools } from './knowledge';
+import { registerMessageLabTools } from './message_eval';
 import { registerMetaTools } from './meta';
 import { registerReviewQueueTools } from './review_queue';
 import { registerRoadmapTools } from './roadmap';
+import { registerScoutPolicyTools } from './scout_policy';
 import { registerSocialDraftTools } from './social_drafts';
 import { registerWorklogTools } from './worklog';
 
@@ -59,9 +63,15 @@ export function registerScopedTools(server: McpServer, ctx: McpToolCtx) {
   }
   if (any(ctx.scopes, 'read:ideas', 'write:ideas')) {
     registerIdeaTools(server, ctx);
+    // Scout policy lives under the ideas scope group — same producer-learner
+    // concern, no need for a separate scope. See ops.scout_policy migration.
+    registerScoutPolicyTools(server, ctx);
   }
   if (any(ctx.scopes, 'read:decisions', 'write:decisions')) {
     registerDecisionTools(server, ctx);
+  }
+  if (any(ctx.scopes, 'read:decision_bundles', 'write:decision_bundles')) {
+    registerDecisionBundleTools(server, ctx);
   }
   if (any(ctx.scopes, 'read:review_queue')) {
     registerReviewQueueTools(server, ctx);
@@ -74,6 +84,12 @@ export function registerScopedTools(server: McpServer, ctx: McpToolCtx) {
   }
   if (any(ctx.scopes, 'write:email')) {
     registerEmailTools(server, ctx);
+  }
+  if (any(ctx.scopes, 'read:message_lab', 'write:message_lab')) {
+    registerMessageLabTools(server, ctx);
+  }
+  if (any(ctx.scopes, 'read:db')) {
+    registerAdminSqlTools(server, ctx);
   }
 
   // Meta tools (memory guide + cross-surface lookup + activity digest).

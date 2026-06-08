@@ -5,7 +5,10 @@
  * configured Supabase instance:
  *
  *   1. /signup creates an auth user, tenant, and tenant_member in one shot
- *      and lands the user on /dashboard.
+ *      and lands the user on /onboarding (the first-run setup pass). Signup
+ *      no longer drops straight to /dashboard — the setup pass is skippable
+ *      and resumable, and /onboarding self-redirects to /dashboard once the
+ *      tenant is onboarded.
  *   2. The middleware (proxy) enforces access: unauthenticated GET of
  *      /dashboard redirects to /login.
  *   3. Logout drops the session and redirects to /login.
@@ -74,15 +77,21 @@ test.describe
       expect(page.url()).toMatch(/\/login(\?|$)/);
     });
 
-    test('signup creates tenant + member and lands on dashboard', async ({ page }) => {
+    test('signup creates tenant + member and lands on onboarding', async ({ page }) => {
       await page.goto('/signup');
+      await page.getByLabel('First name').fill('E2E');
+      await page.getByLabel('Last name').fill('Tester');
       await page.getByLabel('Business name').fill(businessName);
       await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Mobile phone').fill('+1 604 555 1234');
       await page.getByLabel('Password').fill(password);
-      await page.getByRole('button', { name: /create account/i }).click();
+      // ToS/Privacy checkbox gates the submit button.
+      await page.getByRole('checkbox').check();
+      await page.getByRole('button', { name: /create my account/i }).click();
 
-      await page.waitForURL(/\/dashboard(\?.*)?$/, { timeout: 20_000 });
-      expect(page.url()).toMatch(/\/dashboard(\?.*)?$/);
+      // Post-signup now lands in the first-run setup pass, not the dashboard.
+      await page.waitForURL(/\/onboarding(\/|\?|$)/, { timeout: 20_000 });
+      expect(page.url()).toMatch(/\/onboarding(\/|\?|$)/);
 
       // Verify in DB via admin client.
       const admin = createSupabaseClient(url as string, serviceRoleKey as string, {

@@ -19,6 +19,10 @@ When you change upload behavior (file size limits, accepted types, drag-drop, op
 
 **Shared expectations:** all four use the `{ ok, error }` server-action discriminant, all show toast errors, all do optimistic preview where the file is visual. Drag-over state uses `border-primary bg-primary/5` — see photo-upload and intake-dropzone for the canonical styling.
 
+**Offline-capture queue (field path):** project photo uploads survive no-signal. When `navigator.onLine` is false (or a send throws mid-flight), `photo-upload.tsx` stashes the resized blob in IndexedDB via `src/lib/storage/capture-queue.ts` instead of failing. `src/components/features/photos/offline-capture-queue.tsx` (rendered in `gallery-tab-server.tsx`) shows the offline banner + per-item status rows (waiting / syncing / failed) and flushes on the `online` event or a manual "Sync now / Retry all", replaying through the same `uploadPhotoAction`. **Scope:** this is a within-tab queue — no Service Worker / Background Sync registration, so a flush only runs while the tab is open. True background sync (uploads complete with the tab closed) is a follow-up. The bridge between the two halves is a `window` `heyhenry:capture-queued` event.
+
+**Offline time-entry queue (worker `/w`, sibling of the photo path):** a worker logging hours on a no-signal jobsite must never silently lose the entry. `worker-time-form.tsx` checks `navigator.onLine` (and catches a network throw mid-submit) for **new** entries and stashes the `logWorkerTimeAction` payload in its own IndexedDB DB via `src/lib/storage/time-queue.ts` (separate DB name from the photo queue — no shared-version coordination), toasting "Saved on this phone — will sync." `src/components/features/worker/worker-time-queue.tsx` (rendered on `/w/time` above the history list) shows the durable "saved, will sync" banner + per-item status rows and flushes on the `online` event / "Sync now", replaying through the same `logWorkerTimeAction`. **Scope (same as photos):** within-tab only — no Service Worker background sync, so a flush runs while a tab is open. **Edits and invoice submit are NOT queued** — they require a connection (a server row can't be reconciled offline; invoices are money). Expense receipt-blob offline is not yet wired (the camera path is online-only) — a follow-up that should fold into the photo `capture-queue.ts`.
+
 ---
 
 ## 2. Customer picker / pick-or-create
@@ -39,8 +43,17 @@ Soft-delete confirmations follow one shape. When you change the wording, button 
 - `src/components/features/customers/delete-customer-button.tsx`
 - `src/components/features/projects/delete-project-button.tsx`
 - `src/components/features/billing/cancel-subscription-button.tsx` — two-step variant. Step 1 shows the prorated refund preview + a non-coercive "pause for 30 days" alternative. Step 2 collects an exit-survey reason (radio list) + optional comment, both appended to `refunds_log.notes`. No discount upsell ("would $X off help?") — that line stays locked.
+- `src/components/features/projects/schedule-clear-button.tsx` — "Clear & start over" (soft-deletes every schedule task). Controlled-open + hideTrigger so the Schedule toolbar ⋯ overflow hosts it.
+- `src/components/features/projects/schedule-regenerate-deps-button.tsx` — "Auto-link dependencies" (wipes + rebuilds dependency edges). Controlled-open + hideTrigger for the same ⋯ overflow; also exposes `variant="inline"` for the non-destructive empty-deps case (runs immediately, no confirm — nothing to lose).
+- `src/components/features/projects/schedule-task-editor.tsx` — the task-editor's Delete (soft-delete) confirm lives as a nested AlertDialog driven by local `confirmDelete` state.
+- `src/components/features/business-health/owner-draws-panel.tsx` — the owner-draws row Delete confirm: per-row nested AlertDialog driven by local `confirmOpen` state (replaced a native `confirm()`); the description names the draw type + amount + date and reassures the bookkeeper's QBO records are unaffected.
+- `src/components/features/projects/invoices-tab.tsx` — the project-draw (milestone invoice) row Delete confirm: per-row AlertDialog naming the draw label + amount. Edit + Delete render only while the draw is unpaid (`draft`/`sent`); a paid draw can only be voided (guarded server-side in `deleteDrawAction` / `editDrawAction`, which soft-delete via `deleted_at`). Edit reuses the inline `DrawForm` in `editDraw` mode.
+- `src/components/features/team/team-members-table.tsx` — the roster row `⋯ → Remove from crew` confirm: per-row nested AlertDialog driven by local `confirmOpen` (opened from a `DropdownMenuItem` via `onSelect`/`preventDefault`). Names the member + states the consequence (hard delete of the login, can't be undone); owner row's `⋯` is disabled. The `Change role` item above it is intentionally `disabled` ("Coming soon") — role mutation is DEFERRED (needs `updateMemberRoleAction` + `tenant_members` UPDATE RLS).
+- `src/components/features/team/pending-invites.tsx` — the pending-invite-row Delete confirm (AlertDialog); Revoke + Resend fire immediately (no confirm — Revoke is reversible by re-inviting). Used invites can't be deleted.
 
-All three use shadcn `AlertDialog`, wrap the action in a transition, and surface errors via toast. Delete variants additionally handle `NEXT_REDIRECT`.
+All use shadcn `AlertDialog`, wrap the action in a transition, and surface errors via toast. Delete variants additionally handle `NEXT_REDIRECT`.
+
+`delete-project-button.tsx`, `clone-project-dialog.tsx`, `schedule-clear-button.tsx`, and `schedule-regenerate-deps-button.tsx` each accept an optional controlled-open mode (`open` / `onOpenChange` / `hideTrigger`) so a parent can drive them trigger-less. The project ⋯ overflow (`project-actions-menu.tsx`) hosts Duplicate + Delete this way; the Schedule toolbar ⋯ overflow (`schedule-interactive.tsx`) hosts Clear + Auto-link the same way. Default (uncontrolled, self-triggered) behaviour is unchanged for the projects-table callers.
 
 ---
 
@@ -50,7 +63,8 @@ Click-to-edit fields use the same keyboard contract: Enter saves, Escape cancels
 
 - `src/components/features/projects/project-name-editor.tsx` — heading + inline variants.
 - `src/components/features/projects/percent-complete-editor.tsx` — slider variant; shows "edit" hint on hover.
-- `src/components/features/projects/management-fee-editor.tsx` — number-as-percent variant on the Overview facts grid; writes a worklog entry on change.
+- `src/components/features/projects/management-fee-editor.tsx` — number-as-percent variant; writes a worklog entry on change.
+- `src/components/features/projects/project-details-card.tsx` — the `▾` Project Details card. Hosts inline editors for name / description / dates (its local `InlineText` + `DateField` follow the same Enter-saves / Escape-cancels / blur-saves contract) and composes `BillingModeEditor` + `ManagementFeeEditor`. This is the consolidated project-settings home that replaced Overview's "facts grid."
 
 ---
 
@@ -86,18 +100,28 @@ When you add a new status value to an enum, update the matching `*StatusTone` ma
 - `src/components/features/jobs/job-status-badge.tsx`
 - `src/components/features/quotes/quote-status-badge.tsx`
 - `src/components/features/change-orders/change-order-status-badge.tsx`
-- `src/components/features/customers/customer-type-badge.tsx` — kind colors (customer/lead/vendor/sub/etc.) — separate palette from status tones by design
+- `src/components/features/customers/customer-type-badge.tsx` — contact **kind** pill. The 8-hue kind rainbow was retired (2026-05 UX redesign): a category is not an action, so every kind renders one calm neutral pill. The sole exception is `lead`, which reuses the shared `warning` tone from `status-tokens.ts` ("warm, not closed yet"). Don't reintroduce per-kind colors here — kind is not status. The badges above stay colored because they encode state.
 - `src/components/features/inbox/worklog-entry-type-badge.tsx`
+- `src/components/features/team/role-badge.tsx` — `<RoleBadge role>` for the Team roster + Add-to-crew dialog. **Role is not status** — it draws from a calm, fixed per-role palette (owner neutral / admin blue / member muted / employee emerald / subcontractor indigo / bookkeeper amber), **never rust** (rust is reserved for the Add-to-crew CTA + ✦ Henry). Label + glyph, never colour-only. `displayRoleFor(role, worker_type)` maps a `tenant_members.role` (+ worker_type) to the visual role — a `worker` renders as Employee/Subcontractor. The badge is **read-only** (no role-mutation action yet — see §3 / DEFERRED).
 - `src/components/features/worker/worker-invoice-status-badge.tsx`
 - `src/components/features/projects/project-costs-section.tsx` — inline `CostStatusBadge` for the unified Costs surface (`paid_receipt` / `bill_unpaid` / `bill_paid`). Uses the shared `projectCostStatusTone` map in `status-tokens.ts`; no standalone badge file because the three values are tightly coupled to a single rendering surface.
+- `src/app/(dashboard)/settings/billing/page.tsx` — inline `PlanStatusCockpit` pill for the GC's **own HeyHenry subscription** (Settings ▸ Billing). The pill reads a *derived* cockpit state (`trialing` / `active` / `cancel_at_period_end` / `paused` / `past_due` / `canceled`), NOT the raw Stripe status — `cockpitState(overview)` layers `pausedUntil` + `cancelAtPeriodEnd` on top of the status first. The state→tone + state→label maps (`subscriptionStateTone` / `subscriptionStateLabel`) live in `status-tokens.ts`. The same surface carries a **founding-rate chip** (rust-soft `bg-[#FEF0E3] text-brand` + lock glyph) and the Change-plan **✦ Henry grandfather guard** — rust is the single accent, reserved for the grandfather promise (chip) and the one primary per card. `change-plan-card.tsx` is **seat-silent**: the plan Select renders name + flat $/mo only, NEVER `PLAN_CATALOG.seatBand` (flat-rate, intent-led positioning — no per-seat language anywhere on this screen).
+- `src/components/features/bank-review/bank-review-queue.tsx` — inline `ConfidenceBand` badge for the bank-match review queue (`high` / `medium` / `low` confidence). The band→tone map (`high→success`, `medium→warning`, `low→hold`) lives in `src/lib/bank-recon/confidence-band.ts` (`confidenceTone` / `confidenceLabel`), pulled into the `statusToneClass` + `statusToneIcon` render here. UI copy uses **"confidence band"**, never "bucket" (the matcher's internal `bucket()` stays internal). The CSV preset-detection pill in `bank-import-flow.tsx` reuses the same tones via a local `DETECTION_TONE` map but carries **no ✦** — it's deterministic parser plumbing, not the Henry matcher.
+- `src/lib/ui/status-tokens.ts` — `qboSyncStatusTone` (per-row `qbo_sync_status`: `synced→success`, `pending→info`, `failed→danger`, `disabled→neutral`) + `qboRunStatusTone` (import-run lifecycle: `completed→success`, `failed→danger`, `running|queued→info`, `cancelled→neutral`). Rendered through `statusToneClass` + `statusToneIcon` (glyph always carried — never colour-only) in the QuickBooks settings hub (`quickbooks-connect-card.tsx` cockpit pills + "Needs you" strip), the sub-route count badges (`settings/quickbooks/page.tsx`), `qbo-import-history.tsx` (run pill + "rolled back" neutral chip + the `qbo_sync_log` failed-pull `danger` block), `qbo-review-queue.tsx` (pending count), and `quickbooks-import-launcher.tsx` (live counters: skipped→amber, failed→red text; the review/FK/error strips). The per-row `qboSyncStatusTone` badge surface is **reserved for the future push epic** — defined now for consistency, no push UI ships against it. The realm id is **mono, never tokened** (security + noise); sandbox is a `warning` pill ("not your real books"). The Intuit "Connect to QuickBooks" button is the one licensed non-rust brand colour (`#2CA01C`); ✦ Henry appears only on real touchpoints (review dedup match-confidence chip, class→project suggestion) — labelled, operator confirms, never auto-applies.
+
+### 7a. Client-visibility badge (`VisibilityBadge`)
+
+The "who can see this?" badge for any per-item shared/internal surface (Photos, Documents). **Trust-critical state → label + glyph, NEVER colour-only** (WCAG 2.2 AA, SC 1.4.1): internal renders a lock glyph + `Internal`; client-visible renders a globe glyph + `Client visible`, each with a `title` so the meaning is reachable on hover + AT. Colour reinforces, it doesn't carry meaning.
+
+- `src/components/features/projects/visibility-badge.tsx` — the shared primitive (`<VisibilityBadge clientVisible={boolean} />`). Used by `photos/photo-card.tsx` (overlay + lightbox header) and `portal/document-list.tsx` (row). Locked by `tests/unit/visibility-badge.test.tsx`.
+- Photos default **internal** (`portal_visibility`/`client_visible` false); documents default **client-visible**; COIs are seeded internal ("sub compliance — usually internal"). The toggle lives in `portal/photo-portal-button.tsx` (popover) and `document-list.tsx` (per-row Hide/Show); the badge surfaces the resulting state legibly. Copy says **client**, never "homeowner."
 
 ---
 
 ## 8. Calendar / schedule grids
 
-Two grid surfaces today, both built on `project_assignments`. **Forked on purpose** — the per-project view is drag-heavy, the owner view is click-to-modal. Once the owner view stabilizes, evaluate extracting a shared core (date math, weekend handling, project-color hash).
+Built on `project_assignments`. The per-project dated drag-to-schedule grid was **removed** when the Crew tab was retired (the roster moved to the Project Details card via `crew-roster.tsx`; dated scheduling is deferred to the future global dispatch board — see `docs/ux/briefs/project-hub.md` §"Crew scheduling"). Revive it from git history (`crew-schedule-grid.tsx`) when that brief lands and the project Schedule tab grows its crew-day slice.
 
-- `src/components/features/projects/crew-schedule-grid.tsx` — per-project drag-to-schedule grid (rows = workers).
 - `src/components/features/calendar/owner-calendar.tsx` — tenant-wide month + 14-day views (rows = projects in 14-day; calendar cells in month).
 - `src/components/features/jobs/job-calendar.tsx` — month grid for jobs only.
 
@@ -113,7 +137,10 @@ URL-param driven (`?tab=estimate`); `router.replace()` to avoid history pollutio
 - `src/components/features/projects/project-tab-select.tsx` (mobile select)
 - The project detail page renders a row of `<Link>` tabs above `lg`, the select below it.
 - The customer portal at `/portal/[slug]` introduces a minimal "Project" / "Messages" split via the same `?tab=` query param. Future PRs will likely break the Project tab into Updates / Budget / Photos / Files sub-tabs as those surfaces grow.
+- The project **Client hub** (`tabs/client-hub-tab-server.tsx`) is a grouped tab: a top-level `?tab=client` with its own second-level sub-nav (`?client=messages|selections|portal`) rendering the existing Messages / Selections / Portal tab servers. The unread badge (messages + customer ideas) shows on the parent `Client` nav tab; per-subhead badges repeat on the sub-nav. Old `?tab=messages|selections|portal` bookmarks alias to the hub with the matching subtab. This is the model to copy if another set of related tabs needs grouping.
 - `src/components/features/tasks/job-tabs.tsx` — distinct-route variant on the job detail page (`/jobs/[id]` vs `/jobs/[id]/tasks`). Used when each tab needs its own server component shell rather than re-rendering off a query param.
+
+**Worker field bottom-nav (`worker-bottom-nav.tsx`):** the mobile-only worker app `/w` uses a fixed bottom nav of exactly **4 primary tabs** (Today · Calendar · Projects · Profile) split around a **raised rust "Log" FAB** (64×64, centered, lifts above the bar; `grid-cols-[1fr_1fr_5.75rem_1fr_1fr]`). The FAB opens a bottom-sheet (`LogSheet`, same component) whose options are **capability-gated**: Log time (always) · Snap receipt (`can_log_expenses`) · Snap project photo · Build invoice (`can_invoice`, else a locked "Off" row). This replaced an overloaded ≤8-tab nav — when a worker surface needs more reach, add it to the Log sheet or Today, **not** the primary nav. Field-hardened sizing: nav row 64px, FAB 64px, sheet options ≥64px; rust is reserved for the Log action + ✦ Henry only. Tokens `bg-chrome` / `bg-paper-soft` (added to `globals.css` + `@theme`) back the nav chrome + inset fills.
 
 ---
 
@@ -206,6 +233,22 @@ Send-path families to keep aligned when CASL evidence shape changes:
 Never bolt promotional content onto a transactional template — that flips
 the send into CEM territory and loses the transactional exemption.
 
+**Supabase auth emails** (magic link, recovery, signup confirmation, invite,
+email change, reauthentication) do **not** originate in app code — Supabase
+emits them. They are captured by the **Send Email Hook**
+(`src/app/api/auth/email-hook/route.ts`), which verifies the Standard Webhooks
+signature (`src/lib/webhooks/standard-webhook.ts`, secret
+`AUTH_EMAIL_HOOK_SECRET`), renders via `renderAuthEmail`
+(`src/lib/email/templates/auth.ts` → `renderEmailShell`), and ships through the
+same `sendEmail` wrapper (`caslCategory: 'transactional'`, `relatedType: 'auth'`).
+This is the single chokepoint for every auth email — never add a Supabase
+default template or custom-SMTP path that bypasses it. Prod is wired in the
+Supabase dashboard / Management API (Auth → Hooks) pointing at
+`https://app.heyhenry.io/api/auth/email-hook`; the `[auth.hook.send_email]`
+block in `supabase/config.toml` stays **commented** (enabling it would force
+every `supabase start` to define `AUTH_EMAIL_HOOK_SECRET` — uncomment only to
+test the hook locally).
+
 ---
 
 ## 13. Plan / feature gating
@@ -217,6 +260,20 @@ All plan-tier checks go through `src/lib/billing/features.ts`. **Never write inl
 - `src/components/features/billing/past-due-banner.tsx` — top-of-shell banner; rendered once in `(dashboard)/layout.tsx`.
 
 Spec rule: gated features are **visible but locked**, never hidden. `past_due` and `unpaid` collapse the effective plan to `starter` at the gate (handled inside `effectivePlan` — call sites don't repeat this logic).
+
+---
+
+## 13b. Role-filtered settings nav + owner-only permission pane
+
+The `/settings` sidebar + mobile list filter their destinations by **role and vertical** from one source of truth, and gated routes render a calm refusal pane (never a crash/403/redirect) for the wrong role.
+
+- `src/components/features/settings/settings-nav-items.ts` — single source of truth. `SETTINGS_NAV` (6 groups, 27 destinations), `getSettingsNav({ vertical, role })` filter, `getSettingsNavCounts(...)` (honest tally for the foot), `GRADUATE_HREFS` (heavy sub-flows that link out: Team, Billing, QuickBooks, Import). **The role × destination matrix is the `ROLE_HIDDEN_HREFS` hide-set** — per-role `Set` of hrefs to hide. Owner = empty set; Ops tweaks the matrix in this one place. Admin is a documented default (keeps Security + Team, hides Billing/Data export/Delete account) flagged for Ops to confirm.
+- `src/components/features/settings/settings-sidebar.tsx` — desktop sidebar (sticky, mono uppercase group labels, active = `bg-foreground`, `↗` graduate glyph).
+- `src/components/features/settings/settings-mobile-nav.tsx` — mobile grouped-card list (tap → route, ≥44px rows). **Not a `<select>`** — 27 options is a thumb-hostile wall.
+- `src/components/features/settings/settings-nav-foot.tsx` — "X of Y shown · N hidden for role · M hidden for vertical · K graduate"; zero-count segments dropped.
+- `src/components/features/settings/owner-only-pane.tsx` — `<OwnerOnlyPane title description ownerName />`. One shared lock-glyph pane used by every owner-gated route (`billing`, `data-export`, `team`, `account/delete`). The route still enforces the role server-side — it renders this **in place of** the gated UI instead of throwing. Owner name comes from `getPrimaryOperatorName(tenantId)`.
+
+Nav filter is **defense-in-depth**, not the gate. The matrix is pinned by `tests/unit/settings-nav-role-filter.test.ts` so an Ops tweak shows up as a deliberate diff.
 
 ---
 
@@ -302,7 +359,8 @@ Files in this family today:
 - `src/components/features/onboarding/project-import-wizard.tsx` — Phase B wizard
 - `src/components/features/onboarding/invoice-import-wizard.tsx` — Phase C wizard (with editable money cells)
 - `src/components/features/onboarding/receipt-import-wizard.tsx` — Phase D wizard (multi-file fan-out + per-file progress)
-- `src/components/features/onboarding/imports-list.tsx` — `/settings/imports` rollback list (per-kind dispatch across all four phases)
+- `src/components/ui/decision-toggle.tsx` — the shared 3-segment **Create / Merge / Skip** toggle every entity preview uses (customer / project / invoice / receipt). One implementation, one tone story: active Create/Merge = **rust** (`bg-brand` — a sanctioned rust touchpoint), active Skip = **ink** (`bg-foreground`, a neutral "set aside", deliberately not rust), Merge auto-disabled (chip-fill/muted) when there's no dedup match. Not colour-only: each segment carries its word + a leading check glyph on the active one; the three buttons form a labelled `role="group"` with roving arrow-key focus ("Decision for {label}"). Was duplicated four times across the wizards before extraction. Props: `value`, `hasMatch`, `disabled?`, `onChange`, `label?` (row name for the group label), `mergeHint?` (entity-specific tooltip copy). The time-entry wizard keeps its own *2-state* (Create/Skip) inline control — it has no merge path, so it's not a sibling of this primitive.
+- `src/components/features/onboarding/imports-list.tsx` — `/settings/imports` rollback list (per-kind dispatch across all six entity kinds, incl. photos / time_entries; rolled-back rows dim to 60% with a `warning`-toned "Rolled back" badge)
 - `src/app/(dashboard)/contacts/import/page.tsx` + `/projects/import/page.tsx` + `/invoices/import/page.tsx` + `/expenses/import/page.tsx` — entry routes (each with `maxDuration = 300`)
 
 All four phases of the kanban card "Henry-powered onboarding import wizard" are wired. Open follow-up: chunked classification for very large text imports (10K+ rows in one paste), and dogfooding with real customer data.
@@ -441,9 +499,11 @@ When adding new channels (Phase 2 email, Phase 3 SMS), the table shape and notif
 The "mark invoice paid" multi-field collection — payment method, reference, optional notes, optional receipt photo(s) with OCR auto-fill, amount-mismatch warning — lives in **one** shared component and is rendered both from the invoice detail page action bar and inline on the invoice list row. Don't duplicate this UI for new entry points (e.g. dashboard, portal); always reuse the shared dialog so OCR + warning + reset behavior stays consistent.
 
 - `src/components/features/invoices/record-payment-dialog.tsx` — shared dialog. Caller passes a `trigger` ReactNode (the button); the dialog owns method/reference/notes/staged-receipt/OCR state, uploads receipts via `uploadInvoiceReceiptAction`, then calls `markInvoicePaidAction`. Resets on close.
-- `src/components/features/invoices/invoice-actions.tsx` — detail-page caller. Trigger is "Record payment" outline button.
-- `src/components/features/invoices/invoice-table.tsx` — list-page caller, only rendered for `status === 'sent'`. Trigger is "Mark paid" outline button.
-- `src/components/features/projects/invoices-tab.tsx` — project Customer Billing tab caller (Draws + Other invoices tables). Inline button next to View, only for `status === 'sent'`.
+- `src/components/features/invoices/invoice-actions.tsx` — detail-page caller. "Record payment" outline button on `sent`; a "Mark paid" outline button on `draft` (manual out-of-band override — see below). 
+- `src/components/features/invoices/invoice-table.tsx` — list-page caller, rendered for `status === 'draft' || 'sent'`. Trigger is "Mark paid" outline button.
+- `src/components/features/projects/invoices-tab.tsx` — project Customer Billing tab caller (Draws + Other invoices tables). Inline button next to View, rendered for `status === 'draft' || 'sent'`.
+
+**Manual out-of-band override (`draft -> paid`):** `validTransitions` permits `draft -> paid` (not just `sent -> paid`) so a GC who collected a cheque / e-transfer before ever sending the invoice can record it without a send step. `markInvoicePaidAction` guards on `canTransition(status, 'paid')` — paid/void stay terminal. Every "Mark paid" trigger therefore renders on `draft` as well as `sent`; keep these conditions in sync if you add a new entry point.
 
 When the dialog's contract changes (new field, OCR behavior tweak, label rename), check both callers' triggers + that the underlying `markInvoicePaidAction` / `invoiceMarkPaidSchema` accept any new fields.
 
@@ -610,3 +670,168 @@ Don't re-add `max-h-*` or `overflow-y-auto` on the caller — they're already th
 - `src/components/ui/alert-dialog.tsx` — base `AlertDialogContent`.
 
 If you find yourself wanting to opt out (e.g. a dialog that should never scroll), prefer making the dialog body shorter — that's the bug.
+
+---
+
+## 27. State strip — lifecycle moment + actions  *(design primitive, OD-only)*
+
+A horizontal panel that *labels* a project / object lifecycle moment and carries its primary actions. Sibling pattern to the Schedule cascade card and the Billing Ready-to-bill nudge — same chrome family, different soft-pair flavour per state. Lives at the **top of a tab body**, above the summary card, never as floating chrome.
+
+Use a state strip whenever a tab body has actions whose meaning depends on the *current state* of the object — approval flows, sent/awaiting-response, ready-to-bill, cascade-pushed dates, ready-to-deliver, blocked. The strip both *announces* the state and *exposes* the one or two actions that move it to the next state.
+
+**Four soft-pair variants, all share chrome:**
+
+| Variant | Background | Border-left | Mark fill | Typical content |
+|---|---|---|---|---|
+| `.is-pending` | `--rust-soft` | `--rust` | `--rust` | "Budget has unsent changes — send for re-approval" + ghost `Mark approved` / ghost `Mark declined` / rust `Preview & send` |
+| `.is-sent` | `--info-soft` | `--info` | `--info` | "Sent to customer Mar 24 · awaiting response" + ghost `Resend` / ghost `Withdraw` |
+| `.is-approved` | `--card` (calm) | `--ok` | `--ok-soft` | "Approved Mar 25 by Daniel & Priya" + link `View customer view` / link `Revise` |
+| `.is-declined` | `--warn-soft` | `--warn` | `--warn` | "Declined Mar 26 — Daniel asked to drop the kitchen island" + ghost `Address feedback` / rust `Re-send` |
+
+**Rust discipline**: the rust primary CTA appears in at most ONE variant per screen (usually `.is-pending`); state-flip ghost actions don't get rust. Use `.btn-rust` (desktop) / `.ss-btn-rust` (mobile) only for the single "move forward" action.
+
+**Mobile layout**: stacks vertically — `.ss-head` (mark + body) on top, then `.ss-actions` with the two ghost buttons in a 2-col grid above a full-width 44px rust primary. Never crush the three buttons onto one row at phone widths.
+
+**Specificity gotcha** *(found while building mobile-budget.html — 2026-05-22)*: the `.state-strip.is-pending .ss-btn` ghost override beats a bare `.ss-btn-rust` rule on specificity. Declare the rust primary as `.state-strip .ss-btn.ss-btn-rust { … }` so the doubled-class selector wins the tie. Same fix applies to `.is-declined .ss-btn` once the declined-state Re-send button lands.
+
+**Canonical OD source** (until ported to React):
+- `od-project-hub/screens/desktop-budget.html` — `.state-strip.is-pending` between alert-chips and signed-banner; rust CTA = `Preview & send`.
+- `od-project-hub/screens/mobile-budget.html` — same, stacked layout; full-width rust CTA.
+- `od-project-hub/screens/desktop-schedule.html` — warn-soft cascade card (cousin of `.is-declined`): "Moving Drywall +3d pushed Finishes, Punch List & Final Walkthrough" with `Undo` + rust `Notify customer`.
+- `od-project-hub/screens/desktop-billing.html` — Ready-to-bill peach nudge (cousin of `.is-pending`): "Rough-in's done — bill draw 3 ($12,400)?" with rust `Bill draw 3`.
+
+**When the React port lands**, factor a `<StateStrip variant="pending|sent|approved|declined" mark={…} body={…} actions={…} />` primitive sitting next to `Card` in `src/components/ui/`. The four variants are the only legal ones — refuse "info" / "neutral" requests; if a moment doesn't fit one of the four soft pairs, it doesn't belong in a state strip.
+
+**First React port (warn-soft cascade family, embedded Henry):** the Schedule tab's `ScheduleCascadeExplainer` (`src/components/features/projects/schedule-cascade-explainer.tsx`), `ScheduleSlipPrompt` (`schedule-slip-prompt.tsx`), and `ScheduleCoSuggestion` (`schedule-co-suggestion.tsx`) are the React implementations of the warn-soft cascade card. All three reuse the Henry chrome convention directly — `rounded-r-lg border border-l-2 border-l-brand p-3` + `statusToneClass.warning` + a mono rust `✦ Henry` eyebrow (the same family as `henry-insight-strip.tsx` and the portal-tab decision-suggestions wrapper). When the `<StateStrip>` extraction happens, fold these in as the warn-soft variant rather than re-deriving the chrome. Notify routes through the existing deferred-notify path (`notifyCustomerOfScheduleChangeAction` → the mig-0211 cron + 5-min Undo), never a new send system. `ScheduleCoSuggestion` is the **CO → schedule** touchpoint (closes vault gotcha #13 — change orders weren't linked to the Gantt): an approved CO surfaces an inline ✦ prompt to draft schedule task(s) for its added scope (one task per budget category, rough + client-hidden), accept/edit (per-scope editable name + "Add after" predecessor picker) or dismiss — dedup via `change_orders.schedule_suggestion_dismissed_at` so it never auto-inserts and never re-nags. It's the one place dollars (`<Money>`/CAD) legitimately appear on the otherwise money-free Schedule tab.
+
+**Henry attention-strip family (account/money-side, rust-soft fill):** the Business Health cockpit's `BusinessHealthAttentionStrip` (`src/components/features/business-health/attention-strip.tsx`) is the money-side, account-level mirror of the project Overview `henry-insight-strip.tsx`. Same rust `✦ Henry` eyebrow + deterministic, rule-based engine (`src/lib/db/queries/business-health-attention.ts` — the money-side mirror of `project-insights.ts`), but **action-first** (each row leads with the CTA: rust "Send reminders" for overdue AR, ghost "Review bills" for net-cash-negative) and rendered on a rust-soft fill (`bg-[#FEF0E3]` + `border-l-[3px] border-l-brand`) rather than per-row status tones. **Calm discipline:** unlike the Overview engine (which emits a calm `on_track` line), this returns `[]` and the strip is hidden entirely when nothing's pressing — Business Health's home-base read is the cockpit numbers, the strip only appears when there's something to act on. The cockpit detail aggregates (AR aging bands, overdue itemisation, 6-month cash series, near-term cash) live in `src/lib/db/queries/business-health-cockpit.ts` (tax-aware via `invoiceTotalCents`, tying out to the `get_business_health_metrics` RPC totals).
+
+**Sibling pattern siblings to retire when porting**: `signed-banner` (= `.is-approved`), the `chip-alert.is-warn` for "unsent scope changes" (becomes `.is-pending`), and any one-off "preview & send" button floating above a card body (always wrap in `.is-pending`).
+
+**Home Record React port (lifecycle-as-flow, off the canonical four variants):** the operator Home Record flow (`src/components/features/portal/home-record-flow.tsx`, on the project Documents tab) is the first React state-strip that drives a *generate → preview → send* lifecycle rather than an approval. It maps the four document-lifecycle moments to the same chrome family — `snapshot` = rust-soft `bg-[var(--rust-soft)]` + `border-l-brand` (the one rust primary: `Preview & finish`); `ready` = calm `bg-card` + emerald left-border (primary `Email to client`); `sent` = emerald-soft confirmation (primary demotes to `Resend`). Below the strip sits a **readiness line** (Web link · PDF · ZIP) of soft-pair chips (built = emerald, not-built = neutral, stale = amber `AlertTriangle`). Format-building + the ✦ Henry closeout-summary editor live in a **preview drawer** (a wide `Dialog`, not a Sheet — none exists yet); `Regenerate` is one `AlertDialog` (§3). When `<StateStrip>` is extracted, this is a lifecycle variant set distinct from the approval four — keep them separate rather than forcing Home Record into `pending/sent/approved/declined`.
+
+**Invoice-detail React ports (status posture + inline cautions):** the operator invoice detail page (`src/app/(dashboard)/invoices/[id]/page.tsx`) reuses the same chrome family for two roles. (1) The page-level **status posture** — sent = `statusToneClass.warning` "Awaiting payment", paid = `statusToneClass.success` receipt block (date · method · ref · receipt thumbnails §21), void = `statusToneClass.neutral` closed — rendered via a local `PostureStrip` (`rounded-xl border border-l-2 border-l-brand` + a status tone). (2) The **inline cautions** — `CostBasisDriftBanner` (warn) and `MissingGstNotice` (danger) — were full amber/red banners, now `rounded-r-lg border border-l-2 border-l-brand p-3` + `statusToneClass.{warning,danger}` matching `ScheduleSlipPrompt`. When `<StateStrip>` is extracted, fold `PostureStrip`'s warning/success/neutral tones in rather than re-deriving; the inline cautions stay as the thinner caution variant.
+
+## 28. Customer-facing money document (`<CustomerDocument>` shell)
+
+The one branded wrapper every customer-facing money document renders inside — **Estimate · Change Order · Invoice/Pay**. It is the GC's letterhead, not HeyHenry operator chrome: signed logo + business name up top, a quiet "Powered by HeyHenry" footer, **Henry invisible**. Hard boundary — **price-only**: never `unit_cost` / `markup_pct` / supplier cost / margin renders through it.
+
+`src/components/features/projects/customer-document.tsx`. Promoted out of the old `estimate-render.tsx` (the only prior reusable customer render). The shell owns, identically across all three docs:
+- **Header** — logo (or text name) + optional business meta · doc eyebrow / number / date · status chip
+- **Recipient grid** — "Prepared for" / "Billed to" {customer} + optional project column
+- **Body slot** (`children`) — the doc's own content (estimate scope tree · CO diff · invoice line items)
+- **Totals block** — `Subtotal → Management fee → province-aware GST/HST → Total`, every row through `<Money>` (de-emph cents, tabular). Pass `totals.rows` in display order; the Total row renders separately + emphasized. `meta` on a row is the small uppercase tax note ("BC · on top").
+- **Footer** — GST# · WCB# · `footerNote` · "Powered by HeyHenry"
+- **Action zone slot** (`actionZone`) — the one thing to do (Approve e-sig / Pay), rendered after the footer.
+
+**Status chip** comes from `status-tokens.ts` (`{ label, tone }`) — no ad-hoc amber (§7). **Dates** are pre-formatted by the caller in the tenant tz (§23); the shell is client-agnostic, no tz logic inside.
+
+**Adopters:**
+- `src/components/features/projects/estimate-render.tsx` — Estimate (live). Body keeps its section→category→line grouping + approved/declined/draft banners; header/recipient/totals/footer + chip come from the shell.
+- `src/app/(public)/view/invoice/[id]/page.tsx` — Invoice pay surface (live). Draw context + line items in the body; dual-pay zone (`InvoicePayZone`) in the action slot.
+- **Change Order** public `/approve/[code]` page — **live** (card 01a46861), via `src/components/features/change-orders/change-order-render.tsx` (the CO analogue of `estimate-render.tsx`, shared by the public page; reuse it for any operator CO preview). Body = "What's changing & why" + price-only impact card + the Before→After→Δ diff (`ChangeOrderDiffView`); totals use `CustomerDocTotalsRow.signed` for the +/- Cost of work → Management fee → province-aware GST/HST → Total impact; `actionZone` holds the typed-name e-sig + decline-with-reason form. Tax via `canadianTax.getCustomerFacingContext` (PST stripped) — never hardcode 5%.
+
+**Home Record artifact — letterhead conventions, not the money-doc shell.** The public Home Record (`src/app/(public)/home-record/[slug]/page.tsx`) is a long-form *narrative* document (summary → phases → selections → photos → decisions → change orders → documents), not a priced doc, so it does NOT render inside `<CustomerDocument>` (no totals block, no action zone, no GST/WCB footer). It instead **adopts the same letterhead language** on the warm Paper field: GC logo (or text-name fallback) + "Home Record" rust eyebrow + project h1 + "Prepared for {client}" + frozen-tz generated date; rust (`text-brand`/`border-brand`/`bg-brand`) is the single accent (section rules, eyebrows, the Download PDF/ZIP buttons); footer is "Save this link — it works forever" + one quiet "Powered by HeyHenry". **Server-only, no client JS, print-friendly.** The 404/expired state is `not-found.tsx` in the same route — same Paper field + quiet footer. **Client boundary (load-bearing — no-login public):** the snapshot is the only data source; the only money is approved change-order `cost_impact_cents` (CAD); `allowance_cents`/`actual_cost_cents` exist in the snapshot type but are NEVER rendered; no supplier *cost* / markup / margin / internal notes; ✦/Henry invisible (the summary renders as plain prose). The route uses the admin client by slug only — never `getCurrentTenant()`.
+
+**Dual-pay zone** (`src/components/features/invoices/invoice-pay-zone.tsx`): Stripe card + **Interac e-Transfer at true parity** — Interac is a structured, one-tap-copyable block (recipient · amount · memo), never free text. Mobile gets a sticky 44px+ Pay bar (card only; e-Transfer customers use the copyable block).
+
+**Code-keyed public URLs:** the invoice public route resolves by `invoices.code` first, then falls back to raw `id` (legacy links keep working). New sends generate the code (`generateInvoiceCode` in `src/server/actions/invoices.ts`) and key the visible doc number (`INV-XXXXXXXX`) + pay URL on it — never echo the raw row id on a no-login PII page. Migration `20260523194840_invoices_public_code.sql` (additive column + backfill + partial unique index).
+
+## 29. Change-order diff-action palette (edit-action types ≠ lifecycle status)
+
+A change order carries two **separate** colour systems — don't conflate them:
+
+- **Lifecycle status** (draft / pending / approved / declined / voided) → `status-tokens.ts` `changeOrderStatusTone` (§7). Answers "what state is this CO in".
+- **Diff-action** (add / change / remove / budget) → `src/lib/ui/change-order-action.ts` `changeOrderActionStyle`. Answers "what KIND of edit is this row". A green *add* row is NOT a "success" status; a red *remove* row is NOT a "declined" status.
+
+One intentional tone per action, **label + glyph paired** (never colour-only, WCAG SC 1.4.1): `add` emerald `+`, `modify`→**Change** blue `↔`, `remove` red `−`, `modify_envelope`→**Budget** muted `□`. Maps the `change_order_lines.action` enum.
+
+Render the pill via `<ChangeOrderActionChip action=… [count=…] />` (`src/components/features/change-orders/change-order-action-chip.tsx`) — `count` makes a summary chip ("3 Added"). Row washes + signed-Δ tint come from the same `changeOrderActionStyle[action].rowClass` / `.deltaClass`. Used **identically** in the operator editor (`change-order-diff-form.tsx`) and the customer-facing diff view (`change-order-diff-view.tsx`) so the eye is trained once. Before/After/Δ figures: `changeOrderLineDelta(line)` (handles `modify_envelope` reading `before_snapshot.estimate_cents` and `remove`→0 after).
+
+**Operator margin read** (editor only): the sticky impact bar shows `Margin on change · X%` vs the project mgmt-fee floor, tagged `OPS`. Hard boundary — this and any cost/markup figure **never** render on a customer surface (public `/approve`, send preview, portal); the customer doc is price-only (§28).
+
+## 30. Config-fold disclosure (collapse secondary config into one "details" section)
+
+When a screen's main task is one thing but several **config / setup** affordances also need to live on the page, don't stack them as sibling banners under the primary content — fold them into a single titled disclosure so the hero stays the hero. `InvoiceDocumentDetails` (`src/components/features/invoices/invoice-document-details.tsx`) is the first instance: it wraps the tenant-defaults setup nudge + the per-invoice payment-instructions/terms/policies overrides editor (both passed as `children`, so the disclosure owns only the fold chrome — no duplicated form logic).
+
+- **One collapse, not N banners.** Children that previously each carried their own card/banner frame get *de-chromed* (the overrides editor dropped its own `Card` + inner collapse; the defaults nudge became a thin warn-soft caution) so they read as fields inside the section, not nested cards.
+- **`needsAttention` opens it on first paint** only when something is actionable (a blank tenant default, or an active override) — otherwise it's collapsed with a calm `statusLabel` ("Using tenant defaults") + a green dot. Don't auto-open for the calm case.
+- Built on the shared `Collapsible` primitive (`src/components/ui/collapsible.tsx`); chevron rotates 90° on open.
+
+Reach for this whenever a detail page sprouts a third+ secondary banner — the candidates are "config, not the main task" (terms, defaults, integrations, notification prefs).
+
+## 31. Selection allowance-vs-actual variance (+ dual-authoring tag + over-allowance CO nudge)
+
+Per-room finish selections carry `allowance_cents` (the contractual budget) + `actual_cost_cents` (what the choice cost). Three primitives surface that, shared between the operator Selections tab and the client portal so they can't drift:
+
+- **Variance logic** — `src/lib/selections/variance.ts` (pure, unit-tested in `tests/unit/selections-variance.test.ts`). `selectionVariance(allowance, actual)` returns a `{ tone, label, deltaCents, isOverAllowance }` with a verb-bearing label for every case (over / under / on-allowance / allowance-only "no actual yet" / actual-only). `rollupVariance(items, 'Room'|'Project')` nets only selections with a comparable allowance+actual pair (a TBD actual must NOT read as "under") and reports `overCount`.
+- **Rendering** — `src/components/features/portal/selection-variance-ui.tsx`. `<VarianceDelta tone label />` is the soft-pair pill (over = rose, under = emerald, flat/pending = muted — the §7 status-token palette), glyph + label, **never colour-only**. `<ByTag createdBy promoted selfLabel />` is the dual-authoring tag: Operator-spec (shield) / By client|you (user) / Promoted from idea (sparkles). Promotion wins over `created_by`.
+- **Henry over-allowance nudge** — `src/components/features/portal/over-allowance-nudge.tsx`. Deterministic from allowance vs actual (no model call), labeled `Henry ✦`, dismissible (local), names the over items + overage, links a single prefilled "Draft Change Order". **Operator-only — never on the portal.**
+
+**"Start CO" wiring**: over-allowance rows + the nudge link to the real CO creation route `/projects/[id]/change-orders/new?from=selection&title=…&reason=…`. The page (`new/page.tsx`) reads those params into `mode={{ kind:'create', prefill }}` on `ChangeOrderDiffForm`, which seeds the title + reason. Lines stay empty — the operator authors cost impact + approves. Henry never auto-creates.
+
+**CLIENT BOUNDARY** (enforced in `portal-selections.tsx` + `portal-selections-panel.tsx`): the client sees allowance vs **their** actual + room roll-up, but **never** margin / markup / supplier / SKU, and **no Start-CO**. `project_idea_board_items` and `project_selections` stay **distinct objects** — ideas promote one-way into selections (Object Model `b4d880be`); the promoted tag is derived from `idea.promoted_to_selection_id`, the tables are never merged.
+
+Sibling instances: operator `selection-list.tsx`; portal read-only `portal-selections.tsx`; portal composer `portal-selections-panel.tsx`. OD source: `od-selections/screens/{desktop,mobile}.html`.
+
+## 32. Public brand header (`<PublicBrandHeader>` — the GC letterhead bar)
+
+The brand-chrome counterpart to `<CustomerDocument>` (§28) for the **non-money** public surfaces — the **Portal hub** and **Tap-to-decide** — that are not document-shaped enough to render *inside* CustomerDocument but still must open with the GC's letterhead, never HeyHenry's. A white `bg-card` bar floating on the warm Paper `bg-background`: signed GC logo (or two-letter text fallback) + business name + an optional context line + a quiet "secure" lock (the no-login trust signal).
+
+`src/components/features/public/public-brand-header.tsx`. Props: `logoUrl` (signed from the private `photos` bucket — brand chrome, not project data), `businessName` (doubles as logo alt), `context` (caller-supplied — project name + client first name, or "A quick decision for {name}"; **never a money / internal figure**), `hideSecure`.
+
+**Hard boundary:** renders no project data beyond the business name + the caller's `context` string — it never sees cost / margin / supplier / unit fields. The money documents (Estimate / CO / Invoice) keep using `<CustomerDocument>`'s own letterhead; this is only for the brand-header + artifact + action shape where the artifact isn't a priced doc.
+
+**Adopters:**
+- `src/app/(public)/portal/[slug]/page.tsx` — Portal hub. Sits in a rounded `bg-card` card over `bg-background`; the project hero (name + status + % complete) renders under it. Mobile gets a fixed bottom-sheet tab bar (`sm:hidden`, pure `<Link>`s, no client JS) mirroring the thumb-reachable primaries (Project/Schedule/Photos/Messages + More→Budget); the full 7-tab strip stays scrollable up top so every tab is reachable. Project-tab order: decisions pinned → status/progress → approvals → phases → docs → trades → updates → a **calm** boundary note (`Shield` glyph) that does NOT enumerate withheld categories (enumerating internal costs/supplier pricing spotlights markup — a margin tell).
+- `src/app/(public)/decide/[code]/page.tsx` — Tap-to-decide. Brand header → `DecisionPanel` artifact → one-question boundary note. Terminal/decided/dismissed states render in the same branded `Shell`.
+
+OD source: `od-public-pages/screens/{desktop,mobile}.html` (`gc-bar` recipe). Mobile is primary.
+
+## 33. Drag-to-reorder server sections with per-user persisted order
+
+When a server-rendered surface (the owner dashboard) needs user-reorderable blocks **without** turning the blocks themselves into client components: render each block server-side, pass them to a thin `'use client'` sortable wrapper as a `key → node` map, and let the wrapper own only the *order*.
+
+**Canonical instance** — owner dashboard sections:
+- `src/components/features/dashboard/dashboard-sections.tsx` — dnd-kit `DndContext` + `SortableContext` (`verticalListSortingStrategy`), `PointerSensor` (6px activation) + `KeyboardSensor`. Optimistic local order; reverts + toasts on failed save. Drag handle is a hover-revealed grip (`opacity-0 group-hover:opacity-100`, `focus-visible:opacity-100` for keyboard) pinned `absolute right-2 top-2`.
+- `src/lib/dashboard/sections.ts` — **stable string keys** + `normalizeSectionOrder()`: filters unknown/stale keys and appends missing ones in default order, so a saved order never breaks when sections are added/removed. Keys are permanent — renaming one orphans saved orders.
+- `src/server/actions/dashboard-preferences.ts` — `{ ok, error }` discriminant; re-normalizes the client payload server-side before persisting (never trust the client to send the full/clean key set).
+- Persistence: `tenant_members.dashboard_section_order text[]` (per-user, per-tenant; `NULL` = default). Self-update RLS already covered by `tenant_members_update_self` (mig 0152). Read via `getDashboardSectionOrder(userId)` in `src/lib/db/queries/dashboard.ts`.
+
+**Shared expectations for this family:** server blocks stay server components (passed as children/props — Suspense boundaries move *inside* the map values); the wrapper is the only client component; order is the only client-owned state; saves are optimistic with revert-on-failure; the stored value is always normalized to the current key set on both read and write. Reuse this shape for any future "let the user arrange these blocks" surface rather than lifting the blocks into client land.
+
+## 34. Resumable step shell + selection tiles (first-run onboarding)
+
+A **skippable, resumable** one-step-per-screen flow inside the `(auth)` shell, where *value is never gated on completeness* — every step has Skip + Back and the final hand-off always reaches the destination.
+
+**Canonical instance** — the first-run setup pass (`/onboarding`):
+- `src/components/features/onboarding/onboarding-flow.tsx` — the client shell. Owns step index + an ink (not rust) segmented progress bar (`role="progressbar"` + `aria-valuenow/min/max`). `goTo()` fire-and-forgets `setOnboardingStepAction(step)` so the **resume marker never blocks the UI**; the marker is monotonic (advance-only via a `.lt('onboarding_step', step)` guard) so Back-then-leave doesn't lose progress. Exports a shared `StepActions` footer (ink primary CTA + low-emphasis "Skip for now").
+- Step bodies: `vertical-step.tsx` (selection tiles), `profile-step.tsx` (reuses `LogoUploader` + the shared `updateBusinessProfileAction`, passing through Settings-managed fields so they aren't clobbered), `meet-henry-step.tsx` (orientation card, **not** a chat box).
+- `src/server/actions/onboarding.ts` — `{ ok, error }` actions; `completeOnboardingAction` stamps `tenants.onboarding_completed_at` (idempotent via `.is(..., null)`); a failed save **never** stops the hand-off (the shell still routes to `/dashboard`).
+- Route guard: `src/app/(auth)/onboarding/page.tsx` reads the marker — `onboarding_completed_at` set → `redirect('/dashboard')` (loop-safe); else resume to the clamped furthest step. Marker columns added in `20260524040346_onboarding_progress_marker.sql` with existing tenants backfilled to "complete" so they never re-onboard.
+
+**Selection tile** (the `vertical-step` tiles): a keyboard-accessible `<button aria-pressed>` card (mobile ≥44px target) carrying the screen's **one rust accent** on the selected state only — `border-brand ring-3 ring-brand/15` + a `bg-brand` radio check. The CTA stays ink. Pattern mirrors `plan-picker.tsx`'s `PlanCard` (`role="button"`-style card) but uses a real `<button>` + `aria-pressed` for a single-select radio group. Reuse this for any "pick one of N options" tile group; reuse the step-shell shape for any future skippable multi-step setup.
+
+## 35. Paper closed type scale + the eyebrow / money primitives
+
+The "Paper" visual system (DESIGN.md) is a **closed** type scale, enforced — not a convention you can drift from. When you add or restyle any label, number, or eyebrow, reach for the token/primitive, never a fresh `text-[Npx]`.
+
+**Closed scale (the only sizes):** body/label `text-eyebrow` (11px JetBrains-mono) · `text-meta` (12) · `text-body` (14) · `text-lead` (16); display `text-display-xs/sm/md/lg` (20/24/28/36). Named `@theme` tokens live in `src/app/globals.css`. **13 and 15 do not exist.** Tailwind defaults `text-sm` (14) / `text-base` (16) are fine too.
+
+**Enforcement:** `tests/unit/design-tokens.test.ts` is a per-file count baseline (`tests/unit/design-tokens.baseline.json`) that fails CI when a file adds an arbitrary `text-[Npx]` or inline `font-size:` beyond its current count. It's a **ratchet** — fix some, then `pnpm design-tokens:baseline` to tighten. Never regenerate to absorb a *new* violation. Mirrors the `scripts/check-migration-prefixes.ts` / timezone-lint precedent.
+
+**`<Eyebrow>`** (`src/components/ui/eyebrow.tsx`) — the one mono eyebrow: `font-mono text-eyebrow uppercase tracking-[0.06em] text-muted-foreground`, polymorphic via `as` (`span` default; `p`/`h3`/`th` for block/heading/header-cell). Replaces the per-file copy-pasted eyebrow string. Pass overrides via `className` (tailwind-merge resolves `normal-case`/weight/margins). **Sibling instances to migrate as you touch them:** budget surfaces are done (`budget-summary` / `budget-cockpit` / `budget-categories-table`); ~28 other files still inline `font-mono text-[11px] uppercase …` — fold them into `<Eyebrow>` when editing nearby.
+
+**`<Money>`** (`src/components/ui/money.tsx`) — the one currency renderer: `tabular-nums`, full-ink symbol, de-emphasised cents (`0.7em` muted), invisible `.00` padding so whole-dollar and mixed-cent values right-align in a column. **Never hand-format currency for display** (`formatCurrency(...)` in a string, `` `$${...}` ``, `.toFixed(2)`) — that reintroduces the `$7,300` vs `$7,300.00` split. For currency inside a text run (sub-labels), build the run as JSX with `<Money>` rather than an interpolated string.
+
+**`<StatusBadge>`** (`src/components/ui/status-badge.tsx`) — the one status chip: Paper eyebrow shape (11px mono uppercase tracking-[0.06em]), soft-pair fill via `statusToneClass[tone]`, polymorphic `tone: StatusTone` prop. All per-feature status badges (`InvoiceStatusBadge`, `QuoteStatusBadge`, `ProjectStatusBadge`, `JobStatusBadge`, `TaskStatusBadge`, `ChangeOrderStatusBadge`, `BillingStatusBadge`, `WorkerInvoiceStatusBadge`, `VisibilityBadge`) are thin wrappers — their component interfaces are unchanged. **NEVER use `statusToneClass` directly in a span** — route through `<StatusBadge>` so shape can't drift. Dot-prefix variant for live states (`dot={true}` → "• Active"); icon variant for WCAG SC 1.4.1 (`icon={SomeLucideIcon}`). NEVER rust (`tone` accepts `StatusTone` only — see `status-tokens.ts`). **Sibling-eval rule:** when you change a feature's status badge, check all callers for consistency via `data-slot="*-status-badge"`.
+
+## 36. Server-paginated list (URL `?page=` + count, never an unbounded fetch)
+
+Long lists are paginated **in Postgres**, not capped in code and not materialized whole. The page lives in the URL (`?page=`) so it's shareable, back-button-safe, and composes with the surface's other filter params. The visible "X of M" + page-nav affordance is mandatory — never silently truncate.
+
+**Query shape** (`listOverheadExpensesPage` in `src/lib/db/queries/overhead-expenses.ts` is the reference): one `.range(from, to)` query for the page of rows, a parallel `{ count: 'exact' }` query for the full-set total + summary, and any facet queries — all `Promise.all`'d. Push every filter into the SQL (a shared `applyLedgerFilters` wraps all three so a new filter can't drift between them). **Expensive per-row work (signed URLs, joins) is scoped to the page's rows only** — that's the whole point; the count/summary query selects narrow columns and never signs or joins. Return `{ rows, total, page, pageSize, summary, facets }`.
+
+**Pager UI:** `src/components/features/expenses/expenses-pager.tsx` (`ExpensesPager`) renders inside the table card as a `footer` slot. Reads/writes `?page=` via `useSearchParams()` — preserves all other params, deletes `page` when going to page 1. Page-nav buttons render only when `totalPages > 1`; the "firstRow–lastRow of total" line always shows. Pass `basePath` for non-`/expenses` routes (e.g. `basePath="/bk/expenses"` on the bookkeeper twin). The table's `shownOf={{ shown, total }}` prop drives the "· showing N of M" strip header.
+
+**Callers:** `src/app/(dashboard)/expenses/page.tsx` (owner ledger, full filter bar) and `src/app/(bookkeeper)/bk/expenses/page.tsx` (bookkeeper twin, `includeProjectExpenses: true`). When you add a new long list, reuse this shape rather than fetching the whole table and slicing client-side.

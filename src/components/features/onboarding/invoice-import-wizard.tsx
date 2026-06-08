@@ -19,9 +19,12 @@ import { toast } from 'sonner';
 import { IntakeDropzone } from '@/components/features/contacts/intake-dropzone';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DecisionToggle } from '@/components/ui/decision-toggle';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { invoiceStatusTone, statusToneClass, statusToneIcon } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
 import {
   type CommitInvoiceImportRow,
   commitInvoiceImportAction,
@@ -373,6 +376,17 @@ function PreviewStage({
                     value={r.decision}
                     hasMatch={r.invoiceMatch.tier !== null}
                     disabled={pending}
+                    label={
+                      r.customer.kind === 'matched'
+                        ? r.customer.existingName
+                        : r.customer.kind === 'create'
+                          ? r.customer.newName
+                          : undefined
+                    }
+                    mergeHint={{
+                      matched: 'Skip the insert; row already exists.',
+                      none: 'No probable duplicate found',
+                    }}
                     onChange={(v) => updateRow(r.rowKey, (row) => ({ ...row, decision: v }))}
                   />
                 </td>
@@ -494,66 +508,22 @@ function MoneyCell({
 }
 
 function StatusPill({ status }: { status: 'draft' | 'sent' | 'paid' | 'void' }) {
-  const tone =
-    status === 'paid'
-      ? 'bg-emerald-100 text-emerald-900'
-      : status === 'sent'
-        ? 'bg-blue-100 text-blue-900'
-        : status === 'void'
-          ? 'bg-muted text-muted-foreground line-through'
-          : 'bg-muted text-foreground';
+  // Route every invoice status colour through the canonical status-tokens
+  // map (one meaning → one colour) + the colour-blind glyph, instead of
+  // the ad-hoc emerald/blue classes this wizard used to hand-roll.
+  const tone = invoiceStatusTone[status];
+  const Icon = statusToneIcon[tone];
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium',
+        statusToneClass[tone],
+        status === 'void' && 'line-through',
+      )}
+    >
+      <Icon className="size-3" aria-hidden />
       {status}
     </span>
-  );
-}
-
-function DecisionToggle({
-  value,
-  hasMatch,
-  disabled,
-  onChange,
-}: {
-  value: 'create' | 'merge' | 'skip';
-  hasMatch: boolean;
-  disabled: boolean;
-  onChange: (v: 'create' | 'merge' | 'skip') => void;
-}) {
-  return (
-    <div className="inline-flex overflow-hidden rounded-md border text-xs">
-      <button
-        type="button"
-        onClick={() => onChange('create')}
-        disabled={disabled}
-        className={`px-2 py-1 ${value === 'create' ? 'bg-primary text-primary-foreground' : 'bg-transparent hover:bg-muted'}`}
-      >
-        Create
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('merge')}
-        disabled={disabled || !hasMatch}
-        title={hasMatch ? 'Skip the insert; row already exists.' : 'No probable duplicate found'}
-        className={`border-l px-2 py-1 ${
-          value === 'merge'
-            ? 'bg-primary text-primary-foreground'
-            : hasMatch
-              ? 'bg-transparent hover:bg-muted'
-              : 'cursor-not-allowed bg-muted/30 text-muted-foreground'
-        }`}
-      >
-        Merge
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('skip')}
-        disabled={disabled}
-        className={`border-l px-2 py-1 ${value === 'skip' ? 'bg-muted text-foreground' : 'bg-transparent hover:bg-muted'}`}
-      >
-        Skip
-      </button>
-    </div>
   );
 }
 

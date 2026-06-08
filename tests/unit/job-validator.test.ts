@@ -19,7 +19,7 @@ const OTHER_UUID = '99999999-8888-4777-8666-555555555555';
 describe('jobCreateSchema', () => {
   it('accepts a fully populated job', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       quote_id: OTHER_UUID,
       status: 'booked',
       scheduled_at: '2026-04-20T09:00',
@@ -28,13 +28,13 @@ describe('jobCreateSchema', () => {
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.status).toBe('booked');
-      expect(parsed.data.customer_id).toBe(VALID_UUID);
+      expect(parsed.data.contact_id).toBe(VALID_UUID);
     }
   });
 
   it('defaults status to booked when omitted', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
     });
     expect(parsed.success).toBe(true);
     if (parsed.success) {
@@ -42,20 +42,20 @@ describe('jobCreateSchema', () => {
     }
   });
 
-  it('rejects a missing customer_id', () => {
+  it('rejects a missing contact_id', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: '',
+      contact_id: '',
       status: 'booked',
     });
     expect(parsed.success).toBe(false);
     if (!parsed.success) {
-      expect(parsed.error.flatten().fieldErrors.customer_id?.[0]).toMatch(/pick a customer/i);
+      expect(parsed.error.flatten().fieldErrors.contact_id?.[0]).toMatch(/pick a customer/i);
     }
   });
 
-  it('rejects an invalid customer_id uuid', () => {
+  it('rejects an invalid contact_id uuid', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: 'not-a-uuid',
+      contact_id: 'not-a-uuid',
       status: 'booked',
     });
     expect(parsed.success).toBe(false);
@@ -63,7 +63,7 @@ describe('jobCreateSchema', () => {
 
   it('rejects an unknown status', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       status: 'pending',
     });
     expect(parsed.success).toBe(false);
@@ -71,7 +71,7 @@ describe('jobCreateSchema', () => {
 
   it('accepts an empty quote_id (no linked quote)', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       quote_id: '',
       status: 'booked',
     });
@@ -80,7 +80,7 @@ describe('jobCreateSchema', () => {
 
   it('rejects a malformed quote_id', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       quote_id: 'not-a-uuid',
       status: 'booked',
     });
@@ -89,7 +89,7 @@ describe('jobCreateSchema', () => {
 
   it('accepts an ISO datetime-local value for scheduled_at', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       scheduled_at: '2026-04-20T09:00:00.000Z',
     });
     expect(parsed.success).toBe(true);
@@ -97,7 +97,7 @@ describe('jobCreateSchema', () => {
 
   it('accepts empty notes and empty scheduled_at', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       scheduled_at: '',
       notes: '',
     });
@@ -106,7 +106,7 @@ describe('jobCreateSchema', () => {
 
   it('rejects notes longer than 2000 characters', () => {
     const parsed = jobCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       notes: 'x'.repeat(2001),
     });
     expect(parsed.success).toBe(false);
@@ -115,7 +115,7 @@ describe('jobCreateSchema', () => {
   it('accepts all four statuses', () => {
     for (const status of ['booked', 'in_progress', 'complete', 'cancelled'] as const) {
       const parsed = jobCreateSchema.safeParse({
-        customer_id: VALID_UUID,
+        contact_id: VALID_UUID,
         status,
       });
       expect(parsed.success).toBe(true);
@@ -127,7 +127,7 @@ describe('jobUpdateSchema', () => {
   it('requires a UUID id', () => {
     const parsed = jobUpdateSchema.safeParse({
       id: 'not-a-uuid',
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       status: 'booked',
     });
     expect(parsed.success).toBe(false);
@@ -136,7 +136,7 @@ describe('jobUpdateSchema', () => {
   it('accepts a valid update payload', () => {
     const parsed = jobUpdateSchema.safeParse({
       id: VALID_UUID,
-      customer_id: OTHER_UUID,
+      contact_id: OTHER_UUID,
       status: 'in_progress',
     });
     expect(parsed.success).toBe(true);

@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { formatDate } from '@/lib/date/format';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 import { QuoteApprovalForm } from './quote-approval-form';
 
 export const metadata: Metadata = {
@@ -20,13 +22,14 @@ type LineItem = {
 
 export default async function PublicQuoteViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = createAdminClient();
 
   // Load quote with tenant and customer info.
   const { data: quote } = await supabase
     .from('quotes')
     .select(
-      'id, tenant_id, customer_id, status, subtotal_cents, tax_cents, total_cents, pdf_url, sent_at, notes, created_at',
+      'id, tenant_id, contact_id, status, subtotal_cents, tax_cents, total_cents, pdf_url, sent_at, notes, created_at',
     )
     .eq('id', id)
     .is('deleted_at', null)
@@ -54,9 +57,9 @@ export default async function PublicQuoteViewPage({ params }: { params: Promise<
 
   // Load customer info.
   const { data: customer } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('name, email, phone, address_line1, city, province, postal_code')
-    .eq('id', quote.customer_id)
+    .eq('id', quote.contact_id)
     .single();
 
   // Load line items.

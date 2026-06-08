@@ -1,0 +1,1813 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Selections · mobile — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --paper-2:      #FCFAF4;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 10px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 0 80px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ──── Page header & frame grid ──── */
+  .page-head {
+    max-width: 1280px;
+    margin: 0 auto 24px;
+    padding: 0 28px;
+  }
+  .page-head h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .page-head p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    max-width: 720px;
+    font-size: 14px;
+  }
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .frame-label {
+    text-align: center;
+    width: 100%;
+  }
+  .frame-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .frame-title {
+    margin: 2px 0 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .frame-sub {
+    margin: 2px auto 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+    max-width: 320px;
+  }
+  .frame-sub b { color: var(--ink-2); font-weight: 700; }
+
+  /* ──── Phone bezel ──── */
+  .phone {
+    width: 390px;
+    height: 824px;
+    background: #1a1612;
+    border-radius: 50px;
+    padding: 12px;
+    box-shadow:
+      0 0 0 1.5px #2a221b,
+      0 24px 64px rgba(10,10,10,0.18),
+      0 6px 18px rgba(10,10,10,0.08);
+    position: relative;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 38px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--sans);
+    background: var(--chrome);
+    z-index: 4;
+    position: relative;
+  }
+  .status-bar.is-portal { background: var(--chrome); }
+  .status-bar .island {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 8px;
+    width: 110px;
+    height: 28px;
+    background: #000;
+    border-radius: 20px;
+  }
+  .status-right { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+  .status-right svg { width: 14px; height: 14px; }
+
+  /* App bar */
+  .app-bar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    padding: 10px 14px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .app-back {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    color: var(--ink);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .app-back svg { width: 18px; height: 18px; }
+  .app-bar-title {
+    display: flex; flex-direction: column; min-width: 0; flex: 1;
+  }
+  .app-bar-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .app-bar-h {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+  .app-bar-actions { display: flex; gap: 4px; }
+  .app-icn {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    border: 0;
+  }
+  .app-icn svg { width: 18px; height: 18px; }
+
+  /* Secondary tab strip */
+  .mtab-strip {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--hair);
+    background: var(--chrome);
+    padding: 0 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .mtab-strip::-webkit-scrollbar { display: none; }
+  .mtab {
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .mtab.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+  .mtab .ct {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+  .mtab.is-on .ct { color: var(--muted); }
+  .mtab .ct.is-rust { color: #fff; background: var(--rust); padding: 1px 5px; border-radius: 999px; }
+
+  /* Scrollable content */
+  .scroll { flex: 1; overflow: hidden; background: var(--bg); }
+  .scroll-inner { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* Bottom tab bar */
+  .bottom-bar {
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 6px 4px 18px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    flex-shrink: 0;
+  }
+  .bt-item {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .bt-item.is-on { color: var(--ink); }
+  .bt-item svg { width: 22px; height: 22px; }
+  .home-bar {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: var(--ink);
+    border-radius: 99px;
+  }
+
+  /* Common eyebrows */
+  .m-eyebrow {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 4px 2px 2px;
+  }
+  .m-eyebrow .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .m-eyebrow .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Placeholder image fields */
+  .ph-tile-marble  { background: linear-gradient(160deg, #e8e0d2 0%, #c9bfa9 55%, #948975 100%); position: absolute; inset: 0; }
+  .ph-paint-navy   { background: linear-gradient(180deg, #2a3a52 0%, #18243a 100%); position: absolute; inset: 0; }
+  .ph-faucet-brass { background: radial-gradient(circle at 50% 60%, #d9b277 0%, #8c6f3e 60%, #4a3a20 100%); position: absolute; inset: 0; }
+  .ph-tile-zellige { background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 28px),
+    linear-gradient(180deg, #e6dec9 0%, #c9b89a 100%);
+    position: absolute; inset: 0; }
+  .ph-paint-mint  { background: linear-gradient(180deg, #c7d6c4 0%, #95ad94 100%); position: absolute; inset: 0; }
+  .ph-quartz      { background: linear-gradient(160deg, #ece6d8 0%, #b8aa8a 100%);
+                    background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.45) 0 8%, transparent 18%), radial-gradient(circle at 70% 60%, rgba(0,0,0,0.04) 0 6%, transparent 14%), linear-gradient(160deg, #ece6d8 0%, #b8aa8a 100%);
+                    position: absolute; inset: 0; }
+  .ph-paint-cream { background: linear-gradient(180deg, #f3ead4 0%, #c5b486 100%); position: absolute; inset: 0; }
+  .ph-flooring    { background: linear-gradient(160deg, #c5a075 0%, #7b5b34 100%);
+                    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0 2px, transparent 2px 22px), linear-gradient(160deg, #c5a075 0%, #7b5b34 100%);
+                    position: absolute; inset: 0; }
+  .ph-tile-cream  { background: linear-gradient(180deg, #efe6d2 0%, #c4b694 100%); position: absolute; inset: 0; }
+
+  /* By-tag chips (label + glyph) */
+  .by-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .by-tag svg { width: 11px; height: 11px; }
+  .by-tag.by-client    { color: var(--info); background: var(--info-soft); }
+  .by-tag.by-operator  { color: var(--muted); background: var(--chip-fill); }
+  .by-tag.by-promoted  { color: var(--ok); background: var(--ok-soft); }
+
+  .cat-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     OPERATOR — quick-add with photo-extract (capture-first)
+     ───────────────────────────────────────────────────────────────── */
+
+  .extract-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .extract-head {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .extract-head .right {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .extract-preview {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: var(--ink);
+  }
+  .extract-preview .img {
+    position: absolute; inset: 0;
+  }
+  .extract-preview .scan {
+    position: absolute; left: 14px; right: 14px; top: 38%;
+    height: 28%;
+    border: 1.5px solid rgba(255,255,255,0.85);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(10,10,10,0.4);
+  }
+  .extract-preview .scan-label {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(255,255,255,0.95);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .extract-preview .scan-label svg { width: 11px; height: 11px; color: var(--rust); }
+
+  .draft-row {
+    background: var(--paper-2);
+    border: 1px dashed rgba(194,65,12,0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .draft-row-head {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .draft-row-head .glyph { font-size: 12px; line-height: 1; }
+  .draft-row-head .conf {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .draft-fields {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .draft-field {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .draft-field .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .draft-field .val { font-size: 14px; color: var(--ink); }
+  .draft-field .val.mono {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .draft-actions {
+    display: flex; gap: 6px;
+  }
+  .draft-actions .btn-confirm {
+    flex: 1;
+    height: 44px;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .draft-actions .btn-confirm svg { width: 14px; height: 14px; }
+  .draft-actions .btn-edit {
+    height: 44px;
+    padding: 0 14px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .capture-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .capture-btn {
+    height: 48px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .capture-btn svg { width: 16px; height: 16px; }
+  .capture-btn.is-primary {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     OPERATOR — room list (compact + stacked variance)
+     ───────────────────────────────────────────────────────────────── */
+
+  .m-rollup {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .m-rollup-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .m-rollup-cell {
+    padding: 10px 12px;
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .m-rollup-cell:last-child { border-right: 0; }
+  .m-rollup-cell .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .m-rollup-cell .val {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .m-rollup-foot {
+    padding: 8px 12px;
+    background: var(--rust-soft);
+    border-top: 1px dashed rgba(194,65,12,0.3);
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .m-rollup-foot svg { width: 11px; height: 11px; }
+  .m-rollup-foot .right {
+    margin-left: auto;
+    font-family: var(--sans);
+    text-transform: none;
+    letter-spacing: -0.005em;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--rust);
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+
+  /* Henry nudge inline (mobile) */
+  .m-henry-nudge {
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.3);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .m-henry-nudge-body {
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .m-henry-glyph {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    display: grid; place-items: center;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .m-henry-text { min-width: 0; }
+  .m-henry-eyebrow {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+  .m-henry-text p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .m-henry-text p b { font-weight: 700; }
+  .m-henry-text .money-over {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--rust);
+    font-variant-numeric: tabular-nums;
+  }
+  .m-henry-actions {
+    padding: 10px 14px;
+    border-top: 1px dashed rgba(194,65,12,0.25);
+    background: var(--paper-2);
+    display: flex; gap: 6px;
+  }
+  .m-henry-actions button {
+    flex: 1;
+    height: 44px;
+    border-radius: 10px;
+    border: 0;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .m-henry-actions .dismiss {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+  }
+  .m-henry-actions .start-co {
+    background: var(--rust);
+    color: #fff;
+  }
+  .m-henry-actions svg { width: 13px; height: 13px; }
+
+  /* Room cards */
+  .m-room {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .m-room-head {
+    padding: 10px 14px;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .m-room-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .m-room-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .m-room-variance {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .m-room-variance svg { width: 11px; height: 11px; }
+  .m-room-variance.is-over { color: var(--rust); background: var(--rust-soft); }
+  .m-room-variance.is-under { color: var(--ok); background: var(--ok-soft); }
+  .m-room-variance.is-flat { color: var(--muted); background: var(--chip-fill); }
+
+  .m-sel {
+    padding: 12px 14px;
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .m-sel:first-of-type { border-top: 0; }
+  .m-sel.is-over { background: linear-gradient(90deg, var(--rust-soft) 0%, transparent 40%); }
+  .m-thumb {
+    width: 52px; height: 52px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--hair);
+    background: var(--chip-fill);
+  }
+  .m-sel-body { min-width: 0; }
+  .m-sel-top {
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .m-sel-headline {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .m-sel-detail {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+  .m-sel-detail .sep { color: var(--faint); }
+  .m-sel-detail .sku-mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.04em;
+  }
+
+  /* Money pair stacked (mobile) */
+  .m-av {
+    display: flex; align-items: center; gap: 0;
+    background: var(--paper-2);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .m-av .col {
+    flex: 1;
+    padding: 7px 10px;
+    display: flex; flex-direction: column; gap: 2px;
+    border-right: 1px solid var(--hair);
+  }
+  .m-av .col:last-child { border-right: 0; }
+  .m-av .col .l {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .m-av .col .v {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .m-av .col.is-over .v { color: var(--rust); }
+  .m-av-delta {
+    margin-top: 6px;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+  .m-av-delta svg { width: 11px; height: 11px; }
+  .m-av-delta.is-over { color: var(--rust); background: var(--rust-soft); }
+  .m-av-delta.is-under { color: var(--ok); background: var(--ok-soft); }
+  .m-av-delta.is-flat { color: var(--muted); background: var(--chip-fill); }
+
+  .m-co-trigger {
+    margin-top: 6px;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--rust);
+    color: #fff;
+    border: 0;
+    padding: 4px 10px;
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .m-co-trigger svg { width: 11px; height: 11px; }
+
+  /* Floating action (operator) */
+  .m-fab {
+    position: absolute;
+    bottom: 100px; right: 16px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    display: grid; place-items: center;
+    box-shadow: 0 6px 20px rgba(10,10,10,0.18);
+    z-index: 3;
+  }
+  .m-fab svg { width: 22px; height: 22px; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     CLIENT PORTAL — mobile-first composer + list
+     ───────────────────────────────────────────────────────────────── */
+
+  .portal-app-bar {
+    padding: 10px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .portal-app-bar .ey {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .portal-app-bar h1 {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+  .portal-page-h {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .portal-page-sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .m-composer {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .m-composer-head {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .m-composer-head .icn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--info-soft);
+    color: var(--info);
+    display: grid; place-items: center;
+  }
+  .m-composer-head .icn svg { width: 16px; height: 16px; }
+  .m-composer-head h3 {
+    margin: 0;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .m-composer-head .sub {
+    font-size: 12px; color: var(--muted);
+  }
+  .m-field {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .m-field label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .m-field input, .m-field select, .m-field textarea {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--paper-2);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    padding: 0 12px;
+    outline: none;
+    width: 100%;
+    height: 44px;
+  }
+  .m-field textarea { height: auto; padding: 10px 12px; min-height: 60px; line-height: 1.45; resize: none; }
+  .m-field input::placeholder, .m-field textarea::placeholder { color: var(--faint); }
+  .m-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .m-photo-zone {
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius-input);
+    background: var(--paper-2);
+    padding: 14px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    text-align: center;
+  }
+  .m-photo-zone .icn {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    margin-bottom: 4px;
+  }
+  .m-photo-zone .icn svg { width: 18px; height: 18px; }
+  .m-photo-zone .t {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .m-photo-zone .s {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .m-photo-zone .actions {
+    margin-top: 8px;
+    display: flex; gap: 6px;
+    width: 100%;
+  }
+  .m-photo-zone .actions button {
+    flex: 1;
+    height: 44px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .m-photo-zone .actions svg { width: 14px; height: 14px; }
+  .m-composer-foot {
+    display: flex; gap: 8px;
+  }
+  .m-composer-foot .submit {
+    flex: 1;
+    height: 48px;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  /* Client portal list (mobile) */
+  .p-room {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .p-room-head {
+    padding: 10px 14px;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .p-room-head h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .p-room-head .ct {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .p-room-head .delta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .p-room-head .delta svg { width: 11px; height: 11px; }
+  .p-room-head .delta.is-over { color: var(--rust); background: var(--rust-soft); }
+  .p-room-head .delta.is-under { color: var(--ok); background: var(--ok-soft); }
+
+  .p-sel {
+    padding: 12px 14px;
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .p-sel:first-of-type { border-top: 0; }
+  .p-thumb {
+    width: 72px; height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--hair);
+    background: var(--chip-fill);
+  }
+  .p-sel-body { min-width: 0; }
+  .p-sel-top {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    margin-bottom: 4px;
+  }
+  .p-sel-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .p-sel-detail {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+  .p-sel-detail .sku-mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.04em;
+  }
+  .p-sel-notes {
+    margin: 2px 0 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     STATES (mobile)
+     ───────────────────────────────────────────────────────────────── */
+
+  .m-state-empty {
+    margin: 32px 14px;
+    padding: 22px 18px;
+    border: 1px dashed var(--rule);
+    border-radius: 14px;
+    background: var(--card);
+    text-align: center;
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: center;
+  }
+  .m-state-empty .icn {
+    width: 44px; height: 44px;
+    border-radius: 11px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    margin: 0 auto 4px;
+  }
+  .m-state-empty .icn svg { width: 18px; height: 18px; }
+  .m-state-empty h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .m-state-empty p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 280px;
+    line-height: 1.5;
+  }
+  .m-state-empty .actions {
+    margin-top: 6px;
+    display: flex; gap: 6px; flex-direction: column;
+    width: 100%;
+  }
+  .m-state-empty .actions button {
+    height: 44px;
+    border-radius: 10px;
+    border: 0;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .m-state-empty .actions .primary { background: var(--ink); color: #fff; }
+  .m-state-empty .actions .secondary {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+  }
+
+  /* Skeleton */
+  .sk { background: linear-gradient(90deg, var(--chip-fill) 0%, #F3EBD2 50%, var(--chip-fill) 100%); border-radius: 6px; }
+  .sk-bar { height: 12px; }
+  .sk-thumb { width: 52px; height: 52px; border-radius: 10px; }
+  .m-sk-row {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-top: 1px solid var(--hair);
+  }
+  .m-sk-row:first-child { border-top: 0; }
+
+  /* Build foot */
+  .build-foot {
+    max-width: 1280px;
+    margin: 36px auto 0;
+    padding: 20px 28px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px dashed var(--rule);
+  }
+  .build-foot b { color: var(--ink); font-weight: 700; }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ────────── ICON LIBRARY ────────── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></symbol>
+    <symbol id="i-arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-image-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="18" y1="3" x2="18" y2="9"/><line x1="15" y1="6" x2="21" y2="6"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+    <symbol id="i-paint-bucket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11h2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V11h2"/><path d="M5 11l7-9 7 9"/><line x1="9" y1="15" x2="9.01" y2="15"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-user-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M6.3 19a8 8 0 0 1 11.4 0"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 19 7"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4" y="5" width="3" height="7" rx="0.5"/><rect x="8" y="2" width="3" height="10" rx="0.5"/><rect x="12" y="0" width="3" height="12" rx="0.5" opacity="0.4"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 4c4-3 10-3 14 0"/><path d="M3 7c3-2 7-2 10 0"/><path d="M5.5 10c1.5-1 3.5-1 5 0"/></symbol>
+    <symbol id="i-battery" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="2" width="14" height="8" rx="1.5"/><rect x="2.5" y="3.5" width="11" height="5" rx="0.5" fill="currentColor"/><line x1="16" y1="4.5" x2="16" y2="7.5" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  </defs>
+</svg>
+
+<div class="page-head">
+  <h1>Selections · mobile</h1>
+  <p>Capture-first for the operator (site-photo extract → Henry drafts a row), mobile-first for the client (lighter "what I chose" composer). Variance carries a <b>label</b>, not just a colour — over-allowance is the CO trigger.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ──────────────────────────────────────────────────────
+       FRAME 01 — Operator: photo-extract → Henry draft
+       ────────────────────────────────────────────────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 01</div>
+      <div class="frame-title">Operator · photo-extract → Henry draft</div>
+      <div class="frame-sub">Snap a paint can on site — Henry drafts a Selection. Operator confirms; <b>never auto-commits</b>.</div>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-signal"/></svg> <svg><use href="#i-wifi"/></svg> <svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Heath St. · Master bath</span>
+            <span class="app-bar-h">Add selection</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn" aria-label="Type instead"><svg><use href="#i-pen"/></svg></button>
+          </div>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab is-on">By photo</button>
+          <button class="mtab">Type it in</button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div class="extract-card">
+              <div class="extract-head">
+                <span style="color: var(--rust); font-size: 12px;">&#10022;</span>
+                Henry · paint-can extract
+                <span class="right">96% confidence</span>
+              </div>
+              <div class="extract-preview">
+                <div class="ph-paint-navy img"></div>
+                <span class="scan-label"><svg><use href="#i-zap"/></svg> Reading label</span>
+                <div class="scan"></div>
+              </div>
+
+              <div class="draft-row">
+                <div class="draft-row-head">
+                  <span class="glyph">&#10022;</span>
+                  Drafted row · confirm to save
+                  <span class="conf">Editable</span>
+                </div>
+                <div class="draft-fields">
+                  <div class="draft-field">
+                    <span class="lbl">Brand</span>
+                    <span class="val">Benjamin Moore</span>
+                  </div>
+                  <div class="draft-field">
+                    <span class="lbl">Name</span>
+                    <span class="val">Hale Navy</span>
+                  </div>
+                  <div class="draft-field">
+                    <span class="lbl">Code</span>
+                    <span class="val mono">HC-154</span>
+                  </div>
+                  <div class="draft-field">
+                    <span class="lbl">Finish</span>
+                    <span class="val">Eggshell</span>
+                  </div>
+                  <div class="draft-field">
+                    <span class="lbl">Category</span>
+                    <span class="val">Paint</span>
+                  </div>
+                  <div class="draft-field">
+                    <span class="lbl">Room</span>
+                    <span class="val" style="color: var(--muted)">Master bathroom <span style="font-family:var(--mono); font-size: 11px; color: var(--faint)">· inferred</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="draft-actions">
+                <button class="btn-edit">Edit</button>
+                <button class="btn-confirm"><svg><use href="#i-check"/></svg> Confirm &amp; save</button>
+              </div>
+            </div>
+
+            <div class="capture-controls">
+              <button class="capture-btn"><svg><use href="#i-rotate"/></svg> Retake</button>
+              <button class="capture-btn is-primary"><svg><use href="#i-image-plus"/></svg> Add another</button>
+            </div>
+
+            <div style="padding: 4px 2px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; text-align: center;">
+              Allowance &amp; supplier you'll add on the next step
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="bottom-bar">
+          <button class="bt-item is-on"><svg><use href="#i-folder"/></svg>Project</button>
+          <button class="bt-item"><svg><use href="#i-inbox"/></svg>Inbox</button>
+          <button class="bt-item"><svg><use href="#i-camera"/></svg>Capture</button>
+          <button class="bt-item"><svg><use href="#i-calendar"/></svg>Today</button>
+          <button class="bt-item"><svg><use href="#i-user-circle"/></svg>Me</button>
+        </nav>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────────────────────────────────
+       FRAME 02 — Operator: room list + Henry CO nudge
+       ────────────────────────────────────────────────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 02</div>
+      <div class="frame-title">Operator · room list · Henry over-allowance nudge</div>
+      <div class="frame-sub">Allowance vs actual stacked. <b>Over-allowance</b> = the rust-trimmed row, labelled, plus a one-tap path to the Change Order.</div>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-signal"/></svg> <svg><use href="#i-wifi"/></svg> <svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Heath St. reno · Davies</span>
+            <span class="app-bar-h">Selections</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn" aria-label="Search"><svg><use href="#i-search"/></svg></button>
+          </div>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab">Budget</button>
+          <button class="mtab">Spend</button>
+          <button class="mtab is-on">Selections <span class="ct is-rust">2</span></button>
+          <button class="mtab">Photos</button>
+          <button class="mtab">Notes</button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div class="m-rollup" aria-label="Project allowance roll-up">
+              <div class="m-rollup-row">
+                <div class="m-rollup-cell">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$48,200</span>
+                </div>
+                <div class="m-rollup-cell">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$46,180</span>
+                </div>
+              </div>
+              <div class="m-rollup-foot">
+                <svg><use href="#i-arrow-up"/></svg>
+                3 of 18 over · 2 rooms
+                <span class="right">Review <svg style="width:11px;height:11px"><use href="#i-arrow-right"/></svg></span>
+              </div>
+            </div>
+
+            <div class="m-henry-nudge">
+              <div class="m-henry-nudge-body">
+                <div class="m-henry-glyph">&#10022;</div>
+                <div class="m-henry-text">
+                  <div class="m-henry-eyebrow">
+                    Henry · over-allowance
+                  </div>
+                  <p><b>Master bath tile</b> is <span class="money-over">+$1,200</span> over. Start a Change Order?</p>
+                </div>
+              </div>
+              <div class="m-henry-actions">
+                <button class="dismiss">Dismiss</button>
+                <button class="start-co"><svg><use href="#i-arrow-up-right"/></svg> Draft CO</button>
+              </div>
+            </div>
+
+            <div class="m-room">
+              <header class="m-room-head">
+                <span class="m-room-name">Master bath</span>
+                <span class="m-room-meta">6</span>
+                <span class="m-room-variance is-over"><svg><use href="#i-arrow-up"/></svg> +$1,100</span>
+              </header>
+
+              <div class="m-sel is-over">
+                <div class="m-thumb"><div class="ph-tile-zellige"></div></div>
+                <div class="m-sel-body">
+                  <div class="m-sel-top">
+                    <span class="cat-pill">Tile</span>
+                    <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> Promoted</span>
+                  </div>
+                  <div class="m-sel-headline">Clé Zellige · Sea Glass</div>
+                  <div class="m-sel-detail">
+                    Matte · 2"×2" · Clé Tile <span class="sep">·</span> <span class="sku-mono">CLE-ZG-12</span>
+                  </div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$3,800</span></div>
+                    <div class="col is-over"><span class="l">Actual</span><span class="v">$5,000</span></div>
+                  </div>
+                  <span class="m-av-delta is-over"><svg><use href="#i-arrow-up"/></svg> +$1,200 over allowance</span>
+                  <div><button class="m-co-trigger"><svg><use href="#i-arrow-up-right"/></svg> Start CO</button></div>
+                </div>
+              </div>
+
+              <div class="m-sel">
+                <div class="m-thumb"><div class="ph-paint-navy"></div></div>
+                <div class="m-sel-body">
+                  <div class="m-sel-top">
+                    <span class="cat-pill">Paint</span>
+                    <span class="by-tag by-client"><svg><use href="#i-user"/></svg> By client</span>
+                  </div>
+                  <div class="m-sel-headline">BM Hale Navy</div>
+                  <div class="m-sel-detail">
+                    <span class="sku-mono">HC-154</span> <span class="sep">·</span> Eggshell · vanity only
+                  </div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$220</span></div>
+                    <div class="col"><span class="l">Actual</span><span class="v">$220</span></div>
+                  </div>
+                  <span class="m-av-delta is-flat"><svg><use href="#i-check"/></svg> On allowance</span>
+                </div>
+              </div>
+
+              <div class="m-sel">
+                <div class="m-thumb"><div class="ph-faucet-brass"></div></div>
+                <div class="m-sel-body">
+                  <div class="m-sel-top">
+                    <span class="cat-pill">Fixture</span>
+                    <span class="by-tag by-operator"><svg><use href="#i-shield"/></svg> Operator</span>
+                  </div>
+                  <div class="m-sel-headline">Kohler Purist · brushed brass</div>
+                  <div class="m-sel-detail">Basin tap <span class="sep">·</span> Andrew Sheret</div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$680</span></div>
+                    <div class="col"><span class="l">Actual</span><span class="v">$612</span></div>
+                  </div>
+                  <span class="m-av-delta is-under"><svg><use href="#i-arrow-down"/></svg> $67.50 under</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="m-room">
+              <header class="m-room-head">
+                <span class="m-room-name">Kitchen</span>
+                <span class="m-room-meta">8</span>
+                <span class="m-room-variance is-over"><svg><use href="#i-arrow-up"/></svg> +$420</span>
+              </header>
+
+              <div class="m-sel is-over">
+                <div class="m-thumb"><div class="ph-quartz"></div></div>
+                <div class="m-sel-body">
+                  <div class="m-sel-top">
+                    <span class="cat-pill">Counter</span>
+                    <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> Promoted</span>
+                  </div>
+                  <div class="m-sel-headline">Calacatta Nuvo</div>
+                  <div class="m-sel-detail">3cm polished · Stone Pacific</div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$6,200</span></div>
+                    <div class="col is-over"><span class="l">Actual</span><span class="v">$6,620</span></div>
+                  </div>
+                  <span class="m-av-delta is-over"><svg><use href="#i-arrow-up"/></svg> +$420 over allowance</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <button class="m-fab" aria-label="Add selection"><svg><use href="#i-plus"/></svg></button>
+
+        <nav class="bottom-bar">
+          <button class="bt-item is-on"><svg><use href="#i-folder"/></svg>Project</button>
+          <button class="bt-item"><svg><use href="#i-inbox"/></svg>Inbox</button>
+          <button class="bt-item"><svg><use href="#i-camera"/></svg>Capture</button>
+          <button class="bt-item"><svg><use href="#i-calendar"/></svg>Today</button>
+          <button class="bt-item"><svg><use href="#i-user-circle"/></svg>Me</button>
+        </nav>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────────────────────────────────
+       FRAME 03 — Client portal · composer (mobile-first)
+       ────────────────────────────────────────────────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 03</div>
+      <div class="frame-title">Client portal · "what I chose" composer</div>
+      <div class="frame-sub">Lighter than the operator form — room, category, name/code, notes, one photo. ≥44px targets. <b>No allowance / no supplier / no margin.</b></div>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar is-portal">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-signal"/></svg> <svg><use href="#i-wifi"/></svg> <svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="portal-app-bar">
+          <span class="ey"><svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:4px;color:var(--muted)"><use href="#i-lock"/></svg> Project portal · Maple Ridge</span>
+          <h1>Heath St. reno</h1>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab">Updates</button>
+          <button class="mtab">Photos</button>
+          <button class="mtab">Schedule</button>
+          <button class="mtab is-on">Selections</button>
+          <button class="mtab">Ideas</button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div>
+              <h2 class="portal-page-h">Post what you chose</h2>
+              <p class="portal-page-sub">Sarah will see it right away. Room, what it is, a photo — that's it.</p>
+            </div>
+
+            <form class="m-composer">
+              <div class="m-composer-head">
+                <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+                <div>
+                  <h3>New selection</h3>
+                  <div class="sub">Required: room · category · name</div>
+                </div>
+              </div>
+              <div class="m-field">
+                <label>Room</label>
+                <input value="Master bathroom" />
+              </div>
+              <div class="m-field-row">
+                <div class="m-field">
+                  <label>Category</label>
+                  <select>
+                    <option>Paint</option>
+                    <option>Tile</option>
+                    <option>Fixture</option>
+                  </select>
+                </div>
+                <div class="m-field">
+                  <label>Code</label>
+                  <input value="HC-154" style="font-family: var(--mono);" />
+                </div>
+              </div>
+              <div class="m-field">
+                <label>Name</label>
+                <input value="Hale Navy" />
+              </div>
+              <div class="m-field">
+                <label>Notes (optional)</label>
+                <textarea rows="2">Saw it at Mira's place. Just the vanity, trim stays white.</textarea>
+              </div>
+              <div class="m-field">
+                <label>Photo (optional)</label>
+                <div class="m-photo-zone">
+                  <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+                  <span class="t">Add a photo</span>
+                  <span class="s">JPG / PNG / HEIC · up to 10 MB</span>
+                  <div class="actions">
+                    <button type="button"><svg><use href="#i-camera"/></svg> Camera</button>
+                    <button type="button"><svg><use href="#i-image"/></svg> Library</button>
+                  </div>
+                </div>
+              </div>
+              <div class="m-composer-foot">
+                <button type="button" class="submit">Add selection</button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────────────────────────────────
+       FRAME 04 — Client portal · list view (mobile)
+       ────────────────────────────────────────────────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 04</div>
+      <div class="frame-title">Client portal · list view</div>
+      <div class="frame-sub">Allowance vs <b>your</b> actual — never margin / supplier cost. "Added by you" is editable; the rest is read-only.</div>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar is-portal">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-signal"/></svg> <svg><use href="#i-wifi"/></svg> <svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="portal-app-bar">
+          <span class="ey"><svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:4px;color:var(--muted)"><use href="#i-lock"/></svg> Project portal · Maple Ridge</span>
+          <h1>Heath St. reno</h1>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab">Updates</button>
+          <button class="mtab">Photos</button>
+          <button class="mtab">Schedule</button>
+          <button class="mtab is-on">Selections</button>
+          <button class="mtab">Ideas</button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div>
+              <h2 class="portal-page-h">Selections</h2>
+              <p class="portal-page-sub">Everything going in your home. You'll get this in your Home Record at handover.</p>
+            </div>
+
+            <div class="p-room">
+              <header class="p-room-head">
+                <h3>Master bath</h3>
+                <span class="ct">6</span>
+                <span class="delta is-over"><svg><use href="#i-arrow-up"/></svg> +$1,100</span>
+              </header>
+
+              <div class="p-sel">
+                <div class="p-thumb"><div class="ph-tile-zellige"></div></div>
+                <div class="p-sel-body">
+                  <div class="p-sel-top">
+                    <span class="cat-pill">Tile</span>
+                    <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> From your idea</span>
+                  </div>
+                  <div class="p-sel-name">Clé Zellige · Sea Glass</div>
+                  <div class="p-sel-detail">2"×2" matte · shower walls only · <a style="color:var(--info); font-weight:600;"><svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px"><use href="#i-link"/></svg> warranty</a></div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$3,800</span></div>
+                    <div class="col is-over"><span class="l">Your actual</span><span class="v">$5,000</span></div>
+                  </div>
+                  <span class="m-av-delta is-over"><svg><use href="#i-arrow-up"/></svg> +$1,200 vs allowance</span>
+                </div>
+              </div>
+
+              <div class="p-sel">
+                <div class="p-thumb"><div class="ph-paint-navy"></div></div>
+                <div class="p-sel-body">
+                  <div class="p-sel-top">
+                    <span class="cat-pill">Paint</span>
+                    <span class="by-tag by-client"><svg><use href="#i-user"/></svg> Added by you</span>
+                  </div>
+                  <div class="p-sel-name">BM Hale Navy</div>
+                  <div class="p-sel-detail">
+                    <span class="sku-mono">HC-154</span> · Eggshell · vanity only
+                  </div>
+                  <div class="p-sel-notes">Saw it at Mira's place. Trim stays Simply White.</div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$220</span></div>
+                    <div class="col"><span class="l">Your actual</span><span class="v">$220</span></div>
+                  </div>
+                  <span class="m-av-delta is-flat"><svg><use href="#i-check"/></svg> On allowance</span>
+                  <div style="display:flex; gap: 6px; margin-top: 8px;">
+                    <button style="flex:1; height: 36px; background: var(--card); color: var(--ink); border: 1px solid var(--hair); border-radius: 8px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;"><svg style="width:12px;height:12px"><use href="#i-pen"/></svg> Edit</button>
+                    <button style="flex:1; height: 36px; background: var(--card); color: var(--ink); border: 1px solid var(--hair); border-radius: 8px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;"><svg style="width:12px;height:12px"><use href="#i-trash"/></svg> Remove</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-sel">
+                <div class="p-thumb"><div class="ph-faucet-brass"></div></div>
+                <div class="p-sel-body">
+                  <div class="p-sel-top">
+                    <span class="cat-pill">Fixture</span>
+                  </div>
+                  <div class="p-sel-name">Kohler Purist · brass</div>
+                  <div class="p-sel-detail">Basin tap · widespread · <a style="color:var(--info); font-weight:600;"><svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px"><use href="#i-link"/></svg> warranty</a></div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$680</span></div>
+                    <div class="col"><span class="l">Your actual</span><span class="v">$612</span></div>
+                  </div>
+                  <span class="m-av-delta is-under"><svg><use href="#i-arrow-down"/></svg> $67.50 under</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-room">
+              <header class="p-room-head">
+                <h3>Kitchen</h3>
+                <span class="ct">8</span>
+                <span class="delta is-over"><svg><use href="#i-arrow-up"/></svg> +$420</span>
+              </header>
+
+              <div class="p-sel">
+                <div class="p-thumb"><div class="ph-quartz"></div></div>
+                <div class="p-sel-body">
+                  <div class="p-sel-top">
+                    <span class="cat-pill">Counter</span>
+                    <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> From your idea</span>
+                  </div>
+                  <div class="p-sel-name">Calacatta Nuvo</div>
+                  <div class="p-sel-detail">3cm polished · island + perimeter</div>
+                  <div class="m-av">
+                    <div class="col"><span class="l">Allowance</span><span class="v">$6,200</span></div>
+                    <div class="col is-over"><span class="l">Your actual</span><span class="v">$6,620</span></div>
+                  </div>
+                  <span class="m-av-delta is-over"><svg><use href="#i-arrow-up"/></svg> +$420 vs allowance</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────────────────────────────────
+       FRAME 05 — States (empty operator + empty client + loading)
+       ────────────────────────────────────────────────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 05</div>
+      <div class="frame-title">States · empty (operator + client) · loading</div>
+      <div class="frame-sub">Distinct copy per role. Capture-first nudge for the operator; "post what you chose" for the client.</div>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-signal"/></svg> <svg><use href="#i-wifi"/></svg> <svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back" aria-label="Back"><svg><use href="#i-chevron-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">States preview</span>
+            <span class="app-bar-h">Selections · empty + loading</span>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner" style="gap: 14px;">
+
+            <!-- empty operator -->
+            <div class="m-eyebrow">
+              <span class="label">Operator · empty</span>
+              <span class="meta">Maple Ridge</span>
+            </div>
+            <div class="m-state-empty">
+              <span class="icn"><svg><use href="#i-paint-bucket"/></svg></span>
+              <h4>No selections yet</h4>
+              <p>Catalog the paint, tile, and fixtures going in each room. Or snap a paint can — Henry drafts the row.</p>
+              <div class="actions">
+                <button class="primary"><svg style="width:13px;height:13px"><use href="#i-camera"/></svg> Snap a paint can</button>
+                <button class="secondary"><svg style="width:13px;height:13px"><use href="#i-plus"/></svg> Add manually</button>
+              </div>
+            </div>
+
+            <!-- empty client portal -->
+            <div class="m-eyebrow" style="margin-top: 8px;">
+              <span class="label">Client portal · empty</span>
+              <span class="meta">Priya's view</span>
+            </div>
+            <div class="m-state-empty">
+              <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+              <h4>Your contractor adds finishes here</h4>
+              <p>You'll see paint codes, tile, and fixtures as Maple Ridge picks them. Post what <b>you've</b> chosen too — they'll see it right away.</p>
+              <div class="actions">
+                <button class="primary"><svg style="width:13px;height:13px"><use href="#i-plus"/></svg> Post what I chose</button>
+              </div>
+            </div>
+
+            <!-- loading -->
+            <div class="m-eyebrow" style="margin-top: 8px;">
+              <span class="label">Loading</span>
+            </div>
+            <div class="p-room">
+              <header class="p-room-head">
+                <div class="sk sk-bar" style="width: 38%;"></div>
+                <span style="margin-left: auto;"><div class="sk sk-bar" style="width: 60px; height: 16px;"></div></span>
+              </header>
+              <div class="m-sk-row">
+                <div class="sk sk-thumb"></div>
+                <div>
+                  <div class="sk sk-bar" style="width: 60%;"></div>
+                  <div class="sk sk-bar" style="width: 80%; margin-top: 6px; height: 9px;"></div>
+                  <div class="sk sk-bar" style="width: 100%; margin-top: 8px; height: 30px;"></div>
+                </div>
+              </div>
+              <div class="m-sk-row">
+                <div class="sk sk-thumb"></div>
+                <div>
+                  <div class="sk sk-bar" style="width: 70%;"></div>
+                  <div class="sk sk-bar" style="width: 60%; margin-top: 6px; height: 9px;"></div>
+                  <div class="sk sk-bar" style="width: 100%; margin-top: 8px; height: 30px;"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="build-foot">
+  <b>od-selections · mobile</b> · 5 frames · operator photo-extract → Henry draft (capture-first) · operator room list w/ Henry CO nudge · client portal composer (mobile-first, lighter) · client portal list view · states (empty operator + empty client + loading).
+  Paper palette · status-tokens soft pairs · rust = single accent (primary action + ✦ Henry only). Money tabular CAD; over-allowance carries a <b>label</b>, not just a colour, and is the CO trigger. "Client" everywhere — never "homeowner." Client view never shows margin / supplier cost / other projects. ≥44px targets on the client composer.
+</footer>
+
+</body>
+</html>

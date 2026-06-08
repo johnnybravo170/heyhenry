@@ -39,7 +39,7 @@ export async function sendPhaseNotification(input: SendPhaseNotificationInput): 
     .from('projects')
     .select(
       `id, name, portal_slug, portal_enabled,
-       customers:customer_id (name, email, phone)`,
+       contacts:contact_id (name, email, phone)`,
     )
     .eq('id', input.projectId)
     .single();
@@ -52,7 +52,7 @@ export async function sendPhaseNotification(input: SendPhaseNotificationInput): 
   // they can't see anyway.
   if (!portalSlug || !portalEnabled) return;
 
-  const customer = (p.customers as Record<string, unknown> | null) ?? null;
+  const customer = (p.contacts as Record<string, unknown> | null) ?? null;
   if (!customer) return;
 
   const customerName = (customer.name as string) ?? '';

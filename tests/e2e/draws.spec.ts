@@ -1,10 +1,11 @@
 /**
  * Draws end-to-end against the seeded demo fixture.
  *
- * Covers what shipped this week: doc_type='draw' invoices created
- * from the project Customer Billing tab are tax-inclusive, carry an
- * operator-set % complete, and the customer-facing view shows
- * "Progress payment ... — N% complete" inline with the embedded GST.
+ * Covers doc_type='draw' invoices created from the project Customer
+ * Billing tab: GST is added on top (amount_cents=0, line items carry the
+ * pre-tax subtotal, tax on top), they carry an operator-set % complete,
+ * and the customer-facing view shows "Progress payment ... — N% complete"
+ * inline with the GST line.
  */
 
 import { expect, test } from '@playwright/test';
@@ -41,15 +42,15 @@ test.describe
 
       // Form: label defaults to "Draw #1", percent defaults to 0 (no
       // prior draws). Operator types a single line item totaling
-      // $5,000 (tax-inclusive) and bumps the % to 25.
+      // $5,000 (pre-tax — GST is added on top) and bumps the % to 25.
       await page.getByLabel(/% complete/i).fill('25');
       const lineRow = page.getByPlaceholder('Description').first();
       await lineRow.fill('Phase 1 deposit');
       await page.getByPlaceholder('Amount ($)').first().fill('5000');
 
-      // The form's live total readout should call GST inclusive — a
-      // regression check on the rename + tax-inclusive math.
-      await expect(page.getByText(/incl\.\s+\$238\.10\s+gst/i)).toBeVisible();
+      // The form's live total readout adds GST ON TOP now:
+      // "Subtotal: $5,000.00 + $250.00 GST = $5,250.00" (5000 * 0.05 = 250).
+      await expect(page.getByText(/\+\s*\$250\.00\s+GST/i)).toBeVisible();
 
       // Submit. Form action redirects to /invoices/<id>; landing there
       // confirms the action ran and the row was inserted. The redirect
@@ -67,10 +68,12 @@ test.describe
         .single();
       expect(invoice).toBeTruthy();
       expect(invoice?.doc_type).toBe('draw');
-      expect(invoice?.tax_inclusive).toBe(true);
-      expect(invoice?.amount_cents).toBe(500000);
-      // 5000 * 0.05 / 1.05 ≈ 238.10 → 23810 cents.
-      expect(invoice?.tax_cents).toBe(23810);
+      // GST is added on top now: tax_inclusive=false and amount_cents=0 (the
+      // $5,000 lives in line_items). Tax is 5000 * 0.05 = 250.00 on top, so
+      // tax_cents=25000 also confirms the entered subtotal flowed through.
+      expect(invoice?.tax_inclusive).toBe(false);
+      expect(invoice?.amount_cents).toBe(0);
+      expect(invoice?.tax_cents).toBe(25000);
       expect(invoice?.percent_complete).toBe(25);
       expect(invoice?.customer_note).toMatch(/draw\s*#1/i);
     });
@@ -97,8 +100,8 @@ test.describe
       await expect(page.getByText(/progress payment/i)).toBeVisible();
       await expect(page.getByText(/25% complete/i)).toBeVisible();
 
-      // Total + embedded GST line. "GST (5%, included)" is the
-      // canonical copy for tax-inclusive invoices.
-      await expect(page.getByText(/included/i)).toBeVisible();
+      // GST is added on top now, so the tax row reads "on top", not
+      // "included" (customer total is $5,250 = $5,000 + $250 GST).
+      await expect(page.getByText(/on top/i)).toBeVisible();
     });
   });

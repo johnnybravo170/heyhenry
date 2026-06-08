@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 390px; height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  /* iOS status bar with Dynamic Island */
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .signal { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+  .signal i { display: block; width: 2.5px; background: var(--ink); border-radius: 1px; }
+  .signal i:nth-child(1) { height: 4px; }
+  .signal i:nth-child(2) { height: 6px; }
+  .signal i:nth-child(3) { height: 8px; }
+  .signal i:nth-child(4) { height: 10px; }
+  .battery { width: 22px; height: 11px; border: 1.2px solid var(--ink); border-radius: 3px; position: relative; }
+  .battery::after { content: ''; position: absolute; right: -3px; top: 2.5px; width: 2px; height: 4px; background: var(--ink); border-radius: 1px; }
+  .battery::before { content: ''; position: absolute; left: 1px; top: 1px; width: 14px; height: 5px; background: var(--ink); border-radius: 1px; }
+
+  /* App header (lean — identity + state + wayfinding) */
+  .app-header {
+    padding: 8px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    cursor: pointer;
+    margin-left: -6px;
+  }
+  .header-back svg { width: 14px; height: 14px; }
+  .header-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .icon-btn-sm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn-sm:hover { background: var(--chip-fill); color: var(--ink); }
+  .icon-btn-sm svg { width: 16px; height: 16px; }
+  .add-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .add-pill .glyph { color: var(--rust); font-size: 13px; }
+
+  .header-title {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    flex: 1; min-width: 0;
+  }
+  .header-title h1 .chev {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    margin-left: 2px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    vertical-align: -4px;
+  }
+  .header-title h1 .chev svg { width: 11px; height: 11px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-pill .check { display: grid; place-items: center; width: 9px; height: 9px; }
+  .status-pill .check svg { width: 9px; height: 9px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+  .customer-line .at { color: var(--faint); }
+
+  /* Tab dropdown */
+  .tab-select-wrap {
+    margin-top: 10px;
+    position: relative;
+  }
+  .tab-select {
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tab-select.is-open { border-color: var(--ink); }
+  .tab-select .arrow {
+    margin-left: auto;
+    color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .tab-select .arrow svg { width: 12px; height: 12px; }
+  .tab-select .total-sep {
+    margin-left: 8px;
+    color: var(--faint);
+  }
+  .tab-select .total-badge {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--rust); color: #fff;
+    padding: 2px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+
+  /* Open dropdown panel — per-tab badges */
+  .tab-menu {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    margin-top: 6px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(10,10,10,0.08);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .tab-menu-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    border-top: 1px solid var(--hair);
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .tab-menu-item:first-child { border-top: 0; }
+  .tab-menu-item.is-on { background: var(--nav-active); }
+  .tab-menu-item.is-secondary {
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .tab-menu-item .menu-check {
+    width: 12px; height: 12px;
+    color: var(--ink);
+    display: grid; place-items: center;
+    margin-left: auto;
+  }
+  .tab-menu-item .menu-check svg { width: 12px; height: 12px; }
+  .tab-menu-item .menu-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .tab-menu-item .menu-badge.rust { background: var(--rust); color: #fff; }
+  .tab-menu-item .menu-badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .tab-menu-item .menu-badge.info { background: var(--info-soft); color: var(--info); }
+  .tab-menu-item.is-on .menu-check { color: var(--ink); }
+  .tab-menu-divider {
+    height: 1px;
+    background: var(--rule);
+    margin: 0;
+  }
+
+  /* Scrollable body */
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 92px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* Transient alert (above content because brief calls for it below the header when live) */
+  .alert-row {
+    display: flex; align-items: flex-start; gap: 9px;
+    background: var(--warn-soft);
+    border: 1px solid rgba(180,83,9,0.22);
+    border-left: 3px solid var(--warn);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .alert-row .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--warn);
+    margin-top: 5px; flex-shrink: 0;
+  }
+  .alert-row strong { color: var(--ink); font-weight: 600; }
+  .alert-row .cta {
+    display: inline-block;
+    margin-top: 2px;
+    color: var(--warn);
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: none;
+  }
+
+  /* Section eyebrow */
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    margin: 4px 4px 8px;
+  }
+  .section-eyebrow .label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-eyebrow .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Needs-you stacked cards */
+  .needs-list {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .needs-card {
+    padding: 12px 14px;
+    border-top: 1px solid var(--hair);
+    background: var(--card);
+  }
+  .needs-card:first-child { border-top: 0; }
+  /* Color = left rule + Henry chip (marker-scale), NOT card wash */
+  .needs-card { border-left: 3px solid transparent; }
+  .needs-card.is-danger { border-left-color: var(--danger); }
+  .needs-card.is-bill { border-left-color: var(--rust); }
+  .needs-card.is-warn { border-left-color: var(--warn); }
+  .needs-card.is-info { border-left-color: var(--info); }
+  .needs-card .head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .needs-card .mark {
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .needs-card .mark svg { width: 10px; height: 10px; }
+  .needs-card.is-danger .mark { color: var(--danger); border-color: rgba(185,28,28,0.25); }
+  .needs-card.is-bill .mark { color: var(--rust); border-color: rgba(194,65,12,0.3); }
+  .needs-card.is-warn .mark { color: var(--warn); border-color: rgba(180,83,9,0.25); }
+  .needs-card.is-info .mark { color: var(--info); border-color: rgba(30,64,175,0.22); }
+
+  /* Default Henry chip = colored mono text (no pill bg). Color carried by icon + border + chip text + CTA. */
+  .needs-card .henry {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+    line-height: 1.4;
+  }
+  .needs-card.is-danger .henry { color: var(--danger); }
+  .needs-card.is-bill .henry { color: var(--rust); }
+  .needs-card.is-warn .henry { color: var(--warn); }
+  .needs-card.is-info .henry { color: var(--info); }
+  /* TOP-of-rank card only: subtle soft-tint wash. No pill — colored eyebrow + icon + rule do the work. */
+  .needs-card.is-top.is-danger { background: #FDF4F4; }
+  .needs-card.is-top.is-bill { background: #FFF7F1; }
+
+  /* "+N more" quiet footer */
+  .needs-more {
+    padding: 11px 14px;
+    border-top: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 8px;
+    background: #FBF6EC;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .needs-more strong { color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .needs-more a {
+    margin-left: auto;
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  .needs-card .row-text {
+    display: block;            /* override global .body { display:flex } collision */
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.45;
+    padding: 0;
+    overflow: visible;
+    gap: 0;
+  }
+  .needs-card .row-text strong { color: var(--ink); font-weight: 600; }
+  .needs-card .row-text .amt {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink); font-weight: 600;
+    white-space: nowrap;
+  }
+  .needs-card .row-text .amt .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+  .needs-card.is-bill .row-text .amt { color: var(--rust); }
+  .needs-card.is-bill .row-text .amt .cents { color: rgba(194,65,12,0.6); }
+  .needs-card .row-text .muted { color: var(--muted); }
+  .needs-card .row-text .sep { color: var(--faint); margin: 0 4px; }
+
+  .needs-card .cta {
+    margin-top: 10px;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-height: 36px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .needs-card .cta svg { width: 12px; height: 12px; color: var(--muted); }
+  .needs-card.is-bill .cta {
+    background: var(--rust); color: #fff; border-color: var(--rust);
+  }
+  .needs-card.is-bill .cta svg { color: #fff; }
+  .needs-card.is-danger .cta {
+    background: var(--card); color: var(--danger);
+    border-color: rgba(185,28,28,0.3);
+  }
+  .needs-card.is-danger .cta svg { color: var(--danger); }
+  .needs-card.is-warn .cta {
+    background: var(--card); color: var(--warn);
+    border-color: rgba(180,83,9,0.3);
+  }
+  .needs-card.is-warn .cta svg { color: var(--warn); }
+  .needs-card.is-info .cta {
+    background: var(--card); color: var(--info);
+    border-color: rgba(30,64,175,0.25);
+  }
+  .needs-card.is-info .cta svg { color: var(--info); }
+
+  /* Variance card (mobile = 2x2) */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .panel-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .panel-link {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ink-2);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: transparent; border: 0;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .panel-link:hover { background: var(--chip-fill); color: var(--ink); }
+  .panel-link svg { width: 10px; height: 10px; }
+
+  .var-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+    padding: 14px;
+  }
+  .var-cell { display: flex; flex-direction: column; gap: 3px; }
+  .var-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .var-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .var-value .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .var-sub {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .progress-stack {
+    padding: 0 14px 14px;
+  }
+  .progress-meta {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .progress-meta strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .progress-meta .right { margin-left: auto; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .seg-bar {
+    display: flex;
+    height: 7px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--chip-fill);
+  }
+  .seg-spent { background: var(--ink); }
+  .seg-committed { background: #7A6A4D; }
+
+  .margin-strip {
+    margin: 12px 14px 14px;
+    padding: 10px 12px;
+    background: var(--danger-soft);
+    border: 1px solid rgba(185,28,28,0.18);
+    border-left: 3px solid var(--danger);
+    border-radius: 9px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .margin-strip .henry-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--danger);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 2px;
+  }
+  .margin-strip strong { color: var(--ink); font-weight: 700; }
+  .margin-strip a {
+    display: inline-block;
+    margin-top: 4px;
+    color: var(--danger);
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: none;
+  }
+
+  /* Activity */
+  .activity-body { padding: 4px 14px 10px; }
+  .activity-row {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px dashed var(--rule);
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .activity-row:first-child { border-top: 0; }
+  .activity-icon {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    margin-top: 1px;
+  }
+  .activity-icon svg { width: 11px; height: 11px; }
+  .activity-icon.is-ok { background: var(--ok-soft); color: var(--ok); }
+  .activity-icon.is-rust { background: var(--rust-soft); color: var(--rust); }
+  .activity-icon.is-info { background: var(--info-soft); color: var(--info); }
+  .activity-icon.is-warn { background: var(--warn-soft); color: var(--warn); }
+  .activity-text strong { color: var(--ink); font-weight: 600; }
+  .activity-text .sep { color: var(--faint); margin: 0 3px; }
+  .activity-amt {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .activity-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 3px;
+    display: block;
+  }
+  .activity-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 76px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    padding: 0 4px 18px;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--muted);
+    font-size: 10px; font-weight: 600;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .tab-item.active { color: var(--ink); }
+  .tab-item svg { width: 18px; height: 18px; }
+  .tab-item .label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .tab-item.with-count { position: relative; }
+  .tab-item .count {
+    position: absolute; top: 0; right: calc(50% - 18px);
+    background: var(--rust); color: #fff;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/><path d="M19 14l.7 1.9 1.9.7-1.9.7L19 19l-.7-1.7-1.9-.7 1.9-.7z"/></symbol>
+    <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-receipt-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 2V2l-1 2-3-2-3 2-3-2-3 2-3-2z"/><line x1="8" y1="9" x2="14" y2="9"/><line x1="8" y1="13" x2="12" y2="13"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- iOS status bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="island"></span>
+      <span class="right">
+        <span class="signal"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="battery"></span>
+      </span>
+    </div>
+
+    <!-- App header — lean -->
+    <div class="app-header">
+      <div class="header-top">
+        <button class="header-back" aria-label="Back to projects"><svg><use href="#i-chevron-left"/></svg></button>
+        <span class="header-crumb">Projects</span>
+        <span class="header-actions">
+          <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+          <button class="icon-btn-sm" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </span>
+      </div>
+      <div class="header-title">
+        <h1>Glenwood Heights<br/>Master Suite Addition
+          <span class="chev" aria-label="Project details"><svg><use href="#i-chevron-down"/></svg></span>
+        </h1>
+        <span class="status-pill status-active">
+          <span class="check"><svg><use href="#i-check"/></svg></span>Active
+        </span>
+      </div>
+      <div class="customer-line">
+        <a href="#">Daniel &amp; Priya Mohan</a>
+      </div>
+
+      <div class="tab-select-wrap" role="navigation" aria-label="Project sections">
+        <div class="tab-select is-open" aria-expanded="true">
+          <span>Overview</span>
+          <span class="total-sep">&middot;</span>
+          <span class="total-badge">5</span>
+          <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+        </div>
+        <div class="tab-menu" role="listbox">
+          <div class="tab-menu-item">Budget<span class="menu-badge warn">2</span></div>
+          <div class="tab-menu-item">Spend<span class="menu-badge warn">1</span></div>
+          <div class="tab-menu-item">Labour</div>
+          <div class="tab-menu-item">Schedule</div>
+          <div class="tab-menu-item">Billing<span class="menu-badge warn">1</span></div>
+          <div class="tab-menu-item is-on">Overview <span class="menu-check"><svg><use href="#i-check"/></svg></span></div>
+          <div class="tab-menu-divider"></div>
+          <div class="tab-menu-item is-secondary">Client<span class="menu-badge info">2</span></div>
+          <div class="tab-menu-item is-secondary">Photos</div>
+          <div class="tab-menu-item is-secondary">Documents</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="body">
+
+      <!-- Needs you -->
+      <section aria-label="Needs you">
+        <div class="section-eyebrow">
+          <span class="label">Needs you</span>
+          <span class="meta">5 today &middot; ranked by Henry</span>
+        </div>
+
+        <div class="needs-list">
+
+          <div class="needs-card is-danger is-top">
+            <div class="head">
+              <span class="mark"><svg><use href="#i-alert-triangle"/></svg></span>
+              <span class="henry">Margin at risk</span>
+            </div>
+            <div class="row-text">
+              <strong>6%</strong> vs <strong>18%</strong> target &middot; framing labour over by $4,800
+            </div>
+            <a class="cta">Open Budget <svg><use href="#i-arrow-right"/></svg></a>
+          </div>
+
+          <div class="needs-card is-bill">
+            <div class="head">
+              <span class="mark"><svg><use href="#i-sparkles"/></svg></span>
+              <span class="henry">Ready to bill</span>
+            </div>
+            <div class="row-text">
+              <strong>Draw 3</strong> &middot; rough-in complete &middot; <span class="amt">$18,400<span class="cents">.00</span></span>
+            </div>
+            <a class="cta">Bill draw <svg><use href="#i-arrow-right"/></svg></a>
+          </div>
+
+          <div class="needs-card is-warn">
+            <div class="head">
+              <span class="mark"><svg><use href="#i-shuffle"/></svg></span>
+              <span class="henry">Unsent scope changes</span>
+            </div>
+            <div class="row-text">
+              <strong>2 changes</strong> since v2 &middot; <span class="amt">+$3,200<span class="cents">.00</span></span> &middot; <span class="muted">customer-impacting</span>
+            </div>
+            <a class="cta">Review <svg><use href="#i-arrow-right"/></svg></a>
+          </div>
+
+          <div class="needs-card is-info">
+            <div class="head">
+              <span class="mark"><svg><use href="#i-message"/></svg></span>
+              <span class="henry">Client message</span>
+            </div>
+            <div class="row-text">
+              <strong>Daniel</strong> &middot; &ldquo;Any chance we can swap to the brushed nickel pulls?&rdquo; <span class="muted">2h ago</span>
+            </div>
+            <a class="cta">Open Client <svg><use href="#i-arrow-right"/></svg></a>
+          </div>
+
+          <div class="needs-more">
+            <span><strong>+1 more</strong> &middot; 3 missing receipts</span>
+            <a href="#">Show all <svg style="width:11px;height:11px;"><use href="#i-chevron-down"/></svg></a>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Variance / margin card -->
+      <section aria-label="Budget &amp; margin">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Budget &amp; margin</span>
+            <button class="panel-link">Open <svg><use href="#i-arrow-right"/></svg></button>
+          </div>
+          <div class="var-grid">
+            <div class="var-cell">
+              <span class="var-label">Estimate</span>
+              <span class="var-value">$142,000<span class="cents">.00</span></span>
+              <span class="var-sub">Baseline v2</span>
+            </div>
+            <div class="var-cell">
+              <span class="var-label">Spent</span>
+              <span class="var-value">$61,300<span class="cents">.00</span></span>
+              <span class="var-sub">Labour + bills</span>
+            </div>
+            <div class="var-cell">
+              <span class="var-label">Committed</span>
+              <span class="var-value">$24,800<span class="cents">.00</span></span>
+              <span class="var-sub">Subs + POs</span>
+            </div>
+            <div class="var-cell">
+              <span class="var-label">Remaining</span>
+              <span class="var-value">$55,900<span class="cents">.00</span></span>
+              <span class="var-sub">After committed</span>
+            </div>
+          </div>
+          <div class="progress-stack">
+            <div class="progress-meta">
+              <span><strong>53% complete</strong> &middot; <strong>61%</strong> consumed</span>
+              <span class="right">$86,100 / $142k</span>
+            </div>
+            <div class="seg-bar" aria-hidden="true">
+              <i class="seg-spent" style="width:43.2%;"></i>
+              <i class="seg-committed" style="width:17.5%;"></i>
+            </div>
+          </div>
+          <div class="margin-strip">
+            <span class="henry-label">&#10022; Henry</span>
+            <strong>Running 8 pts hot.</strong> Framing labour +$4,800 &middot; lumber +$1,200 &middot; plumbing &minus;$700 net the gap. Tightening trade hours could recover ~$2,000.
+            <a>See cost lines &rarr;</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Activity feed -->
+      <section aria-label="Recent activity">
+        <div class="section-eyebrow">
+          <span class="label">Recent activity</span>
+          <span class="meta">View all</span>
+        </div>
+        <div class="panel">
+          <div class="activity-body">
+
+            <div class="activity-row">
+              <span class="activity-icon is-info"><svg><use href="#i-message"/></svg></span>
+              <div class="activity-text">
+                <strong>Daniel Mohan</strong> messaged
+                <div class="activity-note">&ldquo;Any chance we can swap to the brushed nickel pulls?&rdquo;</div>
+                <span class="activity-time">2h ago</span>
+              </div>
+            </div>
+
+            <div class="activity-row">
+              <span class="activity-icon"><svg><use href="#i-shuffle"/></svg></span>
+              <div class="activity-text">
+                Scope edit &mdash; <strong>Closet built-ins: solid maple shelving</strong> <span class="sep">&middot;</span> <span class="activity-amt">+$2,150</span>
+                <span class="activity-time">Yesterday</span>
+              </div>
+            </div>
+
+            <div class="activity-row">
+              <span class="activity-icon is-ok"><svg><use href="#i-check"/></svg></span>
+              <div class="activity-text">
+                Sub-quote accepted &mdash; <strong>Pacific Wallboard &middot; drywall</strong> <span class="sep">&middot;</span> <span class="activity-amt">$8,400</span>
+                <span class="activity-time">May 19</span>
+              </div>
+            </div>
+
+            <div class="activity-row">
+              <span class="activity-icon is-info"><svg><use href="#i-camera"/></svg></span>
+              <div class="activity-text">
+                12 photos added &mdash; <strong>Rough-in &middot; ensuite &amp; closet</strong> <span class="sep">by</span> Mike Reyes
+                <span class="activity-time">May 18</span>
+              </div>
+            </div>
+
+            <div class="activity-row">
+              <span class="activity-icon is-rust"><svg><use href="#i-dollar"/></svg></span>
+              <div class="activity-text">
+                Draw 2 paid &mdash; <strong>Foundation &amp; framing</strong> <span class="sep">&middot;</span> <span class="activity-amt">$22,800</span>
+                <span class="activity-time">May 12</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Bottom tab bar -->
+    <nav class="tab-bar" aria-label="Primary">
+      <div class="tab-item"><svg><use href="#i-dashboard"/></svg><span class="label">Today</span></div>
+      <div class="tab-item with-count"><svg><use href="#i-inbox"/></svg><span class="label">Inbox</span><span class="count">7</span></div>
+      <div class="tab-item active"><svg><use href="#i-folder"/></svg><span class="label">Projects</span></div>
+      <div class="tab-item"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></div>
+      <div class="tab-item"><svg><use href="#i-more"/></svg><span class="label">More</span></div>
+    </nav>
+
+  </div>
+</div>
+
+</body>
+</html>

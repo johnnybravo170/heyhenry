@@ -49,8 +49,8 @@ const VENDOR_SIGNAL_ENV_PREFIXES = [
   'NEXT_PUBLIC_SUPABASE_',
   'OPENAI_',
   'POSTHOG_',
+  'POSTMARK_',
   'R2_',
-  'RESEND_',
   'SENTRY_',
   'STRIPE_',
   'SUPABASE_',
@@ -132,7 +132,7 @@ function main(): void {
     // Only flag scoped packages and a small set of bare names — bare
     // packages are almost never vendor signatures.
     const looksVendory =
-      dep.startsWith('@') || ['stripe', 'twilio', 'resend', 'openai'].includes(dep);
+      dep.startsWith('@') || ['stripe', 'twilio', 'postmark', 'openai'].includes(dep);
     // 'supabase' bare is the CLI dev tool (used for migrations), not a
     // runtime data flow — covered by @supabase/* on the runtime side.
     if (!looksVendory) continue;

@@ -96,7 +96,7 @@ test.describe
 
       // Seed customer.
       const { data: customer } = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: createdTenantId,
           type: 'residential',

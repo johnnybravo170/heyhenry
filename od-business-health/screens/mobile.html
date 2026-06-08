@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Business Health — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: start center;
+    padding: 40px 0;
+    gap: 40px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* Two phones side-by-side to show populated + healthy variants */
+  .phones {
+    display: flex; gap: 40px; flex-wrap: wrap; justify-content: center;
+    align-items: flex-start;
+  }
+  .phone-wrap { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .phone-cap {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .phone-cap strong { color: var(--ink); }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── App header ───── */
+  .app-header {
+    padding: 12px 18px 14px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .app-greet {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--ink);
+    margin: 0;
+  }
+  .fy-chip {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: transparent;
+    padding: 0;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .fy-chip .dot {
+    width: 5px; height: 5px;
+    border-radius: 999px;
+    background: var(--rust);
+  }
+
+  /* ───── Scroll area ───── */
+  .scroll-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 12px 14px 24px;
+    margin-bottom: 88px;
+    display: flex; flex-direction: column;
+    gap: 12px;
+  }
+  .scroll-area > * { flex-shrink: 0; }
+
+  /* ───── Henry attention strip ───── */
+  .attention {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    border-left: 3px solid var(--rust);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .attention-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px 5px;
+  }
+  .attention-mark {
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+  }
+  .attention-mark svg { width: 11px; height: 11px; }
+  .attention-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .attention-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--rust);
+    letter-spacing: 0.04em;
+    opacity: .8;
+  }
+  .attention-row {
+    padding: 10px 12px;
+    border-top: 1px dashed rgba(194, 65, 12, 0.22);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .attention-top {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .attention-top .name {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    flex: 1;
+  }
+  .attention-top .amt {
+    font-size: 15px; font-weight: 700;
+    color: var(--rust);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .attention-top .amt .cents { font-size: 12px; color: rgba(194, 65, 12, .6); font-weight: 500; }
+  .attention-why {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .attention-cta {
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    border: 0;
+    background: var(--rust);
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .attention-cta svg { width: 13px; height: 13px; }
+  .attention-cta.is-ghost {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+  }
+
+  /* ───── Hero card (Net cash) ───── */
+  .hero-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .hero-top {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hero-tag {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .hero-value {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+    display: flex; align-items: baseline; gap: 3px;
+  }
+  .hero-value .cents { font-size: 15px; color: var(--muted); font-weight: 500; }
+  .hero-value.is-ok { color: var(--ok); }
+  .hero-value.is-ok .cents { color: rgba(21, 128, 61, .55); }
+  .hero-value.is-danger { color: var(--danger); }
+  .hero-value.is-danger .cents { color: rgba(185, 28, 28, .55); }
+  .hero-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .hero-sub strong { color: var(--ink-2); font-weight: 600; }
+
+  /* Cash gist */
+  .cash-gist {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .cash-bar { display: flex; flex-direction: column; gap: 3px; }
+  .cash-bar .bar {
+    height: 28px;
+    background: var(--chip-fill);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cash-bar .bar .fill {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--ok); opacity: .85;
+    border-radius: 3px 3px 0 0;
+  }
+  .cash-bar.is-neg .bar .fill { background: var(--rust); opacity: .9; }
+  .cash-bar.is-current .bar { box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .cash-bar .m {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+  .cash-bar.is-current .m { color: var(--ink); }
+
+  /* AR aging bar (compact) */
+  .aging {
+    display: flex; flex-direction: column; gap: 8px;
+    margin-top: 4px;
+  }
+  .aging-bar {
+    display: flex;
+    height: 9px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--chip-fill);
+  }
+  .aging-bar .seg { height: 100%; }
+  .aging-bar .seg.current { background: var(--info); }
+  .aging-bar .seg.late30  { background: var(--warn); }
+  .aging-bar .seg.late60p { background: var(--danger); }
+  .aging-legend {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .aging-cell {
+    display: flex; flex-direction: column; gap: 1px;
+    padding-right: 6px;
+    border-right: 1px solid var(--hair);
+  }
+  .aging-cell:last-child { border-right: 0; padding-right: 0; }
+  .aging-cell .lbl {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .aging-cell .lbl::before {
+    content: ''; width: 6px; height: 6px;
+    border-radius: 999px;
+    background: var(--info);
+  }
+  .aging-cell.late30 .lbl::before  { background: var(--warn); }
+  .aging-cell.late60p .lbl::before { background: var(--danger); }
+  .aging-cell .v {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+  }
+  .aging-cell .v .cents { font-size: 10px; color: var(--muted); font-weight: 500; }
+  .aging-cell .c {
+    font-family: var(--mono);
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .aging-cell.late60p .v { color: var(--danger); }
+  .aging-cell.late60p .v .cents { color: rgba(185, 28, 28, .5); }
+
+  /* ───── Supporting tiles (2-up) ───── */
+  .kpi-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .kpi-tile {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 11px 12px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 96px;
+  }
+  .kpi-tile .lbl {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .kpi-tile .v {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .kpi-tile .v .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .kpi-tile .sub {
+    font-size: 12px; color: var(--muted); font-weight: 500;
+    margin-top: auto;
+  }
+  .kpi-tile .sub strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ───── Section card (Owner draws + QBO) ───── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .card-head {
+    padding: 12px 14px 10px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .card-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .card-meta strong {
+    color: var(--ink);
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    margin-left: 4px;
+  }
+
+  /* Quick-add (collapsed CTA) */
+  .quick-add {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--chrome);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .quick-add .ai {
+    flex: 1;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    padding: 0 12px;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: text;
+  }
+  .quick-add .ai svg { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+  .quick-add .add-btn {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    display: inline-grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .quick-add .add-btn svg { width: 14px; height: 14px; }
+
+  /* Draws rows */
+  .draws-list { padding: 0 14px; }
+  .draw-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px dashed var(--rule);
+    align-items: center;
+  }
+  .draw-row:first-child { border-top: 0; }
+  .draw-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .draw-left .a {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .draw-left .a .date {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .draw-type {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+  }
+  .draw-type.salary       { background: var(--info-soft);   color: var(--info); }
+  .draw-type.dividend     { background: var(--ok-soft);     color: var(--ok); }
+  .draw-type.reimbursement{ background: var(--warn-soft);   color: var(--warn); }
+  .draw-left .note {
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .draw-amt {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .draw-amt .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .view-all {
+    width: 100%;
+    height: 44px;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--hair);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .view-all svg { width: 11px; height: 11px; }
+
+  /* ───── Desktop nudge ───── */
+  .desktop-nudge {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .desktop-nudge .nudge-mark {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--muted);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .desktop-nudge .nudge-mark svg { width: 12px; height: 12px; }
+  .desktop-nudge p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .desktop-nudge p strong { color: var(--ink); font-weight: 700; }
+
+  /* ───── QBO mini aside ───── */
+  .qbo-mini {
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .qbo-mini-head {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .qbo-mini-head .qm {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--card); color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .qbo-mini-head .qm svg { width: 12px; height: 12px; }
+  .qbo-mini-head h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .qbo-mini p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .qbo-mini p strong { color: var(--ink-2); font-weight: 600; }
+  .qbo-mini .is-isnt {
+    display: grid; gap: 6px;
+    margin-top: 2px;
+  }
+  .qbo-mini .ii {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .qbo-mini .ii .tag {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-align: center;
+    line-height: 1.6;
+    height: 16px;
+  }
+  .qbo-mini .is { background: var(--ok-soft); color: var(--ok); }
+  .qbo-mini .isnt { background: var(--chip-fill); color: var(--muted); }
+  .qbo-mini .ii strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Healthy attention strip variant ───── */
+  .attention.is-healthy {
+    background: var(--ok-soft);
+    border-color: rgba(21, 128, 61, 0.22);
+    border-left-color: var(--ok);
+  }
+  .attention.is-healthy .attention-label { color: var(--ok); }
+  .attention.is-healthy .attention-mark { color: var(--ok); }
+  .attention.is-healthy .attention-meta { color: var(--ok); }
+  .attention.is-healthy .calm {
+    padding: 10px 12px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .attention.is-healthy .calm .name {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+  }
+  .attention.is-healthy .calm .why {
+    font-size: 12px; color: var(--muted); font-weight: 500;
+  }
+
+  /* ───── Bottom tab bar ───── */
+  .tabbar {
+    position: absolute;
+    left: 12px; right: 12px;
+    bottom: 12px;
+    height: 64px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 16px;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    z-index: 50;
+    box-shadow: 0 2px 14px rgba(10, 10, 10, 0.05);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .tab .tab-icon { width: 20px; height: 20px; }
+  .tab.is-active {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .tab .tab-pill {
+    margin-left: 4px;
+    background: var(--rust);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    padding: 0 5px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    min-width: 16px; height: 14px;
+    display: inline-grid; place-items: center;
+  }
+
+  .mono { font-family: var(--mono); }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+  </defs>
+</svg>
+
+<div class="phones">
+
+  <!-- ════════ Phone 1: needs-attention (canonical populated state) ════════ -->
+  <div class="phone-wrap">
+    <span class="phone-cap"><strong>Needs attention</strong> &middot; populated</span>
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <div class="island"></div>
+          <span>9:42</span>
+          <span class="right"><span>5G</span><span class="battery"></span></span>
+        </div>
+
+        <header class="app-header">
+          <h1 class="app-greet">Business Health</h1>
+          <span class="fy-chip"><span class="dot"></span>FY 2026 &middot; Jan 1 &ndash; Dec 31</span>
+        </header>
+
+        <div class="scroll-area">
+
+          <!-- Henry attention strip -->
+          <section class="attention" aria-label="Henry attention">
+            <div class="attention-head">
+              <div class="attention-mark"><svg><use href="#i-sparkles"/></svg></div>
+              <span class="attention-label">Henry</span>
+              <span class="attention-meta">2 things money-side</span>
+            </div>
+            <div class="attention-row">
+              <div class="attention-top">
+                <span class="name">3 invoices &gt;30d</span>
+                <span class="amt">$8,016<span class="cents">.00</span></span>
+              </div>
+              <div class="attention-why">Patel (47d) &middot; Lin (38d) &middot; MacLeod (32d)</div>
+              <button class="attention-cta"><svg><use href="#i-send"/></svg>Send reminders</button>
+            </div>
+            <div class="attention-row">
+              <div class="attention-top">
+                <span class="name">Net cash negative this month</span>
+                <span class="amt">&minus;$2,800<span class="cents">.00</span></span>
+              </div>
+              <div class="attention-why">$14,200 in bills due before $11,400 of AR likely to land by Jun 5.</div>
+              <button class="attention-cta is-ghost">Review bills</button>
+            </div>
+          </section>
+
+          <!-- Hero: Net cash YTD -->
+          <section class="hero-card">
+            <div class="hero-top">
+              <span class="hero-label">Net cash flow &middot; YTD</span>
+              <span class="hero-tag">Tax-aware</span>
+            </div>
+            <div class="hero-value is-ok">$122,640<span class="cents">.00</span></div>
+            <div class="hero-sub"><strong>+$12,420</strong> last 30 days &middot; revenue &minus; expenses &minus; owner pay</div>
+            <div class="cash-gist" aria-label="By month, last 6">
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:62%"></div></div><div class="m">Dec</div></div>
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:78%"></div></div><div class="m">Jan</div></div>
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:54%"></div></div><div class="m">Feb</div></div>
+              <div class="cash-bar is-neg"><div class="bar"><div class="fill" style="height:28%"></div></div><div class="m">Mar</div></div>
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:88%"></div></div><div class="m">Apr</div></div>
+              <div class="cash-bar is-current"><div class="bar"><div class="fill" style="height:48%"></div></div><div class="m">May</div></div>
+            </div>
+          </section>
+
+          <!-- Hero: AR cockpit -->
+          <section class="hero-card">
+            <div class="hero-top">
+              <span class="hero-label">AR outstanding</span>
+              <span class="hero-tag">incl. GST/HST</span>
+            </div>
+            <div class="hero-value is-danger">$42,816<span class="cents">.00</span></div>
+            <div class="hero-sub"><strong>8 invoices</strong> &middot; oldest <strong>47d</strong></div>
+            <div class="aging">
+              <div class="aging-bar" aria-hidden="true">
+                <div class="seg current" style="width:56%"></div>
+                <div class="seg late30" style="width:25%"></div>
+                <div class="seg late60p" style="width:19%"></div>
+              </div>
+              <div class="aging-legend">
+                <div class="aging-cell">
+                  <span class="lbl">Current</span>
+                  <span class="v">$24,000<span class="cents">.00</span></span>
+                  <span class="c">3 inv</span>
+                </div>
+                <div class="aging-cell late30">
+                  <span class="lbl">1&ndash;30d</span>
+                  <span class="v">$10,800<span class="cents">.00</span></span>
+                  <span class="c">2 inv</span>
+                </div>
+                <div class="aging-cell late60p">
+                  <span class="lbl">30d+</span>
+                  <span class="v">$8,016<span class="cents">.00</span></span>
+                  <span class="c">3 inv</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Supporting tiles 2-up -->
+          <section class="kpi-pair">
+            <div class="kpi-tile">
+              <span class="lbl">Revenue &middot; YTD</span>
+              <span class="v">$186,420<span class="cents">.00</span></span>
+              <span class="sub">Paid invoices</span>
+            </div>
+            <div class="kpi-tile">
+              <span class="lbl">AP outstanding</span>
+              <span class="v">$14,200<span class="cents">.00</span></span>
+              <span class="sub"><strong>4 bills</strong> pending</span>
+            </div>
+          </section>
+
+          <section class="kpi-pair">
+            <div class="kpi-tile">
+              <span class="lbl">Owner pay &middot; YTD</span>
+              <span class="v">$36,500<span class="cents">.00</span></span>
+              <span class="sub"><strong>Sal</strong> $24k &middot; <strong>Div</strong> $10k</span>
+            </div>
+            <div class="kpi-tile">
+              <span class="lbl">Expenses &middot; YTD</span>
+              <span class="v">$27,280<span class="cents">.00</span></span>
+              <span class="sub">Across 4 categories</span>
+            </div>
+          </section>
+
+          <!-- Owner draws -->
+          <section class="card">
+            <div class="card-head">
+              <span class="card-title">Owner draws &middot; 2026</span>
+              <span class="card-meta">YTD <strong>$36.5k</strong></span>
+            </div>
+            <div class="quick-add">
+              <div class="ai">
+                <svg><use href="#i-dollar"/></svg>
+                <span>Add a draw &mdash; amount, type, date&hellip;</span>
+              </div>
+              <button class="add-btn" aria-label="Add draw"><svg><use href="#i-plus"/></svg></button>
+            </div>
+            <div class="draws-list">
+              <div class="draw-row">
+                <div class="draw-left">
+                  <div class="a">
+                    <span class="date">May 15</span>
+                    <span class="draw-type salary">Salary</span>
+                  </div>
+                  <span class="note">Bi-weekly &mdash; payroll Apr 25 &ndash; May 8</span>
+                </div>
+                <span class="draw-amt">$4,000<span class="cents">.00</span></span>
+              </div>
+              <div class="draw-row">
+                <div class="draw-left">
+                  <div class="a">
+                    <span class="date">May 1</span>
+                    <span class="draw-type salary">Salary</span>
+                  </div>
+                  <span class="note">Bi-weekly &mdash; payroll Apr 11 &ndash; Apr 24</span>
+                </div>
+                <span class="draw-amt">$4,000<span class="cents">.00</span></span>
+              </div>
+              <div class="draw-row">
+                <div class="draw-left">
+                  <div class="a">
+                    <span class="date">Apr 30</span>
+                    <span class="draw-type dividend">Dividend</span>
+                  </div>
+                  <span class="note">Q1 retained earnings</span>
+                </div>
+                <span class="draw-amt">$10,000<span class="cents">.00</span></span>
+              </div>
+              <div class="draw-row">
+                <div class="draw-left">
+                  <div class="a">
+                    <span class="date">Apr 18</span>
+                    <span class="draw-type reimbursement">Reimburse</span>
+                  </div>
+                  <span class="note">Office Wi-Fi + cell &mdash; March</span>
+                </div>
+                <span class="draw-amt">$285<span class="cents">.00</span></span>
+              </div>
+            </div>
+            <button class="view-all">View all 10 draws<svg><use href="#i-chevron-down"/></svg></button>
+          </section>
+
+          <!-- Desktop nudge (bank-import lives on desktop) -->
+          <section class="desktop-nudge">
+            <div class="nudge-mark"><svg><use href="#i-monitor"/></svg></div>
+            <p>
+              <strong>Importing a bank statement?</strong> Do this on desktop &mdash; you&rsquo;ll need to drop a CSV or PDF, then review the matches Henry finds.
+            </p>
+          </section>
+
+          <!-- QBO mini aside -->
+          <section class="qbo-mini">
+            <div class="qbo-mini-head">
+              <div class="qm"><svg><use href="#i-info"/></svg></div>
+              <h4>How this fits with your bookkeeping</h4>
+            </div>
+            <p>Your <strong>operational view</strong> &mdash; the books still live in QuickBooks. We push clean transactions over so your bookkeeper sees the right data without re-entering.</p>
+            <div class="is-isnt">
+              <div class="ii"><span class="tag is">Is</span><span>A <strong>payment shortcut</strong> from a bank statement.</span></div>
+              <div class="ii"><span class="tag isnt">Isn&rsquo;t</span><span><strong>Bank reconciliation</strong> &mdash; that stays in QBO.</span></div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- Bottom tab bar -->
+        <nav class="tabbar" aria-label="Primary navigation">
+          <button class="tab">
+            <svg class="tab-icon"><use href="#i-dashboard"/></svg>
+            <span>Dashboard</span>
+          </button>
+          <button class="tab">
+            <svg class="tab-icon"><use href="#i-folder"/></svg>
+            <span>Projects</span>
+          </button>
+          <button class="tab">
+            <svg class="tab-icon"><use href="#i-inbox"/></svg>
+            <span>Inbox<span class="tab-pill">7</span></span>
+          </button>
+          <button class="tab">
+            <svg class="tab-icon"><use href="#i-receipt"/></svg>
+            <span>Billing</span>
+          </button>
+          <button class="tab is-active">
+            <svg class="tab-icon"><use href="#i-more"/></svg>
+            <span>More</span>
+          </button>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ Phone 2: healthy state (above-the-fold only) ════════ -->
+  <div class="phone-wrap">
+    <span class="phone-cap"><strong>Healthy</strong> &middot; nothing needs you</span>
+    <div class="phone">
+      <div class="screen">
+
+        <div class="status-bar">
+          <div class="island"></div>
+          <span>9:42</span>
+          <span class="right"><span>5G</span><span class="battery"></span></span>
+        </div>
+
+        <header class="app-header">
+          <h1 class="app-greet">Business Health</h1>
+          <span class="fy-chip"><span class="dot" style="background:var(--ok)"></span>FY 2026 &middot; Jan 1 &ndash; Dec 31</span>
+        </header>
+
+        <div class="scroll-area">
+
+          <!-- Henry attention — healthy variant -->
+          <section class="attention is-healthy" aria-label="All clear">
+            <div class="attention-head">
+              <div class="attention-mark" style="color:var(--ok)"><svg><use href="#i-check"/></svg></div>
+              <span class="attention-label">Henry</span>
+              <span class="attention-meta">All clear</span>
+            </div>
+            <div class="calm">
+              <span class="name">Nothing needs your attention.</span>
+              <span class="why">All invoices current &middot; net cash positive Jun &ndash; Jul on the books.</span>
+            </div>
+          </section>
+
+          <!-- Hero: Net cash (still positive, healthy) -->
+          <section class="hero-card">
+            <div class="hero-top">
+              <span class="hero-label">Net cash flow &middot; YTD</span>
+              <span class="hero-tag">Tax-aware</span>
+            </div>
+            <div class="hero-value is-ok">$148,920<span class="cents">.00</span></div>
+            <div class="hero-sub"><strong>+$18,200</strong> last 30 days &middot; revenue &minus; expenses &minus; owner pay</div>
+            <div class="cash-gist">
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:62%"></div></div><div class="m">Dec</div></div>
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:78%"></div></div><div class="m">Jan</div></div>
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:64%"></div></div><div class="m">Feb</div></div>
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:72%"></div></div><div class="m">Mar</div></div>
+              <div class="cash-bar"><div class="bar"><div class="fill" style="height:88%"></div></div><div class="m">Apr</div></div>
+              <div class="cash-bar is-current"><div class="bar"><div class="fill" style="height:92%"></div></div><div class="m">May</div></div>
+            </div>
+          </section>
+
+          <!-- Hero: AR cockpit (all current) -->
+          <section class="hero-card">
+            <div class="hero-top">
+              <span class="hero-label">AR outstanding</span>
+              <span class="hero-tag">incl. GST/HST</span>
+            </div>
+            <div class="hero-value">$28,400<span class="cents">.00</span></div>
+            <div class="hero-sub"><strong>4 invoices</strong> &middot; all current</div>
+            <div class="aging">
+              <div class="aging-bar" aria-hidden="true">
+                <div class="seg current" style="width:100%"></div>
+              </div>
+              <div class="aging-legend">
+                <div class="aging-cell">
+                  <span class="lbl">Current</span>
+                  <span class="v">$28,400<span class="cents">.00</span></span>
+                  <span class="c">4 inv</span>
+                </div>
+                <div class="aging-cell late30">
+                  <span class="lbl">1&ndash;30d</span>
+                  <span class="v" style="color:var(--faint)">&mdash;</span>
+                  <span class="c">0 inv</span>
+                </div>
+                <div class="aging-cell late60p">
+                  <span class="lbl">30d+</span>
+                  <span class="v" style="color:var(--faint)">&mdash;</span>
+                  <span class="c">0 inv</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Supporting tiles -->
+          <section class="kpi-pair">
+            <div class="kpi-tile">
+              <span class="lbl">Revenue &middot; YTD</span>
+              <span class="v">$210,840<span class="cents">.00</span></span>
+              <span class="sub">Paid invoices</span>
+            </div>
+            <div class="kpi-tile">
+              <span class="lbl">AP outstanding</span>
+              <span class="v">$4,180<span class="cents">.00</span></span>
+              <span class="sub"><strong>2 bills</strong> not yet due</span>
+            </div>
+          </section>
+
+          <section class="kpi-pair">
+            <div class="kpi-tile">
+              <span class="lbl">Owner pay &middot; YTD</span>
+              <span class="v">$42,200<span class="cents">.00</span></span>
+              <span class="sub"><strong>Sal</strong> $30k &middot; <strong>Div</strong> $10k</span>
+            </div>
+            <div class="kpi-tile">
+              <span class="lbl">Expenses &middot; YTD</span>
+              <span class="v">$19,720<span class="cents">.00</span></span>
+              <span class="sub">Across 5 categories</span>
+            </div>
+          </section>
+
+          <!-- Compact draws (peek) -->
+          <section class="card">
+            <div class="card-head">
+              <span class="card-title">Owner draws &middot; 2026</span>
+              <span class="card-meta">YTD <strong>$42.2k</strong></span>
+            </div>
+            <div class="quick-add">
+              <div class="ai">
+                <svg><use href="#i-dollar"/></svg>
+                <span>Add a draw &mdash; amount, type, date&hellip;</span>
+              </div>
+              <button class="add-btn" aria-label="Add draw"><svg><use href="#i-plus"/></svg></button>
+            </div>
+            <div class="draws-list">
+              <div class="draw-row">
+                <div class="draw-left">
+                  <div class="a">
+                    <span class="date">May 15</span>
+                    <span class="draw-type salary">Salary</span>
+                  </div>
+                  <span class="note">Bi-weekly &mdash; payroll Apr 25 &ndash; May 8</span>
+                </div>
+                <span class="draw-amt">$5,000<span class="cents">.00</span></span>
+              </div>
+              <div class="draw-row">
+                <div class="draw-left">
+                  <div class="a">
+                    <span class="date">May 1</span>
+                    <span class="draw-type salary">Salary</span>
+                  </div>
+                  <span class="note">Bi-weekly</span>
+                </div>
+                <span class="draw-amt">$5,000<span class="cents">.00</span></span>
+              </div>
+            </div>
+            <button class="view-all">View all 9 draws<svg><use href="#i-chevron-down"/></svg></button>
+          </section>
+
+        </div>
+
+        <nav class="tabbar" aria-label="Primary navigation">
+          <button class="tab"><svg class="tab-icon"><use href="#i-dashboard"/></svg><span>Dashboard</span></button>
+          <button class="tab"><svg class="tab-icon"><use href="#i-folder"/></svg><span>Projects</span></button>
+          <button class="tab"><svg class="tab-icon"><use href="#i-inbox"/></svg><span>Inbox<span class="tab-pill">7</span></span></button>
+          <button class="tab"><svg class="tab-icon"><use href="#i-receipt"/></svg><span>Billing</span></button>
+          <button class="tab is-active"><svg class="tab-icon"><use href="#i-more"/></svg><span>More</span></button>
+        </nav>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

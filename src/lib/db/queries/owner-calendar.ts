@@ -39,6 +39,7 @@ export type CalendarProject = {
 export type CalendarWorker = {
   profile_id: string;
   display_name: string;
+  worker_type: 'employee' | 'subcontractor';
 };
 
 export type CalendarUnavailability = {
@@ -76,11 +77,11 @@ export async function getOwnerCalendarData(
       .lte('scheduled_date', endDate),
     admin
       .from('worker_profiles')
-      .select('id, display_name, tenant_member_id')
+      .select('id, display_name, tenant_member_id, worker_type')
       .eq('tenant_id', tenantId),
     admin
       .from('projects')
-      .select('id, name, lifecycle_stage, customers:customer_id (name)')
+      .select('id, name, lifecycle_stage, contacts:contact_id (name)')
       .eq('tenant_id', tenantId)
       .is('deleted_at', null),
     admin
@@ -142,12 +143,13 @@ export async function getOwnerCalendarData(
   const workers: CalendarWorker[] = (workersRes.data ?? []).map((w) => ({
     profile_id: w.id as string,
     display_name: (w.display_name as string | null) ?? 'Worker',
+    worker_type: (w.worker_type as 'employee' | 'subcontractor' | null) ?? 'employee',
   }));
 
   const projects: CalendarProject[] = (
     (projectsRes.data ?? []) as Array<Record<string, unknown>>
   ).map((p) => {
-    const cs = p.customers as { name?: string } | { name?: string }[] | null;
+    const cs = p.contacts as { name?: string } | { name?: string }[] | null;
     const customer = Array.isArray(cs) ? cs[0] : cs;
     return {
       id: p.id as string,

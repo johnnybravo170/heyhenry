@@ -26,7 +26,7 @@ export type ProjectMatchTier = 'customer+name' | 'name' | null;
 export type ExistingProject = {
   id: string;
   name: string;
-  customer_id: string | null;
+  contact_id: string | null;
   customer_name: string | null;
 };
 
@@ -34,7 +34,7 @@ export type ProposedProject = {
   name: string;
   customerName?: string | null;
   /** Resolved customer id, if the operator has already confirmed a match. */
-  customerId?: string | null;
+  contactId?: string | null;
 };
 
 export type ProjectDedupMatch = {
@@ -50,14 +50,14 @@ export function findProjectMatch(
   if (!pName) return { tier: null, existing: null };
 
   // Tier 1: same customer + same project name.
-  // We accept either a resolved customer_id OR a customer_name match
+  // We accept either a resolved contact_id OR a customer_name match
   // against the existing project's customer_name.
   const pCustomerName = normalizeName(proposed.customerName);
-  const pCustomerId = proposed.customerId ?? null;
-  if (pCustomerId || pCustomerName) {
+  const pContactId = proposed.contactId ?? null;
+  if (pContactId || pCustomerName) {
     const hit = existing.find((p) => {
       if (normalizeName(p.name) !== pName) return false;
-      if (pCustomerId && p.customer_id === pCustomerId) return true;
+      if (pContactId && p.contact_id === pContactId) return true;
       if (pCustomerName && normalizeName(p.customer_name) === pCustomerName) return true;
       return false;
     });

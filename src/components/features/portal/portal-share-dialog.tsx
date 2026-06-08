@@ -144,7 +144,7 @@ export function PortalShareDialog({
                       />
                       <span className="font-mono text-xs">{email}</span>
                       {email === primaryEmail?.toLowerCase() ? (
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-xs uppercase tracking-wider text-muted-foreground">
                           Primary
                         </span>
                       ) : null}
@@ -167,7 +167,7 @@ export function PortalShareDialog({
               rows={3}
               className="resize-none text-sm"
             />
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               Appears as a quoted block in the email above the &ldquo;View Your Project&rdquo;
               button.
             </p>

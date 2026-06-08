@@ -2,7 +2,10 @@
  * Currency cell renderer used across budget / change-order tables.
  *
  * Three jobs:
- *   1. Mute the currency symbol — it's redundant in a $-only column.
+ *   1. Render the currency symbol full-ink, inline with the integer —
+ *      matching the OD renders, where only the cents recede (the earlier
+ *      "mute the $" treatment was superseded by Open Design). The `symbol`
+ *      prop still drops it entirely in dense columns where it's redundant.
  *   2. Render cents smaller + dimmer, like a superscript, so the
  *      integer dominates and whole-dollar values still line up with
  *      mixed-cent values column-to-column.
@@ -27,11 +30,18 @@ export function Money({
    * treatment used on change-order diffs.
    */
   signed,
+  /**
+   * Show the currency symbol. Default true. Set false in dense columns where
+   * the symbol is redundant (e.g. an OD cost table where only the Total
+   * carries "$" and subtotal/GST are bare numbers).
+   */
+  symbol: showSymbol = true,
 }: {
   cents: number;
   className?: string;
   emphasis?: boolean;
   signed?: boolean;
+  symbol?: boolean;
 }) {
   const text = formatCurrencyCompact(cents);
   // Pull symbol, integer, fraction out separately so we can style and
@@ -59,12 +69,12 @@ export function Money({
       )}
     >
       {signed && cents > 0 ? '+' : ''}
-      <span className="text-muted-foreground/60">{symbol}</span>
+      {showSymbol ? symbol : null}
       {integer}
       {fraction ? (
-        <span className="text-[0.7em] text-muted-foreground/70">{fraction}</span>
+        <span className="text-[0.8em] text-muted-foreground/70">{fraction}</span>
       ) : (
-        <span aria-hidden className="invisible text-[0.7em]">
+        <span aria-hidden className="invisible text-[0.8em]">
           .00
         </span>
       )}

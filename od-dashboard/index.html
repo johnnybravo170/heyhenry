@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OD — Dashboard — HeyHenry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 28px 80px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--rust);
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; color: var(--ink); }
+  .lede { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 56ch; line-height: 1.55; }
+  .meta {
+    margin-top: 22px; display: flex; gap: 18px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase; flex-wrap: wrap;
+  }
+  .meta span strong { color: var(--ink); font-weight: 700; }
+
+  .grid {
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .screen-card {
+    background: var(--card); border: 1px solid var(--hair); border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 120ms, border-color 120ms;
+    text-decoration: none; color: inherit;
+  }
+  .screen-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .screen-thumb {
+    aspect-ratio: 16/10; background: var(--bg); border-bottom: 1px solid var(--hair);
+    position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px;
+  }
+  .screen-thumb iframe {
+    width: 1440px; height: 900px; transform: scale(0.32); transform-origin: top left;
+    border: 0; pointer-events: none; position: absolute; top: 0; left: 0;
+  }
+  .screen-thumb.mobile iframe {
+    width: 390px; height: 844px; transform: scale(0.45); transform-origin: center;
+    position: static;
+  }
+  .screen-thumb.mobile { background: #ECE3D0; }
+  .screen-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .screen-eyebrow {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .screen-title { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; color: var(--ink); }
+  .screen-desc { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.5; }
+
+  .notes {
+    margin-top: 48px; background: var(--card); border: 1px solid var(--hair);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .notes h2 {
+    margin: 0 0 12px; font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
+    font-family: var(--mono); text-transform: uppercase; color: var(--ink);
+  }
+  .notes ul { margin: 0; padding-left: 16px; color: var(--ink-2); font-size: 14px; line-height: 1.6; }
+  .notes li + li { margin-top: 6px; }
+  .notes code {
+    font-family: var(--mono); font-size: 12px; background: var(--bg);
+    border: 1px solid var(--hair); border-radius: 4px; padding: 1px 5px; color: var(--ink);
+  }
+  .notes strong { color: var(--ink); font-weight: 600; }
+  .notes .open-q {
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--hair);
+    color: var(--muted); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OD &middot; HeyHenry &middot; Paper palette (deepened 2026-05-20)</div>
+  <h1>Owner Dashboard</h1>
+  <p class="lede">
+    The contractor&rsquo;s home cockpit. Answers <em>what needs me today</em> + <em>where does the business stand</em>
+    &mdash; every element earns its place by prompting an action or being a number you&rsquo;d actually act on.
+    No vanity tiles, no duplicate KPIs, no carryover service-job branches.
+  </p>
+  <div class="meta">
+    <span><strong>Object</strong> &middot; The business at a glance</span>
+    <span><strong>Roles</strong> &middot; owner / admin</span>
+    <span><strong>Primary action</strong> &middot; act on what needs you</span>
+    <span><strong>States</strong> &middot; 3 desktop &middot; 1 mobile</span>
+  </div>
+
+  <div class="grid">
+    <a class="screen-card" href="screens/desktop.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop.html" loading="lazy" title="Desktop default"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">01 &middot; Desktop &middot; Default</div>
+        <div class="screen-title">Populated &middot; 1280 wide</div>
+        <div class="screen-desc">
+          Greeting + Henry orientation line (&ldquo;3 things need you today&rdquo;) + Graham-accepted celebration banner +
+          Needs-You 3-col grid (Today / Blocked / Needs you) + one chase list of 4 (Patel overdue, stale quote, Lin aging estimate, Sarah follow-up) +
+          Recent Activity at 5 with &ldquo;View all&rdquo;.
+        </div>
+      </div>
+    </a>
+
+    <a class="screen-card" href="screens/desktop-henry-empty.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-henry-empty.html" loading="lazy" title="Desktop quiet morning"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">02 &middot; Desktop &middot; Quiet morning</div>
+        <div class="screen-title">Henry orientation &mdash; all clear</div>
+        <div class="screen-desc">
+          A calm positive state: &ldquo;Nothing needs you &mdash; you&rsquo;re caught up.&rdquo; The orientation line flips its mark
+          from rust sparkle to a green check, the chase list disappears, the Needs-You cards collapse to empty-state lines.
+          Recent Activity stays because the audit trail is still useful info. Don&rsquo;t fake urgency.
+        </div>
+      </div>
+    </a>
+
+    <a class="screen-card" href="screens/desktop-recent-expanded.html">
+      <div class="screen-thumb">
+        <iframe src="screens/desktop-recent-expanded.html" loading="lazy" title="Desktop recent activity expanded"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">03 &middot; Desktop &middot; Activity expanded</div>
+        <div class="screen-title">After &ldquo;View all&rdquo; tap</div>
+        <div class="screen-desc">
+          Same dashboard with Recent Activity in its expanded state: 18 items over 14 days &mdash; payments, status changes,
+          schedule moves, cost-line edits, photo uploads, contacts added. Audit trail demoted but accessible.
+          The toggle inverts to &ldquo;Collapse&rdquo;.
+        </div>
+      </div>
+    </a>
+
+    <a class="screen-card" href="screens/mobile.html">
+      <div class="screen-thumb mobile">
+        <iframe src="screens/mobile.html" loading="lazy" title="Mobile dashboard"></iframe>
+      </div>
+      <div class="screen-body">
+        <div class="screen-eyebrow">04 &middot; Mobile &middot; 390 (iPhone)</div>
+        <div class="screen-title">Action-first stack</div>
+        <div class="screen-desc">
+          Greeting + Henry orientation line &rarr; Graham banner &rarr; <strong>Today</strong> (leads) &rarr; Needs-you decisions &rarr;
+          chase list of 4 &rarr; Blocked &rarr; Recent Activity collapsed. 44px touch targets on every action; bottom tab nav with Dashboard active.
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="notes">
+    <h2>Brief alignment</h2>
+    <ul>
+      <li><strong>Action-first ordering</strong> &mdash; orientation line &rarr; celebration banner &rarr; needs-you &rarr; chase list &rarr; audit (activity). The dashboard is for triage and action; standing-number tiles live on their own screens (Business Health / Billing / Projects), one tap away in the nav.</li>
+      <li><strong>Henry as a one-line orientation</strong> &mdash; the multi-line digest is gone. Right under the greeting, Henry contributes a single count + read of the day: <em>&ldquo;3 things need you today&rdquo;</em> (rust mark, working day), or <em>&ldquo;Nothing needs you &mdash; you&rsquo;re caught up&rdquo;</em> (green check, clear day). It orients, never enumerates &mdash; the items live in the cards below so nothing repeats.</li>
+      <li><strong>Each signal lives in exactly one place</strong> &mdash; wins in the green celebration banner, money / follow-ups / aging-estimates in the chase list, day-to-day tasks in Today / Blocked / Needs-You. Henry is the read + embedded flags, not a digest that repeats the cards.</li>
+      <li><strong>Needs You &mdash; the action zone</strong> as 3 sub-cards: Today (overdue + due, 4 items), Blocked (5, tagged Client/Material/Sub so the owner knows who to chase), Needs You (2 decisions with inline Verify/Approve buttons).</li>
+      <li><strong>One chase list, money first</strong> &mdash; Needs Attention + Money-at-risk merged into a single ranked list of 4: Patel overdue invoice (with the &ldquo;Henry chased &middot; no reply&rdquo; pill + &ldquo;I called them&rdquo; dismiss), Dawson stale quote, Lin Family aging estimate ($18,150, sent 5d, not viewed &mdash; &ldquo;Nudge&rdquo;), Sarah Chen follow-up. Each row deep-links to its source surface. <strong>Money appears only here.</strong></li>
+      <li><strong>Recent Activity demoted</strong> &mdash; 5 latest only, behind a &ldquo;View all&rdquo; expander on default; expanded variant shows the full audit feed. Never dominates the screen.</li>
+      <li><strong>What was removed</strong> &mdash; <code>TodaysJobs</code>, <code>getJobTaskHealth</code>, generic <code>PipelineSummary</code>, every &ldquo;coming soon&rdquo; placeholder, AND the de-duped 6-tile metric strip itself (Planning / Awaiting / Active / Complete / Revenue / Outstanding). Those numbers live on Business Health, Billing, and Projects &mdash; the dashboard is for triage, not for re-displaying metrics. GC-only path; no <code>isRenovation</code> branching anywhere.</li>
+    </ul>
+    <div class="open-q">
+      <strong>Notes:</strong> the celebration banner is dismissible &mdash; once Jonathan opens or dismisses the Graham-accepted message it disappears from this card. Money appears only in the chase list, with the Patel overdue row in danger red because it is the only red-priority money row; the Lin estimate row carries its $18,150 in plain ink because aging-but-not-yet-late doesn&rsquo;t earn alarm color. Three type sizes per screen (28 / 16 / 14 / 12 mixed across heading-scale and body-scale, but body uses only 16 / 14 / 12).
+    </div>
+  </div>
+</div>
+</body>
+</html>

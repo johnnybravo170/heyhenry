@@ -1,0 +1,2185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Invoice detail — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───────────────────────────────────────────────────────────────────
+     HeyHenry Paper palette (operator surface — matches od-billing sibling)
+     Restyle of /invoices/[id] — built end-to-end; deltas are styling +
+     hierarchy + keying. The page IS the operator's one-invoice workbench:
+     draft = preview-forward, sent = awaiting-payment, paid = receipt,
+     void = closed. Rust is reserved for the ONE status-primary action.
+  ──────────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --paper-soft:   #FBF6EC;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --interac:      #B61D24;
+    --interac-soft: #FCE8E8;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  /* ═══ Frame divider (OD chrome — outside the product) ═══ */
+  .frame-divider {
+    max-width: 1440px;
+    margin: 56px auto 16px;
+    padding: 0 28px;
+    display: flex; align-items: baseline; gap: 18px;
+    flex-wrap: wrap;
+  }
+  .frame-divider:first-child { margin-top: 40px; }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub { color: var(--muted); font-size: 12px; }
+
+  /* ═══ Shell — sidebar + main (matches od-billing) ═══ */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 800px;
+           max-width: 1440px; margin: 0 auto;
+           background: var(--bg);
+           border: 1px solid var(--hair);
+           border-radius: 16px;
+           overflow: hidden; }
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust);
+    color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
+  .org-avatar {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  .main { display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  .main-inner {
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 28px 80px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+
+  /* ═══ Buttons ═══ */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 34px; padding: 0 14px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn .icon { width: 13px; height: 13px; flex-shrink: 0; }
+  .btn-rust  { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn-ink   { background: var(--ink);  color: #fff; border-color: var(--ink); }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn-quiet { background: transparent; color: var(--muted); }
+  .btn-quiet:hover { background: var(--chip-fill); color: var(--ink); }
+  .btn-danger-quiet { background: transparent; color: var(--danger); }
+  .btn-danger-quiet:hover { background: var(--danger-soft); }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+  /* ═══ Detail page nav ═══ */
+  .crumbs {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .crumbs a:hover { color: var(--ink); }
+  .crumbs .crumb-back { display: inline-flex; align-items: center; gap: 4px; }
+  .crumbs .crumb-back svg { width: 11px; height: 11px; }
+  .crumbs .sep { color: var(--faint); }
+
+  /* ═══ Page header (friendly invoice key — NOT the UUID) ═══ */
+  .invoice-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .invoice-id-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .invoice-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .invoice-eyebrow .doc-num {
+    color: var(--ink);
+    background: var(--chip-fill);
+    padding: 2px 8px;
+    border-radius: 5px;
+  }
+  .invoice-eyebrow .sep { color: var(--faint); }
+  .invoice-title {
+    font-size: 24px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  .invoice-sub {
+    color: var(--muted);
+    font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .invoice-sub a { color: var(--ink-2); font-weight: 600; }
+  .invoice-sub a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .invoice-sub .sep { color: var(--faint); }
+
+  .head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* ═══ Status badge (status-tokens soft pairs — never raw amber/emerald) ═══ */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  .status-badge svg { width: 11px; height: 11px; }
+  .status-draft   { background: var(--chip-fill); color: var(--muted); }
+  .status-sent    { background: var(--info-soft); color: var(--info); border-color: rgba(30,64,175,0.18); }
+  .status-paid    { background: var(--ok-soft);   color: var(--ok);   border-color: rgba(21,128,61,0.22); }
+  .status-void    { background: var(--chip-fill); color: var(--faint); }
+
+  /* ═══ Card primitives ═══ */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+  }
+  .card-pad { padding: 18px 22px; }
+  .card-tight { padding: 14px 18px; }
+  .card-h2 {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 4px;
+    letter-spacing: -0.005em;
+  }
+  .card-h2 svg { width: 14px; height: 14px; color: var(--ink-2); }
+  .card-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .card-sub { color: var(--muted); font-size: 12px; margin: 0; }
+  .card-sub .accent-ink { color: var(--ink); font-weight: 600; }
+
+  /* ═══ Status posture strip (sent / paid / void band at the top of the
+     status section — replaces full-width banners) ═══ */
+  .posture {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 18px;
+    border-radius: var(--radius-card);
+    border: 1px solid transparent;
+  }
+  .posture .ico {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .posture .ico svg { width: 16px; height: 16px; }
+  .posture .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .posture .body .pri {
+    font-size: 14px; font-weight: 700;
+  }
+  .posture .body .sec {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .posture .right {
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .posture-warn  {
+    background: var(--warn-soft);
+    border-color: rgba(180, 83, 9, 0.25);
+    color: var(--warn);
+  }
+  .posture-warn .ico  { background: rgba(180, 83, 9, 0.12); color: var(--warn); }
+  .posture-warn .pri  { color: #7C3F0A; }
+  .posture-warn .sec  { color: rgba(124, 63, 10, 0.85); }
+  .posture-success {
+    background: var(--ok-soft);
+    border-color: rgba(21, 128, 61, 0.22);
+    color: var(--ok);
+  }
+  .posture-success .ico { background: rgba(21, 128, 61, 0.12); color: var(--ok); }
+  .posture-success .pri { color: #0F5C2C; }
+  .posture-success .sec { color: rgba(15, 92, 44, 0.85); }
+  .posture-neutral {
+    background: var(--chip-fill);
+    border-color: var(--rule);
+  }
+  .posture-neutral .ico { background: var(--card); color: var(--muted); }
+  .posture-neutral .pri { color: var(--ink-2); }
+  .posture-neutral .sec { color: var(--muted); }
+
+  /* ═══ Inline cautions (drift / missing-GST — strip not banner) ═══ */
+  .inline-caution {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .inline-caution .ico {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .inline-caution .ico svg { width: 12px; height: 12px; }
+  .inline-caution .text { flex: 1; min-width: 0; }
+  .inline-caution .text strong { font-weight: 700; }
+  .inline-caution .text .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-left: 6px;
+    opacity: 0.85;
+  }
+  .inline-caution .text .delta {
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+  .inline-caution .fix {
+    flex-shrink: 0;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: var(--card);
+    cursor: pointer;
+  }
+  .caution-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180, 83, 9, 0.25);
+    color: #7C3F0A;
+  }
+  .caution-warn .ico  { background: rgba(180, 83, 9, 0.15); color: var(--warn); }
+  .caution-warn .fix  { border-color: rgba(180, 83, 9, 0.3); color: var(--warn); }
+  .caution-warn .fix:hover { background: rgba(180, 83, 9, 0.12); }
+  .caution-danger {
+    background: var(--danger-soft);
+    border-color: rgba(185, 28, 28, 0.22);
+    color: #7B1414;
+  }
+  .caution-danger .ico { background: rgba(185, 28, 28, 0.15); color: var(--danger); }
+  .caution-danger .fix { border-color: rgba(185, 28, 28, 0.3); color: var(--danger); }
+  .caution-danger .fix:hover { background: rgba(185, 28, 28, 0.1); }
+
+  /* ═══ Customer-view preview card (the HERO on draft) ═══ */
+  .preview-card { padding: 0; overflow: hidden; }
+  .preview-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .preview-head .eye {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--paper-soft);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    color: var(--ink-2);
+  }
+  .preview-head .eye svg { width: 16px; height: 16px; }
+  .preview-head .text { flex: 1; min-width: 0; }
+  .preview-head .text h2 {
+    margin: 0; font-size: 16px; font-weight: 700;
+    color: var(--ink); letter-spacing: -0.01em;
+  }
+  .preview-head .text .desc {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .preview-head .text .desc .override {
+    color: var(--ink-2);
+  }
+  .preview-head .text .desc .override b { color: var(--ink); font-weight: 600; }
+
+  .preview-controls {
+    padding: 14px 22px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--paper-soft);
+  }
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .mode-card {
+    text-align: left;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: background 100ms, border-color 100ms;
+  }
+  .mode-card:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .mode-card .name {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .mode-card .hint {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 3px;
+  }
+  .mode-card.active {
+    background: var(--ink); border-color: var(--ink);
+  }
+  .mode-card.active .name { color: #fff; }
+  .mode-card.active .hint { color: rgba(255,255,255,0.7); }
+  .mode-card.disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .mgmt-toggle {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+  }
+  .mgmt-toggle .check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    background: var(--card);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .mgmt-toggle.is-on .check { background: var(--ink); }
+  .mgmt-toggle.is-on .check svg { color: #fff; display: block; }
+  .mgmt-toggle .check svg { width: 10px; height: 10px; color: transparent; }
+  .mgmt-toggle .label {
+    font-size: 14px; color: var(--ink);
+    font-weight: 600;
+  }
+  .mgmt-toggle .sub {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    margin-left: 6px;
+  }
+
+  /* "What the customer will see" preview body — mirrors portal-budget-detail */
+  .preview-body { padding: 18px 22px 22px; }
+  .preview-body .what {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 10px;
+  }
+  .preview-body .what::before, .preview-body .what::after {
+    content: ''; height: 1px; flex: 1; background: var(--hair);
+  }
+
+  .pv-rows { display: flex; flex-direction: column; gap: 8px; }
+  .pv-group {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .pv-group-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 10px 14px;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+    gap: 12px;
+  }
+  .pv-group-head .ttl {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink); letter-spacing: -0.005em;
+  }
+  .pv-group-head .val {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .pv-group-head .val .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .pv-leaf-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--hair);
+    gap: 12px;
+  }
+  .pv-leaf-row:last-child { border-bottom: 0; }
+  .pv-leaf-row .ttl {
+    font-size: 14px; color: var(--ink-2);
+  }
+  .pv-leaf-row .ttl .body {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+  .pv-leaf-row .val {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px; color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .pv-leaf-row .val .cents { color: var(--muted); font-size: 11px; }
+
+  .pv-row-card {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 11px 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    gap: 12px;
+  }
+  .pv-row-card.is-mgmt {
+    background: var(--paper-soft);
+  }
+  .pv-row-card.is-credit {
+    background: var(--info-soft);
+    border-color: rgba(30, 64, 175, 0.18);
+  }
+  .pv-row-card .ttl {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+  }
+  .pv-row-card .ttl .body {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-weight: 500;
+  }
+  .pv-row-card .val {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .pv-row-card .val .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .pv-row-card.is-credit .val { color: var(--info); }
+
+  /* Totals strip inside the preview */
+  .pv-totals {
+    margin-top: 14px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .pv-totals-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px;
+  }
+  .pv-totals-row .lbl { color: var(--muted); }
+  .pv-totals-row .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .pv-totals-row .val .cents { color: var(--muted); font-size: 11px; }
+  .pv-totals-row.is-total {
+    border-top: 1px solid var(--hair);
+    padding-top: 7px;
+    margin-top: 4px;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+  }
+  .pv-totals-row.is-total .lbl { color: var(--ink); }
+  .pv-totals-row.is-total .val { color: var(--ink); font-weight: 700; }
+  .pv-totals-row.is-total .val .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+
+  .preview-apply {
+    padding: 14px 22px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--hair);
+    background: var(--card);
+    gap: 12px;
+  }
+  .preview-apply .left {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .preview-apply .left b { color: var(--ink); font-weight: 700; }
+
+  /* ═══ Amount breakdown card (sent / paid / void — when preview suppressed) ═══ */
+  .breakdown { display: flex; flex-direction: column; gap: 8px; }
+  .breakdown-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .breakdown-row .lbl { color: var(--muted); }
+  .breakdown-row .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .breakdown-row .val .cents { color: var(--muted); font-size: 12px; }
+  .breakdown-row.is-line .lbl { color: var(--ink); font-weight: 600; }
+  .breakdown-row.is-line .lbl .desc {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-top: 1px;
+  }
+  .breakdown-divider {
+    border-top: 1px solid var(--hair);
+    margin: 6px 0 2px;
+  }
+  .breakdown-row.is-total {
+    font-size: 18px; font-weight: 700;
+    color: var(--ink);
+    padding-top: 4px;
+  }
+  .breakdown-row.is-total .lbl { color: var(--ink); }
+  .breakdown-row.is-total .val { color: var(--ink); font-weight: 700; }
+  .breakdown-row.is-total .val .cents { color: var(--muted); font-size: 14px; font-weight: 500; }
+
+  .reg-footer {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex; gap: 14px; flex-wrap: wrap;
+    letter-spacing: 0.02em;
+  }
+  .reg-footer .num { color: var(--ink-2); font-weight: 600; }
+  .reg-footer .sep { color: var(--faint); }
+
+  /* ═══ Customer note ═══ */
+  .note-card {
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .note-card .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .note-card .body {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    font-style: italic;
+  }
+  .note-card .edit {
+    font-size: 12px;
+    color: var(--rust);
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+  }
+  .note-card .edit:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ═══ Two-col context (customer + job) ═══ */
+  .ctx-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ctx-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .ctx-card .ico {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: var(--paper-soft);
+    display: grid; place-items: center;
+    color: var(--ink-2);
+    flex-shrink: 0;
+  }
+  .ctx-card .ico svg { width: 14px; height: 14px; }
+  .ctx-card .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ctx-card .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ctx-card .name {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+  }
+  .ctx-card .name:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .ctx-card .meta {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .ctx-card .meta .sep { color: var(--faint); margin: 0 4px; }
+
+  /* ═══ Receipt thumbnails ═══ */
+  .receipts {
+    display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap;
+  }
+  .receipt-thumb {
+    width: 64px; height: 64px;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    background: var(--paper-soft);
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    overflow: hidden;
+    display: grid; place-items: center;
+    color: var(--muted);
+  }
+  .receipt-thumb.is-pdf {
+    background: var(--card);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    text-align: center;
+    line-height: 1.2;
+  }
+  .receipt-thumb.is-pdf svg { width: 18px; height: 18px; color: var(--danger); margin-bottom: 2px; }
+  .receipt-thumb.r-photo-1 {
+    background: linear-gradient(135deg, #c9a373 0%, #8a6c3f 100%);
+  }
+  .receipt-thumb.r-photo-2 {
+    background: linear-gradient(160deg, #a59478 0%, #5a4c36 100%);
+  }
+
+  /* ═══ Document details (disclosure — collapses defaults-setup + overrides) ═══ */
+  .disclosure {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+  }
+  .disclosure-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+  }
+  .disclosure-head .chev {
+    width: 18px; height: 18px;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: transform 120ms;
+  }
+  .disclosure.is-open .chev { transform: rotate(90deg); color: var(--ink); }
+  .disclosure-head .text { flex: 1; }
+  .disclosure-head .text .t {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .disclosure-head .text .s {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .disclosure-head .meta {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .disclosure-head .meta .ok-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .disclosure-body {
+    padding: 4px 18px 18px;
+    display: flex; flex-direction: column; gap: 14px;
+    border-top: 1px solid var(--hair);
+    background: var(--paper-soft);
+  }
+  .dd-field { display: flex; flex-direction: column; gap: 6px; }
+  .dd-field .lbl {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-top: 10px;
+  }
+  .dd-field .lbl .seg {
+    display: inline-flex;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .dd-field .lbl .seg button {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .dd-field .lbl .seg button.is-on {
+    background: var(--ink); color: #fff;
+  }
+  .dd-field .val {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .dd-field .val.is-default {
+    background: var(--paper-soft);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .dd-field .val.is-empty {
+    background: var(--card);
+    color: var(--faint);
+    font-style: italic;
+    border: 1px dashed var(--rule);
+  }
+
+  /* ═══ Actions row ═══ */
+  .actions-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 4px 0 0;
+  }
+  .actions-row .spacer { flex: 1; }
+
+  /* ═══ History ═══ */
+  .history {
+    padding: 18px 22px;
+  }
+  .history .h-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .history .h-head h3 {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+  }
+  .history ol {
+    list-style: none; margin: 0; padding: 0;
+    position: relative;
+    border-left: 1px solid var(--rule);
+    padding-left: 16px;
+    margin-left: 6px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .history li {
+    position: relative;
+    font-size: 14px;
+  }
+  .history li::before {
+    content: '';
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px solid var(--rule);
+    position: absolute;
+    left: -21px;
+    top: 4px;
+  }
+  .history li.is-current::before { background: var(--rust); border-color: var(--rust); }
+  .history li .ttl {
+    display: flex; align-items: baseline; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .history li .ttl .t { color: var(--ink); font-weight: 600; }
+  .history li .ttl .when {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .history li .body {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  /* ═══ Record-payment dialog (Frame E) ═══ */
+  .dialog-stage {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 28px 32px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .dialog-backdrop {
+    background: rgba(10, 10, 10, 0.40);
+    border-radius: 16px;
+    padding: 36px;
+    display: grid; place-items: center;
+  }
+  .dialog {
+    width: 100%;
+    max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    box-shadow: 0 18px 60px rgba(10, 10, 10, 0.25);
+    overflow: hidden;
+  }
+  .dialog-head {
+    padding: 18px 22px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .dialog-head h2 {
+    margin: 0; font-size: 16px; font-weight: 700;
+    color: var(--ink); letter-spacing: -0.01em;
+  }
+  .dialog-head .desc {
+    margin: 3px 0 0; font-size: 12px; color: var(--muted);
+  }
+  .dialog-body { padding: 16px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .dialog-field { display: flex; flex-direction: column; gap: 5px; }
+  .dialog-field label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .input, .select-trigger, .textarea {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--ink);
+    font-family: inherit;
+    width: 100%;
+  }
+  .input.tabular { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .select-trigger {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .select-trigger .val { font-weight: 600; color: var(--ink); }
+  .select-trigger svg { width: 12px; height: 12px; color: var(--muted); }
+  .textarea { min-height: 60px; resize: none; }
+
+  /* Method picker (Interac at parity) */
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .method {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    background: var(--card);
+    font-size: 14px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .method:hover { background: var(--chip-fill); }
+  .method.is-on {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .method.is-on.interac {
+    background: var(--interac);
+    border-color: var(--interac);
+  }
+  .method .glyph {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: var(--paper-soft);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .method.interac .glyph {
+    background: var(--interac-soft);
+    color: var(--interac);
+  }
+  .method.is-on .glyph { background: rgba(255,255,255,0.2); color: #fff; }
+
+  .receipt-upload {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px;
+    border: 1px dashed var(--rule);
+    border-radius: 9px;
+    background: var(--paper-soft);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .receipt-upload svg { width: 16px; height: 16px; }
+  .receipt-upload .t { font-weight: 600; color: var(--ink-2); }
+
+  .ocr-hint {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.18);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--rust);
+  }
+  .ocr-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .ocr-hint b { font-weight: 700; }
+
+  .dialog-foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--hair);
+    display: flex; gap: 8px; justify-content: flex-end;
+    background: var(--paper-soft);
+  }
+</style>
+</head>
+<body>
+
+<!-- Icon symbols -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-pdf-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+  </defs>
+</svg>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FRAME 1 — DRAFT (the workbench: preview-as-hero, inline cautions,
+     Doc details collapsed, Send primary)
+═════════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 1</span>
+  <span class="label">Draft — the workbench</span>
+  <span class="sub">/invoices/INV-2026-0142 · preview-as-hero · Send is the one action</span>
+</div>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">4</span></div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <!-- Detail nav -->
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="#" class="crumb-back"><svg><use href="#i-arrow-left"/></svg>All invoices</a>
+        <span class="sep">›</span>
+        <span>Hillcrest Kitchen Remodel</span>
+      </nav>
+
+      <!-- Header (friendly key + status badge — UUID is GONE) -->
+      <header class="invoice-head">
+        <div class="invoice-id-block">
+          <div class="invoice-eyebrow">
+            <span>Invoice</span>
+            <span class="doc-num">INV-2026-0142</span>
+            <span class="sep">·</span>
+            <span>Draw 3 of 5</span>
+          </div>
+          <h1 class="invoice-title">Hillcrest Kitchen Remodel</h1>
+          <p class="invoice-sub">
+            <a href="#">Helen Chao</a>
+            <span class="sep">·</span>
+            <span>Created May 22, 2026 · 9:14 am PDT</span>
+            <span class="sep">·</span>
+            <span>Tax-exclusive · BC (GST 5%)</span>
+          </p>
+        </div>
+        <div class="head-right">
+          <span class="status-badge status-draft">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/></svg>
+            Draft
+          </span>
+        </div>
+      </header>
+
+      <!-- ═══ The HERO: customer-view preview (gated draft && !tax_inclusive && project_id) ═══ -->
+      <section class="card preview-card" aria-label="Customer view preview">
+        <div class="preview-head">
+          <div class="eye"><svg><use href="#i-eye"/></svg></div>
+          <div class="text">
+            <h2>What the customer will see</h2>
+            <p class="desc">
+              Pick how much detail to show. Their total stays the same — only the breakdown changes.
+              <span class="override">(Override for this invoice only — project default is <b>Categories</b>.)</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="preview-controls">
+          <div class="mode-grid" role="radiogroup" aria-label="Customer view detail level">
+            <button class="mode-card">
+              <div class="name">Lump sum</div>
+              <div class="hint">One total</div>
+            </button>
+            <button class="mode-card">
+              <div class="name">Sections</div>
+              <div class="hint">Grouped</div>
+            </button>
+            <button class="mode-card active" aria-pressed="true">
+              <div class="name">Categories</div>
+              <div class="hint">Per category</div>
+            </button>
+            <button class="mode-card">
+              <div class="name">Detailed</div>
+              <div class="hint">Every line</div>
+            </button>
+          </div>
+
+          <div class="mgmt-toggle" role="switch" aria-checked="false">
+            <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="label">Bake management fee into the headline total</span>
+            <span class="sub">Lump sum only</span>
+          </div>
+        </div>
+
+        <div class="preview-body">
+          <p class="what">↓ customer view preview ↓</p>
+
+          <div class="pv-rows">
+            <div class="pv-row-card">
+              <div class="ttl">
+                Labour — May 5 to May 19
+                <span class="body">3 framers · 1 finish carpenter · 142 hrs on-site</span>
+              </div>
+              <div class="val">$11,800<span class="cents">.00</span></div>
+            </div>
+            <div class="pv-row-card">
+              <div class="ttl">
+                Materials &amp; Expenses
+                <span class="body">Subfloor &amp; underlayment · cabinet hardware · 1st delivery</span>
+              </div>
+              <div class="val">$5,420<span class="cents">.18</span></div>
+            </div>
+            <div class="pv-row-card is-mgmt">
+              <div class="ttl">
+                Project management (15%)
+              </div>
+              <div class="val">$2,583<span class="cents">.03</span></div>
+            </div>
+          </div>
+
+          <div class="pv-totals">
+            <div class="pv-totals-row">
+              <span class="lbl">Subtotal</span>
+              <span class="val">$19,803<span class="cents">.21</span></span>
+            </div>
+            <div class="pv-totals-row">
+              <span class="lbl">GST (5%)</span>
+              <span class="val">$990<span class="cents">.16</span></span>
+            </div>
+            <div class="pv-totals-row is-total">
+              <span class="lbl">Customer total</span>
+              <span class="val">$20,793<span class="cents">.37</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-apply">
+          <div class="left">CURRENT BREAKDOWN · <b>3 lines</b> · last applied 12 min ago</div>
+          <button class="btn btn-ink">
+            <svg class="icon"><use href="#i-check"/></svg>
+            Apply to invoice
+          </button>
+        </div>
+      </section>
+
+      <!-- Inline caution: cost-basis drift (warn-soft, NOT a stacked banner) -->
+      <div class="inline-caution caution-warn">
+        <span class="ico"><svg><use href="#i-alert"/></svg></span>
+        <div class="text">
+          <strong>Cost basis has drifted from this draft.</strong>
+          Billed <span class="delta">$17,220.18</span> · today's rollup <span class="delta">$17,420.18</span> — <span class="delta">$200.00 higher</span>.
+          <span class="meta">2 expenses logged since 9:14 am</span>
+        </div>
+        <button class="fix">Regenerate draft</button>
+      </div>
+
+      <!-- Customer note (draft-editable) -->
+      <div class="note-card">
+        <span class="label">Customer note</span>
+        <p class="body">
+          “Thanks Helen — this draw covers framing, the new subfloor, and first-pass cabinet
+          hardware. The marble lookups land Wed; I'll loop you on the showroom photos before we
+          order.”
+        </p>
+        <button class="edit">Edit note</button>
+      </div>
+
+      <!-- Customer + Job links -->
+      <section class="ctx-grid">
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-user"/></svg></span>
+          <div class="body">
+            <span class="label">Customer</span>
+            <a href="#" class="name">Helen Chao</a>
+            <span class="meta">helen.chao@gmail.com<span class="sep">·</span>(604) 555-0143</span>
+          </div>
+        </div>
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-briefcase"/></svg></span>
+          <div class="body">
+            <span class="label">Project</span>
+            <a href="#" class="name">Hillcrest Kitchen Remodel</a>
+            <span class="meta">Cost-plus · Abbotsford<span class="sep">·</span>3 of 5 draws billed</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Document details disclosure (folds defaults-setup + overrides) -->
+      <div class="disclosure">
+        <div class="disclosure-head">
+          <svg class="chev"><use href="#i-chevron-right"/></svg>
+          <div class="text">
+            <div class="t">Document details</div>
+            <div class="s">Payment instructions, terms, and policies for this invoice</div>
+          </div>
+          <span class="meta">
+            <span class="ok-dot"></span>Using tenant defaults
+          </span>
+        </div>
+      </div>
+
+      <!-- Actions (status-aware primary: Send) -->
+      <div class="actions-row">
+        <button class="btn btn-rust">
+          <svg class="icon"><use href="#i-send"/></svg>
+          Send invoice — $20,793.37
+        </button>
+        <button class="btn btn-ghost">
+          <svg class="icon"><use href="#i-printer"/></svg>
+          Print
+        </button>
+        <span class="spacer"></span>
+        <button class="btn btn-danger-quiet btn-sm">
+          <svg class="icon"><use href="#i-ban"/></svg>
+          Void draft
+        </button>
+      </div>
+
+      <!-- History -->
+      <section class="card history" aria-label="History">
+        <div class="h-head">
+          <h3>History</h3>
+        </div>
+        <ol>
+          <li class="is-current">
+            <div class="ttl">
+              <span class="t">Cost basis drift surfaced</span>
+              <span class="when">just now</span>
+            </div>
+            <div class="body">2 expenses on the project rollup landed after this draft was generated. Henry flagged the $200 delta.</div>
+          </li>
+          <li>
+            <div class="ttl">
+              <span class="t">Draw 3 generated from Budget tab</span>
+              <span class="when">today, 9:14 am</span>
+            </div>
+            <div class="body">Cost-plus rollup · Labour $11,800.00 · Materials $5,420.18 · Mgmt fee 15%.</div>
+          </li>
+          <li>
+            <div class="ttl">
+              <span class="t">Draw 2 paid by cheque</span>
+              <span class="when">May 7</span>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FRAME 2 — SENT (warn-soft awaiting-payment; Record-payment is primary)
+═════════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 2</span>
+  <span class="label">Sent — awaiting payment</span>
+  <span class="sub">warn-soft posture strip + chase actions · Record-payment is the one action</span>
+</div>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">4</span></div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher"><div class="org-avatar">N</div><div class="org-meta"><span class="org-name">Northbeam Build Co.</span><span class="org-sub">Abbotsford, BC</span></div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search"><svg class="icon"><use href="#i-search"/></svg><span>Search projects, customers, invoices…</span><span class="chip-kbd">⌘ K</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <nav class="crumbs"><a href="#" class="crumb-back"><svg><use href="#i-arrow-left"/></svg>All invoices</a><span class="sep">›</span><span>Donahue Basement Suite</span></nav>
+
+      <header class="invoice-head">
+        <div class="invoice-id-block">
+          <div class="invoice-eyebrow">
+            <span>Invoice</span>
+            <span class="doc-num">INV-2026-0139</span>
+            <span class="sep">·</span>
+            <span>Draw 2 of 4</span>
+          </div>
+          <h1 class="invoice-title">Donahue Basement Suite</h1>
+          <p class="invoice-sub">
+            <a href="#">The Donahue Family</a>
+            <span class="sep">·</span>
+            <span>Sent May 17, 2026 · 3:42 pm PDT</span>
+          </p>
+        </div>
+        <div class="head-right">
+          <span class="status-badge status-sent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" opacity="0.18"/></svg>
+            Sent
+          </span>
+        </div>
+      </header>
+
+      <!-- Posture strip: awaiting payment -->
+      <div class="posture posture-warn">
+        <span class="ico"><svg><use href="#i-hourglass"/></svg></span>
+        <div class="body">
+          <span class="pri">Awaiting payment · sent 6 days ago</span>
+          <span class="sec">
+            Email opened twice · payment link clicked once · no payment received.
+            <strong>Net-15 due May 31</strong> — 8 days away.
+          </span>
+        </div>
+        <div class="right">
+          <span class="status-badge status-sent" style="background:rgba(180,83,9,0.12); color:#7C3F0A; border-color:rgba(180,83,9,0.3);">
+            Net-15
+          </span>
+        </div>
+      </div>
+
+      <!-- Amount breakdown (no preview — invoice is sent) -->
+      <section class="card card-pad" aria-label="Amount breakdown">
+        <div class="breakdown">
+          <div class="breakdown-row">
+            <span class="lbl">Subtotal</span>
+            <span class="val">$17,142<span class="cents">.86</span></span>
+          </div>
+          <div class="breakdown-row is-line">
+            <div class="lbl">Framing — labour
+              <span class="desc">May 1 – May 14 · 86 hrs</span>
+            </div>
+            <span class="val">$8,600<span class="cents">.00</span></span>
+          </div>
+          <div class="breakdown-row is-line">
+            <div class="lbl">Materials &amp; expenses
+              <span class="desc">Lumber pkg 2 · subfloor · fasteners</span>
+            </div>
+            <span class="val">$6,300<span class="cents">.86</span></span>
+          </div>
+          <div class="breakdown-row is-line">
+            <div class="lbl">Project management (15%)
+              <span class="desc">Inline · per project default</span>
+            </div>
+            <span class="val">$2,242<span class="cents">.00</span></span>
+          </div>
+          <div class="breakdown-row">
+            <span class="lbl">GST (5%)</span>
+            <span class="val">$857<span class="cents">.14</span></span>
+          </div>
+          <div class="breakdown-divider"></div>
+          <div class="breakdown-row is-total">
+            <span class="lbl">Customer total</span>
+            <span class="val">$18,000<span class="cents">.00</span></span>
+          </div>
+          <div class="reg-footer">
+            <span>GST: <span class="num">779 481 326 RT0001</span></span>
+            <span class="sep">·</span>
+            <span>WCB: <span class="num">418294-AC</span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Customer note -->
+      <div class="note-card">
+        <span class="label">Customer note</span>
+        <p class="body">
+          “Thanks for choosing Northbeam. Net-15 — pay by Interac e-Transfer (no fee) or card via
+          the link below. Receipt arrives by email once we mark this paid.”
+        </p>
+      </div>
+
+      <!-- Context -->
+      <section class="ctx-grid">
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-user"/></svg></span>
+          <div class="body">
+            <span class="label">Customer</span>
+            <a href="#" class="name">The Donahue Family</a>
+            <span class="meta">donahue.fam@protonmail.com<span class="sep">·</span>(604) 555-0287</span>
+          </div>
+        </div>
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-briefcase"/></svg></span>
+          <div class="body">
+            <span class="label">Project</span>
+            <a href="#" class="name">Donahue Basement Suite</a>
+            <span class="meta">Fixed-price · Chilliwack<span class="sep">·</span>2 of 4 draws sent</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Document details disclosure (collapsed) -->
+      <div class="disclosure">
+        <div class="disclosure-head">
+          <svg class="chev"><use href="#i-chevron-right"/></svg>
+          <div class="text">
+            <div class="t">Document details</div>
+            <div class="s">Payment instructions, terms, and policies — sent with this invoice</div>
+          </div>
+          <span class="meta"><span class="ok-dot"></span>Using tenant defaults</span>
+        </div>
+      </div>
+
+      <!-- Actions (Record payment is primary, Resend + Copy link are secondary) -->
+      <div class="actions-row">
+        <button class="btn btn-rust">
+          <svg class="icon"><use href="#i-check-circle"/></svg>
+          Record payment
+        </button>
+        <button class="btn btn-ghost">
+          <svg class="icon"><use href="#i-mail"/></svg>
+          Resend
+        </button>
+        <button class="btn btn-ghost">
+          <svg class="icon"><use href="#i-link"/></svg>
+          Copy payment link
+        </button>
+        <button class="btn btn-ghost">
+          <svg class="icon"><use href="#i-printer"/></svg>
+          Print
+        </button>
+        <span class="spacer"></span>
+        <button class="btn btn-danger-quiet btn-sm">
+          <svg class="icon"><use href="#i-ban"/></svg>
+          Void
+        </button>
+      </div>
+
+      <!-- History -->
+      <section class="card history">
+        <div class="h-head"><h3>History</h3></div>
+        <ol>
+          <li class="is-current">
+            <div class="ttl"><span class="t">Payment link clicked</span><span class="when">May 21 · 11:02 am</span></div>
+            <div class="body">From the email opened on May 19. No payment processed yet.</div>
+          </li>
+          <li>
+            <div class="ttl"><span class="t">Email opened (Helen Chao)</span><span class="when">May 19 · 8:14 am</span></div>
+          </li>
+          <li>
+            <div class="ttl"><span class="t">Sent to donahue.fam@protonmail.com</span><span class="when">May 17 · 3:42 pm</span></div>
+            <div class="body">Stripe checkout link generated · Net-15 terms.</div>
+          </li>
+          <li>
+            <div class="ttl"><span class="t">Draft generated from Budget tab</span><span class="when">May 17 · 3:38 pm</span></div>
+          </li>
+        </ol>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FRAME 3 — PAID (success-soft receipt: date · method · ref · receipts)
+═════════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 3</span>
+  <span class="label">Paid — a calm receipt</span>
+  <span class="sub">success-soft posture · receipt thumbnails · Duplicate available · closed</span>
+</div>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">4</span></div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher"><div class="org-avatar">N</div><div class="org-meta"><span class="org-name">Northbeam Build Co.</span><span class="org-sub">Abbotsford, BC</span></div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search"><svg class="icon"><use href="#i-search"/></svg><span>Search projects, customers, invoices…</span><span class="chip-kbd">⌘ K</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <nav class="crumbs"><a href="#" class="crumb-back"><svg><use href="#i-arrow-left"/></svg>All invoices</a><span class="sep">›</span><span>Petrov Bathroom Reno</span></nav>
+
+      <header class="invoice-head">
+        <div class="invoice-id-block">
+          <div class="invoice-eyebrow">
+            <span>Invoice</span>
+            <span class="doc-num">INV-2026-0128</span>
+            <span class="sep">·</span>
+            <span>Final invoice</span>
+          </div>
+          <h1 class="invoice-title">Petrov Bathroom Reno</h1>
+          <p class="invoice-sub">
+            <a href="#">Marcus &amp; Aisha Petrov</a>
+            <span class="sep">·</span>
+            <span>Paid May 19, 2026 · 2:08 pm PDT</span>
+          </p>
+        </div>
+        <div class="head-right">
+          <span class="status-badge status-paid">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Paid
+          </span>
+          <button class="btn btn-ghost btn-sm">
+            <svg class="icon"><use href="#i-copy"/></svg>
+            Duplicate
+          </button>
+        </div>
+      </header>
+
+      <!-- Posture: paid receipt -->
+      <div class="posture posture-success">
+        <span class="ico"><svg><use href="#i-check-circle"/></svg></span>
+        <div class="body">
+          <span class="pri">Paid May 19, 2026 · via Interac e-Transfer</span>
+          <span class="sec">
+            Reference <strong>E-TR-7F32-X91Q</strong> · received 6 minutes after send ·
+            recorded by Avery (Northbeam) · receipt emailed to customer.
+          </span>
+        </div>
+        <div class="right">
+          <button class="btn btn-ghost btn-sm">
+            <svg class="icon"><use href="#i-mail"/></svg>
+            Resend receipt
+          </button>
+        </div>
+      </div>
+
+      <!-- Amount breakdown (now a receipt of record) -->
+      <section class="card card-pad" aria-label="Amount breakdown">
+        <div class="breakdown">
+          <div class="breakdown-row">
+            <span class="lbl">Subtotal</span>
+            <span class="val">$10,476<span class="cents">.19</span></span>
+          </div>
+          <div class="breakdown-row is-line">
+            <div class="lbl">Bathroom reno — final
+              <span class="desc">Fixed-price · per accepted estimate · Mar 14, 2026</span>
+            </div>
+            <span class="val">$10,476<span class="cents">.19</span></span>
+          </div>
+          <div class="breakdown-row">
+            <span class="lbl">GST (5%)</span>
+            <span class="val">$523<span class="cents">.81</span></span>
+          </div>
+          <div class="breakdown-divider"></div>
+          <div class="breakdown-row is-total">
+            <span class="lbl">Customer total</span>
+            <span class="val">$11,000<span class="cents">.00</span></span>
+          </div>
+          <div class="reg-footer">
+            <span>GST: <span class="num">779 481 326 RT0001</span></span>
+            <span class="sep">·</span>
+            <span>WCB: <span class="num">418294-AC</span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Payment notes + receipt thumbnails -->
+      <div class="note-card">
+        <span class="label">Payment notes &amp; receipts</span>
+        <p class="body">
+          “Marcus sent via personal account — emailed me the confirmation right after.
+          Two receipt photos attached for the books.”
+        </p>
+        <div class="receipts" aria-label="Payment receipts">
+          <a href="#" class="receipt-thumb r-photo-1" aria-label="Receipt photo 1"></a>
+          <a href="#" class="receipt-thumb r-photo-2" aria-label="Receipt photo 2"></a>
+          <a href="#" class="receipt-thumb is-pdf" aria-label="Bank confirmation PDF">
+            <svg><use href="#i-pdf-file"/></svg>
+            BANK<br/>PDF
+          </a>
+        </div>
+      </div>
+
+      <!-- Context -->
+      <section class="ctx-grid">
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-user"/></svg></span>
+          <div class="body">
+            <span class="label">Customer</span>
+            <a href="#" class="name">Marcus &amp; Aisha Petrov</a>
+            <span class="meta">m.petrov@telus.net<span class="sep">·</span>(604) 555-0419</span>
+          </div>
+        </div>
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-briefcase"/></svg></span>
+          <div class="body">
+            <span class="label">Project</span>
+            <a href="#" class="name">Petrov Bathroom Reno</a>
+            <span class="meta">Fixed-price · Chilliwack<span class="sep">·</span>Closed out · 100% paid</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actions (closed — just Print, Duplicate is in the header) -->
+      <div class="actions-row">
+        <button class="btn btn-ghost">
+          <svg class="icon"><use href="#i-printer"/></svg>
+          Print
+        </button>
+      </div>
+
+      <!-- History -->
+      <section class="card history">
+        <div class="h-head"><h3>History</h3></div>
+        <ol>
+          <li class="is-current">
+            <div class="ttl"><span class="t">Payment recorded · Interac e-Transfer · $11,000.00</span><span class="when">May 19 · 2:08 pm</span></div>
+            <div class="body">Recorded by Avery · ref E-TR-7F32-X91Q · 2 photo receipts + 1 bank PDF attached · receipt emailed.</div>
+          </li>
+          <li>
+            <div class="ttl"><span class="t">Email opened</span><span class="when">May 19 · 2:01 pm</span></div>
+          </li>
+          <li>
+            <div class="ttl"><span class="t">Sent to m.petrov@telus.net</span><span class="when">May 19 · 1:58 pm</span></div>
+          </li>
+        </ol>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FRAME 4 — VOID (neutral, closed) + missing-GST inline caution
+     (shown as a non-stacked strip on a hypothetical draft that pre-dates
+      the send gate — demonstrates the danger-soft inline variant)
+═════════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 4</span>
+  <span class="label">Void — neutral, closed</span>
+  <span class="sub">+ inset: the missing-GST inline caution (danger-soft) on a different draft</span>
+</div>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand"><div class="brand-mark">H</div><div class="brand-name">HeyHenry</div></div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">4</span></div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher"><div class="org-avatar">N</div><div class="org-meta"><span class="org-name">Northbeam Build Co.</span><span class="org-sub">Abbotsford, BC</span></div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search"><svg class="icon"><use href="#i-search"/></svg><span>Search projects, customers, invoices…</span><span class="chip-kbd">⌘ K</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <nav class="crumbs"><a href="#" class="crumb-back"><svg><use href="#i-arrow-left"/></svg>All invoices</a><span class="sep">›</span><span>Bandsma Cedar Deck</span></nav>
+
+      <header class="invoice-head">
+        <div class="invoice-id-block">
+          <div class="invoice-eyebrow">
+            <span>Invoice</span>
+            <span class="doc-num">INV-2026-0117</span>
+            <span class="sep">·</span>
+            <span>Deposit</span>
+          </div>
+          <h1 class="invoice-title">Bandsma Cedar Deck + Pergola</h1>
+          <p class="invoice-sub">
+            <a href="#">Graham Bandsma</a>
+            <span class="sep">·</span>
+            <span>Voided May 12, 2026 · 4:21 pm PDT</span>
+          </p>
+        </div>
+        <div class="head-right">
+          <span class="status-badge status-void">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="5" y1="5" x2="19" y2="19"/></svg>
+            Void
+          </span>
+          <button class="btn btn-ghost btn-sm">
+            <svg class="icon"><use href="#i-copy"/></svg>
+            Duplicate to new draft
+          </button>
+        </div>
+      </header>
+
+      <!-- Posture: neutral closed -->
+      <div class="posture posture-neutral">
+        <span class="ico"><svg><use href="#i-ban"/></svg></span>
+        <div class="body">
+          <span class="pri">Voided May 12 by Avery</span>
+          <span class="sec">
+            Reason: customer pushed start to fall — re-issued as INV-2026-0124 with revised scope.
+            The pay link no longer works.
+          </span>
+        </div>
+      </div>
+
+      <!-- Inline caution: a missing-GST case (shown here on the void's
+           breakdown to demonstrate the danger-soft strip — it would
+           normally appear on a draft, not a void) -->
+      <div class="inline-caution caution-danger">
+        <span class="ico"><svg><use href="#i-x-circle"/></svg></span>
+        <div class="text">
+          <strong>GST# missing on this invoice.</strong>
+          The send gate prevented this one from going out — your draft pre-dates the gate, so it
+          surfaces here for a fix-in-place.
+          <span class="meta">tenant.gst_number is empty</span>
+        </div>
+        <button class="fix">Add GST # in Settings</button>
+      </div>
+
+      <!-- Amount breakdown -->
+      <section class="card card-pad">
+        <div class="breakdown">
+          <div class="breakdown-row">
+            <span class="lbl">Subtotal</span>
+            <span class="val">$2,250<span class="cents">.00</span></span>
+          </div>
+          <div class="breakdown-row is-line">
+            <div class="lbl">Cedar deck — deposit (10%)
+              <span class="desc">Fixed-price · per estimate EST-2026-0044</span>
+            </div>
+            <span class="val">$2,250<span class="cents">.00</span></span>
+          </div>
+          <div class="breakdown-row">
+            <span class="lbl">GST (5%)</span>
+            <span class="val">$112<span class="cents">.50</span></span>
+          </div>
+          <div class="breakdown-divider"></div>
+          <div class="breakdown-row is-total">
+            <span class="lbl">Customer total</span>
+            <span class="val">$2,362<span class="cents">.50</span></span>
+          </div>
+          <div class="reg-footer">
+            <span>GST: <span style="color:var(--danger); font-weight:600;">— missing —</span></span>
+            <span class="sep">·</span>
+            <span>WCB: <span class="num">418294-AC</span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="ctx-grid">
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-user"/></svg></span>
+          <div class="body">
+            <span class="label">Customer</span>
+            <a href="#" class="name">Graham Bandsma</a>
+            <span class="meta">graham.b@gmail.com<span class="sep">·</span>(778) 555-0612</span>
+          </div>
+        </div>
+        <div class="ctx-card">
+          <span class="ico"><svg><use href="#i-briefcase"/></svg></span>
+          <div class="body">
+            <span class="label">Project</span>
+            <a href="#" class="name">Cedar Deck + Pergola</a>
+            <span class="meta">Fixed-price · Langley<span class="sep">·</span>Replaced by INV-2026-0124</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="actions-row">
+        <button class="btn btn-ghost">
+          <svg class="icon"><use href="#i-printer"/></svg>
+          Print
+        </button>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FRAME 5 — RECORD-PAYMENT DIALOG (modal on top of the SENT frame)
+     Interac at parity in the method picker.
+═════════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 5</span>
+  <span class="label">Record-payment dialog (modal)</span>
+  <span class="sub">Cash · Cheque · Interac e-Transfer · Stripe · Other — at parity · receipt OCR-prefill</span>
+</div>
+
+<div class="dialog-stage">
+  <div class="dialog-backdrop">
+    <div class="dialog">
+      <div class="dialog-head">
+        <h2>Record payment · INV-2026-0139</h2>
+        <p class="desc">Donahue Basement Suite · Draw 2 · invoice total <span class="tabular" style="font-weight:700; color:var(--ink);">$18,000.00</span></p>
+      </div>
+      <div class="dialog-body">
+
+        <div class="dialog-field">
+          <label>Amount received</label>
+          <input class="input tabular" value="$18,000.00" />
+        </div>
+
+        <div class="dialog-field">
+          <label>Method</label>
+          <div class="method-grid">
+            <button class="method"><span class="glyph">$</span>Cash</button>
+            <button class="method"><span class="glyph">CH</span>Cheque</button>
+            <button class="method interac is-on">
+              <span class="glyph">⇄</span>
+              Interac e-Transfer
+            </button>
+            <button class="method"><span class="glyph">S</span>Stripe</button>
+          </div>
+        </div>
+
+        <div class="dialog-field">
+          <label>Confirmation #</label>
+          <input class="input mono" value="E-TR-A8F1-Q34M" />
+        </div>
+
+        <div class="dialog-field">
+          <label>Date received</label>
+          <div class="select-trigger">
+            <span class="val">Today · May 23, 2026</span>
+            <svg><use href="#i-chevron-down"/></svg>
+          </div>
+        </div>
+
+        <div class="dialog-field">
+          <label>Notes (optional)</label>
+          <textarea class="textarea" placeholder="Mark called to confirm…">Sent from Donahue family account. Confirmation in inbox.</textarea>
+        </div>
+
+        <div class="dialog-field">
+          <label>Receipts</label>
+          <div class="receipt-upload">
+            <svg><use href="#i-paperclip"/></svg>
+            <span><span class="t">Attach photo or PDF</span> — up to 10 · 10 MB each</span>
+          </div>
+          <div class="ocr-hint" style="margin-top:6px;">
+            <svg><use href="#i-sparkles"/></svg>
+            <span><b>Henry</b> reads the first receipt and pre-fills amount + ref · re-fires if you swap photos.</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn-quiet">Cancel</button>
+        <button class="btn btn-rust"><svg class="icon"><use href="#i-check"/></svg>Mark paid · $18,000.00</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FRAME 6 — DOCUMENT DETAILS DISCLOSURE (open state)
+═════════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 6</span>
+  <span class="label">"Document details" — disclosure open</span>
+  <span class="sub">Folds defaults-setup + per-invoice overrides into one calm card. Config, not the main task.</span>
+</div>
+
+<div style="max-width:960px; margin: 0 auto 80px; padding: 0 28px;">
+  <div class="disclosure is-open">
+    <div class="disclosure-head">
+      <svg class="chev"><use href="#i-chevron-right"/></svg>
+      <div class="text">
+        <div class="t">Document details</div>
+        <div class="s">Payment instructions, terms, and policies for this invoice</div>
+      </div>
+      <span class="meta"><span class="ok-dot"></span>1 override on this invoice</span>
+    </div>
+    <div class="disclosure-body">
+
+      <div class="dd-field">
+        <div class="lbl">
+          <span>Payment instructions</span>
+          <span class="seg" role="group" aria-label="Payment instructions source">
+            <button>Use tenant default</button>
+            <button class="is-on">Custom · this invoice</button>
+          </span>
+        </div>
+        <div class="val">
+          Net-15 from invoice date. Interac e-Transfer to <strong>pay@northbeam.ca</strong>
+          (no security question — auto-deposit on). Or Stripe via the link below — 2.9% + 30¢ card fee
+          is included on this draw. Reference: <strong>INV-2026-0142</strong>.
+        </div>
+      </div>
+
+      <div class="dd-field">
+        <div class="lbl">
+          <span>Terms</span>
+          <span class="seg" role="group" aria-label="Terms source">
+            <button class="is-on">Use tenant default</button>
+            <button>Custom · this invoice</button>
+          </span>
+        </div>
+        <div class="val is-default">
+          ↑ Tenant default · last edited Apr 4 · 412 chars · used on 17 invoices
+        </div>
+      </div>
+
+      <div class="dd-field">
+        <div class="lbl">
+          <span>Policies (warranty, GST, lien rights)</span>
+          <span class="seg" role="group" aria-label="Policies source">
+            <button class="is-on">Use tenant default</button>
+            <button>Custom · this invoice</button>
+          </span>
+        </div>
+        <div class="val is-default">
+          ↑ Tenant default · last edited Mar 18 · used on 23 invoices
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; padding-top:6px;">
+        <button class="btn btn-ink btn-sm">Save changes</button>
+        <button class="btn btn-quiet btn-sm">Reset to defaults</button>
+        <span style="flex:1"></span>
+        <a href="#" style="font-size:12px; color:var(--rust); font-weight:600; align-self:center;">
+          Edit tenant defaults in Settings ↗
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

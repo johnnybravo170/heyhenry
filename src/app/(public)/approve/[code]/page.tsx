@@ -1,7 +1,11 @@
-import { ChangeOrderDiffView } from '@/components/features/change-orders/change-order-diff-view';
+import { ChangeOrderRender } from '@/components/features/change-orders/change-order-render';
+import type { CustomerDocStatus } from '@/components/features/projects/customer-document';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
+import { changeOrderWhy } from '@/lib/change-orders/why-summary';
 import { formatDate } from '@/lib/date/format';
 import type { ChangeOrderLineRow } from '@/lib/db/queries/change-orders';
+import { formatCurrency } from '@/lib/pricing/calculator';
+import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ApprovalForm } from './approval-form';
 
@@ -9,132 +13,115 @@ export const metadata = {
   title: 'Change Order — HeyHenry',
 };
 
+const LOGO_SIGN_SECONDS = 60 * 60 * 24 * 30;
+
+function CenteredNotice({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="mx-auto max-w-lg py-20 text-center">
+      <h1 className="text-2xl font-semibold">{title}</h1>
+      <p className="mt-2 text-muted-foreground">{body}</p>
+    </div>
+  );
+}
+
 export default async function ApprovalPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const admin = createAdminClient();
 
-  // Look up change order by approval code
+  // Look up change order by approval code.
   const { data: co } = await admin
     .from('change_orders')
     .select(
-      `id, project_id, title, description, reason, cost_impact_cents, timeline_impact_days,
+      `id, project_id, tenant_id, title, description, reason, cost_impact_cents, timeline_impact_days,
        status, approved_by_name, approved_at, declined_at, declined_reason, approval_code,
-       flow_version, category_notes,
-       management_fee_override_rate,
-       projects:project_id (name, management_fee_rate, customers:customer_id (name)),
-       tenants:tenant_id (name, timezone)`,
+       flow_version, category_notes, management_fee_override_rate,
+       projects:project_id (name, management_fee_rate, contacts:contact_id (name, address_line1, city, province, postal_code)),
+       tenants:tenant_id (name, logo_storage_path, timezone, gst_number, wcb_number)`,
     )
     .eq('approval_code', code)
     .single();
 
   if (!co) {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <h1 className="text-2xl font-semibold">Change Order Not Found</h1>
-        <p className="mt-2 text-muted-foreground">
-          This link may have expired or the change order may have been voided.
-        </p>
-      </div>
+      <CenteredNotice
+        title="Change Order Not Found"
+        body="This link may have expired or the change order may have been voided."
+      />
     );
   }
 
   const coData = co as Record<string, unknown>;
   const project = coData.projects as Record<string, unknown> | null;
   const tenant = coData.tenants as Record<string, unknown> | null;
-  const _customerRaw = project?.customers as Record<string, unknown> | null;
+  const customerRaw = (project?.contacts as Record<string, unknown> | null) ?? null;
   const projectName = (project?.name as string) ?? 'Project';
   const businessName = (tenant?.name as string) ?? 'Your Contractor';
   const tenantTz = (tenant?.timezone as string | null) ?? undefined;
+  const tenantId = coData.tenant_id as string;
 
-  // Already responded
+  // Terminal states — short notices, not the full doc.
   if (coData.status === 'approved') {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-          <svg
-            className="h-8 w-8 text-emerald-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            role="img"
-            aria-label="Approved"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-semibold">Already Approved</h1>
-        <p className="mt-2 text-muted-foreground">
-          This change order was approved by {coData.approved_by_name as string} on{' '}
-          {formatDate(coData.approved_at as string, { timezone: tenantTz, style: 'long' })}.
-        </p>
-      </div>
+      <CenteredNotice
+        title="Already Approved"
+        body={`This change order was approved by ${coData.approved_by_name as string} on ${formatDate(
+          coData.approved_at as string,
+          { timezone: tenantTz, style: 'long' },
+        )}.`}
+      />
     );
   }
-
   if (coData.status === 'declined') {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <h1 className="text-2xl font-semibold">Change Order Declined</h1>
-        <p className="mt-2 text-muted-foreground">
-          This change order was declined.
-          {coData.declined_reason ? ` Reason: ${coData.declined_reason}` : ''}
-        </p>
-      </div>
+      <CenteredNotice
+        title="Change Order Declined"
+        body={`This change order was declined.${
+          coData.declined_reason ? ` Reason: ${coData.declined_reason}` : ''
+        }`}
+      />
     );
   }
-
   if (coData.status === 'voided') {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <h1 className="text-2xl font-semibold">Change Order Voided</h1>
-        <p className="mt-2 text-muted-foreground">
-          This change order has been cancelled by the contractor.
-        </p>
-      </div>
+      <CenteredNotice
+        title="Change Order Voided"
+        body="This change order has been cancelled by the contractor."
+      />
     );
   }
-
   if (coData.status !== 'pending_approval') {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
-        <h1 className="text-2xl font-semibold">Not Available</h1>
-        <p className="mt-2 text-muted-foreground">
-          This change order is not currently awaiting approval.
-        </p>
-      </div>
+      <CenteredNotice
+        title="Not Available"
+        body="This change order is not currently awaiting approval."
+      />
     );
   }
 
+  // ── Price-only impact math (mirrors the operator editor; customer sees
+  //    Cost of work → Management fee → province-aware GST/HST → Total). ──
   const costCents = coData.cost_impact_cents as number;
-  const costFormatted = new Intl.NumberFormat('en-CA', {
-    style: 'currency',
-    currency: 'CAD',
-  }).format(Math.abs(costCents) / 100);
-  const costSign = costCents >= 0 ? '+' : '-';
-
-  // Management fee on this CO. Mirrors the customer-facing estimate page
-  // (which breaks out "Management fee (X%)" as a separate line) so the
-  // customer sees the same shape for change orders. Operator may override
-  // the rate per CO — the customer sees that rate, not the project default.
   const projectFeeRate = (project?.management_fee_rate as number | null) ?? 0;
   const overrideFeeRate = coData.management_fee_override_rate as number | null;
   const coFeeRate = overrideFeeRate ?? projectFeeRate;
   const coFeeCents = Math.round(costCents * coFeeRate);
-  const totalImpactCents = costCents + coFeeCents;
+  const beforeTaxCents = costCents + coFeeCents;
 
-  const fmtCurrency = (cents: number) =>
-    new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
-      Math.abs(cents) / 100,
-    );
-  const formatPct = (rate: number) => (rate * 100).toFixed(2).replace(/\.?0+$/, '');
+  // Province-aware GST/HST — same customer-facing tax provider Customer
+  // Documents use (PST/RST/QST stripped — contractors embed those). The
+  // delta is taxed on the pre-tax change amount.
+  const taxCtx = await canadianTax.getCustomerFacingContext(tenantId);
+  const taxLines = taxCtx.breakdown.map((b) => {
+    const provinceSuffix = taxCtx.provinceCode ? ` · ${taxCtx.provinceCode}` : '';
+    return {
+      label: `${b.label}${provinceSuffix}`,
+      cents: Math.round(beforeTaxCents * b.rate),
+    };
+  });
+  const taxTotalCents = taxLines.reduce((s, t) => s + t.cents, 0);
+  const totalImpactCents = beforeTaxCents + taxTotalCents;
 
-  const timelineDays = coData.timeline_impact_days as number;
-
-  // Running project total — current cost_lines + the same project-rate
-  // management fee the customer signed off on at estimate-approval time.
-  // Adding this CO's cost + its (possibly-overridden) fee gives the new
-  // running total. Customer sees the full running revenue, not just the
-  // line subtotal.
+  // Running project total (lines + project-rate fee) + this CO's full impact.
   const projectIdForTotal = coData.project_id as string;
   const { data: linesForTotal } = await admin
     .from('project_cost_lines')
@@ -144,12 +131,13 @@ export default async function ApprovalPage({ params }: { params: Promise<{ code:
     (s, l) => s + l.line_price_cents,
     0,
   );
-  const currentFeeCents = Math.round(currentLinesCents * projectFeeRate);
-  const currentProjectTotalCents = currentLinesCents + currentFeeCents;
-  const newProjectTotalCents = currentProjectTotalCents + totalImpactCents;
+  const previousProjectTotalCents =
+    currentLinesCents + Math.round(currentLinesCents * projectFeeRate);
+  const newProjectTotalCents = previousProjectTotalCents + totalImpactCents;
 
-  // For v2 COs, surface the line-level diff + per-category notes so the
-  // homeowner sees exactly what changed before signing. v1 stays text-only.
+  const timelineDays = coData.timeline_impact_days as number;
+
+  // v2 line-level diff + per-category notes. v1 stays text-only (no diff).
   const flowVersion = (coData.flow_version as number | null) ?? 1;
   const categoryNotes =
     (coData.category_notes as { budget_category_id: string; note: string }[] | null) ?? [];
@@ -166,105 +154,73 @@ export default async function ApprovalPage({ params }: { params: Promise<{ code:
       .order('created_at', { ascending: true });
     diffLines = (lines ?? []) as ChangeOrderLineRow[];
 
-    const projectId = coData.project_id as string;
     const { data: cats } = await admin
       .from('project_budget_categories')
       .select('id, name')
-      .eq('project_id', projectId);
+      .eq('project_id', projectIdForTotal);
     budgetCategoryNamesById = Object.fromEntries(
       ((cats ?? []) as { id: string; name: string }[]).map((c) => [c.id, c.name]),
     );
   }
 
-  const showDiff = flowVersion === 2 && (diffLines.length > 0 || categoryNotes.length > 0);
+  const why = changeOrderWhy({
+    description: coData.description as string | null,
+    diffLines,
+    timelineDays,
+  });
+
+  // Sign the tenant logo (private `photos` bucket) so the customer doc shows
+  // the GC's letterhead, not a text fallback.
+  let logoUrl: string | null = null;
+  const logoPath = tenant?.logo_storage_path as string | null;
+  if (logoPath) {
+    const { data: signed } = await admin.storage
+      .from('photos')
+      .createSignedUrl(logoPath, LOGO_SIGN_SECONDS);
+    logoUrl = signed?.signedUrl ?? null;
+  }
+
+  const customerAddress = customerRaw
+    ? [
+        customerRaw.address_line1,
+        [customerRaw.city, customerRaw.province].filter(Boolean).join(', '),
+        customerRaw.postal_code,
+      ]
+        .filter(Boolean)
+        .join('\n') || null
+    : null;
+
+  const status: CustomerDocStatus = { label: 'Pending', tone: 'warning' };
+  const approveLabel = `Approve — ${totalImpactCents >= 0 ? '+' : ''}${formatCurrency(totalImpactCents)}`;
 
   return (
-    <div className={`mx-auto px-4 py-12 ${showDiff ? 'max-w-2xl' : 'max-w-lg'}`}>
+    <div className="mx-auto w-full max-w-2xl px-4 py-10 pb-28 sm:pb-10">
       <PublicViewLogger resourceType="change_order" identifier={code} />
-      <div className="mb-8 text-center">
-        <p className="text-sm font-medium text-muted-foreground">{businessName}</p>
-        <h1 className="mt-1 text-2xl font-semibold">Change Order</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{projectName}</p>
-      </div>
-
-      <div className="rounded-lg border p-6 space-y-5">
-        <div>
-          <h2 className="text-lg font-semibold">{coData.title as string}</h2>
-          <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
-            {coData.description as string}
-          </p>
-          {coData.reason ? (
-            <p className="mt-2 text-sm text-muted-foreground">Reason: {coData.reason as string}</p>
-          ) : null}
-        </div>
-
-        <div className="rounded-md bg-muted/50 p-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Total Cost Impact</p>
-              <p className="text-xl font-semibold">
-                {totalImpactCents >= 0 ? '+' : '-'}
-                {fmtCurrency(totalImpactCents)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                New project total{' '}
-                <span className="font-medium text-foreground tabular-nums">
-                  {fmtCurrency(newProjectTotalCents)}
-                </span>
-                {currentProjectTotalCents > 0 ? (
-                  <> (was {fmtCurrency(currentProjectTotalCents)})</>
-                ) : null}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Timeline Impact</p>
-              <p className="text-xl font-semibold">
-                {timelineDays === 0
-                  ? 'None'
-                  : `${timelineDays > 0 ? '+' : ''}${timelineDays} day${Math.abs(timelineDays) === 1 ? '' : 's'}`}
-              </p>
-            </div>
-          </div>
-
-          {coFeeCents !== 0 ? (
-            <div className="mt-3 space-y-1 border-t pt-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Cost of work</span>
-                <span className="tabular-nums">
-                  {costSign}
-                  {costFormatted}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Management fee ({formatPct(coFeeRate)}%)
-                </span>
-                <span className="tabular-nums">
-                  {coFeeCents >= 0 ? '+' : '-'}
-                  {fmtCurrency(coFeeCents)}
-                </span>
-              </div>
-              <div className="flex justify-between border-t pt-1.5 font-medium">
-                <span>Total</span>
-                <span className="tabular-nums">
-                  {totalImpactCents >= 0 ? '+' : '-'}
-                  {fmtCurrency(totalImpactCents)}
-                </span>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        {showDiff ? (
-          <ChangeOrderDiffView
-            diffLines={diffLines}
-            categoryNotes={categoryNotes}
-            budgetCategoryNamesById={budgetCategoryNamesById}
-          />
-        ) : null}
-
-        <ApprovalForm approvalCode={code} />
-      </div>
+      <ChangeOrderRender
+        businessName={businessName}
+        logoUrl={logoUrl}
+        customerName={(customerRaw?.name as string) ?? 'Customer'}
+        customerAddress={customerAddress}
+        projectName={projectName}
+        docDate={null}
+        status={status}
+        title={coData.title as string}
+        why={why}
+        costOfWorkCents={costCents}
+        mgmtFeeCents={coFeeCents}
+        mgmtFeeRate={coFeeRate}
+        taxLines={taxLines}
+        totalImpactCents={totalImpactCents}
+        newProjectTotalCents={newProjectTotalCents}
+        previousProjectTotalCents={previousProjectTotalCents}
+        timelineDays={timelineDays}
+        diffLines={diffLines}
+        categoryNotes={categoryNotes}
+        budgetCategoryNamesById={budgetCategoryNamesById}
+        gstNumber={(tenant?.gst_number as string | null) ?? null}
+        wcbNumber={(tenant?.wcb_number as string | null) ?? null}
+        actionZone={<ApprovalForm approvalCode={code} approveLabel={approveLabel} />}
+      />
     </div>
   );
 }

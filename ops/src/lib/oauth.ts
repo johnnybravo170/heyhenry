@@ -26,6 +26,8 @@ const ALL_SCOPES = [
   'write:ideas',
   'read:decisions',
   'write:decisions',
+  'read:decision_bundles',
+  'write:decision_bundles',
   'read:worklog',
   'write:worklog',
   'read:review_queue',
@@ -34,6 +36,9 @@ const ALL_SCOPES = [
   'write:kanban',
   'write:feedback',
   'write:email',
+  'read:message_lab',
+  'write:message_lab',
+  'read:db',
 ] as const;
 
 export const SUPPORTED_SCOPES: readonly string[] = ALL_SCOPES;

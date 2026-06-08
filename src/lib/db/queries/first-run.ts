@@ -14,7 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export async function isFirstRunTenant(tenantId: string): Promise<boolean> {
   const admin = createAdminClient();
   const [contacts, projects, quotes] = await Promise.all([
-    admin.from('customers').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    admin.from('contacts').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     admin.from('projects').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     admin.from('quotes').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
   ]);

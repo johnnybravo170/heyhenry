@@ -28,6 +28,7 @@
 import { randomUUID } from 'node:crypto';
 import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
+import { HUMAN_VOICE_RULES } from '@/lib/ai/human-voice';
 import {
   INTAKE_JSON_SCHEMA,
   INTAKE_SYSTEM_PROMPT,
@@ -40,6 +41,7 @@ import {
   loadIntakeCustomerContext,
   renderCustomerContextForPrompt,
 } from '@/lib/db/queries/intake-customer-context';
+import { applyScopeToProject } from '@/lib/db/queries/project-budget-categories';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -118,6 +120,8 @@ const ARTIFACT_KINDS = [
   'spec_drawing_pdf',
   'receipt',
   'inspiration_photo',
+  'customer_message',
+  'text_body',
   'other',
 ] as const;
 export type IntakeArtifactKind = (typeof ARTIFACT_KINDS)[number];
@@ -151,11 +155,16 @@ export type IntakeAugmentation = {
 
 const AUGMENT_SCHEMA: Record<string, unknown> = {
   type: 'object',
+  // additionalProperties: false required for OpenAI strict mode — see the
+  // note on ARTIFACT_CLASSIFY_SCHEMA. Without it the OpenAI tier-climb 400s
+  // and augmentation silently returns [].
+  additionalProperties: false,
   properties: {
     suggestions: {
       type: 'array',
       items: {
         type: 'object',
+        additionalProperties: false,
         properties: {
           title: { type: 'string' },
           reasoning: { type: 'string' },
@@ -200,11 +209,19 @@ Title is short (max ~50 chars). Reasoning is one sentence. Return JSON via the s
 
 const ARTIFACT_CLASSIFY_SCHEMA: Record<string, unknown> = {
   type: 'object',
+  // additionalProperties: false on EVERY object is required by OpenAI's
+  // strict structured-output mode. Without it, the gateway's tier-climb
+  // to OpenAI (when Gemini is overloaded) 400s — and classifyArtifacts
+  // silently falls back to mime defaults (every PDF → kind='other'),
+  // which is exactly the "Henry couldn't classify it" failure. Gemini is
+  // lenient about the omission; OpenAI is not. Mirror INTAKE_JSON_SCHEMA.
+  additionalProperties: false,
   properties: {
     artifacts: {
       type: 'array',
       items: {
         type: 'object',
+        additionalProperties: false,
         properties: {
           index: { type: 'integer' },
           kind: { type: 'string', enum: [...ARTIFACT_KINDS] },
@@ -226,11 +243,18 @@ const ARTIFACT_CLASSIFY_PROMPT = `You're inspecting artifacts the operator dropp
 - screenshot (text-thread, email, or messaging-app capture)
 - sub_quote_pdf (PDF quote from a sub-trade)
 - spec_drawing_pdf (architectural drawing, floor plan, or technical spec PDF)
-- receipt (invoice or receipt for materials / supplies)
+- receipt (invoice or receipt for materials / supplies — includes screenshots of receipts, not just PDFs)
 - inspiration_photo (Pinterest-style aesthetic shot — what the customer wants it to look like)
+- customer_message (email or text FROM a customer that the operator is forwarding — scope question, complaint, change request, etc.)
+- text_body (the body of a forwarded email itself, as text — never from an attachment, only from the email envelope)
 - other (when nothing fits)
 
 Also produce a short label (max 80 chars) describing what's IN the artifact specifically. Examples: "Water-damaged hardwood near the back door", "Text thread — kitchen reno scope", "Sub-trade quote — electrical, 4 lines".
+
+CONTEXT HINTS (especially when artifacts arrive via forwarded email):
+- The email subject and the leading paragraph of the body are USUALLY the operator's intent hint — "Fwd: Receipt for Glenwood" strongly suggests the attachment is a receipt for the Glenwood project. Treat as a possible-intent signal, not a directive: if the subject says "receipt" but the attachment is clearly a permit, classify as spec_drawing_pdf and note the discrepancy in the label.
+- A text_body artifact is the email's text content. It informs the OTHER artifacts' classification but is itself classified as text_body.
+- Screenshots-of-receipts: the artifact is visually a screenshot (PNG/JPG), but its CONTENT is a receipt — classify as receipt, not screenshot. Same logic for screenshots of permits (spec_drawing_pdf), text threads from customers (customer_message if the customer is the speaker), etc. Classify by what it IS, not by how it was captured.
 
 Return one row per artifact. The "index" must match the artifact's position in the order they were attached.`;
 
@@ -412,7 +436,7 @@ export async function parseInboundLeadAction(
     status: 'extracting',
     transcript,
     artifacts: allArtifacts,
-    recognized_customer_id: customerContext?.customerId ?? null,
+    recognized_customer_id: customerContext?.contactId ?? null,
   });
 
   // Build the prompt + the typed file list.
@@ -539,16 +563,47 @@ export async function parseIntakeDraftAction(
   draftId: string,
   options?: { model?: ParseModelChoice },
 ): Promise<ParseInboundResult> {
-  const tenant = await getCurrentTenant();
-  if (!tenant) return { ok: false, error: 'Not signed in.' };
-
-  const supabase = await createClient();
-  const { data: row, error: loadErr } = await supabase
+  // Load the draft via the admin client because this action is invoked
+  // from BOTH UI contexts (operator clicked "reparse" on /inbox/intake —
+  // has a session cookie) and service-role contexts (Postmark inbound
+  // webhook, /api/widget/submit — public-token-authenticated, no
+  // session). The RLS-scoped client returns no row in the service path,
+  // which silently breaks classification of every email- and form-sourced
+  // lead. Tenant authz is enforced explicitly below for session callers.
+  const admin = createAdminClient();
+  const { data: row, error: loadErr } = await admin
     .from('intake_drafts')
-    .select('id, tenant_id, status, customer_name, pasted_text, transcript, ai_extraction')
+    .select(
+      'id, tenant_id, status, customer_name, pasted_text, transcript, ai_extraction, artifacts',
+    )
     .eq('id', draftId)
     .maybeSingle();
   if (loadErr || !row) return { ok: false, error: 'Draft not found.' };
+
+  const draftTenantId = row.tenant_id as string;
+  const sessionTenant = await getCurrentTenant();
+  if (sessionTenant && sessionTenant.id !== draftTenantId) {
+    // A logged-in user trying to operate on a draft from a different
+    // tenant. RLS would have hidden the row before this refactor; the
+    // explicit check preserves that boundary.
+    return { ok: false, error: 'Not authorized for this draft.' };
+  }
+
+  // Resolve the tenant name for the prompt. Session caller already has
+  // it; service caller looks it up.
+  let tenantName: string | null;
+  if (sessionTenant) {
+    tenantName = sessionTenant.name;
+  } else {
+    const { data: t } = await admin
+      .from('tenants')
+      .select('name')
+      .eq('id', draftTenantId)
+      .maybeSingle();
+    if (!t) return { ok: false, error: 'Tenant not found.' };
+    tenantName = (t.name as string | null) ?? null;
+  }
+  const tenant = { id: draftTenantId, name: tenantName };
 
   const customerName = (row.customer_name as string | null)?.trim() ?? '';
   const transcript = (row.transcript as string | null)?.trim() ?? '';
@@ -565,19 +620,21 @@ export async function parseIntakeDraftAction(
   const provider_override = modelChoice === 'claude-sonnet' ? 'anthropic' : 'openai';
   const model_override = modelChoice === 'claude-sonnet' ? CLAUDE_PARSE_MODEL : PARSE_MODEL;
 
-  // Re-load customer context for the retry — same logic as the
-  // initial parse. Stamps recognized_customer_id alongside the
-  // status flip in case the customer name has been edited since
-  // the original run (or recognition was missed first time).
-  const customerContext = customerName ? await loadIntakeCustomerContext(customerName) : null;
+  // Customer recognition uses the RLS-scoped client (it's the operator's
+  // address book). In the service path there's no session, so this
+  // degrades to `null` — emails / widget submits won't auto-recognize a
+  // returning customer on first parse. Operators can still reparse from
+  // the inbox to pick that up. Acceptable trade for V1.
+  const customerContext =
+    sessionTenant && customerName ? await loadIntakeCustomerContext(customerName) : null;
   const customerContextBlock = renderCustomerContextForPrompt(customerContext);
 
-  await supabase
+  await admin
     .from('intake_drafts')
     .update({
       status: 'extracting',
       error_message: null,
-      recognized_customer_id: customerContext?.customerId ?? null,
+      recognized_customer_id: customerContext?.contactId ?? null,
     })
     .eq('id', draftId);
 
@@ -619,7 +676,7 @@ export async function parseIntakeDraftAction(
         : isAiError(err) && (err.kind === 'overload' || err.kind === 'rate_limit')
           ? 'Intake parsing is busy right now. Try again in a moment.'
           : `Intake parse failed: ${err instanceof Error ? err.message : String(err)}`;
-    await supabase
+    await admin
       .from('intake_drafts')
       .update({ status: 'failed', error_message: message })
       .eq('id', draftId);
@@ -632,17 +689,80 @@ export async function parseIntakeDraftAction(
   // on failure. The previous augmentations are stale once the parse
   // changes, so overwrite rather than merge.
   const augmentations = await augmentScope(draft, transcript || null, tenant.id);
-  await supabase
+
+  // Classify any still-unclassified artifacts. This is the path that makes
+  // the email/widget pipeline work: createIntakeDraftFromEmailAction stores
+  // attachments with kind=null, and the processor's call to this action is
+  // the only place they get classified. Their files persist in the intake
+  // bucket, so we can download + run the same classifier the lead-form path
+  // uses. (Lead-form retries may have had their files swept on accept — the
+  // download just fails there and we leave the nulls untouched.)
+  const persistedArtifacts = await classifyPersistedArtifacts(
+    (row.artifacts as IntakeArtifact[] | null) ?? [],
+    tenant.id,
+    admin,
+  );
+
+  await admin
     .from('intake_drafts')
     .update({
       status: 'ready',
       ai_extraction: envelope,
       parsed_by: model_override,
       augmentations,
+      ...(persistedArtifacts ? { artifacts: persistedArtifacts } : {}),
     })
     .eq('id', draftId);
 
   return { ok: true, draftId, draft, transcript: transcript || null, parsedBy: model_override };
+}
+
+/**
+ * Download + classify any artifacts on a persisted draft that still have
+ * kind=null. Returns the merged artifact array, or null when there's
+ * nothing to do / nothing downloadable (caller then leaves the column
+ * untouched). Visual artifacts go to the batched classifier; audio is
+ * shortcut to voice_memo by classifyArtifacts itself.
+ */
+async function classifyPersistedArtifacts(
+  artifacts: IntakeArtifact[],
+  tenantId: string,
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<IntakeArtifact[] | null> {
+  if (artifacts.length === 0) return null;
+  if (!artifacts.some((a) => a && a.kind == null)) return null;
+
+  const visualFiles: Array<{ index: number; file: File }> = [];
+  const audioIndexes: number[] = [];
+  for (let i = 0; i < artifacts.length; i++) {
+    const a = artifacts[i];
+    if (!a?.path) continue;
+    if (a.mime?.startsWith('audio/')) {
+      audioIndexes.push(i);
+      continue;
+    }
+    if (a.mime?.startsWith('image/') || a.mime === 'application/pdf') {
+      const { data: blob } = await admin.storage.from('intake-audio').download(a.path);
+      if (blob) {
+        visualFiles.push({
+          index: i,
+          file: new File([blob], a.name || 'artifact', { type: a.mime }),
+        });
+      }
+    }
+  }
+  if (visualFiles.length === 0 && audioIndexes.length === 0) return null;
+
+  const classifications = await classifyArtifacts(
+    visualFiles,
+    audioIndexes,
+    artifacts.length,
+    tenantId,
+  );
+  return artifacts.map((a, i) => {
+    const c = classifications.find((r) => r.index === i);
+    return c ? { ...a, kind: c.kind, label: c.label } : a;
+  });
 }
 
 export type AppendInboundResult =
@@ -859,6 +979,86 @@ export type AcceptInboundResult =
   | { ok: true; projectId: string }
   | { ok: false; error: string; duplicates?: ContactMatch[] };
 
+export type DraftIntakeReplyResult = { ok: true; reply: string } | { ok: false; error: string };
+
+const INTAKE_REPLY_MODEL = 'gpt-4o-mini';
+
+const INTAKE_REPLY_SYSTEM = `You are drafting a short text or email a Canadian general contractor will send a customer about a job they just scoped. Write it in the contractor's own voice — like they're texting from their truck. Answer any question the customer asked, acknowledge any opt-out, and end on one concrete next step (a time, a question, an action). Two to three short paragraphs, max. Return ONLY the message body — no subject line, no sign-off platitudes, and no "Hi [name]" unless you actually know the name.
+
+${HUMAN_VOICE_RULES}`;
+
+/**
+ * On-demand reply draft for the New-Project review screen. The parse no
+ * longer writes a reply (it only flags whether one is warranted); this
+ * runs when the operator clicks "Draft a reply", so Henry never composes
+ * an email nobody asked for. Text-only and cheap — grounded in the parsed
+ * customer / scope / signals plus the original message, with no image
+ * re-send.
+ */
+export async function draftIntakeReplyAction(
+  draft: ParsedIntake,
+  draftId?: string,
+): Promise<DraftIntakeReplyResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  // Pull the original customer message / voice-memo transcript back so the
+  // reply answers what was actually said, not just the structured scope.
+  // Best-effort — a missing draft just means a thinner prompt.
+  let sourceText: string | null = null;
+  if (draftId) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('intake_drafts')
+      .select('pasted_text, transcript')
+      .eq('id', draftId)
+      .maybeSingle();
+    sourceText = [data?.pasted_text, data?.transcript].filter(Boolean).join('\n\n').trim() || null;
+  }
+
+  const s = draft.signals;
+  const categoryNames = draft.categories.map((c) => c.name).filter(Boolean);
+  const userBlock = [
+    `Customer: ${draft.customer.name ?? '(unknown)'}`,
+    draft.customer.address ? `Address: ${draft.customer.address}` : null,
+    `Project: ${draft.project.name}`,
+    draft.project.description ? `Description: ${draft.project.description}` : null,
+    categoryNames.length ? `Scope areas: ${categoryNames.join(', ')}` : null,
+    s?.competitive ? 'Note: customer is shopping other quotes (competitive).' : null,
+    s?.urgency && s.urgency !== 'normal' ? `Urgency: ${s.urgency}.` : null,
+    s?.upsells?.length ? `Possible add-ons: ${s.upsells.map((u) => u.label).join('; ')}.` : null,
+    draft.reply_reason ? `Why a reply helps: ${draft.reply_reason}` : null,
+    '',
+    sourceText
+      ? `ORIGINAL MESSAGE / MEMO:\n${sourceText}`
+      : 'No original message text available — keep the reply general but grounded in the scope above.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  try {
+    const res = await gateway().runChat({
+      kind: 'chat',
+      task: 'intake_reply_draft',
+      tenant_id: tenant.id,
+      model_override: INTAKE_REPLY_MODEL,
+      system: INTAKE_REPLY_SYSTEM,
+      messages: [{ role: 'user', content: userBlock }],
+    });
+    const reply = res.text.trim();
+    if (!reply) return { ok: false, error: 'Henry returned an empty reply. Try again.' };
+    return { ok: true, reply };
+  } catch (err) {
+    if (isAiError(err)) {
+      if (err.kind === 'quota')
+        return { ok: false, error: 'Henry is temporarily unavailable across providers.' };
+      if (err.kind === 'overload' || err.kind === 'rate_limit')
+        return { ok: false, error: 'Henry is busy right now. Try again in a moment.' };
+    }
+    return { ok: false, error: 'Henry could not draft a reply. Try again.' };
+  }
+}
+
 export async function acceptInboundLeadAction(
   draft: ParsedIntake,
   options?: {
@@ -885,9 +1085,9 @@ export async function acceptInboundLeadAction(
 
   // 1. Customer — resolve to an existing row, or check for duplicates before
   //    creating a new one.
-  let customerId: string;
+  let contactId: string;
   if (options?.useExistingContactId) {
-    customerId = options.useExistingContactId;
+    contactId = options.useExistingContactId;
   } else {
     if (!options?.confirmCreate) {
       const duplicates = await findContactMatches({
@@ -908,7 +1108,7 @@ export async function acceptInboundLeadAction(
     }
 
     const { data: cust, error: custErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .insert({
         tenant_id: tenant.id,
         kind: 'customer',
@@ -923,9 +1123,9 @@ export async function acceptInboundLeadAction(
     if (custErr || !cust) {
       return { ok: false, error: custErr?.message ?? 'Failed to create customer.' };
     }
-    customerId = cust.id;
+    contactId = cust.id;
   }
-  const cust = { id: customerId };
+  const cust = { id: contactId };
 
   // 2. Project
   const projectName = draft.project.name?.trim() || `${customerName} project`;
@@ -933,7 +1133,7 @@ export async function acceptInboundLeadAction(
     .from('projects')
     .insert({
       tenant_id: tenant.id,
-      customer_id: cust.id,
+      contact_id: cust.id,
       name: projectName,
       description: draft.project.description?.trim() || null,
       intake_source: 'text-thread',
@@ -945,52 +1145,24 @@ export async function acceptInboundLeadAction(
     return { ok: false, error: projErr?.message ?? 'Failed to create project.' };
   }
 
-  // 3. Budget categories
-  const categoryRows = draft.categories.map((b, i) => ({
-    project_id: proj.id,
-    tenant_id: tenant.id,
-    name: b.name,
-    section: b.section?.trim() || 'General',
-    display_order: i,
-  }));
-  let categoryIds: string[] = [];
-  if (categoryRows.length) {
-    const { data: bs, error: bErr } = await supabase
-      .from('project_budget_categories')
-      .insert(categoryRows)
-      .select('id');
-    if (bErr) return { ok: false, error: `Categories: ${bErr.message}` };
-    categoryIds = (bs ?? []).map((b) => b.id);
-  }
-
-  // 4. Cost lines
-  const lineRows: Array<Record<string, unknown>> = [];
-  draft.categories.forEach((b, bi) => {
-    const categoryId = categoryIds[bi] ?? null;
-    b.lines.forEach((l, li) => {
-      const qty = Number(l.qty) || 1;
-      const unitPrice = Number(l.unit_price_cents ?? 0) || 0;
-      lineRows.push({
-        project_id: proj.id,
-        budget_category_id: categoryId,
-        category: 'material',
+  // 3. Budget categories + cost lines — one shared apply path (sections →
+  // categories → lines). Intake lines carry parsed prices but no cost basis.
+  const applied = await applyScopeToProject(supabase, {
+    tenantId: tenant.id,
+    projectId: proj.id,
+    categories: draft.categories.map((b) => ({
+      name: b.name,
+      section: b.section,
+      lines: b.lines.map((l) => ({
         label: l.label,
-        notes: l.notes?.trim() || null,
-        qty,
+        qty: Number(l.qty) || 1,
         unit: l.unit || 'lot',
-        unit_cost_cents: 0,
-        unit_price_cents: unitPrice,
-        line_cost_cents: 0,
-        line_price_cents: Math.round(qty * unitPrice),
-        markup_pct: 0,
-        sort_order: li,
-      });
-    });
+        unit_price_cents: Number(l.unit_price_cents ?? 0) || 0,
+        notes: l.notes?.trim() || null,
+      })),
+    })),
   });
-  if (lineRows.length) {
-    const { error: lErr } = await supabase.from('project_cost_lines').insert(lineRows);
-    if (lErr) return { ok: false, error: `Cost lines: ${lErr.message}` };
-  }
+  if (!applied.ok) return { ok: false, error: applied.error };
 
   // 5. Worklog
   await supabase.from('worklog_entries').insert({
@@ -1031,7 +1203,19 @@ export async function acceptInboundLeadAction(
     }
     await supabase
       .from('intake_drafts')
-      .update({ accepted_project_id: proj.id, artifacts: [] })
+      .update({
+        accepted_project_id: proj.id,
+        // Mark the draft consumed. Without this it sits at the default
+        // disposition='pending_review' forever and shows as "1 forwarded
+        // item waiting on you" on the very project it just created — a
+        // phantom that links to an empty inbox. It WAS applied (to create
+        // this project), so stamp the full apply lifecycle.
+        disposition: 'applied',
+        applied_at: new Date().toISOString(),
+        applied_destination_kind: 'project',
+        applied_destination_id: proj.id,
+        artifacts: [],
+      })
       .eq('id', options.draftId);
   }
 
@@ -1137,8 +1321,16 @@ async function classifyArtifacts(
         (row.label ?? '').trim().slice(0, 200) || mimeDefaultLabel(visualFiles, row.index);
       results.push({ index: row.index, kind, label });
     }
-  } catch {
+  } catch (err) {
     // Fall back to mime-derived defaults so the chip row still renders.
+    // Capture to Sentry — a silent fallback here means EVERY artifact gets
+    // mislabelled (PDFs → 'other'), which looks like "Henry can't classify"
+    // to the operator. This catch swallowed an OpenAI strict-schema 400 for
+    // weeks; never let it go unobserved again.
+    Sentry.captureException(err, {
+      tags: { stage: 'intake.classify', task: 'intake_artifact_classify' },
+      extra: { tenantId, visualCount: visualFiles.length },
+    });
     for (const { index, file } of visualFiles) {
       results.push({
         index,

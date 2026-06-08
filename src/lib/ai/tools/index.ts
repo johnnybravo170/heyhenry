@@ -3,9 +3,9 @@ import type { AiTool, ToolDefinition } from '../types';
 import { catalogTools } from './catalog';
 import { changeOrderTools } from './change-orders';
 import { customerTools } from './customers';
-import { dashboardTools, setDashboardTimezone } from './dashboard';
+import { dashboardTools, setDashboardTimezone, setDashboardVertical } from './dashboard';
 import { featureTools } from './features';
-import { invoiceTools, setInvoiceTimezone } from './invoices';
+import { invoiceTools, setInvoiceTimezone, setInvoiceVertical } from './invoices';
 import { jobTools } from './jobs';
 import { projectTools } from './projects';
 import { quoteTools } from './quotes';
@@ -68,6 +68,16 @@ export function setToolTimezone(timezone: string) {
   setDashboardTimezone(timezone);
   setInvoiceTimezone(timezone);
   setFormatTimezone(timezone);
+}
+
+/**
+ * Set the tenant vertical used by dashboard and invoice tools, so AI
+ * snapshots report the same vertical-appropriate metrics as the owner
+ * dashboard UI. Call this alongside setToolTimezone before executing tools.
+ */
+export function setToolVertical(vertical: string | null | undefined) {
+  setDashboardVertical(vertical);
+  setInvoiceVertical(vertical);
 }
 
 /**

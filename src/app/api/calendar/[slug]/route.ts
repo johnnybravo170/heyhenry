@@ -37,7 +37,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   const { data: jobs, error: jobsErr } = await admin
     .from('jobs')
     .select(
-      'id, status, scheduled_at, notes, customers:customer_id (id, name, email, address_line1, city, province)',
+      'id, status, scheduled_at, notes, contacts:contact_id (id, name, email, address_line1, city, province)',
     )
     .eq('tenant_id', tenant.id)
     .is('deleted_at', null)
@@ -51,7 +51,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   }
 
   const events: IcsEventOptions[] = (jobs ?? []).map((job) => {
-    const customer = Array.isArray(job.customers) ? job.customers[0] : job.customers;
+    const customer = Array.isArray(job.contacts) ? job.contacts[0] : job.contacts;
     const customerName = customer?.name ?? 'Customer';
 
     let location: string | undefined;

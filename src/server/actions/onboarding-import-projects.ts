@@ -269,10 +269,10 @@ export async function parseProjectImportAction(
   const supabase = await createClient();
   const [{ data: existingCustRaw, error: custErr }, { data: existingProjRaw, error: projErr }] =
     await Promise.all([
-      supabase.from('customers').select('id, name, email, phone, city').is('deleted_at', null),
+      supabase.from('contacts').select('id, name, email, phone, city').is('deleted_at', null),
       supabase
         .from('projects')
-        .select('id, name, customer_id, customers:customer_id (name)')
+        .select('id, name, contact_id, contacts:contact_id (name)')
         .is('deleted_at', null),
     ]);
   if (custErr) return { ok: false, error: custErr.message };
@@ -286,11 +286,11 @@ export async function parseProjectImportAction(
     city: (c.city as string | null) ?? null,
   }));
   const existingProjects: ExistingProject[] = (existingProjRaw ?? []).map((p) => {
-    const cust = (p as Record<string, unknown>).customers as { name?: string } | null;
+    const cust = (p as Record<string, unknown>).contacts as { name?: string } | null;
     return {
       id: p.id as string,
       name: (p.name as string) ?? '',
-      customer_id: (p.customer_id as string | null) ?? null,
+      contact_id: (p.contact_id as string | null) ?? null,
       customer_name: cust?.name ?? null,
     };
   });
@@ -302,7 +302,7 @@ export async function parseProjectImportAction(
       {
         name: p.name,
         customerName: p.customerName,
-        customerId: customer.kind === 'matched' ? customer.existingId : null,
+        contactId: customer.kind === 'matched' ? customer.existingId : null,
       },
       existingProjects,
     );
@@ -448,7 +448,7 @@ export async function commitProjectImportAction(input: {
       import_batch_id: batchId,
     }));
     const { data: insertedCustomers, error: custInsErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .insert(newCustomerRows)
       .select('id, name');
     if (custInsErr) {
@@ -463,14 +463,14 @@ export async function commitProjectImportAction(input: {
 
   // Step 3: insert projects with resolved customer FKs.
   const projectRows = toCreate.map((r) => {
-    let customerId: string | null = null;
-    if (r.customer.kind === 'matched') customerId = r.customer.existingId;
+    let contactId: string | null = null;
+    if (r.customer.kind === 'matched') contactId = r.customer.existingId;
     else if (r.customer.kind === 'create') {
-      customerId = customerNameToId.get(normalizeName(r.customer.newName)) ?? null;
+      contactId = customerNameToId.get(normalizeName(r.customer.newName)) ?? null;
     }
     return {
       tenant_id: tenant.id,
-      customer_id: customerId,
+      contact_id: contactId,
       name: r.proposed.name,
       description: r.proposed.description ?? null,
       lifecycle_stage: r.proposed.lifecycleStage ?? 'planning',
@@ -482,7 +482,7 @@ export async function commitProjectImportAction(input: {
     const { error: projInsErr } = await supabase.from('projects').insert(projectRows);
     if (projInsErr) {
       // Roll back the batch + side-effect customers we just created.
-      await supabase.from('customers').delete().eq('import_batch_id', batchId);
+      await supabase.from('contacts').delete().eq('import_batch_id', batchId);
       await supabase.from('import_batches').delete().eq('id', batchId);
       return { ok: false, error: projInsErr.message };
     }
@@ -549,7 +549,7 @@ export async function rollbackProjectImportAction(
   // Only the customers WE created during this import — operator's pre-
   // existing customers were never tagged.
   const { data: deletedCustRows, error: custDelErr } = await supabase
-    .from('customers')
+    .from('contacts')
     .update({ deleted_at: now })
     .eq('import_batch_id', batchId)
     .is('deleted_at', null)

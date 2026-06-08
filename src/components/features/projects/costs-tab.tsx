@@ -3,8 +3,8 @@
 /**
  * Project Costs tab. Post-unification this is a thin orchestrator:
  *
- *   - Summary strip (Committed / PO'd / Billed / Paid)
- *   - "By type" vs "By category" toggle
+ *   - "Money out" panel (Committed / Vendor-billed / Paid) + uncategorized alert
+ *   - "By type" vs "By category" toggle, under a Procurement scope head
  *   - Subtab nav (Vendor quotes / POs / Costs)
  *   - One of: SubQuotesSection, PO section, ProjectCostsSection
  *
@@ -13,18 +13,20 @@
  * one table with status badges + a payment filter.
  */
 
+import { TriangleAlert } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Money } from '@/components/ui/money';
 import type { PurchaseOrderRow, PurchaseOrderStatus } from '@/lib/db/queries/purchase-orders';
-import { formatCurrency, formatCurrencyCompact } from '@/lib/pricing/calculator';
+import { formatCurrency } from '@/lib/pricing/calculator';
 import {
   createPurchaseOrderAction,
   updatePurchaseOrderStatusAction,
 } from '@/server/actions/project-cost-control';
 import { CostsByCategoryView } from './costs-by-category-view';
-import { type CostsSubtabKey, CostsSubtabs } from './costs-subtabs';
+import { type CostsSubtabCount, type CostsSubtabKey, CostsSubtabs } from './costs-subtabs';
 import { type BillItem, type ExpenseItem, ProjectCostsSection } from './project-costs-section';
 import { type SubQuoteItem, SubQuotesSection } from './sub-quotes-section';
 
@@ -241,6 +243,7 @@ function POForm({ projectId, onDone }: { projectId: string; onDone: () => void }
 
 export function CostsTab({
   projectId,
+  isCostPlus,
   purchaseOrders,
   bills,
   subQuotes,
@@ -248,6 +251,7 @@ export function CostsTab({
   categories,
 }: {
   projectId: string;
+  isCostPlus: boolean;
   purchaseOrders: PurchaseOrderRow[];
   bills: BillItem[];
   subQuotes: SubQuoteItem[];
@@ -255,7 +259,7 @@ export function CostsTab({
   categories: Array<{
     id: string;
     name: string;
-    section: 'interior' | 'exterior' | 'general';
+    section: string;
     cost_lines: Array<{ id: string; label: string }>;
   }>;
 }) {
@@ -270,19 +274,38 @@ export function CostsTab({
     });
   }
 
-  const totalPOs = purchaseOrders
+  // Open POs = active obligations (sent/acknowledged/received), part of
+  // Committed below.
+  const committedPos = purchaseOrders
     .filter((po) => ['sent', 'acknowledged', 'received'].includes(po.status))
     .reduce((s, po) => s + po.total_cents, 0);
-
-  // Summary strip: keep the legacy "Billed" + "Paid" split so the
-  // headline doesn't collapse to a single rolled-up number — the
-  // operator still cares about how much is owed vs paid even though
-  // the row-level UI no longer splits them.
-  const totalBills = bills.reduce((s, b) => s + b.amount_cents, 0);
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount_cents, 0);
-  const committedTotal = subQuotes
+  const committedQuotes = subQuotes
     .filter((q) => q.status === 'accepted')
     .reduce((s, q) => s + q.total_cents, 0);
+  // ONE reconciled Committed = accepted sub-quotes + open POs. Matches
+  // `getVarianceReport.committed_cents` (committed_vendor_quotes_cents +
+  // committed_pos_cents); sub-quotes + POs are its breakdown, not two
+  // parallel headline silos.
+  const committedTotal = committedQuotes + committedPos;
+
+  // Billed = all vendor bills received (pre-GST subtotal, matching the
+  // variance model). Paid = bills actually settled + receipts (which are
+  // paid by definition). The old "Paid" cell summed *all expenses* and
+  // ignored paid bills entirely — that was the bug.
+  const totalBills = bills.reduce((s, b) => s + b.amount_cents, 0);
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount_cents, 0);
+  const paidBills = bills
+    .filter((b) => b.status === 'paid')
+    .reduce((s, b) => s + b.amount_cents, 0);
+  const paidTotal = paidBills + totalExpenses;
+  // Unpaid vendor bills — the rust "chase" shout in the Money-out panel.
+  const unpaidBilledCents = bills
+    .filter((b) => b.status !== 'paid')
+    .reduce((s, b) => s + b.amount_cents, 0);
+  // Spend-owned alert: costs with no budget category, awaiting filing.
+  const uncategorizedCount =
+    bills.filter((b) => !b.budget_category_id).length +
+    expenses.filter((e) => !e.budget_category_id).length;
 
   const searchParams = useSearchParams();
   const sub: CostsSubtabKey = (() => {
@@ -290,14 +313,11 @@ export function CostsTab({
     if (raw === 'quotes' || raw === 'pos' || raw === 'costs') return raw;
     // Legacy deep-links (?sub=bills, ?sub=expenses) — fold into Costs.
     if (raw === 'bills' || raw === 'expenses') return 'costs';
-    // No explicit subtab — pick the first one that has content so the
-    // page isn't a wall of "No quotes yet" when there are 18 costs sitting
-    // one click away. Quotes still wins on a tie since it's the most
-    // common entry point for new spend.
-    if (subQuotes.length > 0) return 'quotes';
-    if (bills.length + expenses.length > 0) return 'costs';
-    if (purchaseOrders.length > 0) return 'pos';
-    return 'quotes';
+    // Stable landing subtab — always Costs (the actual money-out ledger of
+    // bills + receipts). Previously this shifted based on which subtab had
+    // data, so the same project could land you on a different tab as spend
+    // accrued — disorienting. Quotes / POs are one labeled click away.
+    return 'costs';
   })();
   const groupByCategory = searchParams?.get('view') === 'category';
   // Drill-down filter: Budget tab links here with `?focus=<budget_category_id>`
@@ -340,40 +360,110 @@ export function CostsTab({
   const focusLineLabel = focusLineId
     ? categories.flatMap((b) => b.cost_lines).find((l) => l.id === focusLineId)?.label
     : null;
-  const subtabCounts: Record<CostsSubtabKey, number> = {
-    quotes: filteredSubQuotes.length,
-    pos: filteredPurchaseOrders.length,
-    costs: filteredBills.length + filteredExpenses.length,
+  const pendingQuotes = filteredSubQuotes.filter((q) => q.status === 'pending_review').length;
+  const activePOs = filteredPurchaseOrders.filter((po) =>
+    ['sent', 'acknowledged', 'received'].includes(po.status),
+  ).length;
+  const subtabCounts: Record<CostsSubtabKey, CostsSubtabCount> = {
+    quotes: {
+      count: filteredSubQuotes.length,
+      hint: pendingQuotes > 0 ? `${pendingQuotes} pending` : undefined,
+      warn: pendingQuotes > 0,
+    },
+    pos: {
+      count: filteredPurchaseOrders.length,
+      hint: activePOs > 0 ? `${activePOs} active` : undefined,
+    },
+    costs: { count: filteredBills.length + filteredExpenses.length },
   };
 
   return (
     <div className="space-y-4">
-      {/* Summary strip. Narrow screens get a 2-column grid (readable and
-          predictable); sm+ flows to a single row so the whole story is on
-          one line where there's space. formatCurrencyCompact drops .00 on
-          whole-dollar amounts to save width on mobile. */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border bg-muted/20 px-4 py-3 text-sm sm:flex sm:flex-wrap sm:gap-4">
-        <div>
-          <span className="text-muted-foreground">Committed</span>{' '}
-          <span className="font-semibold tabular-nums">
-            {formatCurrencyCompact(committedTotal)}
+      {/* Spend-owned alert: uncategorized costs awaiting filing. Tapping
+          jumps to the By-category lens where the uncategorized category lives. */}
+      {uncategorizedCount > 0 ? (
+        <a
+          href={`/projects/${projectId}?tab=costs&view=category`}
+          className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-100 px-3 py-1.5 text-sm text-foreground hover:bg-amber-200/70 dark:bg-amber-900/30 dark:text-amber-200"
+        >
+          <TriangleAlert className="size-3.5 text-amber-700 dark:text-amber-300" aria-hidden />
+          <strong className="font-semibold">
+            {uncategorizedCount} uncategorized cost{uncategorizedCount === 1 ? '' : 's'}
+          </strong>
+        </a>
+      ) : null}
+
+      {/* "Money out" panel — Committed (Quotes · POs breakdown) · Vendor-billed
+          (rust unpaid shout) · Paid. Committed reconciles with the Budget tab;
+          internal hours live on Labour. */}
+      <div className="rounded-xl border bg-card">
+        <div className="flex items-baseline justify-between border-b px-4 py-2.5">
+          <span className="text-sm font-semibold">Money out</span>
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+            External · vendors &amp; subs only
           </span>
         </div>
-        <div>
-          <span className="text-muted-foreground">PO&apos;d</span>{' '}
-          <span className="font-semibold tabular-nums">{formatCurrencyCompact(totalPOs)}</span>
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 px-4 py-3 sm:grid-cols-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Committed
+            </span>
+            <Money cents={committedTotal} className="text-lg font-semibold" />
+            {committedQuotes > 0 || committedPos > 0 ? (
+              <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                Quotes <Money cents={committedQuotes} className="text-foreground" /> · POs{' '}
+                <Money cents={committedPos} className="text-foreground" />
+              </span>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Vendor-billed
+            </span>
+            <Money cents={totalBills} className="text-lg font-semibold" />
+            {unpaidBilledCents > 0 ? (
+              <a
+                href={`/projects/${projectId}?tab=costs&sub=costs&costs=unpaid`}
+                className="text-xs font-medium text-brand hover:underline"
+              >
+                <Money cents={unpaidBilledCents} className="text-brand" /> unpaid →
+              </a>
+            ) : (
+              <span className="text-xs text-muted-foreground">All settled</span>
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Paid
+            </span>
+            <Money cents={paidTotal} className="text-lg font-semibold" />
+            <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              Actually paid out
+            </span>
+          </div>
         </div>
-        <div>
-          <span className="text-muted-foreground">Billed</span>{' '}
-          <span className="font-semibold tabular-nums">{formatCurrencyCompact(totalBills)}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Paid</span>{' '}
-          <span className="font-semibold tabular-nums">{formatCurrencyCompact(totalExpenses)}</span>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground">
+          <span>
+            <strong className="font-medium text-foreground">Committed</strong> reconciles with the
+            Budget tab
+          </span>
+          <a
+            href={`/projects/${projectId}?tab=time`}
+            className="font-mono text-[11px] uppercase tracking-wide hover:text-foreground"
+          >
+            Sub time + worker invoices live on Labour →
+          </a>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2">
+      {/* Scope head — procurement framing + By type / By category lens. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Procurement{' '}
+          <span className="font-normal text-muted-foreground/60">
+            · external money-out workflow
+          </span>
+        </div>
         <div className="flex rounded-md border bg-muted/30 p-0.5 text-xs">
           <a
             href={`/projects/${projectId}?tab=costs${focusCategoryId ? `&focus=${focusCategoryId}` : ''}${focusLineId ? `&focus_line=${focusLineId}` : ''}`}
@@ -439,6 +529,7 @@ export function CostsTab({
       {!groupByCategory && sub === 'costs' ? (
         <ProjectCostsSection
           projectId={projectId}
+          isCostPlus={isCostPlus}
           bills={filteredBills}
           expenses={filteredExpenses}
           categories={categories.map((b) => ({
@@ -489,7 +580,7 @@ export function CostsTab({
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <p className="font-semibold">{formatCurrency(po.total_cents)}</p>
+                        <Money cents={po.total_cents} className="font-semibold" />
                         {next && (
                           <Button size="xs" variant="outline" onClick={() => advancePOStatus(po)}>
                             Mark {STATUS_LABELS[next]}
@@ -508,7 +599,7 @@ export function CostsTab({
                                   {Number(item.qty)} {item.unit}
                                 </td>
                                 <td className="py-1 text-right">
-                                  {formatCurrency(item.line_total_cents)}
+                                  <Money cents={item.line_total_cents} />
                                 </td>
                               </tr>
                             ))}
@@ -520,10 +611,10 @@ export function CostsTab({
                 );
               })}
 
-              {totalPOs > 0 && (
+              {committedPos > 0 && (
                 <p className="text-right text-sm">
                   <span className="text-muted-foreground">Committed (open POs): </span>
-                  <span className="font-semibold">{formatCurrency(totalPOs)}</span>
+                  <Money cents={committedPos} className="font-semibold" />
                 </p>
               )}
             </div>

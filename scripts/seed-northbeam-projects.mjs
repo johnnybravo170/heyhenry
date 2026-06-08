@@ -79,7 +79,7 @@ async function uploadPhoto({ jobId, projectId, customerId, slug, prompt, tag, ca
   const takenAt = ts(-daysAgo);
   const [row] = await sql`
     INSERT INTO public.photos
-      (tenant_id, job_id, project_id, customer_id, storage_path, tag, caption,
+      (tenant_id, job_id, project_id, contact_id, storage_path, tag, caption,
        taken_at, uploaded_at, uploader_user_id, source, mime, bytes,
        width, height, caption_source)
     VALUES (${TENANT_ID}, ${jobId}, ${projectId}, ${customerId},
@@ -96,7 +96,7 @@ async function uploadPhoto({ jobId, projectId, customerId, slug, prompt, tag, ca
 // ---- Common: insert customer / project / categories / lines / job / tasks / notes / bills ----
 async function seedProject(spec) {
   const existing = await sql`
-    SELECT id FROM public.customers
+    SELECT id FROM public.contacts
     WHERE tenant_id = ${TENANT_ID} AND email = ${spec.customer.email}
     LIMIT 1
   `;
@@ -107,7 +107,7 @@ async function seedProject(spec) {
 
   const c = spec.customer;
   const [customer] = await sql`
-    INSERT INTO public.customers
+    INSERT INTO public.contacts
       (tenant_id, type, kind, name, email, phone, address_line1, city, province, postal_code, notes, tax_exempt)
     VALUES (${TENANT_ID}, 'residential', 'customer', ${c.name}, ${c.email}, ${c.phone},
             ${c.address}, ${c.city}, 'BC', ${c.postal}, ${c.notes ?? null}, false)
@@ -117,7 +117,7 @@ async function seedProject(spec) {
   const p = spec.project;
   const [project] = await sql`
     INSERT INTO public.projects
-      (tenant_id, customer_id, name, description, management_fee_rate,
+      (tenant_id, contact_id, name, description, management_fee_rate,
        start_date, target_end_date, percent_complete,
        portal_enabled, estimate_status, lifecycle_stage,
        estimate_approval_proof_paths, document_type)
@@ -130,13 +130,27 @@ async function seedProject(spec) {
   console.log(`\n=== ${project.name} (${project.id}) ===`);
 
   // categories
+  // Sections are a real entity — insert distinct sections first, then
+  // reference section_id (the legacy `section` string column no longer exists).
+  const sectionIds = {};
+  for (const b of spec.categories) {
+    if (!b.section || sectionIds[b.section]) continue;
+    const [srow] = await sql`
+      INSERT INTO public.project_budget_sections (project_id, tenant_id, name, sort_order)
+      VALUES (${project.id}, ${TENANT_ID}, ${b.section}, ${Object.keys(sectionIds).length})
+      ON CONFLICT (project_id, name) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id
+    `;
+    sectionIds[b.section] = srow.id;
+  }
+
   const categoryIds = {};
   for (let i = 0; i < spec.categories.length; i++) {
     const b = spec.categories[i];
     const [row] = await sql`
       INSERT INTO public.project_budget_categories
-        (project_id, tenant_id, name, section, estimate_cents, display_order, is_visible_in_report)
-      VALUES (${project.id}, ${TENANT_ID}, ${b.name}, ${b.section ?? null}, ${b.est}, ${i + 1}, true)
+        (project_id, tenant_id, name, section_id, estimate_cents, display_order, is_visible_in_report)
+      VALUES (${project.id}, ${TENANT_ID}, ${b.name}, ${b.section ? sectionIds[b.section] : null}, ${b.est}, ${i + 1}, true)
       RETURNING id
     `;
     categoryIds[b.name] = row.id;
@@ -163,7 +177,7 @@ async function seedProject(spec) {
   if (spec.createJob) {
     const [job] = await sql`
       INSERT INTO public.jobs
-        (tenant_id, customer_id, status, scheduled_at, started_at, notes)
+        (tenant_id, contact_id, status, scheduled_at, started_at, notes)
       VALUES (${TENANT_ID}, ${customer.id}, ${spec.jobStatus ?? 'in_progress'},
               ${p.start}, ${p.start}, ${spec.jobNotes ?? null})
       RETURNING id

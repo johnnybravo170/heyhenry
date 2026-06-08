@@ -16,6 +16,8 @@ const ALL_SCOPES = [
   'write:ideas',
   'read:decisions',
   'write:decisions',
+  'read:decision_bundles',
+  'write:decision_bundles',
   'read:knowledge',
   'write:knowledge',
   'read:competitors',
@@ -32,6 +34,9 @@ const ALL_SCOPES = [
   'write:kanban',
   'write:email',
   'write:feedback',
+  'read:message_lab',
+  'write:message_lab',
+  'read:db',
   'admin:maintenance',
 ];
 

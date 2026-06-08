@@ -34,10 +34,10 @@ jobs:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
         run: |
           missing=()
-          for var in BACKUP_ENCRYPTION_KEY S3_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY RESEND_API_KEY; do
+          for var in BACKUP_ENCRYPTION_KEY S3_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY POSTMARK_SERVER_TOKEN; do
             if [ -z "${!var}" ]; then
               missing+=("$var")
             fi
@@ -84,12 +84,13 @@ jobs:
       - name: Alert on failure
         if: failure()
         env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
           OPS_ALERTS_TO_EMAIL: ${{ secrets.OPS_ALERTS_TO_EMAIL }}
           OPS_ALERTS_FROM_EMAIL: ${{ secrets.OPS_ALERTS_FROM_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          curl -fsSL -X POST https://api.resend.com/emails \
-            -H "Authorization: Bearer ${RESEND_API_KEY}" \
+          curl -fsSL -X POST https://api.postmarkapp.com/email \
+            -H "X-Postmark-Server-Token: ${POSTMARK_SERVER_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"from\":\"${OPS_ALERTS_FROM_EMAIL:-ops@mail.heyhenry.io}\",\"to\":[\"${OPS_ALERTS_TO_EMAIL:-riffninjavideos@gmail.com}\"],\"subject\":\"[HeyHenry] Monthly restore drill FAILED\",\"text\":\"Restore drill failed — untested backups are no backups. Run: ${RUN_URL}\"}"
+            -H "Accept: application/json" \
+            -d "{\"From\":\"${OPS_ALERTS_FROM_EMAIL:-HeyHenry <noreply@mail.heyhenry.io>}\",\"To\":\"${OPS_ALERTS_TO_EMAIL:-riffninjavideos@gmail.com}\",\"Subject\":\"[HeyHenry] Monthly restore drill FAILED\",\"TextBody\":\"Restore drill failed — untested backups are no backups. Run: ${RUN_URL}\",\"MessageStream\":\"outbound-transactional\"}"

@@ -1,8 +1,11 @@
 import { CheckCircle2, FileText, FolderKanban, Send } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Money } from '@/components/ui/money';
 import type { RenovationPipelineMetrics } from '@/lib/db/queries/dashboard';
-import { formatCurrency } from '@/lib/pricing/calculator';
+
+/** Mono eyebrow — small uppercase label used on stat cells across the Paper surfaces. */
+const EYEBROW = 'font-mono text-[11px] uppercase tracking-wide text-muted-foreground';
 
 /**
  * Dashboard pipeline cards for the renovation vertical. All four cards
@@ -60,7 +63,11 @@ export function RenovationPipelineSummary({ metrics }: { metrics: RenovationPipe
   return (
     <section>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-muted-foreground">Pipeline</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          <Link href="/projects" className="hover:underline">
+            Pipeline
+          </Link>
+        </h2>
         <Link href="/projects" className="text-xs text-muted-foreground hover:underline">
           View all →
         </Link>
@@ -80,7 +87,7 @@ export function RenovationPipelineSummary({ metrics }: { metrics: RenovationPipe
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardDescription>{card.label}</CardDescription>
+                    <CardDescription className={EYEBROW}>{card.label}</CardDescription>
                     <Icon
                       className={
                         warning
@@ -96,7 +103,7 @@ export function RenovationPipelineSummary({ metrics }: { metrics: RenovationPipe
                 <CardContent>
                   {card.valueCents !== null ? (
                     <p className="text-sm font-medium tabular-nums">
-                      {formatCurrency(card.valueCents)}
+                      <Money cents={card.valueCents} />
                     </p>
                   ) : null}
                   <p className="text-xs text-muted-foreground">{card.detail}</p>

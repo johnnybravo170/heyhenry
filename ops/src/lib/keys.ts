@@ -110,6 +110,8 @@ export type Scope =
   | 'write:ideas'
   | 'read:decisions'
   | 'write:decisions'
+  | 'read:decision_bundles'
+  | 'write:decision_bundles'
   | 'read:knowledge'
   | 'write:knowledge'
   | 'read:help_docs'
@@ -136,6 +138,9 @@ export type Scope =
   | 'write:board'
   | 'write:board:run'
   | 'write:board:review'
+  | 'read:message_lab'
+  | 'write:message_lab'
+  | 'read:db'
   | 'admin:maintenance'
   | 'admin:keys';
 

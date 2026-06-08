@@ -243,7 +243,7 @@ function ActionButton({
 }) {
   const toneClass = {
     emerald: 'bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-600/60',
-    red: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/60',
+    red: 'bg-destructive text-white hover:bg-destructive/90 disabled:bg-destructive/60',
     amber: 'bg-amber-500 text-white hover:bg-amber-600 disabled:bg-amber-500/60',
     neutral: 'bg-background text-foreground border hover:bg-accent',
   }[tone];

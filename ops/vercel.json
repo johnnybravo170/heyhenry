@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./ ../pnpm-lock.yaml ../pnpm-workspace.yaml",
   "crons": [
     {
       "path": "/api/ops/maintenance/run?task=weekly",
@@ -17,12 +18,24 @@
       "schedule": "30 13 * * *"
     },
     {
+      "path": "/api/ops/ideas-stale/run",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/ops/bundles-cap/run",
+      "schedule": "30 15 * * *"
+    },
+    {
       "path": "/api/ops/ideas-digest/run",
       "schedule": "0 16 * * *"
     },
     {
       "path": "/api/ops/ideas-review/run",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/mcp?warm=1",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

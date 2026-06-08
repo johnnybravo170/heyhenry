@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type InvoiceCustomerSummary = {
   id: string;
@@ -31,8 +32,12 @@ export type InvoiceRow = {
   tenant_id: string;
   job_id: string;
   project_id: string | null;
-  customer_id: string;
+  contact_id: string;
   status: InvoiceStatus;
+  /** Unguessable short code (mig 20260523194840) — also the basis for the
+   *  friendly, non-UUID doc number (`INV-<first 8, uppercased>`). Null on
+   *  rows created before the column was backfilled / a code is assigned. */
+  code: string | null;
   amount_cents: number;
   tax_cents: number;
   tax_inclusive: boolean;
@@ -71,13 +76,13 @@ export type InvoiceWithRelations = InvoiceWithCustomer & {
 
 export type InvoiceListFilters = {
   status?: InvoiceStatus;
-  customer_id?: string;
+  contact_id?: string;
   limit?: number;
   offset?: number;
 };
 
 const INVOICE_COLUMNS =
-  'id, tenant_id, job_id, project_id, customer_id, status, amount_cents, tax_cents, tax_inclusive, doc_type, stripe_invoice_id, stripe_payment_intent_id, pdf_url, sent_at, paid_at, payment_method, payment_reference, payment_notes, payment_receipt_paths, customer_note, line_items, payment_instructions_override, terms_override, policies_override, customer_view_mode, customer_view_mgmt_fee_inline, created_at, updated_at, deleted_at';
+  'id, tenant_id, job_id, project_id, contact_id, status, code, amount_cents, tax_cents, tax_inclusive, doc_type, stripe_invoice_id, stripe_payment_intent_id, pdf_url, sent_at, paid_at, payment_method, payment_reference, payment_notes, payment_receipt_paths, customer_note, line_items, payment_instructions_override, terms_override, policies_override, customer_view_mode, customer_view_mgmt_fee_inline, created_at, updated_at, deleted_at';
 
 /**
  * Re-export of the pure `invoiceTotalCents` helper.
@@ -105,11 +110,11 @@ export async function listInvoices(
 
   let query = supabase
     .from('invoices')
-    .select(`${INVOICE_COLUMNS}, customers:customer_id (id, name, email, additional_emails)`)
+    .select(`${INVOICE_COLUMNS}, contacts:contact_id (id, name, email, additional_emails)`)
     .is('deleted_at', null);
 
   if (filters.status) query = query.eq('status', filters.status);
-  if (filters.customer_id) query = query.eq('customer_id', filters.customer_id);
+  if (filters.contact_id) query = query.eq('contact_id', filters.contact_id);
 
   const { data, error } = await query
     .order('created_at', { ascending: false })
@@ -120,7 +125,7 @@ export async function listInvoices(
   }
 
   return (data ?? []).map((row) => {
-    const { customers: customerRaw, ...rest } = row as Record<string, unknown>;
+    const { contacts: customerRaw, ...rest } = row as Record<string, unknown>;
     return {
       ...(rest as InvoiceRow),
       customer: extractRelation<InvoiceCustomerSummary>(customerRaw),
@@ -129,13 +134,15 @@ export async function listInvoices(
 }
 
 export async function getInvoice(id: string): Promise<InvoiceWithRelations | null> {
+  // Defense-in-depth — non-UUID id can't match a row. See getProjectUncached.
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('invoices')
     .select(
       `${INVOICE_COLUMNS},
-       customers:customer_id (id, name, email, additional_emails),
+       contacts:contact_id (id, name, email, additional_emails),
        jobs:job_id (id, status, scheduled_at)`,
     )
     .eq('id', id)
@@ -148,7 +155,7 @@ export async function getInvoice(id: string): Promise<InvoiceWithRelations | nul
   }
   if (!data) return null;
 
-  const { customers: customerRaw, jobs: jobRaw, ...rest } = data as Record<string, unknown>;
+  const { contacts: customerRaw, jobs: jobRaw, ...rest } = data as Record<string, unknown>;
 
   return {
     ...(rest as InvoiceRow),

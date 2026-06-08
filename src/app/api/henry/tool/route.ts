@@ -9,7 +9,7 @@
  * `executeToolCall` the Claude chat route uses.
  */
 
-import { executeToolCall, setToolTimezone } from '@/lib/ai/tools';
+import { executeToolCall, setToolTimezone, setToolVertical } from '@/lib/ai/tools';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 
 export async function POST(request: Request) {
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
       : {};
 
   setToolTimezone(tenant.timezone);
+  setToolVertical(tenant.vertical);
   const result = await executeToolCall(body.name, args);
 
   return Response.json({ result });

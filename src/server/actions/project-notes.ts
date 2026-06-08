@@ -109,13 +109,13 @@ export async function askHenryAboutProjectAction(input: {
   const [{ data: project }, { data: categoryRows }, { data: recentNotes }] = await Promise.all([
     supabase
       .from('projects')
-      .select('name, description, customers:customer_id (name)')
+      .select('name, description, contacts:contact_id (name)')
       .eq('id', input.projectId)
       .maybeSingle(),
     supabase
       .from('project_budget_categories')
       .select(
-        'name, section, project_cost_lines (label, qty, unit, unit_price_cents, line_price_cents, notes)',
+        'name, section_row:project_budget_sections!section_id(name), project_cost_lines (label, qty, unit, unit_price_cents, line_price_cents, notes)',
       )
       .eq('project_id', input.projectId)
       .order('display_order'),
@@ -130,13 +130,14 @@ export async function askHenryAboutProjectAction(input: {
 
   if (!project) return { ok: false, error: 'Project not found.' };
 
-  const customerName = Array.isArray(project.customers)
-    ? (project.customers[0] as { name?: string } | undefined)?.name
-    : (project.customers as { name?: string } | null)?.name;
+  const customerName = Array.isArray(project.contacts)
+    ? (project.contacts[0] as { name?: string } | undefined)?.name
+    : (project.contacts as { name?: string } | null)?.name;
 
   const categoriesBlock = (categoryRows ?? [])
     .map((b) => {
-      const sec = b.section ? `${b.section} / ` : '';
+      const sectionName = (b.section_row as unknown as { name: string } | null)?.name;
+      const sec = sectionName ? `${sectionName} / ` : '';
       const lines =
         (b.project_cost_lines as Array<{
           label: string;

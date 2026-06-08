@@ -87,7 +87,9 @@ export async function snapshotProjectScope(input: {
       .order('created_at', { ascending: true }),
     admin
       .from('project_budget_categories')
-      .select('id, name, section, estimate_cents, display_order')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), estimate_cents, display_order',
+      )
       .eq('project_id', input.projectId)
       .order('display_order', { ascending: true }),
   ]);
@@ -96,7 +98,13 @@ export async function snapshotProjectScope(input: {
   if (categoriesRes.error) return { ok: false, error: categoriesRes.error.message };
 
   const costLines = (linesRes.data ?? []) as SnapshotCostLine[];
-  const budgetCategories = (categoriesRes.data ?? []) as SnapshotBudgetCategory[];
+  const budgetCategories = (categoriesRes.data ?? []).map((c) => ({
+    id: c.id as string,
+    name: c.name as string,
+    section: (c.section_row as unknown as { name: string } | null)?.name ?? '',
+    estimate_cents: (c.estimate_cents as number) ?? 0,
+    display_order: (c.display_order as number) ?? 0,
+  })) satisfies SnapshotBudgetCategory[];
   const totalCents = costLines.reduce((s, l) => s + (l.line_price_cents ?? 0), 0);
 
   // 2. Pick the next version number — monotonic per project.
@@ -152,16 +160,4 @@ export async function getLatestSnapshot(projectId: string): Promise<ProjectScope
     .maybeSingle();
 
   return (data as ProjectScopeSnapshot) ?? null;
-}
-
-/** All snapshots for a project, oldest first. Drives the Versions dropdown. */
-export async function listSnapshots(projectId: string): Promise<ProjectScopeSnapshot[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('project_scope_snapshots')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('version_number', { ascending: true });
-
-  return ((data ?? []) as ProjectScopeSnapshot[]) ?? [];
 }

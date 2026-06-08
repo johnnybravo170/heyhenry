@@ -1,0 +1,2396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Expenses — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+
+  /* ───── Sidebar ───── */
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; overflow-y: auto; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 120ms;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust);
+    color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .org-switcher:hover { background: rgba(232,222,201,.5); }
+  .org-avatar {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 120ms, border-color 120ms;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn .icon { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 9px; font-size: 12px; }
+  .btn-lg { height: 38px; padding: 0 16px; font-size: 14px; }
+  .btn-rust {
+    background: var(--rust); color: #fff; border-color: var(--rust);
+  }
+  .btn-rust:hover { background: #A8370A; border-color: #A8370A; }
+  .btn-rust-ghost {
+    background: var(--rust-soft); color: var(--rust);
+    border-color: rgba(194, 65, 12, 0.25);
+  }
+  .btn-rust-ghost:hover { background: #FBE4CF; border-color: var(--rust); }
+  .btn-warn-ghost {
+    background: var(--card); color: var(--warn);
+    border-color: rgba(180, 83, 9, 0.35);
+  }
+  .btn-warn-ghost:hover { background: var(--warn-soft); border-color: var(--warn); }
+
+  /* ───── Main column ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 96px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+
+  /* ───── Frame divider (between labeled frames) ───── */
+  .frame-label {
+    display: flex; align-items: center; gap: 12px;
+    margin: 28px 0 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .frame-label .mark {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.25);
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .frame-label .name {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .frame-label .path {
+    font-family: var(--mono);
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .frame-label .note {
+    margin-left: auto;
+    font-size: 12px; color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ───── Page header ───── */
+  .page-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); }
+  .page-sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .page-head-cta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+  /* ───── Summary strip (3-tile compact) ───── */
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .summary-tile {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 12px 16px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .summary-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .summary-value {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
+  .summary-value .cents { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .summary-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .summary-sub .mono { font-family: var(--mono); color: var(--ink-2); font-weight: 600; }
+
+  /* ───── Drop zone (Henry chrome — rust positive) ───── */
+  .dropzone {
+    background: var(--rust-soft);
+    border: 1px dashed rgba(194, 65, 12, 0.4);
+    border-left: 3px solid var(--rust);
+    border-radius: var(--radius-card);
+    padding: 18px 22px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .dropzone-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(194, 65, 12, 0.18);
+  }
+  .dropzone-icon svg { width: 22px; height: 22px; }
+  .dropzone-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .dropzone-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dropzone-headline {
+    font-size: 16px; font-weight: 600; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .dropzone-help { font-size: 12px; color: var(--muted); }
+  .dropzone-help .alt { color: var(--ink-2); font-weight: 600; }
+  .dropzone-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ───── Filter bar ───── */
+  .filter-bar {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .filter-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px 5px 12px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 14px; font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .filter-pill:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .filter-pill .pill-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .filter-pill .pill-value {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .filter-pill .pill-chev { width: 11px; height: 11px; color: var(--faint); }
+  .filter-pill.is-set { background: var(--chip-fill); border-color: var(--rule); }
+
+  .filter-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 14px; font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .filter-toggle:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .filter-toggle.is-on {
+    background: var(--warn-soft);
+    border-color: rgba(180, 83, 9, 0.35);
+    color: var(--warn);
+  }
+  .filter-toggle.is-on .dot {
+    width: 6px; height: 6px; border-radius: 999px; background: var(--warn);
+  }
+
+  .filter-search {
+    margin-left: auto;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 32px;
+    display: flex; align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    min-width: 240px;
+  }
+  .filter-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .filter-search input {
+    flex: 1;
+    border: none; outline: none; background: transparent;
+    font: inherit;
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .filter-search input::placeholder { color: var(--muted); }
+
+  .filter-reset {
+    border: none; background: none; cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 6px;
+  }
+  .filter-reset:hover { color: var(--ink); }
+
+  /* ───── Table card ───── */
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  /* Inline section header strip above the table */
+  .table-strip {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 16px 11px 18px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .table-strip-title {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .table-strip-count {
+    font-family: var(--mono);
+    font-size: 11px; color: var(--faint);
+    font-weight: 600;
+  }
+  .table-strip-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+
+  /* Expense table */
+  .ex-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .ex-table thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hair);
+    background: transparent;
+    white-space: nowrap;
+  }
+  .ex-table thead th.num { text-align: right; }
+  .ex-table tbody td {
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--hair);
+    vertical-align: middle;
+  }
+  .ex-table tbody tr:last-child td { border-bottom: 0; }
+  .ex-table tbody tr.is-selected td { background: var(--rust-soft); }
+  .ex-table tbody tr:hover td { background: rgba(236, 227, 208, .35); }
+  .ex-table tbody tr.is-selected:hover td { background: #FBE4CF; }
+
+  .ex-table .col-check { width: 32px; padding-left: 18px; }
+  .ex-table .col-date  { width: 90px; }
+  .ex-table .col-cat   { min-width: 200px; }
+  .ex-table .col-vend  { min-width: 160px; }
+  .ex-table .col-paid  { width: 150px; }
+  .ex-table .col-desc  { min-width: 200px; max-width: 280px; }
+  .ex-table .col-tax   { width: 80px; text-align: right; }
+  .ex-table .col-amt   { width: 110px; text-align: right; padding-right: 8px; }
+  .ex-table .col-rcpt  { width: 48px; padding: 0 4px; }
+  .ex-table .col-del   { width: 36px; padding-right: 16px; }
+
+  .ex-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .ex-cat {
+    font-size: 14px; font-weight: 500;
+    color: var(--ink-2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ex-cat .crumb { color: var(--muted); font-weight: 500; }
+  .ex-cat .crumb-sep { color: var(--faint); margin: 0 2px; }
+  .ex-cat .leaf { color: var(--ink); font-weight: 600; }
+
+  .ex-cat-uncat {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-size: 12px; font-weight: 600;
+    border: 1px solid rgba(180, 83, 9, 0.25);
+    cursor: pointer;
+  }
+  .ex-cat-uncat svg { width: 11px; height: 11px; }
+  .ex-cat-uncat:hover { background: #FAE9B8; }
+
+  .ex-vendor { font-size: 14px; color: var(--ink); font-weight: 500; }
+  .ex-vendor.is-empty { color: var(--faint); font-weight: 500; }
+
+  .ex-desc { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .ex-desc.is-empty { color: var(--faint); }
+
+  /* Payment-source pill */
+  .paid-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px 3px 6px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .paid-pill .pp-icon {
+    width: 18px; height: 12px;
+    border-radius: 3px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 8px; font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .paid-pill .pp-icon.amex { background: #1E40AF; }
+  .paid-pill .pp-icon.cash { background: var(--ok); }
+  .paid-pill .pp-icon.eft  { background: var(--ink-2); }
+  .paid-pill .pp-last4 { font-family: var(--mono); color: var(--muted); font-weight: 600; }
+
+  /* Money */
+  .money {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .money .cents { color: var(--muted); font-weight: 500; font-size: 0.85em; }
+  .money.is-zero { color: var(--faint); font-weight: 500; }
+  .money.is-zero .cents { color: var(--faint); }
+  .money.is-tax { color: var(--ink-2); font-weight: 500; }
+  .money.is-tax .cents { color: var(--muted); }
+  .money-empty { color: var(--faint); font-weight: 500; }
+
+  /* Receipt thumb */
+  .rcpt {
+    width: 32px; height: 36px;
+    border-radius: 5px;
+    background: #FAF6EE;
+    border: 1px solid var(--hair);
+    display: inline-flex; flex-direction: column;
+    align-items: stretch;
+    padding: 4px 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .rcpt:hover { background: var(--card); border-color: var(--rust); }
+  .rcpt .rl { display: block; height: 1.2px; background: var(--rule); margin: 1px 0; border-radius: 1px; }
+  .rcpt .rl:nth-child(1) { width: 70%; }
+  .rcpt .rl:nth-child(2) { width: 90%; }
+  .rcpt .rl:nth-child(3) { width: 50%; }
+  .rcpt .rl:nth-child(4) { width: 80%; }
+  .rcpt .rl:nth-child(5) { width: 40%; }
+  .rcpt-empty {
+    width: 32px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 18px; font-weight: 400;
+  }
+
+  .icon-del-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--faint);
+    display: inline-grid; place-items: center;
+    cursor: pointer;
+    transition: background 100ms, color 100ms, border-color 100ms;
+  }
+  .icon-del-btn:hover {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: rgba(185, 28, 28, 0.2);
+  }
+  .icon-del-btn svg { width: 13px; height: 13px; }
+
+  /* Checkbox */
+  .cbx {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--rule);
+    background: var(--card);
+    display: inline-grid; place-items: center;
+    cursor: pointer;
+  }
+  .cbx.is-on {
+    background: var(--ink); border-color: var(--ink);
+  }
+  .cbx.is-on svg { color: #fff; width: 10px; height: 10px; }
+  .cbx svg { width: 0; height: 0; }
+
+  /* ───── Bulk action bar (anchored to table) ───── */
+  .bulk-bar {
+    background: var(--ink);
+    color: #fff;
+    border-radius: 999px;
+    padding: 8px 8px 8px 18px;
+    display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: 0 4px 18px rgba(10, 10, 10, 0.18);
+    margin: 16px auto;
+  }
+  .bulk-bar-count {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .bulk-bar-sep { color: rgba(255,255,255,.4); margin: 0 6px; }
+  .bulk-bar-act {
+    height: 28px; padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fff;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .bulk-bar-act:hover { background: rgba(255,255,255,.18); }
+  .bulk-bar-act svg { width: 11px; height: 11px; }
+  .bulk-bar-clear {
+    width: 28px; height: 28px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.18);
+    color: rgba(255,255,255,.7);
+    cursor: pointer;
+    display: inline-grid; place-items: center;
+    margin-left: 4px;
+  }
+  .bulk-bar-clear svg { width: 11px; height: 11px; }
+  .bulk-bar-wrap {
+    display: flex; justify-content: center;
+    padding: 0 20px;
+  }
+
+  /* ───── Pager ───── */
+  .pager {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px;
+    border-top: 1px solid var(--hair);
+    background: transparent;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .pager-left { font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em; }
+  .pager-left .mono-num { color: var(--ink); font-weight: 600; }
+  .pager-right { display: flex; align-items: center; gap: 6px; }
+  .pager-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: inline-grid; place-items: center;
+    cursor: pointer;
+    transition: background 100ms;
+  }
+  .pager-btn:hover:not([disabled]) { background: var(--chip-fill); border-color: var(--rule); }
+  .pager-btn[disabled] { opacity: 0.4; cursor: default; }
+  .pager-btn svg { width: 12px; height: 12px; }
+  .pager-page {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    padding: 0 8px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ───── GST page ───── */
+  .gst-disclaimer {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+    display: flex; gap: 14px;
+  }
+  .gst-disclaimer-icon {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .gst-disclaimer-icon svg { width: 14px; height: 14px; }
+  .gst-disclaimer-body p { margin: 0; font-size: 14px; color: var(--muted); }
+  .gst-disclaimer-body p + p { margin-top: 4px; }
+  .gst-disclaimer-body strong { color: var(--ink); font-weight: 600; }
+
+  .gst-periods {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    flex-wrap: wrap;
+  }
+  .gst-periods-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .gst-period-chip {
+    display: inline-flex; align-items: center;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 14px; font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .gst-period-chip:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .gst-period-chip.is-on {
+    background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 600;
+  }
+  .gst-period-sep {
+    width: 1px; height: 18px; background: var(--rule);
+    margin: 0 6px;
+  }
+  .gst-custom { display: flex; align-items: center; gap: 6px; }
+  .gst-custom .date-in {
+    height: 28px; padding: 0 8px;
+    border-radius: 6px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .gst-custom .to {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* GST position card — the headline */
+  .gst-position-grid .pos-block {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .pos-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .pos-value {
+    font-size: 28px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .pos-value .cents { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .pos-foot {
+    font-size: 12px; color: var(--muted);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .pos-foot .mono { font-family: var(--mono); color: var(--ink-2); font-weight: 600; }
+  .pos-op {
+    font-family: var(--mono);
+    font-size: 22px; font-weight: 600;
+    color: var(--faint);
+    align-self: center;
+    padding-top: 18px;
+  }
+  .pos-net .pos-value { font-size: 36px; }
+  .pos-net .pos-value .cents { font-size: 16px; }
+  .pos-actions {
+    display: flex; flex-direction: column; gap: 6px;
+    align-items: stretch;
+  }
+  .pos-actions .btn { justify-content: center; }
+  .gst-position-period {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--rule);
+    margin-bottom: 4px;
+  }
+  .gst-position-wrap {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 18px 26px 22px;
+  }
+  .gst-position-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1.3fr auto;
+    gap: 22px;
+    align-items: center;
+  }
+
+  /* GST — Henry warn caution card */
+  .henry-warn {
+    background: var(--warn-soft);
+    border: 1px solid rgba(180, 83, 9, 0.28);
+    border-left: 3px solid var(--rust);
+    border-radius: var(--radius-card);
+    padding: 16px 18px 14px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .henry-warn-head {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .henry-warn-mark {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .henry-warn-mark svg { width: 13px; height: 13px; }
+  .henry-warn-body { flex: 1; min-width: 0; }
+  .henry-warn-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .henry-warn-title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.005em;
+    display: inline;
+  }
+  .henry-warn-help {
+    margin-top: 2px;
+    font-size: 14px; color: var(--ink-2);
+  }
+  .henry-warn-action {
+    display: flex; gap: 6px; align-self: flex-start;
+  }
+  .henry-warn-list {
+    background: var(--card);
+    border-radius: 8px;
+    border: 1px solid rgba(180, 83, 9, 0.18);
+    overflow: hidden;
+  }
+  .henry-warn-list-head {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.2fr) minmax(160px, 1.4fr) 90px 90px 90px;
+    gap: 14px;
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(180, 83, 9, 0.14);
+    background: rgba(254, 243, 199, 0.35);
+  }
+  .henry-warn-list-head > div {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .henry-warn-list-head .num { text-align: right; }
+  .henry-warn-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.2fr) minmax(160px, 1.4fr) 90px 90px 90px;
+    gap: 14px;
+    padding: 10px 14px;
+    border-top: 1px solid rgba(180, 83, 9, 0.10);
+    align-items: center;
+  }
+  .henry-warn-row:first-of-type { border-top: 0; }
+  .henry-warn-row .vendor {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .henry-warn-row .where {
+    font-size: 12px; color: var(--muted);
+  }
+  .henry-warn-row .date {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 600; color: var(--ink-2);
+    letter-spacing: 0.02em;
+    text-align: right;
+  }
+  .henry-warn-row .amt, .henry-warn-row .gst {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .henry-warn-row .amt .cents, .henry-warn-row .gst .cents {
+    color: var(--muted); font-weight: 500; font-size: 0.85em;
+  }
+  .henry-warn-row .gst { color: var(--warn); }
+
+  /* GST breakdown sections */
+  .breakdown {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .breakdown-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: transparent;
+  }
+  .breakdown-title {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .breakdown-total {
+    font-size: 14px;
+    font-weight: 700; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .breakdown-total .cents { color: var(--muted); font-weight: 500; font-size: 0.85em; }
+  .breakdown-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .breakdown-link {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
+    cursor: pointer;
+  }
+  .breakdown-link:hover { color: var(--ink); }
+  .breakdown-link svg { width: 11px; height: 11px; }
+
+  .breakdown-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .breakdown-table thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .breakdown-table thead th.num { text-align: right; }
+  .breakdown-table tbody td {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .breakdown-table tbody tr:last-child td { border-bottom: 0; }
+  .breakdown-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .breakdown-table tbody td.itc { color: var(--ink); font-weight: 600; }
+  .breakdown-table tbody td.sub { color: var(--muted); font-weight: 500; }
+  .breakdown-table tbody td.count {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* ───── Import wizard ───── */
+  .wizard-head {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .wizard-stages {
+    display: flex; align-items: center; gap: 8px;
+    margin-left: auto;
+  }
+  .wizard-stage {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px; font-weight: 500;
+  }
+  .wizard-stage .step-num {
+    width: 18px; height: 18px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    display: inline-grid; place-items: center;
+  }
+  .wizard-stage.is-done { color: var(--ok); }
+  .wizard-stage.is-done .step-num { background: var(--ok); color: #fff; }
+  .wizard-stage.is-active {
+    background: var(--ink); color: #fff; font-weight: 600;
+  }
+  .wizard-stage.is-active .step-num { background: rgba(255,255,255,.18); color: #fff; }
+  .wizard-arrow { color: var(--faint); font-family: var(--mono); font-size: 12px; }
+
+  .wizard-progress {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .wizard-progress-bar {
+    flex: 1; height: 6px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .wizard-progress-bar > .fill {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    background: var(--rust);
+    border-radius: 999px;
+  }
+  .wizard-progress-stat {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--ink-2);
+    letter-spacing: 0.02em;
+  }
+  .wizard-progress-stat .ok { color: var(--ok); }
+  .wizard-progress-stat .err { color: var(--warn); }
+  .wizard-progress-stat .total { color: var(--muted); font-weight: 600; }
+
+  .wizard-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .wizard-table thead th {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hair);
+    background: transparent;
+    white-space: nowrap;
+  }
+  .wizard-table thead th.num { text-align: right; }
+  .wizard-table tbody td {
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--hair);
+    vertical-align: middle;
+  }
+  .wizard-table tbody tr:last-child td { border-bottom: 0; }
+  .wizard-table tbody tr.is-flag td { background: rgba(254, 243, 199, 0.35); }
+
+  .wizard-table .col-rcpt-w { width: 44px; padding-left: 18px; }
+  .wizard-table .col-date-w { width: 100px; }
+  .wizard-table .col-vend-w { min-width: 170px; }
+  .wizard-table .col-cat-w { min-width: 200px; }
+  .wizard-table .col-paid-w { width: 150px; }
+  .wizard-table .col-tax-w { width: 80px; text-align: right; }
+  .wizard-table .col-amt-w { width: 110px; text-align: right; }
+  .wizard-table .col-flag-w { width: 38px; padding-right: 16px; }
+
+  .henry-suggested {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px 3px 8px;
+    border-radius: 6px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    font-size: 12px; font-weight: 600;
+    border: 1px solid rgba(194, 65, 12, 0.18);
+    cursor: pointer;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .henry-suggested svg { width: 11px; height: 11px; flex-shrink: 0; }
+  .henry-suggested .lbl { font-weight: 500; color: var(--ink-2); }
+  .henry-suggested .leaf { font-weight: 600; color: var(--ink); }
+  .henry-suggested .crumb-sep { color: var(--faint); margin: 0 2px; font-weight: 500; }
+
+  .flag-bn {
+    width: 26px; height: 26px;
+    border-radius: 999px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    display: inline-grid; place-items: center;
+    border: 1px solid rgba(180, 83, 9, 0.25);
+    cursor: help;
+  }
+  .flag-bn svg { width: 12px; height: 12px; }
+
+  .wizard-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid var(--hair);
+    background: transparent;
+  }
+  .wizard-footer-stat {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .wizard-footer-stat .ok { color: var(--ok); }
+  .wizard-footer-stat .warn { color: var(--warn); }
+  .wizard-footer-stat .mono-num { color: var(--ink); font-weight: 700; }
+  .wizard-footer-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ───── States row ───── */
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .state-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 0;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .state-card-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--chrome);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .state-card-head .mark {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .state-card-head .label {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .state-card-head .note {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; color: var(--muted); font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .state-card-body {
+    padding: 22px 20px;
+    flex: 1;
+  }
+
+  .empty-block {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+    text-align: center;
+    padding: 16px 0;
+  }
+  .empty-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .empty-icon svg { width: 22px; height: 22px; }
+  .empty-headline { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .empty-help { font-size: 14px; color: var(--muted); max-width: 360px; }
+  .empty-actions { display: flex; gap: 8px; margin-top: 6px; }
+
+  .filed-card {
+    background: var(--ok-soft);
+    border: 1px solid rgba(21, 128, 61, 0.22);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .filed-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ok);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .filed-eyebrow svg { width: 12px; height: 12px; }
+  .filed-amount {
+    font-size: 28px; font-weight: 700;
+    color: var(--ok);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .filed-amount .cents { font-size: 14px; opacity: 0.65; font-weight: 500; }
+  .filed-meta {
+    font-size: 12px; color: var(--ink-2);
+  }
+  .filed-meta .ref {
+    font-family: var(--mono); font-weight: 600; color: var(--ink-2);
+  }
+  .filed-meta .sep { color: var(--faint); margin: 0 5px; }
+  .filed-unmark {
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ok);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: transparent; border: none; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+    align-self: flex-start;
+    padding: 0;
+  }
+
+  /* GST clean — single calm net-owed in state card */
+  .calm-position {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .calm-position .eb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .calm-position .num {
+    font-size: 32px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .calm-position .num .cents { font-size: 16px; color: var(--muted); font-weight: 500; }
+  .calm-position .help {
+    font-size: 14px; color: var(--muted);
+    margin-top: 4px;
+  }
+  .calm-position .calm-row {
+    margin-top: 6px;
+    display: flex; gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .calm-position .calm-row .v { color: var(--ink-2); font-weight: 700; }
+
+  /* Skeleton */
+  .sk-line {
+    background: linear-gradient(90deg, var(--chip-fill) 0%, #F5EDD9 50%, var(--chip-fill) 100%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    height: 12px;
+    animation: sk 1.4s ease-in-out infinite;
+  }
+  @keyframes sk { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .sk-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 120px 80px 90px;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px dashed var(--rule);
+    align-items: center;
+  }
+  .sk-row:first-of-type { border-top: 0; }
+  .sk-row .sk-line { height: 10px; }
+
+  .filtered-empty {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 18px 0;
+    text-align: center;
+  }
+  .filtered-empty .headline { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .filtered-empty .help { font-size: 14px; color: var(--muted); }
+  .filtered-empty .badge-row {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+  }
+  .filtered-empty .applied {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px 3px 10px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: 0.02em;
+  }
+  .filtered-empty .applied .x {
+    color: var(--faint); font-weight: 700; cursor: pointer;
+    padding-left: 2px;
+  }
+
+  /* Inline help banner (uncategorized) */
+  .uncat-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px;
+    background: var(--warn-soft);
+    border: 1px solid rgba(180, 83, 9, 0.22);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--warn);
+  }
+  .uncat-banner svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .uncat-banner strong { color: var(--ink); font-weight: 700; }
+  .uncat-banner .link {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+
+  .mono { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  /* Frame anchor */
+  .frame { scroll-margin-top: 72px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-loader" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <!-- ═════ Sidebar ═════ -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-wallet"/></svg>Expenses</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Build Co.</span>
+          <span class="org-sub">Abbotsford, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═════ Main column ═════ -->
+  <div class="main">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices…</span>
+        <span class="chip-kbd">⌘ K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!--  FRAME 1 — /expenses · The overhead ledger (default, populated)  -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame 1</span>
+        <span class="name">The ledger — populated</span>
+        <span class="path">/expenses</span>
+        <span class="note">default this-quarter · uncategorized present · receipt drop the spine</span>
+      </div>
+
+      <section class="frame" id="frame-ledger">
+
+        <!-- Page header -->
+        <section class="page-head">
+          <div>
+            <h1 class="page-title">Overhead expenses</h1>
+            <div class="page-sub">Operating costs not tied to a project — fuel, tools, office, insurance.</div>
+          </div>
+          <div class="page-head-cta">
+            <a class="btn btn-ghost"><svg class="icon"><use href="#i-receipt"/></svg>GST/HST</a>
+            <button class="btn btn-rust-ghost"><svg class="icon"><use href="#i-sparkles"/></svg>Import receipts</button>
+            <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg>Log expense</button>
+          </div>
+        </section>
+
+        <!-- Summary strip -->
+        <section class="summary-strip" style="margin-top: 4px;" aria-label="Period summary">
+          <div class="summary-tile">
+            <span class="summary-label">Total · This quarter</span>
+            <span class="summary-value">$8,420<span class="cents">.36</span></span>
+            <span class="summary-sub">Apr 1 — May 23 &middot; partial quarter</span>
+          </div>
+          <div class="summary-tile">
+            <span class="summary-label">GST claimable</span>
+            <span class="summary-value">$402<span class="cents">.18</span></span>
+            <span class="summary-sub"><span class="mono">32</span> of 37 with vendor BN</span>
+          </div>
+          <div class="summary-tile">
+            <span class="summary-label">Entries</span>
+            <span class="summary-value">37</span>
+            <span class="summary-sub">5 uncategorized &middot; 2 missing receipt</span>
+          </div>
+        </section>
+
+        <!-- Drop zone (Henry chrome, rust-positive) -->
+        <section class="dropzone" role="region" aria-label="Drop receipts">
+          <div class="dropzone-icon"><svg><use href="#i-upload"/></svg></div>
+          <div class="dropzone-body">
+            <span class="dropzone-eyebrow">✦ Henry · fastest path</span>
+            <span class="dropzone-headline">Drop receipts here. Henry reads vendor, date, amount, and GST.</span>
+            <span class="dropzone-help">Up to 50 at once · JPG, PNG, HEIC, PDF · <span class="alt">or log one manually</span></span>
+          </div>
+          <div class="dropzone-actions">
+            <button class="btn btn-rust"><svg class="icon"><use href="#i-upload"/></svg>Drop receipts</button>
+          </div>
+        </section>
+
+        <!-- Filter bar -->
+        <section class="filter-bar" role="group" aria-label="Filter expenses">
+          <button class="filter-pill is-set">
+            <span class="pill-label">Period</span>
+            <span class="pill-value">This quarter</span>
+            <svg class="pill-chev"><use href="#i-chevron-down"/></svg>
+          </button>
+          <button class="filter-pill">
+            <span class="pill-label">Category</span>
+            <span class="pill-value">All</span>
+            <svg class="pill-chev"><use href="#i-chevron-down"/></svg>
+          </button>
+          <button class="filter-pill">
+            <span class="pill-label">Vendor</span>
+            <span class="pill-value">All</span>
+            <svg class="pill-chev"><use href="#i-chevron-down"/></svg>
+          </button>
+          <button class="filter-pill">
+            <span class="pill-label">Paid by</span>
+            <span class="pill-value">All</span>
+            <svg class="pill-chev"><use href="#i-chevron-down"/></svg>
+          </button>
+          <button class="filter-toggle is-on" aria-pressed="true">
+            <span class="dot"></span>
+            Uncategorized only · <span style="font-family:var(--mono); font-size:11px; font-weight:700;">5</span>
+          </button>
+          <div class="filter-search" role="search">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="text" placeholder="Vendor or description…" />
+          </div>
+          <button class="filter-reset">Reset</button>
+        </section>
+
+        <!-- Uncategorized inline banner (because toggle is on) -->
+        <div class="uncat-banner" role="status">
+          <svg><use href="#i-alert"/></svg>
+          <span>Showing <strong>5 uncategorized</strong> expenses. Categorize them so they roll up correctly on Business Health and the GST report.</span>
+          <span class="link">Bulk categorize ⌃</span>
+        </div>
+
+        <!-- Table -->
+        <section class="table-card" aria-label="Overhead expenses">
+
+          <div class="table-strip">
+            <span class="table-strip-title">Ledger</span>
+            <span class="table-strip-count">· showing 12 of 37</span>
+            <div class="table-strip-actions">
+              <a class="breakdown-link" href="#"><svg><use href="#i-download"/></svg>Export CSV</a>
+            </div>
+          </div>
+
+          <table class="ex-table">
+            <thead>
+              <tr>
+                <th class="col-check"><div class="cbx" aria-label="Select all"></div></th>
+                <th class="col-date">Date</th>
+                <th class="col-cat">Category</th>
+                <th class="col-vend">Vendor</th>
+                <th class="col-paid">Paid by</th>
+                <th class="col-desc">Description</th>
+                <th class="col-tax num">Tax</th>
+                <th class="col-amt num">Amount</th>
+                <th class="col-rcpt" aria-label="Receipt"></th>
+                <th class="col-del" aria-label="Actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- Row 1 — Petro-Canada (categorized, with receipt) -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">MAY 21</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Vehicle</span><span class="crumb-sep">›</span><span class="leaf">Fuel</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Petro-Canada</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Truck fill — Abbotsford</span></td>
+                <td class="col-tax num"><span class="money is-tax">$4<span class="cents">.05</span></span></td>
+                <td class="col-amt num"><span class="money">$85<span class="cents">.10</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 2 — Home Depot (selected, categorized) -->
+              <tr class="is-selected">
+                <td class="col-check"><div class="cbx is-on" aria-label="Selected"><svg><use href="#i-check"/></svg></div></td>
+                <td class="col-date"><span class="ex-date">MAY 19</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Materials</span><span class="crumb-sep">›</span><span class="leaf">Hardware</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Home Depot</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Shop racking + bin sleeves</span></td>
+                <td class="col-tax num"><span class="money is-tax">$9<span class="cents">.93</span></span></td>
+                <td class="col-amt num"><span class="money">$208<span class="cents">.50</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 3 — Telus Business (categorized) -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">MAY 17</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Office</span><span class="crumb-sep">›</span><span class="leaf">Phone &amp; internet</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Telus Business</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon amex">A</span>AmEx<span class="pp-last4">····2001</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">May statement · 2 lines + fibre</span></td>
+                <td class="col-tax num"><span class="money is-tax">$4<span class="cents">.50</span></span></td>
+                <td class="col-amt num"><span class="money">$94<span class="cents">.50</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 4 — ICBC insurance (categorized, no tax on insurance) -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">MAY 14</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Vehicle</span><span class="crumb-sep">›</span><span class="leaf">Insurance</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">ICBC</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon eft">E</span>EFT<span class="pp-last4">pre-auth</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Truck — Apr–May coverage</span></td>
+                <td class="col-tax num"><span class="money-empty">—</span></td>
+                <td class="col-amt num"><span class="money">$382<span class="cents">.00</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 5 — UNCATEGORIZED (no vendor) -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">MAY 12</span></td>
+                <td class="col-cat">
+                  <button class="ex-cat-uncat" aria-label="Categorize"><svg><use href="#i-tag"/></svg>Uncategorized</button>
+                </td>
+                <td class="col-vend"><span class="ex-vendor is-empty">— add vendor</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon cash">$</span>Cash</span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Gas station — Chilliwack</span></td>
+                <td class="col-tax num"><span class="money is-tax">$0<span class="cents">.95</span></span></td>
+                <td class="col-amt num"><span class="money">$19<span class="cents">.95</span></span></td>
+                <td class="col-rcpt"><span class="rcpt-empty">·</span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 6 — Rona (selected) -->
+              <tr class="is-selected">
+                <td class="col-check"><div class="cbx is-on" aria-label="Selected"><svg><use href="#i-check"/></svg></div></td>
+                <td class="col-date"><span class="ex-date">MAY 09</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Materials</span><span class="crumb-sep">›</span><span class="leaf">Hardware</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Rona</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Drywall screws + tape — shop stock</span></td>
+                <td class="col-tax num"><span class="money is-tax">$2<span class="cents">.05</span></span></td>
+                <td class="col-amt num"><span class="money">$43<span class="cents">.07</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 7 — Pacific Building Supplies -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">MAY 07</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="leaf">Tools</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Pacific Building Supplies</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon amex">A</span>AmEx<span class="pp-last4">····2001</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Makita belt sander — replacement</span></td>
+                <td class="col-tax num"><span class="money is-tax">$11<span class="cents">.45</span></span></td>
+                <td class="col-amt num"><span class="money">$240<span class="cents">.45</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 8 — UNCATEGORIZED (cafe) -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">MAY 05</span></td>
+                <td class="col-cat">
+                  <button class="ex-cat-uncat" aria-label="Categorize"><svg><use href="#i-tag"/></svg>Uncategorized</button>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Trading Post Café</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Coffee w/ Helen (kitchen reno discussion)</span></td>
+                <td class="col-tax num"><span class="money is-tax">$0<span class="cents">.62</span></span></td>
+                <td class="col-amt num"><span class="money">$13<span class="cents">.10</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 9 — Wilson M&P (categorized, Professional services) -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">APR 30</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Office</span><span class="crumb-sep">›</span><span class="leaf">Accounting</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Wilson M&amp;P CPA</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon eft">E</span>EFT<span class="pp-last4">8821</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Q1 bookkeeping review</span></td>
+                <td class="col-tax num"><span class="money is-tax">$22<span class="cents">.50</span></span></td>
+                <td class="col-amt num"><span class="money">$472<span class="cents">.50</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 10 — Petro-Canada, no receipt -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">APR 28</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Vehicle</span><span class="crumb-sep">›</span><span class="leaf">Fuel</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Petro-Canada</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Truck fill — Langley site run</span></td>
+                <td class="col-tax num"><span class="money is-tax">$3<span class="cents">.74</span></span></td>
+                <td class="col-amt num"><span class="money">$78<span class="cents">.60</span></span></td>
+                <td class="col-rcpt"><span class="rcpt-empty">·</span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 11 — WorkSafeBC -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">APR 22</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Insurance</span><span class="crumb-sep">›</span><span class="leaf">WSIB / WCB</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">WorkSafeBC</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon eft">E</span>EFT<span class="pp-last4">pre-auth</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Q2 instalment</span></td>
+                <td class="col-tax num"><span class="money-empty">—</span></td>
+                <td class="col-amt num"><span class="money">$1,184<span class="cents">.00</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+              <!-- Row 12 — Pacific Auto Body -->
+              <tr>
+                <td class="col-check"><div class="cbx" aria-label="Select"></div></td>
+                <td class="col-date"><span class="ex-date">APR 18</span></td>
+                <td class="col-cat">
+                  <span class="ex-cat"><span class="crumb">Vehicle</span><span class="crumb-sep">›</span><span class="leaf">Maintenance</span></span>
+                </td>
+                <td class="col-vend"><span class="ex-vendor">Pacific Auto Body</span></td>
+                <td class="col-paid">
+                  <span class="paid-pill"><span class="pp-icon amex">A</span>AmEx<span class="pp-last4">····2001</span></span>
+                </td>
+                <td class="col-desc"><span class="ex-desc">Truck — rear bumper touch-up</span></td>
+                <td class="col-tax num"><span class="money is-tax">$15<span class="cents">.42</span></span></td>
+                <td class="col-amt num"><span class="money">$323<span class="cents">.92</span></span></td>
+                <td class="col-rcpt"><span class="rcpt" title="receipt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td class="col-del"><button class="icon-del-btn" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <!-- Pager -->
+          <div class="pager">
+            <div class="pager-left"><span class="mono-num">12</span> OF <span class="mono-num">37</span> EXPENSES</div>
+            <div class="pager-right">
+              <button class="pager-btn" disabled aria-label="Previous"><svg><use href="#i-chevron-left"/></svg></button>
+              <span class="pager-page">1 · 2 · 3 · 4</span>
+              <button class="pager-btn" aria-label="Next"><svg><use href="#i-chevron-right"/></svg></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bulk action bar (anchored to table, sticky-style) -->
+        <div class="bulk-bar-wrap">
+          <div class="bulk-bar" role="region" aria-label="Bulk actions">
+            <span class="bulk-bar-count">2 SELECTED</span>
+            <span class="bulk-bar-sep">·</span>
+            <button class="bulk-bar-act"><svg><use href="#i-tag"/></svg>Recategorize</button>
+            <button class="bulk-bar-act"><svg><use href="#i-card"/></svg>Set source</button>
+            <button class="bulk-bar-act"><svg><use href="#i-trash"/></svg>Delete</button>
+            <button class="bulk-bar-clear" aria-label="Clear selection"><svg><use href="#i-x"/></svg></button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!--  FRAME 2 — /expenses/gst · GST remittance (with BN gaps)         -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame 2</span>
+        <span class="name">GST/HST remittance — with BN gaps</span>
+        <span class="path">/expenses/gst</span>
+        <span class="note">net owed is data, not alarm · Henry flags real CRA risk only</span>
+      </div>
+
+      <section class="frame" id="frame-gst">
+
+        <!-- Page header -->
+        <section class="page-head">
+          <div>
+            <h1 class="page-title">GST/HST remittance</h1>
+            <div class="page-sub">Collected − ITCs = what you owe CRA this period.</div>
+          </div>
+          <div class="page-head-cta">
+            <a class="btn btn-ghost"><svg class="icon"><use href="#i-chevron-left"/></svg>Back to expenses</a>
+            <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg>Export CSV</button>
+            <button class="btn btn-primary"><svg class="icon"><use href="#i-check"/></svg>Mark as filed</button>
+          </div>
+        </section>
+
+        <!-- Honest disclaimer -->
+        <div class="gst-disclaimer">
+          <div class="gst-disclaimer-icon"><svg><use href="#i-info"/></svg></div>
+          <div class="gst-disclaimer-body">
+            <p><strong>This is a bookkeeping aid, not a CRA filing tool.</strong> HeyHenry doesn&rsquo;t file returns or send payments — your bookkeeper still handles that. The numbers below are everything they need for Form GST34.</p>
+            <p>Figures come from what&rsquo;s logged in HeyHenry. If a receipt is missing or a vendor&rsquo;s BN isn&rsquo;t captured, the ITC may not stand up on audit — clear the warnings before handing off.</p>
+          </div>
+        </div>
+
+        <!-- Period chips -->
+        <section class="gst-periods" role="group" aria-label="Period">
+          <span class="gst-periods-label">Period</span>
+          <button class="gst-period-chip">This month</button>
+          <button class="gst-period-chip">This quarter</button>
+          <button class="gst-period-chip is-on">Last quarter · Q1 2026</button>
+          <button class="gst-period-chip">This year</button>
+          <span class="gst-period-sep" aria-hidden="true"></span>
+          <div class="gst-custom">
+            <input class="date-in" type="text" value="2026-01-01" aria-label="From" />
+            <span class="to">to</span>
+            <input class="date-in" type="text" value="2026-03-31" aria-label="To" />
+            <button class="btn btn-ghost btn-sm">Apply</button>
+          </div>
+        </section>
+
+        <!-- The position (Collected − ITCs = Net owed) -->
+        <div class="gst-position-wrap">
+          <div class="gst-position-period">Filing period · Jan 1 — Mar 31, 2026 &middot; Q1 · 90 days</div>
+          <div class="gst-position-grid">
+
+            <div class="pos-block">
+              <span class="pos-eyebrow">Collected on invoices</span>
+              <span class="pos-value">$9,720<span class="cents">.00</span></span>
+              <span class="pos-foot"><span class="mono">8</span> paid invoices · 5% GST</span>
+            </div>
+            <div class="pos-op">−</div>
+            <div class="pos-block">
+              <span class="pos-eyebrow">Input Tax Credits</span>
+              <span class="pos-value">$4,920<span class="cents">.00</span></span>
+              <span class="pos-foot"><span class="mono">18</span> overhead · <span class="mono">12</span> project expenses · <span class="mono">4</span> bills</span>
+            </div>
+            <div class="pos-op">=</div>
+            <div class="pos-block pos-net">
+              <span class="pos-eyebrow">Net owed to CRA</span>
+              <span class="pos-value">$4,800<span class="cents">.00</span></span>
+              <span class="pos-foot">File + remit · was due Apr 30 · <strong style="color: var(--warn); font-weight: 700;">overdue</strong></span>
+            </div>
+            <div class="pos-actions">
+              <button class="btn btn-primary"><svg class="icon"><use href="#i-check"/></svg>Mark as filed</button>
+              <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-download"/></svg>Export CSV</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Henry caution — missing BN (Henry chrome ON warn-soft fill) -->
+        <section class="henry-warn" role="region" aria-label="Missing vendor BN">
+          <div class="henry-warn-head">
+            <div class="henry-warn-mark"><svg><use href="#i-sparkles"/></svg></div>
+            <div class="henry-warn-body">
+              <span class="henry-warn-eyebrow">✦ Henry · CRA risk</span><span class="henry-warn-title">3 ITC claims missing a vendor BN — $420 at risk.</span>
+              <div class="henry-warn-help">CRA requires the vendor&rsquo;s GST/HST number on any invoice over $30 to claim the Input Tax Credit. Add the BN to each, or chase the vendor for an updated receipt before you file.</div>
+            </div>
+            <div class="henry-warn-action">
+              <button class="btn btn-rust"><svg class="icon"><use href="#i-alert"/></svg>Fix these 3</button>
+            </div>
+          </div>
+
+          <div class="henry-warn-list">
+            <div class="henry-warn-list-head">
+              <div>Vendor</div>
+              <div>Where</div>
+              <div>Date</div>
+              <div class="num">Amount</div>
+              <div class="num">GST</div>
+            </div>
+            <div class="henry-warn-row">
+              <div class="vendor">Trading Post Café</div>
+              <div class="where">General overhead expense</div>
+              <div class="date">MAR 28</div>
+              <div class="amt">$314<span class="cents">.20</span></div>
+              <div class="gst">$14<span class="cents">.96</span></div>
+            </div>
+            <div class="henry-warn-row">
+              <div class="vendor">Wesco Bins Ltd.</div>
+              <div class="where">Bill · Hillcrest Kitchen Remodel</div>
+              <div class="date">MAR 14</div>
+              <div class="amt">$2,850<span class="cents">.00</span></div>
+              <div class="gst">$135<span class="cents">.71</span></div>
+            </div>
+            <div class="henry-warn-row">
+              <div class="vendor">Westcoast Drywall &amp; Insulation</div>
+              <div class="where">Expense · Donahue Basement Suite</div>
+              <div class="date">FEB 22</div>
+              <div class="amt">$5,656<span class="cents">.50</span></div>
+              <div class="gst">$269<span class="cents">.36</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Overhead breakdown -->
+        <section class="breakdown">
+          <div class="breakdown-head">
+            <span class="breakdown-title">General overhead · GST paid</span>
+            <span class="breakdown-total">$740<span class="cents">.18</span></span>
+            <div class="breakdown-actions">
+              <a class="breakdown-link"><svg><use href="#i-download"/></svg>CSV</a>
+            </div>
+          </div>
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th class="num">Pre-tax subtotal</th>
+                <th class="num">ITC (GST)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Vehicle › Fuel</td>
+                <td class="num sub"><span class="money is-tax">$2,184<span class="cents">.20</span></span></td>
+                <td class="num itc"><span class="money">$109<span class="cents">.21</span></span></td>
+              </tr>
+              <tr>
+                <td>Materials › Hardware</td>
+                <td class="num sub"><span class="money is-tax">$3,108<span class="cents">.40</span></span></td>
+                <td class="num itc"><span class="money">$155<span class="cents">.42</span></span></td>
+              </tr>
+              <tr>
+                <td>Office › Phone &amp; internet</td>
+                <td class="num sub"><span class="money is-tax">$1,890<span class="cents">.00</span></span></td>
+                <td class="num itc"><span class="money">$94<span class="cents">.50</span></span></td>
+              </tr>
+              <tr>
+                <td>Office › Accounting</td>
+                <td class="num sub"><span class="money is-tax">$1,837<span class="cents">.50</span></span></td>
+                <td class="num itc"><span class="money">$91<span class="cents">.88</span></span></td>
+              </tr>
+              <tr>
+                <td>Tools</td>
+                <td class="num sub"><span class="money is-tax">$1,964<span class="cents">.40</span></span></td>
+                <td class="num itc"><span class="money">$98<span class="cents">.22</span></span></td>
+              </tr>
+              <tr>
+                <td>Vehicle › Maintenance</td>
+                <td class="num sub"><span class="money is-tax">$1,420<span class="cents">.00</span></span></td>
+                <td class="num itc"><span class="money">$71<span class="cents">.00</span></span></td>
+              </tr>
+              <tr>
+                <td>Marketing</td>
+                <td class="num sub"><span class="money is-tax">$398<span class="cents">.00</span></span></td>
+                <td class="num itc"><span class="money">$19<span class="cents">.90</span></span></td>
+              </tr>
+              <tr>
+                <td><em style="color:var(--muted); font-weight:500;">Insurance &middot; WSIB</em> <span style="color:var(--faint); font-size:12px; margin-left:6px;">no GST</span></td>
+                <td class="num sub"><span class="money is-tax">$1,566<span class="cents">.00</span></span></td>
+                <td class="num itc"><span class="money is-zero">$0<span class="cents">.00</span></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Project breakdown -->
+        <section class="breakdown">
+          <div class="breakdown-head">
+            <span class="breakdown-title">Project work · GST paid</span>
+            <span class="breakdown-total">$4,180<span class="cents">.00</span></span>
+            <div class="breakdown-actions">
+              <a class="breakdown-link"><svg><use href="#i-download"/></svg>CSV</a>
+            </div>
+          </div>
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th class="num">Expenses</th>
+                <th class="num">Bills</th>
+                <th class="num">Pre-tax subtotal</th>
+                <th class="num">ITC (GST)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hillcrest Kitchen Remodel <span style="color:var(--muted); font-size:12px; margin-left:4px;">· Helen Chao</span></td>
+                <td class="num count">4</td>
+                <td class="num count">2</td>
+                <td class="num sub"><span class="money is-tax">$38,420<span class="cents">.00</span></span></td>
+                <td class="num itc"><span class="money">$1,921<span class="cents">.00</span></span></td>
+              </tr>
+              <tr>
+                <td>Donahue Basement Suite <span style="color:var(--muted); font-size:12px; margin-left:4px;">· The Donahue Family</span></td>
+                <td class="num count">6</td>
+                <td class="num count">1</td>
+                <td class="num sub"><span class="money is-tax">$28,610<span class="cents">.00</span></span></td>
+                <td class="num itc"><span class="money">$1,430<span class="cents">.50</span></span></td>
+              </tr>
+              <tr>
+                <td>Petrov Bathroom Reno <span style="color:var(--muted); font-size:12px; margin-left:4px;">· Marcus &amp; Aisha Petrov</span></td>
+                <td class="num count">2</td>
+                <td class="num count">1</td>
+                <td class="num sub"><span class="money is-tax">$16,570<span class="cents">.00</span></span></td>
+                <td class="num itc"><span class="money">$828<span class="cents">.50</span></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Subtle close -->
+        <p style="font-size:12px; color: var(--muted); margin: 4px 0 0;">
+          Tax figures come from what&rsquo;s stored on each record, not re-computed from rates. If an expense is missing its tax amount it won&rsquo;t show up as an ITC here. <a style="color:var(--muted); text-decoration:underline; text-underline-offset:3px;">Last filed — Q4 2025 on Jan 28 ($3,950)</a>.
+        </p>
+
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!--  FRAME 3 — /expenses/import · Receipt-import wizard (preview)    -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame 3</span>
+        <span class="name">Receipt import — review before commit</span>
+        <span class="path">/expenses/import</span>
+        <span class="note">Henry read 32 receipts · vendor→category auto-fill · 1 BN flag</span>
+      </div>
+
+      <section class="frame" id="frame-import">
+
+        <!-- Page header -->
+        <section class="page-head">
+          <div>
+            <h1 class="page-title">Import receipts</h1>
+            <div class="page-sub">Henry reads vendor, date, amount, and GST. Review before bringing them in.</div>
+          </div>
+          <div class="page-head-cta">
+            <a class="btn btn-ghost"><svg class="icon"><use href="#i-chevron-left"/></svg>Back to expenses</a>
+          </div>
+        </section>
+
+        <!-- Stage tracker -->
+        <div class="wizard-head">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--rust); text-transform: uppercase; letter-spacing: 0.06em;">✦ Henry · batch</span>
+            <span style="font-size: 16px; font-weight: 700; color: var(--ink);">32 receipts read · 1 needs your attention</span>
+          </div>
+          <div class="wizard-stages">
+            <span class="wizard-stage is-done"><span class="step-num"><svg style="width:8px;height:8px"><use href="#i-check"/></svg></span>Drop</span>
+            <span class="wizard-arrow">›</span>
+            <span class="wizard-stage is-done"><span class="step-num"><svg style="width:8px;height:8px"><use href="#i-check"/></svg></span>Read</span>
+            <span class="wizard-arrow">›</span>
+            <span class="wizard-stage is-active"><span class="step-num">3</span>Review</span>
+            <span class="wizard-arrow">›</span>
+            <span class="wizard-stage"><span class="step-num">4</span>Done</span>
+          </div>
+        </div>
+
+        <!-- Processing progress strip (frozen at done state, shown for context) -->
+        <div class="wizard-progress">
+          <span class="wizard-progress-stat"><span class="ok">32</span><span class="total"> / 32 read</span></span>
+          <div class="wizard-progress-bar"><div class="fill" style="width: 100%;"></div></div>
+          <span class="wizard-progress-stat"><span class="err">0</span><span class="total"> errors</span></span>
+          <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-rotate"/></svg>Re-read all</button>
+        </div>
+
+        <!-- Review table -->
+        <section class="table-card">
+          <div class="table-strip">
+            <span class="table-strip-title">Review</span>
+            <span class="table-strip-count">· 32 receipts · 4 newly suggested categories</span>
+            <div class="table-strip-actions">
+              <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-tag"/></svg>Set category</button>
+              <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-card"/></svg>Set source</button>
+            </div>
+          </div>
+
+          <table class="wizard-table">
+            <thead>
+              <tr>
+                <th class="col-rcpt-w">Receipt</th>
+                <th class="col-date-w">Date</th>
+                <th class="col-vend-w">Vendor</th>
+                <th class="col-cat-w">Category <span style="color:var(--rust);">✦ suggested</span></th>
+                <th class="col-paid-w">Paid by</th>
+                <th class="col-tax-w num">GST</th>
+                <th class="col-amt-w num">Total</th>
+                <th class="col-flag-w" aria-label="Flag"></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <tr>
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 21</span></td>
+                <td><span class="ex-vendor">Petro-Canada</span></td>
+                <td>
+                  <span class="henry-suggested"><svg><use href="#i-sparkles"/></svg><span class="lbl">Vehicle</span><span class="crumb-sep">›</span><span class="leaf">Fuel</span></span>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span></td>
+                <td class="num"><span class="money is-tax">$4<span class="cents">.05</span></span></td>
+                <td class="num"><span class="money">$85<span class="cents">.10</span></span></td>
+                <td class="col-flag-w"></td>
+              </tr>
+
+              <tr>
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 19</span></td>
+                <td><span class="ex-vendor">Home Depot</span></td>
+                <td>
+                  <span class="henry-suggested"><svg><use href="#i-sparkles"/></svg><span class="lbl">Materials</span><span class="crumb-sep">›</span><span class="leaf">Hardware</span></span>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span></td>
+                <td class="num"><span class="money is-tax">$9<span class="cents">.93</span></span></td>
+                <td class="num"><span class="money">$208<span class="cents">.50</span></span></td>
+                <td class="col-flag-w"></td>
+              </tr>
+
+              <tr>
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 18</span></td>
+                <td><span class="ex-vendor">Rona</span></td>
+                <td>
+                  <span class="henry-suggested"><svg><use href="#i-sparkles"/></svg><span class="lbl">Materials</span><span class="crumb-sep">›</span><span class="leaf">Hardware</span></span>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span></td>
+                <td class="num"><span class="money is-tax">$2<span class="cents">.05</span></span></td>
+                <td class="num"><span class="money">$43<span class="cents">.07</span></span></td>
+                <td class="col-flag-w"></td>
+              </tr>
+
+              <tr class="is-flag">
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 17</span></td>
+                <td><span class="ex-vendor">South Fraser Cabinets</span></td>
+                <td>
+                  <button class="ex-cat-uncat" aria-label="Categorize"><svg><use href="#i-tag"/></svg>Pick a category</button>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon amex">A</span>AmEx<span class="pp-last4">····2001</span></span></td>
+                <td class="num"><span class="money is-tax">$28<span class="cents">.40</span></span></td>
+                <td class="num"><span class="money">$596<span class="cents">.40</span></span></td>
+                <td class="col-flag-w"><span class="flag-bn" title="No vendor BN — CRA may deny this ITC"><svg><use href="#i-alert"/></svg></span></td>
+              </tr>
+
+              <tr>
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 14</span></td>
+                <td><span class="ex-vendor">Telus Business</span></td>
+                <td>
+                  <span class="henry-suggested"><svg><use href="#i-sparkles"/></svg><span class="lbl">Office</span><span class="crumb-sep">›</span><span class="leaf">Phone &amp; internet</span></span>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon amex">A</span>AmEx<span class="pp-last4">····2001</span></span></td>
+                <td class="num"><span class="money is-tax">$4<span class="cents">.50</span></span></td>
+                <td class="num"><span class="money">$94<span class="cents">.50</span></span></td>
+                <td class="col-flag-w"></td>
+              </tr>
+
+              <tr>
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 12</span></td>
+                <td><span class="ex-vendor">Pacific Building Supplies</span></td>
+                <td>
+                  <span class="henry-suggested"><svg><use href="#i-sparkles"/></svg><span class="leaf">Tools</span></span>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon amex">A</span>AmEx<span class="pp-last4">····2001</span></span></td>
+                <td class="num"><span class="money is-tax">$11<span class="cents">.45</span></span></td>
+                <td class="num"><span class="money">$240<span class="cents">.45</span></span></td>
+                <td class="col-flag-w"></td>
+              </tr>
+
+              <tr>
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 11</span></td>
+                <td><span class="ex-vendor">Wilson M&amp;P CPA</span></td>
+                <td>
+                  <span class="henry-suggested"><svg><use href="#i-sparkles"/></svg><span class="lbl">Office</span><span class="crumb-sep">›</span><span class="leaf">Accounting</span></span>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon eft">E</span>EFT<span class="pp-last4">8821</span></span></td>
+                <td class="num"><span class="money is-tax">$22<span class="cents">.50</span></span></td>
+                <td class="num"><span class="money">$472<span class="cents">.50</span></span></td>
+                <td class="col-flag-w"></td>
+              </tr>
+
+              <tr>
+                <td class="col-rcpt-w"><span class="rcpt"><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span><span class="rl"></span></span></td>
+                <td><span class="ex-date">MAY 09</span></td>
+                <td><span class="ex-vendor">Petro-Canada</span></td>
+                <td>
+                  <span class="henry-suggested"><svg><use href="#i-sparkles"/></svg><span class="lbl">Vehicle</span><span class="crumb-sep">›</span><span class="leaf">Fuel</span></span>
+                </td>
+                <td><span class="paid-pill"><span class="pp-icon">V</span>Visa<span class="pp-last4">····4318</span></span></td>
+                <td class="num"><span class="money is-tax">$3<span class="cents">.74</span></span></td>
+                <td class="num"><span class="money">$78<span class="cents">.60</span></span></td>
+                <td class="col-flag-w"></td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <div class="wizard-footer">
+            <div class="wizard-footer-stat">
+              <span class="mono-num">8</span> OF <span class="mono-num">32</span> SHOWN ·
+              <span class="ok">31 ready</span> ·
+              <span class="warn">1 needs vendor BN</span>
+            </div>
+            <div class="wizard-footer-actions">
+              <button class="btn btn-ghost">Cancel</button>
+              <button class="btn btn-rust"><svg class="icon"><use href="#i-check"/></svg>Bring in 32 receipts</button>
+            </div>
+          </div>
+        </section>
+
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!--  FRAME 4 — States                                                -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div class="frame-label">
+        <span class="mark">Frame 4</span>
+        <span class="name">States — empty, filtered, GST clean, filed, loading</span>
+        <span class="path">/expenses · /expenses/gst</span>
+        <span class="note">drawn as cards for review · same chrome above</span>
+      </div>
+
+      <section class="frame" id="frame-states">
+        <div class="states-grid">
+
+          <!-- State 1 — Empty ledger -->
+          <div class="state-card">
+            <div class="state-card-head">
+              <span class="mark">Empty</span>
+              <span class="label">Ledger · no overhead yet</span>
+              <span class="note">/expenses</span>
+            </div>
+            <div class="state-card-body">
+              <div class="empty-block">
+                <div class="empty-icon"><svg><use href="#i-receipt"/></svg></div>
+                <div class="empty-headline">Nothing here yet</div>
+                <div class="empty-help">Drop a receipt — Henry will fill the form — or log your first overhead expense manually.</div>
+                <div class="empty-actions">
+                  <button class="btn btn-rust"><svg class="icon"><use href="#i-upload"/></svg>Drop receipts</button>
+                  <button class="btn btn-ghost"><svg class="icon"><use href="#i-plus"/></svg>Log expense</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- State 2 — Filtered/searched empty -->
+          <div class="state-card">
+            <div class="state-card-head">
+              <span class="mark">Filtered</span>
+              <span class="label">No expenses match</span>
+              <span class="note">/expenses · q="propane"</span>
+            </div>
+            <div class="state-card-body">
+              <div class="filtered-empty">
+                <div class="empty-icon"><svg><use href="#i-search"/></svg></div>
+                <div class="headline">No expenses match those filters</div>
+                <div class="help">Try a wider date range, or clear a filter.</div>
+                <div class="badge-row">
+                  <span class="applied">PERIOD · LAST MONTH <span class="x">×</span></span>
+                  <span class="applied">CATEGORY · TOOLS <span class="x">×</span></span>
+                  <span class="applied">SEARCH · "PROPANE" <span class="x">×</span></span>
+                </div>
+                <button class="btn btn-ghost btn-sm" style="margin-top: 8px;">Clear all filters</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- State 3 — GST clean period -->
+          <div class="state-card">
+            <div class="state-card-head">
+              <span class="mark">GST · clean</span>
+              <span class="label">No BN gaps — confident net owed</span>
+              <span class="note">/expenses/gst</span>
+            </div>
+            <div class="state-card-body">
+              <div class="calm-position">
+                <span class="eb">Net owed to CRA · Q4 2025</span>
+                <span class="num">$3,142<span class="cents">.85</span></span>
+                <span class="help">All 24 ITC claims have a vendor BN on file. Ready to hand off to your bookkeeper.</span>
+                <div class="calm-row">
+                  <span>COLLECTED <span class="v">$8,180</span></span>
+                  <span>ITCs <span class="v">$5,037</span></span>
+                  <span>DUE <span class="v">JAN 31</span></span>
+                </div>
+                <div style="display:flex; gap:8px; margin-top: 14px;">
+                  <button class="btn btn-primary"><svg class="icon"><use href="#i-check"/></svg>Mark as filed</button>
+                  <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg>Export CSV</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- State 4 — Filed -->
+          <div class="state-card">
+            <div class="state-card-head">
+              <span class="mark">GST · filed</span>
+              <span class="label">Period closed</span>
+              <span class="note">/expenses/gst</span>
+            </div>
+            <div class="state-card-body">
+              <div class="filed-card">
+                <span class="filed-eyebrow"><svg><use href="#i-check"/></svg>Filed · Q4 2025</span>
+                <span class="filed-amount">$3,142<span class="cents">.85</span></span>
+                <span class="filed-meta">Paid <strong style="color:var(--ink); font-weight:600;">Jan 28, 2026</strong> <span class="sep">·</span> ref <span class="ref">CRA-GST-A78421</span></span>
+                <span class="filed-meta">via EFT · CIBC business chequing</span>
+                <button class="filed-unmark">Unmark filing</button>
+              </div>
+              <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--rule); font-size: 12px; color: var(--muted);">
+                Switch period to view Q1 2026 — its Apr 30 filing deadline has passed; file as soon as possible.
+              </div>
+            </div>
+          </div>
+
+          <!-- State 5 — Loading -->
+          <div class="state-card" style="grid-column: span 2;">
+            <div class="state-card-head">
+              <span class="mark">Loading</span>
+              <span class="label">Skeleton · ledger</span>
+              <span class="note">/expenses · server fetch</span>
+            </div>
+            <div class="state-card-body" style="padding: 14px 20px 22px;">
+              <div class="sk-row">
+                <div class="sk-line" style="width: 70%;"></div>
+                <div class="sk-line" style="width: 60%;"></div>
+                <div class="sk-line" style="width: 80%;"></div>
+                <div class="sk-line" style="width: 50%;"></div>
+                <div class="sk-line" style="width: 60%;"></div>
+              </div>
+              <div class="sk-row">
+                <div class="sk-line" style="width: 60%;"></div>
+                <div class="sk-line" style="width: 75%;"></div>
+                <div class="sk-line" style="width: 65%;"></div>
+                <div class="sk-line" style="width: 50%;"></div>
+                <div class="sk-line" style="width: 70%;"></div>
+              </div>
+              <div class="sk-row">
+                <div class="sk-line" style="width: 80%;"></div>
+                <div class="sk-line" style="width: 55%;"></div>
+                <div class="sk-line" style="width: 70%;"></div>
+                <div class="sk-line" style="width: 50%;"></div>
+                <div class="sk-line" style="width: 65%;"></div>
+              </div>
+              <div class="sk-row">
+                <div class="sk-line" style="width: 65%;"></div>
+                <div class="sk-line" style="width: 70%;"></div>
+                <div class="sk-line" style="width: 50%;"></div>
+                <div class="sk-line" style="width: 50%;"></div>
+                <div class="sk-line" style="width: 60%;"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

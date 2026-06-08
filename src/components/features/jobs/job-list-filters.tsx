@@ -4,8 +4,8 @@
  * URL-state filters for the jobs list view (`/jobs/list`).
  *
  * Two controls: a status chip group and an optional customer <Select>.
- * Following the Track A `CustomerSearchBar` pattern, state lives in the URL
- * (`?status=&customer_id=`) so links are shareable and the browser back
+ * Following the Track A `ContactSearchBar` pattern, state lives in the URL
+ * (`?status=&contact_id=`) so links are shareable and the browser back
  * button works.
  */
 
@@ -22,14 +22,14 @@ import {
 import { cn } from '@/lib/utils';
 import { type JobStatus, jobStatuses, jobStatusLabels } from '@/lib/validators/job';
 
-export type JobsCustomerOption = {
+export type JobsContactOption = {
   id: string;
   name: string;
 };
 
 const ALL_CUSTOMERS = '__all__';
 
-export function JobListFilters({ customers }: { customers: JobsCustomerOption[] }) {
+export function JobListFilters({ contacts }: { contacts: JobsContactOption[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
@@ -40,7 +40,7 @@ export function JobListFilters({ customers }: { customers: JobsCustomerOption[] 
     return (jobStatuses as readonly string[]).includes(raw) ? (raw as JobStatus) : null;
   }, [searchParams]);
 
-  const currentCustomer = searchParams?.get('customer_id') ?? '';
+  const currentCustomer = searchParams?.get('contact_id') ?? '';
 
   function applyStatus(next: JobStatus | null) {
     const params = new URLSearchParams(searchParams?.toString());
@@ -53,8 +53,8 @@ export function JobListFilters({ customers }: { customers: JobsCustomerOption[] 
 
   function applyCustomer(next: string) {
     const params = new URLSearchParams(searchParams?.toString());
-    if (next && next !== ALL_CUSTOMERS) params.set('customer_id', next);
-    else params.delete('customer_id');
+    if (next && next !== ALL_CUSTOMERS) params.set('contact_id', next);
+    else params.delete('contact_id');
     startTransition(() => {
       router.replace(`/jobs/list?${params.toString()}`);
     });
@@ -78,7 +78,7 @@ export function JobListFilters({ customers }: { customers: JobsCustomerOption[] 
         ))}
       </div>
 
-      {customers.length > 0 ? (
+      {contacts.length > 0 ? (
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Customer:
@@ -88,8 +88,8 @@ export function JobListFilters({ customers }: { customers: JobsCustomerOption[] 
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_CUSTOMERS}>All customers</SelectItem>
-              {customers.map((c) => (
+              <SelectItem value={ALL_CUSTOMERS}>All contacts</SelectItem>
+              {contacts.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
                 </SelectItem>

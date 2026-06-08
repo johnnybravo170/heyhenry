@@ -1,16 +1,17 @@
 'use client';
 
-import { Ban, Lock, Mail, Send } from 'lucide-react';
+import { Ban, Mail, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
+import { LockedFeature } from '@/components/features/billing/locked-feature';
 import { Button } from '@/components/ui/button';
 import { enrollStaleQuoteFollowupAction } from '@/server/actions/automations';
 
 export type StaleQuoteRow = {
   projectId: string;
   projectName: string;
-  customerId: string | null;
+  contactId: string | null;
   customerName: string;
   customerEmail: string | null;
   customerHasKillSwitch: boolean;
@@ -30,18 +31,11 @@ export function StaleQuotesList({
 
   if (!featureUnlocked) {
     return (
-      <section className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
-        <div className="flex items-start gap-3">
-          <Lock className="mt-0.5 size-5 shrink-0" aria-hidden />
-          <div className="flex flex-col gap-2">
-            <p className="font-medium">Quote follow-up is a Growth-plan feature.</p>
-            <p>Upgrade to enroll your stale quotes in automated follow-up sequences.</p>
-            <Button asChild variant="default" size="sm" className="mt-1 w-fit">
-              <Link href="/settings/billing">Upgrade</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+      <LockedFeature
+        feature="customers.followup_sequences"
+        label="Quote follow-up"
+        description="Upgrade to enroll your stale quotes in automated follow-up sequences."
+      />
     );
   }
 

@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { enqueueCapture, makeCaptureId } from '@/lib/storage/capture-queue';
 import { resizeImage } from '@/lib/storage/resize-image';
 import { cn } from '@/lib/utils';
 import { type PhotoTag, photoTagLabels, photoTags } from '@/lib/validators/photo';
@@ -44,6 +45,26 @@ type StagedPhoto = {
 
 function makeKey() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Persist a resized capture to the offline queue (IndexedDB). */
+async function stashOffline(
+  projectId: string,
+  file: File,
+  fileName: string,
+  entry: StagedPhoto,
+): Promise<void> {
+  await enqueueCapture({
+    id: makeCaptureId(),
+    projectId,
+    blob: file,
+    fileName,
+    tag: entry.tag,
+    caption: entry.caption,
+    bytes: file.size,
+    capturedAt: Date.now(),
+    status: 'waiting',
+  });
 }
 
 export function PhotoUpload({
@@ -129,6 +150,9 @@ export function PhotoUpload({
       setProgress({ done: 0, total });
       const remaining: StagedPhoto[] = [];
       let successes = 0;
+      let queued = 0;
+      // Offline-capture queue only applies to project photos (the field path).
+      const canQueue = Boolean(projectId);
 
       for (let i = 0; i < staged.length; i++) {
         const entry = staged[i];
@@ -142,6 +166,16 @@ export function PhotoUpload({
             resized instanceof File
               ? resized
               : new File([resized], outName, { type: 'image/jpeg' });
+
+          // Offline: stash the capture locally so the field never blocks on
+          // signal. The OfflineCaptureQueue flushes it on reconnect.
+          if (canQueue && typeof navigator !== 'undefined' && !navigator.onLine) {
+            await stashOffline(projectId as string, finalFile, outName, entry);
+            URL.revokeObjectURL(entry.previewUrl);
+            queued += 1;
+            setProgress({ done: i + 1, total });
+            continue;
+          }
 
           const fd = new FormData();
           fd.append('file', finalFile);
@@ -159,9 +193,30 @@ export function PhotoUpload({
             successes += 1;
           }
         } catch (err) {
-          const msg = err instanceof Error ? err.message : 'Unknown error';
-          toast.error(`${entry.file.name}: ${msg}`);
-          remaining.push(entry);
+          // A thrown error here is almost always a dropped connection mid-send.
+          // For project photos, fall back to the offline queue rather than
+          // losing the capture.
+          if (canQueue) {
+            try {
+              const resized = await resizeImage(entry.file);
+              const outName = /\.(jpe?g|png|webp|gif)$/i.test(entry.file.name)
+                ? entry.file.name
+                : `${entry.file.name}.jpg`;
+              const finalFile =
+                resized instanceof File
+                  ? resized
+                  : new File([resized], outName, { type: 'image/jpeg' });
+              await stashOffline(projectId as string, finalFile, outName, entry);
+              URL.revokeObjectURL(entry.previewUrl);
+              queued += 1;
+            } catch {
+              remaining.push(entry);
+            }
+          } else {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            toast.error(`${entry.file.name}: ${msg}`);
+            remaining.push(entry);
+          }
         }
         setProgress({ done: i + 1, total });
       }
@@ -169,6 +224,14 @@ export function PhotoUpload({
       setStaged(remaining);
       setProgress(null);
 
+      if (queued > 0) {
+        toast.success(
+          queued === 1
+            ? 'Offline — 1 capture queued. It will sync when you reconnect.'
+            : `Offline — ${queued} captures queued. They'll sync when you reconnect.`,
+        );
+        window.dispatchEvent(new Event('heyhenry:capture-queued'));
+      }
       if (successes > 0) {
         toast.success(successes === 1 ? 'Photo uploaded.' : `${successes} photos uploaded.`);
         router.refresh();

@@ -20,7 +20,7 @@ const costLineSchema = z.object({
   project_id: z.string().uuid(),
   budget_category_id: z.string().uuid().optional().or(z.literal('')),
   catalog_item_id: z.string().uuid().optional().or(z.literal('')),
-  category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead']),
+  category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead', 'supply_install']),
   label: z.string().trim().min(1, 'Label is required').max(300),
   qty: z.coerce.number().positive('Quantity must be positive'),
   unit: z.string().trim().min(1).max(50),
@@ -36,6 +36,35 @@ function computeLineTotals(qty: number, unit_cost_cents: number, unit_price_cent
     line_cost_cents: Math.round(qty * unit_cost_cents),
     line_price_cents: Math.round(qty * unit_price_cents),
   };
+}
+
+/**
+ * Keep a category's `estimate_cents` in lockstep with the sum of its cost
+ * lines whenever it has any. This is the single invariant that stops the
+ * budget table (which shows estimate_cents), the variance rollup
+ * (cost-lines.ts: `catLines>0 ? sum(lines) : estimate_cents`), and the
+ * customer-facing estimate from disagreeing once a category is itemized.
+ *
+ * When the last line is removed the estimate is intentionally left at its
+ * prior value, so the category degrades to a flat (manually-priced) entry
+ * rather than collapsing to $0.
+ */
+async function syncCategoryEstimate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  categoryId: string | null | undefined,
+): Promise<void> {
+  if (!categoryId) return;
+  const { data } = await supabase
+    .from('project_cost_lines')
+    .select('line_price_cents')
+    .eq('budget_category_id', categoryId);
+  const lines = data ?? [];
+  if (lines.length === 0) return; // flat fallback — keep the typed estimate
+  const sum = lines.reduce((s, l) => s + ((l.line_price_cents as number) ?? 0), 0);
+  await supabase
+    .from('project_budget_categories')
+    .update({ estimate_cents: sum })
+    .eq('id', categoryId);
 }
 
 export async function upsertCostLineAction(input: unknown): Promise<CostControlResult> {
@@ -62,8 +91,20 @@ export async function upsertCostLineAction(input: unknown): Promise<CostControlR
   };
 
   if (id) {
+    // Capture the prior category so an edit that moves the line to a
+    // different category re-syncs both the old and new category estimates.
+    const { data: prev } = await supabase
+      .from('project_cost_lines')
+      .select('budget_category_id')
+      .eq('id', id)
+      .maybeSingle();
+    const prevCat = (prev?.budget_category_id as string | null) ?? null;
     const { error } = await supabase.from('project_cost_lines').update(row).eq('id', id);
     if (error) return { ok: false, error: error.message };
+    await syncCategoryEstimate(supabase, row.budget_category_id);
+    if (prevCat && prevCat !== row.budget_category_id) {
+      await syncCategoryEstimate(supabase, prevCat);
+    }
     revalidatePath(`/projects/${fields.project_id}`);
     return { ok: true, id };
   }
@@ -74,6 +115,7 @@ export async function upsertCostLineAction(input: unknown): Promise<CostControlR
     .select('id')
     .single();
   if (error || !data) return { ok: false, error: error?.message ?? 'Failed to add line.' };
+  await syncCategoryEstimate(supabase, row.budget_category_id);
   revalidatePath(`/projects/${fields.project_id}`);
   return { ok: true, id: data.id as string };
 }
@@ -85,8 +127,14 @@ export async function deleteCostLineAction(
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
   const supabase = await createClient();
+  const { data: line } = await supabase
+    .from('project_cost_lines')
+    .select('budget_category_id')
+    .eq('id', id)
+    .maybeSingle();
   const { error } = await supabase.from('project_cost_lines').delete().eq('id', id);
   if (error) return { ok: false, error: error.message };
+  await syncCategoryEstimate(supabase, (line?.budget_category_id as string | null) ?? null);
   revalidatePath(`/projects/${projectId}`);
   return { ok: true, id };
 }
@@ -212,6 +260,10 @@ export async function upsertBillWithAttachmentAction(
   const cost_line_id = (formData.get('cost_line_id') as string | null)?.trim() || null;
   const cost_code = (formData.get('cost_code') as string | null)?.trim() || null;
   const vendor_gst_number = (formData.get('vendor_gst_number') as string | null)?.trim() || null;
+  // Cost-plus overhead flag (card #11). 'false' marks the bill as project
+  // overhead the contractor absorbs — counts toward margin but excluded
+  // from the cost-plus customer invoice. Default-true at the DB level.
+  const isNonBillable = formData.get('is_billable') === 'false';
   const attachmentFile = formData.get('attachment');
 
   if (!project_id) return { ok: false, error: 'Missing project_id.' };
@@ -262,6 +314,7 @@ export async function upsertBillWithAttachmentAction(
     cost_line_id: cost_line_id || null,
     external_ref: cost_code,
     vendor_gst_number,
+    is_billable: !isNonBillable,
     updated_at: new Date().toISOString(),
   };
   if (attachment_storage_path) row.attachment_storage_path = attachment_storage_path;

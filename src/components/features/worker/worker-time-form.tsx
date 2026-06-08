@@ -27,6 +27,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { ProjectWithCategories, WorkerTimeEntry } from '@/lib/db/queries/worker-time';
+import { enqueueTime, makeTimeQueueId } from '@/lib/storage/time-queue';
 import { logWorkerTimeAction, updateWorkerTimeAction } from '@/server/actions/worker-time';
 
 type Props = {
@@ -69,29 +70,83 @@ export function WorkerTimeForm({ projects, initial }: Props) {
   const hasNotes = notes.trim().length > 0;
   const isEmptyContext = !hasBucket && !hasNotes;
 
+  // Offline-tolerant capture: a NEW time entry must never be silently dropped
+  // on a jobsite. When the device is offline (or the submit hits a network
+  // error), queue it to IndexedDB with an explicit "saved, will sync" state —
+  // the queue on /w/time flushes on reconnect. Edits still require a
+  // connection (we can't reconcile a server row offline).
+  async function queueOffline(h: number): Promise<boolean> {
+    try {
+      await enqueueTime({
+        id: makeTimeQueueId(),
+        project_id: projectId,
+        project_name: projects.find((p) => p.project_id === projectId)?.project_name ?? 'Project',
+        budget_category_id: categoryId || undefined,
+        cost_line_id: costLineId || undefined,
+        hours: h,
+        notes: notes || undefined,
+        entry_date: date,
+        category_name: categories.find((c) => c.id === categoryId)?.name,
+        capturedAt: Date.now(),
+        status: 'waiting',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function submit(confirmEmpty: boolean) {
     const h = Number(hours);
+
+    // Offline new-entry path: queue locally and head to the history (which
+    // shows the "will sync" queue) rather than failing the capture.
+    if (!isEdit && typeof navigator !== 'undefined' && navigator.onLine === false) {
+      startTransition(async () => {
+        const queued = await queueOffline(h);
+        if (!queued) {
+          toast.error("Couldn't save offline. Check storage and try again.");
+          return;
+        }
+        toast.success('Saved on this phone — will sync.');
+        router.push('/w/time');
+      });
+      return;
+    }
+
     startTransition(async () => {
-      const res = isEdit
-        ? await updateWorkerTimeAction({
-            id: initial?.id ?? '',
-            project_id: projectId,
-            budget_category_id: categoryId || undefined,
-            cost_line_id: costLineId || undefined,
-            hours: h,
-            notes: notes || undefined,
-            entry_date: date,
-            confirm_empty: confirmEmpty || undefined,
-          })
-        : await logWorkerTimeAction({
-            project_id: projectId,
-            budget_category_id: categoryId || undefined,
-            cost_line_id: costLineId || undefined,
-            hours: h,
-            notes: notes || undefined,
-            entry_date: date,
-            confirm_empty: confirmEmpty || undefined,
-          });
+      let res: Awaited<ReturnType<typeof logWorkerTimeAction>>;
+      try {
+        res = isEdit
+          ? await updateWorkerTimeAction({
+              id: initial?.id ?? '',
+              project_id: projectId,
+              budget_category_id: categoryId || undefined,
+              cost_line_id: costLineId || undefined,
+              hours: h,
+              notes: notes || undefined,
+              entry_date: date,
+              confirm_empty: confirmEmpty || undefined,
+            })
+          : await logWorkerTimeAction({
+              project_id: projectId,
+              budget_category_id: categoryId || undefined,
+              cost_line_id: costLineId || undefined,
+              hours: h,
+              notes: notes || undefined,
+              entry_date: date,
+              confirm_empty: confirmEmpty || undefined,
+            });
+      } catch {
+        // Network died mid-submit. Queue new entries; surface the failure on edits.
+        if (!isEdit && (await queueOffline(h))) {
+          toast.success('Saved on this phone — will sync.');
+          router.push('/w/time');
+          return;
+        }
+        toast.error('No connection. Try again when you have signal.');
+        return;
+      }
       if (!res.ok) {
         toast.error(res.error);
         return;

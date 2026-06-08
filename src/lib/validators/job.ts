@@ -21,7 +21,7 @@ export const jobStatusLabels: Record<JobStatus, string> = {
 };
 
 export const jobCreateSchema = z.object({
-  customer_id: z.string().uuid({ message: 'Pick a customer.' }),
+  contact_id: z.string().uuid({ message: 'Pick a customer.' }),
   quote_id: z.string().uuid({ message: 'Invalid quote id.' }).optional().or(z.literal('')),
   status: z.enum(jobStatuses).default('booked'),
   scheduled_at: z.string().optional().or(z.literal('')),

@@ -107,7 +107,7 @@ export async function importPaymentPage(
   type InsertRow = {
     qbo_payment_id: string;
     qbo_sync_token: string;
-    customer_id: string | null;
+    contact_id: string | null;
     invoice_id: string;
     amount_cents: number;
     method: PaymentMethod;
@@ -144,7 +144,7 @@ export async function importPaymentPage(
       continue;
     }
 
-    const customerId = ctx.qboCustomerIdToHhId.get(qbo.CustomerRef.value) ?? null;
+    const contactId = ctx.qboCustomerIdToHhId.get(qbo.CustomerRef.value) ?? null;
     const method = mapPaymentMethod(qbo.PaymentMethodRef?.name);
     const paidAt = qbo.TxnDate ? new Date(qbo.TxnDate).toISOString() : new Date().toISOString();
 
@@ -161,7 +161,7 @@ export async function importPaymentPage(
         // re-import is preserved via the first row.
         qbo_payment_id: appliedAtLeastOne ? '' : qbo.Id,
         qbo_sync_token: qbo.SyncToken,
-        customer_id: customerId,
+        contact_id: contactId,
         invoice_id: invoiceId,
         amount_cents: app.amount_cents,
         method,
@@ -184,7 +184,7 @@ export async function importPaymentPage(
     const rows = toInsert.map((r) => ({
       tenant_id: ctx.tenantId,
       invoice_id: r.invoice_id,
-      customer_id: r.customer_id,
+      contact_id: r.contact_id,
       amount_cents: r.amount_cents,
       method: r.method,
       payment_reference: r.payment_reference,
@@ -228,7 +228,7 @@ export async function loadPaymentImportContext(
   const supabase = createAdminClient();
   const [customerRes, invoiceRes, paymentRes] = await Promise.all([
     supabase
-      .from('customers')
+      .from('contacts')
       .select('id, qbo_customer_id')
       .eq('tenant_id', tenantId)
       .not('qbo_customer_id', 'is', null)

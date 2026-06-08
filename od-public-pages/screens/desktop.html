@@ -1,0 +1,1866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Public pages — HeyHenry (desktop)</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ──────────────────────────────────────────────────────────────────
+     Public-pages desktop. Mobile-first means the desktop is for the
+     spouse / realtor / future-contractor reading on a laptop — legible,
+     not dense. The artifact stays a single column, the GC's brand on
+     top, calm whitespace. HeyHenry only shows up in the OD frame
+     chrome (outside the product) and the quiet "Powered by" footer.
+
+     Strict type scale: 16 / 14 / 12 / 11-mono. Only the OD frame
+     label + the page H1s and document title use a larger display size.
+  ─────────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --paper-soft:   #FBF6EC;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --interac:      #B61D24;
+    --interac-soft: #FCE8E8;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #E6DBC2;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 0 64px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  .ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ───── OD frame chrome ───── */
+  .frame-divider {
+    max-width: 1440px;
+    margin: 56px auto 16px;
+    padding: 0 28px;
+    display: flex; align-items: baseline; gap: 18px;
+    flex-wrap: wrap;
+  }
+  .frame-divider:first-of-type { margin-top: 8px; }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .frame-pad {
+    max-width: 1440px;
+    margin: 0 auto 24px;
+    padding: 0 28px;
+    color: var(--muted);
+    font-size: 12px;
+    max-width: 980px;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     Browser chrome — each public surface wrapped in a faux browser
+     so the reviewer sees the URL (slug or approval_code).
+  ═════════════════════════════════════════════════════════════════ */
+  .browser {
+    max-width: 1280px;
+    margin: 0 auto 36px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 30px rgba(10,10,10,0.07);
+  }
+  .browser-narrow { max-width: 980px; }
+  .browser-chrome {
+    background: #ECE3D0;
+    border-bottom: 1px solid var(--hair);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .traffic { display: flex; gap: 6px; }
+  .traffic .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .traffic .red    { background: #ED6A5F; }
+  .traffic .yellow { background: #F5BD4F; }
+  .traffic .green  { background: #61C554; }
+  .browser-url {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    display: flex; align-items: center; gap: 8px;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  .browser-url .lock { width: 11px; height: 11px; color: var(--ok); }
+  .browser-url .url-host { color: var(--faint); }
+  .browser-url .url-path { color: var(--ink); font-weight: 600; }
+  .browser-body { background: var(--bg); padding: 32px 40px 40px; }
+  .browser-body.tight { padding: 28px 36px 32px; }
+
+  /* ════════════════════════════════════════════════════════════════
+     UNIFIED PUBLIC TEMPLATE — Desktop
+     GC brand bar → artifact → primary action. Single column inside
+     the browser body so the page reads like a document, not a SaaS.
+  ═════════════════════════════════════════════════════════════════ */
+
+  /* ── GC brand bar (the public-surface header — never HeyHenry's brand) ── */
+  .gc-bar {
+    max-width: 980px;
+    margin: 0 auto 22px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .gc-logo {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
+  }
+  .gc-logo.brand-northbeam { background: #1B3F2E; color: #F5E9D2; }
+  .gc-logo.brand-mapleridge { background: #4F2419; color: #F1E4D0; }
+  .gc-stack { display: flex; flex-direction: column; min-width: 0; }
+  .gc-name {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+  }
+  .gc-meta {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+  .gc-bar .right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 18px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .gc-bar .right .secure {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .gc-bar .right .secure .ico { width: 12px; height: 12px; color: var(--ok); }
+  .gc-bar .right .lang {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     PORTAL HUB — `/portal/[slug]`
+     Two-column on laptop: the spine (project, money, decisions,
+     phases, schedule preview) and a smaller tab nav rail on the
+     left. The intentional tab order is preserved.
+  ═════════════════════════════════════════════════════════════════ */
+  .portal-layout {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+  }
+
+  /* Tab rail (left) */
+  .tab-rail {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 8px;
+    align-self: start;
+    position: sticky; top: 16px;
+  }
+  .tab-rail .rail-h {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px 10px;
+  }
+  .tab-rail .rail-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.003em;
+    min-height: 44px;
+  }
+  .tab-rail .rail-item:hover { background: var(--paper-soft); }
+  .tab-rail .rail-item.active {
+    background: var(--paper-soft);
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .tab-rail .rail-item .ico { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .tab-rail .rail-item.active .ico { color: var(--ink); }
+  .tab-rail .rail-item .badge {
+    margin-left: auto;
+    background: var(--rust);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 1px 6px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .tab-rail .rail-divider {
+    height: 1px;
+    background: var(--hair);
+    margin: 8px 6px;
+  }
+
+  /* Right column — the project surface */
+  .portal-spine { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+  .portal-hero {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 22px 26px 20px;
+  }
+  .portal-hero .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .portal-hero h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.024em;
+    margin: 4px 0 4px;
+    line-height: 1.15;
+  }
+  .portal-hero .paddr {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .portal-hero .pstats {
+    margin-top: 18px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+  }
+  .portal-hero .pcell .l {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .portal-hero .pcell .v {
+    margin-top: 4px;
+    font-size: 16px;
+    color: var(--ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.012em;
+  }
+  .portal-hero .pcell .s {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Decisions strip */
+  .decisions-strip {
+    background: var(--warn-soft);
+    border: 1px solid #E8C26A;
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .decisions-strip .dh {
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .decisions-strip .dh .ico { width: 12px; height: 12px; }
+  .decisions-strip .dt {
+    margin-top: 5px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.012em;
+  }
+  .decisions-strip .ds {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+  .decisions-strip .row {
+    display: flex; gap: 8px;
+    align-self: center;
+  }
+  .decisions-strip .pill {
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .decisions-strip .pill.approve { background: var(--rust); border-color: var(--rust); color: #fff; }
+  .decisions-strip .pill .ico { width: 14px; height: 14px; }
+
+  /* Money block */
+  .money-block {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 20px 24px;
+  }
+  .money-block .h {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .money-block .h .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .money-block .h .sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .money-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .money-cell .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .money-cell .val {
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 16px;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+  .money-cell .val .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .money-cell .sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .money-bar {
+    margin-top: 18px;
+    height: 9px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+  }
+  .money-bar .seg-paid { background: var(--ok); }
+  .money-bar .seg-due  { background: var(--warn); opacity: 0.7; }
+  .money-bar .seg-remain { background: transparent; }
+  .money-foot {
+    margin-top: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .tax-flag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 999px;
+    padding: 3px 10px;
+    letter-spacing: 0.04em;
+  }
+  .tax-flag .ico { width: 11px; height: 11px; color: var(--muted); }
+
+  /* Two-up panel (phases + schedule preview) */
+  .two-up {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .panel .ph {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .panel .ph .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .panel .ph .sub {
+    font-size: 12px;
+    color: var(--rust);
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+  .phase-list { display: flex; flex-direction: column; gap: 11px; }
+  .phase-item {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    font-size: 14px;
+  }
+  .phase-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1.6px solid var(--rule);
+    background: var(--card);
+  }
+  .phase-dot.done { background: var(--ok); border-color: var(--ok); }
+  .phase-dot.now { background: var(--rust); border-color: var(--rust); box-shadow: 0 0 0 4px var(--rust-soft); }
+  .phase-name { color: var(--ink); font-weight: 600; }
+  .phase-name.done { color: var(--muted); font-weight: 500; }
+  .phase-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* Mini Gantt (preview inside the Project tab) */
+  .mini-gantt {
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .mini-gantt .mg-head {
+    display: grid; grid-template-columns: 110px 1fr;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+  }
+  .mini-gantt .mg-head .lbl {
+    padding: 7px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-right: 1px solid var(--hair);
+  }
+  .mini-gantt .mg-head .grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .mini-gantt .mg-head .grid > span {
+    padding: 7px 0;
+    text-align: center;
+    border-right: 1px dashed var(--hair);
+  }
+  .mini-gantt .mg-head .grid > span:last-child { border-right: 0; }
+  .mini-gantt .mg-row {
+    display: grid; grid-template-columns: 110px 1fr;
+    border-bottom: 1px solid var(--hair);
+    min-height: 38px;
+    align-items: center;
+  }
+  .mini-gantt .mg-row:last-child { border-bottom: 0; }
+  .mini-gantt .mg-name {
+    padding: 7px 12px;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+    border-right: 1px solid var(--hair);
+    line-height: 1.2;
+  }
+  .mini-gantt .mg-name .sub {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 1px;
+    letter-spacing: 0.02em;
+  }
+  .mini-gantt .mg-name .sub.amber { color: var(--warn); font-weight: 700; }
+  .mini-gantt .mg-track {
+    position: relative;
+    height: 38px;
+    background-image:
+      linear-gradient(to right, var(--hair) 1px, transparent 1px);
+    background-size: calc(100% / 6) 100%;
+  }
+  .mini-gantt .mg-bar {
+    position: absolute;
+    top: 9px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-flex; align-items: center;
+    padding: 0 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mini-gantt .mg-bar.demo    { background: #7C2D12; }
+  .mini-gantt .mg-bar.rough   { background: #1B3F2E; }
+  .mini-gantt .mg-bar.cabinet { background: var(--rust); }
+  .mini-gantt .mg-bar.finish  { background: #1E40AF; }
+  .mini-gantt .mg-bar.disrupt { background: var(--warn); color: var(--ink); }
+  .mini-gantt .mg-today {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 0;
+    border-left: 1.5px dashed var(--rust);
+  }
+  .mini-gantt .mg-today::after {
+    content: 'today';
+    position: absolute;
+    top: 3px; left: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.05em;
+  }
+  .panel .panel-foot {
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--hair);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel .panel-foot .ico { width: 13px; height: 13px; color: var(--muted); }
+  .panel .panel-foot a {
+    color: var(--rust);
+    font-weight: 600;
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .panel .panel-foot a .ico { width: 13px; height: 13px; color: var(--rust); }
+
+  /* Boundary disclosure (subtle but explicit) */
+  .boundary-note {
+    background: var(--paper-soft);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 11px 14px;
+    display: flex; gap: 9px;
+    align-items: flex-start;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .boundary-note .ico { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+  .boundary-note strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ════════════════════════════════════════════════════════════════
+     ESTIMATE / approval surface (desktop)
+     Single-column document. The contractor's letterhead on top,
+     line items by category in the middle, totals card right-justified,
+     terms + signature zone below, single primary CTA.
+  ═════════════════════════════════════════════════════════════════ */
+  .doc {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(10,10,10,0.04);
+  }
+  .doc-inner { padding: 40px 48px 36px; }
+  .doc-letterhead {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: start;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .doc-business { display: flex; gap: 16px; align-items: center; }
+  .gc-logo-lg {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
+  }
+  .gc-logo-lg.brand-northbeam { background: #1B3F2E; color: #F5E9D2; }
+  .gc-logo-lg.brand-mapleridge { background: #4F2419; color: #F1E4D0; }
+  .gc-name-lg {
+    font-size: 20px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+  }
+  .gc-meta-lg {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+  .gc-meta-lg .sep { color: var(--faint); margin: 0 6px; }
+  .doc-meta {
+    text-align: right;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .doc-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .doc-number {
+    font-family: var(--mono);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .doc-date { margin-top: 8px; font-size: 12px; }
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-top: 10px;
+  }
+  .status-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip-pending  { background: var(--warn-soft); color: var(--warn); }
+  .chip-approved { background: var(--ok-soft);   color: var(--ok); }
+  .chip-declined { background: var(--danger-soft);color: var(--danger); }
+  .chip-paid     { background: var(--ok-soft);   color: var(--ok); }
+  .chip-void     { background: var(--chip-fill); color: var(--muted); }
+  .chip-expired  { background: var(--chip-fill); color: var(--muted); }
+
+  .doc-prepared {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    margin-top: 22px;
+  }
+  .prep-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .prep-value {
+    margin-top: 4px;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .prep-value .addr {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  /* View-mode read-only indicator (the client doesn't toggle this; the GC does) */
+  .view-mode-chip {
+    margin-top: 18px;
+    padding: 10px 14px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    display: flex; align-items: center; gap: 9px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .view-mode-chip .ico { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+  .view-mode-chip strong { color: var(--ink-2); font-weight: 600; }
+
+  .doc-section { margin-top: 26px; }
+  .doc-h2 {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin: 0 0 12px;
+  }
+
+  /* Line items table (estimate detailed mode) */
+  .line-table {
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .line-section-head {
+    padding: 9px 16px;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .line-row {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 16px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--hair);
+    align-items: start;
+    background: var(--card);
+  }
+  .line-row:last-child { border-bottom: 0; }
+  .line-label { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.4; }
+  .line-note  { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .line-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .line-num .cents { color: var(--muted); font-size: 11px; }
+
+  /* Totals — right-justified */
+  .totals {
+    margin-top: 24px;
+    display: flex; justify-content: flex-end;
+  }
+  .totals-card {
+    width: 360px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .totals-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .totals-row .lbl { color: var(--muted); }
+  .totals-row .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .totals-row .val .cents { color: var(--muted); font-size: 11px; }
+  .totals-row.is-total {
+    border-top: 1px solid var(--hair);
+    padding-top: 9px;
+    margin-top: 3px;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 16px;
+  }
+  .totals-row.is-total .val { font-weight: 700; color: var(--ink); }
+  .totals-row.is-total .val .cents { color: var(--muted); font-size: 12px; }
+  .totals-row.is-tax .tax-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  /* Henry summary block */
+  .henry-summary {
+    padding: 16px 20px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+  }
+  .henry-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .henry-tag .star {
+    font-family: var(--sans);
+    font-weight: 800;
+    color: var(--rust);
+    font-size: 12px;
+  }
+  .henry-summary p {
+    margin: 0 0 10px;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .henry-summary p:last-child { margin-bottom: 0; }
+  .henry-summary strong { color: var(--ink); font-weight: 700; }
+
+  /* Terms block */
+  .terms-block {
+    margin-top: 22px;
+    padding: 14px 18px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .terms-block strong { color: var(--ink-2); font-weight: 600; }
+
+  /* Action zone (typed-name approve) */
+  .action-zone {
+    margin-top: 26px;
+    padding: 22px 24px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+  }
+  .action-zone h3 {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin: 0;
+  }
+  .action-zone .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .esig-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    margin-top: 14px;
+    letter-spacing: -0.005em;
+  }
+  .esig-input::placeholder { color: var(--faint); font-style: italic; }
+  .action-row {
+    display: flex; gap: 10px;
+    margin-top: 14px;
+  }
+  .btn {
+    height: 48px;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    padding: 0 18px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary {
+    background: var(--rust);
+    color: #fff;
+    border-color: var(--rust);
+  }
+  .btn-secondary {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+  }
+  .btn-primary.full, .btn-secondary.full { flex: 1; }
+  .btn .ico { width: 16px; height: 16px; }
+  .esig-foot {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .esig-foot .ico { width: 13px; height: 13px; color: var(--muted); }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--hair);
+    display: flex; justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .doc-footer .reg { display: flex; gap: 14px; flex-wrap: wrap; }
+  .doc-footer .reg .num { color: var(--ink-2); font-weight: 600; }
+  .powered {
+    color: var(--faint);
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .powered strong { color: var(--muted); font-weight: 600; }
+
+  /* ════════════════════════════════════════════════════════════════
+     STATE CARDS — already-acted variants on the unified shell
+  ═════════════════════════════════════════════════════════════════ */
+  .states-grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 18px;
+  }
+  .state-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .state-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 11px 16px 9px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .state-body { padding: 22px 22px 24px; flex: 1; }
+  .state-mini-header {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--hair);
+    margin-bottom: 18px;
+  }
+  .state-mini-header .gc-logo {
+    width: 32px; height: 32px; font-size: 12px; border-radius: 7px;
+  }
+  .state-mini-header .name {
+    font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.15;
+  }
+  .state-mini-header .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .state-icon {
+    width: 60px; height: 60px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    margin: 0 auto 14px;
+  }
+  .state-icon.ok    { background: var(--ok-soft);    color: var(--ok); }
+  .state-icon.warn  { background: var(--warn-soft);  color: var(--warn); }
+  .state-icon.void  { background: var(--chip-fill);  color: var(--muted); }
+  .state-icon.danger{ background: var(--danger-soft);color: var(--danger); }
+  .state-icon .ico { width: 30px; height: 30px; stroke-width: 2.2; }
+  .state-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+  }
+  .state-sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .state-sub strong { color: var(--ink-2); font-weight: 600; }
+  .state-receipt {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .state-receipt-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+  }
+  .state-receipt-row .l {
+    color: var(--muted);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .state-receipt-row .v {
+    color: var(--ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+  }
+  .state-receipt-row .v.mono { font-family: var(--mono); font-size: 12px; }
+  .state-cta {
+    margin-top: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .state-cta .btn { width: 100%; height: 44px; font-size: 14px; }
+  .state-foot {
+    padding: 12px 16px;
+    background: var(--paper-soft);
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-lock"     viewBox="0 0 24 24"><rect class="ico" x="3" y="11" width="18" height="11" rx="2"/><path class="ico" d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-check"    viewBox="0 0 24 24"><polyline class="ico" points="20 6 9 17 4 12" style="stroke-width:2.4"/></symbol>
+    <symbol id="i-x"        viewBox="0 0 24 24"><line class="ico" x1="18" y1="6" x2="6" y2="18"/><line class="ico" x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-clock"    viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="10"/><polyline class="ico" points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-info"     viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="10"/><line class="ico" x1="12" y1="16" x2="12" y2="12"/><line class="ico" x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-bell"     viewBox="0 0 24 24"><path class="ico" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path class="ico" d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-eye"      viewBox="0 0 24 24"><path class="ico" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle class="ico" cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-shield"   viewBox="0 0 24 24"><path class="ico" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-cal"      viewBox="0 0 24 24"><rect class="ico" x="3" y="4" width="18" height="18" rx="2"/><line class="ico" x1="16" y1="2" x2="16" y2="6"/><line class="ico" x1="8" y1="2" x2="8" y2="6"/><line class="ico" x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-home"     viewBox="0 0 24 24"><path class="ico" d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-5v-7H10v7H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-money"    viewBox="0 0 24 24"><line class="ico" x1="12" y1="1" x2="12" y2="23"/><path class="ico" d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+    <symbol id="i-photo"    viewBox="0 0 24 24"><rect class="ico" x="3" y="5" width="18" height="14" rx="2"/><circle class="ico" cx="9" cy="11" r="2"/><polyline class="ico" points="21 17 16 12 8 19"/></symbol>
+    <symbol id="i-msg"      viewBox="0 0 24 24"><path class="ico" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-doc"      viewBox="0 0 24 24"><path class="ico" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline class="ico" points="14 2 14 8 20 8"/><line class="ico" x1="9" y1="13" x2="15" y2="13"/><line class="ico" x1="9" y1="17" x2="13" y2="17"/></symbol>
+    <symbol id="i-list"     viewBox="0 0 24 24"><line class="ico" x1="8" y1="6" x2="21" y2="6"/><line class="ico" x1="8" y1="12" x2="21" y2="12"/><line class="ico" x1="8" y1="18" x2="21" y2="18"/><line class="ico" x1="3" y1="6" x2="3.01" y2="6"/><line class="ico" x1="3" y1="12" x2="3.01" y2="12"/><line class="ico" x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+    <symbol id="i-trades"   viewBox="0 0 24 24"><path class="ico" d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+    <symbol id="i-idea"     viewBox="0 0 24 24"><line class="ico" x1="12" y1="2" x2="12" y2="4"/><line class="ico" x1="5" y1="5" x2="6.5" y2="6.5"/><line class="ico" x1="2" y1="12" x2="4" y2="12"/><line class="ico" x1="20" y1="12" x2="22" y2="12"/><line class="ico" x1="17.5" y1="6.5" x2="19" y2="5"/><path class="ico" d="M14 17a4 4 0 1 0-4 0"/><line class="ico" x1="10" y1="22" x2="14" y2="22"/></symbol>
+    <symbol id="i-arrow-r"  viewBox="0 0 24 24"><line class="ico" x1="5" y1="12" x2="19" y2="12"/><polyline class="ico" points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path class="ico" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline class="ico" points="7 10 12 15 17 10"/><line class="ico" x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-phone"    viewBox="0 0 24 24"><path class="ico" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-grid"     viewBox="0 0 24 24"><rect class="ico" x="3" y="3" width="7" height="7"/><rect class="ico" x="14" y="3" width="7" height="7"/><rect class="ico" x="3" y="14" width="7" height="7"/><rect class="ico" x="14" y="14" width="7" height="7"/></symbol>
+  </defs>
+</svg>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 01 — Portal Hub on desktop
+     The spouse / realtor / future-contractor view. Legible, not dense.
+     Tab rail (left) + project surface (right). Intentional tab order.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 01 &middot; desktop</span>
+  <span class="label">Portal Hub &mdash; the spouse / realtor read</span>
+  <span class="sub">Tab rail order matches the brief &middot; intentional &middot; GC brand only &middot; firm Gantt bars &middot; client-boundary disclosed</span>
+</div>
+<div class="frame-pad">
+  Same shell, different breathing. Desktop is for the second reader (Helen's spouse, the realtor reviewing a Home Record, a future contractor reading the closeout). Same tab order, same firm bars, same boundary &mdash; just wider and calmer.
+</div>
+
+<div class="browser">
+  <div class="browser-chrome">
+    <div class="traffic">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+    </div>
+    <div class="browser-url">
+      <svg class="ico lock"><use href="#i-lock"/></svg>
+      <span class="url-host">portal.northbeam.ca</span><span class="url-path">/hillcrest-kitchen</span>
+    </div>
+    <div style="width: 60px;"></div>
+  </div>
+
+  <div class="browser-body">
+
+    <!-- GC brand bar — never HeyHenry's brand -->
+    <div class="gc-bar" style="max-width: 1180px;">
+      <div class="gc-logo brand-northbeam">Nb</div>
+      <div class="gc-stack">
+        <div class="gc-name">Northbeam Build Co.</div>
+        <div class="gc-meta">Abbotsford BC &middot; (604)&nbsp;555&middot;0188 &middot; <strong style="color: var(--ink-2); font-weight: 600;">Helen Chao</strong>'s project portal</div>
+      </div>
+      <div class="right">
+        <span class="lang">EN&nbsp;·&nbsp;CAD</span>
+        <span class="secure"><svg class="ico"><use href="#i-lock"/></svg>secure link</span>
+      </div>
+    </div>
+
+    <div class="portal-layout">
+
+      <!-- Tab rail — intentional order from the brief -->
+      <nav class="tab-rail">
+        <div class="rail-h">Project</div>
+        <div class="rail-item active">
+          <svg class="ico"><use href="#i-home"/></svg>
+          Overview
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-money"/></svg>
+          Budget
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-bell"/></svg>
+          Decisions
+          <span class="badge">1</span>
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-cal"/></svg>
+          Schedule
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-photo"/></svg>
+          Photos
+        </div>
+
+        <div class="rail-divider"></div>
+
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-list"/></svg>
+          Updates
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-idea"/></svg>
+          Selections
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-doc"/></svg>
+          Documents
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-trades"/></svg>
+          Trades
+        </div>
+        <div class="rail-item">
+          <svg class="ico"><use href="#i-msg"/></svg>
+          Messages
+          <span class="badge">2</span>
+        </div>
+      </nav>
+
+      <!-- Project surface -->
+      <div class="portal-spine">
+
+        <div class="portal-hero">
+          <div class="eyebrow">Project</div>
+          <h1>Hillcrest Kitchen</h1>
+          <div class="paddr">2918 Hillcrest Dr, Abbotsford BC &middot; <strong style="color: var(--ink-2); font-weight: 600;">Helen Chao</strong></div>
+          <div class="pstats">
+            <div class="pcell">
+              <div class="l">Phase</div>
+              <div class="v">Cabinetry</div>
+              <div class="s">week 6 of 11</div>
+            </div>
+            <div class="pcell">
+              <div class="l">Complete</div>
+              <div class="v">62%</div>
+              <div class="s">on track</div>
+            </div>
+            <div class="pcell">
+              <div class="l">Started</div>
+              <div class="v">Mar 12</div>
+              <div class="s">10 weeks ago</div>
+            </div>
+            <div class="pcell">
+              <div class="l">Handover</div>
+              <div class="v">Jun 13</div>
+              <div class="s">~3 weeks out</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="decisions-strip">
+          <div>
+            <div class="dh"><svg class="ico"><use href="#i-bell"/></svg>1 decision needed</div>
+            <div class="dt">Pick your kitchen pendants</div>
+            <div class="ds">Helen, the cabinets land Thursday. Picking pendants today keeps the electrician on schedule.</div>
+          </div>
+          <div class="row">
+            <button class="pill"><svg class="ico"><use href="#i-msg"/></svg>Ask</button>
+            <button class="pill approve"><svg class="ico"><use href="#i-arrow-r"/></svg>Decide now</button>
+          </div>
+        </div>
+
+        <div class="money-block">
+          <div class="h">
+            <span class="lbl">Contract &amp; payments</span>
+            <span class="sub">3 of 6 draws paid &middot; next on cabinets done</span>
+          </div>
+          <div class="money-grid">
+            <div class="money-cell">
+              <div class="lbl">Contract total</div>
+              <div class="val tabular">$72,206<span class="cents">.40</span></div>
+              <div class="sub">Including GST 5%</div>
+            </div>
+            <div class="money-cell">
+              <div class="lbl">Paid to date</div>
+              <div class="val tabular" style="color: var(--ok);">$30,808<span class="cents">.06</span></div>
+              <div class="sub">42% of contract</div>
+            </div>
+            <div class="money-cell">
+              <div class="lbl">Due now</div>
+              <div class="val tabular">$0<span class="cents">.00</span></div>
+              <div class="sub">Next draw on cabinets</div>
+            </div>
+          </div>
+          <div class="money-bar">
+            <span class="seg-paid" style="width: 42%"></span>
+            <span class="seg-due"  style="width: 0%"></span>
+            <span class="seg-remain" style="width: 58%"></span>
+          </div>
+          <div class="money-foot">
+            <span class="tax-flag">
+              <svg class="ico"><use href="#i-info"/></svg>
+              GST 5% &middot; BC &middot; included
+            </span>
+            <span>Mgmt fee included in contract &middot; no holdback</span>
+          </div>
+        </div>
+
+        <div class="two-up">
+
+          <div class="panel">
+            <div class="ph">
+              <span class="lbl">Phases</span>
+              <span class="sub">4 of 7 done</span>
+            </div>
+            <div class="phase-list">
+              <div class="phase-item"><span class="phase-dot done"></span><span class="phase-name done">Demo &amp; disposal</span><span class="phase-meta">Mar 12</span></div>
+              <div class="phase-item"><span class="phase-dot done"></span><span class="phase-name done">Rough-ins</span><span class="phase-meta">Apr 02</span></div>
+              <div class="phase-item"><span class="phase-dot done"></span><span class="phase-name done">Drywall &amp; paint</span><span class="phase-meta">Apr 24</span></div>
+              <div class="phase-item"><span class="phase-dot now"></span><span class="phase-name">Cabinetry</span><span class="phase-meta">now</span></div>
+              <div class="phase-item"><span class="phase-dot"></span><span class="phase-name">Counters &amp; backsplash</span><span class="phase-meta">May 30</span></div>
+              <div class="phase-item"><span class="phase-dot"></span><span class="phase-name">Plumbing finish</span><span class="phase-meta">Jun 06</span></div>
+              <div class="phase-item"><span class="phase-dot"></span><span class="phase-name">Punch &amp; handover</span><span class="phase-meta">Jun 13</span></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="ph">
+              <span class="lbl">Schedule preview</span>
+              <span class="sub" style="color: var(--muted); font-family: var(--sans); font-weight: 500;">May — Jun</span>
+            </div>
+            <div class="mini-gantt">
+              <div class="mg-head">
+                <div class="lbl">Week</div>
+                <div class="grid"><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span></div>
+              </div>
+              <div class="mg-row">
+                <div class="mg-name">Cabinetry<span class="sub">now</span></div>
+                <div class="mg-track">
+                  <div class="mg-bar cabinet" style="left: 0%; width: 33.33%;">cabinets</div>
+                  <div class="mg-today" style="left: 27%;"></div>
+                </div>
+              </div>
+              <div class="mg-row">
+                <div class="mg-name">Counters<span class="sub">template + install</span></div>
+                <div class="mg-track">
+                  <div class="mg-bar finish" style="left: 33.33%; width: 25%;">counters</div>
+                </div>
+              </div>
+              <div class="mg-row">
+                <div class="mg-name">Tile backsplash<span class="sub amber">loud · saw cuts</span></div>
+                <div class="mg-track">
+                  <div class="mg-bar disrupt" style="left: 50%; width: 16.67%;">tile</div>
+                </div>
+              </div>
+              <div class="mg-row">
+                <div class="mg-name">Plumbing finish<span class="sub">water off ½ day</span></div>
+                <div class="mg-track">
+                  <div class="mg-bar finish" style="left: 66.67%; width: 16.67%;">plumb</div>
+                </div>
+              </div>
+              <div class="mg-row">
+                <div class="mg-name">Punch &amp; clean<span class="sub">handover</span></div>
+                <div class="mg-track">
+                  <div class="mg-bar rough" style="left: 83.33%; width: 16.67%;">punch</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-foot">
+              <svg class="ico"><use href="#i-info"/></svg>
+              <span>Firm dates only. Amber = disruptive &mdash; plan to be out.</span>
+              <a href="#">Open Schedule <svg class="ico"><use href="#i-arrow-r"/></svg></a>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="boundary-note">
+          <svg class="ico"><use href="#i-shield"/></svg>
+          <span><strong>What you see, what's private.</strong> Your portal shows the firm schedule, the photos Northbeam shared with you, decisions you've made, and the contract money. Internal costs, supplier pricing, planning confidence ranges, and unshared photos aren't visible here.</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 02 — Estimate approval — detailed mode
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 02 &middot; desktop</span>
+  <span class="label">Estimate approval &mdash; <span style="font-family: var(--mono); font-size: 16px; color: var(--rust);">customer_view_mode</span> = detailed</span>
+  <span class="sub">The full breakdown by category &middot; mgmt fee as its own line &middot; GST tax-exempt-aware &middot; GST# + WCB# trust signals</span>
+</div>
+
+<div class="browser browser-narrow">
+  <div class="browser-chrome">
+    <div class="traffic">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+    </div>
+    <div class="browser-url">
+      <svg class="ico lock"><use href="#i-lock"/></svg>
+      <span class="url-host">northbeam.heyhenry.app</span><span class="url-path">/estimate/k4p2-x7w9-qmnt</span>
+    </div>
+    <div style="width: 60px;"></div>
+  </div>
+
+  <div class="browser-body">
+
+    <div class="gc-bar">
+      <div class="gc-logo brand-northbeam">Nb</div>
+      <div class="gc-stack">
+        <div class="gc-name">Northbeam Build Co.</div>
+        <div class="gc-meta">Estimate for <strong style="color: var(--ink-2); font-weight: 600;">Helen Chao</strong></div>
+      </div>
+      <div class="right">
+        <span class="lang">EN&nbsp;·&nbsp;CAD</span>
+        <span class="secure"><svg class="ico"><use href="#i-lock"/></svg>secure link</span>
+      </div>
+    </div>
+
+    <div class="doc">
+      <div class="doc-inner">
+
+        <header class="doc-letterhead">
+          <div class="doc-business">
+            <div class="gc-logo-lg brand-northbeam">Nb</div>
+            <div>
+              <div class="gc-name-lg">Northbeam Build Co.</div>
+              <div class="gc-meta-lg">Abbotsford BC<span class="sep">·</span>(604)&nbsp;555&middot;0188<span class="sep">·</span>build@northbeam.ca</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div class="doc-eyebrow">Estimate</div>
+            <div class="doc-number">E-2406-014</div>
+            <div class="doc-date">Issued May 18 &middot; valid 30 days</div>
+            <span class="status-chip chip-pending"><span class="dot"></span>Awaiting approval</span>
+          </div>
+        </header>
+
+        <div class="doc-prepared">
+          <div>
+            <div class="prep-label">Prepared for</div>
+            <div class="prep-value">Helen Chao<span class="addr">2918 Hillcrest Dr, Abbotsford BC</span></div>
+          </div>
+          <div>
+            <div class="prep-label">Project</div>
+            <div class="prep-value">Hillcrest Kitchen renovation<span class="addr">Single-storey, occupied during work</span></div>
+          </div>
+        </div>
+
+        <div class="view-mode-chip">
+          <svg class="ico"><use href="#i-eye"/></svg>
+          <span><strong>Detailed view</strong> &middot; line items by category. Helen requested the full breakdown.</span>
+        </div>
+
+        <div class="doc-section">
+          <h2 class="doc-h2">Scope of work</h2>
+          <div class="line-table">
+
+            <div class="line-section-head">Kitchen</div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Demolition &amp; disposal</div>
+                <div class="line-note">Cabinets, counter, tile, drywall. Two bin loads.</div>
+              </div>
+              <div class="line-num tabular">$3,200<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Custom shaker cabinetry &mdash; supply &amp; install</div>
+                <div class="line-note">15 boxes, soft-close hardware, painted finish.</div>
+              </div>
+              <div class="line-num tabular">$28,400<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Quartz counter &amp; full-height backsplash</div>
+                <div class="line-note">Caesarstone Pure White, 30 sq ft, eased edges, undermount cutouts.</div>
+              </div>
+              <div class="line-num tabular">$11,800<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Plumbing &mdash; rough &amp; finish</div>
+                <div class="line-note">Sink relocation, dishwasher line, two shut-offs replaced.</div>
+              </div>
+              <div class="line-num tabular">$4,150<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Electrical &mdash; rough &amp; finish</div>
+                <div class="line-note">Under-cabinet lighting, three pendant rough-ins, dedicated dishwasher circuit.</div>
+              </div>
+              <div class="line-num tabular">$3,900<span class="cents">.00</span></div>
+            </div>
+
+            <div class="line-section-head">Flooring</div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Engineered oak &mdash; supply &amp; install</div>
+                <div class="line-note">240 sq ft, refinish transition into hallway.</div>
+              </div>
+              <div class="line-num tabular">$5,800<span class="cents">.00</span></div>
+            </div>
+
+            <div class="line-section-head">Paint</div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Drywall, prime &amp; finish coats</div>
+                <div class="line-note">All kitchen surfaces; trim refresh in adjacent dining.</div>
+              </div>
+              <div class="line-num tabular">$4,150<span class="cents">.00</span></div>
+            </div>
+
+          </div>
+
+          <div class="totals">
+            <div class="totals-card">
+              <div class="totals-row"><span class="lbl">Subtotal</span><span class="val tabular">$61,400<span class="cents">.00</span></span></div>
+              <div class="totals-row"><span class="lbl">Mgmt fee &middot; 12%</span><span class="val tabular">$7,368<span class="cents">.00</span></span></div>
+              <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC</span></span><span class="val tabular">$3,438<span class="cents">.40</span></span></div>
+              <div class="totals-row is-total"><span>Estimate total</span><span class="val tabular">$72,206<span class="cents">.40</span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="terms-block">
+          <strong>Terms.</strong> Valid 30&nbsp;days from issue. Six progress draws on milestones, each invoiced and approved before the next. Changes captured via written change order before work proceeds. <strong>No holdback</strong> &mdash; the management fee covers project admin. Materials warranty: manufacturer; workmanship: 2 years. Permits handled by Northbeam.
+        </div>
+
+        <div class="action-zone">
+          <h3>Approve this estimate</h3>
+          <div class="sub">Type your full name &mdash; this is your e-signature, same as on paper.</div>
+          <input class="esig-input" type="text" placeholder="Your full name" />
+          <div class="action-row">
+            <button class="btn btn-primary full"><svg class="ico"><use href="#i-check"/></svg>Approve &amp; sign</button>
+            <button class="btn btn-secondary"><svg class="ico"><use href="#i-msg"/></svg>Ask a question</button>
+            <button class="btn btn-ghost">Decline</button>
+          </div>
+          <div class="esig-foot">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            Encrypted &middot; timestamped &middot; logged. A signed PDF is emailed to you immediately.
+          </div>
+        </div>
+
+        <div class="doc-footer">
+          <div class="reg">
+            GST# <span class="num">82143 9215 RT0001</span>
+            WCB# <span class="num">98273461</span>
+            BC LIC# <span class="num">LBR-04822</span>
+          </div>
+          <div class="powered">Powered by <strong>HeyHenry</strong></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 03 — Estimate approval — summary mode (Henry-drafted)
+     The margin-protecting alternative. customer_view_mode = summary.
+     Same shell, different artifact (customer_summary_md).
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 03 &middot; desktop</span>
+  <span class="label">Estimate approval &mdash; <span style="font-family: var(--mono); font-size: 16px; color: var(--rust);">customer_view_mode</span> = summary</span>
+  <span class="sub">Henry drafts the customer-facing framing &middot; the GC approves before send &middot; clean total &middot; no line-by-line breakdown</span>
+</div>
+<div class="frame-pad">
+  Summary mode protects the GC's margin without hiding the price. Henry drafts <span style="font-family: var(--mono); font-size: 12px; color: var(--ink-2);">customer_summary_md</span> from the line items; the GC reviews and approves it on the dashboard <em>before</em> the link goes to the client. The client never sees Henry &mdash; they see their contractor.
+</div>
+
+<div class="browser browser-narrow">
+  <div class="browser-chrome">
+    <div class="traffic">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+    </div>
+    <div class="browser-url">
+      <svg class="ico lock"><use href="#i-lock"/></svg>
+      <span class="url-host">mapleridgerenos.heyhenry.app</span><span class="url-path">/estimate/n7v3-b4kp-mxqr</span>
+    </div>
+    <div style="width: 60px;"></div>
+  </div>
+
+  <div class="browser-body">
+
+    <div class="gc-bar">
+      <div class="gc-logo brand-mapleridge">Mr</div>
+      <div class="gc-stack">
+        <div class="gc-name">Maple Ridge Renos</div>
+        <div class="gc-meta">Estimate for <strong style="color: var(--ink-2); font-weight: 600;">the Brandscombes</strong></div>
+      </div>
+      <div class="right">
+        <span class="lang">EN&nbsp;·&nbsp;CAD</span>
+        <span class="secure"><svg class="ico"><use href="#i-lock"/></svg>secure link</span>
+      </div>
+    </div>
+
+    <div class="doc">
+      <div class="doc-inner">
+
+        <header class="doc-letterhead">
+          <div class="doc-business">
+            <div class="gc-logo-lg brand-mapleridge">Mr</div>
+            <div>
+              <div class="gc-name-lg">Maple Ridge Renos</div>
+              <div class="gc-meta-lg">Maple Ridge BC<span class="sep">·</span>(604)&nbsp;555&middot;0244<span class="sep">·</span>sam@mapleridgerenos.ca</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div class="doc-eyebrow">Estimate</div>
+            <div class="doc-number">E-2406-019</div>
+            <div class="doc-date">Issued May 20 &middot; valid 30 days</div>
+            <span class="status-chip chip-pending"><span class="dot"></span>Awaiting approval</span>
+          </div>
+        </header>
+
+        <div class="doc-prepared">
+          <div>
+            <div class="prep-label">Prepared for</div>
+            <div class="prep-value">The Brandscombe family<span class="addr">1140 Cedar Lane, Maple Ridge BC</span></div>
+          </div>
+          <div>
+            <div class="prep-label">Project</div>
+            <div class="prep-value">Basement build-out<span class="addr">1,140 sq ft &middot; bedroom + 4-pc bath + family room</span></div>
+          </div>
+        </div>
+
+        <div class="view-mode-chip">
+          <svg class="ico"><use href="#i-eye"/></svg>
+          <span><strong>Summary view</strong> &middot; clean project total. Detailed line items are in the contract attached below.</span>
+        </div>
+
+        <div class="doc-section">
+          <h2 class="doc-h2">What's included</h2>
+          <div class="henry-summary">
+            <div class="henry-tag"><span class="star">✦</span><span>Drafted by Henry &middot; reviewed &amp; approved by Sam (Maple Ridge)</span></div>
+            <p>A full <strong>1,140&nbsp;sq&nbsp;ft basement build-out</strong> &mdash; one bedroom, a 4-piece bath, a family room with a wet bar, and a dedicated laundry room. The plumbing rough-ins are sized for a future suite if you change your mind down the road.</p>
+            <p><strong>What we handle.</strong> Permits, framing, insulation, mechanical (HVAC + plumbing + electrical), drywall, paint, vinyl plank flooring, and all finish carpentry &mdash; including the laundry millwork and door hardware. Two cleaning days and a final walk-through close the project.</p>
+            <p><strong>What you bring.</strong> The bar cabinetry (you've already picked the shaker style) and the bathroom fixtures (we have your list, we'll order through our supplier with your colours and email you to confirm).</p>
+            <p><strong>Timeline.</strong> Six weeks from permit pull. Indoor work &mdash; weather doesn't affect the schedule. Two crew, one site supervisor, weekly progress on the portal.</p>
+          </div>
+
+          <div class="totals">
+            <div class="totals-card">
+              <div class="totals-row"><span class="lbl">Scope of work</span><span class="val tabular">$94,500<span class="cents">.00</span></span></div>
+              <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC</span></span><span class="val tabular">$4,725<span class="cents">.00</span></span></div>
+              <div class="totals-row is-total"><span>Project total</span><span class="val tabular">$99,225<span class="cents">.00</span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="terms-block">
+          <strong>Terms.</strong> Valid 30&nbsp;days. Eight progress draws on milestones &mdash; permits, framing inspection, drywall, mechanical rough, paint, trim, final, walk-through. Changes captured via written change order. <strong>No holdback.</strong> Two-year workmanship warranty; manufacturer warranty on materials. Detailed line-item breakdown is attached to the signed contract.
+        </div>
+
+        <div class="action-zone">
+          <h3>Approve this estimate</h3>
+          <div class="sub">Type your full name &mdash; this is your e-signature, same as on paper.</div>
+          <input class="esig-input" type="text" placeholder="Your full name" />
+          <div class="action-row">
+            <button class="btn btn-primary full"><svg class="ico"><use href="#i-check"/></svg>Approve &amp; sign</button>
+            <button class="btn btn-secondary"><svg class="ico"><use href="#i-msg"/></svg>Ask a question</button>
+            <button class="btn btn-ghost">Decline</button>
+          </div>
+          <div class="esig-foot">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            Encrypted &middot; timestamped &middot; logged.
+          </div>
+        </div>
+
+        <div class="doc-footer">
+          <div class="reg">
+            GST# <span class="num">73921 0048 RT0001</span>
+            WCB# <span class="num">61840322</span>
+            BC LIC# <span class="num">LBR-07314</span>
+          </div>
+          <div class="powered">Powered by <strong>HeyHenry</strong></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 04 — Already-acted state row
+     Same shell. Different verb. Calm, branded, always a way out.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 04 &middot; desktop</span>
+  <span class="label">Already-acted &middot; expired &middot; not-found</span>
+  <span class="sub">Same shell, different verb &middot; receipt-style facts &middot; always a way back to the GC, never to HeyHenry</span>
+</div>
+<div class="frame-pad">
+  Four states the public family needs: approved (estimate signed), paid (invoice deposited), declined (change order refused), expired (estimate past its validity window). All four wear the same branded shell so the client knows where they are.
+</div>
+
+<div class="states-grid">
+
+  <!-- Approved -->
+  <div class="state-card">
+    <div class="state-tag">Estimate &middot; approved</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo brand-northbeam">Nb</div>
+        <div>
+          <div class="name">Northbeam Build Co.</div>
+          <div class="num">E-2406-014 &middot; Hillcrest Kitchen</div>
+        </div>
+      </div>
+      <div class="state-icon ok"><svg class="ico"><use href="#i-check"/></svg></div>
+      <h3 class="state-title">Approved &middot; thank you.</h3>
+      <div class="state-sub">Signed on <strong>May&nbsp;19 at 7:12&nbsp;PM</strong>. Dane will be in touch with the first draw and a schedule.</div>
+      <div class="state-receipt">
+        <div class="state-receipt-row"><span class="l">Approved by</span><span class="v">Helen Chao</span></div>
+        <div class="state-receipt-row"><span class="l">Total</span><span class="v tabular">$72,206.40</span></div>
+        <div class="state-receipt-row"><span class="l">Reference</span><span class="v mono">E-2406-014</span></div>
+      </div>
+      <div class="state-cta">
+        <button class="btn btn-secondary"><svg class="ico"><use href="#i-download"/></svg>Download signed copy</button>
+        <button class="btn btn-ghost"><svg class="ico"><use href="#i-grid"/></svg>Open project portal</button>
+      </div>
+    </div>
+    <div class="state-foot">approved.now &middot; status visible on parent</div>
+  </div>
+
+  <!-- Paid -->
+  <div class="state-card">
+    <div class="state-tag">Invoice &middot; paid</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo brand-northbeam">Nb</div>
+        <div>
+          <div class="name">Northbeam Build Co.</div>
+          <div class="num">INV-2406-031 &middot; Draw 3</div>
+        </div>
+      </div>
+      <div class="state-icon ok"><svg class="ico"><use href="#i-check"/></svg></div>
+      <h3 class="state-title">Paid &middot; thank you.</h3>
+      <div class="state-sub">Received on <strong>May&nbsp;23 at 9:42&nbsp;AM</strong>. Cabinets are scheduled to land Thursday.</div>
+      <div class="state-receipt">
+        <div class="state-receipt-row"><span class="l">Amount</span><span class="v tabular">$32,348.46</span></div>
+        <div class="state-receipt-row"><span class="l">Method</span><span class="v">Interac e-Transfer</span></div>
+        <div class="state-receipt-row"><span class="l">Reference</span><span class="v mono">CA-IET-78NMQ4</span></div>
+      </div>
+      <div class="state-cta">
+        <button class="btn btn-secondary"><svg class="ico"><use href="#i-download"/></svg>Download receipt</button>
+        <button class="btn btn-ghost"><svg class="ico"><use href="#i-grid"/></svg>Open project portal</button>
+      </div>
+    </div>
+    <div class="state-foot">paid &middot; auto-emailed receipt</div>
+  </div>
+
+  <!-- Declined -->
+  <div class="state-card">
+    <div class="state-tag">Change order &middot; declined</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo brand-northbeam">Nb</div>
+        <div>
+          <div class="name">Northbeam Build Co.</div>
+          <div class="num">CO-3 &middot; pendants + subfloor</div>
+        </div>
+      </div>
+      <div class="state-icon void"><svg class="ico"><use href="#i-x"/></svg></div>
+      <h3 class="state-title">You declined this change</h3>
+      <div class="state-sub">Declined on <strong>May&nbsp;22 at 4:18&nbsp;PM</strong>. Dane will follow up if there's a way to keep the project moving without it.</div>
+      <div class="state-receipt">
+        <div class="state-receipt-row"><span class="l">Decision</span><span class="v">Declined</span></div>
+        <div class="state-receipt-row"><span class="l">By</span><span class="v">Helen Chao</span></div>
+        <div class="state-receipt-row"><span class="l">Impact</span><span class="v tabular">$0.00</span></div>
+      </div>
+      <div class="state-cta">
+        <button class="btn btn-secondary"><svg class="ico"><use href="#i-phone"/></svg>Call Dane</button>
+        <button class="btn btn-ghost"><svg class="ico"><use href="#i-grid"/></svg>Open project portal</button>
+      </div>
+    </div>
+    <div class="state-foot">declined &middot; CO won't apply to budget</div>
+  </div>
+
+  <!-- Expired -->
+  <div class="state-card">
+    <div class="state-tag">Estimate &middot; expired</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo brand-northbeam">Nb</div>
+        <div>
+          <div class="name">Northbeam Build Co.</div>
+          <div class="num">E-2406-014 &middot; expired</div>
+        </div>
+      </div>
+      <div class="state-icon warn"><svg class="ico"><use href="#i-clock"/></svg></div>
+      <h3 class="state-title">This estimate expired</h3>
+      <div class="state-sub">Prices were good through <strong>Jun&nbsp;17, 2026</strong>. Materials and labour may have shifted &mdash; get in touch and we'll refresh it for you.</div>
+      <div class="state-receipt">
+        <div class="state-receipt-row"><span class="l">Issued</span><span class="v">May 18, 2026</span></div>
+        <div class="state-receipt-row"><span class="l">Validity</span><span class="v">30 days</span></div>
+        <div class="state-receipt-row"><span class="l">Reference</span><span class="v mono">E-2406-014</span></div>
+      </div>
+      <div class="state-cta">
+        <button class="btn btn-secondary"><svg class="ico"><use href="#i-phone"/></svg>Call Dane &middot; (604)&nbsp;555&middot;0188</button>
+        <button class="btn btn-ghost"><svg class="ico"><use href="#i-msg"/></svg>Text Northbeam</button>
+      </div>
+    </div>
+    <div class="state-foot">expired &middot; no action permitted</div>
+  </div>
+
+</div>
+
+
+<!-- ───────────── Footer note ───────────── -->
+<div style="text-align: center; padding: 56px 28px 24px; color: var(--muted); font-size: 12px; max-width: 980px; margin: 0 auto;">
+  <div style="font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); margin-bottom: 6px; font-size: 11px;">Desktop spec &middot; spouse/realtor read &middot; same shell as mobile</div>
+  4 frames &middot; one shared template. The GC's brand at the top of every page; HeyHenry only in the quiet "Powered by" footer. Money tabular CAD &middot; GST 5% BC (tax-exempt-aware) &middot; transparent mgmt-fee line &middot; <strong>no holdback</strong> &middot; Stripe + Interac at parity (full pay surface lives in <span style="font-family: var(--mono);">od-customer-documents</span>). Status always label+glyph, never colour-only. Subscreens (<span style="font-family: var(--mono);">/pulse</span> · <span style="font-family: var(--mono);">/home-record</span> · <span style="font-family: var(--mono);">/view/invoice</span> · <span style="font-family: var(--mono);">/q</span> · <span style="font-family: var(--mono);">/r</span>) graduate to their own renders &mdash; same shell, different artifact.
+</div>
+
+</body>
+</html>

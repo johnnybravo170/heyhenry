@@ -45,14 +45,14 @@ export async function draftPulseUpdate(jobId: string): Promise<PulseDraft> {
   //    caller (server action checks getCurrentTenant; AI tool wraps it).
   const { data: jobRow, error: jobErr } = await admin
     .from('jobs')
-    .select('id, scheduled_at, customers:customer_id (name)')
+    .select('id, scheduled_at, contacts:contact_id (name)')
     .eq('id', jobId)
     .is('deleted_at', null)
     .maybeSingle();
 
   if (jobErr || !jobRow) throw new Error(`Job not found: ${jobId}`);
 
-  const customerRaw = jobRow.customers as { name?: string } | { name?: string }[] | null;
+  const customerRaw = jobRow.contacts as { name?: string } | { name?: string }[] | null;
   const customerObj = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
   const projectName = (customerObj?.name as string) ?? 'Your Project';
 

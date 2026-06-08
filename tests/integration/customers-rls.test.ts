@@ -4,7 +4,7 @@
  * Creates two tenants + owners via the admin client, inserts a customer
  * for each, then signs in as user A with the anon client and verifies:
  *   - SELECT returns A's customer, not B's.
- *   - A direct `eq('id', B.customerId)` returns no row.
+ *   - A direct `eq('id', B.contactId)` returns no row.
  *   - UPDATE against B's customer affects zero rows (RLS USING denies).
  *
  * Skipped without DATABASE_URL + service-role credentials.
@@ -70,7 +70,7 @@ describe.skipIf(!canRun)('customers RLS isolation (integration)', () => {
         .insert({ tenant_id: tenantIdA, user_id: userIdA, role: 'owner' });
 
       const custAInsert = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: tenantIdA,
           type: 'residential',
@@ -78,8 +78,8 @@ describe.skipIf(!canRun)('customers RLS isolation (integration)', () => {
         })
         .select('id')
         .single();
-      const customerIdA = custAInsert.data?.id as string;
-      expect(customerIdA).toBeTruthy();
+      const contactIdA = custAInsert.data?.id as string;
+      expect(contactIdA).toBeTruthy();
 
       // ---- Provision tenant B ----
       const createdB = await admin.auth.admin.createUser({
@@ -103,7 +103,7 @@ describe.skipIf(!canRun)('customers RLS isolation (integration)', () => {
         .insert({ tenant_id: tenantIdB, user_id: userIdB, role: 'owner' });
 
       const custBInsert = await admin
-        .from('customers')
+        .from('contacts')
         .insert({
           tenant_id: tenantIdB,
           type: 'commercial',
@@ -111,8 +111,8 @@ describe.skipIf(!canRun)('customers RLS isolation (integration)', () => {
         })
         .select('id')
         .single();
-      const customerIdB = custBInsert.data?.id as string;
-      expect(customerIdB).toBeTruthy();
+      const contactIdB = custBInsert.data?.id as string;
+      expect(contactIdB).toBeTruthy();
 
       // ---- Sign in as user A with the anon client (RLS active) ----
       const anonA = createSupabaseClient(supaUrl, anonKey, {
@@ -122,37 +122,33 @@ describe.skipIf(!canRun)('customers RLS isolation (integration)', () => {
       expect(signInRes.error).toBeNull();
 
       // Generic SELECT: only A's customer is visible.
-      const listRes = await anonA.from('customers').select('id, name, tenant_id');
+      const listRes = await anonA.from('contacts').select('id, name, tenant_id');
       expect(listRes.error).toBeNull();
       const rows = listRes.data ?? [];
       expect(rows).toHaveLength(1);
-      expect(rows[0].id).toBe(customerIdA);
+      expect(rows[0].id).toBe(contactIdA);
       expect(rows[0].tenant_id).toBe(tenantIdA);
 
       // Targeted lookup of B's customer returns no row (not an error).
-      const targeted = await anonA
-        .from('customers')
-        .select('id')
-        .eq('id', customerIdB)
-        .maybeSingle();
+      const targeted = await anonA.from('contacts').select('id').eq('id', contactIdB).maybeSingle();
       expect(targeted.data).toBeNull();
 
       // UPDATE against B's customer touches zero rows (RLS USING denies).
       const updateRes = await anonA
-        .from('customers')
+        .from('contacts')
         .update({ notes: 'cross-tenant tamper' })
-        .eq('id', customerIdB)
+        .eq('id', contactIdB)
         .select('id');
       expect(updateRes.error).toBeNull();
       expect(updateRes.data ?? []).toHaveLength(0);
 
       // Sanity: the service-role view still sees both rows untouched.
       const allView = await admin
-        .from('customers')
+        .from('contacts')
         .select('id, notes')
-        .in('id', [customerIdA, customerIdB]);
+        .in('id', [contactIdA, contactIdB]);
       expect(allView.data).toHaveLength(2);
-      const b = allView.data?.find((r) => r.id === customerIdB);
+      const b = allView.data?.find((r) => r.id === contactIdB);
       expect(b?.notes).toBeNull();
     } finally {
       const db = getDb();

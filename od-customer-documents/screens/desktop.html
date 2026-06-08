@@ -1,0 +1,1699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Customer Documents &amp; Pay — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ────────────────────────────────────────────────────────────────
+     HeyHenry Paper palette (Customer-facing — GC's letterhead)
+     The page sits on the warm paper background; the document card
+     is white and carries the contractor's brand. HeyHenry shows up
+     only in the OD frame chrome (outside the product) and in the
+     quiet "Powered by HeyHenry" footer.
+  ───────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --paper-soft:   #FBF6EC;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    /* Interac brand colour — used sparingly on the e-Transfer card so
+       the option reads "this is the bank thing", not free text. */
+    --interac:      #B61D24;
+    --interac-soft: #FCE8E8;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  /* ───── Frame divider (OD chrome — outside the GC's product) ───── */
+  .frame-divider {
+    max-width: 1440px;
+    margin: 56px auto 16px;
+    padding: 0 28px;
+    display: flex; align-items: baseline; gap: 18px;
+    flex-wrap: wrap;
+  }
+  .frame-divider:first-child { margin-top: 40px; }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .frame-pad { padding: 0 28px 8px; max-width: 1440px; margin: 0 auto; }
+
+  /* ────────────────────────────────────────────────────────────────
+     Browser chrome — wrap each customer-facing doc in a faux browser
+     window so the reviewer sees the URL (code-keyed, never raw id).
+  ───────────────────────────────────────────────────────────────── */
+  .browser {
+    max-width: 920px;
+    margin: 0 auto 28px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 30px rgba(10,10,10,0.06);
+  }
+  .browser-chrome {
+    background: #ECE3D0;
+    border-bottom: 1px solid var(--hair);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .traffic { display: flex; gap: 6px; }
+  .traffic .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .traffic .red    { background: #ED6A5F; }
+  .traffic .yellow { background: #F5BD4F; }
+  .traffic .green  { background: #61C554; }
+  .browser-url {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    display: flex; align-items: center; gap: 8px;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+  .browser-url .lock { width: 11px; height: 11px; color: var(--ok); }
+  .browser-url .url-host { color: var(--faint); }
+  .browser-url .url-path { color: var(--ink); font-weight: 600; }
+  .browser-body { background: var(--bg); padding: 36px 56px 48px; }
+  .browser-body.tight { padding: 28px 40px 36px; }
+
+  /* ────────────────────────────────────────────────────────────────
+     The shared <CustomerDocument> shell — the system this brief
+     creates. Estimate, Change Order, Invoice all wear this letterhead.
+  ───────────────────────────────────────────────────────────────── */
+  .doc {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(10,10,10,0.03);
+  }
+  .doc-inner { padding: 40px 48px 36px; }
+
+  /* ── Letterhead — GC logo + business header (the brand on the page
+        is the contractor's; HeyHenry is invisible up here) */
+  .doc-letterhead {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: start;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .doc-business {
+    display: flex; gap: 16px; align-items: center;
+  }
+  /* Signed logo — falls back to monogram tile if no logo */
+  .gc-logo {
+    width: 56px; height: 56px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
+  }
+  .gc-logo.brand-northbeam { background: #1B3F2E; color: #F5E9D2; }
+  .gc-logo.brand-everett   { background: #C2410C; color: #fff; }
+  .gc-logo.brand-marsh     { background: #1E40AF; color: #fff; }
+
+  .gc-name {
+    font-size: 20px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+  }
+  .gc-meta {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+  .gc-meta .sep { color: var(--faint); margin: 0 6px; }
+
+  .doc-meta {
+    text-align: right;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .doc-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .doc-number {
+    font-family: var(--mono);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .doc-date { margin-top: 8px; }
+
+  /* ── Status chip (label-not-colour-only — text first) */
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-top: 10px;
+  }
+  .status-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip-pending { background: var(--warn-soft); color: var(--warn); }
+  .chip-paid    { background: var(--ok-soft);   color: var(--ok); }
+  .chip-void    { background: var(--chip-fill); color: var(--muted); }
+  .chip-sent    { background: var(--info-soft); color: var(--info); }
+  .chip-approved{ background: var(--ok-soft);   color: var(--ok); }
+  .chip-expired { background: var(--chip-fill); color: var(--muted); }
+
+  /* ── "Prepared for" block (under the letterhead) */
+  .doc-prepared {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 22px;
+  }
+  .prep-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .prep-value {
+    margin-top: 4px;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .prep-value .addr {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  /* ── Body sections */
+  .doc-section { margin-top: 26px; }
+  .doc-h2 {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin: 0 0 10px;
+  }
+  .doc-prose {
+    font-size: 14px; line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  /* ── Line-item table (universal — used on estimate body + invoice) */
+  .line-table {
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .line-head {
+    display: grid;
+    grid-template-columns: 1fr 60px 100px 110px;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+  }
+  .line-head > div {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .line-head .num { text-align: right; }
+  .line-row {
+    display: grid;
+    grid-template-columns: 1fr 60px 100px 110px;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hair);
+    align-items: start;
+    background: var(--card);
+  }
+  .line-row:last-child { border-bottom: 0; }
+  .line-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .line-note  { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+  .line-num   {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .line-num .cents { color: var(--muted); font-size: 12px; }
+
+  /* Section header inside the line table — for estimates with category groups */
+  .line-section-head {
+    grid-column: 1 / -1;
+    padding: 10px 16px;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Totals block — IDENTICAL across every doc type. The unifying
+        piece. Subtotal → Mgmt fee → province-aware GST/HST → Total. */
+  .totals {
+    margin-top: 22px;
+    display: flex; justify-content: flex-end;
+  }
+  .totals-card {
+    width: 340px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .totals-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .totals-row .lbl { color: var(--muted); }
+  .totals-row .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .totals-row .val .cents { color: var(--muted); font-size: 11px; }
+  .totals-row.is-total {
+    border-top: 1px solid var(--hair);
+    padding-top: 9px;
+    margin-top: 3px;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 16px;
+  }
+  .totals-row.is-total .val { font-weight: 700; color: var(--ink); }
+  .totals-row.is-total .val .cents { color: var(--muted); font-size: 12px; }
+  .totals-row.is-tax .tax-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  /* ── Action zone — the ONE thing to do */
+  .action-zone {
+    margin-top: 28px;
+    padding: 22px 24px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+  }
+  .action-zone h3 {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin: 0;
+  }
+  .action-zone .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 3px;
+  }
+  .esig-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    padding: 11px 14px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    margin-top: 14px;
+    letter-spacing: -0.005em;
+  }
+  .esig-input::placeholder { color: var(--faint); font-style: italic; }
+  .action-row {
+    display: flex; gap: 10px;
+    margin-top: 14px;
+  }
+  .btn {
+    height: 48px;
+    border-radius: 10px;
+    font-size: 15px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    padding: 0 18px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary {
+    background: var(--rust);
+    color: #fff;
+    border-color: var(--rust);
+  }
+  .btn-primary:hover { background: #A8370A; }
+  .btn-secondary {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+  }
+  .btn-primary.full, .btn-secondary.full { flex: 1; }
+  .esig-foot {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+    font-size: 12px; color: var(--muted);
+  }
+  .esig-foot .ico { width: 13px; height: 13px; color: var(--muted); }
+
+  /* ── Footer (GST# · WCB# · "Powered by HeyHenry") */
+  .doc-footer {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--hair);
+    display: flex; justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  .doc-footer .reg { display: flex; gap: 14px; flex-wrap: wrap; }
+  .doc-footer .reg .num { color: var(--ink-2); font-weight: 600; }
+  .powered {
+    color: var(--faint);
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .powered strong { color: var(--muted); font-weight: 600; }
+
+  /* ────────────────────────────────────────────────────────────────
+     Frame 1 — "One company, one letterhead" consistency strip.
+     Three side-by-side doc cards (compact crops) proving the shared
+     shell renders the Estimate, the CO, and the Invoice in the
+     same letterhead.
+  ───────────────────────────────────────────────────────────────── */
+  .triptych {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 28px 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  .triptych .doc {
+    margin: 0;
+    max-width: none;
+  }
+  .triptych .doc-inner { padding: 24px 26px 22px; }
+  .triptych .doc-letterhead { gap: 14px; padding-bottom: 14px; }
+  .triptych .gc-logo { width: 40px; height: 40px; font-size: 16px; border-radius: 8px; }
+  .triptych .gc-name { font-size: 15px; }
+  .triptych .gc-meta { font-size: 11px; }
+  .triptych .doc-meta { font-size: 11px; }
+  .triptych .doc-number { font-size: 12px; }
+  .triptych .doc-prepared {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .triptych .doc-section { margin-top: 16px; }
+  .triptych .doc-h2 { font-size: 12px; }
+  .triptych .totals-card { width: 100%; padding: 11px 14px; gap: 5px; }
+  .triptych .totals-row { font-size: 12px; }
+  .triptych .totals-row.is-total { font-size: 14px; }
+  .triptych .doc-footer { font-size: 10px; flex-wrap: wrap; gap: 8px; }
+  .triptych .doc-footer .reg { gap: 8px; }
+  .triptych .action-zone { padding: 14px 14px; margin-top: 16px; }
+  .triptych .action-zone h3 { font-size: 12px; }
+  .triptych .action-zone .sub { font-size: 11px; }
+  .triptych .btn { height: 38px; font-size: 14px; }
+  /* Triptych body shrinks — line table is compact too */
+  .triptych .line-table { font-size: 12px; }
+  .triptych .line-head { padding: 7px 11px; grid-template-columns: 1fr 70px; gap: 8px; }
+  .triptych .line-row  { padding: 9px 11px; grid-template-columns: 1fr 70px; gap: 8px; }
+  .triptych .line-label { font-size: 12px; }
+  .triptych .line-note  { font-size: 11px; }
+  .triptych .line-num { font-size: 12px; }
+  .triptych .line-section-head { padding: 7px 11px; font-size: 10px; }
+
+  /* Tag above each triptych card so reviewer sees "this is the estimate" etc */
+  .triptych-cell .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .triptych-cell .tag .url {
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     Frame 2 — The invoice PAY surface. The centerpiece.
+     Draw context, line items, province-aware tax, and the dual-pay
+     zone (Stripe + Interac e-Transfer at true parity).
+  ───────────────────────────────────────────────────────────────── */
+
+  /* Draw-context card — sits above the line items, makes "Draw 3 of 6"
+     legible without forcing the customer to math their way through. */
+  .draw-context {
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+  }
+  .draw-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .draw-headline {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.012em;
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+  .draw-headline .pct {
+    color: var(--rust);
+    font-family: var(--mono);
+    margin: 0 4px;
+  }
+  .draw-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+  .draw-progress {
+    width: 220px;
+  }
+  .draw-bar {
+    height: 8px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+  }
+  .draw-bar .seg {
+    height: 100%;
+    border-right: 2px solid var(--paper-soft);
+  }
+  .draw-bar .seg:last-child { border-right: 0; }
+  .draw-bar .seg.done    { background: var(--rust); }
+  .draw-bar .seg.current { background: var(--rust); opacity: 0.55; }
+  .draw-bar .seg.upcoming{ background: transparent; }
+  .draw-progress .legend {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+
+  /* ── Dual pay zone — Stripe and Interac at TRUE parity */
+  .pay-zone {
+    margin-top: 28px;
+  }
+  .pay-zone h3 {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 4px;
+    letter-spacing: -0.005em;
+  }
+  .pay-zone .pay-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+  .pay-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .pay-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 20px 20px 18px;
+    display: flex; flex-direction: column;
+    min-height: 100%;
+  }
+  .pay-card-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .pay-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .pay-icon.card    { background: var(--ink); color: #fff; }
+  .pay-icon.interac { background: var(--interac); color: #fff; font-weight: 800; font-family: var(--sans); font-size: 14px; letter-spacing: -0.05em; }
+  .pay-icon .ico { width: 18px; height: 18px; }
+  .pay-card-title {
+    font-size: 15px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.012em;
+    line-height: 1.15;
+  }
+  .pay-card-sub {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Stripe card body */
+  .pay-card .stripe-body {
+    flex: 1;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .pay-card .stripe-body ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .pay-card .stripe-body li {
+    display: flex; gap: 7px;
+    align-items: baseline;
+  }
+  .pay-card .stripe-body li::before {
+    content: '✓';
+    color: var(--ok);
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .pay-card .stripe-foot {
+    margin-top: 14px;
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Interac card body — STRUCTURED, COPYABLE — NOT free text. */
+  .etransfer-block {
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 0;
+    margin: 4px 0 0;
+    overflow: hidden;
+  }
+  .etr-row {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--hair);
+    font-size: 14px;
+  }
+  .etr-row:last-child { border-bottom: 0; }
+  .etr-row .etr-lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .etr-row .etr-val {
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .etr-row .etr-val.mono {
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .etr-row .etr-val.amount {
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--interac);
+    font-weight: 700;
+  }
+  .etr-copy {
+    background: transparent;
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .etr-copy:hover { background: var(--card); }
+  .etr-copy .ico { width: 13px; height: 13px; }
+
+  /* The Q/A row is two stacked sub-rows so the long security-answer
+     hint reads cleanly. */
+  .etr-row.qa {
+    grid-template-columns: 110px 1fr;
+    gap: 10px;
+  }
+  .etr-row.qa .stack { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .etr-row.qa .stack .ans-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .pay-card .interac-foot {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .pay-card .interac-foot strong { color: var(--ink-2); font-weight: 600; }
+
+  .pay-card .pay-cta {
+    margin-top: 16px;
+  }
+  .pay-card .pay-cta .btn { width: 100%; }
+  .btn-interac {
+    background: var(--card);
+    color: var(--interac);
+    border: 1.5px solid var(--interac);
+  }
+  .btn-interac:hover { background: var(--interac-soft); }
+  .btn-interac .ico { width: 16px; height: 16px; }
+
+  /* Or-divider between the two pay options on mobile collapse */
+  .pay-or {
+    display: none;
+    text-align: center;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 6px 0;
+    font-weight: 700;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     Frame 3 — State cards (paid · void · expired · loading)
+  ───────────────────────────────────────────────────────────────── */
+  .states-grid {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 18px;
+  }
+  .state-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .state-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .state-body { padding: 22px 22px 24px; flex: 1; }
+  .state-mini-header {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--hair);
+    margin-bottom: 16px;
+  }
+  .state-mini-header .gc-logo {
+    width: 30px; height: 30px; font-size: 12px; border-radius: 6px;
+  }
+  .state-mini-header .name {
+    font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.15;
+  }
+  .state-mini-header .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .state-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    margin: 0 auto 14px;
+  }
+  .state-icon.ok    { background: var(--ok-soft);    color: var(--ok);    }
+  .state-icon.void  { background: var(--chip-fill);  color: var(--muted); }
+  .state-icon.expire{ background: var(--warn-soft);  color: var(--warn);  }
+  .state-icon.load  { background: var(--paper-soft); color: var(--muted); }
+  .state-icon .ico { width: 28px; height: 28px; }
+  .state-title {
+    text-align: center;
+    font-size: 18px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+  .state-sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .state-receipt {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .state-receipt-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px;
+  }
+  .state-receipt-row .l { color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; font-weight: 600; }
+  .state-receipt-row .v { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .state-receipt-link {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--rust);
+    font-weight: 600;
+    text-align: center;
+  }
+  .state-cta {
+    margin-top: 18px;
+    text-align: center;
+  }
+  .state-cta .ghost-link {
+    color: var(--muted);
+    font-size: 14px;
+    border-bottom: 1px dotted var(--rule);
+    font-weight: 500;
+  }
+  /* Skeleton bars for the loading state */
+  .sk-row { height: 11px; border-radius: 4px; background: var(--paper-soft); margin-bottom: 9px; }
+  .sk-row.w70 { width: 70%; }
+  .sk-row.w90 { width: 90%; }
+  .sk-row.w50 { width: 50%; }
+  .sk-row.w100{ width: 100%; }
+  .sk-row.tall { height: 24px; margin: 14px 0 12px; }
+  .sk-totals {
+    margin-top: 18px;
+    padding: 12px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     Estimate / CO body specifics (used inside the triptych)
+  ───────────────────────────────────────────────────────────────── */
+  .co-diff-strip {
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .co-row {
+    display: grid;
+    grid-template-columns: 56px 1fr 80px;
+    gap: 8px;
+    padding: 8px 11px;
+    border-bottom: 1px solid var(--hair);
+    align-items: center;
+    font-size: 12px;
+  }
+  .co-row:last-child { border-bottom: 0; }
+  .co-act {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+  }
+  .co-act.add    { background: var(--ok-soft); color: var(--ok); }
+  .co-act.remove { background: var(--danger-soft); color: var(--danger); }
+  .co-act.change { background: var(--info-soft); color: var(--info); }
+  .co-delta {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .co-delta.minus { color: var(--ok); }
+
+  /* SVG icon helpers */
+  .ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Sticky-pay-bar callout (for the *next* frame — desktop doesn't
+     need one, but we annotate to show "mobile uses the sticky bar"). */
+  .note-tag {
+    display: inline-flex; gap: 6px; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    padding: 4px 9px;
+    background: var(--paper-soft);
+    border: 1px dashed var(--rule);
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG icon defs ------------------------------------------------------ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect class="ico" x="3" y="11" width="18" height="11" rx="2"/><path class="ico" d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect class="ico" x="3" y="5" width="18" height="14" rx="2"/><line class="ico" x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><polyline class="ico" points="20 6 9 17 4 12" style="stroke-width:2.4"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><line class="ico" x1="18" y1="6" x2="6" y2="18"/><line class="ico" x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="10"/><polyline class="ico" points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect class="ico" x="9" y="9" width="13" height="13" rx="2"/><path class="ico" d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path class="ico" d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path class="ico" d="M16 8h-7"/><path class="ico" d="M16 12h-7"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><path class="ico" d="M3 10l9-6 9 6"/><line class="ico" x1="3" y1="22" x2="21" y2="22"/><line class="ico" x1="5" y1="10" x2="5" y2="22"/><line class="ico" x1="19" y1="10" x2="19" y2="22"/><line class="ico" x1="9" y1="10" x2="9" y2="22"/><line class="ico" x1="15" y1="10" x2="15" y2="22"/></symbol>
+    <symbol id="i-spin" viewBox="0 0 24 24"><path class="ico" d="M21 12a9 9 0 1 1-6.219-8.56"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="10"/><line class="ico" x1="12" y1="16" x2="12" y2="12"/><line class="ico" x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-mobile" viewBox="0 0 24 24"><rect class="ico" x="6" y="2" width="12" height="20" rx="2"/><line class="ico" x1="12" y1="18" x2="12.01" y2="18"/></symbol>
+  </defs>
+</svg>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     FRAME 1 — The shared customer-document shell, instantiated
+     across Estimate · Change Order · Invoice. The "one company,
+     one letterhead" proof.
+     ════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 01</span>
+  <span class="label">The shared shell &mdash; one branded wrapper, three documents</span>
+  <span class="sub">Same letterhead, same totals treatment, same footer &middot; the contractor's brand on the page, HeyHenry barely visible</span>
+</div>
+
+<div class="triptych">
+
+  <!-- ── ESTIMATE ──────────────────────────────────────────────── -->
+  <div class="triptych-cell">
+    <div class="tag">
+      <span>Estimate</span>
+      <span class="url">/estimate/<span style="color:var(--ink);">k4p2-x7w9-qmnt</span></span>
+    </div>
+
+    <article class="doc">
+      <div class="doc-inner">
+
+        <header class="doc-letterhead">
+          <div class="doc-business">
+            <div class="gc-logo brand-northbeam">Nb</div>
+            <div>
+              <div class="gc-name">Northbeam Build Co.</div>
+              <div class="gc-meta">Abbotsford, BC <span class="sep">&middot;</span> (604)&nbsp;555&middot;0188</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div class="doc-eyebrow">Estimate</div>
+            <div class="doc-number">E-2406-014</div>
+            <div class="doc-date">May 18, 2026</div>
+            <span class="status-chip chip-pending"><span class="dot"></span>Pending</span>
+          </div>
+        </header>
+
+        <div class="doc-prepared">
+          <div>
+            <div class="prep-label">Prepared for</div>
+            <div class="prep-value">
+              Helen Chao
+              <span class="addr">2918 Hillcrest Ave, Abbotsford</span>
+            </div>
+          </div>
+          <div>
+            <div class="prep-label">Project</div>
+            <div class="prep-value">
+              Hillcrest Kitchen Remodel
+              <span class="addr">Valid 30 days &middot; through Jun&nbsp;17</span>
+            </div>
+          </div>
+        </div>
+
+        <section class="doc-section">
+          <h2 class="doc-h2">Scope &mdash; what's included</h2>
+          <div class="line-table">
+            <div class="line-section-head">Kitchen</div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Demolition &amp; disposal</div>
+                <div class="line-note">Cabinets, counters, flooring, fixtures.</div>
+              </div>
+              <div class="line-num tabular">$3,200<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Custom shaker cabinetry</div>
+                <div class="line-note">15 boxes, soft-close, painted Sherwin BM White Dove.</div>
+              </div>
+              <div class="line-num tabular">$28,400<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Quartz countertop &amp; full-height backsplash</div>
+                <div class="line-note">Caesarstone Pure White, 3cm.</div>
+              </div>
+              <div class="line-num tabular">$11,800<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Plumbing &mdash; rough &amp; finish</div>
+                <div class="line-note">Sink, faucet, dishwasher, pot-filler rough-in.</div>
+              </div>
+              <div class="line-num tabular">$4,150<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Electrical &mdash; rough &amp; finish</div>
+                <div class="line-note">Island circuit, under-cabinet lighting, 4 pendants.</div>
+              </div>
+              <div class="line-num tabular">$5,250<span class="cents">.00</span></div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Tile, paint, trim &amp; finishing</div>
+                <div class="line-note">Floor tile + grout, paint walls/ceiling, baseboard.</div>
+              </div>
+              <div class="line-num tabular">$8,600<span class="cents">.00</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Identical totals block (the unifying piece) -->
+        <div class="totals">
+          <div class="totals-card">
+            <div class="totals-row"><span class="lbl">Subtotal</span><span class="val tabular">$61,400<span class="cents">.00</span></span></div>
+            <div class="totals-row"><span class="lbl">Management fee &middot; 12%</span><span class="val tabular">$7,368<span class="cents">.00</span></span></div>
+            <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC</span></span><span class="val tabular">$3,438<span class="cents">.40</span></span></div>
+            <div class="totals-row is-total"><span>Total</span><span class="val tabular">$72,206<span class="cents">.40</span></span></div>
+          </div>
+        </div>
+
+        <div class="action-zone">
+          <h3>Approve this estimate</h3>
+          <div class="sub">Type your name to sign &mdash; same as on paper.</div>
+          <input class="esig-input" type="text" placeholder="Your full name" value="" />
+          <div class="action-row">
+            <button class="btn btn-primary full">Approve &mdash; $72,206.40</button>
+            <button class="btn btn-secondary">Comment&hellip;</button>
+          </div>
+          <div class="esig-foot">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            Encrypted &middot; timestamped &middot; logged to your project.
+          </div>
+        </div>
+
+        <footer class="doc-footer">
+          <div class="reg">
+            <span>GST <span class="num">802 314 559</span></span>
+            <span>WCB <span class="num">9128-44</span></span>
+          </div>
+          <div class="powered">Powered by <strong>HeyHenry</strong></div>
+        </footer>
+
+      </div>
+    </article>
+  </div>
+
+  <!-- ── CHANGE ORDER ──────────────────────────────────────────── -->
+  <div class="triptych-cell">
+    <div class="tag">
+      <span>Change order</span>
+      <span class="url">/approve/<span style="color:var(--ink);">r7q4-x9w2-mbnq</span></span>
+    </div>
+
+    <article class="doc">
+      <div class="doc-inner">
+
+        <header class="doc-letterhead">
+          <div class="doc-business">
+            <div class="gc-logo brand-northbeam">Nb</div>
+            <div>
+              <div class="gc-name">Northbeam Build Co.</div>
+              <div class="gc-meta">Abbotsford, BC <span class="sep">&middot;</span> (604)&nbsp;555&middot;0188</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div class="doc-eyebrow">Change order</div>
+            <div class="doc-number">CO-3</div>
+            <div class="doc-date">May 22, 2026</div>
+            <span class="status-chip chip-pending"><span class="dot"></span>Pending</span>
+          </div>
+        </header>
+
+        <div class="doc-prepared">
+          <div>
+            <div class="prep-label">Prepared for</div>
+            <div class="prep-value">
+              Helen Chao
+              <span class="addr">2918 Hillcrest Ave, Abbotsford</span>
+            </div>
+          </div>
+          <div>
+            <div class="prep-label">Project</div>
+            <div class="prep-value">
+              Hillcrest Kitchen Remodel
+              <span class="addr">Against estimate E-2406-014</span>
+            </div>
+          </div>
+        </div>
+
+        <section class="doc-section">
+          <h2 class="doc-h2">Rotten subfloor + island pendants</h2>
+          <div class="doc-prose" style="font-size:14px; color:var(--muted); margin-bottom:12px;">
+            Concealed condition on demo + a client-requested lighting swap.
+          </div>
+          <div class="co-diff-strip">
+            <div class="co-row">
+              <span class="co-act add">ADD</span>
+              <div>
+                <div style="font-weight:600; color:var(--ink);">Replace subfloor &mdash; 2 sheets</div>
+                <div style="color:var(--muted); font-size:11px;">Behind sink cabinet.</div>
+              </div>
+              <div class="co-delta">+$570.00</div>
+            </div>
+            <div class="co-row">
+              <span class="co-act remove">REMOVE</span>
+              <div>
+                <div style="font-weight:600; color:var(--ink); text-decoration:line-through; text-decoration-color:var(--danger);">Flush ceiling lights &times;4</div>
+                <div style="color:var(--muted); font-size:11px;">Replaced by pendants below.</div>
+              </div>
+              <div class="co-delta minus">&minus;$312.00</div>
+            </div>
+            <div class="co-row">
+              <span class="co-act add">ADD</span>
+              <div>
+                <div style="font-weight:600; color:var(--ink);">Brushed-nickel pendants</div>
+                <div style="color:var(--muted); font-size:11px;">From your Pinterest link.</div>
+              </div>
+              <div class="co-delta">+$660.00</div>
+            </div>
+            <div class="co-row">
+              <span class="co-act change">CHANGE</span>
+              <div>
+                <div style="font-weight:600; color:var(--ink);">Electrician labour</div>
+                <div style="color:var(--muted); font-size:11px;">+3hr for pendant boxes.</div>
+              </div>
+              <div class="co-delta">+$330.00</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Same totals block, framed as a delta -->
+        <div class="totals">
+          <div class="totals-card">
+            <div class="totals-row"><span class="lbl">Cost of work</span><span class="val tabular">+$2,841<span class="cents">.51</span></span></div>
+            <div class="totals-row"><span class="lbl">Management fee &middot; 12%</span><span class="val tabular">+$340<span class="cents">.99</span></span></div>
+            <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC</span></span><span class="val tabular">+$159<span class="cents">.13</span></span></div>
+            <div class="totals-row is-total"><span>Change &middot; total</span><span class="val tabular">+$3,341<span class="cents">.63</span></span></div>
+          </div>
+        </div>
+
+        <div class="action-zone">
+          <h3>Approve this change order</h3>
+          <div class="sub">Adds $3,341.63 to your project total.</div>
+          <input class="esig-input" type="text" placeholder="Your full name" />
+          <div class="action-row">
+            <button class="btn btn-primary full">Approve &mdash; +$3,341.63</button>
+            <button class="btn btn-secondary">Decline&hellip;</button>
+          </div>
+          <div class="esig-foot">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            Encrypted &middot; timestamped &middot; logged to your project.
+          </div>
+        </div>
+
+        <footer class="doc-footer">
+          <div class="reg">
+            <span>GST <span class="num">802 314 559</span></span>
+            <span>WCB <span class="num">9128-44</span></span>
+          </div>
+          <div class="powered">Powered by <strong>HeyHenry</strong></div>
+        </footer>
+
+      </div>
+    </article>
+  </div>
+
+  <!-- ── INVOICE (compact preview — the full pay surface is Frame 2) ── -->
+  <div class="triptych-cell">
+    <div class="tag">
+      <span>Invoice &middot; pay</span>
+      <span class="url">/view/invoice/<span style="color:var(--ink);">y2nh-3jk8-vqpt</span></span>
+    </div>
+
+    <article class="doc">
+      <div class="doc-inner">
+
+        <header class="doc-letterhead">
+          <div class="doc-business">
+            <div class="gc-logo brand-northbeam">Nb</div>
+            <div>
+              <div class="gc-name">Northbeam Build Co.</div>
+              <div class="gc-meta">Abbotsford, BC <span class="sep">&middot;</span> (604)&nbsp;555&middot;0188</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div class="doc-eyebrow">Draw &middot; invoice</div>
+            <div class="doc-number">INV-2406-031</div>
+            <div class="doc-date">May 22, 2026</div>
+            <span class="status-chip chip-sent"><span class="dot"></span>Due now</span>
+          </div>
+        </header>
+
+        <div class="doc-prepared">
+          <div>
+            <div class="prep-label">Billed to</div>
+            <div class="prep-value">
+              Helen Chao
+              <span class="addr">2918 Hillcrest Ave, Abbotsford</span>
+            </div>
+          </div>
+          <div>
+            <div class="prep-label">Project</div>
+            <div class="prep-value">
+              Hillcrest Kitchen Remodel
+              <span class="addr">Draw 3 of 6 &middot; 40% complete</span>
+            </div>
+          </div>
+        </div>
+
+        <section class="doc-section">
+          <h2 class="doc-h2">This draw</h2>
+          <div class="line-table">
+            <div class="line-row">
+              <div>
+                <div class="line-label">Progress payment &mdash; Draw 3</div>
+                <div class="line-note">40% of $72,206.40 contract.</div>
+              </div>
+              <div class="line-num tabular">$30,808<span class="cents">.06</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Same totals block — framed as amount due -->
+        <div class="totals">
+          <div class="totals-card">
+            <div class="totals-row"><span class="lbl">Subtotal</span><span class="val tabular">$27,507<span class="cents">.20</span></span></div>
+            <div class="totals-row"><span class="lbl">Management fee &middot; 12%</span><span class="val tabular">$3,300<span class="cents">.86</span></span></div>
+            <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC &middot; on top</span></span><span class="val tabular">$1,540<span class="cents">.40</span></span></div>
+            <div class="totals-row is-total"><span>Due now</span><span class="val tabular">$32,348<span class="cents">.46</span></span></div>
+          </div>
+        </div>
+
+        <div class="action-zone">
+          <h3>Pay this draw</h3>
+          <div class="sub">Two options &mdash; card or Interac e-Transfer.</div>
+          <div class="action-row" style="margin-top: 10px;">
+            <button class="btn btn-primary full"><svg class="ico" style="width:16px;height:16px;"><use href="#i-card"/></svg>Pay&nbsp;by&nbsp;card</button>
+            <button class="btn btn-interac full"><svg class="ico" style="width:16px;height:16px;"><use href="#i-bank"/></svg>Interac</button>
+          </div>
+        </div>
+
+        <footer class="doc-footer">
+          <div class="reg">
+            <span>GST <span class="num">802 314 559</span></span>
+            <span>WCB <span class="num">9128-44</span></span>
+          </div>
+          <div class="powered">Powered by <strong>HeyHenry</strong></div>
+        </footer>
+
+      </div>
+    </article>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     FRAME 2 — The invoice PAY surface, in full. The centerpiece.
+     Rebuilt on the shared shell. Draw context up top. Stripe and
+     Interac at TRUE parity below the totals.
+     ════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 02</span>
+  <span class="label">Invoice pay surface &mdash; the centerpiece &middot; /view/invoice/[code]</span>
+  <span class="sub">Rebuilt on the shared shell &middot; draw context &middot; province-aware tax &middot; <strong style="color:var(--ink);">two equal pay options</strong></span>
+</div>
+
+<div class="browser">
+  <div class="browser-chrome">
+    <div class="traffic">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+    </div>
+    <div class="browser-url">
+      <svg class="ico lock"><use href="#i-lock"/></svg>
+      <span class="url-host">northbeam.heyhenry.app</span><span class="url-path">/view/invoice/y2nh-3jk8-vqpt</span>
+    </div>
+    <span style="width:54px;"></span>
+  </div>
+
+  <div class="browser-body">
+    <article class="doc">
+      <div class="doc-inner">
+
+        <header class="doc-letterhead">
+          <div class="doc-business">
+            <div class="gc-logo brand-northbeam">Nb</div>
+            <div>
+              <div class="gc-name">Northbeam Build Co.</div>
+              <div class="gc-meta">112 Marshall Rd <span class="sep">&middot;</span> Abbotsford, BC&nbsp;V2S&nbsp;3J8 <span class="sep">&middot;</span> (604)&nbsp;555&middot;0188</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div class="doc-eyebrow">Draw &middot; invoice</div>
+            <div class="doc-number">INV-2406-031</div>
+            <div class="doc-date">Sent May 22, 2026</div>
+            <span class="status-chip chip-sent"><span class="dot"></span>Due now</span>
+          </div>
+        </header>
+
+        <div class="doc-prepared">
+          <div>
+            <div class="prep-label">Billed to</div>
+            <div class="prep-value">
+              Helen Chao
+              <span class="addr">2918 Hillcrest Ave, Abbotsford&nbsp;BC&nbsp;V2T&nbsp;4R7</span>
+            </div>
+          </div>
+          <div>
+            <div class="prep-label">Project</div>
+            <div class="prep-value">
+              Hillcrest Kitchen Remodel
+              <span class="addr">Against estimate E-2406-014 + CO-3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draw context — makes "what is this for" instantly legible -->
+        <section class="doc-section">
+          <div class="draw-context">
+            <div>
+              <div class="draw-eyebrow">Progress payment</div>
+              <div class="draw-headline">Draw 3 of 6 &middot; <span class="pct">40%</span> of your contract</div>
+              <div class="draw-sub">
+                Cumulative billed to date: <strong style="color:var(--ink-2); font-weight:600;">$30,808.06</strong> of $72,206.40. Reconciled against the final invoice on completion.
+              </div>
+            </div>
+            <div class="draw-progress" aria-label="Draw progress">
+              <div class="draw-bar">
+                <span class="seg done"     style="width:16.67%"></span>
+                <span class="seg done"     style="width:16.67%"></span>
+                <span class="seg current"  style="width:16.67%"></span>
+                <span class="seg upcoming" style="width:16.67%"></span>
+                <span class="seg upcoming" style="width:16.67%"></span>
+                <span class="seg upcoming" style="width:16.65%"></span>
+              </div>
+              <div class="legend">
+                <span>Draw 1 &middot; Mar 12</span>
+                <span style="color:var(--rust); font-weight:700;">Draw 3 &middot; now</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Line items -->
+        <section class="doc-section">
+          <h2 class="doc-h2">This draw</h2>
+          <div class="line-table">
+            <div class="line-head">
+              <div>Description</div>
+              <div class="num">Qty</div>
+              <div class="num">Price</div>
+              <div class="num">Total</div>
+            </div>
+            <div class="line-row">
+              <div>
+                <div class="line-label">Progress payment &mdash; Draw 3 (40% milestone)</div>
+                <div class="line-note">Rough-ins signed off; cabinetry installed; tile underway.</div>
+              </div>
+              <div class="line-num">1</div>
+              <div class="line-num tabular">$27,507<span class="cents">.20</span></div>
+              <div class="line-num tabular">$27,507<span class="cents">.20</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- The unifying totals block (province-aware GST/HST) -->
+        <div class="totals">
+          <div class="totals-card">
+            <div class="totals-row"><span class="lbl">Subtotal</span><span class="val tabular">$27,507<span class="cents">.20</span></span></div>
+            <div class="totals-row"><span class="lbl">Management fee &middot; 12%</span><span class="val tabular">$3,300<span class="cents">.86</span></span></div>
+            <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC &middot; on top</span></span><span class="val tabular">$1,540<span class="cents">.40</span></span></div>
+            <div class="totals-row is-total"><span>Due now</span><span class="val tabular">$32,348<span class="cents">.46</span></span></div>
+          </div>
+        </div>
+
+        <!-- THE DUAL PAY ZONE — Stripe + Interac at TRUE parity -->
+        <section class="pay-zone">
+          <h3>How would you like to pay?</h3>
+          <div class="pay-sub">Pick one. Both go to Northbeam &mdash; you'll get a confirmation either way.</div>
+
+          <div class="pay-grid">
+
+            <!-- LEFT — Card via Stripe -->
+            <div class="pay-card">
+              <div class="pay-card-head">
+                <div class="pay-icon card"><svg class="ico"><use href="#i-card"/></svg></div>
+                <div>
+                  <div class="pay-card-title">Pay by credit card</div>
+                  <div class="pay-card-sub">Visa &middot; Mastercard &middot; Amex</div>
+                </div>
+              </div>
+              <div class="stripe-body">
+                Opens a secure checkout. We never see your card details.
+                <ul>
+                  <li>Marked paid instantly</li>
+                  <li>Emailed receipt</li>
+                  <li>2.9% + $0.30 card surcharge applies</li>
+                </ul>
+              </div>
+              <div class="pay-cta">
+                <button class="btn btn-primary">Pay $32,348.46 with card</button>
+              </div>
+              <div class="stripe-foot">
+                <svg class="ico" style="width:11px;height:11px;color:var(--ok);"><use href="#i-lock"/></svg>
+                Secured by Stripe
+              </div>
+            </div>
+
+            <!-- RIGHT — Interac e-Transfer — STRUCTURED, COPYABLE, parity. -->
+            <div class="pay-card">
+              <div class="pay-card-head">
+                <div class="pay-icon interac">i&Dagger;</div>
+                <div>
+                  <div class="pay-card-title">Pay by Interac e-Transfer</div>
+                  <div class="pay-card-sub">From any Canadian bank app &middot; no fee</div>
+                </div>
+              </div>
+
+              <div class="etransfer-block" role="group" aria-label="Interac e-Transfer details">
+                <div class="etr-row">
+                  <span class="etr-lbl">Send to</span>
+                  <span class="etr-val mono">pay@northbeambuild.ca</span>
+                  <button class="etr-copy" aria-label="Copy email"><svg class="ico"><use href="#i-copy"/></svg></button>
+                </div>
+                <div class="etr-row">
+                  <span class="etr-lbl">Amount</span>
+                  <span class="etr-val amount">$32,348.46&nbsp;CAD</span>
+                  <button class="etr-copy" aria-label="Copy amount"><svg class="ico"><use href="#i-copy"/></svg></button>
+                </div>
+                <div class="etr-row">
+                  <span class="etr-lbl">Message</span>
+                  <span class="etr-val mono">INV-2406-031 Hillcrest D3</span>
+                  <button class="etr-copy" aria-label="Copy message"><svg class="ico"><use href="#i-copy"/></svg></button>
+                </div>
+                <div class="etr-row qa">
+                  <span class="etr-lbl">Security Q</span>
+                  <div class="stack">
+                    <span class="etr-val">What street is the project on?</span>
+                    <span class="ans-hint">Answer: <strong style="color:var(--ink-2);">hillcrest</strong> (one word, lowercase)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="interac-foot">
+                <strong>Most Canadian bank apps auto-deposit</strong> &mdash; we'll mark your draw paid the same business day and email you a receipt. Questions: text Dane at (604)&nbsp;555&middot;0188.
+              </div>
+
+              <div class="pay-cta">
+                <button class="btn btn-interac"><svg class="ico"><use href="#i-copy"/></svg>Copy all e-Transfer details</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Mobile sticky-bar callout — desktop doesn't need it, but flag -->
+        <div style="margin-top: 20px; display:flex; justify-content:center;">
+          <span class="note-tag">
+            <svg class="ico" style="width:11px;height:11px;"><use href="#i-mobile"/></svg>
+            On mobile &mdash; a sticky <strong style="color:var(--ink);">$32,348.46 Pay</strong> bar lives at the bottom of the viewport
+          </span>
+        </div>
+
+        <footer class="doc-footer">
+          <div class="reg">
+            <span>GST <span class="num">802 314 559&nbsp;RT0001</span></span>
+            <span>WCB <span class="num">9128-44</span></span>
+            <span>Payable in CAD</span>
+          </div>
+          <div class="powered">Powered by <strong>HeyHenry</strong></div>
+        </footer>
+
+      </div>
+    </article>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     FRAME 3 — States (paid · void · expired · loading)
+     ════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 03</span>
+  <span class="label">States &mdash; after the action &middot; or before it loads</span>
+  <span class="sub">Paid (success + receipt) &middot; Void (neutral) &middot; Expired (graceful) &middot; Loading skeleton</span>
+</div>
+
+<div class="states-grid">
+
+  <!-- ── PAID ── -->
+  <div class="state-card">
+    <div class="state-tag">State &middot; Paid</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo brand-northbeam" style="width:30px;height:30px;font-size:11px;border-radius:6px;">Nb</div>
+        <div>
+          <div class="name">Northbeam Build Co.</div>
+          <div class="num">INV-2406-031 &middot; Draw 3</div>
+        </div>
+      </div>
+
+      <div class="state-icon ok"><svg class="ico"><use href="#i-check"/></svg></div>
+      <h3 class="state-title">Paid &middot; thank you.</h3>
+      <div class="state-sub">Your draw was received and recorded.</div>
+
+      <div class="state-receipt">
+        <div class="state-receipt-row"><span class="l">Amount</span><span class="v">$32,348.46</span></div>
+        <div class="state-receipt-row"><span class="l">Method</span><span class="v">Interac e-Transfer</span></div>
+        <div class="state-receipt-row"><span class="l">Paid</span><span class="v">May 23, 2026 &middot; 9:42&nbsp;AM</span></div>
+        <div class="state-receipt-row"><span class="l">Ref</span><span class="v" style="font-family:var(--mono); font-size:11px;">CA-IET-78NMQ4</span></div>
+      </div>
+      <div class="state-receipt-link">Download receipt &rarr;</div>
+    </div>
+  </div>
+
+  <!-- ── VOID ── -->
+  <div class="state-card">
+    <div class="state-tag">State &middot; Void</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo brand-northbeam" style="width:30px;height:30px;font-size:11px;border-radius:6px;">Nb</div>
+        <div>
+          <div class="name">Northbeam Build Co.</div>
+          <div class="num">INV-2406-031 &middot; Draw 3</div>
+        </div>
+      </div>
+
+      <div class="state-icon void"><svg class="ico"><use href="#i-x"/></svg></div>
+      <h3 class="state-title">No longer payable</h3>
+      <div class="state-sub">Northbeam voided this invoice. If you've already paid, your money was returned or applied to a replacement.</div>
+
+      <div class="state-cta">
+        <span class="ghost-link">Questions? Text Dane &middot; (604)&nbsp;555&middot;0188</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EXPIRED (estimate validity window past) ── -->
+  <div class="state-card">
+    <div class="state-tag">State &middot; Expired</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo brand-northbeam" style="width:30px;height:30px;font-size:11px;border-radius:6px;">Nb</div>
+        <div>
+          <div class="name">Northbeam Build Co.</div>
+          <div class="num">E-2406-014 &middot; Estimate</div>
+        </div>
+      </div>
+
+      <div class="state-icon expire"><svg class="ico"><use href="#i-clock"/></svg></div>
+      <h3 class="state-title">This estimate has expired</h3>
+      <div class="state-sub">Prices on the estimate were valid through <strong style="color:var(--ink-2);">Jun&nbsp;17, 2026</strong>. Materials &amp; labour may have shifted &mdash; get in touch for a refresh.</div>
+
+      <div class="state-cta">
+        <span class="ghost-link">Contact Northbeam Build Co.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOADING ── -->
+  <div class="state-card">
+    <div class="state-tag">State &middot; Loading</div>
+    <div class="state-body">
+      <div class="state-mini-header">
+        <div class="gc-logo" style="background:var(--paper-soft);color:var(--paper-soft);width:30px;height:30px;border-radius:6px;">·</div>
+        <div style="flex:1;">
+          <div class="sk-row w70" style="height:10px;"></div>
+          <div class="sk-row w50" style="height:8px; margin-top:5px;"></div>
+        </div>
+      </div>
+
+      <div class="sk-row tall w70"></div>
+      <div class="sk-row w100"></div>
+      <div class="sk-row w90"></div>
+      <div class="sk-row w70"></div>
+
+      <div class="sk-totals">
+        <div class="sk-row w50"></div>
+        <div class="sk-row w70"></div>
+        <div class="sk-row w50" style="margin-bottom:0;"></div>
+      </div>
+
+      <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:18px; color:var(--muted); font-size:12px;">
+        <svg class="ico" style="width:13px;height:13px; animation: spin 1.2s linear infinite;"><use href="#i-spin"/></svg>
+        Loading your document&hellip;
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center; padding: 28px 0 56px; color: var(--muted); font-size:12px;">
+  <div style="font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--faint); margin-bottom:4px;">End of desktop spec</div>
+  Mobile (the primary target — clients open these on phones) is at <span style="font-family:var(--mono); color:var(--ink-2);">od-customer-documents/screens/mobile.html</span>
+</div>
+
+<style>
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  /* Print stylesheet — these get saved + printed. Hide the browser
+     chrome and OD frame dividers; expand to a single page. */
+  @media print {
+    body { background: #fff; }
+    .frame-divider, .browser-chrome, .pay-zone, .action-zone, .note-tag, .states-grid, .state-card { display: none !important; }
+    .browser, .triptych .doc { box-shadow: none; border: 0; }
+    .triptych { display: block; padding: 0; }
+    .doc { border: 0; box-shadow: none; max-width: 100%; }
+  }
+</style>
+
+</body>
+</html>

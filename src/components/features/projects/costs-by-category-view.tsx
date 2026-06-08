@@ -17,13 +17,16 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { SourcePill } from '@/components/ui/source-pill';
+import { StatusBadge } from '@/components/ui/status-badge';
 import type { ProjectBillRow } from '@/lib/db/queries/project-bills';
 import type { SubQuoteRow } from '@/lib/db/queries/project-sub-quotes';
 import type { PurchaseOrderRow } from '@/lib/db/queries/purchase-orders';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/pricing/calculator';
+import { cn } from '@/lib/utils';
 import type { ExpenseItem } from './project-costs-section';
 
-type Category = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+type Category = { id: string; name: string; section: string };
 
 type Row = {
   kind: 'quote' | 'po' | 'bill' | 'expense';
@@ -133,7 +136,7 @@ export function CostsByCategoryView({
   return (
     <div className="space-y-6">
       {unallocated.length > 0 ? (
-        <CategoryBlock name="Unallocated" rows={unallocated} highlight />
+        <CategoryBlock name="Uncategorized" rows={unallocated} tone="warning" />
       ) : null}
 
       {Array.from(sectionsByName.entries()).map(([section, sectionCategories]) => (
@@ -148,7 +151,7 @@ export function CostsByCategoryView({
               const isFocused = focusName.length > 0 && b.name.toLowerCase().trim() === focusName;
               return (
                 <div key={b.id} ref={isFocused ? focusedCategoryRef : undefined}>
-                  <CategoryBlock name={b.name} rows={rows} highlight={isFocused} />
+                  <CategoryBlock name={b.name} rows={rows} tone={isFocused ? 'focus' : undefined} />
                 </div>
               );
             })}
@@ -162,17 +165,30 @@ export function CostsByCategoryView({
 function CategoryBlock({
   name,
   rows,
-  highlight,
+  tone,
 }: {
   name: string;
   rows: Row[];
-  highlight?: boolean;
+  /** `warning` = uncategorized spend that needs filing (warning-soft, with
+   * a chip). `focus` = the drilled-into category (neutral primary ring, a
+   * distinct meaning from "uncategorized"). */
+  tone?: 'warning' | 'focus';
 }) {
   const subtotal = rows.reduce((s, r) => s + r.amount_cents, 0);
   return (
-    <div className={`rounded-md border ${highlight ? 'border-amber-300/60 bg-amber-50/30' : ''}`}>
+    <div
+      className={cn(
+        'rounded-md border',
+        tone === 'warning' &&
+          'border-amber-200 bg-amber-50/40 dark:border-amber-900 dark:bg-amber-950/20',
+        tone === 'focus' && 'border-primary/50 ring-1 ring-primary/20',
+      )}
+    >
       <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
-        <span className="text-sm font-medium">{name}</span>
+        <span className="flex items-center gap-2">
+          <span className="text-sm font-medium">{name}</span>
+          {tone === 'warning' ? <StatusBadge tone="warning" label="Needs a category" /> : null}
+        </span>
         <span className="text-sm tabular-nums font-semibold">
           {formatCurrencyCompact(subtotal)}
         </span>
@@ -202,23 +218,6 @@ function CategoryBlock({
 }
 
 function KindChip({ kind }: { kind: Row['kind'] }) {
-  const styles: Record<Row['kind'], string> = {
-    quote: 'bg-blue-100 text-blue-800',
-    po: 'bg-purple-100 text-purple-800',
-    bill: 'bg-amber-100 text-amber-800',
-    expense: 'bg-emerald-100 text-emerald-800',
-  };
-  const labels: Record<Row['kind'], string> = {
-    quote: 'Quote',
-    po: 'PO',
-    bill: 'Bill',
-    expense: 'Expense',
-  };
-  return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${styles[kind]}`}
-    >
-      {labels[kind]}
-    </span>
-  );
+  // Row['kind'] ('quote'|'po'|'bill'|'expense') is a strict subset of SourceKind.
+  return <SourcePill kind={kind} />;
 }

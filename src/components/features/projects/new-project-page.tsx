@@ -1,68 +1,81 @@
 'use client';
 
 /**
- * Client wrapper for /projects/new — owns the parsed-intake state so
- * the IntakeAccelerator (drop a quote / voice memo / paste a blurb)
- * can pre-fill the ProjectForm fields below it. Both surfaces live on
- * one page; either path produces the same project create.
+ * Client wrapper for /projects/new. One canonical intake, two entry modes:
+ *
+ *   - GUIDED (default, "drop the mess"): the LeadIntakeForm — drop a quote /
+ *     photo / voice memo / paste a blurb, Henry parses the scope, and the
+ *     operator reviews + applies the extracted categories to a new project.
+ *     This is the universal intake surface; it self-contains parse → review →
+ *     apply (incl. customer dedup) via acceptInboundLeadAction.
+ *   - MANUAL: the plain ProjectForm for a typed create with no document.
+ *
+ * Replaces the old split where a slim "accelerator" pre-filled the manual form
+ * (and dropped the parsed scope) and the real review lived behind a separate
+ * /projects/new?intake=full route. There's no bifurcation now — guided is the
+ * default surface; manual is a toggle.
  */
 
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { IntakeAccelerator } from '@/components/features/projects/intake-accelerator';
+import { LeadIntakeForm } from '@/components/features/leads/lead-intake-form';
 import {
   ProjectForm,
-  type ProjectFormCustomerOption,
+  type ProjectFormContactOption,
   type ProjectFormDefaults,
-  type ProjectFormSuggestions,
 } from '@/components/features/projects/project-form';
-import type { ParsedIntake } from '@/lib/ai/intake-prompt';
+import type { IntakeDraftRow } from '@/lib/db/queries/intake-drafts';
 import type { ProjectInput } from '@/lib/validators/project';
+import type { ParseModelChoice } from '@/server/actions/intake';
 import type { ProjectActionResult } from '@/server/actions/projects';
 
 export function NewProjectFormSurface({
-  customers,
+  contacts,
   action,
   defaults,
+  parseModel = 'claude-sonnet',
+  initialDraft = null,
 }: {
-  customers: ProjectFormCustomerOption[];
+  contacts: ProjectFormContactOption[];
   action: (input: ProjectInput & { id?: string }) => Promise<ProjectActionResult>;
   defaults?: ProjectFormDefaults;
+  parseModel?: ParseModelChoice;
+  /** When the page is opened with ?draft=<id>, the persisted draft is
+   *  hydrated into the guided review so the operator resumes mid-flow. */
+  initialDraft?: IntakeDraftRow | null;
 }) {
-  const [suggestions, setSuggestions] = useState<ProjectFormSuggestions | undefined>(undefined);
+  const [mode, setMode] = useState<'guided' | 'manual'>('guided');
 
-  function handleParsed(parsed: ParsedIntake) {
-    // Translate ParsedIntake → ProjectFormSuggestions. We pull the
-    // customer name (fuzzy-matched downstream against existing
-    // contacts), project name, and description. Categories / scope /
-    // reply draft are intentionally not surfaced here — the operator
-    // can build scope on the budget tab post-creation. If they need
-    // the deeper guided flow (scope review, reply drafting), the
-    // /projects/new?intake=full route still serves it.
-    setSuggestions({
-      customer_name: parsed.customer.name,
-      name: parsed.project.name,
-      description: parsed.project.description,
-    });
-  }
-
-  function handleUnmatchedCustomer(name: string) {
-    toast(`Customer "${name}" doesn't exist yet`, {
-      description: 'Pick from the dropdown below or click "+ New customer" to create them.',
-    });
+  if (mode === 'manual') {
+    return (
+      <div className="space-y-4">
+        <ProjectForm mode="create" contacts={contacts} defaults={defaults} action={action} />
+        <p className="text-center text-xs text-muted-foreground">
+          Got a quote, photos, or a voice memo?{' '}
+          <button
+            type="button"
+            onClick={() => setMode('guided')}
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Drop it in instead →
+          </button>
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <IntakeAccelerator onParsed={handleParsed} />
-      <ProjectForm
-        mode="create"
-        customers={customers}
-        defaults={defaults}
-        action={action}
-        suggestions={suggestions}
-        onUnmatchedCustomer={handleUnmatchedCustomer}
-      />
+    <div className="space-y-4">
+      <LeadIntakeForm parseModel={parseModel} initialDraft={initialDraft} />
+      <p className="text-center text-xs text-muted-foreground">
+        No document?{' '}
+        <button
+          type="button"
+          onClick={() => setMode('manual')}
+          className="font-medium text-foreground underline-offset-2 hover:underline"
+        >
+          Enter the project manually →
+        </button>
+      </p>
     </div>
   );
 }

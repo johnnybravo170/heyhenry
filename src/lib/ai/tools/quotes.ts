@@ -29,7 +29,7 @@ export const quoteTools: AiTool[] = [
             enum: ['draft', 'sent', 'accepted', 'rejected', 'expired'],
             description: 'Filter by status (ignored when filter is set)',
           },
-          customer_id: {
+          contact_id: {
             type: 'string',
             description: 'Filter by customer UUID (ignored when filter is set)',
           },
@@ -56,7 +56,7 @@ export const quoteTools: AiTool[] = [
           const supabase = await createClient();
           const { data, error } = await supabase
             .from('quotes')
-            .select('id, sent_at, total_cents, customers:customer_id (name)')
+            .select('id, sent_at, total_cents, contacts:contact_id (name)')
             .eq('status', 'sent')
             .lte('sent_at', cutoff)
             .is('deleted_at', null)
@@ -74,7 +74,7 @@ export const quoteTools: AiTool[] = [
           let output = `Found ${data.length} overdue quote(s):\n\n`;
           for (let i = 0; i < data.length; i++) {
             const q = data[i];
-            const customerRaw = q.customers;
+            const customerRaw = q.contacts;
             const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
             const sentAt = q.sent_at ? new Date(q.sent_at) : null;
             const daysSince = sentAt ? Math.floor((now - sentAt.getTime()) / 86400000) : null;
@@ -96,7 +96,7 @@ export const quoteTools: AiTool[] = [
             | 'rejected'
             | 'expired'
             | undefined,
-          customer_id: input.customer_id as string | undefined,
+          contact_id: input.contact_id as string | undefined,
           limit: Math.min((input.limit as number) || 20, 100),
         });
 
@@ -249,7 +249,7 @@ export const quoteTools: AiTool[] = [
           .from('quotes')
           .insert({
             tenant_id: tenant.id,
-            customer_id: resolved.id,
+            contact_id: resolved.id,
             status: 'draft',
             subtotal_cents: totals.subtotal_cents,
             tax_cents: totals.tax_cents,
@@ -334,8 +334,8 @@ export const quoteTools: AiTool[] = [
           id: string;
           status: string;
           total_cents: number;
-          customer_id: string;
-          customers:
+          contact_id: string;
+          contacts:
             | { name: string; email: string | null }
             | { name: string; email: string | null }[];
         };
@@ -343,7 +343,7 @@ export const quoteTools: AiTool[] = [
         const result = await resolveByShortId<QuoteRow>(
           'quotes',
           input.quote_id as string,
-          'id, status, total_cents, customer_id, customers:customer_id (name, email)',
+          'id, status, total_cents, contact_id, contacts:contact_id (name, email)',
         );
         if (typeof result === 'string') return result;
 
@@ -353,7 +353,7 @@ export const quoteTools: AiTool[] = [
         }
 
         // Extract customer from join
-        const customerRaw = quote.customers;
+        const customerRaw = quote.contacts;
         const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
 
         if (!customer?.email) {
@@ -425,11 +425,11 @@ export const quoteTools: AiTool[] = [
         const tenant = await getCurrentTenant();
         if (!tenant) return 'Not authenticated.';
 
-        type QuoteRow = { id: string; status: string; customer_id: string };
+        type QuoteRow = { id: string; status: string; contact_id: string };
         const result = await resolveByShortId<QuoteRow>(
           'quotes',
           input.quote_id as string,
-          'id, status, customer_id',
+          'id, status, contact_id',
         );
         if (typeof result === 'string') return result;
 

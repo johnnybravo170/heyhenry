@@ -1,15 +1,29 @@
 /**
- * Shared Resend-backed email send used by both the REST route
- * (`/api/ops/email/send`) and the MCP tool (`ops_email_send`).
+ * Shared Postmark-backed email send used by both the REST route
+ * (`/api/ops/email/send`) and the MCP tools (`ops_email_send`,
+ * `ops_digest_send`).
  *
- * Keeps the Resend HTTP call + validation + audit-logging in one place so
- * routes/tools don't each re-implement the wire format.
+ * Keeps the Postmark HTTP call + validation + audit-logging in one place so
+ * routes/tools don't each re-implement the wire format. Raw fetch (no SDK)
+ * to stay dependency-light — ops only ever sends transactional mail.
+ *
+ * Reuses the main app's Postmark setup: the `outbound-transactional` stream
+ * and the verified `noreply@mail.heyhenry.io` sender. Point the ops
+ * `POSTMARK_SERVER_TOKEN` at the same Postmark server as the app and senders
+ * + streams work with no extra config.
  *
  * Env:
- *   RESEND_API_KEY           — required, sending-only Resend key
- *   OPS_EMAIL_DEFAULT_FROM   — fallback `from` when caller omits it
+ *   POSTMARK_SERVER_TOKEN    — required, server token for the Postmark account
+ *   OPS_EMAIL_DEFAULT_FROM   — optional `from` override (must be a verified
+ *                              Postmark sender); defaults to the app's
+ *                              transactional sender
+ *   OPS_POSTMARK_STREAM      — optional message-stream override
  */
 import { createServiceClient } from '@/lib/supabase';
+
+const POSTMARK_API = 'https://api.postmarkapp.com/email';
+const DEFAULT_FROM = 'HeyHenry <noreply@mail.heyhenry.io>';
+const MESSAGE_STREAM = process.env.OPS_POSTMARK_STREAM || 'outbound-transactional';
 
 export type EmailTag = { name: string; value: string };
 
@@ -49,7 +63,7 @@ export function validateEmailInput(
 }
 
 /**
- * Send an email via Resend and write an audit_log row with the outcome.
+ * Send an email via Postmark and write an audit_log row with the outcome.
  *
  * `auditKeyId` is the ops.api_keys.id for REST callers, `null` for OAuth.
  * `auditPath` is the logical path to stamp on the audit row so both the
@@ -65,39 +79,47 @@ export async function sendOpsEmail(
     return { ok: false, status: 400, error: validation.error };
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.POSTMARK_SERVER_TOKEN;
   if (!apiKey) {
-    const msg = 'RESEND_API_KEY not set';
+    const msg = 'POSTMARK_SERVER_TOKEN not set';
     await writeAudit(audit, 500, msg);
     return { ok: false, status: 500, error: msg };
   }
 
-  const from = input.from ?? process.env.OPS_EMAIL_DEFAULT_FROM;
-  if (!from) {
-    const msg = 'OPS_EMAIL_DEFAULT_FROM not set and no from provided';
-    await writeAudit(audit, 500, msg);
-    return { ok: false, status: 500, error: msg };
-  }
-
+  const from = input.from ?? process.env.OPS_EMAIL_DEFAULT_FROM ?? DEFAULT_FROM;
   const toList = Array.isArray(input.to) ? input.to : [input.to];
 
+  // Postmark takes a comma-separated To string and a single Tag + Metadata
+  // map (vs Resend's name/value tag array). Fold the tags in: Metadata keeps
+  // every pair; Tag takes the `kind` value (the digest convention) or the
+  // first pair so categorization still works in the Postmark dashboard.
   const payload: Record<string, unknown> = {
-    from,
-    to: toList,
-    subject: input.subject,
+    From: from,
+    To: toList.join(', '),
+    Subject: input.subject,
+    MessageStream: MESSAGE_STREAM,
+    // Transactional ops mail — no open/link tracking (matches the app's
+    // transactional stream; agent/alert mail doesn't need engagement signal).
+    TrackOpens: false,
+    TrackLinks: 'None',
   };
-  if (input.html) payload.html = input.html;
-  if (input.text) payload.text = input.text;
-  if (input.reply_to) payload.reply_to = input.reply_to;
-  if (input.tags) payload.tags = input.tags;
+  if (input.html) payload.HtmlBody = input.html;
+  if (input.text) payload.TextBody = input.text;
+  if (input.reply_to) payload.ReplyTo = input.reply_to;
+  if (input.tags?.length) {
+    payload.Metadata = Object.fromEntries(input.tags.map((t) => [t.name, t.value]));
+    const kind = input.tags.find((t) => t.name === 'kind');
+    payload.Tag = (kind ?? input.tags[0]).value;
+  }
 
   let res: Response;
   try {
-    res = await fetch('https://api.resend.com/emails', {
+    res = await fetch(POSTMARK_API, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
         'Content-Type': 'application/json',
+        'X-Postmark-Server-Token': apiKey,
       },
       body: JSON.stringify(payload),
     });
@@ -108,20 +130,21 @@ export async function sendOpsEmail(
   }
 
   const bodyText = await res.text();
-  let body: { id?: string; message?: string; name?: string } = {};
+  let body: { MessageID?: string; Message?: string; ErrorCode?: number } = {};
   try {
     body = bodyText ? JSON.parse(bodyText) : {};
   } catch {
     body = {};
   }
 
-  if (!res.ok) {
-    const msg = body.message ?? body.name ?? `Resend ${res.status}`;
-    await writeAudit(audit, 500, `resend: ${msg}`);
-    return { ok: false, status: res.status, error: msg };
+  // Postmark signals failure via non-2xx AND a non-zero ErrorCode.
+  if (!res.ok || (body.ErrorCode != null && body.ErrorCode !== 0)) {
+    const msg = body.Message ?? `Postmark ${res.status}`;
+    await writeAudit(audit, 500, `postmark: ${msg}`);
+    return { ok: false, status: res.ok ? 502 : res.status, error: msg };
   }
 
-  const id = body.id ?? '';
+  const id = body.MessageID ?? '';
   await writeAudit(audit, 200, `subject=${input.subject.slice(0, 100)}`);
   return { ok: true, id, to: toList, subject: input.subject };
 }
@@ -148,6 +171,6 @@ async function writeAudit(
   }
 }
 
-export function resendConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
+export function postmarkConfigured(): boolean {
+  return Boolean(process.env.POSTMARK_SERVER_TOKEN);
 }

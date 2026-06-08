@@ -1,0 +1,2662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Public pages — HeyHenry (mobile, the primary target)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ──────────────────────────────────────────────────────────────────
+     HeyHenry Paper palette — the GC's letterhead.
+     Public surfaces carry the contractor's brand; HeyHenry is invisible
+     until the quiet "Powered by" footer. Mobile-first: clients open
+     these from an SMS / email link on a phone.
+
+     Strict type scale used everywhere below: 16 / 14 / 12 / 11-mono.
+     Only the OD frame label is larger.
+  ─────────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --paper-soft:   #FBF6EC;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --interac:      #B61D24;
+    --interac-soft: #FCE8E8;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #E6DBC2;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 0 56px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  .ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ───── OD frame chrome — outside the product ───── */
+  .frame-divider {
+    max-width: 1680px;
+    margin: 56px auto 14px;
+    padding: 0 28px;
+    display: flex; align-items: baseline; gap: 18px;
+    flex-wrap: wrap;
+  }
+  .frame-divider:first-of-type { margin-top: 8px; }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .frame-pad {
+    max-width: 1680px;
+    margin: 0 auto 12px;
+    padding: 0 28px;
+    color: var(--muted);
+    font-size: 12px;
+    max-width: 880px;
+  }
+
+  /* ───── Phone row ───── */
+  .phone-row {
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 36px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .phone-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .phone-cell .cap {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    max-width: 390px;
+  }
+  .phone-cell .cap .url {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--card);
+    position: relative;
+    z-index: 5;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+  .home-indicator {
+    position: absolute;
+    bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px;
+    background: var(--ink);
+    border-radius: 999px;
+    opacity: 0.5;
+    z-index: 10;
+  }
+
+  /* ───── Mobile browser bar ───── */
+  .mob-url-bar {
+    height: 36px;
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 7px;
+    padding: 0 14px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .mob-url-bar .lock { width: 11px; height: 11px; color: var(--ok); flex-shrink: 0; }
+  .mob-url-bar .host { color: var(--faint); }
+  .mob-url-bar .path { color: var(--ink); font-weight: 600; }
+  .mob-url-bar .menu { margin-left: auto; color: var(--faint); font-size: 14px; letter-spacing: 0.1em; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     THE UNIFIED PUBLIC TEMPLATE
+     Every public surface opens with:
+       (1) GC brand header  (the contractor's logo, never HeyHenry's)
+       (2) the artifact rendered for the client
+       (3) one primary action (sticky thumb-bar, ≥50px)
+  ═══════════════════════════════════════════════════════════════════ */
+
+  /* ── GC brand header ── */
+  .gc-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 11px;
+    flex-shrink: 0;
+  }
+  .gc-logo {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
+  }
+  .gc-logo.brand-northbeam { background: #1B3F2E; color: #F5E9D2; }
+  .gc-logo.brand-mapleridge { background: #4F2419; color: #F1E4D0; }
+  .gc-logo.brand-everett    { background: #C2410C; color: #fff; }
+  .gc-stack { display: flex; flex-direction: column; min-width: 0; }
+  .gc-name {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+  }
+  .gc-meta {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .gc-bar .right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .gc-bar .right .ico { width: 12px; height: 12px; color: var(--ok); }
+
+  /* ── Scroll body ── */
+  .surface {
+    flex: 1;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+  }
+  .surface::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 22px;
+    background: linear-gradient(to top, var(--bg), transparent);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .surface-pad { padding: 14px 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .surface-pad-tight { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── Card / panel ── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .panel-inner { padding: 14px 14px 12px; }
+  .panel-inner-pad { padding: 16px; }
+
+  /* ── Sticky thumb-bar (the one primary action) ── */
+  .sticky-bar {
+    background: var(--card);
+    border-top: 1px solid var(--hair);
+    padding: 12px 14px 22px;
+    flex-shrink: 0;
+    box-shadow: 0 -8px 18px -8px rgba(10,10,10,0.06);
+    position: relative;
+    z-index: 4;
+  }
+  .sticky-amount {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 7px;
+  }
+  .sticky-amount .due-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .sticky-amount .due-val {
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+  .sticky-amount .due-val .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+
+  .cta-row { display: flex; gap: 8px; }
+  .cta {
+    flex: 1;
+    height: 50px;            /* mobile-first ≥44px target; 50 to feel deliberate */
+    border-radius: 12px;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .cta-primary {
+    background: var(--rust);
+    color: #fff;
+    border-color: var(--rust);
+  }
+  .cta-secondary {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+  }
+  .cta-interac {
+    background: var(--card);
+    color: var(--interac);
+    border: 1.5px solid var(--interac);
+  }
+  .cta-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--hair);
+    font-weight: 600;
+  }
+  .cta .ico { width: 16px; height: 16px; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     PORTAL HUB — /portal/[slug]
+     Intentional tab order (no horizontal scroll strip):
+       Project → Budget → Schedule → Photos → Updates → Phases →
+       Decisions → Selections → Documents → Trades → Messages.
+     Bottom-sheet tab bar instead of a scrolling strip — the saved
+     feedback rule. The active surface shown here is the Project
+     (money + decisions + phases overview) tab.
+  ═══════════════════════════════════════════════════════════════════ */
+
+  /* Money block — first thing the client sees */
+  .money-block {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .money-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .money-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    margin-top: 2px;
+    line-height: 1.2;
+  }
+  .money-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .money-cell .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .money-cell .val {
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 16px;
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+  .money-cell .val .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .money-cell .sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .money-bar {
+    margin-top: 12px;
+    height: 7px;
+    background: var(--chip-fill);
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+  }
+  .money-bar .seg-paid { background: var(--ok); }
+  .money-bar .seg-due  { background: var(--warn); opacity: 0.7; }
+  .money-bar .seg-remain { background: transparent; }
+
+  /* Tax-exempt aware (canadianTax.getCustomerFacingContext) */
+  .tax-flag {
+    margin-top: 10px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 999px;
+    padding: 3px 9px;
+    letter-spacing: 0.04em;
+  }
+  .tax-flag .ico { width: 11px; height: 11px; color: var(--muted); }
+
+  /* ── Decisions strip (pending — pinned above the fold) ── */
+  .decisions-strip {
+    background: var(--warn-soft);
+    border: 1px solid #E8C26A;
+    border-radius: 14px;
+    padding: 12px 14px 12px;
+  }
+  .decisions-strip .dh {
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .decisions-strip .dh .ico { width: 12px; height: 12px; }
+  .decisions-strip .dt {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.012em;
+    line-height: 1.3;
+  }
+  .decisions-strip .ds {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+  .decisions-strip .row {
+    display: flex; gap: 7px;
+    margin-top: 10px;
+  }
+  .decisions-strip .pill {
+    flex: 1;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .decisions-strip .pill.approve { background: var(--rust); border-color: var(--rust); color: #fff; }
+  .decisions-strip .pill .ico { width: 14px; height: 14px; }
+
+  /* ── Phase rail ── */
+  .phase-rail {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+  }
+  .phase-rail-h {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 11px;
+  }
+  .phase-rail-h .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .phase-rail-h .pct {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--rust);
+    font-weight: 700;
+  }
+  .phase-list { display: flex; flex-direction: column; gap: 9px; }
+  .phase-item {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    gap: 11px;
+    align-items: center;
+    font-size: 14px;
+  }
+  .phase-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1.6px solid var(--rule);
+    background: var(--card);
+    position: relative;
+  }
+  .phase-dot.done { background: var(--ok); border-color: var(--ok); }
+  .phase-dot.now  { background: var(--rust); border-color: var(--rust); box-shadow: 0 0 0 4px var(--rust-soft); }
+  .phase-name { color: var(--ink); font-weight: 600; }
+  .phase-name.done { color: var(--muted); font-weight: 500; }
+  .phase-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* ── Tab bar (bottom sheet — replaces horizontal scroll strip) ── */
+  .tab-bar {
+    background: var(--card);
+    border-top: 1px solid var(--hair);
+    padding: 8px 6px 22px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 4;
+  }
+  .tab-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 6px 4px;
+    border-radius: 9px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .tab-btn .ico { width: 18px; height: 18px; color: var(--muted); }
+  .tab-btn .tlbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+  }
+  .tab-btn.active .ico { color: var(--ink); }
+  .tab-btn.active .tlbl { color: var(--ink); }
+  .tab-btn.active { background: var(--paper-soft); }
+  .tab-btn .badge {
+    position: absolute;
+    top: 2px;
+    right: calc(50% - 18px);
+    background: var(--rust);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0 5px;
+    min-width: 16px; height: 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .tab-btn { position: relative; }
+  .tab-more {
+    /* "More" tab opens a sheet of the long tail (selections, ideas,
+       trades, etc.) — keeps the bottom bar uncluttered. */
+  }
+
+  /* ── Hero (project name + customer-facing %) ── */
+  .portal-hero {
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .portal-hero .pname {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    line-height: 1.2;
+  }
+  .portal-hero .paddr {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .portal-hero .pstats {
+    margin-top: 10px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .portal-hero .pcell { display: flex; flex-direction: column; gap: 2px; }
+  .portal-hero .pcell .l {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .portal-hero .pcell .v {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     SCHEDULE (read-only Gantt) — Portal tab
+     Firm bars only. NO confidence dimension. Sticky name column on
+     mobile. High-disruption tasks shown amber.
+  ═══════════════════════════════════════════════════════════════════ */
+  .gantt-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .gantt-card .ghead {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .gantt-card .gh-lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .gantt-card .gh-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .gantt-table {
+    display: grid;
+    grid-template-columns: 116px 1fr;          /* sticky-name + bars */
+  }
+  .gantt-month-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+  }
+  .gantt-month-row .m-lbl {
+    padding: 7px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    border-right: 1px solid var(--hair);
+  }
+  .gantt-month-row .m-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .gantt-month-row .m-grid > span {
+    padding: 7px 0;
+    text-align: center;
+    border-right: 1px dashed var(--hair);
+  }
+  .gantt-month-row .m-grid > span:last-child { border-right: 0; }
+  .gantt-row {
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    border-bottom: 1px solid var(--hair);
+    align-items: center;
+    min-height: 42px;
+  }
+  .gantt-row:last-child { border-bottom: 0; }
+  .gantt-name {
+    padding: 8px 12px;
+    border-right: 1px solid var(--hair);
+    background: var(--card);
+    position: sticky; left: 0;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .gantt-name .sub {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 1px;
+    letter-spacing: 0.02em;
+  }
+  .gantt-name .sub.amber { color: var(--warn); font-weight: 700; }
+  .gantt-track {
+    position: relative;
+    height: 42px;
+    background-image:
+      linear-gradient(to right, var(--hair) 1px, transparent 1px);
+    background-size: calc(100% / 8) 100%;
+  }
+  .gantt-bar {
+    position: absolute;
+    top: 11px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--rust);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-flex; align-items: center;
+    padding: 0 7px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gantt-bar.demo     { background: #7C2D12; }
+  .gantt-bar.rough    { background: #1B3F2E; }
+  .gantt-bar.cabinet  { background: var(--rust); }
+  .gantt-bar.finish   { background: #1E40AF; }
+  .gantt-bar.disrupt  { background: var(--warn); color: var(--ink); }
+  .gantt-today {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 0;
+    border-left: 1.5px dashed var(--rust);
+  }
+  .gantt-today::after {
+    content: 'today';
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.05em;
+  }
+  .gantt-foot {
+    padding: 10px 14px;
+    border-top: 1px solid var(--hair);
+    background: var(--paper-soft);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+    line-height: 1.4;
+  }
+  .gantt-foot .ico { width: 13px; height: 13px; color: var(--muted); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     PHOTOS — client-visible only
+     The boundary call-out makes the boundary visible: internal photos
+     never appear here.
+  ═══════════════════════════════════════════════════════════════════ */
+  .photo-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 0 2px;
+  }
+  .photo-head .h {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+  .photo-head .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .photo-tile {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--hair);
+    position: relative;
+    background: linear-gradient(135deg, var(--paper-soft), var(--chip-fill));
+  }
+  .photo-tile .meta {
+    position: absolute;
+    bottom: 6px; left: 6px; right: 6px;
+    background: rgba(10,10,10,0.65);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 3px 7px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .photo-tile .phase-tag {
+    position: absolute;
+    top: 7px; left: 7px;
+    background: rgba(255,255,255,0.85);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 5px;
+    padding: 2px 6px;
+    letter-spacing: 0.04em;
+  }
+  /* simulated photo content with css gradients */
+  .photo-tile.t-demo    { background: linear-gradient(135deg, #6B5847, #8B7355); }
+  .photo-tile.t-framing { background: linear-gradient(135deg, #A89880, #C7B894); }
+  .photo-tile.t-rough   { background: linear-gradient(135deg, #B89F7E, #876B4A); }
+  .photo-tile.t-tile    { background: linear-gradient(135deg, #C7C3B8, #9C9685); }
+  .photo-tile.t-cabinet { background: linear-gradient(135deg, #8B6F4E, #614525); }
+  .photo-tile.t-paint   { background: linear-gradient(135deg, #D8CFB8, #B6A98A); }
+
+  .boundary-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--paper-soft);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .boundary-note .ico { width: 12px; height: 12px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+  .boundary-note strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ESTIMATE — /estimate/[code]
+     The headline approval surface — same shell as customer-documents.
+  ═══════════════════════════════════════════════════════════════════ */
+  .letterhead {
+    text-align: center;
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .gc-logo-lg {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.04em;
+    margin: 0 auto 10px;
+  }
+  .gc-logo-lg.brand-northbeam { background: #1B3F2E; color: #F5E9D2; }
+  .gc-logo-lg.brand-mapleridge { background: #4F2419; color: #F1E4D0; }
+  .letterhead .name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+  }
+  .letterhead .meta {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 3px;
+  }
+  .doc-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 14px;
+  }
+  .doc-title-num {
+    display: flex; justify-content: center; align-items: baseline; gap: 8px;
+    margin-top: 4px;
+  }
+  .doc-title-num .num {
+    font-family: var(--mono);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .doc-title-num .date {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 9px;
+    border-radius: 999px;
+    margin-top: 10px;
+  }
+  .status-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-chip .ico { width: 11px; height: 11px; }
+  .chip-pending  { background: var(--warn-soft); color: var(--warn); }
+  .chip-approved { background: var(--ok-soft);   color: var(--ok); }
+  .chip-paid     { background: var(--ok-soft);   color: var(--ok); }
+  .chip-declined { background: var(--danger-soft);color: var(--danger); }
+  .chip-void     { background: var(--chip-fill); color: var(--muted); }
+  .chip-expired  { background: var(--chip-fill); color: var(--muted); }
+
+  /* ── Prepared-for ── */
+  .prepared {
+    margin-top: 14px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 0 16px;
+  }
+  .prep-lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .prep-val {
+    margin-top: 3px;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .prep-val .addr {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  /* ── View toggle (customer_view_mode lever — shown to GC only,
+        rendered here as a static read-only chip showing which mode the
+        client is in. The toggle UI is the GC's, not the client's.) ── */
+  .view-mode-chip {
+    margin: 14px 16px 0;
+    padding: 9px 12px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .view-mode-chip .ico { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+  .view-mode-chip strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ── Estimate body sections ── */
+  .doc-section { margin: 16px 16px 0; }
+  .doc-h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin: 0 0 8px;
+  }
+  .line-table {
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .line-section-head {
+    padding: 8px 12px;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .line-row {
+    display: grid;
+    grid-template-columns: 1fr 96px;
+    gap: 10px;
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--hair);
+    align-items: start;
+    background: var(--card);
+  }
+  .line-row:last-child { border-bottom: 0; }
+  .line-label { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.35; }
+  .line-note  { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .line-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .line-num .cents { color: var(--muted); font-size: 11px; }
+
+  /* ── Totals ── */
+  .totals-card {
+    margin-top: 12px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .totals-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .totals-row .lbl { color: var(--muted); }
+  .totals-row .val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .totals-row .val .cents { color: var(--muted); font-size: 11px; }
+  .totals-row.is-total {
+    border-top: 1px solid var(--hair);
+    padding-top: 8px;
+    margin-top: 3px;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 16px;
+  }
+  .totals-row.is-total .val { font-weight: 700; color: var(--ink); }
+  .totals-row.is-total .val .cents { color: var(--muted); font-size: 12px; }
+  .totals-row.is-tax .tax-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  /* ── Henry summary block (margin-protecting framing, summary view) ── */
+  .henry-summary {
+    margin: 0 16px;
+    padding: 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    position: relative;
+  }
+  .henry-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .henry-tag .star {
+    font-family: var(--sans);
+    font-weight: 800;
+    color: var(--rust);
+    font-size: 12px;
+  }
+  .henry-summary p {
+    margin: 0 0 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .henry-summary p:last-child { margin-bottom: 0; }
+  .henry-summary strong { color: var(--ink); font-weight: 700; }
+
+  /* ── Terms ── */
+  .terms-block {
+    margin: 0 16px;
+    padding: 12px 14px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .terms-block strong { color: var(--ink-2); font-weight: 600; }
+
+  /* ── Footer: GST# + WCB# + quiet powered-by ── */
+  .doc-footer {
+    margin: 18px 16px 0;
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--hair);
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .doc-footer .reg {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .doc-footer .reg .num { color: var(--ink-2); font-weight: 600; }
+  .doc-footer .reg .sep { color: var(--faint); margin: 0 6px; }
+  .doc-footer .powered {
+    margin-top: 6px;
+    color: var(--faint);
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .doc-footer .powered strong { color: var(--muted); font-weight: 600; }
+
+  /* ── Approve action zone (inline above sticky bar) ── */
+  .esig-zone {
+    margin: 12px 16px 0;
+    padding: 14px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+  }
+  .esig-zone h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 4px;
+  }
+  .esig-zone .sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 11px;
+    line-height: 1.4;
+  }
+  .esig-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 11px 13px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .esig-input::placeholder { color: var(--faint); font-style: italic; }
+  .esig-foot {
+    margin-top: 9px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .esig-foot .ico { width: 12px; height: 12px; color: var(--muted); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     TAP-TO-DECIDE — /decide/[code]
+     SMS deep-link landing. No portal nav, no login.
+     One question → reference photos → Approve / Decline / Ask.
+  ═══════════════════════════════════════════════════════════════════ */
+  .decide-hero {
+    text-align: center;
+    padding: 18px 18px 6px;
+  }
+  .decide-hero .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  .decide-hero .q {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    margin-top: 8px;
+    line-height: 1.3;
+  }
+  .decide-body { padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 12px; }
+  .decide-ctx {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .decide-ctx p {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .decide-ctx .due {
+    margin-top: 9px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warn);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .decide-ctx .due .ico { width: 11px; height: 11px; }
+
+  .decide-photos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .decide-name-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 11px 13px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .decide-name-input::placeholder { color: var(--faint); font-style: italic; }
+
+  .decide-action-stack { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     STATES — link-expired · already-acted · payment retry
+     Honest, calm, neutral. Never blame the client.
+     Always give a way out (call the GC).
+  ═══════════════════════════════════════════════════════════════════ */
+  .state-screen {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 28px 24px;
+    text-align: center;
+    background: var(--bg);
+  }
+  .state-row {
+    display: flex; align-items: center; gap: 11px;
+    margin-bottom: 24px;
+  }
+  .state-row .gc-logo {
+    width: 36px; height: 36px; font-size: 14px;
+  }
+  .state-row .name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    line-height: 1.15;
+  }
+  .state-row .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: left;
+    margin-top: 1px;
+  }
+  .state-icon {
+    width: 76px; height: 76px;
+    border-radius: 22px;
+    display: grid; place-items: center;
+    margin: 0 auto 16px;
+  }
+  .state-icon.ok    { background: var(--ok-soft);    color: var(--ok); }
+  .state-icon.warn  { background: var(--warn-soft);  color: var(--warn); }
+  .state-icon.void  { background: var(--chip-fill);  color: var(--muted); }
+  .state-icon.danger{ background: var(--danger-soft);color: var(--danger); }
+  .state-icon .ico { width: 36px; height: 36px; stroke-width: 2.2; }
+  .state-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+  .state-sub {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 280px;
+  }
+  .state-sub strong { color: var(--ink-2); font-weight: 600; }
+
+  .state-receipt {
+    margin-top: 18px;
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    text-align: left;
+  }
+  .state-receipt-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .state-receipt-row .l {
+    color: var(--muted);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .state-receipt-row .v {
+    color: var(--ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+  }
+  .state-receipt-row .v.mono { font-family: var(--mono); font-size: 12px; }
+
+  .state-cta-stack {
+    margin-top: 18px;
+    width: 100%;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .state-cta-stack .receipt-btn {
+    height: 48px;
+    width: 100%;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    font-size: 14px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .state-cta-stack .receipt-btn .ico { width: 16px; height: 16px; }
+
+  /* Payment-retry banner — sits inline above the sticky bar */
+  .retry-banner {
+    margin: 0 14px;
+    padding: 12px 14px;
+    background: var(--danger-soft);
+    border: 1px solid #F5B5B5;
+    border-radius: 12px;
+    display: flex; gap: 10px;
+    align-items: flex-start;
+  }
+  .retry-banner .ico { width: 16px; height: 16px; color: var(--danger); flex-shrink: 0; margin-top: 1px; }
+  .retry-banner .t {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--danger);
+    letter-spacing: -0.005em;
+  }
+  .retry-banner .s {
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-lock"    viewBox="0 0 24 24"><rect class="ico" x="3" y="11" width="18" height="11" rx="2"/><path class="ico" d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-check"   viewBox="0 0 24 24"><polyline class="ico" points="20 6 9 17 4 12" style="stroke-width:2.4"/></symbol>
+    <symbol id="i-x"       viewBox="0 0 24 24"><line class="ico" x1="18" y1="6" x2="6" y2="18"/><line class="ico" x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-clock"   viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="10"/><polyline class="ico" points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-info"    viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="10"/><line class="ico" x1="12" y1="16" x2="12" y2="12"/><line class="ico" x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-eye"     viewBox="0 0 24 24"><path class="ico" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle class="ico" cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-alert"   viewBox="0 0 24 24"><path class="ico" d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line class="ico" x1="12" y1="9" x2="12" y2="13"/><line class="ico" x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-bell"    viewBox="0 0 24 24"><path class="ico" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path class="ico" d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="i-msg"     viewBox="0 0 24 24"><path class="ico" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-phase"   viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="9"/><path class="ico" d="M12 7v5l3 3"/></symbol>
+    <symbol id="i-photo"   viewBox="0 0 24 24"><rect class="ico" x="3" y="5" width="18" height="14" rx="2"/><circle class="ico" cx="9" cy="11" r="2"/><polyline class="ico" points="21 17 16 12 8 19"/></symbol>
+    <symbol id="i-grid"    viewBox="0 0 24 24"><rect class="ico" x="3" y="3" width="7" height="7"/><rect class="ico" x="14" y="3" width="7" height="7"/><rect class="ico" x="3" y="14" width="7" height="7"/><rect class="ico" x="14" y="14" width="7" height="7"/></symbol>
+    <symbol id="i-home"    viewBox="0 0 24 24"><path class="ico" d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-5v-7H10v7H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-cal"     viewBox="0 0 24 24"><rect class="ico" x="3" y="4" width="18" height="18" rx="2"/><line class="ico" x1="16" y1="2" x2="16" y2="6"/><line class="ico" x1="8" y1="2" x2="8" y2="6"/><line class="ico" x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-money"   viewBox="0 0 24 24"><line class="ico" x1="12" y1="1" x2="12" y2="23"/><path class="ico" d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+    <symbol id="i-doc"     viewBox="0 0 24 24"><path class="ico" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline class="ico" points="14 2 14 8 20 8"/><line class="ico" x1="9" y1="13" x2="15" y2="13"/><line class="ico" x1="9" y1="17" x2="13" y2="17"/></symbol>
+    <symbol id="i-more"    viewBox="0 0 24 24"><circle class="ico" cx="5" cy="12" r="1"/><circle class="ico" cx="12" cy="12" r="1"/><circle class="ico" cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path class="ico" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline class="ico" points="7 10 12 15 17 10"/><line class="ico" x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-phone"   viewBox="0 0 24 24"><path class="ico" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-shield"  viewBox="0 0 24 24"><path class="ico" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-help"    viewBox="0 0 24 24"><circle class="ico" cx="12" cy="12" r="10"/><path class="ico" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line class="ico" x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-arrow-r" viewBox="0 0 24 24"><line class="ico" x1="5" y1="12" x2="19" y2="12"/><polyline class="ico" points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-bank"    viewBox="0 0 24 24"><path class="ico" d="M3 10l9-6 9 6"/><line class="ico" x1="3" y1="22" x2="21" y2="22"/><line class="ico" x1="5" y1="10" x2="5" y2="22"/><line class="ico" x1="19" y1="10" x2="19" y2="22"/><line class="ico" x1="9" y1="10" x2="9" y2="22"/><line class="ico" x1="15" y1="10" x2="15" y2="22"/></symbol>
+    <symbol id="i-card"    viewBox="0 0 24 24"><rect class="ico" x="3" y="5" width="18" height="14" rx="2"/><line class="ico" x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><polyline class="ico" points="23 4 23 10 17 10"/><polyline class="ico" points="1 20 1 14 7 14"/><path class="ico" d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  </defs>
+</svg>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 01 — Portal Hub `/portal/[slug]`
+     The unified template, instantiated. GC brand header → the project
+     surface → the tab bar bottom. No login. No HeyHenry brand on the
+     page itself.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 01 &middot; mobile</span>
+  <span class="label">Portal Hub &mdash; the project surface</span>
+  <span class="sub">GC brand header &middot; money &amp; decisions above the fold &middot; intentional tab order &middot; bottom-sheet tabs (no horizontal scroll strip)</span>
+</div>
+<div class="frame-pad">
+  Three phones across the same project: the <strong>Project</strong> tab (landing) &middot; <strong>Schedule</strong> (read-only Gantt, firm bars) &middot; <strong>Photos</strong> (client-visible only). All open at <code style="font-family:var(--mono); font-size:12px;">portal.northbeam.ca/hillcrest-kitchen</code>.
+</div>
+
+<div class="phone-row">
+
+  <!-- ═══ PHONE 1 — Portal · Project tab (the landing) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Portal &middot; Project tab<span class="url">portal.northbeam.ca/hillcrest-kitchen</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">portal.northbeam.ca</span>
+          <span class="path">/hillcrest-kitchen</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <!-- (1) GC brand header — never HeyHenry's brand -->
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Hillcrest Kitchen &middot; Helen</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-pad">
+
+            <!-- Project hero -->
+            <div class="portal-hero">
+              <div class="pname">Hillcrest Kitchen</div>
+              <div class="paddr">2918 Hillcrest Dr, Abbotsford BC</div>
+              <div class="pstats">
+                <div class="pcell">
+                  <span class="l">Phase</span>
+                  <span class="v">Cabinetry &middot; week 6</span>
+                </div>
+                <div class="pcell">
+                  <span class="l">Complete</span>
+                  <span class="v">62%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Decisions pending (above the fold) -->
+            <div class="decisions-strip">
+              <div class="dh"><svg class="ico"><use href="#i-bell"/></svg>1 decision needed</div>
+              <div class="dt">Pick your kitchen pendants</div>
+              <div class="ds">Helen, the cabinets land Thursday. Picking pendants today keeps the electrician on schedule.</div>
+              <div class="row">
+                <button class="pill approve"><svg class="ico"><use href="#i-arrow-r"/></svg>Decide</button>
+                <button class="pill">Ask</button>
+              </div>
+            </div>
+
+            <!-- Money block -->
+            <div class="money-block">
+              <div class="money-eyebrow">Contract &amp; payments</div>
+              <div class="money-title">$72,206.40 &middot; 3 of 6 draws paid</div>
+              <div class="money-grid">
+                <div class="money-cell">
+                  <div class="lbl">Paid to date</div>
+                  <div class="val tabular">$30,808<span class="cents">.06</span></div>
+                  <div class="sub">42% of contract</div>
+                </div>
+                <div class="money-cell">
+                  <div class="lbl">Due now</div>
+                  <div class="val tabular">$0<span class="cents">.00</span></div>
+                  <div class="sub">Next draw on cabinets done</div>
+                </div>
+              </div>
+              <div class="money-bar">
+                <span class="seg-paid" style="width:42%"></span>
+                <span class="seg-due"  style="width:0%"></span>
+                <span class="seg-remain" style="width:58%"></span>
+              </div>
+              <span class="tax-flag">
+                <svg class="ico"><use href="#i-info"/></svg>
+                GST 5% &middot; BC &middot; included
+              </span>
+            </div>
+
+            <!-- Phase rail (milestone overview) -->
+            <div class="phase-rail">
+              <div class="phase-rail-h">
+                <span class="lbl">Phases</span>
+                <span class="pct">4 of 7 &middot; on track</span>
+              </div>
+              <div class="phase-list">
+                <div class="phase-item"><span class="phase-dot done"></span><span class="phase-name done">Demo &amp; disposal</span><span class="phase-meta">Mar 12</span></div>
+                <div class="phase-item"><span class="phase-dot done"></span><span class="phase-name done">Rough-ins</span><span class="phase-meta">Apr 02</span></div>
+                <div class="phase-item"><span class="phase-dot done"></span><span class="phase-name done">Drywall &amp; paint</span><span class="phase-meta">Apr 24</span></div>
+                <div class="phase-item"><span class="phase-dot now"></span><span class="phase-name">Cabinetry</span><span class="phase-meta">now</span></div>
+                <div class="phase-item"><span class="phase-dot"></span><span class="phase-name">Counters &amp; backsplash</span><span class="phase-meta">May 30</span></div>
+                <div class="phase-item"><span class="phase-dot"></span><span class="phase-name">Plumbing finish</span><span class="phase-meta">Jun 06</span></div>
+                <div class="phase-item"><span class="phase-dot"></span><span class="phase-name">Punch &amp; handover</span><span class="phase-meta">Jun 13</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Bottom tab bar — order matches the brief: -->
+        <div class="tab-bar">
+          <button class="tab-btn active">
+            <svg class="ico"><use href="#i-home"/></svg>
+            <span class="tlbl">Project</span>
+          </button>
+          <button class="tab-btn">
+            <svg class="ico"><use href="#i-cal"/></svg>
+            <span class="tlbl">Schedule</span>
+          </button>
+          <button class="tab-btn">
+            <svg class="ico"><use href="#i-photo"/></svg>
+            <span class="tlbl">Photos</span>
+          </button>
+          <button class="tab-btn">
+            <svg class="ico"><use href="#i-msg"/></svg>
+            <span class="badge">2</span>
+            <span class="tlbl">Messages</span>
+          </button>
+          <button class="tab-btn">
+            <svg class="ico"><use href="#i-more"/></svg>
+            <span class="tlbl">More</span>
+          </button>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ PHONE 2 — Portal · Schedule tab (read-only Gantt) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Portal &middot; Schedule tab<span class="url">read-only Gantt &middot; firm bars only</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">portal.northbeam.ca</span>
+          <span class="path">/hillcrest-kitchen?tab=schedule</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Hillcrest Kitchen &middot; Helen</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-pad">
+
+            <div class="portal-hero" style="padding-bottom: 11px;">
+              <div class="pname">Schedule</div>
+              <div class="paddr">Cabinetry &middot; week 6 &middot; on track for handover Jun&nbsp;13</div>
+            </div>
+
+            <div class="gantt-card">
+              <div class="ghead">
+                <span class="gh-lbl">May — Jun</span>
+                <span class="gh-sub">8-week view</span>
+              </div>
+
+              <div class="gantt-table">
+                <div class="gantt-month-row">
+                  <div class="m-lbl">Week</div>
+                  <div class="m-grid">
+                    <span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span>
+                  </div>
+                </div>
+
+                <div class="gantt-row">
+                  <div class="gantt-name">Drywall<span class="sub">done</span></div>
+                  <div class="gantt-track">
+                    <div class="gantt-bar rough" style="left:0%; width:12.5%;">drywall</div>
+                  </div>
+                </div>
+
+                <div class="gantt-row">
+                  <div class="gantt-name">Cabinetry<span class="sub">now &middot; week 6</span></div>
+                  <div class="gantt-track">
+                    <div class="gantt-bar cabinet" style="left:12.5%; width:25%;">cabinets</div>
+                    <div class="gantt-today" style="left:30%;"></div>
+                  </div>
+                </div>
+
+                <div class="gantt-row">
+                  <div class="gantt-name">Counters<span class="sub">template + install</span></div>
+                  <div class="gantt-track">
+                    <div class="gantt-bar finish" style="left:37.5%; width:18.75%;">counters</div>
+                  </div>
+                </div>
+
+                <div class="gantt-row">
+                  <div class="gantt-name">Tile backsplash<span class="sub amber">loud &middot; saw cuts</span></div>
+                  <div class="gantt-track">
+                    <div class="gantt-bar disrupt" style="left:50%; width:12.5%;">tile</div>
+                  </div>
+                </div>
+
+                <div class="gantt-row">
+                  <div class="gantt-name">Plumbing finish<span class="sub">water off ½ day</span></div>
+                  <div class="gantt-track">
+                    <div class="gantt-bar finish" style="left:62.5%; width:12.5%;">plumb</div>
+                  </div>
+                </div>
+
+                <div class="gantt-row">
+                  <div class="gantt-name">Punch &amp; clean<span class="sub">handover</span></div>
+                  <div class="gantt-track">
+                    <div class="gantt-bar rough" style="left:75%; width:18.75%;">punch</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gantt-foot">
+                <svg class="ico"><use href="#i-info"/></svg>
+                <span>Amber rows are disruptive &mdash; plan to be out.</span>
+              </div>
+            </div>
+
+            <div class="boundary-note">
+              <svg class="ico"><use href="#i-shield"/></svg>
+              <span><strong>What you see:</strong> firm dates only. Internal planning, supplier lead times, and confidence ranges aren't shared on your portal.</span>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <button class="tab-btn"><svg class="ico"><use href="#i-home"/></svg><span class="tlbl">Project</span></button>
+          <button class="tab-btn active"><svg class="ico"><use href="#i-cal"/></svg><span class="tlbl">Schedule</span></button>
+          <button class="tab-btn"><svg class="ico"><use href="#i-photo"/></svg><span class="tlbl">Photos</span></button>
+          <button class="tab-btn"><svg class="ico"><use href="#i-msg"/></svg><span class="badge">2</span><span class="tlbl">Messages</span></button>
+          <button class="tab-btn"><svg class="ico"><use href="#i-more"/></svg><span class="tlbl">More</span></button>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ PHONE 3 — Portal · Photos tab (client-visible only) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Portal &middot; Photos tab<span class="url">client_visible photos only &middot; internal default</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">portal.northbeam.ca</span>
+          <span class="path">/hillcrest-kitchen?tab=photos</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Hillcrest Kitchen &middot; Helen</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-pad">
+
+            <div class="portal-hero" style="padding-bottom: 11px;">
+              <div class="pname">Site photos</div>
+              <div class="paddr">12 shared by Northbeam &middot; latest May&nbsp;22</div>
+            </div>
+
+            <div class="photo-head">
+              <span class="h">Cabinetry &middot; week 6</span>
+              <span class="count">4 photos</span>
+            </div>
+            <div class="photo-grid">
+              <div class="photo-tile t-cabinet">
+                <span class="phase-tag">Cabinetry</span>
+                <span class="meta">May 22</span>
+              </div>
+              <div class="photo-tile t-cabinet">
+                <span class="phase-tag">Cabinetry</span>
+                <span class="meta">May 22</span>
+              </div>
+              <div class="photo-tile t-paint">
+                <span class="phase-tag">Cabinetry</span>
+                <span class="meta">May 21</span>
+              </div>
+              <div class="photo-tile t-paint">
+                <span class="phase-tag">Cabinetry</span>
+                <span class="meta">May 20</span>
+              </div>
+            </div>
+
+            <div class="photo-head" style="margin-top: 6px;">
+              <span class="h">Drywall &amp; paint</span>
+              <span class="count">6 photos</span>
+            </div>
+            <div class="photo-grid">
+              <div class="photo-tile t-framing">
+                <span class="phase-tag">Paint</span>
+                <span class="meta">Apr 24</span>
+              </div>
+              <div class="photo-tile t-tile">
+                <span class="phase-tag">Drywall</span>
+                <span class="meta">Apr 20</span>
+              </div>
+            </div>
+
+            <div class="boundary-note">
+              <svg class="ico"><use href="#i-shield"/></svg>
+              <span><strong>What you see:</strong> only photos Northbeam shared with you. Site photos default to internal; the team posts the keepers here.</span>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <button class="tab-btn"><svg class="ico"><use href="#i-home"/></svg><span class="tlbl">Project</span></button>
+          <button class="tab-btn"><svg class="ico"><use href="#i-cal"/></svg><span class="tlbl">Schedule</span></button>
+          <button class="tab-btn active"><svg class="ico"><use href="#i-photo"/></svg><span class="tlbl">Photos</span></button>
+          <button class="tab-btn"><svg class="ico"><use href="#i-msg"/></svg><span class="badge">2</span><span class="tlbl">Messages</span></button>
+          <button class="tab-btn"><svg class="ico"><use href="#i-more"/></svg><span class="tlbl">More</span></button>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 02 — Estimate approval `/estimate/[code]`
+     The same shell as Frame 01. customer_view_mode = detailed:
+     line items grouped by CATEGORY (not "bucket"); transparent
+     management fee; GST 5% BC; GST# + WCB# trust signals; terms_text;
+     typed-name approval; ≥50px "Approve &amp; sign" CTA.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 02 &middot; mobile</span>
+  <span class="label">Estimate approval &mdash; <span style="font-family:var(--mono); font-size:14px; color:var(--rust);">customer_view_mode</span> = detailed</span>
+  <span class="sub">Line items by category &middot; transparent mgmt fee line &middot; tax-exempt-aware GST &middot; one ≥50px primary action</span>
+</div>
+<div class="frame-pad">
+  Detailed mode is the GC's default for clients who want the full breakdown. Cost lines are grouped by <strong>category</strong> (the rename — formerly "bucket"). Management fee shown as its own line, never baked into totals.
+</div>
+
+<div class="phone-row">
+
+  <!-- ═══ PHONE 1 — Estimate · detailed mode (top of doc) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Detailed &middot; top of doc<span class="url">heyhenry.app/estimate/k4p2&hellip;</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/estimate/k4p2&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Estimate for Helen Chao</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="surface">
+
+          <div class="letterhead">
+            <div class="gc-logo-lg brand-northbeam">Nb</div>
+            <div class="name">Northbeam Build Co.</div>
+            <div class="meta">Abbotsford BC &middot; (604)&nbsp;555&middot;0188</div>
+            <div class="doc-eyebrow">Estimate</div>
+            <div class="doc-title-num">
+              <span class="num">E-2406-014</span>
+              <span class="date">&middot; May 18</span>
+            </div>
+            <span class="status-chip chip-pending"><span class="dot"></span>Awaiting&nbsp;approval</span>
+          </div>
+
+          <div class="prepared">
+            <div>
+              <div class="prep-lbl">For</div>
+              <div class="prep-val">Helen Chao<span class="addr">2918 Hillcrest Dr</span></div>
+            </div>
+            <div>
+              <div class="prep-lbl">Project</div>
+              <div class="prep-val">Hillcrest Kitchen<span class="addr">Valid 30 days</span></div>
+            </div>
+          </div>
+
+          <!-- view-mode chip — read-only indicator -->
+          <div class="view-mode-chip">
+            <svg class="ico"><use href="#i-eye"/></svg>
+            <span><strong>Detailed view</strong> &middot; line items by category. Helen prefers the full breakdown.</span>
+          </div>
+
+          <div class="doc-section">
+            <h2 class="doc-h2">Scope</h2>
+            <div class="line-table">
+
+              <div class="line-section-head">Kitchen</div>
+              <div class="line-row">
+                <div>
+                  <div class="line-label">Demolition &amp; disposal</div>
+                  <div class="line-note">Cabinets, counter, tile, drywall.</div>
+                </div>
+                <div class="line-num tabular">$3,200<span class="cents">.00</span></div>
+              </div>
+              <div class="line-row">
+                <div>
+                  <div class="line-label">Custom shaker cabinetry</div>
+                  <div class="line-note">15 boxes, soft-close.</div>
+                </div>
+                <div class="line-num tabular">$28,400<span class="cents">.00</span></div>
+              </div>
+              <div class="line-row">
+                <div>
+                  <div class="line-label">Quartz counter &amp; backsplash</div>
+                  <div class="line-note">Caesarstone Pure White, 30 sq ft.</div>
+                </div>
+                <div class="line-num tabular">$11,800<span class="cents">.00</span></div>
+              </div>
+              <div class="line-row">
+                <div>
+                  <div class="line-label">Plumbing &mdash; rough &amp; finish</div>
+                </div>
+                <div class="line-num tabular">$4,150<span class="cents">.00</span></div>
+              </div>
+              <div class="line-row">
+                <div>
+                  <div class="line-label">Electrical &mdash; rough &amp; finish</div>
+                  <div class="line-note">Under-cabinet lighting, pendants ready.</div>
+                </div>
+                <div class="line-num tabular">$3,900<span class="cents">.00</span></div>
+              </div>
+
+              <div class="line-section-head">Flooring</div>
+              <div class="line-row">
+                <div>
+                  <div class="line-label">Engineered oak &mdash; supply &amp; install</div>
+                  <div class="line-note">240 sq ft, refinish transition.</div>
+                </div>
+                <div class="line-num tabular">$5,800<span class="cents">.00</span></div>
+              </div>
+
+              <div class="line-section-head">Paint</div>
+              <div class="line-row">
+                <div>
+                  <div class="line-label">Drywall, prime &amp; finish</div>
+                </div>
+                <div class="line-num tabular">$4,150<span class="cents">.00</span></div>
+              </div>
+
+            </div>
+
+            <!-- Totals — management fee as its own line, NOT baked in -->
+            <div class="totals-card">
+              <div class="totals-row"><span class="lbl">Subtotal</span><span class="val tabular">$61,400<span class="cents">.00</span></span></div>
+              <div class="totals-row"><span class="lbl">Mgmt fee &middot; 12%</span><span class="val tabular">$7,368<span class="cents">.00</span></span></div>
+              <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC</span></span><span class="val tabular">$3,438<span class="cents">.40</span></span></div>
+              <div class="totals-row is-total"><span>Estimate total</span><span class="val tabular">$72,206<span class="cents">.40</span></span></div>
+            </div>
+          </div>
+
+          <div class="terms-block" style="margin-top:14px;">
+            <strong>Terms.</strong> Valid 30&nbsp;days. Six progress draws on milestones (signed below). Changes captured via written change order before work proceeds. No holdback &mdash; the management fee covers admin.
+          </div>
+
+          <div class="esig-zone">
+            <h3>Approve this estimate</h3>
+            <div class="sub">Type your full name &mdash; same as on paper.</div>
+            <input class="esig-input" type="text" placeholder="Your full name" />
+            <div class="esig-foot">
+              <svg class="ico"><use href="#i-lock"/></svg>
+              Encrypted &middot; timestamped &middot; logged.
+            </div>
+          </div>
+
+          <div class="doc-footer" style="margin-bottom: 14px;">
+            <div class="reg">
+              GST# <span class="num">82143 9215 RT0001</span>
+              <span class="sep">·</span>
+              WCB# <span class="num">98273461</span>
+            </div>
+            <div class="powered">Powered by <strong>HeyHenry</strong></div>
+          </div>
+
+        </div>
+
+        <!-- Sticky approve bar -->
+        <div class="sticky-bar">
+          <div class="sticky-amount">
+            <span class="due-label">Estimate total &middot; CAD</span>
+            <span class="due-val tabular">$72,206<span class="cents">.40</span></span>
+          </div>
+          <div class="cta-row">
+            <button class="cta cta-primary">Approve &amp; sign</button>
+            <button class="cta cta-secondary">Decline</button>
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ PHONE 2 — Estimate · summary mode (Henry-drafted) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Summary &middot; Henry-drafted, GC-approved<span class="url">customer_view_mode = summary &middot; margin-protecting</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/estimate/n7v3&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-mapleridge">Mr</div>
+          <div class="gc-stack">
+            <div class="gc-name">Maple Ridge Renos</div>
+            <div class="gc-meta">Estimate for the Brandscombes</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="surface">
+
+          <div class="letterhead">
+            <div class="gc-logo-lg brand-mapleridge">Mr</div>
+            <div class="name">Maple Ridge Renos</div>
+            <div class="meta">Maple Ridge BC &middot; (604)&nbsp;555&middot;0244</div>
+            <div class="doc-eyebrow">Estimate</div>
+            <div class="doc-title-num">
+              <span class="num">E-2406-019</span>
+              <span class="date">&middot; May 20</span>
+            </div>
+            <span class="status-chip chip-pending"><span class="dot"></span>Awaiting&nbsp;approval</span>
+          </div>
+
+          <div class="prepared">
+            <div>
+              <div class="prep-lbl">For</div>
+              <div class="prep-val">The Brandscombes<span class="addr">1140 Cedar Lane</span></div>
+            </div>
+            <div>
+              <div class="prep-lbl">Project</div>
+              <div class="prep-val">Basement build-out<span class="addr">Valid 30 days</span></div>
+            </div>
+          </div>
+
+          <div class="view-mode-chip">
+            <svg class="ico"><use href="#i-eye"/></svg>
+            <span><strong>Summary view</strong> &middot; clean total, no line-by-line breakdown. Detailed scope is in the contract.</span>
+          </div>
+
+          <!-- Henry-drafted summary (GC approved before sending) -->
+          <div class="doc-section">
+            <h2 class="doc-h2">What's included</h2>
+            <div class="henry-summary">
+              <div class="henry-tag"><span class="star">✦</span><span>Henry-drafted &middot; reviewed by Sam</span></div>
+              <p>A full <strong>1,140&nbsp;sq&nbsp;ft basement build-out</strong> &mdash; one bedroom, a 4-pc bath, family room with wet bar, and a dedicated laundry room. Includes plumbing rough-ins for a future suite.</p>
+              <p><strong>What we handle:</strong> permits, framing, insulation, mechanical, drywall, paint, vinyl plank flooring, and all finish carpentry. Owner-supplied items are limited to the bar cabinetry and bathroom fixtures.</p>
+              <p><strong>Timeline.</strong> Six weeks from permit pull, weather-independent indoor work. Two cleaning days and a final walk-through close the project.</p>
+            </div>
+
+            <div class="totals-card">
+              <div class="totals-row"><span class="lbl">Scope of work</span><span class="val tabular">$94,500<span class="cents">.00</span></span></div>
+              <div class="totals-row is-tax"><span class="lbl">GST 5% <span class="tax-meta">BC</span></span><span class="val tabular">$4,725<span class="cents">.00</span></span></div>
+              <div class="totals-row is-total"><span>Project total</span><span class="val tabular">$99,225<span class="cents">.00</span></span></div>
+            </div>
+          </div>
+
+          <div class="terms-block" style="margin-top:14px;">
+            <strong>Terms.</strong> Valid 30&nbsp;days. Eight progress draws on milestones. Changes via written change order. No holdback.
+          </div>
+
+          <div class="esig-zone">
+            <h3>Approve this estimate</h3>
+            <div class="sub">Type your full name &mdash; same as on paper.</div>
+            <input class="esig-input" type="text" placeholder="Your full name" />
+            <div class="esig-foot">
+              <svg class="ico"><use href="#i-lock"/></svg>
+              Encrypted &middot; timestamped &middot; logged.
+            </div>
+          </div>
+
+          <div class="doc-footer" style="margin-bottom: 14px;">
+            <div class="reg">
+              GST# <span class="num">73921 0048 RT0001</span>
+              <span class="sep">·</span>
+              WCB# <span class="num">61840322</span>
+            </div>
+            <div class="powered">Powered by <strong>HeyHenry</strong></div>
+          </div>
+
+        </div>
+
+        <div class="sticky-bar">
+          <div class="sticky-amount">
+            <span class="due-label">Project total &middot; CAD</span>
+            <span class="due-val tabular">$99,225<span class="cents">.00</span></span>
+          </div>
+          <div class="cta-row">
+            <button class="cta cta-primary">Approve &amp; sign</button>
+            <button class="cta cta-secondary">Decline</button>
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ PHONE 3 — Estimate · already approved (already-acted) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Already approved &middot; calm confirmation<span class="url">re-opening the link after signing</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/estimate/k4p2&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Hillcrest Kitchen &middot; Helen</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="state-screen">
+          <div class="state-row">
+            <div class="gc-logo brand-northbeam">Nb</div>
+            <div>
+              <div class="name">Northbeam Build Co.</div>
+              <div class="num">E-2406-014 &middot; Hillcrest Kitchen</div>
+            </div>
+          </div>
+
+          <div class="state-icon ok"><svg class="ico"><use href="#i-check"/></svg></div>
+          <h3 class="state-title">Approved &middot; thank you.</h3>
+          <div class="state-sub">You signed this estimate on <strong>May&nbsp;19 at 7:12&nbsp;PM</strong>. Dane will be in touch with the first draw and a schedule.</div>
+
+          <div class="state-receipt">
+            <div class="state-receipt-row"><span class="l">Approved by</span><span class="v">Helen Chao</span></div>
+            <div class="state-receipt-row"><span class="l">Total</span><span class="v tabular">$72,206.40</span></div>
+            <div class="state-receipt-row"><span class="l">Reference</span><span class="v mono">E-2406-014</span></div>
+          </div>
+
+          <div class="state-cta-stack">
+            <button class="receipt-btn"><svg class="ico"><use href="#i-download"/></svg>Download signed copy (PDF)</button>
+            <button class="receipt-btn"><svg class="ico"><use href="#i-grid"/></svg>Open project portal</button>
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 03 — Tap-to-decide `/decide/[code]`
+     The SMS gap-filler. No portal nav. No login. One question, one
+     tap. Henry drafts the SMS preview the GC approves before send.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 03 &middot; mobile</span>
+  <span class="label">Tap-to-decide &mdash; the SMS gap-filler</span>
+  <span class="sub">Decisions that would rot in a portal nobody logs into get a phone link &middot; one question &middot; one tap</span>
+</div>
+<div class="frame-pad">
+  Two phones tell the round trip. <strong>SMS preview</strong> (Henry drafts, the GC approves before send &mdash; outbound is human-in-the-loop) &middot; <strong>Decide page</strong> (the link's landing, no login, no nav). Photos are reference-only — never internal.
+</div>
+
+<div class="phone-row">
+
+  <!-- ═══ PHONE 1 — SMS preview (GC reviews + sends) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">SMS preview &middot; the GC's send view<span class="url">✦ Henry drafted &middot; human-in-the-loop</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:38</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <!-- Imitate an iMessage thread for the GC review -->
+        <div style="background: var(--card); padding: 12px 14px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+          <div class="gc-logo brand-northbeam" style="width: 32px; height: 32px; font-size: 12px;">Nb</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink);">Helen Chao</div>
+            <div style="font-size: 11px; color: var(--muted); font-family: var(--mono);">+1 (604) 555 0177</div>
+          </div>
+          <div style="font-family: var(--mono); font-size: 11px; color: var(--rust); font-weight: 700; letter-spacing: 0.04em;">DRAFT</div>
+        </div>
+
+        <div style="flex: 1; padding: 16px 14px; background: var(--bg); display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+
+          <!-- Henry tag banner -->
+          <div style="background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 12px 14px;">
+            <div class="henry-tag" style="margin-bottom: 6px;"><span class="star">✦</span><span>Henry drafted &middot; review before send</span></div>
+            <div style="font-size: 12px; color: var(--muted); line-height: 1.45;">Helen hasn't opened the portal in 4 days. Henry framed the decision in one sentence and a tap link &mdash; faster than chasing.</div>
+          </div>
+
+          <!-- Outgoing message bubble (the draft) -->
+          <div style="align-self: flex-end; max-width: 88%;">
+            <div style="background: var(--rust); color: #fff; border-radius: 18px 18px 6px 18px; padding: 11px 14px; font-size: 14px; line-height: 1.45;">
+              Hi Helen &mdash; quick pendant call before the electrician's Thursday rough-in. One tap, takes 30s:<br><br>
+              northbeam.ca/decide/r7q4
+            </div>
+            <div style="font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; margin-top: 4px; letter-spacing: 0.04em;">draft &middot; Sam &middot; SMS</div>
+          </div>
+
+          <!-- GC controls -->
+          <div style="margin-top: auto; display: flex; gap: 8px;">
+            <button class="cta cta-secondary" style="flex: 1;">Edit</button>
+            <button class="cta cta-primary" style="flex: 2;">Send to Helen</button>
+          </div>
+
+          <div style="font-size: 12px; color: var(--muted); text-align: center; line-height: 1.45;">
+            The client never sees Henry. You see the preview; they see your name.
+          </div>
+
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ PHONE 2 — Decide page (the client's landing) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Decide page &middot; the client's tap<span class="url">heyhenry.app/decide/r7q4-x9w2&hellip;</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/decide/r7q4&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">A quick decision for Helen</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="surface">
+
+          <div class="decide-hero">
+            <div class="eyebrow">Decision needed by Thu</div>
+            <div class="q">Kitchen pendants &mdash; pick three?</div>
+          </div>
+
+          <div class="decide-body">
+
+            <div class="decide-ctx">
+              <p>Hi Helen &mdash; before the electrician roughs in the island Thursday, we need the pendant count. Three is what fits the island length and the breaker plan. Want to confirm three?</p>
+              <div class="due"><svg class="ico"><use href="#i-clock"/></svg>By Thu May&nbsp;26</div>
+            </div>
+
+            <!-- Reference photos -->
+            <div class="decide-photos">
+              <div class="photo-tile t-cabinet">
+                <span class="phase-tag">Reference</span>
+                <span class="meta">island layout</span>
+              </div>
+              <div class="photo-tile t-paint">
+                <span class="phase-tag">Reference</span>
+                <span class="meta">your Pinterest</span>
+              </div>
+            </div>
+
+            <input class="decide-name-input" type="text" placeholder="Your name" value="Helen Chao" />
+
+            <div class="decide-action-stack">
+              <button class="cta cta-primary">
+                <svg class="ico"><use href="#i-check"/></svg>
+                Yes &mdash; three pendants
+              </button>
+              <button class="cta cta-secondary">
+                <svg class="ico"><use href="#i-x"/></svg>
+                No &mdash; rethink layout
+              </button>
+              <button class="cta cta-ghost">
+                <svg class="ico"><use href="#i-help"/></svg>
+                Ask a question instead
+              </button>
+            </div>
+
+            <div class="boundary-note" style="margin-top: 4px;">
+              <svg class="ico"><use href="#i-shield"/></svg>
+              <span>This link only lets you answer this one question. No login required.</span>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FRAME 04 — Edge states
+     Link expired · not found · already-acted (declined) · already-paid
+     · payment retry. Calm, honest, never blame the client; always
+     a way out (call the GC).
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="frame-divider">
+  <span class="num">Frame 04 &middot; mobile</span>
+  <span class="label">Edge states &mdash; expired &middot; not found &middot; already-acted &middot; pay retry</span>
+  <span class="sub">Calm, branded, never a stack trace &middot; always give a way out (call the GC, not HeyHenry)</span>
+</div>
+<div class="frame-pad">
+  Every code-based surface needs a state for: link expired, link not found, the action already taken (approved / declined / paid), and a payment that couldn't authorize. All four wear the same shell.
+</div>
+
+<div class="phone-row">
+
+  <!-- ═══ STATE 1 — Link expired (estimate validity past) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Link expired<span class="url">estimate past its 30-day validity</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/estimate/k4p2&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Estimate</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="state-screen">
+          <div class="state-icon warn"><svg class="ico"><use href="#i-clock"/></svg></div>
+          <h3 class="state-title">This estimate expired</h3>
+          <div class="state-sub">Prices were good through <strong>Jun&nbsp;17, 2026</strong>. Materials and labour may have shifted &mdash; get in touch and we'll refresh it for you.</div>
+
+          <div class="state-cta-stack">
+            <button class="receipt-btn"><svg class="ico"><use href="#i-phone"/></svg>Call Dane &middot; (604)&nbsp;555&middot;0188</button>
+            <button class="receipt-btn"><svg class="ico"><use href="#i-msg"/></svg>Text Northbeam</button>
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ STATE 2 — Link not found (slug/code unknown) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Link not found<span class="url">slug typo or reset code</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">heyhenry.app</span>
+          <span class="path">/decide/&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <!-- No GC bar here — we don't know which tenant. Generic
+             but still calm + branded with HeyHenry quietly. -->
+        <div style="background: var(--card); padding: 12px 16px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; gap: 11px; flex-shrink: 0;">
+          <div style="width: 36px; height: 36px; border-radius: 9px; background: var(--paper-soft); border: 1px solid var(--hair); display: grid; place-items: center; color: var(--muted);">
+            <svg class="ico" style="width: 18px; height: 18px;"><use href="#i-help"/></svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink);">Link not found</div>
+            <div style="font-size: 12px; color: var(--muted);">heyhenry.app</div>
+          </div>
+        </div>
+
+        <div class="state-screen">
+          <div class="state-icon void"><svg class="ico"><use href="#i-x"/></svg></div>
+          <h3 class="state-title">We couldn't find this link</h3>
+          <div class="state-sub">The link may have been reset, deleted, or copied wrong. Check the most recent text or email from your contractor &mdash; they always have the current link.</div>
+
+          <div class="state-cta-stack">
+            <button class="receipt-btn">Open the most recent text</button>
+          </div>
+
+          <div style="margin-top: 24px; font-family: var(--mono); font-size: 11px; color: var(--faint); letter-spacing: 0.04em;">
+            Reference: <span style="color: var(--muted);">404 &middot; resource not found</span>
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ STATE 3 — Already declined ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Already declined<span class="url">change order &middot; re-opening the link</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/approve/r7q4&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Change order CO-3</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="state-screen">
+          <div class="state-row">
+            <div class="gc-logo brand-northbeam">Nb</div>
+            <div>
+              <div class="name">Northbeam Build Co.</div>
+              <div class="num">CO-3 &middot; pendants + subfloor</div>
+            </div>
+          </div>
+
+          <div class="state-icon void"><svg class="ico"><use href="#i-x"/></svg></div>
+          <h3 class="state-title">You declined this change</h3>
+          <div class="state-sub">Helen declined CO-3 on <strong>May&nbsp;22 at 4:18&nbsp;PM</strong>. Dane will follow up if there's a way to keep the project moving without it.</div>
+
+          <div class="state-receipt">
+            <div class="state-receipt-row"><span class="l">Decision</span><span class="v">Declined</span></div>
+            <div class="state-receipt-row"><span class="l">By</span><span class="v">Helen Chao</span></div>
+            <div class="state-receipt-row"><span class="l">Impact</span><span class="v tabular">$0.00</span></div>
+            <div class="state-receipt-row"><span class="l">Reference</span><span class="v mono">CO-3</span></div>
+          </div>
+
+          <div class="state-cta-stack">
+            <button class="receipt-btn"><svg class="ico"><use href="#i-grid"/></svg>Open project portal</button>
+            <button class="receipt-btn"><svg class="ico"><use href="#i-phone"/></svg>Call Dane</button>
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ STATE 4 — Already paid (invoice family) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Already paid<span class="url">invoice already received</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/view/invoice/y2nh&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Draw 3 &middot; Hillcrest Kitchen</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="state-screen">
+          <div class="state-row">
+            <div class="gc-logo brand-northbeam">Nb</div>
+            <div>
+              <div class="name">Northbeam Build Co.</div>
+              <div class="num">INV-2406-031 &middot; Draw 3</div>
+            </div>
+          </div>
+
+          <div class="state-icon ok"><svg class="ico"><use href="#i-check"/></svg></div>
+          <h3 class="state-title">Paid &middot; thank you.</h3>
+          <div class="state-sub">Your draw was received on <strong>May&nbsp;23 at 9:42&nbsp;AM</strong>. Cabinets are scheduled to land Thursday.</div>
+
+          <div class="state-receipt">
+            <div class="state-receipt-row"><span class="l">Amount</span><span class="v tabular">$32,348.46</span></div>
+            <div class="state-receipt-row"><span class="l">Method</span><span class="v">Interac e-Transfer</span></div>
+            <div class="state-receipt-row"><span class="l">Reference</span><span class="v mono">CA-IET-78NMQ4</span></div>
+          </div>
+
+          <div class="state-cta-stack">
+            <button class="receipt-btn"><svg class="ico"><use href="#i-download"/></svg>Download receipt (PDF)</button>
+            <button class="receipt-btn"><svg class="ico"><use href="#i-grid"/></svg>Open project portal</button>
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ STATE 5 — Payment retry (card declined) ═══ -->
+  <div class="phone-cell">
+    <div class="cap">Payment didn't go through<span class="url">card declined &middot; calm retry path</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right"><span>5G</span><span class="battery"></span></div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="ico lock"><use href="#i-lock"/></svg>
+          <span class="host">northbeam.heyhenry.app</span>
+          <span class="path">/view/invoice/y2nh&hellip;</span>
+          <span class="menu">&hellip;</span>
+        </div>
+
+        <div class="gc-bar">
+          <div class="gc-logo brand-northbeam">Nb</div>
+          <div class="gc-stack">
+            <div class="gc-name">Northbeam Build Co.</div>
+            <div class="gc-meta">Draw 3 &middot; Hillcrest Kitchen</div>
+          </div>
+          <div class="right">
+            <svg class="ico"><use href="#i-lock"/></svg>
+            <span>secure</span>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-pad">
+
+            <div class="retry-banner" style="margin: 0;">
+              <svg class="ico"><use href="#i-alert"/></svg>
+              <div>
+                <div class="t">Your card was declined</div>
+                <div class="s">The bank didn't authorize a $32,348.46 charge. No money moved. Try a different card or send by Interac &mdash; same result, same business day.</div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-inner-pad">
+                <div style="font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;">Outstanding</div>
+                <div style="margin-top: 4px; font-size: 16px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.015em;">
+                  $32,348.46 <span style="font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.04em;">CAD</span>
+                </div>
+                <div style="margin-top: 3px; font-size: 12px; color: var(--muted);">Draw 3 of 6 &middot; INV-2406-031</div>
+
+                <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                  <button class="cta cta-primary" style="height: 50px;">
+                    <svg class="ico"><use href="#i-refresh"/></svg>
+                    Try a different card
+                  </button>
+                  <button class="cta cta-interac" style="height: 50px;">
+                    <svg class="ico"><use href="#i-bank"/></svg>
+                    Send Interac e-Transfer
+                  </button>
+                </div>
+
+                <div style="margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.45; display: flex; gap: 8px; align-items: flex-start;">
+                  <svg class="ico" style="width: 12px; height: 12px; color: var(--muted); flex-shrink: 0; margin-top: 2px;"><use href="#i-info"/></svg>
+                  <span>Most Canadian banks auto-deposit Interac. Northbeam marks paid the same business day.</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="cta cta-secondary" style="height: 48px;">
+              <svg class="ico"><use href="#i-phone"/></svg>
+              Call Dane &middot; (604)&nbsp;555&middot;0188
+            </button>
+
+          </div>
+        </div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ───────────── Footer note ───────────── -->
+<div style="text-align:center; padding: 48px 28px 24px; color: var(--muted); font-size: 12px; max-width: 880px; margin: 0 auto;">
+  <div style="font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); margin-bottom: 6px; font-size: 11px;">Mobile spec &middot; primary surface</div>
+  13 phones across four frames &middot; one shared template (GC brand &rarr; artifact &rarr; one primary action). All money tabular CAD &middot; GST 5% BC (tax-exempt aware) &middot; transparent mgmt-fee line &middot; Stripe + Interac at parity &middot; <strong>no holdback</strong>. Buttons ≥50px; status always label+glyph, never colour-only. ✦ Henry appears on the GC's draft / summary-view surfaces, never on the client side as a chat. Subscreens (<span style="font-family: var(--mono);">/pulse</span> &middot; <span style="font-family: var(--mono);">/home-record</span> &middot; <span style="font-family: var(--mono);">/view/invoice</span> &middot; <span style="font-family: var(--mono);">/q</span> &middot; <span style="font-family: var(--mono);">/r</span>) graduate to their own renders &mdash; same shell, different artifact.
+</div>
+
+</body>
+</html>
