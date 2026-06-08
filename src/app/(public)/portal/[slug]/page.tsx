@@ -29,6 +29,7 @@ import { PortalSelectionsPanel } from '@/components/features/portal/portal-selec
 import { TradeContactsList } from '@/components/features/portal/trade-contacts-list';
 import { PublicBrandHeader } from '@/components/features/public/public-brand-header';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { TenantProvider } from '@/lib/auth/tenant-context';
 import {
@@ -41,6 +42,7 @@ import type { ProjectPhase } from '@/lib/db/queries/project-phases';
 import type { ProjectSelection } from '@/lib/db/queries/project-selections';
 import { signIdeaBoardImageUrls } from '@/lib/storage/idea-board';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { projectStageTone } from '@/lib/ui/status-tokens';
 import { isPortalPhotoTag, type PortalPhotoTag } from '@/lib/validators/portal-photo';
 import type { IdeaBoardItem } from '@/server/actions/project-idea-board';
 import type { MessageRow } from '@/server/actions/project-messages';
@@ -887,18 +889,18 @@ export default async function PortalPage({
               <div className="mb-8 space-y-3 rounded-lg border bg-card p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                      {statusLabel}
-                    </span>
+                    <StatusBadge
+                      tone={
+                        projectStageTone[p.lifecycle_stage as keyof typeof projectStageTone] ??
+                        'neutral'
+                      }
+                      label={statusLabel}
+                    />
                   </div>
                   {hasPendingItems ? (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                      Waiting on you
-                    </span>
+                    <StatusBadge tone="warning" label="Waiting on you" />
                   ) : (
-                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                      Waiting on us
-                    </span>
+                    <StatusBadge tone="success" label="Waiting on us" />
                   )}
                 </div>
 

@@ -67,39 +67,52 @@ export async function listMoneyAtRisk(tenantId: string): Promise<MoneyAtRiskRow[
 
   const customerByContact = new Map<string, { id: string; name: string }>();
 
-  if (emails.length > 0) {
-    const { data: byEmail } = await admin
-      .from('contacts')
-      .select('id, name, email')
-      .eq('tenant_id', tenantId)
-      .in('email', emails);
-    for (const c of byEmail ?? []) {
-      const row = c as { id: string; name: string; email: string | null };
-      const matchEmail = row.email?.toLowerCase() ?? '';
-      const contact = rows.find((r) => r.ar_contacts?.email?.toLowerCase() === matchEmail);
-      if (contact?.ar_contacts) {
-        customerByContact.set(contact.ar_contacts.id, { id: row.id, name: row.name });
-      }
+  // Resolve matching customers by email and phone in parallel (the two lookups
+  // are independent), and index the tagged AR contacts by email/phone so each
+  // match is O(1) instead of an O(n*m) rows.find() per returned customer. The
+  // phone list preserves the original "first tagged contact not already matched"
+  // semantics.
+  const arByEmail = new Map<string, NonNullable<RawRow['ar_contacts']>>();
+  const arByPhone = new Map<string, NonNullable<RawRow['ar_contacts']>[]>();
+  for (const r of rows) {
+    if (!r.ar_contacts) continue;
+    const e = r.ar_contacts.email?.toLowerCase();
+    if (e && !arByEmail.has(e)) arByEmail.set(e, r.ar_contacts);
+    const p = r.ar_contacts.phone;
+    if (p) {
+      const arr = arByPhone.get(p) ?? [];
+      arr.push(r.ar_contacts);
+      arByPhone.set(p, arr);
     }
   }
-  if (phones.length > 0) {
-    const { data: byPhone } = await admin
-      .from('contacts')
-      .select('id, name, phone')
-      .eq('tenant_id', tenantId)
-      .in('phone', phones);
-    for (const c of byPhone ?? []) {
-      const row = c as { id: string; name: string; phone: string | null };
-      const contact = rows.find(
-        (r) =>
-          r.ar_contacts?.phone === row.phone &&
-          r.ar_contacts &&
-          !customerByContact.has(r.ar_contacts.id),
-      );
-      if (contact?.ar_contacts) {
-        customerByContact.set(contact.ar_contacts.id, { id: row.id, name: row.name });
-      }
-    }
+
+  const [emailRes, phoneRes] = await Promise.all([
+    emails.length > 0
+      ? admin
+          .from('contacts')
+          .select('id, name, email')
+          .eq('tenant_id', tenantId)
+          .in('email', emails)
+      : Promise.resolve({ data: [] as { id: string; name: string; email: string | null }[] }),
+    phones.length > 0
+      ? admin
+          .from('contacts')
+          .select('id, name, phone')
+          .eq('tenant_id', tenantId)
+          .in('phone', phones)
+      : Promise.resolve({ data: [] as { id: string; name: string; phone: string | null }[] }),
+  ]);
+
+  for (const c of emailRes.data ?? []) {
+    const row = c as { id: string; name: string; email: string | null };
+    const contact = arByEmail.get(row.email?.toLowerCase() ?? '');
+    if (contact) customerByContact.set(contact.id, { id: row.id, name: row.name });
+  }
+  for (const c of phoneRes.data ?? []) {
+    const row = c as { id: string; name: string; phone: string | null };
+    if (!row.phone) continue;
+    const contact = (arByPhone.get(row.phone) ?? []).find((ar) => !customerByContact.has(ar.id));
+    if (contact) customerByContact.set(contact.id, { id: row.id, name: row.name });
   }
 
   // For each customer, fetch the most recent pending-approval project.

@@ -517,7 +517,7 @@ export type MemoItemCostLineInput = {
   memoId: string;
   itemIndex: number;
   budget_category_id: string;
-  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead';
+  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead' | 'supply_install';
   label: string;
   qty: number;
   unit: string;

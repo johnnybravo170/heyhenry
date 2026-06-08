@@ -269,11 +269,13 @@ export async function importBillPage(ctx: BillImportContext, page: QboBill[]): P
     }
   }
 
-  for (const u of toUpdate) {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('bills')
-      .update({
+  if (toUpdate.length > 0) {
+    // One set-based UPDATE for the whole page's headers instead of one round
+    // trip per bill. QBO is the source of truth on re-import.
+    const { error } = await supabase.rpc('qbo_bulk_update_bills', {
+      p_rows: toUpdate.map((u) => ({
+        id: u.id,
+        tenant_id: ctx.tenantId,
         doc_number: u.header.doc_number,
         txn_date: u.header.txn_date,
         due_date: u.header.due_date,
@@ -286,37 +288,48 @@ export async function importBillPage(ctx: BillImportContext, page: QboBill[]): P
         qbo_class_id: u.header.qbo_class_id,
         qbo_class_name: u.header.qbo_class_name,
         qbo_sync_token: u.qbo.SyncToken,
-        qbo_sync_status: 'synced',
-        qbo_synced_at: now,
-        updated_at: now,
-      })
-      .eq('id', u.id);
+      })),
+    });
     if (error) {
-      throw new Error(`Failed to update bill ${u.id}: ${error.message}`);
+      throw new Error(`Failed to update bills page: ${error.message}`);
     }
+
     // Replace line items wholesale — QBO is source of truth on re-import.
-    await supabase.from('bill_line_items').delete().eq('bill_id', u.id);
-    const lines = mapQboBillLines(u.qbo.Line ?? []);
-    if (lines.length > 0) {
-      const lineRows = lines.map((line) => ({
-        bill_id: u.id,
-        tenant_id: ctx.tenantId,
-        position: line.position,
-        description: line.description,
-        amount_cents: line.amount_cents,
-        detail_type: line.detail_type,
-        qbo_account_id: line.qbo_account_id,
-        qbo_account_name: line.qbo_account_name,
-        qbo_item_id: line.qbo_item_id,
-        qbo_tax_code_id: line.qbo_tax_code_id,
-        tax_cents: line.tax_cents,
-        qbo_line_id: line.qbo_line_id,
-        qbo_class_id: line.qbo_class_id,
-        qbo_customer_ref: line.qbo_customer_ref,
-      }));
-      const { error: lineErr } = await supabase.from('bill_line_items').insert(lineRows);
+    // One delete for every updated bill, then one bulk insert for all their
+    // lines (was a delete + insert round trip per bill).
+    const updateIds = toUpdate.map((u) => u.id);
+    const { error: delErr } = await supabase
+      .from('bill_line_items')
+      .delete()
+      .in('bill_id', updateIds);
+    if (delErr) {
+      throw new Error(`Failed to clear bill_line_items: ${delErr.message}`);
+    }
+    const updatedLineRows: Array<Record<string, unknown>> = [];
+    for (const u of toUpdate) {
+      for (const line of mapQboBillLines(u.qbo.Line ?? [])) {
+        updatedLineRows.push({
+          bill_id: u.id,
+          tenant_id: ctx.tenantId,
+          position: line.position,
+          description: line.description,
+          amount_cents: line.amount_cents,
+          detail_type: line.detail_type,
+          qbo_account_id: line.qbo_account_id,
+          qbo_account_name: line.qbo_account_name,
+          qbo_item_id: line.qbo_item_id,
+          qbo_tax_code_id: line.qbo_tax_code_id,
+          tax_cents: line.tax_cents,
+          qbo_line_id: line.qbo_line_id,
+          qbo_class_id: line.qbo_class_id,
+          qbo_customer_ref: line.qbo_customer_ref,
+        });
+      }
+    }
+    if (updatedLineRows.length > 0) {
+      const { error: lineErr } = await supabase.from('bill_line_items').insert(updatedLineRows);
       if (lineErr) {
-        throw new Error(`Failed to re-insert bill_line_items for ${u.id}: ${lineErr.message}`);
+        throw new Error(`Failed to re-insert bill_line_items: ${lineErr.message}`);
       }
     }
   }

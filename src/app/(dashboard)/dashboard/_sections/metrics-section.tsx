@@ -17,11 +17,16 @@ export async function MetricsSection() {
     getRecentActivityFeed(),
   ]);
 
+  // This section stacks several cards (key metrics, needs-attention, recent
+  // activity) into a single drag-sortable slot. The slot wrapper
+  // (SortableSection) provides no spacing, so without this container the cards
+  // butt together with no vertical gap. flex-col gap-6 gives them the same
+  // rhythm as the dashboard's top-level sections — matching AttentionSection.
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <KeyMetrics metrics={metrics} revenueYtdCents={revenueYtdCents} isRenovation={isRenovation} />
       <NeedsAttention items={attentionItems} />
       <RecentActivity entries={recentActivity} timezone={tz} />
-    </>
+    </div>
   );
 }
