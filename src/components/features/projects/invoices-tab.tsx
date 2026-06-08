@@ -1,15 +1,25 @@
 'use client';
 
-import { CheckCircle, Sparkles } from 'lucide-react';
+import { CheckCircle, Pencil, Sparkles, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { RecordPaymentDialog } from '@/components/features/invoices/record-payment-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Money } from '@/components/ui/money';
-import type { DrawGstMode } from '@/lib/invoices/draw-gst-mode';
 import { invoiceTotalCents } from '@/lib/invoices/totals';
 import { withFrom } from '@/lib/nav/from-link';
 import { invoiceStatusTone, statusToneClass } from '@/lib/ui/status-tokens';
@@ -17,9 +27,17 @@ import { cn } from '@/lib/utils';
 import {
   createInvoiceFromEstimateAction,
   createMilestoneInvoiceAction,
+  deleteDrawAction,
+  editDrawAction,
   generateFinalInvoiceAction,
-  setProjectDrawGstModeAction,
 } from '@/server/actions/invoices';
+
+type InvoiceLineItem = {
+  description?: string | null;
+  quantity?: number | null;
+  unit_price_cents?: number | null;
+  total_cents?: number | null;
+};
 
 type InvoiceSummary = {
   id: string;
@@ -29,7 +47,7 @@ type InvoiceSummary = {
   percent_complete: number | null;
   amount_cents: number;
   tax_cents: number;
-  line_items: { total_cents?: number | null }[] | null;
+  line_items: InvoiceLineItem[] | null;
   customer_note: string | null;
   created_at: string;
 };
@@ -52,29 +70,44 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+/** Initial values for editing an existing draw. When present, DrawForm edits
+ *  that draw in place instead of creating a new one. */
+type DrawEditInit = {
+  invoiceId: string;
+  label: string;
+  percent: number | null;
+  items: { description: string; amountRaw: string }[];
+};
+
 function DrawForm({
   projectId,
   defaultLabel,
   defaultPercent,
-  gstMode,
   taxRate,
+  editDraw,
   onDone,
 }: {
   projectId: string;
   defaultLabel: string;
   defaultPercent: number;
-  /** Resolved project GST mode — drives the preview math + label. */
-  gstMode: DrawGstMode;
   /** Tenant's combined tax rate (e.g. 0.05). Drives the GST preview. */
   taxRate: number;
+  /** When set, the form edits this existing draw instead of creating one. */
+  editDraw?: DrawEditInit;
   onDone: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
-  const [label, setLabel] = useState(defaultLabel);
-  const [percentRaw, setPercentRaw] = useState(String(defaultPercent));
-  const [items, setItems] = useState([{ id: crypto.randomUUID(), description: '', amountRaw: '' }]);
+  const [label, setLabel] = useState(editDraw?.label ?? defaultLabel);
+  const [percentRaw, setPercentRaw] = useState(
+    editDraw ? (editDraw.percent !== null ? String(editDraw.percent) : '') : String(defaultPercent),
+  );
+  const [items, setItems] = useState(() =>
+    editDraw && editDraw.items.length > 0
+      ? editDraw.items.map((it) => ({ id: crypto.randomUUID(), ...it }))
+      : [{ id: crypto.randomUUID(), description: '', amountRaw: '' }],
+  );
 
   function addItem() {
     setItems((prev) => [...prev, { id: crypto.randomUUID(), description: '', amountRaw: '' }]);
@@ -94,16 +127,33 @@ function DrawForm({
       setError('% complete must be between 0 and 100.');
       return;
     }
+    const lineItems = items.map((item) => ({
+      description: item.description,
+      quantity: 1,
+      unitPriceCents: Math.round(parseFloat(item.amountRaw || '0') * 100),
+    }));
     startTransition(async () => {
+      if (editDraw) {
+        const res = await editDrawAction({
+          invoiceId: editDraw.invoiceId,
+          label,
+          percentComplete: pctNum,
+          lineItems,
+        });
+        if (res.ok) {
+          toast.success('Draw updated.');
+          router.refresh();
+          onDone();
+        } else {
+          setError(res.error);
+        }
+        return;
+      }
       const res = await createMilestoneInvoiceAction({
         projectId,
         label,
         percentComplete: pctNum,
-        lineItems: items.map((item) => ({
-          description: item.description,
-          quantity: 1,
-          unitPriceCents: Math.round(parseFloat(item.amountRaw || '0') * 100),
-        })),
+        lineItems,
       });
       if (res.ok) {
         toast.success('Draw created.');
@@ -124,14 +174,10 @@ function DrawForm({
     (s, item) => s + Math.round(parseFloat(item.amountRaw || '0') * 100),
     0,
   );
-  // GST preview depends on the project's mode:
-  //  - inclusive: entered total is the all-in; back-compute embedded GST.
-  //  - on_top: entered total is the subtotal; add GST to get the all-in.
-  const onTop = gstMode === 'on_top';
-  const gstCents = onTop
-    ? Math.round(total * taxRate)
-    : Math.round((total * taxRate) / (1 + taxRate));
-  const customerTotal = onTop ? total + gstCents : total;
+  // GST is always added on top: entered line items are the pre-tax subtotal,
+  // GST is computed on top to get the all-in customer total.
+  const gstCents = Math.round(total * taxRate);
+  const customerTotal = total + gstCents;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border bg-muted/30 p-4">
@@ -212,30 +258,24 @@ function DrawForm({
 
       {total > 0 && (
         <p className="text-sm">
-          {onTop ? (
-            <>
-              <span className="text-muted-foreground">Subtotal: </span>
-              <Money cents={total} className="font-medium" />
-              <span className="text-muted-foreground ml-2">
-                + <Money cents={gstCents} /> GST ={' '}
-              </span>
-              <Money cents={customerTotal} className="font-medium" />
-            </>
-          ) : (
-            <>
-              <span className="text-muted-foreground">Total: </span>
-              <Money cents={customerTotal} className="font-medium" />
-              <span className="text-muted-foreground ml-2">
-                (incl. <Money cents={gstCents} /> GST)
-              </span>
-            </>
-          )}
+          <span className="text-muted-foreground">Subtotal: </span>
+          <Money cents={total} className="font-medium" />
+          <span className="text-muted-foreground ml-2">
+            + <Money cents={gstCents} /> GST ={' '}
+          </span>
+          <Money cents={customerTotal} className="font-medium" />
         </p>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? 'Creating…' : 'Create draw'}
+          {editDraw
+            ? pending
+              ? 'Saving…'
+              : 'Save changes'
+            : pending
+              ? 'Creating…'
+              : 'Create draw'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>
           Cancel
@@ -250,9 +290,6 @@ export function InvoicesTab({
   invoices,
   contractRevenueCents,
   estimateApproved,
-  drawGstMode,
-  projectGstModeOverride,
-  tenantDefaultGstMode,
   taxRate,
   approvedChangeOrderCents = 0,
 }: {
@@ -272,27 +309,36 @@ export function InvoicesTab({
    *  "Convert estimate to invoice" shortcut — the action itself doesn't
    *  enforce approval, but offering it on a draft would be misleading. */
   estimateApproved: boolean;
-  /** Resolved draw GST mode (project override → tenant default → inclusive). */
-  drawGstMode: DrawGstMode;
-  /** The project's own override, or null when inheriting the tenant default. */
-  projectGstModeOverride: string | null;
-  /** Tenant default, shown in the "Account default" option label. */
-  tenantDefaultGstMode: DrawGstMode;
   /** Tenant combined tax rate for the new-draw preview. */
   taxRate: number;
 }) {
   const router = useRouter();
   const [showDrawForm, setShowDrawForm] = useState(false);
+  const [editDraw, setEditDraw] = useState<DrawEditInit | null>(null);
   const [finalPending, startFinalTransition] = useTransition();
   const [convertPending, startConvertTransition] = useTransition();
-  const [gstModePending, startGstModeTransition] = useTransition();
+  const [deletePending, startDeleteTransition] = useTransition();
 
-  function handleGstModeChange(value: string) {
-    const next = value === 'inherit' ? null : (value as DrawGstMode);
-    startGstModeTransition(async () => {
-      const res = await setProjectDrawGstModeAction({ projectId, mode: next });
+  function startEditDraw(inv: InvoiceSummary) {
+    setShowDrawForm(false);
+    setEditDraw({
+      invoiceId: inv.id,
+      label: inv.customer_note ?? '',
+      percent: inv.percent_complete,
+      // Draws store one $-amount per line (quantity 1). Re-derive the
+      // dollar string from total_cents (falls back to unit_price_cents).
+      items: (inv.line_items ?? []).map((li) => ({
+        description: li.description ?? '',
+        amountRaw: ((li.total_cents ?? li.unit_price_cents ?? 0) / 100).toString(),
+      })),
+    });
+  }
+
+  function handleDeleteDraw(invoiceId: string) {
+    startDeleteTransition(async () => {
+      const res = await deleteDrawAction({ invoiceId });
       if (res.ok) {
-        toast.success('Draw GST display updated.');
+        toast.success('Draw deleted.');
         router.refresh();
       } else {
         toast.error(res.error);
@@ -389,7 +435,7 @@ export function InvoicesTab({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        {!showDrawForm && (
+        {!showDrawForm && !editDraw && (
           <Button
             size="sm"
             onClick={() => setShowDrawForm(true)}
@@ -412,22 +458,6 @@ export function InvoicesTab({
         <Button size="sm" variant="outline" onClick={handleFinalInvoice} disabled={finalPending}>
           {finalPending ? 'Generating…' : 'Generate final invoice'}
         </Button>
-
-        <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          GST on draws
-          <select
-            className="rounded-md border bg-background px-2 py-1 text-foreground"
-            value={projectGstModeOverride ?? 'inherit'}
-            onChange={(e) => handleGstModeChange(e.target.value)}
-            disabled={gstModePending}
-          >
-            <option value="inherit">
-              Account default ({tenantDefaultGstMode === 'on_top' ? 'on top' : 'included'})
-            </option>
-            <option value="inclusive">GST included</option>
-            <option value="on_top">GST on top</option>
-          </select>
-        </label>
       </div>
 
       {showDrawForm && (
@@ -435,9 +465,20 @@ export function InvoicesTab({
           projectId={projectId}
           defaultLabel={defaultLabel}
           defaultPercent={defaultPercent}
-          gstMode={drawGstMode}
           taxRate={taxRate}
           onDone={() => setShowDrawForm(false)}
+        />
+      )}
+
+      {editDraw && (
+        <DrawForm
+          key={editDraw.invoiceId}
+          projectId={projectId}
+          defaultLabel={defaultLabel}
+          defaultPercent={defaultPercent}
+          taxRate={taxRate}
+          editDraw={editDraw}
+          onDone={() => setEditDraw(null)}
         />
       )}
 
@@ -521,7 +562,10 @@ export function InvoicesTab({
                       </td>
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {inv.status === 'sent' ? (
+                          {/* Mark paid is available from draft AND sent — a GC
+                              who collected an out-of-band cheque records it
+                              without sending first (Card #8). */}
+                          {inv.status === 'draft' || inv.status === 'sent' ? (
                             <RecordPaymentDialog
                               invoiceId={inv.id}
                               invoiceTotalCents={total}
@@ -532,6 +576,46 @@ export function InvoicesTab({
                                 </Button>
                               }
                             />
+                          ) : null}
+                          {/* Edit + delete are allowed only while unpaid. Once
+                              paid, removal is via void on the detail page. */}
+                          {inv.status === 'draft' || inv.status === 'sent' ? (
+                            <>
+                              <Button size="xs" variant="ghost" onClick={() => startEditDraw(inv)}>
+                                <Pencil className="size-3.5" />
+                                Edit
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="xs"
+                                    variant="ghost"
+                                    className="text-destructive hover:text-destructive"
+                                    disabled={deletePending}
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete this draw?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      "{inv.customer_note || `Draw ${inv.id.slice(0, 8)}`}" (
+                                      <Money cents={total} />) will be removed. This can't be
+                                      undone. A draw that's already been paid can't be deleted, only
+                                      voided.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteDraw(inv.id)}>
+                                      Delete draw
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
                           ) : null}
                           <Button
                             size="xs"
@@ -613,7 +697,8 @@ export function InvoicesTab({
                       </td>
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {inv.status === 'sent' ? (
+                          {/* Mark paid from draft AND sent (Card #8). */}
+                          {inv.status === 'draft' || inv.status === 'sent' ? (
                             <RecordPaymentDialog
                               invoiceId={inv.id}
                               invoiceTotalCents={total}

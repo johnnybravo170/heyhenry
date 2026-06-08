@@ -93,7 +93,11 @@ export function QuickLogExpenseButton({ tenantTaxRate }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 min-w-11 gap-1 sm:min-h-0 sm:min-w-0"
+        >
           <DollarSign className="size-3.5" />
           <span className="hidden sm:inline">Log Expense</span>
         </Button>
@@ -223,6 +227,12 @@ function ExpenseDialogBody({
       if (projectsRes.ok) {
         setProjects(projectsRes.projects);
         projectsRef.current = projectsRes.projects;
+        // Single-project tenants: auto-select so the picker isn't a
+        // dead tap. Guarded on empty projectId so it never clobbers a
+        // pick the operator already made before the fetch resolved.
+        if (projectsRes.projects.length === 1) {
+          setProjectId((prev) => prev || projectsRes.projects[0].id);
+        }
       }
       if (categoriesRes.ok) {
         setCategories(categoriesRes.options);

@@ -33,6 +33,9 @@ export type ProjectBillRow = {
   budget_category_name: string | null;
   cost_line_id: string | null;
   attachment_storage_path: string | null;
+  /** Cost-plus billing flag (card #11). false = project overhead the
+   *  contractor absorbs — excluded from the cost-plus customer invoice. */
+  is_billable: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -42,7 +45,7 @@ export async function listProjectBills(projectId: string): Promise<ProjectBillRo
   const { data, error } = await supabase
     .from('project_costs')
     .select(
-      'id, tenant_id, project_id, vendor, cost_date, description, amount_cents, pre_tax_amount_cents, gst_cents, payment_status, receipt_url, external_ref, vendor_gst_number, budget_category_id, cost_line_id, attachment_storage_path, created_at, updated_at, project_budget_categories(name)',
+      'id, tenant_id, project_id, vendor, cost_date, description, amount_cents, pre_tax_amount_cents, gst_cents, payment_status, receipt_url, external_ref, vendor_gst_number, budget_category_id, cost_line_id, attachment_storage_path, is_billable, created_at, updated_at, project_budget_categories(name)',
     )
     .eq('source_type', 'vendor_bill')
     .eq('status', 'active')
@@ -72,6 +75,7 @@ export async function listProjectBills(projectId: string): Promise<ProjectBillRo
       budget_category_name: categoryRel?.name ?? null,
       cost_line_id: (r.cost_line_id as string | null) ?? null,
       attachment_storage_path: (r.attachment_storage_path as string | null) ?? null,
+      is_billable: (r.is_billable as boolean | null) ?? true,
       created_at: r.created_at as string,
       updated_at: r.updated_at as string,
     } satisfies ProjectBillRow;

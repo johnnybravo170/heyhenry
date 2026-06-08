@@ -243,6 +243,7 @@ function POForm({ projectId, onDone }: { projectId: string; onDone: () => void }
 
 export function CostsTab({
   projectId,
+  isCostPlus,
   purchaseOrders,
   bills,
   subQuotes,
@@ -250,6 +251,7 @@ export function CostsTab({
   categories,
 }: {
   projectId: string;
+  isCostPlus: boolean;
   purchaseOrders: PurchaseOrderRow[];
   bills: BillItem[];
   subQuotes: SubQuoteItem[];
@@ -527,6 +529,7 @@ export function CostsTab({
       {!groupByCategory && sub === 'costs' ? (
         <ProjectCostsSection
           projectId={projectId}
+          isCostPlus={isCostPlus}
           bills={filteredBills}
           expenses={filteredExpenses}
           categories={categories.map((b) => ({
