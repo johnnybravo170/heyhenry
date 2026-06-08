@@ -12,6 +12,7 @@ import {
 import { listPaymentSources, toLite } from '@/lib/db/queries/payment-sources';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const metadata = {
   title: 'Edit general overhead expense — HeyHenry',
@@ -23,6 +24,7 @@ export default async function EditOverheadExpensePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { tenant } = await requireTenant();
   if (tenant.member.role === 'worker') redirect('/w');
 

@@ -71,7 +71,7 @@ export async function getSignupsInWindow(days: number): Promise<number> {
  * create, or worklog entry within the window. Union across signals so
  * tenants who don't use Henry yet still show up.
  */
-export async function getActiveTenants(days: number): Promise<number> {
+async function getActiveTenants(days: number): Promise<number> {
   const admin = createAdminClient();
   const since = windowStart(days);
   const demoIds = new Set(await getDemoTenantIds());

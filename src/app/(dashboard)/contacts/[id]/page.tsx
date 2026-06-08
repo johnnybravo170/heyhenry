@@ -30,6 +30,7 @@ import type { InvoiceStatus } from '@/lib/validators/invoice';
 import type { JobStatus } from '@/lib/validators/job';
 import type { QuoteStatus } from '@/lib/validators/quote';
 import { formatGstNumber } from '@/lib/validators/tax-id';
+import { isUuid } from '@/lib/validators/uuid';
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', {
   style: 'currency',
@@ -75,6 +76,7 @@ function addressLines(customer: CustomerRow): string | null {
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const [customer, tenant] = await Promise.all([getCustomer(id), getCurrentTenant()]);
   if (!customer) notFound();

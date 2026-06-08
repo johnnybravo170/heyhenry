@@ -33,6 +33,14 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // `read-excel-file/node` (used by `src/server/actions/coa-mapping.ts`)
+  // depends on `unzipper`, which has a dynamic `require('@aws-sdk/client-s3')`
+  // in an S3-source code path we never hit (we feed it a Buffer). Turbopack
+  // / webpack try to statically resolve the require and fail the build with
+  // "Module not found: @aws-sdk/client-s3". Marking these as external keeps
+  // them out of the bundle and resolved at runtime from node_modules, where
+  // the unused branch stays inert.
+  serverExternalPackages: ['read-excel-file', 'unzipper'],
   experimental: {
     serverActions: {
       // Photo uploads travel through server actions as multipart FormData.

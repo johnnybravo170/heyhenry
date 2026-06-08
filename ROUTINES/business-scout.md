@@ -104,6 +104,7 @@ This is the audit trail that prevents "the agent always says quiet" being indist
 For each surviving move, call `ideas_add`:
 
 - **title**: specific strategic move, not a theme. Max 140 chars.
+- **actor_name**: `"business-scout"` — REQUIRED on every call. Stamps the idea with this scout's slug so the scout-learner can attribute outcomes back to this scout's policy. Without it, the idea lands under the generic OAuth client_id and the learner can't update any producer file. (Producer-learner Phase 0 — see `ops.idea_outcomes`.)
 - **body**: structured markdown, sections in this order:
 
 ```

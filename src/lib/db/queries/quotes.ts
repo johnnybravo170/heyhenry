@@ -8,6 +8,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type QuoteCustomerSummary = {
   id: string;
@@ -131,6 +132,7 @@ export async function listQuotes(filters: QuoteListFilters = {}): Promise<QuoteW
 }
 
 export async function getQuote(id: string): Promise<QuoteWithRelations | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -180,7 +182,9 @@ export async function getQuote(id: string): Promise<QuoteWithRelations | null> {
 
 export async function countQuotesByStatus(): Promise<QuoteStatusCounts> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from('quotes').select('status').is('deleted_at', null);
+  // Single GROUP BY aggregate over quotes_tenant_status_idx (tenant-scoped via
+  // count_quotes_by_status RPC) instead of transferring one row per quote.
+  const { data, error } = await supabase.rpc('count_quotes_by_status');
 
   if (error) {
     throw new Error(`Failed to count quotes: ${error.message}`);
@@ -194,12 +198,13 @@ export async function countQuotesByStatus(): Promise<QuoteStatusCounts> {
     rejected: 0,
     expired: 0,
   };
-  for (const row of data ?? []) {
-    const s = (row as { status?: string }).status as QuoteStatus;
+  for (const row of (data ?? []) as Array<{ status: string; count: number }>) {
+    const s = row.status as QuoteStatus;
+    const n = Number(row.count);
     if (s in counts) {
-      counts[s] += 1;
+      counts[s] += n;
     }
-    counts.all += 1;
+    counts.all += n;
   }
   return counts;
 }

@@ -46,7 +46,8 @@ export const contacts = pgTable(
      * CASL kill switch. When true, no automated outbound messages of any
      * kind are sent to this customer (AR sequences, broadcasts, follow-ups).
      * Manual sends from a contractor still go through. Auto-set when the
-     * customer unsubscribes, replies STOP, or files a Resend complaint.
+     * customer unsubscribes, replies STOP, or files a spam complaint
+     * (Postmark `SpamComplaint` webhook).
      */
     doNotAutoMessage: boolean('do_not_auto_message').notNull().default(false),
     doNotAutoMessageAt: timestamp('do_not_auto_message_at', { withTimezone: true }),

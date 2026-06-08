@@ -155,6 +155,7 @@ export default async function CostsTabServer({ projectId }: { projectId: string 
   return (
     <CostsTab
       projectId={projectId}
+      isCostPlus={project.is_cost_plus}
       purchaseOrders={purchaseOrders}
       bills={billItems}
       subQuotes={subQuoteItems}

@@ -57,6 +57,12 @@ const expenseSchema = z.object({
     .regex(/^\d{4}$/)
     .optional()
     .or(z.literal('')),
+  // Cost-plus billing flag (card #11). false = project overhead the
+  // contractor absorbs — counts toward margin but excluded from the
+  // cost-plus customer invoice. Defaults to billable when absent.
+  // Boolean, not z.coerce.boolean(): the latter treats the string
+  // 'false' as truthy. Callers pass a real boolean.
+  is_billable: z.boolean().optional(),
 });
 
 /**
@@ -268,6 +274,10 @@ export async function logExpenseWithReceiptAction(
     expense_date: String(formData.get('expense_date') ?? ''),
     payment_source_id: String(formData.get('payment_source_id') ?? ''),
     card_last4: String(formData.get('card_last4') ?? ''),
+    // Cost-plus overhead toggle (card #11). Sent as the literal 'false'
+    // only when the operator marks this cost non-billable; absent or
+    // anything else means billable.
+    is_billable: formData.get('is_billable') === 'false' ? false : undefined,
   };
 
   const parsed = expenseSchema.safeParse(input);
@@ -330,6 +340,9 @@ export async function logExpenseWithReceiptAction(
       cost_date: parsed.data.expense_date,
       payment_source_id: paymentSourceId,
       card_last4: parsed.data.card_last4?.trim() || null,
+      // Cost-plus overhead flag (card #11). Default-true at the DB level;
+      // only write false when the operator marked it non-billable.
+      is_billable: parsed.data.is_billable === false ? false : undefined,
       source_type: 'receipt',
       payment_status: 'paid',
       paid_at: new Date().toISOString(),

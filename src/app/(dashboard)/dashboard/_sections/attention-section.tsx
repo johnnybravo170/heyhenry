@@ -37,8 +37,14 @@ export async function AttentionSection() {
       listMoneyAtRisk(tenant.id),
     ]);
 
+  // This section streams several stacked cards (triage grid, money-at-risk,
+  // personal to-do) into a single drag-sortable slot. The slot wrapper
+  // (SortableSection) provides no spacing, so without this container the cards
+  // butt together with no vertical gap. flex-col gap-6 gives them the same
+  // rhythm as the dashboard's top-level sections — and more space than the
+  // triage row's internal gap-4, so each card reads as its own group.
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {celebration ? <EstimateCelebrationCard celebration={celebration} /> : null}
       <ChecklistDashboardChip />
       <CommandCenter
@@ -50,6 +56,6 @@ export async function AttentionSection() {
       />
       <MoneyAtRiskCard rows={moneyAtRisk} />
       <PersonalTasksCard tasks={taskBuckets.personalTop} />
-    </>
+    </div>
   );
 }

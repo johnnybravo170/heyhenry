@@ -56,6 +56,7 @@ import { createClient as createBrowserSupabase } from '@/lib/supabase/client';
 import {
   acceptInboundLeadAction,
   appendToIntakeDraftAction,
+  draftIntakeReplyAction,
   type IntakeArtifact,
   type IntakeArtifactKind,
   type IntakeAugmentation,
@@ -1067,6 +1068,7 @@ export function LeadIntakeForm({
         {parsedBy ? <p className="text-xs text-muted-foreground">Parsed by: {parsedBy}</p> : null}
         <ReviewDraft
           draft={draft}
+          draftId={draftId}
           onChange={setDraft}
           onBack={() => setPhase('upload')}
           onAccept={() => handleAccept()}
@@ -1149,6 +1151,7 @@ export function LeadIntakeForm({
 
 function ReviewDraft({
   draft,
+  draftId,
   onChange,
   onBack,
   onAccept,
@@ -1156,6 +1159,9 @@ function ReviewDraft({
   artifacts,
 }: {
   draft: ParsedIntake;
+  /** Persisted intake_drafts row id — lets the on-demand reply pull the
+   * original message/transcript back for grounding. */
+  draftId?: string | null;
   onChange: (d: ParsedIntake) => void;
   onBack: () => void;
   onAccept: () => void;
@@ -1163,8 +1169,29 @@ function ReviewDraft({
   /** For per-line citation chips — maps source_image_indexes to chip labels. */
   artifacts?: IntakeArtifact[] | null;
 }) {
+  const [isDraftingReply, setIsDraftingReply] = useState(false);
+
   function copyReply() {
-    navigator.clipboard.writeText(draft.reply_draft).then(() => toast.success('Reply copied'));
+    navigator.clipboard
+      .writeText(draft.reply_draft ?? '')
+      .then(() => toast.success('Reply copied'));
+  }
+
+  // Henry writes the reply only when the operator asks — never during the
+  // parse. The button shows only when the parse flagged a reply as
+  // warranted (a real customer message / follow-up hook).
+  async function generateReply() {
+    setIsDraftingReply(true);
+    try {
+      const res = await draftIntakeReplyAction(draft, draftId ?? undefined);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      onChange({ ...draft, reply_draft: res.reply });
+    } finally {
+      setIsDraftingReply(false);
+    }
   }
 
   function patchCustomer(patch: Partial<ParsedIntake['customer']>) {
@@ -1381,19 +1408,67 @@ function ReviewDraft({
         )}
       </Section>
 
-      {/* Reply */}
-      <Section title="Draft reply">
-        <Textarea
-          rows={6}
-          value={draft.reply_draft}
-          onChange={(e) => onChange({ ...draft, reply_draft: e.target.value })}
-        />
-        <div className="mt-2 flex justify-end">
-          <Button type="button" size="sm" variant="outline" onClick={copyReply}>
-            Copy reply
-          </Button>
-        </div>
-      </Section>
+      {/* Reply — drafted on demand, and only when Henry flagged it as
+          warranted. No phantom email for a bare scope. */}
+      {draft.reply_draft ? (
+        <Section title="Draft reply">
+          <Textarea
+            rows={6}
+            value={draft.reply_draft ?? ''}
+            onChange={(e) => onChange({ ...draft, reply_draft: e.target.value })}
+          />
+          <div className="mt-2 flex justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={generateReply}
+              disabled={isDraftingReply}
+            >
+              {isDraftingReply ? (
+                <>
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  Redrafting…
+                </>
+              ) : (
+                'Redraft'
+              )}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={copyReply}>
+              Copy reply
+            </Button>
+          </div>
+        </Section>
+      ) : draft.reply_warranted ? (
+        <Section title="Reply to customer">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {draft.reply_reason
+                ? `Looks like a reply would help — ${draft.reply_reason}.`
+                : 'Looks like this could use a reply to the customer.'}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              onClick={generateReply}
+              disabled={isDraftingReply}
+              className="shrink-0"
+            >
+              {isDraftingReply ? (
+                <>
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  Drafting…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-1.5 size-3.5" />
+                  Draft a reply
+                </>
+              )}
+            </Button>
+          </div>
+        </Section>
+      ) : null}
 
       <div className="flex items-center justify-between gap-2">
         <Button type="button" variant="ghost" onClick={onBack}>

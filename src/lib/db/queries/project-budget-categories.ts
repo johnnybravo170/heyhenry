@@ -128,22 +128,20 @@ export const listBudgetCategoriesForProject = cache(
  * categories) so they still render on the budget page now that sections are
  * a real entity.
  */
-export const listBudgetSectionsForProject = cache(
-  async (projectId: string): Promise<BudgetSection[]> => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('project_budget_sections')
-      .select('id, name, sort_order, description_md')
-      .eq('project_id', projectId)
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true });
+const listBudgetSectionsForProject = cache(async (projectId: string): Promise<BudgetSection[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('project_budget_sections')
+    .select('id, name, sort_order, description_md')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
 
-    if (error) {
-      throw new Error(`Failed to list sections: ${error.message}`);
-    }
-    return (data ?? []) as BudgetSection[];
-  },
-);
+  if (error) {
+    throw new Error(`Failed to list sections: ${error.message}`);
+  }
+  return (data ?? []) as BudgetSection[];
+});
 
 /**
  * Resolve a budget section by name on a project, creating it if missing.
@@ -188,7 +186,7 @@ export async function resolveBudgetSectionId(
 }
 
 /** A single cost line in a normalized scope. */
-export type ScopeLineInput = {
+type ScopeLineInput = {
   label: string;
   /** Cost-line bucket; defaults to 'material'. */
   category?: string;
@@ -322,29 +320,62 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
     description_md: null,
   };
 
-  // 2. Load time entries for this project, grouped by budget_category_id
-  const { data: timeData, error: timeErr } = await supabase
-    .from('time_entries')
-    .select('budget_category_id, hours, hourly_rate_cents')
-    .eq('project_id', projectId);
+  // 2-5. Load every per-project cost input in parallel. These five reads are
+  // independent (each filtered only by projectId), so a single Promise.all
+  // round-trip replaces what was a 5-query sequential waterfall on the hot
+  // Budget tab. Semantics of each result are documented at its aggregation
+  // point below.
+  //   3+4. project_costs: receipts contribute gross amount_cents; vendor bills
+  //        contribute the pre-GST subtotal (GST is an ITC, not a project cost).
+  //        The split below preserves the pre-unification mixed semantics so
+  //        variance numbers don't shift.
+  //   4a.  project_cost_lines: fallback when a category's stored envelope is 0
+  //        but priced lines exist under it (AI-scaffolded projects insert
+  //        categories with estimate_cents=0).
+  //   5.   committed = accepted vendor-quote allocations + active PO line items
+  //        (POs carry budget_category_id indirectly via cost_lines).
+  const [
+    { data: timeData, error: timeErr },
+    { data: costData, error: costErr },
+    { data: costLineData, error: costLineErr },
+    { data: subQuoteAllocs },
+    { data: poItems },
+  ] = await Promise.all([
+    supabase
+      .from('time_entries')
+      .select('budget_category_id, hours, hourly_rate_cents')
+      .eq('project_id', projectId),
+    supabase
+      .from('project_costs')
+      .select('budget_category_id, source_type, amount_cents, pre_tax_amount_cents')
+      .eq('project_id', projectId)
+      .eq('status', 'active'),
+    supabase
+      .from('project_cost_lines')
+      .select('budget_category_id, line_price_cents')
+      .eq('project_id', projectId),
+    supabase
+      .from('project_sub_quote_allocations')
+      .select('allocated_cents, budget_category_id, project_sub_quotes!inner(project_id, status)')
+      .eq('project_sub_quotes.project_id', projectId)
+      .eq('project_sub_quotes.status', 'accepted'),
+    supabase
+      .from('purchase_order_items')
+      .select(
+        'line_total_cents, project_cost_lines(budget_category_id), purchase_orders!inner(project_id, status)',
+      )
+      .eq('purchase_orders.project_id', projectId)
+      .in('purchase_orders.status', ['sent', 'acknowledged', 'received']),
+  ]);
 
   if (timeErr) {
     throw new Error(`Failed to load time entries: ${timeErr.message}`);
   }
-
-  // 3+4. Load receipts + vendor bills from the unified project_costs
-  // table, grouped by budget_category_id. Receipts contribute gross
-  // amount_cents; vendor bills contribute the pre-GST subtotal (GST is
-  // an ITC, not a project cost). The split below preserves the
-  // pre-unification mixed semantics so variance numbers don't shift.
-  const { data: costData, error: costErr } = await supabase
-    .from('project_costs')
-    .select('budget_category_id, source_type, amount_cents, pre_tax_amount_cents')
-    .eq('project_id', projectId)
-    .eq('status', 'active');
-
   if (costErr) {
     throw new Error(`Failed to load project costs: ${costErr.message}`);
+  }
+  if (costLineErr) {
+    throw new Error(`Failed to load cost lines: ${costLineErr.message}`);
   }
 
   const expenseData = (costData ?? [])
@@ -362,39 +393,6 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
         (r as { amount_cents: number }).amount_cents ??
         0,
     }));
-
-  // 4a. Load cost lines summed per category. Used as a fallback when a
-  // category's stored envelope is 0 but priced lines exist under it
-  // (e.g. AI-scaffolded projects always insert categories with
-  // estimate_cents=0; if the operator prices the lines and never sets
-  // an envelope, the Budget tab would otherwise display $0 totals
-  // while the Estimate tab + project Overview correctly show the lines
-  // sum via scope_subtotal_cents in cost-lines.ts).
-  const { data: costLineData, error: costLineErr } = await supabase
-    .from('project_cost_lines')
-    .select('budget_category_id, line_price_cents')
-    .eq('project_id', projectId);
-
-  if (costLineErr) {
-    throw new Error(`Failed to load cost lines: ${costLineErr.message}`);
-  }
-
-  // 5. Committed: accepted vendor quote allocations + active PO line items.
-  // Vendor quotes have direct budget_category_id on allocations. POs have
-  // it indirectly via PO line items → cost_lines.budget_category_id.
-  const { data: subQuoteAllocs } = await supabase
-    .from('project_sub_quote_allocations')
-    .select('allocated_cents, budget_category_id, project_sub_quotes!inner(project_id, status)')
-    .eq('project_sub_quotes.project_id', projectId)
-    .eq('project_sub_quotes.status', 'accepted');
-
-  const { data: poItems } = await supabase
-    .from('purchase_order_items')
-    .select(
-      'line_total_cents, project_cost_lines(budget_category_id), purchase_orders!inner(project_id, status)',
-    )
-    .eq('purchase_orders.project_id', projectId)
-    .in('purchase_orders.status', ['sent', 'acknowledged', 'received']);
 
   // Aggregate labor by budget_category_id
   const laborByBudgetCategory = new Map<string, number>();

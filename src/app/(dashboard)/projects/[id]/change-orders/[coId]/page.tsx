@@ -4,6 +4,7 @@ import { DetailPageNav } from '@/components/layout/detail-page-nav';
 import { getChangeOrder, listChangeOrderLines } from '@/lib/db/queries/change-orders';
 import { getProject } from '@/lib/db/queries/projects';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function generateMetadata({
   params,
@@ -23,6 +24,7 @@ export default async function ChangeOrderDetailPage({
   params: Promise<{ id: string; coId: string }>;
 }) {
   const { id, coId } = await params;
+  if (!isUuid(id) || !isUuid(coId)) notFound();
   const [project, changeOrder] = await Promise.all([getProject(id), getChangeOrder(coId)]);
 
   if (!project || !changeOrder) notFound();

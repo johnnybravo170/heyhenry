@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase';
-import { getScoutReportCard, logIdeaOutcome } from '@/server/ops-services/ideas';
+import { getScoutReportCard, listScoutOutcomes, logIdeaOutcome } from '@/server/ops-services/ideas';
 import { jsonResult, type McpToolCtx, withAudit } from './context';
 
 export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
@@ -146,19 +146,28 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
   server.tool(
     'ideas_snooze',
     [
-      'Defer an idea for re-evaluation at a future date.',
+      'Defer an idea until a specific CONDITION is met.',
       '',
-      'Sets `remind_at` and resets `review_status` to `pending`. The /api/ops/ideas-review/run cron picks the idea up at/after `remind_at`, asks Sonnet whether the idea is actionable in current business context, and either emails Jonathan or re-snoozes.',
+      'Sets `remind_at` (when to next CHECK) and `review_criterion` (WHAT to check for), and resets `review_status` to `pending`. The /api/ops/ideas-review/run cron picks the idea up at/after `remind_at` and asks Sonnet a single question: "has this condition become true in current business context?" — then emails Jonathan only if it has, or re-snoozes quietly.',
       '',
-      'Use this when an idea is interesting but blocked on timing, capital, or external dependencies. Example: "snooze the BC equipment-dealer co-marketing idea until 2026-08-01 — too pre-launch right now, revisit when the app is live."',
+      'The criterion is the whole point: a snooze without a stated condition can only be re-evaluated as a vague "is this aligned with priorities?", which drifts forever. Always name the concrete event/state that should resurface the idea.',
+      '',
+      'Use when an idea is good but blocked on timing, capital, a stuck card, or an external dependency. Example: snooze the sub-management routing idea with remind_at 2026-06-15 and criterion "JVD\'s week-1 activation (estimate->invoice->payment) is confirmed AND there is an active conversion conversation with a sub-heavy GC". `remind_at` is just the polling cadence — pick when the condition could plausibly first be true.',
     ].join('\n'),
     {
       id: z.string().uuid(),
       remind_at: z
         .string()
         .datetime({ message: 'remind_at must be ISO 8601 UTC, e.g. 2026-08-01T15:00:00Z' }),
+      criterion: z
+        .string()
+        .min(8, { message: 'criterion must state the concrete unblock condition to check for' })
+        .max(1000)
+        .describe(
+          'The unblock condition that should resurface this idea, in plain English. Name a checkable event or state, not a vague aspiration. E.g. "after V1 has shipped and 3 founding members are activated", not "when the time is right".',
+        ),
     },
-    withAudit(ctx, 'ideas_snooze', 'write:ideas', async ({ id, remind_at }) => {
+    withAudit(ctx, 'ideas_snooze', 'write:ideas', async ({ id, remind_at, criterion }) => {
       const service = createServiceClient();
       const remindDate = new Date(remind_at);
       if (Number.isNaN(remindDate.getTime())) {
@@ -175,7 +184,11 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         .from('ideas')
         .update({
           remind_at: remindDate.toISOString(),
+          review_criterion: criterion.trim(),
           review_status: 'pending',
+          // Fresh snooze resets the drift counter — a revised condition/date is
+          // a new bet, and a previously 'stalled' idea re-enters the review pool.
+          resnooze_count: 0,
           // Don't reset email_sent_at — even snoozed ideas should still have
           // appeared in their original daily digest. The review path is
           // additive, not a replacement for the digest.
@@ -183,7 +196,7 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         })
         .eq('id', id)
         .is('archived_at', null)
-        .select('id, title, remind_at, actor_name')
+        .select('id, title, remind_at, review_criterion, actor_name')
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) return jsonResult({ ok: false, error: 'not found or already archived' });
@@ -192,13 +205,20 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
         data.actor_name as string,
         'parked',
         { actorType: 'agent', actorName: ctx.actorName, keyId: ctx.keyId },
-        { metadata: { remind_at: data.remind_at, via: 'mcp_ideas_snooze' } },
+        {
+          metadata: {
+            remind_at: data.remind_at,
+            criterion: data.review_criterion,
+            via: 'mcp_ideas_snooze',
+          },
+        },
       );
       return jsonResult({
         ok: true,
         id: data.id,
         title: data.title,
         remind_at: data.remind_at,
+        criterion: data.review_criterion,
         url: `https://ops.heyhenry.io/ideas/${data.id}`,
       });
     }),
@@ -206,7 +226,15 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
 
   server.tool(
     'ideas_report_card',
-    "Combined feedback view for a scout-style agent. Returns the agent's recently rated ideas (explicit -2/-1/+1/+2), promoted ideas (implicit +2), and archived-without-promotion ideas (implicit -1) in the window. Call this BEFORE producing new findings so you can adjust based on past signal.",
+    [
+      "Combined feedback view for a scout-style agent. Returns the agent's recently rated ideas (explicit -2/-1/+1/+2), promoted ideas (implicit +2), and the archive split derived from ops.idea_outcomes:",
+      '',
+      '- archivedExplicit: STRONG negative (deliberate human reject). Near-veto on this idea-class.',
+      '- archivedStale: WEAK negative (aged out under the ideas-stale cron — nobody looked). Discount heavily; the queue being deep is not a verdict on this idea.',
+      '- archivedWithoutPromotion: legacy union of the two above; retained for back-compat. Prefer the split fields.',
+      '',
+      'Call this BEFORE producing new findings so you can adjust based on past signal.',
+    ].join('\n'),
     {
       scout_tag: z.string().min(1).max(50),
       days: z.number().int().min(1).max(365).default(30),
@@ -214,6 +242,32 @@ export function registerIdeaTools(server: McpServer, ctx: McpToolCtx) {
     withAudit(ctx, 'ideas_report_card', 'read:ideas', async ({ scout_tag, days }) => {
       const card = await getScoutReportCard(scout_tag, days);
       return jsonResult(card);
+    }),
+  );
+
+  server.tool(
+    'ideas_outcomes_list',
+    [
+      'Raw outcome-event read for one scout, by slug, within a time window. This is the producer-learner training feed: per-idea history with the strong/weak archive distinction `ideas_report_card`’s legacy shape cannot express.',
+      '',
+      'event_type values:',
+      '- promoted_to_card  : strongest positive (idea became a kanban/roadmap card; see card_id)',
+      '- rated_up          : strong positive (user_rating > 0; see rating column for the signed value)',
+      '- rated_down        : strong negative (user_rating < 0)',
+      '- archived_explicit : strong negative (human deliberately rejected)',
+      '- archived_stale    : WEAK negative (aged out — discount heavily)',
+      '- parked            : neutral/contextual (idea snoozed for later)',
+      '',
+      '`scout_slug` is the producing scout’s actor_name (e.g. "business-scout") — NOT the tag identifier `ideas_report_card` filters on. Use this from the scout-learner profile, not from scouts themselves.',
+    ].join('\n'),
+    {
+      scout_slug: z.string().min(1).max(100),
+      days: z.number().int().min(1).max(365).default(30),
+      limit: z.number().int().min(1).max(2000).default(500),
+    },
+    withAudit(ctx, 'ideas_outcomes_list', 'read:ideas', async ({ scout_slug, days, limit }) => {
+      const result = await listScoutOutcomes(scout_slug, days, limit);
+      return jsonResult(result);
     }),
   );
 }

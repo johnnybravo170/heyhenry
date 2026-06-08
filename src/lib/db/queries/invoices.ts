@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type InvoiceCustomerSummary = {
   id: string;
@@ -133,6 +134,8 @@ export async function listInvoices(
 }
 
 export async function getInvoice(id: string): Promise<InvoiceWithRelations | null> {
+  // Defense-in-depth — non-UUID id can't match a row. See getProjectUncached.
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase

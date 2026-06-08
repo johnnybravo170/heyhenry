@@ -4,6 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { ChangeOrderStatus } from '@/lib/validators/change-order';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type ChangeOrderRow = {
   id: string;
@@ -141,6 +142,7 @@ export async function listChangeOrders(
 }
 
 export async function getChangeOrder(id: string): Promise<ChangeOrderRow | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('change_orders')
@@ -452,49 +454,4 @@ export async function getProjectChangeOrderContributions(
   }
 
   return { byLineId, byCategoryId, appliedOrder, all };
-}
-
-export async function getChangeOrderSummaryForJob(jobId: string): Promise<{
-  approved_cost_cents: number;
-  pending_cost_cents: number;
-  approved_timeline_days: number;
-  pending_timeline_days: number;
-  pending_count: number;
-}> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('change_orders')
-    .select('status, cost_impact_cents, timeline_impact_days')
-    .eq('job_id', jobId)
-    .in('status', ['approved', 'pending_approval']);
-
-  if (error) {
-    throw new Error(`Failed to get change order summary for job: ${error.message}`);
-  }
-
-  let approved_cost_cents = 0;
-  let pending_cost_cents = 0;
-  let approved_timeline_days = 0;
-  let pending_timeline_days = 0;
-  let pending_count = 0;
-
-  for (const row of data ?? []) {
-    const r = row as { status: string; cost_impact_cents: number; timeline_impact_days: number };
-    if (r.status === 'approved') {
-      approved_cost_cents += r.cost_impact_cents;
-      approved_timeline_days += r.timeline_impact_days;
-    } else {
-      pending_cost_cents += r.cost_impact_cents;
-      pending_timeline_days += r.timeline_impact_days;
-      pending_count += 1;
-    }
-  }
-
-  return {
-    approved_cost_cents,
-    pending_cost_cents,
-    approved_timeline_days,
-    pending_timeline_days,
-    pending_count,
-  };
 }

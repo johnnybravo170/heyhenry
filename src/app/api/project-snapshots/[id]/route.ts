@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/validators/uuid';
 
 /**
  * Serves a single `project_scope_snapshots` row to the Versions
@@ -12,6 +13,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!tenant) return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
 
   const { id } = await ctx.params;
+  if (!isUuid(id)) return NextResponse.json({ error: 'Snapshot not found' }, { status: 404 });
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('project_scope_snapshots')

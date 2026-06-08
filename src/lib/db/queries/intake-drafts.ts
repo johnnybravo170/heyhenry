@@ -9,6 +9,7 @@
 import type { ParsedIntake } from '@/lib/ai/intake-prompt';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/validators/uuid';
 import type {
   IntakeArtifact,
   IntakeArtifactKind,
@@ -70,6 +71,7 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
  * row can render thumbnails.
  */
 export async function loadIntakeDraft(id: string): Promise<IntakeDraftRow | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('intake_drafts')

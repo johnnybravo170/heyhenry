@@ -5,6 +5,7 @@ import { ChangeOrderDiffForm } from '@/components/features/change-orders/change-
 import { ChangeOrderForm } from '@/components/features/change-orders/change-order-form';
 import { listCostLines } from '@/lib/db/queries/cost-lines';
 import { getProject } from '@/lib/db/queries/projects';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,6 +25,7 @@ export default async function NewChangeOrderPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const sp = await searchParams;
   const project = await getProject(id);
   if (!project) notFound();

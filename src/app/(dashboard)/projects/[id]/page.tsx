@@ -36,6 +36,7 @@ import { getProjectTabAlerts } from '@/lib/db/queries/project-tab-alerts';
 import { getProject } from '@/lib/db/queries/projects';
 import { listWorkerProfiles } from '@/lib/db/queries/worker-profiles';
 import type { LifecycleStage } from '@/lib/validators/project';
+import { isUuid } from '@/lib/validators/uuid';
 
 // Audio transcription of voice memos can take up to ~30s — bump the
 // server-action timeout past Vercel's 10s Hobby default.
@@ -43,6 +44,10 @@ export const maxDuration = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // Skip the lookup for non-UUID ids (typos, stale bookmarks, vision-agent
+  // URLs built from a link label). Falls through to the generic title; the
+  // page below 404s.
+  if (!isUuid(id)) return { title: 'Project — HeyHenry' };
   const project = await getProject(id);
   return { title: project ? `${project.name} — HeyHenry` : 'Project — HeyHenry' };
 }
@@ -88,6 +93,13 @@ export default async function ProjectDetailPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  // 404 on non-UUID ids before any DB call. Without this, the Promise.all
+  // below fans out to Postgres with a non-UUID `id`, and every parallel
+  // query throws "invalid input syntax for type uuid: ..." — one unhandled
+  // 500 per query, no clean response. (Seen in prod from a vision-driven
+  // QA agent that hit `/projects/Maple Heights Full Home Reno` instead of
+  // clicking the project's `<Link>` — Sentry incidents 4d55ff8b / 5a45b1ec.)
+  if (!isUuid(id)) notFound();
   const resolvedSearchParams = await searchParams;
   // Tab aliases — old separate Estimate / Change Orders tabs fold into
   // Budget under the unified-Budget design (decision 6790ef2b). Old
@@ -219,10 +231,13 @@ export default async function ProjectDetailPage({
     stage === 'planning' || stage === 'awaiting_approval' ? 'budget' : 'overview';
   const tab: Tab = explicitTab ?? defaultTab;
 
-  // Pre-approval projects (planning / awaiting_approval) default to
-  // expanded so the operator sees the full scope at a glance while
-  // authoring. Active+ defaults collapsed (status-tracking posture).
-  const budgetExpanded = explicitExpand ?? (stage === 'planning' || stage === 'awaiting_approval');
+  // Budget defaults to categories-expanded for ALL lifecycle stages so the
+  // operator always sees the categories under each section at a glance (the
+  // collapse-to-sections-only posture buried the line categories and reset on
+  // every nav-back / receipt-scan re-mount — founding-member feedback, card #3).
+  // Individual cost line items still default collapsed (handled in the table).
+  // `?expand=none` (or legacy `?mode=executing`) still collapses on demand.
+  const budgetExpanded = explicitExpand ?? true;
 
   // One unified nav (no separate header-actions pill row). Primary tabs
   // are the run-the-job work; the secondary group (Client / Photos /

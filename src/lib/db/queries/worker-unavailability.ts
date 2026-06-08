@@ -31,23 +31,6 @@ export async function listUnavailabilityForWorker(
   return (data ?? []) as UnavailabilityRow[];
 }
 
-export async function listUnavailabilityForTenant(
-  tenantId: string,
-  from: string,
-  to: string,
-): Promise<UnavailabilityRow[]> {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from('worker_unavailability')
-    .select(COLUMNS)
-    .eq('tenant_id', tenantId)
-    .gte('unavailable_date', from)
-    .lte('unavailable_date', to)
-    .order('unavailable_date', { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as UnavailabilityRow[];
-}
-
 export const REASON_LABELS: Record<ReasonTag, string> = {
   vacation: 'Vacation',
   sick: 'Sick',

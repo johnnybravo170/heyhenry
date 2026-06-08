@@ -53,6 +53,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Dead code (knip)
+        # Ratchet guard: fails on NEW unused files or unused dependencies in the
+        # app (root) workspace. Pre-existing dead/parked code is frozen in
+        # knip.jsonc's ignore list (see .audit/DEAD-CODE-TRIAGE.md). Unused
+        # exports/types are advisory only — knip flags exports that merely don't
+        # need the `export` keyword, which is not dead code.
+        run: pnpm knip
+
       - name: Vendor coverage (privacy policy ↔ codebase)
         # Asserts every third-party SDK / vendor env var in the
         # codebase has an entry in docs/legal/vendors.yaml. The
@@ -76,8 +84,23 @@ jobs:
         # one. See scripts/check-migration-grants.ts.
         run: pnpm exec tsx scripts/check-migration-grants.ts
 
+      - name: Ops key_id polymorphic FK
+        # ops key_id / created_by_key_id holds an ops.api_keys.id OR an
+        # ops.oauth_tokens.id (OAuth/MCP path). A single-target FK to
+        # ops.api_keys silently 500s every OAuth-authed insert — it bricked the
+        # Command Center queue for 8 days. Fail any new migration that adds it.
+        # See scripts/check-migration-ops-key-id-fk.ts.
+        run: pnpm exec tsx scripts/check-migration-ops-key-id-fk.ts
+
       - name: Unit tests
         run: pnpm test
+
+      - name: Ops unit tests
+        # The ops workspace has its own vitest suite (the root `pnpm test` only
+        # covers the app workspace). Guards the MCP write-tool arg-forwarding
+        # path against a silent SDK/Zod-bump regression. See
+        # ops/tests/mcp-tools/write-tool-forwarding.test.ts.
+        run: pnpm --filter @heyhenry/ops test
 
       - name: Build
         run: pnpm build
@@ -164,6 +187,47 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  migration-guard:
+    name: Migration guard
+    runs-on: ubuntu-latest
+    # Codified gate for the 2026-05-27 migration-drift incident (card c040760a):
+    # a PR that touches supabase/migrations/** must not merge without green
+    # quality + e2e. The rule lives in the workflow, not human attention.
+    #
+    # Runs on EVERY PR — a no-op pass when the diff has no migration, a hard
+    # fail when a migration is present and quality/e2e didn't pass. `if: always()`
+    # so it still runs (and reports the block) when an upstream job is red.
+    #
+    # TEETH: mark "Migration guard" a REQUIRED status check in branch protection.
+    # Until it's required, a red guard turns the PR red + blocks `gh pr merge
+    # --auto`, but a human could still merge past it. Required = can't.
+    needs: [quality, e2e]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce quality + e2e on migration-bearing PRs
+        run: |
+          set -uo pipefail
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          changed="$(git diff --name-only FETCH_HEAD HEAD)"
+          if echo "$changed" | grep -qE '^supabase/migrations/'; then
+            echo "Migration files in this PR:"
+            echo "$changed" | grep -E '^supabase/migrations/' | sed 's/^/  /'
+            ok=1
+            [ "${{ needs.quality.result }}" = "success" ] || { echo "::error::quality=${{ needs.quality.result }} — must be 'success' for a migration-bearing PR"; ok=0; }
+            [ "${{ needs.e2e.result }}" = "success" ]     || { echo "::error::e2e=${{ needs.e2e.result }} — must be 'success' for a migration-bearing PR"; ok=0; }
+            if [ "$ok" != "1" ]; then
+              echo "::error::Migration-bearing PR blocked — schema must ship on green e2e (card c040760a / AGENTS.md 'Database migrations')."
+              exit 1
+            fi
+            echo "✓ migration present; quality + e2e both green"
+          else
+            echo "No supabase/migrations/** changes — guard is a no-op pass."
+          fi
 
   deploy-migrations:
     name: Deploy migrations to prod

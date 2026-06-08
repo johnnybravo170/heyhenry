@@ -70,6 +70,7 @@ Cut anything that fails. **3-5 ideas > 10 mediocre ones.** If nothing passes, se
 For each, call `ideas_add`:
 
 - **title**: specific, ≤ 140 chars. Not a theme, an idea.
+- **actor_name**: `"marketing-strategist"` — REQUIRED on every call. Stamps the idea with this scout's slug so the scout-learner can attribute outcomes back to this scout's policy. Without it, the idea lands under the generic OAuth client_id and the learner can't update any producer file. (Producer-learner Phase 0 — see `ops.idea_outcomes`.)
 - **body**: structured markdown:
 
 ```

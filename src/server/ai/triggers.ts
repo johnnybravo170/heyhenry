@@ -218,39 +218,66 @@ export async function nightlyLeadUnansweredScan(): Promise<{
 
   const rows = leads ?? [];
   let written = 0;
+
+  // Batch the three per-lead lookups up front so the loop does no N+1 queries.
+  // (At 10k customers this nightly scan went from ~3 queries/lead to 3 total.)
+  const leadIds = rows.map((r) => r.id as string);
+  const tenantIds = [...new Set(rows.map((r) => r.tenant_id as string))];
+
+  const [notesRes, openTasksRes, priorRes] = await Promise.all([
+    leadIds.length > 0
+      ? admin.from('contact_notes').select('contact_id, created_at').in('contact_id', leadIds)
+      : Promise.resolve({ data: [] as { contact_id: string; created_at: string }[] }),
+    leadIds.length > 0
+      ? admin
+          .from('tasks')
+          .select('lead_id')
+          .in('lead_id', leadIds)
+          .not('status', 'in', '(done,verified)')
+      : Promise.resolve({ data: [] as { lead_id: string }[] }),
+    tenantIds.length > 0
+      ? admin
+          .from('notifications')
+          .select('tenant_id, body')
+          .eq('kind', 'henry_suggestion')
+          .in('tenant_id', tenantIds)
+          .gte('created_at', since)
+      : Promise.resolve({ data: [] as { tenant_id: string; body: string | null }[] }),
+  ]);
+
+  // Latest contact-note timestamp per lead.
+  const lastTouchByLead = new Map<string, string>();
+  for (const n of notesRes.data ?? []) {
+    const cid = n.contact_id as string;
+    const ts = n.created_at as string;
+    const prev = lastTouchByLead.get(cid);
+    if (!prev || ts > prev) lastTouchByLead.set(cid, ts);
+  }
+  const leadsWithOpenTask = new Set((openTasksRes.data ?? []).map((t) => t.lead_id as string));
+  // Recent henry_suggestion bodies per tenant (lowercased for ilike parity).
+  const recentSuggestionBodiesByTenant = new Map<string, string[]>();
+  for (const p of priorRes.data ?? []) {
+    const tid = p.tenant_id as string;
+    const arr = recentSuggestionBodiesByTenant.get(tid) ?? [];
+    arr.push(((p.body as string | null) ?? '').toLowerCase());
+    recentSuggestionBodiesByTenant.set(tid, arr);
+  }
+
   for (const lead of rows) {
     // Find last contact note for this lead (any author).
-    const { data: notes } = await admin
-      .from('contact_notes')
-      .select('created_at')
-      .eq('contact_id', lead.id as string)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    const lastTouch = notes?.[0]?.created_at ?? (lead.created_at as string) ?? null;
+    const lastTouch = lastTouchByLead.get(lead.id as string) ?? (lead.created_at as string) ?? null;
     if (!lastTouch) continue;
     if (lastTouch >= cutoff) continue; // touched within 5d, skip
 
     // Skip if a follow-up task already exists for this lead.
-    const { data: existingTasks } = await admin
-      .from('tasks')
-      .select('id')
-      .eq('lead_id', lead.id as string)
-      .not('status', 'in', '(done,verified)')
-      .limit(1);
-    if (existingTasks && existingTasks.length > 0) continue;
+    if (leadsWithOpenTask.has(lead.id as string)) continue;
 
     // Idempotency: skip if Henry already suggested in the last 24h.
     // We key on title+body containing the lead name; the cleanest signal
     // we have without a contact_id column on notifications.
-    const { data: prior } = await admin
-      .from('notifications')
-      .select('id')
-      .eq('kind', 'henry_suggestion')
-      .eq('tenant_id', lead.tenant_id as string)
-      .ilike('body', `%${lead.name as string}%`)
-      .gte('created_at', since)
-      .limit(1);
-    if (prior && prior.length > 0) continue;
+    const needle = (lead.name as string).toLowerCase();
+    const priorBodies = recentSuggestionBodiesByTenant.get(lead.tenant_id as string) ?? [];
+    if (priorBodies.some((b) => b.includes(needle))) continue;
 
     await writeHenrySuggestion({
       tenantId: lead.tenant_id as string,

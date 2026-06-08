@@ -19,7 +19,7 @@
  * column-pick UI rather than tossing the user back to a toast.
  */
 
-import * as XLSX from 'xlsx';
+import { readSheet } from 'read-excel-file/node';
 import { z } from 'zod';
 import { gateway, isAiError } from '@/lib/ai-gateway';
 import { getCurrentTenant } from '@/lib/auth/helpers';
@@ -123,19 +123,31 @@ function decodeCsv(buf: ArrayBuffer): { text: string; fallbackUsed: boolean } {
 // XLSX parsing
 // ---------------------------------------------------------------------------
 
-function parseXlsx(buf: ArrayBuffer): string[][] {
-  const wb = XLSX.read(buf, { type: 'array' });
-  const sheetName = wb.SheetNames[0];
-  if (!sheetName) return [];
-  const sheet = wb.Sheets[sheetName];
-  if (!sheet) return [];
-  const raw = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(sheet, {
-    header: 1,
-    defval: '',
-    raw: false,
-    blankrows: false,
-  });
-  return raw.map((row) => row.map((cell) => (cell == null ? '' : String(cell))));
+// We use `read-excel-file/node` (parse-only, ~1.2 MB) instead of the original
+// SheetJS `xlsx` package — SheetJS moved their Community Edition off npm and
+// the published `xlsx@0.18.5` carries an unpatched prototype-pollution
+// advisory (GHSA-4r6h-8v6p-xvw6). `read-excel-file` is OOXML-only: it does
+// NOT parse the legacy binary `.xls` format. We still accept `.xls` uploads
+// for now and surface the parse error message — in practice CoA exports are
+// `.xlsx`/`.xlsm` or `.csv` (QuickBooks Online / Desktop / Sage / Xero).
+async function parseXlsx(buf: ArrayBuffer): Promise<string[][]> {
+  // `readSheet` returns just the first sheet's rows (`CellValue[][]`),
+  // whereas the default `readXlsxFile` wraps every sheet as `{sheet, data}`.
+  // We only ever read the first sheet, so the lighter shape fits.
+  const rows = await readSheet(Buffer.from(buf));
+  // Normalize each cell to a string. `read-excel-file` returns
+  // `string | number | boolean | Date | null` per cell; we match the prior
+  // `defval: ''` / `raw: false` behaviour. Drop fully-blank rows to match
+  // the previous `blankrows: false`.
+  return rows
+    .map((row) =>
+      row.map((cell) => {
+        if (cell == null) return '';
+        if (cell instanceof Date) return cell.toISOString();
+        return String(cell);
+      }),
+    )
+    .filter((row) => row.some((v) => v.trim().length > 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -278,7 +290,7 @@ export async function parseCoaFileAction(formData: FormData): Promise<CoaParseRe
   if (isXlsx) {
     fileType = 'xlsx';
     try {
-      rows = parseXlsx(buf);
+      rows = await parseXlsx(buf);
     } catch (e) {
       return {
         ok: false,
