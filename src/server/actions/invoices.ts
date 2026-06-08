@@ -137,7 +137,9 @@ export async function createInvoiceAction(input: {
   // pre-tax subtotal and GST is computed on top of it. The `tax_inclusive`
   // column is kept (written false) for the existing inclusive rows until a
   // later "contract" migration drops it. EXPAND now / CONTRACT later — do not
-  // recompute or migrate the legacy inclusive rows here.
+  // recompute or migrate the legacy inclusive rows here. The per-project /
+  // per-tenant `draw_gst_mode` columns are now unread (the resolver was
+  // deleted) and slated for that same contract migration.
   const docType = input.docType === 'draw' ? 'draw' : 'invoice';
   const taxInclusive = false;
   const amountCents = quoteTotalCents;
