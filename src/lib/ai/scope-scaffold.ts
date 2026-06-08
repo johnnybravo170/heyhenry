@@ -39,7 +39,7 @@ Return ONLY valid JSON matching this shape:
       "lines": [
         {
           "label": "string",   // specific scope item ("Move drain & supply for vanity")
-          "category": "material" | "labour" | "sub" | "equipment" | "overhead",
+          "category": "material" | "labour" | "sub" | "equipment" | "overhead" | "supply_install",
           "qty": number,       // quantity (whole or decimal)
           "unit": "string",    // unit ("ea", "lot", "sqft", "lf", "hr")
           "notes": "string?"   // optional clarification
@@ -51,7 +51,7 @@ Return ONLY valid JSON matching this shape:
 
 Rules:
 - NO prices. No \`unit_price_cents\`, no \`unit_cost_cents\`, no dollar values anywhere. Structure only.
-- Use the contractor's category vocabulary: material / labour / sub / equipment / overhead. Default to material when unsure.
+- Use the contractor's category vocabulary: material / labour / sub / equipment / overhead / supply_install (all-in materials + labour). Default to material when unsure.
 - Line counts vary by detail level:
    - "quick": ~5 line items total across 3-4 categories — top-level scope only
    - "standard": ~15 line items across 5-7 categories — typical breakdown
@@ -120,7 +120,14 @@ export async function generateScopeScaffold(
         description: b.description,
         lines: (b.lines ?? []).map((l) => ({
           label: l.label,
-          category: ['material', 'labour', 'sub', 'equipment', 'overhead'].includes(l.category)
+          category: [
+            'material',
+            'labour',
+            'sub',
+            'equipment',
+            'overhead',
+            'supply_install',
+          ].includes(l.category)
             ? l.category
             : 'material',
           qty: typeof l.qty === 'number' && l.qty > 0 ? l.qty : 1,
