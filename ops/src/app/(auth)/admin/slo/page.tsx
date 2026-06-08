@@ -1,3 +1,4 @@
+import { fmtDateTime } from '@/lib/tz';
 import { getSloPageData, type SloStatus, type SloTile } from '@/server/ops-services/slo';
 
 export const dynamic = 'force-dynamic';
@@ -52,7 +53,7 @@ export default async function SloPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">SLO dashboard</h1>
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-          Last {data.windowDays} days · refreshed {new Date(data.generatedAt).toLocaleString()}
+          Last {data.windowDays} days · refreshed {fmtDateTime(data.generatedAt)}
         </p>
         {data.warning ? (
           <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800">

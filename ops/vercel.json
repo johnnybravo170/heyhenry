@@ -32,6 +32,10 @@
     {
       "path": "/api/ops/ideas-review/run",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/mcp?warm=1",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

@@ -118,7 +118,17 @@ export function ManualApprovalDialog({
           : mode === 'approve'
             ? manuallyApproveChangeOrderAction
             : manuallyDeclineChangeOrderAction;
-      const result = await action(fd);
+      // Catch a thrown action so an unexpected server error surfaces inline
+      // instead of rejecting the transition and tripping the route error
+      // boundary — the symptom that made an already-committed approval look
+      // like a failure (Charlie session; ops doc cd85d021).
+      let result: Awaited<ReturnType<typeof action>>;
+      try {
+        result = await action(fd);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+        return;
+      }
       if (!result.ok) {
         setError(result.error);
         return;

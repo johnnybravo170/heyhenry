@@ -33,6 +33,7 @@ export const KNOWN_TASKS = [
   'contact_parse_intake', // intake artifact → structured contact
   'intake_augment_suggest', // suggest project amendments from intake notes
   'note_reply_draft', // Henry Q&A reply draft on project notes
+  'intake_reply_draft', // on-demand customer reply draft from the New-Project review screen
   'audio_transcribe_intake', // Whisper transcription of intake voice memo
   'intake_full_parse', // Anthropic tool-use intake → estimate + tasks
   'intake_artifact_classify', // Gemini Flash batch classification of intake artifacts (per-artifact chip row)

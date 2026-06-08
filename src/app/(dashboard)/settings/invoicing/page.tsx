@@ -1,11 +1,8 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { DrawGstModeSetting } from '@/components/features/settings/draw-gst-mode-setting';
 import { InvoicingDefaultsForm } from '@/components/features/settings/invoicing-defaults-form';
 import { requireTenant } from '@/lib/auth/helpers';
 import { requireRole } from '@/lib/auth/role-guard';
-import { type InvoicingPrefs, resolveDrawGstMode } from '@/lib/invoices/draw-gst-mode';
-import { getPrefs } from '@/lib/prefs/tenant-prefs';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function InvoicingSettingsPage() {
@@ -13,17 +10,11 @@ export default async function InvoicingSettingsPage() {
   requireRole(tenant, ['owner', 'admin']);
 
   const supabase = await createClient();
-  const [{ data }, invoicingPrefs] = await Promise.all([
-    supabase
-      .from('tenants')
-      .select('invoice_payment_instructions, invoice_terms, invoice_policies')
-      .eq('id', tenant.id)
-      .single(),
-    getPrefs<InvoicingPrefs>(tenant.id, 'invoicing'),
-  ]);
-  // No project override at the tenant level — resolve falls to the tenant
-  // default (or 'inclusive' when unset).
-  const drawGstMode = resolveDrawGstMode(null, invoicingPrefs.drawGstMode);
+  const { data } = await supabase
+    .from('tenants')
+    .select('invoice_payment_instructions, invoice_terms, invoice_policies')
+    .eq('id', tenant.id)
+    .single();
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -40,8 +31,6 @@ export default async function InvoicingSettingsPage() {
           Default text shown on every invoice and draw you send.
         </p>
       </div>
-
-      <DrawGstModeSetting initial={drawGstMode} />
 
       <InvoicingDefaultsForm
         initial={{

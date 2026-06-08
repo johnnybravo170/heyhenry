@@ -120,6 +120,11 @@ export type OverheadLedgerFilters = {
   uncategorizedOnly?: boolean;
   /** Free-text over vendor + description (case-insensitive). */
   search?: string;
+  /**
+   * Include project-linked receipts too (bookkeeper twin). Default false =
+   * overhead-only slice (`project_id IS NULL`), the owner-facing /expenses view.
+   */
+  includeProjectExpenses?: boolean;
 };
 
 export type OverheadLedgerPage = {
@@ -139,6 +144,8 @@ export const OVERHEAD_LEDGER_PAGE_SIZE = 25;
 // biome-ignore lint/suspicious/noExplicitAny: the Supabase query builder type isn't generic-friendly across .select() shapes
 function applyLedgerFilters(query: any, filters: OverheadLedgerFilters): any {
   let q = query;
+  // Overhead-only slice by default; the bookkeeper twin opts into project-linked rows.
+  if (!filters.includeProjectExpenses) q = q.is('project_id', null);
   if (filters.uncategorizedOnly) q = q.is('category_id', null);
   if (filters.from) q = q.gte('cost_date', filters.from);
   if (filters.to) q = q.lte('cost_date', filters.to);
@@ -166,44 +173,44 @@ export async function listOverheadExpensesPage(
   const baseSelect =
     'id, cost_date, amount_cents, gst_cents, vendor, description, attachment_storage_path, project_id, category_id, card_last4, categories:category_id (name, parent:parent_id (name)), payment_source:payment_source_id (id, label, last4, paid_by, kind)';
 
-  // Page of rows (overhead only — project_id IS NULL is the /expenses slice).
+  // Page of rows. The project_id scoping (overhead-only vs. include-project)
+  // is applied inside applyLedgerFilters.
   const rowsQuery = applyLedgerFilters(
     supabase
       .from('project_costs')
       .select(baseSelect)
       .eq('source_type', 'receipt')
-      .eq('status', 'active')
-      .is('project_id', null),
+      .eq('status', 'active'),
     filters,
   )
     .order('cost_date', { ascending: false })
     .range(fromIdx, toIdx);
 
   // Count + summary across ALL matching rows. We pull (amount, gst,
-  // category) for the matching set to total accurately — the ledger is the
-  // non-project slice so this stays a bounded scan, and the summary strip
-  // needs the full-period figure, not the page's.
+  // category) for the matching set to total accurately — three narrow columns,
+  // no joins or URL signing, so it stays a bounded per-tenant scan even when
+  // the bookkeeper twin includes project rows. The summary strip needs the
+  // full-period figure, not the page's.
   const summaryQuery = applyLedgerFilters(
     supabase
       .from('project_costs')
       .select('amount_cents, gst_cents, category_id', { count: 'exact' })
       .eq('source_type', 'receipt')
-      .eq('status', 'active')
-      .is('project_id', null),
+      .eq('status', 'active'),
     filters,
   );
 
-  // Vendor facet — distinct non-null vendors on the whole overhead slice,
-  // independent of the active filters so the picker never hides an option
-  // the current filter happens to exclude.
-  const vendorFacetQuery = supabase
+  // Vendor facet — distinct non-null vendors on the whole slice (same
+  // project scoping as the rows), independent of the active period/search
+  // filters so the picker never hides an option the current filter excludes.
+  let vendorFacetQuery = supabase
     .from('project_costs')
     .select('vendor')
     .eq('source_type', 'receipt')
     .eq('status', 'active')
-    .is('project_id', null)
     .not('vendor', 'is', null)
     .order('vendor', { ascending: true });
+  if (!filters.includeProjectExpenses) vendorFacetQuery = vendorFacetQuery.is('project_id', null);
 
   const [rowsRes, summaryRes, vendorRes] = await Promise.all([
     rowsQuery,

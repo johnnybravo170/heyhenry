@@ -6,7 +6,7 @@ export type CostLineRow = {
   project_id: string;
   budget_category_id: string | null;
   catalog_item_id: string | null;
-  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead';
+  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead' | 'supply_install';
   label: string;
   qty: number;
   unit: string;
@@ -341,6 +341,12 @@ export async function getVarianceReport(projectId: string): Promise<{
 
   // committed_vendor_quotes_cents + committed_pos_cents come from the RPC.
   const committed_cents = budget.total_committed_cents;
+  // actual_total_cents comes from get_project_variance_aggregates, which
+  // sums EVERY active project_costs row — including is_billable=false
+  // overhead (card #11). So a non-billable cost the contractor absorbs
+  // automatically lowers margin here, even though it's filtered out of
+  // the customer-facing cost-plus invoice base (getProjectCostBasisRollup).
+  // No change needed on this side — do not double-handle.
   const margin_at_risk_cents = estimated_cents - actual_total_cents - committed_cents;
 
   const by_category: VarianceRow[] = budget.lines.map((l) => ({

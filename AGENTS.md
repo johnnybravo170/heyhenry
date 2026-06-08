@@ -44,6 +44,21 @@ Without the GRANT, authenticated reads return permission-denied **even with corr
 
 `scripts/check-migration-grants.ts` runs in CI and fails any migration created after the opt-in that `CREATE TABLE`s in `public` without a matching GRANT. Forward-only: tables created before the opt-in kept their grants, so this governs new tables only.
 
+### ops `key_id` columns are polymorphic — never FK them to `ops.api_keys`
+
+On every `ops.*` table, the `key_id` / `created_by_key_id` actor-attribution column holds the id of whichever identity authenticated the write: **either** an `ops.api_keys.id` (HMAC api-key path) **or** an `ops.oauth_tokens.id` (OAuth path, used by Claude Code Routines hitting `/api/mcp`). Model it FK-free, like `ops.audit_log.key_id` which carries no FK by design. A single-target `key_id → ops.api_keys(id)` FK silently 500s **every** OAuth-authed insert (the token id isn't in `api_keys`) while audit logging and update-paths keep working, so only new inserts fail — this bricked the Command Center queue (`decision_bundles`) for 8 days. It has shipped twice (`0094_drop_ops_key_id_fks` then `20260603153851_drop_remaining_ops_key_id_fks` for 5 tables created from the old template). `scripts/check-migration-ops-key-id-fk.ts` runs in CI and fails any new migration that adds the FK (forward-only, post `20260603153851`).
+
+### Server-only functions — `revoke from public` is NOT enough; revoke from anon + authenticated too
+
+The mirror-image trap for `public`-schema **functions** you want callable ONLY by the server (`service_role` / admin client). Supabase ships a standing `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role`, so a newly-created function gets **explicit** `anon` + `authenticated` EXECUTE grants. A plain `revoke all ... from public` removes only the PUBLIC pseudo-role grant — the explicit anon/authenticated grants survive, and the function lands end-user-callable. (PRs #433/#434: the `qbo_bulk_update_*` functions came up executable by anon + authenticated on prod. For a `SECURITY INVOKER` function that's a write surface a user can hit via raw PostgREST `rpc()` — within-tenant via RLS, but it bypasses app-layer validation.) Lock it down explicitly:
+
+```sql
+revoke all on function public.<fn>(<args>) from public, anon, authenticated;
+grant execute on function public.<fn>(<args>) to service_role;
+```
+
+Verify with **`pg_proc.proacl`** directly (role-independent) — NOT `information_schema.routine_privileges`, which only shows grants the connecting role can see (returns `null` via the read-only Supabase MCP even when grants exist). Target ACL for a server-only function: `{<owner>=X/<owner>, service_role=X/<owner>}`.
+
 ## Prod migrations apply automatically on merge to main
 
 The `deploy-migrations` job in `.github/workflows/ci.yml` runs `supabase db push` against prod on every push to `main` (and on manual `workflow_dispatch`), gated behind `needs: [quality, e2e]` so schema never ships off a red main. You do **not** hand-apply migrations as a separate step anymore — merge the migration with its code and CI pushes it. The job is idempotent: it only applies versions missing from the remote `supabase_migrations.schema_migrations` ledger, and is a no-op when in sync.

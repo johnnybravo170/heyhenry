@@ -20,13 +20,17 @@ export const invoiceStatusLabels: Record<InvoiceStatus, string> = {
 
 /**
  * Valid status transitions.
- *   draft  -> sent, void
+ *   draft  -> sent, paid, void
  *   sent   -> paid, void
  *   paid   -> (terminal)
  *   void   -> (terminal)
+ *
+ * draft -> paid is the manual out-of-band override: a GC who took a cheque or
+ * e-transfer before ever emailing the invoice records the payment without a
+ * send step. Anything paid/void stays terminal.
  */
 export const validTransitions: Record<InvoiceStatus, InvoiceStatus[]> = {
-  draft: ['sent', 'void'],
+  draft: ['sent', 'paid', 'void'],
   sent: ['paid', 'void'],
   paid: [],
   void: [],
@@ -77,6 +81,30 @@ export const invoiceMarkPaidSchema = z.object({
     .optional()
     .or(z.literal('')),
   receipt_paths: z.array(z.string().min(1).max(500)).max(10).optional(),
+});
+
+/**
+ * Edit a project draw (milestone invoice). Mirrors the milestone-create
+ * inputs the operator can change: label, % complete, and line items. Server
+ * recomputes GST on top — the client never sends tax/amount cents.
+ */
+export const drawEditSchema = z.object({
+  invoice_id: z.string().uuid({ message: 'Invalid draw id.' }),
+  label: z.string().trim().min(1, { message: 'Milestone label is required.' }).max(200),
+  percent_complete: z.number().int().min(0).max(100).nullable().optional(),
+  line_items: z
+    .array(
+      z.object({
+        description: z.string().trim().min(1, { message: 'Line description is required.' }),
+        quantity: z.number().int().positive(),
+        unit_price_cents: z.number().int().min(0).max(10_000_000),
+      }),
+    )
+    .min(1, { message: 'At least one line item is required.' }),
+});
+
+export const drawDeleteSchema = z.object({
+  invoice_id: z.string().uuid({ message: 'Invalid draw id.' }),
 });
 
 export type InvoiceCreateInput = z.infer<typeof invoiceCreateSchema>;
