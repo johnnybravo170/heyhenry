@@ -150,6 +150,40 @@ describe('computeCostPlusBreakdown', () => {
     expect(breakdown.mgmtFeeCents).toBe(9000); // 15% of 60000
   });
 
+  it('excludes a non-billable (overhead) cost from the invoice but it still counts as a cost', () => {
+    // Card #11 / Charlie: a $200 sub WCB insurance bill the contractor
+    // absorbs. It's logged with is_billable=false. The invoice base
+    // (getProjectCostBasisRollup) filters such rows BEFORE this math, so
+    // computeCostPlusBreakdown only ever sees billable costs — the
+    // customer is never billed, and no markup is applied, for overhead.
+    const billableReceipt = { amount_cents: 11300, pre_tax_amount_cents: 10000 }; // $100
+    const overheadBill = { amount_cents: 20000, pre_tax_amount_cents: 20000 }; // $200 absorbed
+
+    // Cost-plus invoice: only the billable row reaches the math.
+    const invoice = computeCostPlusBreakdown({
+      timeEntries: [],
+      expenses: [billableReceipt],
+      priorInvoices: [],
+      mgmtRate: 0.2,
+    });
+    expect(invoice.materialsCents).toBe(10000); // overhead excluded
+    expect(invoice.mgmtFeeCents).toBe(2000); // 20% of $100 only — no markup on overhead
+    expect(invoice.materialsCents + invoice.mgmtFeeCents).toBe(12000);
+
+    // Margin side sums every active cost regardless of is_billable, so the
+    // absorbed overhead still lowers margin. Model that "all costs" view:
+    const allCostsMaterials = computeCostPlusBreakdown({
+      timeEntries: [],
+      expenses: [billableReceipt, overheadBill],
+      priorInvoices: [],
+      mgmtRate: 0.2,
+    }).materialsCents;
+    expect(allCostsMaterials).toBe(30000); // $100 + $200 absorbed
+    // The overhead is real cost ($200) but never on the invoice — exactly
+    // the gap between "what hits margin" and "what the customer pays".
+    expect(allCostsMaterials - invoice.materialsCents).toBe(20000);
+  });
+
   it('applies markup over labour + materials together (not separately)', () => {
     // Sanity check: rounding once on the sum gives a different answer
     // than rounding each piece. The contract is "markup over the

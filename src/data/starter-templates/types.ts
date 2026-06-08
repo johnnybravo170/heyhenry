@@ -14,7 +14,7 @@
 
 export type StarterTemplateLine = {
   label: string;
-  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead';
+  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead' | 'supply_install';
   qty: number;
   unit: string;
   notes?: string;
