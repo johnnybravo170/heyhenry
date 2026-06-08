@@ -43,7 +43,7 @@ export function Header({
          * /projects/new accepts everything: voice memos, text threads,
          * photos, sub-trade quotes, sketches, paste, manual entry.
          */}
-        <Button size="sm" className="gap-1" asChild>
+        <Button size="sm" className="min-h-11 min-w-11 gap-1 sm:min-h-0 sm:min-w-0" asChild>
           <Link href="/projects/new">
             <Plus className="size-3.5" />
             <span className="hidden sm:inline">New Project</span>
