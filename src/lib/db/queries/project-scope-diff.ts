@@ -94,13 +94,21 @@ export async function getUnsentDiff(projectId: string): Promise<ProjectScopeDiff
       .order('sort_order', { ascending: true }),
     admin
       .from('project_budget_categories')
-      .select('id, name, section, estimate_cents, display_order')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), estimate_cents, display_order',
+      )
       .eq('project_id', projectId)
       .order('display_order', { ascending: true }),
   ]);
 
   const currentLines = (linesRes.data ?? []) as SnapshotCostLine[];
-  const currentCategories = (categoriesRes.data ?? []) as SnapshotBudgetCategory[];
+  const currentCategories = (categoriesRes.data ?? []).map((c) => ({
+    id: c.id as string,
+    name: c.name as string,
+    section: (c.section_row as unknown as { name: string } | null)?.name ?? '',
+    estimate_cents: (c.estimate_cents as number) ?? 0,
+    display_order: (c.display_order as number) ?? 0,
+  })) satisfies SnapshotBudgetCategory[];
   const currentTotalCents = currentLines.reduce((s, l) => s + (l.line_price_cents ?? 0), 0);
 
   const snapLinesById = new Map<string, SnapshotCostLine>();

@@ -1,0 +1,2750 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project · Selections — HeyHenry (desktop)</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --paper-2:      #FCFAF4;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+    --shadow-lift:  0 18px 60px rgba(10,10,10,0.16), 0 4px 14px rgba(10,10,10,0.08);
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Frame marker (OD annotation chrome) ───── */
+  .frame-label {
+    max-width: 1440px;
+    margin: 36px auto 10px;
+    padding: 0 28px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .frame-label .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .frame-label h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .frame-label .hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .frame {
+    max-width: 1440px;
+    margin: 0 auto 12px;
+    background: var(--bg);
+    border: 1px solid var(--hair);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(10,10,10,0.04);
+    position: relative;
+  }
+
+  /* ───── Shell ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 920px; }
+
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .nav-item.active { background: var(--nav-active); color: var(--ink); font-weight: 600; }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 8px;
+  }
+  .org-avatar {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--rust); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ───── Top bar ───── */
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted); font-size: 14px;
+  }
+  .topbar-search svg { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  /* ───── Buttons ───── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em;
+    border: 1px solid transparent;
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-quiet { background: transparent; color: var(--muted); border-color: transparent; }
+  .btn svg { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .btn-xs { height: 24px; padding: 0 8px; font-size: 11px; gap: 4px; border-radius: 7px; }
+  .btn-rust { background: var(--rust); color: #fff; border-color: var(--rust); }
+  .btn-henry {
+    background: var(--card);
+    border-color: var(--hair);
+    color: var(--ink);
+  }
+  .btn-henry .henry-glyph { color: var(--rust); font-size: 14px; line-height: 1; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-input);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn:hover { background: var(--chip-fill); color: var(--ink); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ───── Main content ───── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 28px 64px;
+    display: flex; flex-direction: column;
+  }
+
+  /* ───── Project header ───── */
+  .project-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 2px 0 14px;
+  }
+  .project-head-text { flex: 1; min-width: 0; }
+  .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .project-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+  .customer-line {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .customer-line .at { color: var(--faint); }
+  .head-actions { display: flex; gap: 6px; flex-shrink: 0; padding-top: 6px; }
+
+  /* ───── Tab strip ───── */
+  .tab-strip {
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 0;
+    overflow-x: auto;
+  }
+  .tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab.is-secondary { color: var(--faint); font-weight: 500; }
+  .tab.is-secondary.is-on { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .tab-divider { width: 1px; height: 18px; background: var(--rule); margin: 0 10px; flex-shrink: 0; }
+  .tab-count {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--rust);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .tab-count-soft {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+
+  /* ───── Section eyebrow ───── */
+  .section-eyebrow {
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 22px 0 10px;
+  }
+  .eyebrow-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .eyebrow-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SELECTIONS — operator surfaces
+     ───────────────────────────────────────────────────────────────── */
+
+  /* — Customer ideas strip (top) — */
+  .ideas-strip {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    position: relative;
+  }
+  .ideas-strip::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--info) 0%, var(--info) 100%);
+    opacity: 0.18;
+  }
+  .ideas-head {
+    display: flex; align-items: flex-end; gap: 12px;
+    padding: 16px 18px 12px;
+    border-bottom: 1px dashed var(--rule);
+    background: var(--paper-2);
+  }
+  .ideas-head .text { flex: 1; min-width: 0; }
+  .ideas-head .ey {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--info);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .ideas-head h3 {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .ideas-head p {
+    margin: 4px 0 0;
+    font-size: 12px; color: var(--muted);
+    max-width: 520px;
+  }
+  .ideas-head .count-pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--info);
+    background: var(--info-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ideas-body { padding: 14px 18px 16px; }
+  .ideas-room { margin-top: 8px; }
+  .ideas-room:first-child { margin-top: 0; }
+  .ideas-room-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .ideas-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .idea-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .idea-img {
+    aspect-ratio: 4 / 3;
+    position: relative;
+    background: var(--chip-fill);
+  }
+  .idea-img .by-tag {
+    position: absolute;
+    top: 6px; left: 6px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 5px;
+    padding: 2px 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--info);
+    display: inline-flex; align-items: center; gap: 3px;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.06);
+  }
+  .idea-img .by-tag svg { width: 10px; height: 10px; }
+  .idea-img .src-host {
+    position: absolute;
+    bottom: 6px; left: 6px;
+    background: rgba(10,10,10,0.7);
+    color: #fff;
+    border-radius: 5px;
+    padding: 2px 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .idea-body { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 4px; }
+  .idea-title { font-size: 12px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+  .idea-note { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .idea-foot {
+    margin-top: 6px;
+    display: flex; align-items: center; gap: 6px;
+    justify-content: space-between;
+  }
+  .idea-foot .promote {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .idea-foot .promote svg { width: 11px; height: 11px; }
+  .idea-foot .promoted {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ok);
+    background: var(--ok-soft);
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .idea-foot .promoted svg { width: 11px; height: 11px; }
+
+  /* placeholder image fields (Paper-feel) */
+  .ph-tile-marble { background: linear-gradient(160deg, #e8e0d2 0%, #c9bfa9 55%, #948975 100%); position: absolute; inset: 0; }
+  .ph-paint-navy  { background: linear-gradient(180deg, #2a3a52 0%, #18243a 100%); position: absolute; inset: 0; }
+  .ph-faucet-brass{ background: radial-gradient(circle at 50% 60%, #d9b277 0%, #8c6f3e 60%, #4a3a20 100%); position: absolute; inset: 0; }
+  .ph-tile-zellige{ background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 28px),
+    linear-gradient(180deg, #e6dec9 0%, #c9b89a 100%);
+    position: absolute; inset: 0; }
+  .ph-wood       { background: linear-gradient(160deg, #ad8a5a 0%, #6e5132 100%);
+                   background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 14px), linear-gradient(160deg, #ad8a5a 0%, #6e5132 100%);
+                   position: absolute; inset: 0; }
+  .ph-paint-mint { background: linear-gradient(180deg, #c7d6c4 0%, #95ad94 100%); position: absolute; inset: 0; }
+  .ph-quartz     { background: linear-gradient(160deg, #ece6d8 0%, #b8aa8a 100%);
+                   background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.45) 0 8%, transparent 18%), radial-gradient(circle at 70% 60%, rgba(0,0,0,0.04) 0 6%, transparent 14%), linear-gradient(160deg, #ece6d8 0%, #b8aa8a 100%);
+                   position: absolute; inset: 0; }
+  .ph-tile-blue  { background: linear-gradient(170deg, #6e8aa3 0%, #2e445a 100%); position: absolute; inset: 0; }
+  .ph-tile-cream { background: linear-gradient(180deg, #efe6d2 0%, #c4b694 100%); position: absolute; inset: 0; }
+  .ph-paint-cream{ background: linear-gradient(180deg, #f3ead4 0%, #c5b486 100%); position: absolute; inset: 0; }
+  .ph-flooring   { background: linear-gradient(160deg, #c5a075 0%, #7b5b34 100%);
+                   background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0 2px, transparent 2px 22px), linear-gradient(160deg, #c5a075 0%, #7b5b34 100%);
+                   position: absolute; inset: 0; }
+  .ph-fixture    { background: radial-gradient(circle at 50% 45%, #d8d1c0 0%, #9b9282 60%, #524937 100%); position: absolute; inset: 0; }
+
+  /* — Selections head row — */
+  .sel-head {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin: 22px 0 6px;
+  }
+  .sel-head .text { flex: 1; min-width: 0; }
+  .sel-head h2 {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .sel-head p {
+    margin: 4px 0 0;
+    font-size: 12px; color: var(--muted);
+    max-width: 620px;
+  }
+  .sel-head-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* — Room roll-up (variance summary at top) — */
+  .rollup {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .rollup-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+    gap: 0;
+  }
+  .rollup-cell {
+    padding: 14px 18px;
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .rollup-cell:last-child { border-right: 0; }
+  .rollup-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .rollup-value {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .rollup-sub { font-size: 12px; color: var(--muted); }
+  .rollup-value.is-over { color: var(--rust); }
+  .rollup-value.is-under { color: var(--ok); }
+  .rollup-cell .delta {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .rollup-cell .delta.is-over { color: var(--rust); }
+  .rollup-cell .delta svg { width: 11px; height: 11px; }
+  .rollup-foot {
+    padding: 9px 18px;
+    background: var(--paper-2);
+    border-top: 1px dashed var(--rule);
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .rollup-foot .right {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-transform: none;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+  }
+  .rollup-foot .right svg { width: 12px; height: 12px; }
+
+  /* — Henry over-allowance nudge (deterministic, labeled, dismissible) — */
+  .henry-nudge {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.3);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .henry-nudge-body {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 18px;
+  }
+  .henry-nudge-glyph {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    display: grid; place-items: center;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .henry-nudge-text { min-width: 0; }
+  .henry-nudge-eyebrow {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+  .henry-nudge-eyebrow .why {
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .henry-nudge p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .henry-nudge p b { color: var(--ink); font-weight: 700; }
+  .henry-nudge .money-over {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--rust);
+    font-variant-numeric: tabular-nums;
+  }
+  .henry-nudge-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .henry-nudge-foot {
+    padding: 9px 18px;
+    background: var(--paper-2);
+    border-top: 1px dashed var(--rule);
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .henry-nudge-foot .sep { color: var(--faint); }
+
+  /* — Room group card — */
+  .room-group {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .room-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--paper-2);
+    align-items: center;
+  }
+  .room-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .room-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .room-variance {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .room-variance svg { width: 11px; height: 11px; }
+  .room-variance.is-over { color: var(--rust); background: var(--rust-soft); }
+  .room-variance.is-under { color: var(--ok); background: var(--ok-soft); }
+  .room-variance.is-flat { color: var(--muted); background: var(--chip-fill); }
+  .room-add {
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .room-add:hover { background: var(--chip-fill); color: var(--ink); }
+  .room-add svg { width: 12px; height: 12px; }
+
+  /* — Selection row — */
+  .sel-list { list-style: none; margin: 0; padding: 0; }
+  .sel-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 220px 130px 56px;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 14px 18px;
+    border-top: 1px solid var(--hair);
+  }
+  .sel-row:first-child { border-top: 0; }
+  .sel-row.is-over { background: linear-gradient(90deg, var(--rust-soft) 0%, transparent 30%); }
+  .sel-thumb {
+    width: 64px; height: 64px;
+    border-radius: 10px;
+    border: 1px solid var(--hair);
+    overflow: hidden;
+    position: relative;
+    background: var(--chip-fill);
+  }
+  .sel-thumb-mini-ct {
+    position: absolute;
+    bottom: 3px; right: 3px;
+    background: rgba(10,10,10,0.7);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .sel-body { min-width: 0; }
+  .sel-body-top {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .cat-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .by-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .by-tag svg { width: 11px; height: 11px; }
+  .by-tag.by-client { color: var(--info); background: var(--info-soft); }
+  .by-tag.by-operator { color: var(--muted); background: var(--chip-fill); }
+  .by-tag.by-promoted { color: var(--ok); background: var(--ok-soft); }
+  .sel-headline {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .sel-detail-row {
+    margin-top: 4px;
+    display: flex; flex-wrap: wrap; gap: 4px 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .sel-detail-row .sep { color: var(--faint); }
+  .sel-detail-row .sku-mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.04em;
+  }
+  .sel-detail-row .warranty-link {
+    color: var(--info);
+    font-weight: 600;
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 12px;
+  }
+  .sel-detail-row .warranty-link svg { width: 11px; height: 11px; }
+  .sel-notes {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  /* — Allowance vs Actual pair (the headline) — */
+  .av {
+    display: flex; flex-direction: column; gap: 4px;
+    font-variant-numeric: tabular-nums;
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+  .av-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .av-row .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .av-row .val {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: right;
+  }
+  .av-row.is-over .val { color: var(--rust); font-weight: 700; }
+
+  /* Variance label (the verb, not just the colour) */
+  .av-delta {
+    margin-top: 4px;
+    display: inline-flex; align-items: center; gap: 5px;
+    align-self: flex-end;
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+  .av-delta svg { width: 11px; height: 11px; }
+  .av-delta.is-over { color: var(--rust); background: var(--rust-soft); }
+  .av-delta.is-under { color: var(--ok); background: var(--ok-soft); }
+  .av-delta.is-flat { color: var(--muted); background: var(--chip-fill); }
+
+  /* CO link chip — shown when over-allowance */
+  .co-trigger {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--rust);
+    color: #fff;
+    border: 0;
+    padding: 4px 9px;
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    margin-top: 4px;
+    align-self: flex-end;
+  }
+  .co-trigger svg { width: 11px; height: 11px; }
+
+  /* Row actions */
+  .sel-actions {
+    display: flex; flex-direction: column; gap: 2px; align-items: flex-end;
+  }
+  .sel-actions .row-icn {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .sel-actions .row-icn:hover { background: var(--chip-fill); color: var(--ink); }
+  .sel-actions .row-icn svg { width: 14px; height: 14px; }
+
+  /* photo strip under a selection */
+  .sel-photos {
+    grid-column: 2 / -1;
+    display: flex; gap: 6px; margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .sel-mini {
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--hair);
+    background: var(--chip-fill);
+  }
+  .sel-mini-add {
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    background: var(--paper-2);
+    border: 1px dashed var(--rule);
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .sel-mini-add svg { width: 12px; height: 12px; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     CLIENT PORTAL VIEW — public chrome (no operator sidebar)
+     ───────────────────────────────────────────────────────────────── */
+
+  .portal-shell {
+    background: var(--bg);
+    min-height: 920px;
+    display: flex; flex-direction: column;
+  }
+  .portal-bar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 64px;
+    display: flex; align-items: center;
+    padding: 0 28px;
+    gap: 14px;
+  }
+  .portal-bar .brand { padding: 0; height: auto; border: 0; }
+  .portal-project {
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .portal-project .ey {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .portal-project h1 {
+    margin: 0;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .portal-bar .right {
+    margin-left: auto;
+    display: flex; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    align-items: center;
+  }
+  .portal-bar .right svg { width: 13px; height: 13px; }
+
+  .portal-tabs {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    display: flex;
+    padding: 0 28px;
+    gap: 0;
+  }
+  .portal-tabs .ptab {
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .portal-tabs .ptab.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+
+  .portal-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 24px 28px 64px;
+  }
+  .portal-h {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .portal-sub { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+
+  /* — Client composer (in-portal lighter form) — */
+  .portal-composer {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .portal-composer-head {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .portal-composer-head .icn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--info-soft);
+    color: var(--info);
+    display: grid; place-items: center;
+  }
+  .portal-composer-head .icn svg { width: 16px; height: 16px; }
+  .portal-composer-head h3 {
+    margin: 0;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .portal-composer-head .sub {
+    font-size: 12px; color: var(--muted);
+  }
+  .portal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .field input, .field select, .field textarea {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--paper-2);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    padding: 8px 10px;
+    outline: none;
+    width: 100%;
+  }
+  .field input::placeholder, .field textarea::placeholder { color: var(--faint); }
+  .field-photo {
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius-input);
+    background: var(--paper-2);
+    padding: 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .field-photo .icn {
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .field-photo .icn svg { width: 18px; height: 18px; }
+  .field-photo .text { display: flex; flex-direction: column; min-width: 0; }
+  .field-photo .text .t { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .field-photo .text .s { font-size: 12px; color: var(--muted); }
+  .field-photo .right { margin-left: auto; display: flex; gap: 6px; }
+  .portal-composer-foot {
+    display: flex; align-items: center; gap: 10px;
+    padding-top: 4px;
+  }
+  .portal-composer-foot .help {
+    font-size: 12px; color: var(--muted);
+    flex: 1; min-width: 0;
+  }
+
+  /* — Portal selection card — */
+  .portal-room {
+    margin-top: 16px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .portal-room-head {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--paper-2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .portal-room-head h3 {
+    margin: 0;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .portal-room-head .ct {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .portal-room-head .av {
+    margin-left: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .portal-row {
+    display: grid;
+    grid-template-columns: 84px 1fr 170px 30px;
+    gap: 16px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--hair);
+    align-items: flex-start;
+  }
+  .portal-row:first-of-type { border-top: 0; }
+  .portal-thumb {
+    width: 84px; height: 84px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--hair);
+    background: var(--chip-fill);
+  }
+  .portal-row-body { min-width: 0; }
+  .portal-actions {
+    display: flex; flex-direction: column; gap: 4px;
+    align-items: flex-end;
+    align-self: center;
+  }
+  .portal-actions .row-icn {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .portal-actions .row-icn:hover { background: var(--chip-fill); color: var(--danger); }
+  .portal-actions .row-icn svg { width: 14px; height: 14px; }
+
+  /* — Portal-only client variance (allowance vs THEIR actual, no margin / supplier cost) — */
+  .pclient-av {
+    display: flex; flex-direction: column; gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .pclient-av .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .pclient-av .value {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .pclient-av .delta {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .pclient-av .delta.is-over { color: var(--rust); background: var(--rust-soft); }
+  .pclient-av .delta.is-under { color: var(--ok); background: var(--ok-soft); }
+  .pclient-av .delta.is-flat { color: var(--muted); background: var(--chip-fill); }
+
+  /* ─────────────────────────────────────────────────────────────────
+     DIALOG (operator add/edit selection)
+     ───────────────────────────────────────────────────────────────── */
+
+  .dialog-frame { padding: 36px 28px; max-width: 1440px; margin: 0 auto; }
+  .dialog-stage {
+    background: var(--paper-2);
+    border: 1px dashed var(--rule);
+    border-radius: 18px;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 580px 1fr;
+    gap: 32px;
+    align-items: flex-start;
+    min-height: 720px;
+  }
+  .dialog-stage .ctx {
+    display: flex; flex-direction: column;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .dialog-stage .ctx h3 {
+    margin: 0;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .dialog-stage .ctx ul {
+    margin: 0; padding-left: 18px;
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 12px;
+  }
+
+  .dialog {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lift);
+  }
+  .dialog-head {
+    padding: 16px 22px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .dialog-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .dialog-head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .dialog-head p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .dialog-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .dialog-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .dialog-row.is-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .dialog-row.is-money {
+    grid-template-columns: 1fr 1fr;
+    background: var(--paper-2);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .money-hint {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .money-hint .glyph { color: var(--rust); font-size: 12px; }
+  .money-hint b { color: var(--rust); font-weight: 700; }
+  .dialog-foot {
+    padding: 12px 22px;
+    background: var(--paper-2);
+    border-top: 1px solid var(--hair);
+    display: flex; align-items: center;
+    gap: 8px;
+  }
+  .dialog-foot .right { margin-left: auto; display: flex; gap: 6px; }
+
+  /* — Photo-refs picker side panel (paired with dialog) — */
+  .picker {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .picker-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--paper-2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .picker-head .ey {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .picker-head h4 {
+    margin: 0;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .picker-head .ct {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .picker-grid {
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .picker-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    border: 1px solid var(--hair);
+    overflow: hidden;
+    position: relative;
+    background: var(--chip-fill);
+    cursor: pointer;
+  }
+  .picker-tile.is-on {
+    box-shadow: 0 0 0 3px var(--ink);
+  }
+  .picker-tile .chk {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    border: 1.5px solid var(--rule);
+    display: grid; place-items: center;
+  }
+  .picker-tile.is-on .chk {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+  .picker-tile.is-on .chk svg { width: 11px; height: 11px; }
+  .picker-foot {
+    padding: 10px 16px;
+    border-top: 1px solid var(--hair);
+    background: var(--paper-2);
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .picker-foot .right { margin-left: auto; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     STATES (empty / loading)
+     ───────────────────────────────────────────────────────────────── */
+  .states-frame { padding: 24px 28px 36px; max-width: 1440px; margin: 0 auto; }
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .state-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 22px;
+    display: flex; flex-direction: column;
+    gap: 8px;
+    min-height: 320px;
+  }
+  .state-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .state-empty-body {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    gap: 8px;
+    color: var(--muted);
+    padding: 20px;
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+  }
+  .state-empty-body .icn {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+  }
+  .state-empty-body .icn svg { width: 16px; height: 16px; }
+  .state-empty-body h4 {
+    margin: 4px 0 0;
+    font-size: 14px; font-weight: 700; color: var(--ink);
+  }
+  .state-empty-body p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 280px;
+    line-height: 1.5;
+  }
+  .state-empty-body .btn { margin-top: 6px; }
+
+  /* Skeleton */
+  .sk { background: linear-gradient(90deg, var(--chip-fill) 0%, #F3EBD2 50%, var(--chip-fill) 100%); border-radius: 6px; }
+  .sk-bar { height: 12px; }
+  .sk-thumb { width: 64px; height: 64px; border-radius: 10px; }
+  .sk-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 100px;
+    gap: 14px;
+    align-items: center;
+    padding: 11px 0;
+    border-top: 1px dashed var(--rule);
+  }
+  .sk-row:first-child { border-top: 0; }
+
+  /* Build foot */
+  .build-foot {
+    max-width: 1440px;
+    margin: 36px auto 30px;
+    padding: 20px 28px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px dashed var(--rule);
+  }
+  .build-foot b { color: var(--ink); font-weight: 700; }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ────────── ICON LIBRARY ────────── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-trending-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+    <symbol id="i-image-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="18" y1="3" x2="18" y2="9"/><line x1="15" y1="6" x2="21" y2="6"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+    <symbol id="i-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"/></symbol>
+    <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></symbol>
+    <symbol id="i-arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></symbol>
+    <symbol id="i-paint-bucket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11h2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V11h2"/><path d="M5 11l7-9 7 9"/><line x1="9" y1="15" x2="9.01" y2="15"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-loader" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></symbol>
+  </defs>
+</svg>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 01 — Operator Hub tab: Selections · hero state
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 01</span>
+  <h2>Selections · operator Hub tab · ideas strip → roll-up → room groups</h2>
+  <span class="hint">Allowance vs actual is the headline. Variance carries a <b>label, not just a colour</b>. Over-allowance is the CO trigger.</span>
+</div>
+<div class="frame">
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">H</span>
+        <span class="brand-name">HeyHenry</span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">4</span></a>
+        <a class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects<span class="nav-count">12</span></a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Expenses</a>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</a>
+        <div class="nav-section-label">Setup</div>
+        <a class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="org-switcher">
+          <span class="org-avatar">MR</span>
+          <span class="org-meta">
+            <span class="org-name">Maple Ridge Renos</span>
+            <span class="org-sub">Sarah · Owner</span>
+          </span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-search">
+          <svg><use href="#i-search"/></svg>
+          <span>Search projects, customers, photos…</span>
+          <span class="chip-kbd">⌘K</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-quiet"><svg><use href="#i-clock"/></svg>Log time</button>
+          <button class="btn btn-quiet"><svg><use href="#i-receipt"/></svg>Log expense</button>
+          <button class="btn btn-rust"><svg><use href="#i-plus"/></svg>New</button>
+        </div>
+      </header>
+
+      <div class="main-inner">
+        <!-- Project head -->
+        <section class="project-head">
+          <div class="project-head-text">
+            <div class="title-row">
+              <h1 class="project-title">Heath St. main-floor reno</h1>
+              <span class="status-pill status-active"><span class="dot"></span>Active</span>
+            </div>
+            <div class="customer-line">
+              <a>Priya &amp; Mark Davies</a> <span class="at">·</span> 4811 Heath St, Vancouver BC
+            </div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-henry"><span class="henry-glyph">&#10022;</span> Ask</button>
+            <button class="icon-btn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </section>
+
+        <!-- Tab strip -->
+        <nav class="tab-strip">
+          <button class="tab">Budget <span class="tab-count-soft">3</span></button>
+          <button class="tab">Spend</button>
+          <button class="tab">Labour</button>
+          <button class="tab">Schedule</button>
+          <button class="tab">Billing</button>
+          <button class="tab">Overview</button>
+          <span class="tab-divider"></span>
+          <button class="tab is-secondary">Client</button>
+          <button class="tab is-secondary">Photos <span class="tab-count-soft">142</span></button>
+          <button class="tab is-secondary">Documents <span class="tab-count-soft">9</span></button>
+          <button class="tab is-secondary is-on">Selections <span class="tab-count">2</span></button>
+          <button class="tab is-secondary">Notes <span class="tab-count-soft">18</span></button>
+        </nav>
+
+        <!-- ─── Customer ideas strip (top) ─── -->
+        <section class="ideas-strip">
+          <header class="ideas-head">
+            <div class="text">
+              <div class="ey">
+                <svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:4px"><use href="#i-lightbulb"/></svg>
+                Posted by the client
+              </div>
+              <h3>Inspiration &amp; ideas</h3>
+              <p>What Priya &amp; Mark are liking. Promote any one into a Selection when it's decided — the idea stays linked, the spec moves forward.</p>
+            </div>
+            <span class="count-pill">2 new · 5 total</span>
+          </header>
+          <div class="ideas-body">
+            <div class="ideas-room">
+              <div class="ideas-room-label">Master bathroom</div>
+              <ul class="ideas-grid" style="list-style:none; margin:0; padding:0;">
+                <li class="idea-card">
+                  <div class="idea-img">
+                    <div class="ph-tile-zellige"></div>
+                    <span class="by-tag"><svg><use href="#i-user"/></svg> Client</span>
+                    <span class="src-host">cletile.com</span>
+                  </div>
+                  <div class="idea-body">
+                    <div class="idea-title">Zellige tile in sea glass</div>
+                    <div class="idea-note">"For the shower walls — handmade, varied"</div>
+                    <div class="idea-foot">
+                      <span></span>
+                      <button class="promote"><svg><use href="#i-arrow-right"/></svg> Promote to Selection</button>
+                    </div>
+                  </div>
+                </li>
+                <li class="idea-card">
+                  <div class="idea-img">
+                    <div class="ph-faucet-brass"></div>
+                    <span class="by-tag"><svg><use href="#i-user"/></svg> Client</span>
+                    <span class="src-host">kohler.ca</span>
+                  </div>
+                  <div class="idea-body">
+                    <div class="idea-title">Kohler Purist · brushed brass</div>
+                    <div class="idea-note">"Both basin taps and shower trim"</div>
+                    <div class="idea-foot">
+                      <span class="promoted"><svg><use href="#i-check"/></svg> Already a Selection</span>
+                      <span></span>
+                    </div>
+                  </div>
+                </li>
+                <li class="idea-card">
+                  <div class="idea-img">
+                    <div class="ph-paint-navy"></div>
+                    <span class="by-tag"><svg><use href="#i-user"/></svg> Client</span>
+                  </div>
+                  <div class="idea-body">
+                    <div class="idea-title">Hale Navy on vanity</div>
+                    <div class="idea-note">"BM HC-154 — saw it at Mira's place"</div>
+                    <div class="idea-foot">
+                      <span></span>
+                      <button class="promote"><svg><use href="#i-arrow-right"/></svg> Promote to Selection</button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="ideas-room" style="margin-top:14px;">
+              <div class="ideas-room-label">Kitchen</div>
+              <ul class="ideas-grid" style="list-style:none; margin:0; padding:0;">
+                <li class="idea-card">
+                  <div class="idea-img">
+                    <div class="ph-quartz"></div>
+                    <span class="by-tag"><svg><use href="#i-user"/></svg> Client</span>
+                    <span class="src-host">caesarstone.ca</span>
+                  </div>
+                  <div class="idea-body">
+                    <div class="idea-title">Caesarstone · Calacatta Nuvo</div>
+                    <div class="idea-note">"Possibly the island. ~$95/sqft installed?"</div>
+                    <div class="idea-foot">
+                      <span></span>
+                      <button class="promote"><svg><use href="#i-arrow-right"/></svg> Promote to Selection</button>
+                    </div>
+                  </div>
+                </li>
+                <li class="idea-card">
+                  <div class="idea-img">
+                    <div class="ph-paint-mint"></div>
+                    <span class="by-tag"><svg><use href="#i-user"/></svg> Client</span>
+                  </div>
+                  <div class="idea-body">
+                    <div class="idea-title">Pale green for the lowers</div>
+                    <div class="idea-note">"Farrow &amp; Ball Mizzle or close to it"</div>
+                    <div class="idea-foot">
+                      <span></span>
+                      <button class="promote"><svg><use href="#i-arrow-right"/></svg> Promote to Selection</button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Selections head ─── -->
+        <section class="sel-head">
+          <div class="text">
+            <h2>Selections</h2>
+            <p>The decided spec, per room. Each row carries an allowance and what it actually cost — over-allowance is what triggers a Change Order. The client sees this too.</p>
+          </div>
+          <div class="sel-head-actions">
+            <button class="btn btn-henry btn-sm"><span class="henry-glyph">&#10022;</span> Extract from photo</button>
+            <button class="btn btn-primary btn-sm"><svg><use href="#i-plus"/></svg> Add selection</button>
+          </div>
+        </section>
+
+        <!-- ─── Room roll-up ─── -->
+        <section class="rollup" aria-label="Allowance vs actual roll-up across all rooms">
+          <div class="rollup-grid">
+            <div class="rollup-cell">
+              <span class="rollup-label">Total allowance · 4 rooms</span>
+              <span class="rollup-value">$48,200.00</span>
+              <span class="rollup-sub">Contractual budget across 18 selections</span>
+            </div>
+            <div class="rollup-cell">
+              <span class="rollup-label">Actual to date</span>
+              <span class="rollup-value">$46,180.00</span>
+              <span class="rollup-sub">14 of 18 priced · 4 still TBD</span>
+            </div>
+            <div class="rollup-cell">
+              <span class="rollup-label">Net variance</span>
+              <span class="rollup-value is-under">−$2,020.00</span>
+              <span class="rollup-sub">Under in total — but uneven</span>
+            </div>
+            <div class="rollup-cell">
+              <span class="rollup-label">Over-allowance</span>
+              <span class="delta is-over"><svg><use href="#i-arrow-up"/></svg> 3 of 18 over · 2 rooms</span>
+              <span class="rollup-sub">Master bath tile · kitchen counter · primary faucet</span>
+            </div>
+          </div>
+          <div class="rollup-foot">
+            <svg style="width:11px;height:11px"><use href="#i-info"/></svg>
+            Allowances live on each selection · variance is per-row, not netted
+            <span class="right">Review the over-allowance items <svg><use href="#i-arrow-right"/></svg></span>
+          </div>
+        </section>
+
+        <!-- ─── Henry over-allowance nudge ─── -->
+        <section class="henry-nudge" role="region" aria-label="Henry: over-allowance change-order nudge">
+          <div class="henry-nudge-body">
+            <div class="henry-nudge-glyph">&#10022;</div>
+            <div class="henry-nudge-text">
+              <div class="henry-nudge-eyebrow">
+                Henry · over-allowance check
+                <span class="why">deterministic · allowance vs actual</span>
+              </div>
+              <p><b>Master bath tile</b> is <span class="money-over">+$1,200.00</span> over its <span style="font-family:var(--mono);font-variant-numeric:tabular-nums;">$3,800</span> allowance. <b>Kitchen counter</b> is <span class="money-over">+$420.00</span> over. Start a single Change Order covering both?</p>
+            </div>
+            <div class="henry-nudge-actions">
+              <button class="btn btn-ghost btn-sm">Dismiss</button>
+              <button class="btn btn-rust btn-sm"><svg><use href="#i-arrow-up-right"/></svg> Draft Change Order</button>
+            </div>
+          </div>
+          <div class="henry-nudge-foot">
+            <span>2 selections · master bath · kitchen</span>
+            <span class="sep">·</span>
+            <span>CO requires your sign-off before sending</span>
+            <span class="sep">·</span>
+            <span>Henry never auto-commits this</span>
+          </div>
+        </section>
+
+        <!-- ─── Room group 1: Master bathroom (has the over-allowance row) ─── -->
+        <section class="room-group">
+          <header class="room-head">
+            <span class="room-name">Master bathroom</span>
+            <span class="room-meta">6 selections · 4 client visible</span>
+            <span class="room-variance is-over"><svg><use href="#i-arrow-up"/></svg> +$1,100 over (room)</span>
+            <button class="room-add"><svg><use href="#i-plus"/></svg> Add to this room</button>
+          </header>
+          <ul class="sel-list">
+
+            <!-- Over-allowance row — the headline -->
+            <li class="sel-row is-over">
+              <div class="sel-thumb">
+                <div class="ph-tile-zellige"></div>
+                <span class="sel-thumb-mini-ct">+3</span>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Tile</span>
+                  <span class="sel-headline">Clé Zellige · Sea Glass</span>
+                  <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> Promoted from idea</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span>2"×2" handmade · matte</span>
+                  <span class="sep">·</span>
+                  <span>Clé Tile</span>
+                  <span class="sep">·</span>
+                  <span class="sku-mono">SKU CLE-ZG-12</span>
+                  <span class="sep">·</span>
+                  <a class="warranty-link"><svg><use href="#i-link"/></svg> Warranty</a>
+                </div>
+                <div class="sel-notes">Shower walls only. 60 sqft @ $80/sqft.</div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$3,800.00</span>
+                </div>
+                <div class="av-row is-over">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$5,000.00</span>
+                </div>
+                <span class="av-delta is-over"><svg><use href="#i-arrow-up"/></svg> +$1,200.00 over allowance</span>
+              </div>
+              <div>
+                <button class="co-trigger"><svg><use href="#i-arrow-up-right"/></svg> Start CO</button>
+              </div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+            <!-- Under-allowance row -->
+            <li class="sel-row">
+              <div class="sel-thumb">
+                <div class="ph-faucet-brass"></div>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Fixture</span>
+                  <span class="sel-headline">Kohler Purist · brushed brass</span>
+                  <span class="by-tag by-operator"><svg><use href="#i-shield"/></svg> Operator-spec</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span>Single-handle widespread basin tap</span>
+                  <span class="sep">·</span>
+                  <span>Andrew Sheret</span>
+                  <span class="sep">·</span>
+                  <span class="sku-mono">SKU K-14406-4A-BV</span>
+                  <span class="sep">·</span>
+                  <a class="warranty-link"><svg><use href="#i-link"/></svg> Warranty</a>
+                </div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$680.00</span>
+                </div>
+                <div class="av-row">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$612.50</span>
+                </div>
+                <span class="av-delta is-under"><svg><use href="#i-arrow-down"/></svg> $67.50 under</span>
+              </div>
+              <div></div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+            <!-- Client-added row, on-allowance -->
+            <li class="sel-row">
+              <div class="sel-thumb">
+                <div class="ph-paint-navy"></div>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Paint</span>
+                  <span class="sel-headline">Benjamin Moore Hale Navy</span>
+                  <span class="by-tag by-client"><svg><use href="#i-user"/></svg> By client</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span class="sku-mono">HC-154</span>
+                  <span class="sep">·</span>
+                  <span>Eggshell</span>
+                </div>
+                <div class="sel-notes">For the vanity only — saw it at Mira's place. Trim stays Simply White.</div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$220.00</span>
+                </div>
+                <div class="av-row">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$220.00</span>
+                </div>
+                <span class="av-delta is-flat"><svg><use href="#i-check"/></svg> On allowance</span>
+              </div>
+              <div></div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+            <!-- Allowance-only row (no actual yet) -->
+            <li class="sel-row">
+              <div class="sel-thumb">
+                <div class="ph-tile-cream"></div>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Tile</span>
+                  <span class="sel-headline">Floor tile · TBD</span>
+                  <span class="by-tag by-operator"><svg><use href="#i-shield"/></svg> Operator-spec</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span>~24 sqft · porcelain · large-format</span>
+                  <span class="sep">·</span>
+                  <span style="color:var(--warn); font-weight:600;">Decision pending — quote sent to client</span>
+                </div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$1,400.00</span>
+                </div>
+                <div class="av-row">
+                  <span class="lbl">Actual</span>
+                  <span class="val" style="color:var(--faint)">—</span>
+                </div>
+                <span class="av-delta is-flat">Allowance set · no actual yet</span>
+              </div>
+              <div></div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+          </ul>
+        </section>
+
+        <!-- ─── Room group 2: Kitchen ─── -->
+        <section class="room-group">
+          <header class="room-head">
+            <span class="room-name">Kitchen</span>
+            <span class="room-meta">8 selections · 6 client visible</span>
+            <span class="room-variance is-over"><svg><use href="#i-arrow-up"/></svg> +$420 over (room)</span>
+            <button class="room-add"><svg><use href="#i-plus"/></svg> Add to this room</button>
+          </header>
+          <ul class="sel-list">
+
+            <li class="sel-row is-over">
+              <div class="sel-thumb">
+                <div class="ph-quartz"></div>
+                <span class="sel-thumb-mini-ct">+2</span>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Countertop</span>
+                  <span class="sel-headline">Caesarstone · Calacatta Nuvo</span>
+                  <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> Promoted from idea</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span>3cm · polished · eased edge</span>
+                  <span class="sep">·</span>
+                  <span>Stone Pacific</span>
+                  <span class="sep">·</span>
+                  <span class="sku-mono">SKU CS-5131</span>
+                </div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$6,200.00</span>
+                </div>
+                <div class="av-row is-over">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$6,620.00</span>
+                </div>
+                <span class="av-delta is-over"><svg><use href="#i-arrow-up"/></svg> +$420.00 over allowance</span>
+              </div>
+              <div>
+                <button class="co-trigger"><svg><use href="#i-arrow-up-right"/></svg> Start CO</button>
+              </div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+            <li class="sel-row">
+              <div class="sel-thumb">
+                <div class="ph-flooring"></div>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Flooring</span>
+                  <span class="sel-headline">Engineered white oak · 7" plank</span>
+                  <span class="by-tag by-operator"><svg><use href="#i-shield"/></svg> Operator-spec</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span>Wire-brushed · matte UV</span>
+                  <span class="sep">·</span>
+                  <span>Hakwood</span>
+                  <span class="sep">·</span>
+                  <span class="sku-mono">SKU HK-MIST-7</span>
+                  <span class="sep">·</span>
+                  <a class="warranty-link"><svg><use href="#i-link"/></svg> Warranty</a>
+                </div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$11,800.00</span>
+                </div>
+                <div class="av-row">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$11,420.00</span>
+                </div>
+                <span class="av-delta is-under"><svg><use href="#i-arrow-down"/></svg> $380.00 under</span>
+              </div>
+              <div></div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+            <li class="sel-row">
+              <div class="sel-thumb">
+                <div class="ph-paint-mint"></div>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Paint</span>
+                  <span class="sel-headline">Farrow &amp; Ball Mizzle</span>
+                  <span class="by-tag by-client"><svg><use href="#i-user"/></svg> By client</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span class="sku-mono">FB 266</span>
+                  <span class="sep">·</span>
+                  <span>Estate emulsion</span>
+                </div>
+                <div class="sel-notes">Lower cabinets only.</div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$280.00</span>
+                </div>
+                <div class="av-row">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$246.00</span>
+                </div>
+                <span class="av-delta is-under"><svg><use href="#i-arrow-down"/></svg> $34.00 under</span>
+              </div>
+              <div></div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+          </ul>
+        </section>
+
+        <!-- ─── Room group 3: Living room (everything on-allowance, terse) ─── -->
+        <section class="room-group">
+          <header class="room-head">
+            <span class="room-name">Living room</span>
+            <span class="room-meta">3 selections · 2 client visible</span>
+            <span class="room-variance is-under"><svg><use href="#i-arrow-down"/></svg> $540 under (room)</span>
+            <button class="room-add"><svg><use href="#i-plus"/></svg> Add to this room</button>
+          </header>
+          <ul class="sel-list">
+
+            <li class="sel-row">
+              <div class="sel-thumb">
+                <div class="ph-paint-cream"></div>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Paint</span>
+                  <span class="sel-headline">Benjamin Moore Simply White · OC-117</span>
+                  <span class="by-tag by-operator"><svg><use href="#i-shield"/></svg> Operator-spec</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span>Walls + ceilings · matte</span>
+                  <span class="sep">·</span>
+                  <span>Cloverdale</span>
+                </div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$640.00</span>
+                </div>
+                <div class="av-row">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$580.00</span>
+                </div>
+                <span class="av-delta is-under"><svg><use href="#i-arrow-down"/></svg> $60.00 under</span>
+              </div>
+              <div></div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+            <li class="sel-row">
+              <div class="sel-thumb">
+                <div class="ph-fixture"></div>
+              </div>
+              <div class="sel-body">
+                <div class="sel-body-top">
+                  <span class="cat-pill">Hardware</span>
+                  <span class="sel-headline">Top Knobs · Aspen II ring pull</span>
+                  <span class="by-tag by-operator"><svg><use href="#i-shield"/></svg> Operator-spec</span>
+                </div>
+                <div class="sel-detail-row">
+                  <span>Brushed bronze · 18 pcs</span>
+                  <span class="sep">·</span>
+                  <span class="sku-mono">SKU M1574</span>
+                </div>
+              </div>
+              <div class="av">
+                <div class="av-row">
+                  <span class="lbl">Allowance</span>
+                  <span class="val">$540.00</span>
+                </div>
+                <div class="av-row">
+                  <span class="lbl">Actual</span>
+                  <span class="val">$540.00</span>
+                </div>
+                <span class="av-delta is-flat"><svg><use href="#i-check"/></svg> On allowance</span>
+              </div>
+              <div></div>
+              <div class="sel-actions">
+                <button class="row-icn" aria-label="Edit"><svg><use href="#i-pen"/></svg></button>
+                <button class="row-icn" aria-label="More"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </li>
+
+          </ul>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 02 — Client portal view
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 02</span>
+  <h2>Client portal · Selections · the client's mirror (read all, author own)</h2>
+  <span class="hint">Client sees allowance vs their actual — <b>never margin / supplier cost / other projects</b>. Lighter composer at top. The composer spec is in <code>public-pages.md</code>.</span>
+</div>
+<div class="frame">
+  <div class="portal-shell">
+    <header class="portal-bar">
+      <span class="brand-mark">H</span>
+      <div class="portal-project">
+        <span class="ey">Project portal · Maple Ridge Renos</span>
+        <h1>Heath St. main-floor reno</h1>
+      </div>
+      <div class="right">
+        <svg><use href="#i-lock"/></svg>
+        <span>Private link · Priya Davies</span>
+      </div>
+    </header>
+    <nav class="portal-tabs">
+      <button class="ptab">Updates</button>
+      <button class="ptab">Photos</button>
+      <button class="ptab">Documents</button>
+      <button class="ptab">Schedule</button>
+      <button class="ptab is-on">Selections</button>
+      <button class="ptab">Ideas</button>
+      <button class="ptab">Messages</button>
+    </nav>
+
+    <div class="portal-inner">
+      <h2 class="portal-h">Selections</h2>
+      <p class="portal-sub">Everything we're putting in your home — paint codes, tile, fixtures. You'll get this in your final Home Record at handover. Anything <b>you've</b> picked up shows here too — just post the name and a photo.</p>
+
+      <!-- Composer (lighter, client-only) -->
+      <form class="portal-composer">
+        <div class="portal-composer-head">
+          <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+          <div>
+            <h3>Post what you've chosen</h3>
+            <div class="sub">Room, what it is, a photo if you have one — that's it.</div>
+          </div>
+        </div>
+        <div class="portal-grid">
+          <div class="field">
+            <label for="pc-room">Room</label>
+            <input id="pc-room" placeholder="e.g. Master bathroom" />
+          </div>
+          <div class="field">
+            <label for="pc-cat">Category</label>
+            <select id="pc-cat">
+              <option>Paint</option>
+              <option>Tile</option>
+              <option>Fixture</option>
+              <option>Flooring</option>
+              <option>Hardware</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="portal-grid">
+          <div class="field">
+            <label for="pc-name">Name</label>
+            <input id="pc-name" placeholder="e.g. Hale Navy" />
+          </div>
+          <div class="field">
+            <label for="pc-code">Colour / code</label>
+            <input id="pc-code" placeholder="HC-154" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="pc-notes">Notes (optional)</label>
+          <textarea id="pc-notes" rows="2" placeholder="Where you saw it, why you liked it…"></textarea>
+        </div>
+        <div class="field">
+          <label>Photo (optional)</label>
+          <div class="field-photo">
+            <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+            <div class="text">
+              <span class="t">Tap to choose, or drop a photo</span>
+              <span class="s">JPG / PNG / HEIC up to 10 MB</span>
+            </div>
+            <div class="right">
+              <button type="button" class="btn btn-ghost btn-sm"><svg><use href="#i-camera"/></svg> Camera</button>
+            </div>
+          </div>
+        </div>
+        <div class="portal-composer-foot">
+          <span class="help">Your contractor sees this immediately on their end.</span>
+          <button type="button" class="btn btn-primary btn-sm">Add selection</button>
+        </div>
+      </form>
+
+      <!-- Room 1: Master bathroom -->
+      <section class="portal-room">
+        <header class="portal-room-head">
+          <h3>Master bathroom</h3>
+          <span class="ct">6 items · 2 by you</span>
+          <div class="pclient-av" style="margin-left:auto;">
+            <span class="delta is-over"><svg style="width:11px;height:11px"><use href="#i-arrow-up"/></svg> Room is +$1,100 vs allowance</span>
+          </div>
+        </header>
+
+        <div class="portal-row">
+          <div class="portal-thumb"><div class="ph-tile-zellige"></div></div>
+          <div class="portal-row-body">
+            <div class="sel-body-top">
+              <span class="cat-pill">Tile</span>
+              <span class="sel-headline">Clé Zellige · Sea Glass</span>
+              <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> Started from your idea</span>
+            </div>
+            <div class="sel-detail-row">
+              <span>2"×2" handmade · matte</span>
+              <span class="sep">·</span>
+              <span>Shower walls only</span>
+              <span class="sep">·</span>
+              <a class="warranty-link"><svg><use href="#i-link"/></svg> Warranty</a>
+            </div>
+          </div>
+          <div class="pclient-av">
+            <div>
+              <span class="label">Allowance</span>
+              <span class="value">$3,800.00</span>
+            </div>
+            <div>
+              <span class="label">Your actual</span>
+              <span class="value" style="color:var(--rust)">$5,000.00</span>
+            </div>
+            <span class="delta is-over"><svg style="width:11px;height:11px"><use href="#i-arrow-up"/></svg> +$1,200 vs allowance</span>
+          </div>
+          <div></div>
+        </div>
+
+        <div class="portal-row">
+          <div class="portal-thumb"><div class="ph-faucet-brass"></div></div>
+          <div class="portal-row-body">
+            <div class="sel-body-top">
+              <span class="cat-pill">Fixture</span>
+              <span class="sel-headline">Kohler Purist · brushed brass</span>
+            </div>
+            <div class="sel-detail-row">
+              <span>Basin tap · single-handle widespread</span>
+              <span class="sep">·</span>
+              <a class="warranty-link"><svg><use href="#i-link"/></svg> Warranty</a>
+            </div>
+          </div>
+          <div class="pclient-av">
+            <div>
+              <span class="label">Allowance</span>
+              <span class="value">$680.00</span>
+            </div>
+            <div>
+              <span class="label">Your actual</span>
+              <span class="value">$612.50</span>
+            </div>
+            <span class="delta is-under"><svg style="width:11px;height:11px"><use href="#i-arrow-down"/></svg> $67.50 under</span>
+          </div>
+          <div></div>
+        </div>
+
+        <div class="portal-row">
+          <div class="portal-thumb"><div class="ph-paint-navy"></div></div>
+          <div class="portal-row-body">
+            <div class="sel-body-top">
+              <span class="cat-pill">Paint</span>
+              <span class="sel-headline">Benjamin Moore Hale Navy</span>
+              <span class="by-tag by-client"><svg><use href="#i-user"/></svg> Added by you</span>
+            </div>
+            <div class="sel-detail-row">
+              <span class="sku-mono">HC-154</span>
+              <span class="sep">·</span>
+              <span>Eggshell · vanity only</span>
+            </div>
+            <div class="sel-notes">Saw it at Mira's place. Trim stays Simply White.</div>
+          </div>
+          <div class="pclient-av">
+            <div>
+              <span class="label">Allowance</span>
+              <span class="value">$220.00</span>
+            </div>
+            <div>
+              <span class="label">Your actual</span>
+              <span class="value">$220.00</span>
+            </div>
+            <span class="delta is-flat"><svg style="width:11px;height:11px"><use href="#i-check"/></svg> On allowance</span>
+          </div>
+          <div class="portal-actions">
+            <button class="row-icn" aria-label="Edit your selection"><svg><use href="#i-pen"/></svg></button>
+            <button class="row-icn" aria-label="Delete your selection"><svg><use href="#i-trash"/></svg></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Room 2: Kitchen (condensed for the frame) -->
+      <section class="portal-room">
+        <header class="portal-room-head">
+          <h3>Kitchen</h3>
+          <span class="ct">8 items · 1 by you</span>
+          <div class="pclient-av" style="margin-left:auto;">
+            <span class="delta is-over"><svg style="width:11px;height:11px"><use href="#i-arrow-up"/></svg> Room is +$420 vs allowance</span>
+          </div>
+        </header>
+
+        <div class="portal-row">
+          <div class="portal-thumb"><div class="ph-quartz"></div></div>
+          <div class="portal-row-body">
+            <div class="sel-body-top">
+              <span class="cat-pill">Countertop</span>
+              <span class="sel-headline">Caesarstone Calacatta Nuvo</span>
+              <span class="by-tag by-promoted"><svg><use href="#i-arrow-up-right"/></svg> Started from your idea</span>
+            </div>
+            <div class="sel-detail-row">
+              <span>3cm · polished · island + perimeter</span>
+            </div>
+          </div>
+          <div class="pclient-av">
+            <div>
+              <span class="label">Allowance</span>
+              <span class="value">$6,200.00</span>
+            </div>
+            <div>
+              <span class="label">Your actual</span>
+              <span class="value" style="color:var(--rust)">$6,620.00</span>
+            </div>
+            <span class="delta is-over"><svg style="width:11px;height:11px"><use href="#i-arrow-up"/></svg> +$420 vs allowance</span>
+          </div>
+          <div></div>
+        </div>
+
+        <div class="portal-row">
+          <div class="portal-thumb"><div class="ph-paint-mint"></div></div>
+          <div class="portal-row-body">
+            <div class="sel-body-top">
+              <span class="cat-pill">Paint</span>
+              <span class="sel-headline">Farrow &amp; Ball Mizzle</span>
+              <span class="by-tag by-client"><svg><use href="#i-user"/></svg> Added by you</span>
+            </div>
+            <div class="sel-detail-row">
+              <span class="sku-mono">FB 266</span>
+              <span class="sep">·</span>
+              <span>Lower cabinets only</span>
+            </div>
+          </div>
+          <div class="pclient-av">
+            <div>
+              <span class="label">Allowance</span>
+              <span class="value">$280.00</span>
+            </div>
+            <div>
+              <span class="label">Your actual</span>
+              <span class="value">$246.00</span>
+            </div>
+            <span class="delta is-under"><svg style="width:11px;height:11px"><use href="#i-arrow-down"/></svg> $34.00 under</span>
+          </div>
+          <div class="portal-actions">
+            <button class="row-icn" aria-label="Edit your selection"><svg><use href="#i-pen"/></svg></button>
+            <button class="row-icn" aria-label="Delete your selection"><svg><use href="#i-trash"/></svg></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 03 — Add-selection dialog (operator)
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 03</span>
+  <h2>Add selection · operator full spec dialog · paired with the photo-refs picker</h2>
+  <span class="hint">The full operator-grade spec form. Money pair is the row that matters — <b>over-allowance is the CO trigger</b>, called out below the inputs.</span>
+</div>
+<div class="frame">
+  <div class="dialog-frame">
+    <div class="dialog-stage">
+
+      <div class="dialog">
+        <header class="dialog-head">
+          <div class="dialog-eyebrow">New selection · master bathroom</div>
+          <h3>Add selection</h3>
+          <p>Captures what's going in this room — paint codes, tile SKUs, finish, supplier, warranty.</p>
+        </header>
+        <div class="dialog-body">
+          <div class="dialog-row">
+            <div class="field">
+              <label>Room</label>
+              <input value="Master bathroom" />
+            </div>
+            <div class="field">
+              <label>Category</label>
+              <select><option>Tile</option></select>
+            </div>
+          </div>
+          <div class="dialog-row">
+            <div class="field">
+              <label>Brand</label>
+              <input value="Clé" placeholder="Benjamin Moore" />
+            </div>
+            <div class="field">
+              <label>Name</label>
+              <input value="Zellige · Sea Glass" placeholder="Simply White" />
+            </div>
+          </div>
+          <div class="dialog-row">
+            <div class="field">
+              <label>Code</label>
+              <input value="" placeholder="OC-117" />
+            </div>
+            <div class="field">
+              <label>Finish</label>
+              <input value="Matte" placeholder="eggshell" />
+            </div>
+          </div>
+          <div class="dialog-row">
+            <div class="field">
+              <label>Supplier</label>
+              <input value="Clé Tile" placeholder="Home Depot" />
+            </div>
+            <div class="field">
+              <label>SKU / model #</label>
+              <input value="CLE-ZG-12" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Warranty link (optional)</label>
+            <input value="https://cletile.com/warranty" placeholder="https://" />
+          </div>
+
+          <div class="dialog-row is-money">
+            <div class="field">
+              <label>Allowance (CAD)</label>
+              <input value="3800.00" style="font-family:var(--mono); font-variant-numeric:tabular-nums;" />
+            </div>
+            <div class="field">
+              <label>Actual cost (CAD)</label>
+              <input value="5000.00" style="font-family:var(--mono); font-variant-numeric:tabular-nums; color: var(--rust); font-weight:700;" />
+            </div>
+            <div class="money-hint">
+              <span class="glyph">&#10022;</span>
+              <span>Saving this puts the row <b>$1,200.00 over allowance</b> — Henry will offer to start a Change Order on save.</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Notes (optional)</label>
+            <textarea rows="2" placeholder="Anything the installer or the client needs to know.">Shower walls only. 60 sqft @ $80/sqft installed.</textarea>
+          </div>
+        </div>
+        <footer class="dialog-foot">
+          <span style="font-family:var(--mono); font-size: 11px; color: var(--muted); letter-spacing:0.04em; text-transform:uppercase;">No tax on the selection itself · feeds the cost line</span>
+          <div class="right">
+            <button class="btn btn-quiet btn-sm">Cancel</button>
+            <button class="btn btn-primary btn-sm">Save selection</button>
+          </div>
+        </footer>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="picker">
+          <header class="picker-head">
+            <span class="ey">Photo refs</span>
+            <h4>Link gallery photos</h4>
+            <span class="ct">3 selected · no re-upload</span>
+          </header>
+          <div class="picker-grid">
+            <div class="picker-tile is-on">
+              <div class="ph-tile-zellige"></div>
+              <span class="chk"><svg><use href="#i-check"/></svg></span>
+            </div>
+            <div class="picker-tile is-on">
+              <div class="ph-tile-blue"></div>
+              <span class="chk"><svg><use href="#i-check"/></svg></span>
+            </div>
+            <div class="picker-tile is-on">
+              <div class="ph-tile-cream"></div>
+              <span class="chk"><svg><use href="#i-check"/></svg></span>
+            </div>
+            <div class="picker-tile">
+              <div class="ph-paint-navy"></div>
+              <span class="chk"></span>
+            </div>
+            <div class="picker-tile">
+              <div class="ph-tile-marble"></div>
+              <span class="chk"></span>
+            </div>
+            <div class="picker-tile">
+              <div class="ph-faucet-brass"></div>
+              <span class="chk"></span>
+            </div>
+          </div>
+          <footer class="picker-foot">
+            <span>Gallery photos only · already uploaded</span>
+            <span class="right">Save refs</span>
+          </footer>
+        </div>
+
+        <div class="ctx">
+          <h3>What's in this dialog</h3>
+          <ul>
+            <li>Full operator spec — Room · Category · Brand · Name · Code · Finish · Supplier · SKU · Warranty.</li>
+            <li>Money row is bordered &amp; backed in paper-2 — the line that triggers a CO when actual exceeds allowance.</li>
+            <li>Photo-refs picker on the right <b>links existing gallery photos</b> — never a re-upload. Selections inherit those refs.</li>
+            <li>No tax math here — selections feed the project cost line; tax flows there. No holdback on selections.</li>
+            <li>Saving a row over its allowance shows the Henry CO nudge on the tab (Frame 01).</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 04 — Idea → Selection promotion (pre-filled, lighter framing)
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 04</span>
+  <h2>Idea → Selection promotion · pre-filled spec, one-way · objects stay distinct</h2>
+  <span class="hint">Same dialog shape as Frame 03 — but framed as <b>"promote"</b>, pre-filled from the client's idea, with the source attribution preserved.</span>
+</div>
+<div class="frame">
+  <div class="dialog-frame">
+    <div class="dialog-stage" style="grid-template-columns: 580px 1fr;">
+
+      <div class="dialog">
+        <header class="dialog-head">
+          <div class="dialog-eyebrow" style="color: var(--info);">
+            <svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:4px"><use href="#i-arrow-up-right"/></svg>
+            Promote · from Priya's idea · posted 4 days ago
+          </div>
+          <h3>Promote idea into a selection</h3>
+          <p>You're turning the client's posted inspiration into the decided spec for this room. The original idea will be marked <b>"already a Selection"</b> — it stays in the idea board for context. <b>Distinct objects · one direction.</b></p>
+        </header>
+        <div class="dialog-body">
+
+          <!-- Idea source mini-card -->
+          <div style="display: grid; grid-template-columns: 84px 1fr; gap: 12px; align-items: center; background: var(--info-soft); border: 1px solid rgba(30,64,175,0.18); border-radius: 10px; padding: 10px 12px;">
+            <div style="width:84px; height:64px; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid var(--hair);">
+              <div class="ph-paint-navy"></div>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <span class="by-tag by-client"><svg><use href="#i-user"/></svg> Client idea</span>
+                <span style="font-family:var(--mono); font-size: 11px; color: var(--muted); letter-spacing:0.04em;">2026-05-19</span>
+              </div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--ink);">Hale Navy on vanity</div>
+              <div style="font-size: 12px; color: var(--muted);">"BM HC-154 — saw it at Mira's place"</div>
+            </div>
+          </div>
+
+          <div class="dialog-row">
+            <div class="field">
+              <label>Room</label>
+              <input value="Master bathroom" />
+            </div>
+            <div class="field">
+              <label>Category</label>
+              <select><option>Paint</option></select>
+            </div>
+          </div>
+          <div class="dialog-row">
+            <div class="field">
+              <label>Brand</label>
+              <input value="Benjamin Moore" />
+            </div>
+            <div class="field">
+              <label>Name</label>
+              <input value="Hale Navy" />
+            </div>
+          </div>
+          <div class="dialog-row">
+            <div class="field">
+              <label>Code</label>
+              <input value="HC-154" style="font-family: var(--mono);" />
+            </div>
+            <div class="field">
+              <label>Finish</label>
+              <input value="Eggshell" />
+            </div>
+          </div>
+
+          <div class="dialog-row is-money">
+            <div class="field">
+              <label>Allowance (CAD)</label>
+              <input value="220.00" style="font-family:var(--mono); font-variant-numeric:tabular-nums;" />
+            </div>
+            <div class="field">
+              <label>Actual cost (CAD)</label>
+              <input placeholder="—" style="font-family:var(--mono); font-variant-numeric:tabular-nums; color: var(--faint);" />
+            </div>
+            <div class="money-hint">
+              <span class="glyph">&#10022;</span>
+              <span>Allowance set · actual will be filled when you buy the paint.</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Notes (optional)</label>
+            <textarea rows="2">Vanity only — Priya saw it at Mira's. Trim stays Simply White.</textarea>
+          </div>
+        </div>
+        <footer class="dialog-foot">
+          <span style="font-family:var(--mono); font-size: 11px; color: var(--muted); letter-spacing:0.04em; text-transform:uppercase;">
+            <svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:3px"><use href="#i-arrow-up-right"/></svg>
+            Image will be inherited from the idea
+          </span>
+          <div class="right">
+            <button class="btn btn-quiet btn-sm">Cancel</button>
+            <button class="btn btn-primary btn-sm"><svg><use href="#i-arrow-up-right"/></svg> Promote &amp; save</button>
+          </div>
+        </footer>
+      </div>
+
+      <div class="ctx">
+        <h3>Why promote, not merge</h3>
+        <ul>
+          <li>Idea Board is <b>client inspiration</b>. Selections is <b>the decided spec</b>. Different objects, different lifecycles.</li>
+          <li>Promotion is <b>one-way</b>: the idea gets a "promoted" stamp; the selection becomes the source of truth.</li>
+          <li>The idea stays visible — useful context — but you can't edit a Selection by editing an idea.</li>
+          <li>Image and notes are inherited; brand · code · finish · supplier · SKU need your operator-grade fill-in.</li>
+          <li><code>by-promoted</code> tag is rendered everywhere the promoted Selection appears — operator AND client portal.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ───────────────────────────────────────────────────────────────
+     FRAME 05 — States · empty operator · empty client portal · loading
+     ─────────────────────────────────────────────────────────────── -->
+<div class="frame-label">
+  <span class="num">Frame 05</span>
+  <h2>States · empty (operator + client portal) · loading skeleton</h2>
+  <span class="hint">Distinct copy per role. Loading mirrors the row layout so the page doesn't reflow.</span>
+</div>
+<div class="frame">
+  <div class="states-frame">
+    <div class="states-grid">
+
+      <!-- Empty operator -->
+      <div class="state-card">
+        <div class="state-label">State · empty operator</div>
+        <div class="state-empty-body">
+          <span class="icn"><svg><use href="#i-paint-bucket"/></svg></span>
+          <h4>No selections yet</h4>
+          <p>Catalog the paint, tile, fixtures, and finishes going in each room. Or snap a paint can — Henry can draft the row.</p>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-henry btn-sm"><span class="henry-glyph">&#10022;</span> Extract from photo</button>
+            <button class="btn btn-primary btn-sm"><svg><use href="#i-plus"/></svg> Add selection</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty client portal -->
+      <div class="state-card">
+        <div class="state-label">State · empty client portal</div>
+        <div class="state-empty-body">
+          <span class="icn"><svg><use href="#i-image-plus"/></svg></span>
+          <h4>Your contractor will add finishes here</h4>
+          <p>You'll see paint codes, tile, and fixtures as Maple Ridge picks them — they go into your final Home Record. You can post what <b>you've</b> chosen too.</p>
+          <button class="btn btn-primary btn-sm"><svg><use href="#i-plus"/></svg> Post what I chose</button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="state-card">
+        <div class="state-label">State · loading</div>
+        <div style="flex:1; padding: 8px 4px; display: flex; flex-direction: column; gap: 4px;">
+          <div class="sk sk-bar" style="width: 35%;"></div>
+          <div class="sk sk-bar" style="width: 80%; height: 8px; margin-top: 6px;"></div>
+          <div style="margin-top: 14px;">
+            <div class="sk-row">
+              <div class="sk sk-thumb"></div>
+              <div>
+                <div class="sk sk-bar" style="width: 65%;"></div>
+                <div class="sk sk-bar" style="width: 80%; margin-top: 6px; height: 9px;"></div>
+              </div>
+              <div>
+                <div class="sk sk-bar" style="height: 9px;"></div>
+                <div class="sk sk-bar" style="margin-top: 6px; height: 9px;"></div>
+              </div>
+            </div>
+            <div class="sk-row">
+              <div class="sk sk-thumb"></div>
+              <div>
+                <div class="sk sk-bar" style="width: 50%;"></div>
+                <div class="sk sk-bar" style="width: 70%; margin-top: 6px; height: 9px;"></div>
+              </div>
+              <div>
+                <div class="sk sk-bar" style="height: 9px;"></div>
+                <div class="sk sk-bar" style="margin-top: 6px; height: 9px;"></div>
+              </div>
+            </div>
+            <div class="sk-row">
+              <div class="sk sk-thumb"></div>
+              <div>
+                <div class="sk sk-bar" style="width: 60%;"></div>
+                <div class="sk sk-bar" style="width: 75%; margin-top: 6px; height: 9px;"></div>
+              </div>
+              <div>
+                <div class="sk sk-bar" style="height: 9px;"></div>
+                <div class="sk sk-bar" style="margin-top: 6px; height: 9px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer class="build-foot">
+  <b>od-selections · desktop</b> · 5 frames · operator tab (ideas + roll-up + room groups w/ allowance vs actual + Henry CO nudge) · client portal view · add-selection dialog + photo-refs picker · idea→selection promotion · states.
+  Paper restyle · status-tokens soft pairs · rust = single accent (primary action + ✦ Henry). Money tabular CAD; over-allowance carries a <b>label</b>, not just a colour, and is the CO trigger. "Client" everywhere — never "homeowner." Client view never shows margin / supplier cost / other projects.
+</footer>
+
+</body>
+</html>

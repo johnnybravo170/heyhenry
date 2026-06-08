@@ -137,6 +137,24 @@ export async function processArEvents(): Promise<{
   let enrollmentsCreated = 0;
   let errored = 0;
 
+  // Prefetch active event-trigger sequences for every tenant in this batch
+  // once, instead of re-querying ar_sequences inside enrollForEvent per event.
+  const tenantIds = [...new Set(events.map((e) => e.tenant_id as string))];
+  const { data: allSequences, error: seqErr } = await admin
+    .from('ar_sequences')
+    .select('id, version, allow_reenrollment, trigger_config, tenant_id')
+    .in('tenant_id', tenantIds)
+    .eq('status', 'active')
+    .eq('trigger_type', 'event');
+  if (seqErr) throw new Error(`list sequences: ${seqErr.message}`);
+  const sequencesByTenant = new Map<string, EventSequence[]>();
+  for (const s of (allSequences ?? []) as EventSequence[]) {
+    const tid = s.tenant_id as string;
+    const arr = sequencesByTenant.get(tid) ?? [];
+    arr.push(s);
+    sequencesByTenant.set(tid, arr);
+  }
+
   for (const event of events) {
     try {
       const created = await enrollForEvent(
@@ -144,6 +162,7 @@ export async function processArEvents(): Promise<{
         event.event_type as string,
         event.contact_id as string | null,
         (event.payload as Record<string, unknown>) ?? {},
+        sequencesByTenant.get(event.tenant_id as string) ?? [],
       );
       enrollmentsCreated += created;
       await admin
@@ -168,25 +187,27 @@ export async function processArEvents(): Promise<{
   return { processed: events.length, enrollmentsCreated, errored };
 }
 
+type EventSequence = {
+  id: string;
+  version: number;
+  allow_reenrollment: boolean;
+  trigger_config: { event_type?: string } | null;
+  tenant_id: string;
+};
+
 async function enrollForEvent(
-  tenantId: string,
+  _tenantId: string,
   eventType: string,
   contactId: string | null,
   payload: Record<string, unknown>,
+  sequences: EventSequence[],
 ): Promise<number> {
   if (!contactId) return 0; // no recipient → nothing to enroll
 
   const admin = createAdminClient();
-  const { data: sequences, error } = await admin
-    .from('ar_sequences')
-    .select('id, version, allow_reenrollment, trigger_config')
-    .eq('tenant_id', tenantId)
-    .eq('status', 'active')
-    .eq('trigger_type', 'event');
-  if (error) throw new Error(`list sequences: ${error.message}`);
 
   let created = 0;
-  for (const seq of sequences ?? []) {
+  for (const seq of sequences) {
     const cfg = (seq.trigger_config as { event_type?: string } | null) ?? {};
     if (cfg.event_type !== eventType) continue;
 

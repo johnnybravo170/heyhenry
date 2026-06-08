@@ -60,6 +60,12 @@ export async function confirmBankMatchesAction(
 
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
+  // Owner+admin only — confirming flips invoices/bills to paid (money
+  // mutation). Defense-in-depth behind the route guard; never loosen below
+  // owner+admin (FLAG FOR OPS to allow members).
+  if (tenant.member.role !== 'owner' && tenant.member.role !== 'admin') {
+    return { ok: false, error: 'Only an owner or admin can confirm bank matches.' };
+  }
   const user = await getCurrentUser();
 
   const supabase = await createClient();
@@ -214,6 +220,10 @@ export async function rejectBankMatchesAction(ids: string[]): Promise<RejectBank
   }
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
+  // Owner+admin only — same surface as confirm. (FLAG FOR OPS to allow members.)
+  if (tenant.member.role !== 'owner' && tenant.member.role !== 'admin') {
+    return { ok: false, error: 'Only an owner or admin can review bank matches.' };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase

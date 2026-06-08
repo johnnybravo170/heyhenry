@@ -8,7 +8,7 @@
  * `batch.kind`.
  */
 
-import { History, Loader2, Sparkles, Undo2 } from 'lucide-react';
+import { AlertTriangle, History, Loader2, Sparkles, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { statusToneClass } from '@/lib/ui/status-tokens';
 import { rollbackCustomerImportAction } from '@/server/actions/onboarding-import';
 import { rollbackInvoiceImportAction } from '@/server/actions/onboarding-import-invoices';
 import { rollbackPhotoImportAction } from '@/server/actions/onboarding-import-photos';
@@ -253,7 +254,8 @@ function BatchRow({ batch, timezone }: { batch: ImportBatchRow; timezone: string
               </Badge>
             ) : null}
             {rolledBack ? (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-900 text-xs">
+              <Badge variant="outline" className={`gap-1 text-xs ${statusToneClass.warning}`}>
+                <AlertTriangle className="size-3" aria-hidden />
                 Rolled back
               </Badge>
             ) : null}

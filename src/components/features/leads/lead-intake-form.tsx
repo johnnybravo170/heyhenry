@@ -28,6 +28,7 @@ import {
   Info,
   Lightbulb,
   Loader2,
+  Mail,
   MessageSquare,
   Mic,
   Pencil,
@@ -35,6 +36,7 @@ import {
   Receipt,
   RefreshCcw,
   Sparkles,
+  Type,
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -42,6 +44,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { ExistingMatchesBanner } from '@/components/features/contacts/existing-matches-banner';
 import { IntakeDropzone } from '@/components/features/contacts/intake-dropzone';
+import { GstSuggestionPrompt } from '@/components/features/leads/gst-suggestion-prompt';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,6 +56,7 @@ import { createClient as createBrowserSupabase } from '@/lib/supabase/client';
 import {
   acceptInboundLeadAction,
   appendToIntakeDraftAction,
+  draftIntakeReplyAction,
   type IntakeArtifact,
   type IntakeArtifactKind,
   type IntakeAugmentation,
@@ -100,6 +104,8 @@ const ARTIFACT_KIND_META: Record<
   spec_drawing_pdf: { Icon: FileText, label: 'Spec drawing' },
   receipt: { Icon: Receipt, label: 'Receipt' },
   inspiration_photo: { Icon: Sparkles, label: 'Inspiration' },
+  customer_message: { Icon: Mail, label: 'Customer message' },
+  text_body: { Icon: Type, label: 'Email body' },
   other: { Icon: FileQuestion, label: 'Artifact' },
 };
 
@@ -324,12 +330,12 @@ function MissingInfoBlock({
 
 function RecognizedCustomerPill({
   customerName,
-  customerId,
+  contactId,
 }: {
   customerName: string | null;
-  customerId: string | null;
+  contactId: string | null;
 }) {
-  if (!customerId) return null;
+  if (!contactId) return null;
   const displayName = (customerName ?? '').trim() || 'this customer';
   return (
     <div className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm dark:border-emerald-800 dark:bg-emerald-900/20">
@@ -949,7 +955,7 @@ export function LeadIntakeForm({
         </p>
         <RecognizedCustomerPill
           customerName={initialDraft?.customer_name ?? customerName}
-          customerId={initialDraft?.recognized_customer_id ?? null}
+          contactId={initialDraft?.recognized_customer_id ?? null}
         />
         <ArtifactChipRow artifacts={initialDraft?.artifacts ?? null} />
         {transcript ? <TranscriptPanel transcript={transcript} /> : null}
@@ -1038,7 +1044,7 @@ export function LeadIntakeForm({
         ) : null}
         <RecognizedCustomerPill
           customerName={initialDraft?.customer_name ?? customerName}
-          customerId={initialDraft?.recognized_customer_id ?? null}
+          contactId={initialDraft?.recognized_customer_id ?? null}
         />
         <ArtifactChipRow artifacts={initialDraft?.artifacts ?? null} />
         <MissingInfoBlock
@@ -1057,10 +1063,12 @@ export function LeadIntakeForm({
           onAccept={handleAcceptSuggestion}
           onDismiss={handleDismissSuggestion}
         />
+        <GstSuggestionPrompt detectedTaxIds={draft.detected_tax_ids ?? []} />
         {transcript ? <TranscriptPanel transcript={transcript} /> : null}
         {parsedBy ? <p className="text-xs text-muted-foreground">Parsed by: {parsedBy}</p> : null}
         <ReviewDraft
           draft={draft}
+          draftId={draftId}
           onChange={setDraft}
           onBack={() => setPhase('upload')}
           onAccept={() => handleAccept()}
@@ -1143,6 +1151,7 @@ export function LeadIntakeForm({
 
 function ReviewDraft({
   draft,
+  draftId,
   onChange,
   onBack,
   onAccept,
@@ -1150,6 +1159,9 @@ function ReviewDraft({
   artifacts,
 }: {
   draft: ParsedIntake;
+  /** Persisted intake_drafts row id — lets the on-demand reply pull the
+   * original message/transcript back for grounding. */
+  draftId?: string | null;
   onChange: (d: ParsedIntake) => void;
   onBack: () => void;
   onAccept: () => void;
@@ -1157,8 +1169,29 @@ function ReviewDraft({
   /** For per-line citation chips — maps source_image_indexes to chip labels. */
   artifacts?: IntakeArtifact[] | null;
 }) {
+  const [isDraftingReply, setIsDraftingReply] = useState(false);
+
   function copyReply() {
-    navigator.clipboard.writeText(draft.reply_draft).then(() => toast.success('Reply copied'));
+    navigator.clipboard
+      .writeText(draft.reply_draft ?? '')
+      .then(() => toast.success('Reply copied'));
+  }
+
+  // Henry writes the reply only when the operator asks — never during the
+  // parse. The button shows only when the parse flagged a reply as
+  // warranted (a real customer message / follow-up hook).
+  async function generateReply() {
+    setIsDraftingReply(true);
+    try {
+      const res = await draftIntakeReplyAction(draft, draftId ?? undefined);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      onChange({ ...draft, reply_draft: res.reply });
+    } finally {
+      setIsDraftingReply(false);
+    }
   }
 
   function patchCustomer(patch: Partial<ParsedIntake['customer']>) {
@@ -1375,19 +1408,67 @@ function ReviewDraft({
         )}
       </Section>
 
-      {/* Reply */}
-      <Section title="Draft reply">
-        <Textarea
-          rows={6}
-          value={draft.reply_draft}
-          onChange={(e) => onChange({ ...draft, reply_draft: e.target.value })}
-        />
-        <div className="mt-2 flex justify-end">
-          <Button type="button" size="sm" variant="outline" onClick={copyReply}>
-            Copy reply
-          </Button>
-        </div>
-      </Section>
+      {/* Reply — drafted on demand, and only when Henry flagged it as
+          warranted. No phantom email for a bare scope. */}
+      {draft.reply_draft ? (
+        <Section title="Draft reply">
+          <Textarea
+            rows={6}
+            value={draft.reply_draft ?? ''}
+            onChange={(e) => onChange({ ...draft, reply_draft: e.target.value })}
+          />
+          <div className="mt-2 flex justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={generateReply}
+              disabled={isDraftingReply}
+            >
+              {isDraftingReply ? (
+                <>
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  Redrafting…
+                </>
+              ) : (
+                'Redraft'
+              )}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={copyReply}>
+              Copy reply
+            </Button>
+          </div>
+        </Section>
+      ) : draft.reply_warranted ? (
+        <Section title="Reply to customer">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {draft.reply_reason
+                ? `Looks like a reply would help — ${draft.reply_reason}.`
+                : 'Looks like this could use a reply to the customer.'}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              onClick={generateReply}
+              disabled={isDraftingReply}
+              className="shrink-0"
+            >
+              {isDraftingReply ? (
+                <>
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  Drafting…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-1.5 size-3.5" />
+                  Draft a reply
+                </>
+              )}
+            </Button>
+          </div>
+        </Section>
+      ) : null}
 
       <div className="flex items-center justify-between gap-2">
         <Button type="button" variant="ghost" onClick={onBack}>

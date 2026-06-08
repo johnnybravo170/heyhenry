@@ -1,0 +1,1732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Onboarding · first-run setup — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette (deepened 2026-05-20) ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+
+    --radius-card:  14px;
+    --radius-input: 10px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 0 80px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 24px;
+  }
+  button, input, select, textarea { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Page header / stage ───── */
+  .page-header {
+    max-width: 880px;
+    padding: 0 24px;
+    text-align: center;
+  }
+  .page-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .page-title {
+    font-family: var(--sans);
+    font-size: 22px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 6px 0 4px;
+    line-height: 1.2;
+  }
+  .page-sub {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+    max-width: 540px;
+    margin-left: auto; margin-right: auto;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: repeat(2, 390px);
+    column-gap: 28px;
+    row-gap: 36px;
+    justify-content: center;
+    padding: 0 24px;
+  }
+
+  .frame { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .frame-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    max-width: 390px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .frame-label .frame-num { color: var(--ink); }
+  .frame-label .frame-strong { color: var(--ink); }
+  .frame-label .frame-sep { color: var(--faint); margin: 0 5px; }
+
+  /* ───── Phone frame (390 × 844) ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--bg);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── (auth) shell — paper bg, wordmark up top, single card, footer ───── */
+  .auth-shell {
+    flex: 1; min-height: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: stretch;
+    padding: 16px 16px 14px;
+    gap: 14px;
+    overflow-y: auto;
+  }
+  .auth-shell.compact { padding: 12px 16px 12px; gap: 12px; }
+
+  .wordmark {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .wordmark-mark {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px;
+    letter-spacing: -0.02em;
+  }
+  .wordmark-name {
+    /* display size, allowed per brief */
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .auth-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex; flex-direction: column;
+  }
+
+  /* ───── Progress affordance (ink fill on paper track — NOT rust) ───── */
+  .progress {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--card);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .progress-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .progress-count {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .progress-count .ink { color: var(--ink); }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    padding: 4px 6px;
+    border-radius: 6px;
+    margin: -4px -6px;
+  }
+  .back-link svg { width: 12px; height: 12px; }
+
+  .progress-bar {
+    display: flex; gap: 4px;
+    height: 4px;
+  }
+  .seg {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+  }
+  .seg.seg-done { background: var(--ink); }
+  .seg.seg-current { background: var(--ink-2); }
+
+  /* ───── Card body ───── */
+  .card-body {
+    padding: 16px 16px 12px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .step-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .step-eyebrow .star { color: var(--rust); font-size: 12px; line-height: 1; }
+  .step-title {
+    /* display size, allowed per brief — only on step H1 */
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin: 0;
+  }
+  .step-sub {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ───── Vertical tiles ───── */
+  .vertical-tiles {
+    display: flex; flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .tile {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    background: var(--card);
+    min-height: 88px;
+    cursor: pointer;
+    position: relative;
+  }
+  .tile.selected {
+    /* the ONE selection highlight per screen — rust ring on this tile */
+    border-color: var(--rust);
+    box-shadow: 0 0 0 3px var(--rust-soft);
+  }
+  .tile.selected .tile-radio {
+    background: var(--rust);
+    border-color: var(--rust);
+    color: #fff;
+  }
+  .tile-radio {
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    border: 1.5px solid var(--hair);
+    background: var(--card);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .tile-radio svg { width: 12px; height: 12px; }
+  .tile-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .tile-row {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tile-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  .tile-default-chip {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .tile-desc {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .tile-list {
+    display: flex; flex-wrap: wrap;
+    gap: 4px 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .tile-list .dot { color: var(--faint); }
+
+  .tile-footnote {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 0 2px;
+    margin-top: 4px;
+  }
+
+  /* ───── Profile step ───── */
+  .profile-fields {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .logo-uploader {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .logo-slot {
+    width: 76px; height: 76px;
+    border-radius: 12px;
+    border: 1px dashed var(--rule);
+    background: var(--bg);
+    display: grid; place-items: center;
+    color: var(--faint);
+    flex-shrink: 0;
+  }
+  .logo-slot.filled {
+    border-style: solid;
+    border-color: var(--hair);
+    background: var(--ink);
+    color: #fff;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+  }
+  .logo-slot svg { width: 26px; height: 26px; }
+  .logo-uploader-body { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+  .logo-uploader-btns { display: flex; gap: 6px; }
+  .logo-help {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .logo-help .payoff { color: var(--ink-2); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .field-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: 0;
+  }
+  .field-optional {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .input, .select {
+    appearance: none;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 44px;
+    padding: 0 12px;
+    font: inherit;
+    font-weight: 500;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .input::placeholder { color: var(--faint); font-weight: 500; }
+  .input.has-value { font-variant-numeric: tabular-nums; }
+  .input.input-focus {
+    /* ink focus ring per brief, not rust */
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(10,10,10,.08);
+  }
+  .select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357534B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+  }
+  .field-help {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .field-help .payoff { color: var(--ink-2); }
+
+  .more-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ───── Meet Henry step ───── */
+  .henry-orient {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.22);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .henry-orient-head {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .henry-mark {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .henry-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .henry-line {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .henry-line .ink { color: var(--ink); font-weight: 600; }
+
+  .henry-bullets {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column;
+    gap: 10px;
+  }
+  .henry-bullet {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .henry-bullet-glyph {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .henry-bullet-glyph svg { width: 12px; height: 12px; }
+  .henry-bullet strong { color: var(--ink); font-weight: 600; }
+
+  .henry-foot {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding: 0 2px;
+  }
+
+  /* ───── Card footer (actions) ───── */
+  .card-actions {
+    border-top: 1px solid var(--hair);
+    padding: 12px 16px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--card);
+  }
+
+  /* ───── Buttons (mobile · ≥44px) — INK primary, never rust ───── */
+  .btn-mob {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; padding: 0 14px;
+    border-radius: 10px;
+    font: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    width: 100%;
+  }
+  .btn-mob-primary { background: var(--ink); color: #fff; }
+  .btn-mob-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-mob-outline { background: var(--card); border-color: var(--hair); color: var(--ink-2); }
+  .btn-mob-text {
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    height: 40px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .btn-mob .ico { width: 16px; height: 16px; }
+  .btn-mob-sm {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    width: auto;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .btn-mob-sm .ico { width: 14px; height: 14px; }
+
+  /* ───── Footer (auth shell) ───── */
+  .auth-footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ───── Signup form (light render — for the Account frame) ───── */
+  .signup-fields {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .checkbox-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding-top: 2px;
+  }
+  .checkbox-box {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid var(--hair);
+    background: var(--card);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .checkbox-box.checked {
+    background: var(--ink);
+    border-color: var(--ink);
+    display: grid; place-items: center;
+    color: #fff;
+  }
+  .checkbox-box svg { width: 12px; height: 12px; }
+  .checkbox-label {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+    flex: 1;
+  }
+  .checkbox-label a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
+
+  .signup-foot {
+    border-top: 1px solid var(--hair);
+    padding: 12px 16px 14px;
+    background: var(--card);
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .signup-foot .login-link {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .signup-foot .login-link a { color: var(--ink); font-weight: 600; }
+  .signup-foot .trial-line {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ───── Plan picker (conditional) ───── */
+  .plan-toggle {
+    display: inline-flex;
+    border: 1px solid var(--hair);
+    background: var(--chip-fill);
+    border-radius: 10px;
+    padding: 3px;
+    align-self: center;
+  }
+  .plan-toggle-btn {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 7px;
+    font-size: 14px; font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .plan-toggle-btn.active {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(10,10,10,.06);
+  }
+  .plan-toggle-save {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ok);
+    letter-spacing: 0;
+  }
+
+  .plan-card {
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    background: var(--card);
+    position: relative;
+  }
+  .plan-card.selected {
+    border-color: var(--rust);
+    box-shadow: 0 0 0 3px var(--rust-soft);
+  }
+  .plan-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .plan-name {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .plan-tagline {
+    font-size: 14px; color: var(--muted);
+    margin-top: 2px;
+  }
+  .plan-radio {
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    border: 1.5px solid var(--rust);
+    background: var(--rust);
+    color: #fff;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .plan-radio svg { width: 12px; height: 12px; }
+  .plan-price-row { display: flex; align-items: baseline; gap: 8px; }
+  .plan-price {
+    font-size: 22px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .plan-price-strike {
+    font-size: 14px;
+    color: var(--faint);
+    text-decoration: line-through;
+    font-variant-numeric: tabular-nums;
+  }
+  .plan-price-unit {
+    font-size: 14px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .plan-seat-band {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .plan-promo {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    border: 1px solid rgba(194,65,12,.22);
+    font-size: 12px; font-weight: 600;
+  }
+  .plan-promo .code {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .plan-features {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column;
+    gap: 6px;
+  }
+  .plan-feature {
+    display: flex; gap: 8px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.45;
+  }
+  .plan-feature .dot { color: var(--faint); }
+  .plan-feature.head { color: var(--ink); font-weight: 600; }
+
+  .plan-trial-foot {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ───── Resume banner ───── */
+  .resume-banner {
+    background: var(--rust-soft);
+    border: 1px solid rgba(194,65,12,.22);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 4px;
+  }
+  .resume-banner .resume-mark {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: var(--card);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .resume-banner .resume-mark svg { width: 13px; height: 13px; }
+  .resume-banner .resume-body { flex: 1; min-width: 0; }
+  .resume-banner .resume-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .resume-banner .resume-line {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.45;
+    margin-top: 2px;
+  }
+  .resume-banner .resume-line strong { color: var(--ink); font-weight: 600; }
+
+  /* ───── Skipped chip in card actions ───── */
+  .skipped-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .skipped-row svg { width: 14px; height: 14px; color: var(--faint); flex-shrink: 0; }
+  .skipped-row .ink { color: var(--ink-2); }
+
+  /* ───── Hand-off (mobile dashboard) ───── */
+  .dash-shell {
+    flex: 1; min-height: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  .dash-top {
+    padding: 14px 16px 10px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    flex-shrink: 0;
+  }
+  .dash-brand {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dash-brand .bmark {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px;
+    letter-spacing: -0.02em;
+  }
+  .dash-brand .bname {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .dash-avatar {
+    width: 32px; height: 32px;
+    border-radius: 999px;
+    background: var(--chip-fill);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .dash-body {
+    padding: 14px 14px 80px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .hero-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .hero-head {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .hero-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .hero-sub {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 4px 0 0;
+  }
+  .hero-steps {
+    display: flex; flex-direction: column;
+    padding: 4px 0;
+  }
+  .hero-step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hair);
+    background: var(--card);
+  }
+  .hero-step:last-child { border-bottom: 0; }
+  .hero-step-n {
+    width: 26px; height: 26px;
+    border-radius: 999px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .hero-step-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .hero-step-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+  }
+  .hero-step-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .hero-step-arrow {
+    color: var(--faint);
+  }
+  .hero-step-arrow svg { width: 16px; height: 16px; }
+
+  .hero-foot-link {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--hair);
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .hero-foot-link .left { display: flex; align-items: center; gap: 8px; }
+  .hero-foot-link .henry-mini {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    display: grid; place-items: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .hero-foot-link .ink { color: var(--ink); font-weight: 600; }
+  .hero-foot-link .chev { color: var(--faint); }
+  .hero-foot-link .chev svg { width: 14px; height: 14px; }
+
+  .placeholder-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .placeholder-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .placeholder-rows { display: flex; flex-direction: column; gap: 6px; }
+  .placeholder-rows .row {
+    height: 12px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+  }
+  .placeholder-rows .row.short { width: 60%; }
+  .placeholder-rows .row.mid { width: 80%; }
+
+  /* ───── Cap (page intro) ───── */
+  .legend {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.55;
+    text-align: center;
+  }
+  .legend strong { color: var(--ink-2); }
+  .legend .swatch {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin: 0 6px;
+  }
+  .legend .chip {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    vertical-align: -1px;
+  }
+  .legend .chip-ink { background: var(--ink); }
+  .legend .chip-rust { background: var(--rust); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-eyebrow">OD · ONBOARDING / FIRST-RUN · MOBILE · 390 × 844</div>
+  <h1 class="page-title">Owner first run · light, skippable, resumable.</h1>
+  <p class="page-sub">
+    Account drops them into a 3-step setup pass inside the (auth) shell — vertical · profile · Meet Henry — then hands off to the dashboard FirstRunHero. Every step skips and resumes; nothing blocks value.
+  </p>
+</div>
+
+<div class="legend">
+  Accent discipline · <span class="swatch"><span class="chip chip-ink"></span> <strong>Ink</strong> primary buttons, focus rings, progress fill.</span>
+  <span class="swatch"><span class="chip chip-rust"></span> <strong>Rust</strong> = ✦ Henry mark + one selection highlight per screen — never the CTA, never the progress bar.</span>
+</div>
+
+<div class="stage">
+
+  <!-- ─────────── FRAME 1 · Account (light) ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="auth-shell">
+          <div class="wordmark">
+            <span class="wordmark-mark">H</span>
+            <span class="wordmark-name">HeyHenry</span>
+          </div>
+
+          <div class="auth-card">
+            <div class="card-body" style="gap:6px;">
+              <h2 class="step-title">Get started with HeyHenry.</h2>
+              <p class="step-sub">Run your jobs from the truck. We handle the paperwork.</p>
+            </div>
+
+            <div class="card-body" style="padding-top:4px; gap:12px;">
+              <div class="signup-fields">
+                <div class="field-grid-2">
+                  <div class="field">
+                    <label class="field-label">First name</label>
+                    <input class="input" value="Mike" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Last name</label>
+                    <input class="input" value="Bélanger" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="field-label">Business name</label>
+                  <input class="input" value="Bélanger Reno Co." />
+                </div>
+                <div class="field">
+                  <label class="field-label">Email</label>
+                  <input class="input" type="email" value="mike@belangerreno.ca" inputmode="email" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Mobile phone</label>
+                  <input class="input" type="tel" value="+1 604 555 1234" inputmode="tel" />
+                  <p class="field-help">We text a 6-digit code the first time you send an SMS — not now.</p>
+                </div>
+                <div class="field">
+                  <label class="field-label">Password</label>
+                  <input class="input" type="password" value="••••••••" />
+                  <p class="field-help">At least 8 characters with one letter and one number.</p>
+                </div>
+                <div class="checkbox-row">
+                  <div class="checkbox-box checked">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <p class="checkbox-label">I agree to the <a>Terms of Service</a> and <a>Privacy Policy</a>.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="signup-foot">
+              <button class="btn-mob btn-mob-primary">Create my account</button>
+              <p class="login-link">Already have an account? <a>Sign in</a></p>
+              <p class="trial-line">14-day free trial. Cancel any time — see <a style="text-decoration:underline;">refund policy</a>.</p>
+            </div>
+          </div>
+
+          <p class="auth-footer">Built for contractors. Made in Canada.</p>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">01</span><span class="frame-sep">·</span>Account <span class="frame-sep">·</span>
+      <span>existing /signup, rendered light · the ONLY hard-required gate · on submit →</span> <span class="frame-strong">setup pass</span>
+    </div>
+  </div>
+
+
+  <!-- ─────────── FRAME 2 · Step 1 · Vertical ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:42</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="auth-shell">
+          <div class="wordmark">
+            <span class="wordmark-mark">H</span>
+            <span class="wordmark-name">HeyHenry</span>
+          </div>
+
+          <div class="auth-card">
+            <div class="progress">
+              <div class="progress-row">
+                <span class="progress-count">STEP <span class="ink">1</span> OF 3</span>
+                <span class="progress-count" style="color:var(--muted);">Setting up</span>
+              </div>
+              <div class="progress-bar" aria-label="Step 1 of 3">
+                <span class="seg seg-current"></span>
+                <span class="seg"></span>
+                <span class="seg"></span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <h2 class="step-title">What kind of work do you do?</h2>
+              <p class="step-sub">We'll set up the right tools, taxes, and starter templates for your trade. You can switch this later.</p>
+
+              <div class="vertical-tiles">
+                <button class="tile selected" type="button">
+                  <span class="tile-radio">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                  <span class="tile-body">
+                    <span class="tile-row">
+                      <span class="tile-title">General contracting / renovation</span>
+                      <span class="tile-default-chip">Default</span>
+                    </span>
+                    <span class="tile-desc">Multi-trade projects with phases, change orders, draws, and a client portal.</span>
+                    <span class="tile-list">
+                      <span>Projects</span><span class="dot">·</span>
+                      <span>Estimates</span><span class="dot">·</span>
+                      <span>Change orders</span><span class="dot">·</span>
+                      <span>Draws</span>
+                    </span>
+                  </span>
+                </button>
+
+                <button class="tile" type="button">
+                  <span class="tile-radio"></span>
+                  <span class="tile-body">
+                    <span class="tile-row">
+                      <span class="tile-title">Pressure washing</span>
+                    </span>
+                    <span class="tile-desc">One-day jobs with photo-driven invoices and route-friendly scheduling.</span>
+                    <span class="tile-list">
+                      <span>Jobs</span><span class="dot">·</span>
+                      <span>Quick quotes</span><span class="dot">·</span>
+                      <span>Before / after</span><span class="dot">·</span>
+                      <span>Invoices</span>
+                    </span>
+                  </span>
+                </button>
+              </div>
+
+              <p class="tile-footnote">More verticals (tile, decks) coming. Pick the closest fit — switching later re-seeds your starter templates.</p>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-mob btn-mob-primary">Continue</button>
+              <button class="btn-mob btn-mob-text">Skip for now</button>
+            </div>
+          </div>
+
+          <p class="auth-footer">Built for contractors. Made in Canada.</p>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">02</span><span class="frame-sep">·</span>Step 1 · Vertical <span class="frame-sep">·</span>
+      <span>renovation pre-selected · rust ring = the one selection highlight · ink CTA · skip keeps the default</span>
+    </div>
+  </div>
+
+
+  <!-- ─────────── FRAME 3 · Step 2 · Business profile ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:43</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="auth-shell">
+          <div class="wordmark">
+            <span class="wordmark-mark">H</span>
+            <span class="wordmark-name">HeyHenry</span>
+          </div>
+
+          <div class="auth-card">
+            <div class="progress">
+              <div class="progress-row">
+                <a class="back-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Back
+                </a>
+                <span class="progress-count">STEP <span class="ink">2</span> OF 3</span>
+              </div>
+              <div class="progress-bar" aria-label="Step 2 of 3">
+                <span class="seg seg-done"></span>
+                <span class="seg seg-current"></span>
+                <span class="seg"></span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <h2 class="step-title">Make it look like your business.</h2>
+              <p class="step-sub">This is what your <strong style="color:var(--ink-2);">clients</strong> see on every estimate and invoice. All optional — finish later from Settings.</p>
+
+              <div class="profile-fields">
+                <div class="field">
+                  <span class="field-label">Logo</span>
+                  <div class="logo-uploader">
+                    <div class="logo-slot">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+                    </div>
+                    <div class="logo-uploader-body">
+                      <div class="logo-uploader-btns">
+                        <button class="btn-mob btn-mob-outline btn-mob-sm">
+                          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          Upload
+                        </button>
+                      </div>
+                      <p class="logo-help"><span class="payoff">Goes on every estimate and invoice.</span> PNG, JPEG, WebP, or SVG up to 5 MB.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <div class="field-row">
+                    <label class="field-label">GST number</label>
+                    <span class="field-optional">Optional</span>
+                  </div>
+                  <input class="input" placeholder="123456789 RT0001" inputmode="numeric" />
+                  <p class="field-help"><span class="payoff">Shown in the footer</span> of estimates and invoices.</p>
+                </div>
+
+                <div class="field">
+                  <div class="field-row">
+                    <label class="field-label">WCB account number</label>
+                    <span class="field-optional">Optional</span>
+                  </div>
+                  <input class="input" placeholder="WCB-1234567" />
+                  <p class="field-help"><span class="payoff">Shown in the footer</span> alongside GST.</p>
+                </div>
+
+                <div class="field">
+                  <label class="field-label">Province</label>
+                  <select class="select">
+                    <option>BC — British Columbia</option>
+                    <option>AB — Alberta</option>
+                    <option>ON — Ontario</option>
+                  </select>
+                  <p class="field-help"><span class="payoff">Sets the right sales tax</span> (GST / PST / HST) on your first estimate.</p>
+                </div>
+
+                <a class="more-link">More business details →</a>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-mob btn-mob-primary">Save &amp; continue</button>
+              <button class="btn-mob btn-mob-text">Skip for now</button>
+            </div>
+          </div>
+
+          <p class="auth-footer">Built for contractors. Made in Canada.</p>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">03</span><span class="frame-sep">·</span>Step 2 · Business profile <span class="frame-sep">·</span>
+      <span>trimmed — logo · GST · WCB · province · address/website/socials deferred to Settings</span>
+    </div>
+  </div>
+
+
+  <!-- ─────────── FRAME 4 · Step 3 · Meet Henry ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:44</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="auth-shell">
+          <div class="wordmark">
+            <span class="wordmark-mark">H</span>
+            <span class="wordmark-name">HeyHenry</span>
+          </div>
+
+          <div class="auth-card">
+            <div class="progress">
+              <div class="progress-row">
+                <a class="back-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Back
+                </a>
+                <span class="progress-count">STEP <span class="ink">3</span> OF 3</span>
+              </div>
+              <div class="progress-bar" aria-label="Step 3 of 3">
+                <span class="seg seg-done"></span>
+                <span class="seg seg-done"></span>
+                <span class="seg seg-current"></span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <h2 class="step-title">Meet Henry.</h2>
+              <p class="step-sub">An assistant tucked inside the app — not a chat box. Here's what he'll do.</p>
+
+              <div class="henry-orient">
+                <div class="henry-orient-head">
+                  <div class="henry-mark">✦</div>
+                  <span class="henry-label">HENRY</span>
+                </div>
+                <p class="henry-line">
+                  <span class="ink">I'm Henry.</span> I'll draft your quotes, chase late invoices, and keep the paperwork straight so you can stay on the tools.
+                </p>
+              </div>
+
+              <ul class="henry-bullets">
+                <li class="henry-bullet">
+                  <span class="henry-bullet-glyph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3"/><path d="M19 12l3-3"/><path d="M5 12l-3-3"/><rect x="6" y="9" width="12" height="11" rx="2"/></svg>
+                  </span>
+                  <span><strong>Draft an estimate</strong> from a voice note or a photo of your scope sketch.</span>
+                </li>
+                <li class="henry-bullet">
+                  <span class="henry-bullet-glyph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><polyline points="14 6 20 12 14 18"/></svg>
+                  </span>
+                  <span><strong>Follow up</strong> on a sent estimate before it goes cold — in your voice.</span>
+                </li>
+                <li class="henry-bullet">
+                  <span class="henry-bullet-glyph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.5" r="0.8" fill="currentColor"/></svg>
+                  </span>
+                  <span><strong>Flag an invoice</strong> drifting past due, with the next nudge ready to send.</span>
+                </li>
+              </ul>
+
+              <p class="henry-foot">Henry shows up where you need him — on the estimate, on the dashboard, on a late invoice. He doesn't run a chat window in the corner.</p>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-mob btn-mob-primary">
+                Let's go
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <p class="auth-footer">Built for contractors. Made in Canada.</p>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">04</span><span class="frame-sep">·</span>Step 3 · Meet Henry <span class="frame-sep">·</span>
+      <span>orientation card, not a chat box · ✦ rust mark = the screen's one accent · CTA stays ink</span>
+    </div>
+  </div>
+
+
+  <!-- ─────────── FRAME 5 · Hand-off · dashboard FirstRunHero ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:45</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="dash-shell">
+          <div class="dash-top">
+            <div class="dash-brand">
+              <div class="bmark">B</div>
+              <div class="bname">Bélanger Reno</div>
+            </div>
+            <div class="dash-avatar">MB</div>
+          </div>
+
+          <div class="dash-body">
+            <div class="hero-card">
+              <div class="hero-head">
+                <h3 class="hero-title">Welcome to HeyHenry, Mike.</h3>
+                <p class="hero-sub">Three steps to your first quote. Most contractors knock these out in 5 minutes.</p>
+              </div>
+              <div class="hero-steps">
+                <a class="hero-step">
+                  <span class="hero-step-n">1</span>
+                  <span class="hero-step-body">
+                    <span class="hero-step-title">Add a client</span>
+                    <span class="hero-step-desc">Their name + how to reach them. 30 seconds.</span>
+                  </span>
+                  <span class="hero-step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </span>
+                </a>
+                <a class="hero-step">
+                  <span class="hero-step-n">2</span>
+                  <span class="hero-step-body">
+                    <span class="hero-step-title">Start a project</span>
+                    <span class="hero-step-desc">A spot for the quote, photos, schedule, and money.</span>
+                  </span>
+                  <span class="hero-step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </span>
+                </a>
+                <a class="hero-step">
+                  <span class="hero-step-n">3</span>
+                  <span class="hero-step-body">
+                    <span class="hero-step-title">Build a quote</span>
+                    <span class="hero-step-desc">Line items, scope, taxes — done from the truck.</span>
+                  </span>
+                  <span class="hero-step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </span>
+                </a>
+              </div>
+              <a class="hero-foot-link">
+                <span class="left">
+                  <span class="henry-mini">✦</span>
+                  <span><span class="ink">Henry can draft your first quote</span> from a voice note.</span>
+                </span>
+                <span class="chev">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+              </a>
+            </div>
+
+            <div class="placeholder-card">
+              <span class="placeholder-eyebrow">TODAY · NOTHING SCHEDULED</span>
+              <div class="placeholder-rows">
+                <div class="row"></div>
+                <div class="row mid"></div>
+                <div class="row short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">05</span><span class="frame-sep">·</span>Hand-off · dashboard FirstRunHero <span class="frame-sep">·</span>
+      <span>setup complete → existing /dashboard hero · stays until 1st client/project/quote</span>
+    </div>
+  </div>
+
+
+  <!-- ─────────── FRAME 6 · Plan picker (conditional) ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="auth-shell compact">
+          <div class="wordmark">
+            <span class="wordmark-mark">H</span>
+            <span class="wordmark-name">HeyHenry</span>
+          </div>
+
+          <div class="auth-card">
+            <div class="card-body" style="gap:8px; align-items:center; text-align:center;">
+              <span class="progress-count" style="color:var(--rust);">CONDITIONAL · PAID-CTA PATH ONLY</span>
+              <h2 class="step-title">Pick your plan.</h2>
+              <p class="step-sub">14-day free trial. Card required. Change or cancel anytime.</p>
+
+              <div class="plan-toggle" style="margin-top:6px;">
+                <button class="plan-toggle-btn active" type="button">Monthly</button>
+                <button class="plan-toggle-btn" type="button">Yearly <span class="plan-toggle-save">−20%</span></button>
+              </div>
+            </div>
+
+            <div class="card-body" style="padding-top:0;">
+              <div class="plan-card selected">
+                <div class="plan-head">
+                  <div>
+                    <div class="plan-name">Growth</div>
+                    <div class="plan-tagline">Small crew · 2–10 people.</div>
+                  </div>
+                  <div class="plan-radio">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                </div>
+                <div class="plan-price-row">
+                  <span class="plan-price">$199</span>
+                  <span class="plan-price-strike">$399</span>
+                  <span class="plan-price-unit">/ mo CAD</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                  <span class="plan-promo">
+                    <span class="code">FOUNDER</span>
+                    applied · locked at sign-up rate
+                  </span>
+                  <span class="plan-seat-band">2–10 SEATS · FLAT RATE</span>
+                </div>
+                <ul class="plan-features">
+                  <li class="plan-feature head"><span>Everything on HeyHenry, plus:</span></li>
+                  <li class="plan-feature"><span class="dot">•</span><span>SMS reminders + two-way relay + dedicated number</span></li>
+                  <li class="plan-feature"><span class="dot">•</span><span>Public lead widget + polygon quoting</span></li>
+                  <li class="plan-feature"><span class="dot">•</span><span>Reviews + GBP auto-posting + SEO pack</span></li>
+                  <li class="plan-feature"><span class="dot">•</span><span>Branded portal + proactive Henry agents</span></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-mob btn-mob-primary">Continue with Growth — start 14-day trial</button>
+              <p class="plan-trial-foot">Trial ends Jun 6, 2026. We'll email you 3 days before any charge.</p>
+            </div>
+          </div>
+
+          <p class="auth-footer">Built for contractors. Made in Canada.</p>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">06</span><span class="frame-sep">·</span>Plan picker — conditional <span class="frame-sep">·</span>
+      <span>only on the paid-CTA path · Growth-only · FOUNDER → $199/mo CAD (reg $399) · flat rate · no seat counter</span>
+    </div>
+  </div>
+
+
+  <!-- ─────────── FRAME 7 · State · Skip-for-now ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:43</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="auth-shell">
+          <div class="wordmark">
+            <span class="wordmark-mark">H</span>
+            <span class="wordmark-name">HeyHenry</span>
+          </div>
+
+          <div class="auth-card">
+            <div class="progress">
+              <div class="progress-row">
+                <a class="back-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Back
+                </a>
+                <span class="progress-count">STEP <span class="ink">3</span> OF 3</span>
+              </div>
+              <div class="progress-bar" aria-label="Step 3 of 3 — profile skipped">
+                <span class="seg seg-done"></span>
+                <span class="seg" style="background:repeating-linear-gradient(90deg, var(--chip-fill) 0 4px, transparent 4px 7px);"></span>
+                <span class="seg seg-current"></span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <h2 class="step-title">Meet Henry.</h2>
+              <p class="step-sub">Last screen of setup — Henry stays out of your way unless you call him.</p>
+
+              <div class="skipped-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></svg>
+                <span><span class="ink">Skipped business profile.</span> Add logo + GST any time from Settings ▸ Profile so it lands on your next estimate.</span>
+              </div>
+
+              <div class="henry-orient">
+                <div class="henry-orient-head">
+                  <div class="henry-mark">✦</div>
+                  <span class="henry-label">HENRY</span>
+                </div>
+                <p class="henry-line">
+                  <span class="ink">I'm Henry.</span> I'll draft your quotes, chase late invoices, and keep the paperwork straight so you can stay on the tools.
+                </p>
+              </div>
+
+              <ul class="henry-bullets">
+                <li class="henry-bullet">
+                  <span class="henry-bullet-glyph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3"/><path d="M19 12l3-3"/><path d="M5 12l-3-3"/><rect x="6" y="9" width="12" height="11" rx="2"/></svg>
+                  </span>
+                  <span><strong>Draft an estimate</strong> from a voice note or a photo of a sketch.</span>
+                </li>
+                <li class="henry-bullet">
+                  <span class="henry-bullet-glyph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><polyline points="14 6 20 12 14 18"/></svg>
+                  </span>
+                  <span><strong>Follow up</strong> on a sent estimate before it goes cold.</span>
+                </li>
+                <li class="henry-bullet">
+                  <span class="henry-bullet-glyph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.5" r="0.8" fill="currentColor"/></svg>
+                  </span>
+                  <span><strong>Flag an invoice</strong> drifting past due, with the nudge ready to send.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-mob btn-mob-primary">
+                Let's go
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <p class="auth-footer">Built for contractors. Made in Canada.</p>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">07</span><span class="frame-sep">·</span>State · Skip-for-now <span class="frame-sep">·</span>
+      <span>profile skipped → dashed segment in the bar · quiet inline ack · value never gated</span>
+    </div>
+  </div>
+
+
+  <!-- ─────────── FRAME 8 · State · Resume-partial ─────────── -->
+  <div class="frame">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>8:12</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M2 12.55a11 11 0 0 1 20 0"/><path d="M5.5 15.5a7 7 0 0 1 13 0"/><path d="M9 18.5a3 3 0 0 1 6 0"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+            <div class="battery"></div>
+          </div>
+        </div>
+
+        <div class="auth-shell">
+          <div class="wordmark">
+            <span class="wordmark-mark">H</span>
+            <span class="wordmark-name">HeyHenry</span>
+          </div>
+
+          <div class="auth-card">
+            <div class="progress">
+              <div class="progress-row">
+                <a class="back-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Back
+                </a>
+                <span class="progress-count">STEP <span class="ink">2</span> OF 3</span>
+              </div>
+              <div class="progress-bar" aria-label="Step 2 of 3 — resumed">
+                <span class="seg seg-done"></span>
+                <span class="seg seg-current"></span>
+                <span class="seg"></span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="resume-banner">
+                <div class="resume-mark">✦</div>
+                <div class="resume-body">
+                  <div class="resume-eyebrow">WELCOME BACK</div>
+                  <p class="resume-line">Picking up at your business profile — vertical's already saved as <strong>General contracting</strong>.</p>
+                </div>
+              </div>
+
+              <h2 class="step-title">Make it look like your business.</h2>
+              <p class="step-sub">Logo + tax info land on your next estimate. All optional.</p>
+
+              <div class="profile-fields">
+                <div class="field">
+                  <span class="field-label">Logo</span>
+                  <div class="logo-uploader">
+                    <div class="logo-slot filled">B</div>
+                    <div class="logo-uploader-body">
+                      <div class="logo-uploader-btns">
+                        <button class="btn-mob btn-mob-outline btn-mob-sm">Replace</button>
+                        <button class="btn-mob btn-mob-text btn-mob-sm">Remove</button>
+                      </div>
+                      <p class="logo-help"><span class="payoff">Saved 2 days ago.</span> Henry can extract brand colours from this — coming soon.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <div class="field-row">
+                    <label class="field-label">GST number</label>
+                    <span class="field-optional">Optional</span>
+                  </div>
+                  <input class="input has-value" value="784512903 RT0001" />
+                  <p class="field-help"><span class="payoff">Will show in your estimate footer.</span></p>
+                </div>
+
+                <div class="field">
+                  <div class="field-row">
+                    <label class="field-label">WCB account number</label>
+                    <span class="field-optional">Optional</span>
+                  </div>
+                  <input class="input" placeholder="WCB-1234567" />
+                  <p class="field-help">Most BC GCs add this later — no rush.</p>
+                </div>
+
+                <div class="field">
+                  <label class="field-label">Province</label>
+                  <select class="select">
+                    <option>BC — British Columbia</option>
+                    <option>AB — Alberta</option>
+                  </select>
+                  <p class="field-help">PST 7% + GST 5% will be applied to your first BC estimate.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-mob btn-mob-primary">Save &amp; continue</button>
+              <button class="btn-mob btn-mob-text">Finish later from Settings</button>
+            </div>
+          </div>
+
+          <p class="auth-footer">Built for contractors. Made in Canada.</p>
+        </div>
+
+      </div>
+    </div>
+    <div class="frame-label">
+      <span class="frame-num">08</span><span class="frame-sep">·</span>State · Resume-partial <span class="frame-sep">·</span>
+      <span>returns later → lands on the furthest-incomplete step · prior answers intact · no re-asking</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

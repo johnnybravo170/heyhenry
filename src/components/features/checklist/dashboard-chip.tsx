@@ -19,13 +19,20 @@ export async function ChecklistDashboardChip() {
   return (
     <Link
       href="/checklists"
-      className="inline-flex items-center gap-2 self-start rounded-md border bg-card px-3 py-1.5 text-xs hover:bg-muted"
+      className="inline-flex items-center gap-2 self-start rounded-lg border bg-card px-3 py-2 text-sm hover:bg-muted"
     >
-      <ListChecks className="size-3.5 text-muted-foreground" />
-      <span className="font-medium">Team checklist:</span>
+      <ListChecks className="size-4 shrink-0 text-muted-foreground" />
+      <span className="font-medium">Team checklist</span>
       <span className="text-muted-foreground">
-        {total} open across {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+        <span className="font-mono font-semibold tabular-nums text-foreground">{total}</span> open
+        across{' '}
+        <span className="font-mono font-semibold tabular-nums text-foreground">
+          {projects.length}
+        </span>{' '}
+        {projects.length === 1 ? 'project' : 'projects'}
       </span>
+      {/* Rust dot — signals live items needing attention */}
+      <span aria-hidden="true" className="ml-auto size-2 shrink-0 rounded-full bg-brand" />
     </Link>
   );
 }

@@ -81,7 +81,7 @@ const resolveSchema = z.object({
   jobId: z.string().uuid(),
   qboId: z.string().min(1),
   action: z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('merge'), hhCustomerId: z.string().uuid() }),
+    z.object({ kind: z.literal('merge'), hhContactId: z.string().uuid() }),
     z.object({ kind: z.literal('create') }),
     z.object({ kind: z.literal('skip') }),
   ]),
@@ -117,9 +117,9 @@ export async function resolveReviewEntryAction(
   if (action.kind === 'merge') {
     // Confirm the chosen HH customer belongs to this tenant + isn't deleted.
     const { data: target, error: targetErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, qbo_customer_id')
-      .eq('id', action.hhCustomerId)
+      .eq('id', action.hhContactId)
       .eq('tenant_id', tenant.id)
       .is('deleted_at', null)
       .maybeSingle();
@@ -135,25 +135,25 @@ export async function resolveReviewEntryAction(
 
     const now = new Date().toISOString();
     const { error: updateErr } = await supabase
-      .from('customers')
+      .from('contacts')
       .update({
         qbo_customer_id: qboId,
         qbo_sync_status: 'synced',
         qbo_synced_at: now,
         updated_at: now,
       })
-      .eq('id', action.hhCustomerId);
+      .eq('id', action.hhContactId);
     if (updateErr) return { ok: false, error: `Failed to merge: ${updateErr.message}` };
   } else if (action.kind === 'create') {
     // Re-create the row from the snapshot the import worker stashed in
     // the queue entry. The job's customers batch may or may not exist
     // yet — bind the new row to the same batch if it does, so rollback
     // wipes them together; otherwise create a fresh batch row.
-    const batchIdFromJob = (job.batch_ids as Record<string, string | undefined>).customers ?? null;
+    const batchIdFromJob = (job.batch_ids as Record<string, string | undefined>).contacts ?? null;
     const batchId = batchIdFromJob ?? (await createReviewQueueBatch(tenant.id, jobId));
 
     const now = new Date().toISOString();
-    const { error: insertErr } = await supabase.from('customers').insert({
+    const { error: insertErr } = await supabase.from('contacts').insert({
       tenant_id: tenant.id,
       kind: 'customer',
       // Without the original CompanyName signal we default to residential —

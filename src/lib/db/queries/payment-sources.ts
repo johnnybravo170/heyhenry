@@ -82,17 +82,6 @@ export function toLite(rows: PaymentSourceRow[]): PaymentSourceLite[] {
   }));
 }
 
-/**
- * Returns "personal_reimbursable" / "petty_cash" pills should be shown
- * in the UI. Pure derivation; kept here so callers don't reinvent the
- * tone mapping.
- */
-export function paidByLabel(p: PaymentSourcePaidBy): string {
-  if (p === 'business') return 'Business';
-  if (p === 'personal_reimbursable') return 'Reimbursable';
-  return 'Petty cash';
-}
-
 const NETWORK_LITERALS: PaymentSourceNetwork[] = [
   'visa',
   'mastercard',

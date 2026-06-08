@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     // CASL: STOP applies platform-wide. Flip do_not_auto_message on every
     // customer row matching this phone number across all tenants.
     await supabase
-      .from('customers')
+      .from('contacts')
       .update({
         do_not_auto_message: true,
         do_not_auto_message_at: now,

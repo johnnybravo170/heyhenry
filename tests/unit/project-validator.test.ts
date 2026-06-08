@@ -16,7 +16,7 @@ const OTHER_UUID = '99999999-8888-4777-8666-555555555555';
 describe('projectCreateSchema', () => {
   it('accepts a fully populated project', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Main St Renovation',
       description: 'Full interior + exterior',
       start_date: '2026-05-01',
@@ -32,7 +32,7 @@ describe('projectCreateSchema', () => {
 
   it('defaults management_fee_rate to 0.12', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Test Project',
     });
     expect(parsed.success).toBe(true);
@@ -41,9 +41,9 @@ describe('projectCreateSchema', () => {
     }
   });
 
-  it('rejects missing customer_id', () => {
+  it('rejects missing contact_id', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: '',
+      contact_id: '',
       name: 'Test',
     });
     expect(parsed.success).toBe(false);
@@ -51,7 +51,7 @@ describe('projectCreateSchema', () => {
 
   it('rejects missing name', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: '',
     });
     expect(parsed.success).toBe(false);
@@ -62,7 +62,7 @@ describe('projectCreateSchema', () => {
 
   it('rejects name longer than 200 characters', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'x'.repeat(201),
     });
     expect(parsed.success).toBe(false);
@@ -70,7 +70,7 @@ describe('projectCreateSchema', () => {
 
   it('accepts empty optional fields', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Test',
       description: '',
       start_date: '',
@@ -79,9 +79,9 @@ describe('projectCreateSchema', () => {
     expect(parsed.success).toBe(true);
   });
 
-  it('rejects invalid customer_id uuid', () => {
+  it('rejects invalid contact_id uuid', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: 'not-a-uuid',
+      contact_id: 'not-a-uuid',
       name: 'Test',
     });
     expect(parsed.success).toBe(false);
@@ -89,7 +89,7 @@ describe('projectCreateSchema', () => {
 
   it('rejects negative management_fee_rate', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Test',
       management_fee_rate: -0.1,
     });
@@ -98,7 +98,7 @@ describe('projectCreateSchema', () => {
 
   it('rejects management_fee_rate over 100%', () => {
     const parsed = projectCreateSchema.safeParse({
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Test',
       management_fee_rate: 1.5,
     });
@@ -110,7 +110,7 @@ describe('projectUpdateSchema', () => {
   it('requires a UUID id', () => {
     const parsed = projectUpdateSchema.safeParse({
       id: 'not-a-uuid',
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Test',
     });
     expect(parsed.success).toBe(false);
@@ -119,7 +119,7 @@ describe('projectUpdateSchema', () => {
   it('accepts a valid update payload', () => {
     const parsed = projectUpdateSchema.safeParse({
       id: VALID_UUID,
-      customer_id: OTHER_UUID,
+      contact_id: OTHER_UUID,
       name: 'Updated Name',
       percent_complete: 50,
     });
@@ -129,7 +129,7 @@ describe('projectUpdateSchema', () => {
   it('rejects percent_complete outside 0-100', () => {
     const over = projectUpdateSchema.safeParse({
       id: VALID_UUID,
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Test',
       percent_complete: 101,
     });
@@ -137,7 +137,7 @@ describe('projectUpdateSchema', () => {
 
     const under = projectUpdateSchema.safeParse({
       id: VALID_UUID,
-      customer_id: VALID_UUID,
+      contact_id: VALID_UUID,
       name: 'Test',
       percent_complete: -1,
     });

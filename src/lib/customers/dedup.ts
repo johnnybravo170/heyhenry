@@ -19,6 +19,8 @@
  * tier so the UI can color-code the operator's choice.
  */
 
+import { phoneDigits } from '@/lib/phone';
+
 export type DedupTier = 'email' | 'phone' | 'name+city' | 'name' | null;
 
 export type ExistingCustomer = {
@@ -53,14 +55,12 @@ export function normalizeEmail(s: string | null | undefined): string {
   return s.trim().toLowerCase();
 }
 
-/** Digits-only. Drops country code prefix differences ("+1" vs "1" vs ""). */
-export function normalizePhone(s: string | null | undefined): string {
-  if (!s) return '';
-  const digits = s.replace(/\D+/g, '');
-  // Strip leading 1 (NANP country code) so "+1 604 555 1234" matches "604-555-1234".
-  if (digits.length === 11 && digits.startsWith('1')) return digits.slice(1);
-  return digits;
-}
+/**
+ * Digits-only matching key (NANP country code stripped) so "+1 604 555 1234"
+ * matches "604-555-1234". Delegates to the shared `phoneDigits` helper — kept
+ * as a re-export here for the existing dedup call sites.
+ */
+export const normalizePhone = phoneDigits;
 
 /**
  * Find the strongest match in `existing` for `proposed`. Returns

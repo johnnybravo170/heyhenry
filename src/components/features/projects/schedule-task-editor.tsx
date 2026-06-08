@@ -14,6 +14,17 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import {
@@ -45,6 +56,7 @@ export function ScheduleTaskEditor({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const initial =
     mode.kind === 'edit'
@@ -55,6 +67,7 @@ export function ScheduleTaskEditor({
           status: mode.task.status,
           confidence: mode.task.confidence,
           client_visible: mode.task.client_visible,
+          works_weekends: mode.task.works_weekends,
           notes: mode.task.notes ?? '',
         }
       : {
@@ -64,6 +77,7 @@ export function ScheduleTaskEditor({
           status: 'planned' as const,
           confidence: 'rough' as const,
           client_visible: true,
+          works_weekends: false,
           notes: '',
         };
 
@@ -73,6 +87,7 @@ export function ScheduleTaskEditor({
   const [status, setStatus] = useState(initial.status);
   const [confidence, setConfidence] = useState(initial.confidence);
   const [clientVisible, setClientVisible] = useState(initial.client_visible);
+  const [worksWeekends, setWorksWeekends] = useState(initial.works_weekends);
   const [notes, setNotes] = useState(initial.notes);
   // "Depends on" picker — predecessors are stored as a Set so toggling
   // is O(1). Default-populated from the auto-bootstrapped phase edges.
@@ -109,6 +124,7 @@ export function ScheduleTaskEditor({
               name: name.trim(),
               planned_start_date: startDate,
               planned_duration_days: duration,
+              works_weekends: worksWeekends,
               status,
               confidence,
               client_visible: clientVisible,
@@ -118,6 +134,7 @@ export function ScheduleTaskEditor({
               name: name.trim(),
               planned_start_date: startDate,
               planned_duration_days: duration,
+              works_weekends: worksWeekends,
               client_visible: clientVisible,
               notes: notes.trim() || null,
             });
@@ -155,14 +172,15 @@ export function ScheduleTaskEditor({
 
   const remove = () => {
     if (mode.kind !== 'edit') return;
-    if (!confirm(`Delete "${mode.task.name}"? It will be soft-deleted (recoverable).`)) return;
+    const taskId = mode.task.id;
     setError(null);
     startTransition(async () => {
-      const res = await deleteScheduleTaskAction(mode.task.id);
+      const res = await deleteScheduleTaskAction(taskId);
       if (!res.ok) {
-        setError(res.error);
+        toast.error(res.error);
         return;
       }
+      setConfirmDelete(false);
       onClose();
       router.refresh();
     });
@@ -210,7 +228,7 @@ export function ScheduleTaskEditor({
               />
             </label>
             <label className="block text-xs font-medium">
-              <span className="block text-muted-foreground">Duration (days)</span>
+              <span className="block text-muted-foreground">Duration (working days)</span>
               <input
                 type="number"
                 min={1}
@@ -220,6 +238,23 @@ export function ScheduleTaskEditor({
               />
             </label>
           </div>
+
+          <label className="flex items-start gap-2 text-xs font-medium">
+            <input
+              type="checkbox"
+              checked={worksWeekends}
+              onChange={(e) => setWorksWeekends(e.target.checked)}
+              className="mt-0.5 rounded"
+            />
+            <span>
+              Works weekends
+              <span className="block font-normal text-muted-foreground">
+                {worksWeekends
+                  ? 'Counts Sat/Sun — duration runs straight through weekends.'
+                  : 'Skips Sat/Sun — the duration counts working days only.'}
+              </span>
+            </span>
+          </label>
 
           {mode.kind === 'edit' ? (
             <div className="grid grid-cols-2 gap-3">
@@ -237,14 +272,14 @@ export function ScheduleTaskEditor({
                 </select>
               </label>
               <label className="block text-xs font-medium">
-                <span className="block text-muted-foreground">Confidence</span>
+                <span className="block text-muted-foreground">Lock dates / share</span>
                 <select
                   value={confidence}
                   onChange={(e) => setConfidence(e.target.value as typeof confidence)}
                   className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-sm"
                 >
-                  <option value="rough">Rough draft</option>
-                  <option value="firm">Firm</option>
+                  <option value="rough">Rough draft (internal)</option>
+                  <option value="firm">Locked — customer sees it</option>
                 </select>
               </label>
             </div>
@@ -310,7 +345,7 @@ export function ScheduleTaskEditor({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={remove}
+              onClick={() => setConfirmDelete(true)}
               disabled={pending}
               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
@@ -329,6 +364,33 @@ export function ScheduleTaskEditor({
           </div>
         </div>
       </div>
+
+      {mode.kind === 'edit' ? (
+        <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete &ldquo;{mode.task.name}&rdquo;?</AlertDialogTitle>
+              <AlertDialogDescription>
+                The task is soft-deleted (recoverable in your records) and removed from the
+                timeline. Any tasks that depend on it stay where they are.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  remove();
+                }}
+                disabled={pending}
+                className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+              >
+                {pending ? 'Deleting…' : 'Delete task'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
     </div>
   );
 }

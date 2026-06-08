@@ -8,6 +8,7 @@
  * "Use a recovery code" link → /login/mfa/recover.
  */
 
+import { ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -48,6 +49,10 @@ export default function LoginMfaPage() {
   return (
     <Card>
       <CardHeader>
+        {/* Info-soft shield icon circle — 44px, rounded-xl per OD spec */}
+        <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-blue-100">
+          <ShieldCheck className="size-5 text-blue-700" aria-hidden="true" />
+        </div>
         <CardTitle className="text-2xl">Two-factor authentication</CardTitle>
         <CardDescription>Enter the 6-digit code from your authenticator app.</CardDescription>
       </CardHeader>
@@ -68,6 +73,9 @@ export default function LoginMfaPage() {
               disabled={pending}
               placeholder="123456"
             />
+            <p className="text-xs text-muted-foreground">
+              From 1Password, Authy, Google Authenticator — whichever you set up.
+            </p>
             {error ? (
               <p className="text-sm text-destructive" role="alert">
                 {error}

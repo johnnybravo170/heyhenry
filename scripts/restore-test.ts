@@ -67,7 +67,7 @@ async function main() {
   console.log('→ Verifying...');
   const sql = postgres(DRILL_DATABASE_URL!, { max: 1 });
 
-  const expectedTables = ['tenants', 'customers', 'projects', 'jobs'];
+  const expectedTables = ['tenants', 'contacts', 'projects', 'jobs'];
   for (const t of expectedTables) {
     const exists = await sql`SELECT to_regclass(${`public.${t}`}) AS r`;
     if (!exists[0].r) throw new Error(`Table ${t} missing after restore`);

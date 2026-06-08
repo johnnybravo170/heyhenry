@@ -1,13 +1,16 @@
 'use client';
 
-import { AlertTriangle, Mail, Phone } from 'lucide-react';
+import { AlertTriangle, Mail, Phone, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Money } from '@/components/ui/money';
 import type { MoneyAtRiskRow } from '@/lib/db/queries/money-at-risk';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import { clearMoneyAtRiskAction } from '@/server/actions/automations';
+
+/** Mono eyebrow — small uppercase label used on stat cells across the Paper surfaces. */
+const EYEBROW = 'font-mono text-[11px] uppercase tracking-wide text-muted-foreground';
 
 export function MoneyAtRiskCard({ rows }: { rows: MoneyAtRiskRow[] }) {
   const [pending, startTransition] = useTransition();
@@ -28,32 +31,37 @@ export function MoneyAtRiskCard({ rows }: { rows: MoneyAtRiskRow[] }) {
   };
 
   return (
-    <section className="rounded-xl border border-amber-200 bg-amber-50/40 p-5">
+    <section className="rounded-xl border bg-card p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <AlertTriangle className="size-5 text-amber-700" aria-hidden />
+          <AlertTriangle className="size-5 text-brand" aria-hidden />
           <div>
             <h2 className="text-base font-semibold">Money at risk</h2>
-            <p className="text-xs text-muted-foreground">
-              Customers who didn't respond to the auto follow-ups. They need a personal touch.
+            <p className="inline-flex items-center gap-1.5 rounded-md bg-[#FEF0E3] px-2 py-0.5 text-xs text-foreground">
+              <Sparkles className="size-3 text-brand" aria-hidden />
+              <span>
+                Customers who didn't respond to the auto follow-ups. They need a personal touch.
+              </span>
             </p>
           </div>
         </div>
         {totalAtRisk > 0 ? (
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">At risk</p>
-            <p className="text-lg font-semibold text-amber-900">{formatCurrency(totalAtRisk)}</p>
+            <p className={EYEBROW}>At risk</p>
+            <p className="text-lg font-semibold text-brand">
+              <Money cents={totalAtRisk} />
+            </p>
           </div>
         ) : null}
       </div>
 
-      <ul className="flex flex-col divide-y divide-amber-200/60 rounded-lg border border-amber-200 bg-white">
+      <ul className="flex flex-col divide-y rounded-lg border bg-card">
         {rows.map((r) => (
           <li key={r.contactId} className="flex flex-wrap items-center justify-between gap-3 p-3">
             <div className="flex min-w-0 flex-col gap-0.5">
               <div className="flex items-center gap-2 text-sm font-medium">
-                {r.customerId ? (
-                  <Link href={`/contacts/${r.customerId}`} className="truncate hover:underline">
+                {r.contactId ? (
+                  <Link href={`/contacts/${r.contactId}`} className="truncate hover:underline">
                     {r.contactName}
                   </Link>
                 ) : (
@@ -78,7 +86,11 @@ export function MoneyAtRiskCard({ rows }: { rows: MoneyAtRiskRow[] }) {
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                {r.totalCents !== null ? <span>{formatCurrency(r.totalCents)}</span> : null}
+                {r.totalCents !== null ? (
+                  <span>
+                    <Money cents={r.totalCents} />
+                  </span>
+                ) : null}
                 <span>flagged {r.daysSinceTagged}d ago</span>
                 {r.contactPhone ? (
                   <a
@@ -104,7 +116,7 @@ export function MoneyAtRiskCard({ rows }: { rows: MoneyAtRiskRow[] }) {
               variant="outline"
               size="sm"
               disabled={pending}
-              onClick={() => onClear(r.contactId, r.contactName)}
+              onClick={() => onClear(r.arContactId, r.contactName)}
             >
               I called them
             </Button>

@@ -50,28 +50,28 @@ const WORKLOG_COLUMNS =
  * round-trip per type. Keeps the related badge free regardless of list size.
  */
 async function hydrateRelatedNames(rows: WorklogRow[]): Promise<WorklogRowWithRelated[]> {
-  const customerIds = new Set<string>();
+  const contactIds = new Set<string>();
   const jobIds = new Set<string>();
   const projectIds = new Set<string>();
   for (const r of rows) {
     if (!r.related_id) continue;
-    if (r.related_type === 'customer') customerIds.add(r.related_id);
+    if (r.related_type === 'customer') contactIds.add(r.related_id);
     if (r.related_type === 'job') jobIds.add(r.related_id);
     if (r.related_type === 'project') projectIds.add(r.related_id);
   }
 
-  if (customerIds.size === 0 && jobIds.size === 0 && projectIds.size === 0) {
+  if (contactIds.size === 0 && jobIds.size === 0 && projectIds.size === 0) {
     return rows.map((r) => ({ ...r, related_name: null }));
   }
 
   const supabase = await createClient();
   const nameById = new Map<string, string>();
 
-  if (customerIds.size > 0) {
+  if (contactIds.size > 0) {
     const { data } = await supabase
-      .from('customers')
+      .from('contacts')
       .select('id, name')
-      .in('id', Array.from(customerIds));
+      .in('id', Array.from(contactIds));
     for (const row of data ?? []) {
       nameById.set(row.id as string, (row as { name: string }).name);
     }
@@ -81,10 +81,10 @@ async function hydrateRelatedNames(rows: WorklogRow[]): Promise<WorklogRowWithRe
     // Jobs don't have their own name — surface the linked customer name.
     const { data } = await supabase
       .from('jobs')
-      .select('id, customers:customer_id (name)')
+      .select('id, contacts:contact_id (name)')
       .in('id', Array.from(jobIds));
     for (const row of data ?? []) {
-      const customerRaw = (row as { customers?: unknown }).customers;
+      const customerRaw = (row as { contacts?: unknown }).contacts;
       const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
       const name =
         customer && typeof customer === 'object' && 'name' in customer

@@ -1,0 +1,1614 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Schedule · HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───── HeyHenry Paper palette — Spend / Labour / Billing twin ───── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    /* Phase palette — held to restrained saturation; the soft tone for rough
+       bars (dashed/tinted), the solid tone for firm bars. Done bars override
+       to emerald + strike regardless of phase. Behind bars carry a danger
+       outline + ⚠ glyph; phase color stays underneath. */
+    --ph-demo:        #C2410C; --ph-demo-soft:        #FEF0E3;
+    --ph-framing:     #1E40AF; --ph-framing-soft:     #E6EDFA;
+    --ph-roughin:     #0F766E; --ph-roughin-soft:     #CCFBF1;
+    --ph-inspection:  #0E7490; --ph-inspection-soft:  #CFFAFE;
+    --ph-drywall:     #6D28D9; --ph-drywall-soft:     #EDE9FE;
+    --ph-cabinets:    #B45309; --ph-cabinets-soft:    #FEF3C7;
+    --ph-finishes:    #15803D; --ph-finishes-soft:    #DCFCE7;
+    --ph-punch:       #BE123C; --ph-punch-soft:       #FFE4E6;
+    --done:           #15803D; --done-soft:           #DCFCE7;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Shell (identical to Spend / Labour / Billing) ───── */
+  .shell { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+
+  .sidebar {
+    background: var(--chrome);
+    border-right: 1px solid var(--hair);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 13px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: var(--ink); }
+  .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--ink-2);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: rgba(232,222,201,.5); }
+  .nav-item.active {
+    background: var(--nav-active);
+    color: var(--ink); font-weight: 600;
+  }
+  .nav-icon { width: 16px; height: 16px; color: var(--ink-2); flex-shrink: 0; }
+  .nav-item.active .nav-icon { color: var(--ink); }
+  .nav-count {
+    margin-left: auto;
+    background: var(--rust); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    font-family: var(--mono);
+  }
+  .sidebar-foot { padding: 12px; border-top: 1px solid var(--hair); }
+  .org-switcher { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .org-switcher:hover { background: rgba(232,222,201,.5); }
+  .org-avatar { width: 24px; height: 24px; border-radius: 6px; background: var(--rust); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+  .org-meta { display: flex; flex-direction: column; min-width: 0; }
+  .org-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .org-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  .topbar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar-search {
+    flex: 1; max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    height: 34px;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .topbar-search .icon { width: 14px; height: 14px; color: var(--muted); }
+  .topbar-search .chip-kbd {
+    margin-left: auto;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: inherit;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #222; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-ghost:hover { background: var(--chip-fill); border-color: var(--rule); }
+  .btn .icon { width: 13px; height: 13px; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-input);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .icon-btn:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-inner {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 14px 28px 32px;
+    display: flex; flex-direction: column;
+  }
+
+  /* Project header */
+  .project-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 2px 0 14px;
+  }
+  .project-head-text { flex: 1; min-width: 0; position: relative; }
+  .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .project-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .details-trigger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .details-trigger:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--hair); }
+  .details-trigger svg { width: 14px; height: 14px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-pill .check { width: 10px; height: 10px; display: grid; place-items: center; }
+  .status-pill .check svg { width: 10px; height: 10px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+  .customer-line {
+    margin-top: 4px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+  .head-actions { display: flex; gap: 6px; flex-shrink: 0; padding-top: 6px; }
+  .btn-add {
+    background: transparent;
+    border-color: var(--hair);
+    color: var(--ink-2);
+    height: 34px;
+  }
+  .btn-add:hover {
+    background: var(--rust-soft);
+    border-color: rgba(194,65,12,0.3);
+    color: var(--rust);
+  }
+  .btn-add .henry-glyph { color: var(--rust); }
+
+  /* Tabs */
+  .tab-strip {
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center;
+    overflow-x: auto;
+  }
+  .tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 14px;
+    font-size: 14px; font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab.is-secondary { color: var(--faint); font-weight: 500; }
+  .tab.is-secondary:hover { color: var(--ink-2); }
+  .tab-divider { width: 1px; height: 18px; background: var(--rule); margin: 0 10px; flex-shrink: 0; }
+  .tab-count {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--rust);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .tab-count-soft {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--warn);
+    background: var(--warn-soft);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+  .tab-count-danger {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--danger);
+    background: var(--danger-soft);
+    padding: 0 6px; height: 16px;
+    border-radius: 999px;
+  }
+
+  /* ───── Schedule body ───── */
+  .schedule { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ═══════ Region 1 — Anchor + This-week digest ═══════
+     The "now" lens. Quiet start-date row + a compact digest that reads at a
+     glance: active / starts / finishes / behind. The legend tucks under
+     because it teaches the bar vocabulary used in the Gantt below. */
+  .anchor-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 2px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .anchor-row .anchor-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 2px;
+  }
+  .anchor-row strong { color: var(--ink-2); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .anchor-row .anchor-edit {
+    display: inline-flex; align-items: center;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    color: var(--faint);
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+  }
+  .anchor-row .anchor-edit:hover { background: var(--chip-fill); color: var(--ink-2); border-color: var(--hair); }
+  .anchor-row .anchor-edit svg { width: 11px; height: 11px; }
+
+  /* Single-row digest — title + week range on the left, three labelled mini-
+     groups inline (Active / Starts / Finishes), behind pill on the right. All
+     on one row to keep the digest ~36px tall and put the gantt closer to the
+     fold. */
+  .digest {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .digest-title {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    flex-shrink: 0;
+  }
+  .digest-title .digest-week {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .digest-divider {
+    width: 1px; height: 14px;
+    background: var(--hair);
+    flex-shrink: 0;
+  }
+  .digest-group {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    flex-shrink: 0;
+  }
+  .digest-group .dl-key {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .digest-group .dl-val { color: var(--ink); font-weight: 500; }
+  .digest-group .dl-val .sep { color: var(--faint); margin: 0 5px; }
+  .digest-group .dl-val .empty { color: var(--faint); font-weight: 500; }
+  .digest-group .dl-val .behind-glyph {
+    color: var(--danger);
+    font-weight: 700;
+    margin-right: 2px;
+  }
+  .digest-group .dl-val .day-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 4px;
+  }
+  .digest-spacer { flex: 1; }
+
+  .digest-stat-col {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  }
+  .behind-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid rgba(185,28,28,0.18);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .behind-pill:hover { border-color: var(--danger); }
+  .behind-pill .glyph { font-size: 11px; }
+  .behind-pill .count {
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+  .behind-pill .lbl { font-weight: 600; }
+
+  /* Legend — lives in the gantt-foot now (was: under the digest list). Frees
+     ~30px above the gantt. The bar swatches are still recognizable inline. */
+  .legend {
+    display: inline-flex; gap: 14px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-swatch {
+    width: 22px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .legend-swatch.is-firm { background: var(--ph-roughin); }
+  .legend-swatch.is-rough {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--ph-roughin) 0 5px,
+      var(--ph-roughin-soft) 5px 10px
+    );
+    opacity: 0.85;
+  }
+  .legend-swatch.is-done {
+    background: var(--done);
+    opacity: 0.85;
+  }
+  .legend-swatch.is-behind {
+    background: var(--ph-drywall);
+    box-shadow: inset 0 0 0 1.5px var(--danger);
+  }
+
+  /* ═══════ Region 2 — Toolbar ═══════
+     One primary outline button (+ Add task). Auto-link and Clear go in the
+     overflow because both are destructive at the global level. Replaces the
+     current toolbar's native confirm()/alert() pattern. */
+  .toolbar {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 7px 14px;
+    display: flex; gap: 10px; align-items: center;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .toolbar .tb-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .toolbar .tb-meta strong { color: var(--ink); font-weight: 700; }
+  .toolbar .tb-meta .sep { color: var(--faint); margin: 0 5px; }
+  .toolbar .tb-spacer { flex: 1; }
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-outline:hover { background: var(--chip-fill); border-color: var(--ink-2); }
+  .btn-outline svg { width: 12px; height: 12px; }
+  .overflow-btn {
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .overflow-btn:hover { background: var(--chip-fill); color: var(--ink); border-color: var(--rule); }
+  .overflow-btn svg { width: 13px; height: 13px; }
+
+  /* ═══════ Region 3 — Henry cascade card ═══════
+     The Henry-leverage moment. Drag → cascade was silent before; now Henry
+     summarises the ripple inline. Caution-soft fill (later = caution, not
+     alarm) + rust left-border + Undo / Notify customer. */
+  .cascade {
+    background: var(--warn-soft);
+    border: 1px solid rgba(180,83,9,0.20);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 12px 12px 0;
+    padding: 9px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: center;
+  }
+  .henry-mark {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .henry-mark .glyph { font-size: 13px; line-height: 1; }
+  .cascade-text {
+    color: var(--ink); font-size: 14px; font-weight: 500; line-height: 1.5;
+    letter-spacing: -0.005em;
+  }
+  .cascade-text strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cascade-text .sub-line {
+    display: block;
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .cascade-text .sub-line strong { color: var(--ink-2); font-weight: 700; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .cascade-text .sub-line .sep { color: var(--faint); margin: 0 4px; }
+  .cascade-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .btn-undo {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 32px;
+    padding: 0 12px;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid rgba(58,58,58,0.18);
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-undo:hover { background: rgba(255,255,255,0.6); border-color: var(--ink-2); color: var(--ink); }
+  .btn-undo svg { width: 12px; height: 12px; }
+  .btn-notify {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 32px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-notify:hover { background: #A8390B; border-color: #A8390B; }
+  .btn-notify svg { width: 12px; height: 12px; }
+
+  /* ═══════ Region 4 — The Gantt ═══════
+     CSS-grid autoscale. 1 task-name column (200px sticky-left) + 28 day
+     columns. Bars positioned via grid-column. Weekend bands sit BELOW bars
+     (faint paper tint signals "off day"). Weekend "recession" inside multi-
+     day bars is achieved by a translucent paper overlay positioned ABOVE
+     bars in weekend cols — the bar continues unbroken but reads receded
+     under each Sat-Sun band. Today line is a rust 1.5px vertical, top z. */
+  .gantt-panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    /* `clip` (not `hidden`) so the inner sticky-top day axis can pin to the
+       page viewport instead of getting trapped inside a scroll context. Bars
+       and row-extension hairlines still clip at the panel's right edge. */
+    overflow: clip;
+  }
+  .gantt-grid {
+    position: relative;
+    display: grid;
+    /* 252px task-name column + 21 day columns (Mar 23 → Apr 12, 3 calendar
+       weeks). 252 fits all 9 task names + their meta chip on one line at the
+       1440px design target without ellipsis. Day-col width ≈ 43px each. */
+    grid-template-columns: 252px repeat(21, minmax(0, 1fr));
+    /* Rows: month header / day-of-month / 1 phase head + 1 task row per phase.
+       8 phases + 9 tasks = 17 body rows. Auto-sized. */
+    grid-auto-rows: min-content;
+  }
+
+  /* Sticky-left name column treatment. Single-line — names never wrap; if
+     they overflow they ellipsize. The bottom border doubles as the task-row
+     separator across the whole gantt (since cells are gone, the name's border
+     extends visually via the .gx-vert-lines body overlay underneath). The
+     `::after` extends that same hairline rightward across the bars area so
+     row separators read continuously across the full gantt width. */
+  .gantt-grid > .gx-name {
+    grid-column: 1 / 2;
+    position: sticky; left: 0;
+    background: var(--card);
+    border-right: 1px solid var(--hair);
+    border-bottom: 1px solid rgba(226,215,192,0.5);
+    z-index: 4;  /* above bars + weekend overlays */
+    padding: 0 10px;
+    display: flex; align-items: center;
+    min-height: 26px;
+    height: 26px;
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    /* overflow visible so the ::after row-line can extend past the name col;
+       the `.gantt-panel` wrapper has overflow:hidden so the line is clipped at
+       the gantt's right edge. */
+  }
+  /* Row-line extension — picks up at the right edge of the name col and
+     extends rightward 2000px (clipped by the gantt panel's overflow:hidden).
+     1px tall at low opacity so it reads as a faint separator over empty cells
+     and recedes behind colored bars (anti-clash). The line lives inside the
+     `.gx-name`'s sticky stacking context, so it can't go BELOW bars in
+     painting order — opacity does the visual recession instead. */
+  .gantt-grid > .gx-name::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    bottom: -1px;
+    width: 2000px;
+    height: 1px;
+    background: rgba(226,215,192,0.5);
+    pointer-events: none;
+  }
+  .gantt-grid > .gx-name > span { overflow: hidden; text-overflow: ellipsis; }
+  .gantt-grid > .gx-name.is-done {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--faint);
+  }
+  .gantt-grid > .gx-name .task-meta {
+    margin-left: 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .gantt-grid > .gx-name .internal-chip {
+    display: inline-flex; align-items: center;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .gantt-grid > .gx-name .behind-glyph {
+    color: var(--danger);
+    font-weight: 700;
+    margin-right: 4px;
+    font-size: 12px;
+  }
+  .gantt-grid > .gx-name .behind-glyph + span { color: var(--ink); }
+
+  /* Month header — Mar / Apr labels, spanning their days. Sticky-top so the
+     day axis pins to the viewport when projects have many tasks and the
+     gantt scrolls past. z:5 sits above bars (z:2) and the sticky-left
+     name col (z:4); the top-left corner is empty here (months start at
+     col 2) so name col rows simply slide up underneath. */
+  .gx-month {
+    position: sticky; top: 0;
+    z-index: 5;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 5px 10px 4px;
+    display: flex; align-items: center;
+    min-height: 22px;
+  }
+  .gx-month.is-mar { grid-column: 2 / 11; } /* days 1-9 (Mar 23-31) */
+  .gx-month.is-apr { grid-column: 11 / 23; } /* days 10-21 (Apr 1-12) */
+  .gx-month .yr { color: var(--faint); font-weight: 500; margin-left: 4px; }
+
+  /* Day-of-month markers — narrow, mono, faint. Every day carries a faint
+     left gridline so days are trackable mid-week; Mondays strengthen the line
+     as a week-start anchor. */
+  .gx-day {
+    /* Sticky-top second header row. `top: 22px` parks it directly under
+       the sticky month strip (which is min-height 22px). */
+    position: sticky; top: 22px;
+    z-index: 5;
+    border-bottom: 1px solid var(--hair);
+    border-left: 1px solid rgba(226,215,192,0.5);
+    background: var(--chrome);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    padding: 3px 0;
+    line-height: 1.1;
+    min-height: 22px;
+  }
+  .gx-day.is-weekend { color: var(--faint); }
+  .gx-day.is-mon { border-left: 1px solid var(--hair); }  /* Monday — stronger anchor */
+  .gx-day.is-today {
+    color: var(--rust);
+    font-weight: 700;
+  }
+  .gx-day .dow {
+    display: block;
+    font-size: 9px;
+    color: var(--faint);
+    letter-spacing: 0.08em;
+  }
+  .gx-day.is-today .dow { color: var(--rust); }
+
+  /* Phase header — small uppercase eyebrow spanning the whole timeline width */
+  .gx-phase-head {
+    grid-column: 1 / -1;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+    padding: 3px 14px 2px;
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    min-height: 18px;
+  }
+  .gx-phase-head .phase-swatch {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Vertical day-gridlines overlay — absolute-positioned so it does NOT
+     participate in grid auto-flow (which would push phase heads / names off
+     their canonical rows). Sits below bars + weekend bands. The container
+     `.gantt-grid` is position:relative; this overlay fills the body area
+     (below the 44px month + day-header strip, right of the 220px name col).
+     Background image draws 21 faint vertical lines at each day-col boundary. */
+  .gx-vert-lines {
+    position: absolute;
+    top: 44px;        /* below month + day headers */
+    left: 252px;      /* right of the sticky name col */
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(100% / 21 - 1px),
+      rgba(226,215,192,0.55) calc(100% / 21 - 1px),
+      rgba(226,215,192,0.55) calc(100% / 21)
+    );
+  }
+  /* Monday emphasis overlay — slightly stronger lines at the two week-boundary
+     Mondays (Mar 30 at 7/21 of the body width, Apr 6 at 14/21). Absolute so
+     it doesn't disrupt grid auto-flow either. */
+  .gx-mon-lines {
+    position: absolute;
+    top: 44px;
+    left: 252px;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(100% * 7 / 21 - 1px),  rgba(168,168,168,0.5) calc(100% * 7 / 21 - 1px),
+      rgba(168,168,168,0.5)                   calc(100% * 7 / 21),                          transparent calc(100% * 7 / 21),
+      transparent calc(100% * 14 / 21 - 1px), rgba(168,168,168,0.5) calc(100% * 14 / 21 - 1px),
+      rgba(168,168,168,0.5)                   calc(100% * 14 / 21),                         transparent calc(100% * 14 / 21),
+      transparent 100%
+    );
+  }
+
+  /* Weekend bands — faint paper tint, span all task rows but NOT the day
+     header row above. Positioned across only the body rows. */
+  .gx-weekend {
+    grid-row: 3 / -1;  /* starts after month + day header rows */
+    background: rgba(232,215,192,0.22);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .gx-weekend.w1 { grid-column: 7 / 9; }   /* Mar 28-29 */
+  .gx-weekend.w2 { grid-column: 14 / 16; } /* Apr 4-5 */
+  .gx-weekend.w3 { grid-column: 21 / 23; } /* Apr 11-12 */
+  .gx-weekend.w4 { grid-column: 28 / 30; } /* Apr 18-19 */
+
+  /* Today line — rust 1.5px vertical, top z-index, runs from the top of the
+     month-row through the bottom of the gantt. Positioned at the START of
+     day 11 (Apr 2). */
+  .gx-today {
+    grid-row: 1 / -1;
+    grid-column: 12 / 13;
+    border-left: 1.5px solid var(--rust);
+    pointer-events: none;
+    z-index: 6;
+    position: relative;
+  }
+  .gx-today::before {
+    content: 'Today';
+    position: absolute;
+    top: 4px;
+    left: -22px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--rust);
+    background: var(--card);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid rgba(194,65,12,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    z-index: 7;
+  }
+
+  /* Weekend overlay — sits ABOVE bars but BELOW today line, at 50% paper
+     opacity. Where a bar crosses a weekend, the bar reads desaturated. */
+  .gx-weekend-mask {
+    grid-row: 3 / -1;
+    pointer-events: none;
+    z-index: 5;
+    background: linear-gradient(rgba(247,241,230,0.62), rgba(247,241,230,0.62));
+    /* Hairline left + right so the bar shows the visual seam at the weekend
+       edges; subtle, just enough to make the recession crisp. */
+    box-shadow:
+      inset 1px 0 0 rgba(168,168,168,0.20),
+      inset -1px 0 0 rgba(168,168,168,0.20);
+  }
+  .gx-weekend-mask.w1 { grid-column: 7 / 9; }
+  .gx-weekend-mask.w2 { grid-column: 14 / 16; }
+  .gx-weekend-mask.w3 { grid-column: 21 / 23; }
+  .gx-weekend-mask.w4 { grid-column: 28 / 30; }
+
+  /* Bars — positioned via grid-column. Self-positioned inside the day grid;
+     do NOT use absolute. z-index 2 sits above weekend bands but under the
+     weekend mask (which "recedes" weekend segments). */
+  .bar {
+    height: 18px;
+    margin: 4px 0;
+    border-radius: 4px;
+    display: flex; align-items: center;
+    padding: 0 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .bar:hover { box-shadow: 0 0 0 1.5px rgba(10,10,10,0.18); }
+  .bar .bar-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Firm bars — solid phase fill, white-ish text */
+  .bar.is-firm { color: #fff; }
+  .bar.is-firm.ph-demo      { background: var(--ph-demo); }
+  .bar.is-firm.ph-framing   { background: var(--ph-framing); }
+  .bar.is-firm.ph-roughin   { background: var(--ph-roughin); }
+  .bar.is-firm.ph-inspection{ background: var(--ph-inspection); }
+  .bar.is-firm.ph-drywall   { background: var(--ph-drywall); }
+  .bar.is-firm.ph-cabinets  { background: var(--ph-cabinets); }
+  .bar.is-firm.ph-finishes  { background: var(--ph-finishes); }
+  .bar.is-firm.ph-punch     { background: var(--ph-punch); }
+
+  /* Rough bars — dashed border + tinted fill */
+  .bar.is-rough {
+    background: transparent;
+    border: 1.5px dashed currentColor;
+    background-clip: padding-box;
+  }
+  .bar.is-rough.ph-demo       { color: var(--ph-demo);       background-color: var(--ph-demo-soft); }
+  .bar.is-rough.ph-framing    { color: var(--ph-framing);    background-color: var(--ph-framing-soft); }
+  .bar.is-rough.ph-roughin    { color: var(--ph-roughin);    background-color: var(--ph-roughin-soft); }
+  .bar.is-rough.ph-inspection { color: var(--ph-inspection); background-color: var(--ph-inspection-soft); }
+  .bar.is-rough.ph-drywall    { color: var(--ph-drywall);    background-color: var(--ph-drywall-soft); }
+  .bar.is-rough.ph-cabinets   { color: var(--ph-cabinets);   background-color: var(--ph-cabinets-soft); }
+  .bar.is-rough.ph-finishes   { color: var(--ph-finishes);   background-color: var(--ph-finishes-soft); }
+  .bar.is-rough.ph-punch      { color: var(--ph-punch);      background-color: var(--ph-punch-soft); }
+
+  /* Done bars — emerald solid, ▮ glyph */
+  .bar.is-done {
+    background: var(--done);
+    color: #fff;
+    opacity: 0.92;
+  }
+  .bar.is-done::before {
+    content: '✓';
+    margin-right: 5px;
+    font-weight: 800;
+    font-size: 9px;
+  }
+
+  /* Behind bars — danger outline + ⚠ glyph; phase color stays underneath
+     so the trade is still legible. */
+  .bar.is-behind {
+    box-shadow: inset 0 0 0 1.5px var(--danger);
+  }
+  .bar.is-behind:hover { box-shadow: inset 0 0 0 1.5px var(--danger), 0 0 0 1.5px rgba(185,28,28,0.35); }
+  .bar.is-behind .behind-glyph {
+    color: var(--danger);
+    font-weight: 800;
+    margin-right: 4px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+    padding: 0 3px;
+    font-size: 10px;
+  }
+  .bar.is-firm.is-behind .behind-glyph { background: rgba(255,255,255,0.92); }
+
+  /* In-progress treatment — a soft progress "fill" overlaid on the bar from
+     left to the today line. Subtle inner shadow to hint "active." */
+  .bar.is-in-progress::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+      rgba(255,255,255,0.18) 0%,
+      rgba(255,255,255,0.18) var(--progress, 60%),
+      transparent var(--progress, 60%));
+    pointer-events: none;
+    border-radius: 5px 0 0 5px;
+  }
+
+  /* Bar quick-actions — hover-only on desktop, absolute right side, real
+     buttons. "Mark done" + "Lock dates" — the two highest-frequency edits. */
+  .bar-actions {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    display: none;
+    gap: 4px;
+    z-index: 10;
+  }
+  .bar:hover .bar-actions { display: inline-flex; }
+  .bar-act {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 16px;
+    padding: 0 6px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 10px; font-weight: 600;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+  .bar-act:hover { background: var(--chip-fill); color: var(--ink); }
+
+  /* Custom tooltip — bottom tail, mono meta */
+  .bar-tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 500;
+    padding: 7px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 20;
+    letter-spacing: -0.005em;
+    text-transform: none;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .bar-tooltip .tt-meta {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .bar:hover .bar-tooltip:not(.is-suppressed) { display: block; }
+
+  /* Phase swatches for the row eyebrow */
+  .sw-demo       { background: var(--ph-demo); }
+  .sw-framing    { background: var(--ph-framing); }
+  .sw-roughin    { background: var(--ph-roughin); }
+  .sw-inspection { background: var(--ph-inspection); }
+  .sw-drywall    { background: var(--ph-drywall); }
+  .sw-cabinets   { background: var(--ph-cabinets); }
+  .sw-finishes   { background: var(--ph-finishes); }
+  .sw-punch      { background: var(--ph-punch); }
+
+  /* Gantt footer — keeps the legend close at hand without taking width */
+  .gantt-foot {
+    padding: 7px 18px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: flex; gap: 14px; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-wrap: wrap;
+  }
+  .gantt-foot strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .gantt-foot .sep { color: var(--faint); }
+
+  /* ═══════ Region 5 — Crew this week (read-only) ═══════
+     The ONLY crew presence on the Schedule tab. Read-only by design; deep-
+     links to /calendar?view=by-worker. The single-scheduler rule means we
+     do not introduce another crew-assignment surface here. */
+  .crew-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 12px 18px;
+    display: flex; gap: 14px; align-items: center;
+    flex-wrap: wrap;
+  }
+  .crew-card .crew-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .crew-card .crew-list {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .crew-card .crew-list strong { color: var(--ink); font-weight: 700; }
+  .crew-card .crew-list .days {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .crew-card .crew-list .sub-chip {
+    display: inline-flex; align-items: center;
+    margin-right: 4px;
+    padding: 0 5px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+  }
+  .crew-card .crew-divider {
+    color: var(--faint); margin: 0 2px;
+  }
+  .crew-card .crew-link {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 600;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1px;
+  }
+  .crew-card .crew-link:hover { color: var(--ink); border-bottom-color: var(--ink); }
+  .crew-card .crew-link svg { width: 11px; height: 11px; }
+
+  /* ───── Overflow menu (toolbar ⋯ — design-spec illustration of the open
+     state). Anchored to the toolbar, hangs down-right with a soft shadow. ───── */
+  .toolbar { position: relative; }  /* anchor for the overflow-pop */
+  .overflow-pop {
+    position: absolute;
+    right: 6px;
+    top: calc(100% + 6px);
+    z-index: 15;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    min-width: 280px;
+    padding: 6px;
+  }
+  .overflow-pop .op-item {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 9px 11px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  .overflow-pop .op-item:hover { background: var(--chip-fill); }
+  .overflow-pop .op-item .op-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .overflow-pop .op-item .op-title .danger-mark {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--danger);
+    background: var(--danger-soft);
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .overflow-pop .op-item .op-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ─── Footer / utility ─── */
+  .field-select {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 28px;
+    padding: 0 8px 0 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .field-select:hover { background: var(--chip-fill); border-color: var(--rule); color: var(--ink); }
+  .field-select svg { width: 10px; height: 10px; color: var(--muted); }
+
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/><path d="M19 14l.7 1.9 1.9.7-1.9.7L19 19l-.7-1.7-1.9-.7 1.9-.7z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <!-- Sidebar (Projects active) -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-name">HeyHenry</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-dashboard"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-inbox"/></svg>Inbox<span class="nav-count">7</span></div>
+      <div class="nav-item active"><svg class="nav-icon"><use href="#i-folder"/></svg>Projects</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-file"/></svg>Quotes</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-receipt"/></svg>Billing</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-users"/></svg>Contacts</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-calendar"/></svg>Calendar</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-trending"/></svg>Business Health</div>
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-sparkles"/></svg>Import with Henry</div>
+      <div class="nav-item"><svg class="nav-icon"><use href="#i-settings"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="org-switcher">
+        <div class="org-avatar">N</div>
+        <div class="org-meta">
+          <span class="org-name">Northbeam Construction</span>
+          <span class="org-sub">Langley, BC</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <span>Search projects, customers, invoices&hellip;</span>
+        <span class="chip-kbd">&#8984; K</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-clock"/></svg>Log time</button>
+        <button class="btn btn-ghost btn-sm"><svg class="icon"><use href="#i-receipt"/></svg>Log expense</button>
+        <button class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-plus"/></svg>New project</button>
+      </div>
+    </header>
+
+    <main class="main-inner">
+
+      <!-- Project header -->
+      <section class="project-head">
+        <div class="project-head-text">
+          <div class="title-row">
+            <h1 class="project-title">Glenwood Heights Master Suite Addition</h1>
+            <button class="details-trigger" aria-label="Project details">
+              <svg><use href="#i-chevron-down"/></svg>
+            </button>
+            <span class="status-pill status-active">
+              <span class="check"><svg><use href="#i-check"/></svg></span>Active
+            </span>
+          </div>
+          <div class="customer-line">
+            <a href="#">Daniel &amp; Priya Mohan</a>
+          </div>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-add">
+            <span class="henry-glyph" aria-hidden="true">&#10022;</span>
+            Add
+          </button>
+          <button class="icon-btn" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </div>
+      </section>
+
+      <!-- Tabs — SCHEDULE active. The danger-toned "1" badge on Schedule
+           surfaces the 1 behind task — same count drives the Overview
+           Needs-You ranking (matches the convention established on Billing). -->
+      <nav class="tab-strip" aria-label="Project sections">
+        <button class="tab">Budget <span class="tab-count-soft" title="2 alerts">2</span></button>
+        <button class="tab">Spend <span class="tab-count-soft" title="1 alert">1</span></button>
+        <button class="tab">Labour <span class="tab-count-soft" title="2 invoices awaiting you">2</span></button>
+        <button class="tab is-on">Schedule <span class="tab-count-danger" title="1 behind task — same count drives the Overview Needs-You ranking" aria-label="1 behind task">1</span></button>
+        <button class="tab">Billing <span class="tab-count-danger" title="1 overdue draw">1</span></button>
+        <button class="tab">Overview</button>
+        <span class="tab-divider" aria-hidden="true"></span>
+        <button class="tab is-secondary">Client <span class="tab-count">2</span></button>
+        <button class="tab is-secondary">Photos</button>
+        <button class="tab is-secondary">Documents</button>
+      </nav>
+
+      <!-- Schedule body -->
+      <section class="schedule" aria-label="Schedule">
+
+        <!-- ═══════ Region 1 — Anchor + This-week digest ═══════
+             The "now" lens (target — missing today). One-line digest of what
+             matters this week: active / starts / finishes / behind. -->
+        <div class="anchor-row">
+          <span class="anchor-eyebrow">Project start</span>
+          <strong>Mon, Mar 23 2026</strong>
+          <button class="anchor-edit" aria-label="Edit project start date"><svg><use href="#i-edit"/></svg></button>
+        </div>
+
+        <div class="digest" aria-label="This week's schedule digest">
+          <span class="digest-title">
+            This week
+            <span class="digest-week">Mar 30&nbsp;–&nbsp;Apr 5</span>
+          </span>
+          <span class="digest-divider" aria-hidden="true"></span>
+
+          <span class="digest-group">
+            <span class="dl-key">Active</span>
+            <span class="dl-val">
+              <span class="behind-glyph" aria-label="behind">&#9888;</span>Drywall
+              <span class="sep">&middot;</span>
+              Plumbing rough-in
+            </span>
+          </span>
+
+          <span class="digest-group">
+            <span class="dl-key">Starts</span>
+            <span class="dl-val">Cabinets &amp; fixtures<span class="day-hint">Thu</span></span>
+          </span>
+
+          <span class="digest-group">
+            <span class="dl-key">Finishes</span>
+            <span class="dl-val"><span class="empty">&mdash;</span></span>
+          </span>
+
+          <span class="digest-spacer"></span>
+
+          <button class="behind-pill" type="button" title="Jump to behind tasks" aria-label="1 task behind">
+            <span class="glyph" aria-hidden="true">&#9888;</span>
+            <span class="count">1</span>
+            <span class="lbl">behind</span>
+          </button>
+
+        </div>
+        <!-- Legend was here; moved to the gantt-foot to free ~30px above the
+             gantt without losing the vocabulary teach. -->
+
+
+        <!-- ═══════ Region 2 — Toolbar ═══════
+             Rebalanced: ONE outline primary (+ Add task) + an overflow with
+             the destructive globals (Clear, Auto-link) so they no longer sit
+             at toolbar-equal weight. Pop is shown below for spec clarity. -->
+        <div class="toolbar" role="toolbar" aria-label="Schedule actions">
+          <span class="tb-meta">
+            <strong>9</strong> tasks
+            <span class="sep">&middot;</span>
+            click to edit
+            <span class="sep">&middot;</span>
+            drag to reschedule
+            <span class="sep">&middot;</span>
+            drag the right edge to resize
+          </span>
+          <span class="tb-spacer"></span>
+          <button class="btn-outline" type="button"><svg><use href="#i-plus"/></svg>Add task</button>
+          <button class="overflow-btn" type="button" aria-label="More actions" aria-haspopup="menu" aria-expanded="true"><svg><use href="#i-more"/></svg></button>
+
+          <!-- Open-state design illustration of the ⋯ overflow. Destructive
+               globals (Auto-link, Clear) tucked away here so they no longer
+               sit at toolbar-equal weight to + Add task. -->
+          <div class="overflow-pop" role="menu" aria-label="Schedule overflow">
+            <div class="op-item">
+              <span class="op-title">Auto-link dependencies <span class="danger-mark">Destructive</span></span>
+              <span class="op-sub">Wipes manual edges &middot; relinks by phase order</span>
+            </div>
+            <div class="op-item">
+              <span class="op-title">Clear &amp; start over <span class="danger-mark">Destructive</span></span>
+              <span class="op-sub">Deletes all tasks &middot; restores empty bootstrap</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════ Region 3 — Henry cascade ═══════
+             The headline Henry moment. Drag → cascade was silent before.
+             Caution-soft (warn) fill + rust ✦ left-border; explicit Undo +
+             Notify customer. The Notify routes into the existing deferred,
+             undoable, debounced notify pipeline (5-min cron + Undo window). -->
+        <div class="cascade" role="status" aria-label="Henry: schedule cascade">
+          <span class="henry-mark"><span class="glyph">&#10022;</span>Henry</span>
+          <div class="cascade-text">
+            Moving <strong>Drywall</strong> <strong>+3 working days</strong> pushed <strong>Finishes</strong>, <strong>Punch List</strong> &amp; <strong>Final Walkthrough</strong>.
+            <span class="sub-line">
+              New finish <strong>Apr 2</strong><span class="sep">&rarr;</span><strong>Apr 8</strong>
+              <span class="sep">&middot;</span>
+              3 downstream tasks moved
+              <span class="sep">&middot;</span>
+              firm + client-visible
+            </span>
+          </div>
+          <div class="cascade-actions">
+            <button class="btn-undo" type="button"><svg><use href="#i-undo"/></svg>Undo</button>
+            <button class="btn-notify" type="button"><svg><use href="#i-send"/></svg>Notify customer</button>
+          </div>
+        </div>
+
+        <!-- ═══════ Region 4 — The Gantt ═══════
+             CSS-grid autoscale, sticky-left name column, phase-grouped rows.
+             Month + day headers, weekend bands (low z, faint), today line at
+             grid line 12 (start of Apr 2). Working-day math: the Electrical
+             bar spans Mar 26 → Apr 6 (12 cal days, 8 working days) — the
+             weekend overlay desaturates the bar inside Sat-Sun cols. -->
+        <div class="gantt-panel">
+          <div class="gantt-grid">
+
+            <!-- Headers — name column kept blank for these two header rows; the
+                 month + day strips own the rest. -->
+            <div class="gx-name" style="grid-row: 1 / 3; min-height: 44px;"></div>
+
+            <!-- Row 1 — month labels -->
+            <div class="gx-month is-mar" style="grid-row: 1;">Mar <span class="yr">2026</span></div>
+            <div class="gx-month is-apr" style="grid-row: 1;">Apr <span class="yr">2026</span></div>
+
+            <!-- Row 2 — day-of-month markers + DOW glyphs. Today (Apr 2) gets
+                 rust. Mondays carry a left gridline. -->
+            <div class="gx-day is-mon" style="grid-row: 2; grid-column: 2;">23<span class="dow">M</span></div>
+            <div class="gx-day"          style="grid-row: 2; grid-column: 3;">24<span class="dow">T</span></div>
+            <div class="gx-day"          style="grid-row: 2; grid-column: 4;">25<span class="dow">W</span></div>
+            <div class="gx-day"          style="grid-row: 2; grid-column: 5;">26<span class="dow">T</span></div>
+            <div class="gx-day"          style="grid-row: 2; grid-column: 6;">27<span class="dow">F</span></div>
+            <div class="gx-day is-weekend" style="grid-row: 2; grid-column: 7;">28<span class="dow">S</span></div>
+            <div class="gx-day is-weekend" style="grid-row: 2; grid-column: 8;">29<span class="dow">S</span></div>
+
+            <div class="gx-day is-mon"  style="grid-row: 2; grid-column: 9;">30<span class="dow">M</span></div>
+            <div class="gx-day"          style="grid-row: 2; grid-column: 10;">31<span class="dow">T</span></div>
+            <div class="gx-day"          style="grid-row: 2; grid-column: 11;">1<span class="dow">W</span></div>
+            <div class="gx-day is-today" style="grid-row: 2; grid-column: 12;">2<span class="dow">T</span></div>
+            <div class="gx-day"          style="grid-row: 2; grid-column: 13;">3<span class="dow">F</span></div>
+            <div class="gx-day is-weekend" style="grid-row: 2; grid-column: 14;">4<span class="dow">S</span></div>
+            <div class="gx-day is-weekend" style="grid-row: 2; grid-column: 15;">5<span class="dow">S</span></div>
+
+            <div class="gx-day is-mon" style="grid-row: 2; grid-column: 16;">6<span class="dow">M</span></div>
+            <div class="gx-day"         style="grid-row: 2; grid-column: 17;">7<span class="dow">T</span></div>
+            <div class="gx-day"         style="grid-row: 2; grid-column: 18;">8<span class="dow">W</span></div>
+            <div class="gx-day"         style="grid-row: 2; grid-column: 19;">9<span class="dow">T</span></div>
+            <div class="gx-day"         style="grid-row: 2; grid-column: 20;">10<span class="dow">F</span></div>
+            <div class="gx-day is-weekend" style="grid-row: 2; grid-column: 21;">11<span class="dow">S</span></div>
+            <div class="gx-day is-weekend" style="grid-row: 2; grid-column: 22;">12<span class="dow">S</span></div>
+
+            <!-- ─── Vertical gridline overlays (z=0). The faint repeating
+                 gradient draws a 1px line at each of the 21 day-col boundaries
+                 so the eye can track a bar's start/end day without per-day
+                 cell divs. Monday lines (Mar 30 + Apr 6) sit a touch stronger
+                 from the second overlay. ─── -->
+            <div class="gx-vert-lines" aria-hidden="true"></div>
+            <div class="gx-mon-lines" aria-hidden="true"></div>
+
+            <!-- ─── Weekend BANDS (z=1, below bars). Provide the "off-day"
+                 backdrop in empty cols. Three weekends in the 21-day range. ─── -->
+            <div class="gx-weekend w1"></div>
+            <div class="gx-weekend w2"></div>
+            <div class="gx-weekend w3"></div>
+
+            <!-- ─── Phase: Demo ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-demo"></span>Demo</div>
+
+            <div class="gx-name is-done">Demo work</div>
+            <!-- 9 day cells under this task row, just so Monday gridlines tile
+                 cleanly. The bar is positioned via grid-column. -->
+            <!-- Demo bar: Mar 23-25 = days 1-3 = grid-column 2 / 5. Pinned to
+                 task row 4 so the bar overlays the task's cells row (without
+                 this, grid auto-flow puts the bar on its own row → 2× height). -->
+            <div class="bar is-done" style="grid-column: 2 / 5;">
+              <span class="bar-label">Demo</span>
+              <div class="bar-tooltip">Demo work&nbsp;&middot;&nbsp;done<span class="tt-meta">3 working days&nbsp;&middot;&nbsp;Mon Mar 23&nbsp;→&nbsp;Wed Mar 25</span></div>
+            </div>
+
+            <!-- ─── Phase: Framing ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-framing"></span>Framing</div>
+
+            <div class="gx-name is-done">Frame partitions</div>
+            <!-- Frame: Mar 24-27 = days 2-5 = grid-column 3 / 7 — row 6 -->
+            <div class="bar is-done" style="grid-column: 3 / 7;">
+              <span class="bar-label">Framing</span>
+              <div class="bar-tooltip">Frame partitions&nbsp;&middot;&nbsp;done<span class="tt-meta">4 working days&nbsp;&middot;&nbsp;Tue Mar 24&nbsp;→&nbsp;Fri Mar 27</span></div>
+            </div>
+
+            <!-- ─── Phase: Rough-in (two tasks) ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-roughin"></span>Rough-in</div>
+
+            <!-- Task 3: Electrical rough-in — firm, 8 working days, Mar 26 → Apr 6 -->
+            <div class="gx-name">Electrical rough-in</div>
+            <!-- Electrical bar: Mar 26 → Apr 6 = days 4-15 = grid-column 5 / 17 — row 8 -->
+            <div class="bar is-firm ph-roughin is-in-progress" style="grid-column: 5 / 17; --progress: 58%;">
+              <span class="bar-label">Electrical rough-in</span>
+              <span class="bar-actions">
+                <button class="bar-act" type="button">Mark done</button>
+                <button class="bar-act" type="button">Lock</button>
+              </span>
+              <div class="bar-tooltip">Electrical rough-in&nbsp;&middot;&nbsp;firm<span class="tt-meta">8 working days&nbsp;&middot;&nbsp;Thu Mar 26&nbsp;→&nbsp;Mon Apr 6</span></div>
+            </div>
+
+            <!-- Task 4: Plumbing rough-in — rough, internal, Mar 30 → Apr 7 -->
+            <div class="gx-name">Plumbing rough-in<span class="internal-chip">Internal</span></div>
+            <!-- Plumbing: Mar 30 → Apr 7 = days 8-16 = grid-column 9 / 18 — row 9 -->
+            <div class="bar is-rough ph-roughin" style="grid-column: 9 / 18;">
+              <span class="bar-label">Plumbing rough-in</span>
+              <div class="bar-tooltip">Plumbing rough-in&nbsp;&middot;&nbsp;rough&nbsp;&middot;&nbsp;internal<span class="tt-meta">7 working days&nbsp;&middot;&nbsp;Mon Mar 30&nbsp;→&nbsp;Tue Apr 7</span></div>
+            </div>
+
+            <!-- ─── Phase: Inspection ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-inspection"></span>Inspection</div>
+
+            <div class="gx-name">Final inspection</div>
+            <!-- Inspection: Apr 1 = day 10 = grid-column 11 / 12 — row 11 -->
+            <div class="bar is-rough ph-inspection" style="grid-column: 11 / 12;">
+              <span class="bar-label">Insp.</span>
+              <div class="bar-tooltip">Final inspection&nbsp;&middot;&nbsp;rough<span class="tt-meta">1 working day&nbsp;&middot;&nbsp;Wed Apr 1</span></div>
+            </div>
+
+            <!-- ─── Phase: Drywall ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-drywall"></span>Drywall</div>
+
+            <div class="gx-name"><span class="behind-glyph" aria-hidden="true">&#9888;</span><span>Hang &amp; tape drywall</span><span class="task-meta">In progress</span></div>
+            <!-- Drywall: Mar 30 → Apr 6 = days 8-15 = grid-column 9 / 17 — row 13 -->
+            <div class="bar is-firm ph-drywall is-behind is-in-progress" style="grid-column: 9 / 17; --progress: 55%;">
+              <span class="behind-glyph" aria-hidden="true">&#9888;</span>
+              <span class="bar-label">Drywall &middot; behind</span>
+              <span class="bar-actions">
+                <button class="bar-act" type="button">Mark done</button>
+                <button class="bar-act" type="button">Bump 1d</button>
+              </span>
+              <div class="bar-tooltip">Hang &amp; tape drywall&nbsp;&middot;&nbsp;BEHIND&nbsp;&middot;&nbsp;in progress<span class="tt-meta">6 working days&nbsp;&middot;&nbsp;Was due Wed Apr 1&nbsp;&middot;&nbsp;now Mon Apr 6</span></div>
+            </div>
+
+            <!-- ─── Phase: Cabinets &amp; Fixtures ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-cabinets"></span>Cabinets &amp; Fixtures</div>
+
+            <div class="gx-name">Cabinet install<span class="task-meta">Starts Thu</span></div>
+            <!-- Cabinets: Thu Apr 2 (today) → Tue Apr 7 = days 11-16 = grid-column
+                 12 / 18 — row 15 -->
+            <div class="bar is-rough ph-cabinets" style="grid-column: 12 / 18;">
+              <span class="bar-label">Cabinet install</span>
+              <div class="bar-tooltip">Cabinet install&nbsp;&middot;&nbsp;rough<span class="tt-meta">4 working days&nbsp;&middot;&nbsp;Thu Apr 2&nbsp;→&nbsp;Tue Apr 7</span></div>
+            </div>
+
+            <!-- ─── Phase: Finishes ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-finishes"></span>Finishes</div>
+
+            <div class="gx-name">Finishes<span class="task-meta">+3d cascade</span></div>
+            <!-- Finishes: Apr 6 → Apr 8 = days 15-17 = grid-column 16 / 19 — row 17
+                 (rough, post-cascade; originally ended Apr 2, +3 working days). -->
+            <div class="bar is-rough ph-finishes" style="grid-column: 16 / 19;">
+              <span class="bar-label">Finishes</span>
+              <div class="bar-tooltip">Finishes&nbsp;&middot;&nbsp;rough<span class="tt-meta">3 working days&nbsp;&middot;&nbsp;Mon Apr 6&nbsp;→&nbsp;Wed Apr 8&nbsp;&middot;&nbsp;was end Apr 2</span></div>
+            </div>
+
+            <!-- ─── Phase: Punch List ─── -->
+            <div class="gx-phase-head"><span class="phase-swatch sw-punch"></span>Punch List</div>
+
+            <div class="gx-name">Punch list &amp; final walkthrough<span class="task-meta">+3d cascade</span></div>
+            <!-- Punch list & final walkthrough: Apr 8 = day 17 = grid-column 18 / 19
+                 — row 19. The project's "new finish" the cascade card calls out. -->
+            <div class="bar is-rough ph-punch" style="grid-column: 18 / 19;">
+              <span class="bar-label">Punch</span>
+              <div class="bar-tooltip">Punch list &amp; final REMOVED 189 LINES, KEPT 1566
+walkthrough&nbsp;&middot;&nbsp;rough<span class="tt-meta">1 working day&nbsp;&middot;&nbsp;Wed Apr 8&nbsp;&middot;&nbsp;was Apr 2</span></div>
+            </div>
+
+            <!-- ─── Weekend MASK overlays (z=5, above bars, below today line).
+                 These "recede" the bar inside Sat-Sun cols — translucent paper
+                 wash + faint vertical hairlines at each weekend boundary. ─── -->
+            <div class="gx-weekend-mask w1"></div>
+            <div class="gx-weekend-mask w2"></div>
+            <div class="gx-weekend-mask w3"></div>
+
+            <!-- ─── Today line (rust, top z) ─── -->
+            <div class="gx-today" aria-hidden="true"></div>
+
+          </div>
+
+          <div class="gantt-foot">
+            <span class="legend" aria-label="Bar legend">
+              <span class="legend-item"><span class="legend-swatch is-firm"></span>Firm</span>
+              <span class="legend-item"><span class="legend-swatch is-rough"></span>Rough</span>
+              <span class="legend-item"><span class="legend-swatch is-done"></span>Done</span>
+              <span class="legend-item"><span class="legend-swatch is-behind"></span>Behind</span>
+            </span>
+            <span class="sep">&middot;</span>
+            <span>Finish <strong>Apr 8</strong> <span class="sep">(was Apr 2)</span></span>
+            <span style="margin-left: auto;">
+              <button class="field-select" type="button">
+                <span style="color: var(--muted); font-weight: 500;">Preview as</span>
+                <strong style="color: var(--ink);">customer</strong>
+                <svg><use href="#i-arrow-right"/></svg>
+              </button>
+            </span>
+          </div>
+        </div>
+
+        <!-- ═══════ Region 5 — Crew this week (read-only) ═══════
+             The single crew touchpoint on Schedule. Read-only by design;
+             deep-links to /calendar (the dispatch board). No editing here —
+             scheduling crew is the Calendar's job. -->
+        <div class="crew-card" aria-label="Crew this week (read-only)">
+          <span class="crew-label">Crew this week</span>
+          <div class="crew-list">
+            <span><strong>Mike Reyes</strong><span class="days">Mon&ndash;Wed</span></span>
+            <span class="crew-divider">&middot;</span>
+            <span><span class="sub-chip">Sub</span><strong>Dave&nbsp;T.</strong><span class="days">Mon&ndash;Fri</span></span>
+          </div>
+          <a class="crew-link" href="#">Manage in Calendar<svg><use href="#i-arrow-right"/></svg></a>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

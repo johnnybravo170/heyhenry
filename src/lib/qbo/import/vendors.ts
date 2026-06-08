@@ -7,7 +7,7 @@
  * round-trip idempotency since QBO Vendor and Customer Ids are drawn
  * from the same global namespace inside a QBO company.
  *
- * Dedup is simpler than for customers: no fuzzy match against the
+ * Dedup is simpler than for contacts: no fuzzy match against the
  * existing roster. Vendor names overlap heavily ("Home Depot" exists
  * for every contractor), and a strong email/phone match against a
  * customer-kind row would silently flip its kind, which would corrupt
@@ -112,7 +112,7 @@ export async function importVendorPage(ctx: VendorImportContext, page: QboVendor
       updated_at: now,
     }));
     const { data: inserted, error } = await supabase
-      .from('customers')
+      .from('contacts')
       .insert(rows)
       .select('id, qbo_customer_id');
     if (error) {
@@ -125,19 +125,20 @@ export async function importVendorPage(ctx: VendorImportContext, page: QboVendor
     }
   }
 
-  for (const u of toUpdate) {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('customers')
-      .update({
+  if (toUpdate.length > 0) {
+    // One set-based UPDATE for the whole page instead of one round trip per
+    // row. Sync-metadata only — operator-edited name/email/etc are preserved
+    // (qbo_customer_id is re-set to its existing value, a no-op).
+    const { error } = await supabase.rpc('qbo_bulk_update_contacts', {
+      p_rows: toUpdate.map((u) => ({
+        id: u.id,
+        tenant_id: ctx.tenantId,
+        qbo_customer_id: u.qbo.Id,
         qbo_sync_token: u.qbo.SyncToken,
-        qbo_sync_status: 'synced',
-        qbo_synced_at: now,
-        updated_at: now,
-      })
-      .eq('id', u.id);
+      })),
+    });
     if (error) {
-      throw new Error(`Failed to update vendor ${u.id}: ${error.message}`);
+      throw new Error(`Failed to update vendors page: ${error.message}`);
     }
   }
 
@@ -153,7 +154,7 @@ export async function loadVendorImportContext(
 ): Promise<VendorImportContext> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, qbo_customer_id')
     .eq('tenant_id', tenantId)
     .eq('kind', 'vendor')

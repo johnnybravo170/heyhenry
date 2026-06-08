@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Money } from '@/components/ui/money';
 import type { ProjectBillRow } from '@/lib/db/queries/project-bills';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { projectCostStatusTone, statusToneClass } from '@/lib/ui/status-tokens';
@@ -125,17 +126,40 @@ function displayToCents(val: string) {
   return Math.round(parseFloat(val || '0') * 100);
 }
 
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+/** Format a date-only `YYYY-MM-DD` as "Apr 28". Parses the parts directly —
+ *  no Date/tz, so a date-only value never shifts across timezones. */
+function fmtShortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return `${SHORT_MONTHS[Number(m[2]) - 1] ?? m[2]} ${Number(m[3])}`;
+}
+
 const STATUS_LABEL: Record<CostStatusKey, string> = {
   paid_receipt: 'Paid receipt',
-  bill_unpaid: 'Vendor bill • Unpaid',
-  bill_paid: 'Vendor bill • Paid',
+  bill_unpaid: 'Vendor bill · Unpaid',
+  bill_paid: 'Vendor bill · Paid',
 };
 
 function CostStatusBadge({ status }: { status: CostStatusKey }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+        // OD `.pill`: mono, 10px/700, uppercase, 4px radius, soft fill, no border.
+        'inline-flex items-center whitespace-nowrap rounded border-transparent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide',
         statusToneClass[projectCostStatusTone[status]],
       )}
     >
@@ -166,15 +190,57 @@ function AddCostGate({ onChoose }: { onChoose: (kind: 'receipt' | 'bill') => voi
   );
 }
 
+// ─── Overhead (non-billable) toggle ──────────────────────────────────────────
+
+/**
+ * Cost-plus only (card #11). When checked, the cost is logged as project
+ * overhead the contractor absorbs: it still counts toward job cost and
+ * margin, but it's excluded from the cost-plus customer invoice (no
+ * markup, never shown to the customer). Charlie's case: a sub's WCB bill.
+ */
+function NonBillableToggle({
+  idPrefix,
+  checked,
+  onChange,
+}: {
+  idPrefix: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <label
+      htmlFor={`${idPrefix}-non-billable`}
+      className="flex cursor-pointer items-start gap-2 rounded-md border bg-background p-3"
+    >
+      <input
+        type="checkbox"
+        id={`${idPrefix}-non-billable`}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 size-4 shrink-0"
+      />
+      <span className="text-sm">
+        <span className="font-medium">Don&apos;t bill the customer (overhead)</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">
+          Counts toward your job cost and margin, but stays off the customer&apos;s cost-plus
+          invoice.
+        </span>
+      </span>
+    </label>
+  );
+}
+
 // ─── Receipt (expense) form ──────────────────────────────────────────────────
 
 function ReceiptForm({
   projectId,
   categories,
+  isCostPlus,
   onDone,
 }: {
   projectId: string;
   categories: Category[];
+  isCostPlus: boolean;
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -186,6 +252,7 @@ function ReceiptForm({
   const [categoryId, setCategoryId] = useState('');
   const [costLineId, setCostLineId] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [nonBillable, setNonBillable] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -200,6 +267,7 @@ function ReceiptForm({
       fd.set('budget_category_id', categoryId);
       if (costLineId) fd.set('cost_line_id', costLineId);
       if (receipt) fd.set('receipt', receipt);
+      if (nonBillable) fd.set('is_billable', 'false');
       const res = await logExpenseWithReceiptAction(fd);
       if (res.ok) onDone();
       else setError(res.error);
@@ -313,6 +381,9 @@ function ReceiptForm({
           )}
         </div>
       </div>
+      {isCostPlus ? (
+        <NonBillableToggle idPrefix="receipt" checked={nonBillable} onChange={setNonBillable} />
+      ) : null}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>
@@ -333,11 +404,13 @@ const GST_RATE = 0.05;
 function BillForm({
   projectId,
   categories,
+  isCostPlus,
   initial,
   onDone,
 }: {
   projectId: string;
   categories: Category[];
+  isCostPlus: boolean;
   initial?: ProjectBillRow;
   onDone: () => void;
 }) {
@@ -361,6 +434,7 @@ function BillForm({
   const [vendorGstNumber, setVendorGstNumber] = useState(initial?.vendor_gst_number ?? '');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [gstManual, setGstManual] = useState(initial?.gst_cents != null && initial.gst_cents > 0);
+  const [nonBillable, setNonBillable] = useState(initial?.is_billable === false);
 
   function handleSubtotalChange(val: string) {
     setSubtotalRaw(val);
@@ -406,6 +480,7 @@ function BillForm({
       if (costLineId) fd.set('cost_line_id', costLineId);
       fd.set('cost_code', costCode);
       fd.set('vendor_gst_number', vendorGstNumber);
+      fd.set('is_billable', nonBillable ? 'false' : 'true');
       if (attachmentFile) fd.set('attachment', attachmentFile);
       const res = await upsertBillWithAttachmentAction(fd);
       if (res.ok) onDone();
@@ -612,6 +687,9 @@ function BillForm({
         )}
       </div>
 
+      {isCostPlus ? (
+        <NonBillableToggle idPrefix="bill" checked={nonBillable} onChange={setNonBillable} />
+      ) : null}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>
@@ -814,7 +892,7 @@ function FilterChips({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
             current === f.key
-              ? 'border-primary bg-primary/10 text-primary'
+              ? 'border-primary bg-primary text-primary-foreground'
               : 'border-muted bg-card text-muted-foreground hover:bg-muted/50',
           )}
         >
@@ -832,11 +910,13 @@ function FilterChips({
 
 export function ProjectCostsSection({
   projectId,
+  isCostPlus,
   bills,
   expenses,
   categories,
 }: {
   projectId: string;
+  isCostPlus: boolean;
   bills: BillItem[];
   expenses: ExpenseItem[];
   categories: Category[];
@@ -956,7 +1036,11 @@ export function ProjectCostsSection({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <FilterChips current={filter} counts={counts} hrefForFilter={hrefForFilter} />
         {!showingForm && (
-          <Button size="sm" onClick={() => setShowGate(true)}>
+          <Button
+            size="sm"
+            onClick={() => setShowGate(true)}
+            className="bg-brand text-white hover:bg-brand/90"
+          >
             + Add cost
           </Button>
         )}
@@ -972,17 +1056,28 @@ export function ProjectCostsSection({
       )}
 
       {adding === 'receipt' && (
-        <ReceiptForm projectId={projectId} categories={categories} onDone={() => setAdding(null)} />
+        <ReceiptForm
+          projectId={projectId}
+          categories={categories}
+          isCostPlus={isCostPlus}
+          onDone={() => setAdding(null)}
+        />
       )}
 
       {adding === 'bill' && (
-        <BillForm projectId={projectId} categories={categories} onDone={() => setAdding(null)} />
+        <BillForm
+          projectId={projectId}
+          categories={categories}
+          isCostPlus={isCostPlus}
+          onDone={() => setAdding(null)}
+        />
       )}
 
       {editingBill && (
         <BillForm
           projectId={projectId}
           categories={categories}
+          isCostPlus={isCostPlus}
           initial={editingBill}
           onDone={() => setEditingBill(null)}
         />
@@ -1001,25 +1096,43 @@ export function ProjectCostsSection({
           .
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
+        <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-3 py-2 text-left font-medium">Date</th>
-                <th className="px-3 py-2 text-left font-medium">Vendor</th>
-                <th className="px-3 py-2 text-left font-medium">Status</th>
-                <th className="px-3 py-2 text-left font-medium">Category</th>
-                <th className="px-3 py-2 text-left font-medium">Description</th>
-                <th className="px-3 py-2 text-right font-medium">Subtotal</th>
-                <th className="px-3 py-2 text-right font-medium">GST</th>
-                <th className="px-3 py-2 text-right font-medium">Total</th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Date
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Vendor
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Status
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Category
+                </th>
+                <th className="px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Description
+                </th>
+                <th className="px-3 py-2 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Subtotal
+                </th>
+                <th className="px-3 py-2 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  GST
+                </th>
+                <th className="px-3 py-2 text-right font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Total
+                </th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={`${r.kind}:${r.id}`} className="border-b last:border-0">
-                  <td className="px-3 py-2 text-muted-foreground tabular-nums">{r.cost_date}</td>
+                  <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-muted-foreground tabular-nums">
+                    {fmtShortDate(r.cost_date)}
+                  </td>
                   <td className="px-3 py-2 font-medium">
                     <div className="flex items-center gap-1.5">
                       {r.attachment_url && (
@@ -1048,24 +1161,28 @@ export function ProjectCostsSection({
                   <td className="px-3 py-2">
                     <CostStatusBadge status={r.status} />
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">
+                  <td className="px-3 py-2">
                     {r.budget_category_name ? (
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
-                        {r.budget_category_name}
-                      </span>
+                      r.budget_category_name
                     ) : (
-                      '—'
+                      <span className="text-muted-foreground/60">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{r.description || '—'}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {formatCurrency(r.subtotal_cents)}
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {r.description || <span className="text-muted-foreground/60">—</span>}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {r.gst_cents > 0 ? formatCurrency(r.gst_cents) : '—'}
+                  <td className="px-3 py-2 text-right">
+                    <Money cents={r.subtotal_cents} symbol={false} />
                   </td>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">
-                    {formatCurrency(r.total_cents)}
+                  <td className="px-3 py-2 text-right text-muted-foreground">
+                    {r.gst_cents > 0 ? (
+                      <Money cents={r.gst_cents} symbol={false} />
+                    ) : (
+                      <span className="italic text-muted-foreground/60">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Money cents={r.total_cents} className="font-bold" />
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-1">

@@ -31,12 +31,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { EstimatePreflight } from '@/lib/estimate/preflight';
-import { patchCustomerEmailAction } from '@/server/actions/customers';
+import { patchCustomerEmailAction } from '@/server/actions/contacts';
 import { sendEstimateForApprovalAction } from '@/server/actions/estimate-approval';
 
 type Props = {
   projectId: string;
-  customerId: string;
+  contactId: string;
   customerName: string;
   customerEmail: string | null;
   /** Saved additional recipients on the customer record. Pre-checked
@@ -57,7 +57,7 @@ type Props = {
 
 export function EstimatePreviewSendBar({
   projectId,
-  customerId,
+  contactId,
   customerName,
   customerEmail: initialEmail,
   customerAdditionalEmails,
@@ -152,7 +152,7 @@ export function EstimatePreviewSendBar({
       return;
     }
     startTransition(async () => {
-      const patch = await patchCustomerEmailAction(customerId, trimmed);
+      const patch = await patchCustomerEmailAction(contactId, trimmed);
       if (!patch.ok) {
         setEmailError(patch.error);
         return;
@@ -181,7 +181,7 @@ export function EstimatePreviewSendBar({
   }
 
   return (
-    <div className="sticky top-0 z-10 -mx-4 mb-6 flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur">
+    <div className="sticky top-0 z-30 -mx-4 mb-6 flex items-center justify-between gap-3 border-b bg-background px-4 py-3 shadow-sm">
       <Button
         variant="ghost"
         size="sm"

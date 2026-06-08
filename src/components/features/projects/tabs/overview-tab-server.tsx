@@ -8,11 +8,9 @@
  */
 
 import { Suspense } from 'react';
-import { BillingModeEditor } from '@/components/features/projects/billing-mode-editor';
 import { VarianceTab } from '@/components/features/projects/budget-summary';
-import { ManagementFeeEditor } from '@/components/features/projects/management-fee-editor';
+import { HenryInsightStrip } from '@/components/features/projects/henry-insight-strip';
 import { ProjectTimeline } from '@/components/features/projects/project-timeline';
-import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getProjectChangeOrderContributions } from '@/lib/db/queries/change-orders';
 import { getVarianceReport } from '@/lib/db/queries/cost-lines';
 import { listProjectEvents } from '@/lib/db/queries/project-events';
@@ -21,13 +19,21 @@ import { getProject } from '@/lib/db/queries/projects';
 export default function OverviewTabServer({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-6">
+      {/* "Needs You" attention strip — getProjectInsights ranks the project's
+          do-this items (margin at risk, unsent changes, overdue draws,
+          over-budget sections, client messages, unpaid bills), capped ~4 +
+          "+N more". Collapses to a calm on-track line when clean. */}
+      <Suspense fallback={<InsightStripSkeleton />}>
+        <HenryInsightStrip projectId={projectId} />
+      </Suspense>
+
       <Suspense fallback={<VarianceSkeleton />}>
         <VarianceSection projectId={projectId} />
       </Suspense>
 
-      <Suspense fallback={<FactsGridSkeleton />}>
-        <ProjectFactsSection projectId={projectId} />
-      </Suspense>
+      {/* The editable project facts (name / customer / dates / billing /
+          mgmt fee / status) moved to the Project Details card (the `▾` in
+          the header), so Overview is freed to be a cockpit. */}
 
       <Suspense fallback={<TimelineSkeleton />}>
         <TimelineSection projectId={projectId} />
@@ -59,48 +65,6 @@ async function VarianceSection({ projectId }: { projectId: string }) {
   );
 }
 
-async function ProjectFactsSection({ projectId }: { projectId: string }) {
-  // getProject is React.cache-wrapped, so this dedupes against the
-  // VarianceSection call above when both run in the same request.
-  const [project, tenant] = await Promise.all([getProject(projectId), getCurrentTenant()]);
-  if (!project) return null;
-  const tz = tenant?.timezone ?? 'America/Vancouver';
-  const dateFmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      <div className="rounded-lg border p-4">
-        <p className="text-xs text-muted-foreground">Start Date</p>
-        <p className="text-sm font-medium">
-          {project.start_date ? dateFmt.format(new Date(project.start_date)) : 'Not set'}
-        </p>
-      </div>
-      <div className="rounded-lg border p-4">
-        <p className="text-xs text-muted-foreground">Target End</p>
-        <p className="text-sm font-medium">
-          {project.target_end_date ? dateFmt.format(new Date(project.target_end_date)) : 'Not set'}
-        </p>
-      </div>
-      <div className="rounded-lg border p-4">
-        <p className="text-xs text-muted-foreground">Mgmt Fee</p>
-        <ManagementFeeEditor projectId={project.id} rate={project.management_fee_rate} />
-      </div>
-      <div className="rounded-lg border p-4">
-        <p className="text-xs text-muted-foreground">Billing</p>
-        <BillingModeEditor projectId={project.id} isCostPlus={project.is_cost_plus} />
-      </div>
-      <div className="rounded-lg border p-4">
-        <p className="text-xs text-muted-foreground">Categories</p>
-        <p className="text-sm font-medium">{project.budget_categories.length}</p>
-      </div>
-    </div>
-  );
-}
-
 async function TimelineSection({ projectId }: { projectId: string }) {
   const projectEvents = await listProjectEvents(projectId);
   return <ProjectTimeline events={projectEvents} />;
@@ -120,13 +84,12 @@ function VarianceSkeleton() {
   );
 }
 
-function FactsGridSkeleton() {
+function InsightStripSkeleton() {
   return (
-    <div className="grid animate-pulse grid-cols-2 gap-4 md:grid-cols-4">
-      <div className="h-16 rounded-lg bg-muted/60" />
-      <div className="h-16 rounded-lg bg-muted/60" />
-      <div className="h-16 rounded-lg bg-muted/60" />
-      <div className="h-16 rounded-lg bg-muted/60" />
+    <div className="animate-pulse space-y-1.5">
+      <div className="h-4 w-40 rounded bg-muted/60" />
+      <div className="h-11 rounded-lg bg-muted/60" />
+      <div className="h-11 rounded-lg bg-muted/60" />
     </div>
   );
 }

@@ -1,0 +1,1470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project Hub · Glenwood Heights — Spend · HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 390px; height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  /* iOS status bar */
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .signal { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+  .signal i { display: block; width: 2.5px; background: var(--ink); border-radius: 1px; }
+  .signal i:nth-child(1) { height: 4px; }
+  .signal i:nth-child(2) { height: 6px; }
+  .signal i:nth-child(3) { height: 8px; }
+  .signal i:nth-child(4) { height: 10px; }
+  .battery { width: 22px; height: 11px; border: 1.2px solid var(--ink); border-radius: 3px; position: relative; }
+  .battery::after { content: ''; position: absolute; right: -3px; top: 2.5px; width: 2px; height: 4px; background: var(--ink); border-radius: 1px; }
+  .battery::before { content: ''; position: absolute; left: 1px; top: 1px; width: 14px; height: 5px; background: var(--ink); border-radius: 1px; }
+
+  /* App header (shell — same as Budget mobile) */
+  .app-header {
+    padding: 8px 14px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .header-back {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    cursor: pointer;
+    margin-left: -6px;
+  }
+  .header-back svg { width: 14px; height: 14px; }
+  .header-crumb {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+  .icon-btn-sm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn-sm:hover { background: var(--chip-fill); color: var(--ink); }
+  .icon-btn-sm svg { width: 16px; height: 16px; }
+  .add-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 30px; padding: 0 10px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .add-pill .glyph { color: var(--rust); font-size: 13px; }
+
+  .header-title {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    flex: 1; min-width: 0;
+  }
+  .header-title h1 .chev {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px;
+    margin-left: 2px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    vertical-align: -4px;
+  }
+  .header-title h1 .chev svg { width: 11px; height: 11px; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-pill .check { display: grid; place-items: center; width: 9px; height: 9px; }
+  .status-pill .check svg { width: 9px; height: 9px; }
+  .status-active { background: var(--ok-soft); color: var(--ok); }
+
+  .customer-line {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .customer-line a { color: var(--muted); border-bottom: 1px solid transparent; }
+  .customer-line a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+
+  /* Tab dropdown */
+  .tab-select-wrap {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-select {
+    flex: 1;
+    height: 36px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tab-select .arrow { margin-left: auto; color: var(--muted); display: grid; place-items: center; }
+  .tab-select .arrow svg { width: 12px; height: 12px; }
+  .tab-select .total-sep { margin-left: 8px; color: var(--faint); }
+  .tab-select .total-badge {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--warn-soft); color: var(--warn);
+    padding: 2px 6px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  /* Scrollable body */
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 14px 92px;
+    scroll-padding-top: 18px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* Open-menu preview (design-spec — shows the per-option badges that appear when the trigger is tapped) */
+  .menu-preview {
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 6px;
+    background: transparent;
+  }
+  .menu-preview .preview-eyebrow {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .menu-preview .mi-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .menu-preview .mi {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 7px 3px 8px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    font-size: 11px; font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.005em;
+  }
+  .menu-preview .mi.is-active { background: var(--nav-active); color: var(--ink); border-color: var(--rule); }
+  .menu-preview .mi .b {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+  .menu-preview .mi .b.warn { color: var(--warn); background: var(--warn-soft); }
+  .menu-preview .mi .b.rust { color: #fff; background: var(--rust); }
+
+  /* Alert chips */
+  .alert-chips { display: flex; flex-direction: column; gap: 8px; }
+  .chip-alert {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    line-height: 1.4;
+    cursor: pointer;
+    min-height: 44px;
+    text-align: left;
+    font-family: var(--sans);
+    color: var(--ink-2);
+  }
+  .chip-alert .mark {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .chip-alert .mark svg { width: 11px; height: 11px; }
+  .chip-alert .chip-text {
+    flex: 1; min-width: 0;
+    color: var(--ink); font-weight: 500;
+    line-height: 1.4;
+  }
+  .chip-alert .chip-text strong { font-weight: 700; }
+  .chip-alert .arrow { width: 12px; height: 12px; color: var(--muted); flex-shrink: 0; }
+  .chip-alert.is-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+  }
+  .chip-alert.is-warn .mark { background: var(--warn); }
+  .chip-alert.is-warn .arrow { color: var(--warn); }
+
+  /* Section eyebrow */
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 4px 6px;
+  }
+  .section-eyebrow .label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-eyebrow .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Summary card — 3 rows stacked (Committed / Billed / Paid) */
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 4px 14px;
+  }
+  .sum-row {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px dashed var(--rule);
+  }
+  .sum-row:first-of-type { border-top: 0; }
+  .sum-label {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .sum-meta {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .sum-meta strong {
+    color: var(--ink-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .sum-meta .sep { color: var(--faint); margin: 0 3px; }
+  .sum-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-align: right;
+  }
+  .sum-value .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .unpaid-shout {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--rust);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700;
+    text-transform: none;
+    letter-spacing: -0.005em;
+    border-bottom: 1px solid rgba(194,65,12,0.25);
+    padding-bottom: 1px;
+  }
+
+  .sum-foot {
+    margin-top: 0;
+    padding: 10px 0 4px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sum-foot strong { color: var(--ink-2); font-weight: 700; }
+  .sum-foot a {
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Segmented toggle (By type / By category) */
+  .seg-toggle {
+    display: flex;
+    padding: 3px;
+    background: var(--chip-fill);
+    border-radius: 9px;
+    gap: 0;
+  }
+  .seg-opt {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    color: var(--muted);
+    padding: 11px 6px;
+    border-radius: 7px;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  .seg-opt.is-on {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(10,10,10,0.06);
+  }
+
+  /* Sub-tabs (Vendor quotes / POs / Costs) */
+  .sub-tabs {
+    display: flex;
+    padding: 3px;
+    background: var(--chip-fill);
+    border-radius: 9px;
+    gap: 0;
+  }
+  .sub-tab {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    padding: 11px 4px;
+    border-radius: 7px;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    min-height: 44px;
+    white-space: nowrap;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .sub-tab.is-on {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(10,10,10,0.06);
+  }
+  .sub-tab-count {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    background: rgba(10,10,10,0.04);
+    padding: 1px 5px;
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+  .sub-tab.is-on .sub-tab-count { background: var(--chip-fill); color: var(--ink-2); }
+  .sub-tab-count.is-warn { color: var(--warn); background: var(--warn-soft); }
+
+  /* Filter chips (All / Unpaid / Paid) */
+  .filter-row {
+    display: flex; align-items: center; gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    flex-shrink: 0;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 32px;
+    padding: 0 12px;
+    background: transparent;
+    border: 1px solid var(--hair);
+    border-radius: 7px;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .filter-chip.is-on {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .filter-chip .count {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    background: rgba(10,10,10,0.06);
+    color: var(--muted);
+    padding: 1px 5px;
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+  .filter-chip.is-on .count { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.95); }
+
+  /* Add cost — primary rust full-width */
+  .btn-rust {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 40px;
+    padding: 0 14px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    min-height: 40px;
+    font-family: var(--sans);
+  }
+  .btn-rust svg { width: 12px; height: 12px; }
+
+  /* Cost-gate (a sheet preview) */
+  .cost-gate-sheet {
+    background: var(--card);
+    border: 1px dashed var(--rule);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .cost-gate-sheet .gate-eyebrow {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .cost-gate-sheet .gate-prompt {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin-bottom: 10px;
+  }
+  .cost-gate-sheet .gate-options { display: flex; flex-direction: column; gap: 6px; }
+  .cost-gate-sheet .gate-opt {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    color: var(--ink-2);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    font-family: var(--sans);
+    text-align: left;
+    min-height: 44px;
+  }
+  .cost-gate-sheet .gate-opt strong { color: var(--ink); font-weight: 700; }
+  .cost-gate-sheet .gate-opt .arrow { margin-left: auto; color: var(--faint); font-size: 14px; }
+
+  /* Stacked cost card */
+  .cost-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 12px 11px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .cost-card + .cost-card { margin-top: 8px; }
+  .cost-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  }
+  .cost-card .vendor {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  .cost-card .desc {
+    font-size: 13px;
+    color: var(--ink-2);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .cost-card .meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    font-weight: 500;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+  .cost-card .meta .sep { color: var(--faint); margin: 0 4px; }
+  .cost-card .cat-cell {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .cost-card .cat-cell.is-empty { color: var(--faint); }
+  .cost-card .amt {
+    font-variant-numeric: tabular-nums;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: right;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .cost-card .amt .cents { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .cost-card .amt-breakdown {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    text-align: right;
+    text-transform: uppercase;
+  }
+  .cost-card .amt-breakdown strong {
+    color: var(--ink-2);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .cost-card-footer {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--rule);
+    flex-wrap: wrap;
+  }
+
+  /* Status pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    border-radius: 4px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .pill.paid-receipt { color: var(--ok); background: var(--ok-soft); }
+  .pill.bill-unpaid  { color: var(--warn); background: var(--warn-soft); }
+  .pill.bill-paid    { color: var(--ok); background: var(--ok-soft); }
+  .pill.uncat        { color: var(--warn); background: var(--warn-soft); }
+  .pill.warn         { color: var(--warn); background: var(--warn-soft); }
+  .pill.ok           { color: var(--ok); background: var(--ok-soft); }
+
+  /* Row action (demoted to ghost; rust reserved for primary CTAs) */
+  .row-action {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    background: transparent;
+    border: 1px solid var(--hair);
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    line-height: 1.2;
+    min-height: 44px;
+    margin-left: auto;
+  }
+  .row-action svg { width: 12px; height: 12px; }
+
+  /* Sub-tab callout (design-spec divider) */
+  .sub-tab-callout {
+    margin-top: 6px;
+    padding: 12px;
+    background: transparent;
+    border: 1px dashed var(--rule);
+    border-radius: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .callout-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .callout-title {
+    font-size: 13px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .callout-title .glyph { color: var(--rust); margin-right: 4px; }
+  .callout-meta {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Quote sub-tab header */
+  .quote-header {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .quote-metric {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .quote-metric strong {
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+    font-size: 14px;
+  }
+  .quote-metric .pending strong { color: var(--warn); }
+  .quote-metric .sep { color: var(--faint); margin: 0 2px; }
+
+  .quote-header-actions { display: flex; gap: 6px; }
+  .btn-upload {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 40px;
+    padding: 0 12px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-upload .glyph { font-size: 14px; line-height: 1; }
+  .btn-ghost-line {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    height: 40px;
+    padding: 0 12px;
+    background: var(--card);
+    color: var(--ink-2);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-ghost-line svg { width: 11px; height: 11px; }
+  .upload-cap {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  /* Quote cards */
+  .quote-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .quote-card + .quote-card { margin-top: 8px; }
+  .quote-card.is-pending {
+    box-shadow: inset 3px 0 0 0 var(--warn);
+  }
+  .quote-card-head {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 12px;
+    cursor: pointer;
+  }
+  .quote-card-head .row-1 {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  }
+  .quote-card-head .vendor {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .quote-card-head .total {
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .quote-card-head .total .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .quote-card-head .row-2 {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .quote-card-head .label {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .quote-card-head .label::before { content: "— "; color: var(--faint); }
+  .quote-card-head .row-3 {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 4px;
+  }
+  .quote-card-head .date {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Expanded body */
+  .quote-body {
+    padding: 12px 12px 14px;
+    border-top: 1px solid var(--hair);
+    background: #FBF6EC;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .quote-section { display: flex; flex-direction: column; gap: 5px; }
+  .qs-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+
+  /* Quote line items */
+  .quote-line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 6px 0;
+    border-top: 1px dashed var(--rule);
+    font-size: 13px;
+  }
+  .quote-line:nth-of-type(2) { border-top: 0; padding-top: 2px; }
+  .ql-name { color: var(--ink-2); font-weight: 500; }
+  .ql-amt {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .ql-amt .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+
+  /* Category allocations */
+  .allocation-row {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 8px 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .allocation-row + .allocation-row { margin-top: 6px; }
+  .allocation-row.is-no-match {
+    background: var(--warn-soft);
+    border-color: rgba(180,83,9,0.22);
+  }
+  .ar-line {
+    color: var(--ink); font-weight: 600;
+    font-size: 13px;
+  }
+  .ar-line .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 4px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .ar-target-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ar-arrow {
+    color: var(--faint);
+    font-size: 11px;
+  }
+  .ar-category {
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .ar-category.is-missing {
+    color: var(--warn);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .ar-status {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .ar-status.ok { color: var(--ok); background: var(--ok-soft); }
+  .ar-status.warn { color: var(--warn); background: rgba(255,255,255,0.6); border: 1px solid rgba(180,83,9,0.3); }
+
+  /* Henry note */
+  .henry-note {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--rust);
+    border-radius: 0 10px 10px 0;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .henry-mark {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .henry-mark .glyph { font-size: 13px; line-height: 1; }
+  .henry-text { color: var(--ink-2); font-size: 12px; font-weight: 500; line-height: 1.5; }
+  .henry-text .line {
+    display: block;
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+  .henry-text .line .amt {
+    color: var(--ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .henry-cta {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Allocation tally */
+  .allocation-tally {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 11px;
+    border-radius: 8px;
+    font-size: 12px;
+    align-self: flex-start;
+    font-weight: 600;
+  }
+  .allocation-tally strong { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .allocation-tally.is-balanced {
+    background: var(--ok-soft);
+    color: var(--ok);
+    border: 1px solid rgba(21,128,61,0.18);
+  }
+  .allocation-tally.is-balanced strong { color: var(--ok); }
+  .allocation-tally .icon {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--ok);
+    color: var(--ok-soft);
+    display: grid; place-items: center;
+  }
+
+  /* Quote actions row */
+  .quote-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--rule);
+  }
+  .btn-accept {
+    grid-column: 1 / 3;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 48px;
+    padding: 0 16px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-quote-action {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    height: 44px;
+    padding: 0 10px;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn-quote-action.is-muted { color: var(--faint); }
+  .quote-hint {
+    grid-column: 1 / 3;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ok);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  /* Bottom tab bar (anchored — corner fix carried over) */
+  .tab-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 76px;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    padding: 0 4px 18px;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--muted);
+    font-size: 10px; font-weight: 600;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .tab-item.active { color: var(--ink); }
+  .tab-item svg { width: 18px; height: 18px; }
+  .tab-item .label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .tab-item.with-count { position: relative; }
+  .tab-item .count {
+    position: absolute; top: 0; right: calc(50% - 18px);
+    background: var(--rust); color: #fff;
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- iOS status bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="island"></span>
+      <span class="right">
+        <span class="signal"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="battery"></span>
+      </span>
+    </div>
+
+    <!-- App header (identical to Budget mobile) -->
+    <div class="app-header">
+      <div class="header-top">
+        <button class="header-back" aria-label="Back to projects"><svg><use href="#i-chevron-left"/></svg></button>
+        <span class="header-crumb">Projects</span>
+        <span class="header-actions">
+          <button class="add-pill"><span class="glyph">&#10022;</span>Add</button>
+          <button class="icon-btn-sm" aria-label="More actions"><svg><use href="#i-more"/></svg></button>
+        </span>
+      </div>
+      <div class="header-title">
+        <h1>Glenwood Heights<br/>Master Suite Addition
+          <span class="chev" aria-label="Project details"><svg><use href="#i-chevron-down"/></svg></span>
+        </h1>
+        <span class="status-pill status-active">
+          <span class="check"><svg><use href="#i-check"/></svg></span>Active
+        </span>
+      </div>
+      <div class="customer-line">
+        <a href="#">Daniel &amp; Priya Mohan</a>
+      </div>
+
+      <!-- Nav as a select, carrying Spend's "1" alert -->
+      <div class="tab-select-wrap" role="navigation" aria-label="Project sections">
+        <div class="tab-select" aria-expanded="false">
+          <span>Spend</span>
+          <span class="total-sep">&middot;</span>
+          <span class="total-badge">1</span>
+          <span class="arrow"><svg><use href="#i-chevron-down"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="body">
+
+      <!-- Open-menu preview (design-spec — confirms per-option alert badges carry into the tab dropdown) -->
+      <div class="menu-preview" aria-hidden="true">
+        <span class="preview-eyebrow">Open menu flags</span>
+        <div class="mi-row">
+          <span class="mi">Budget<span class="b warn">2</span></span>
+          <span class="mi is-active">Spend<span class="b warn">1</span></span>
+          <span class="mi">Client<span class="b rust">2</span></span>
+        </div>
+      </div>
+
+      <!-- Spend-owned alert chip — only one (receipt-OCR/missing-receipt nudges are TARGET, not built) -->
+      <div class="alert-chips" role="region" aria-label="Spend alerts">
+        <button class="chip-alert is-warn" type="button">
+          <span class="mark"><svg><use href="#i-hash"/></svg></span>
+          <span class="chip-text"><strong>1 uncategorized cost</strong></span>
+          <svg class="arrow"><use href="#i-arrow-right"/></svg>
+        </button>
+      </div>
+
+      <!-- Summary — 3 stacked rows (Committed / Vendor-billed / Paid) -->
+      <section aria-label="Money out">
+        <div class="section-eyebrow">
+          <span class="label">Money out</span>
+          <span class="meta">external &middot; vendors &amp; subs</span>
+        </div>
+        <div class="summary-card">
+          <div class="sum-row">
+            <span class="sum-label">Committed</span>
+            <span class="sum-meta">Quotes <strong>$18,000</strong> <span class="sep">&middot;</span> POs <strong>$6,800</strong></span>
+            <span class="sum-value">$24,800<span class="cents">.00</span></span>
+          </div>
+          <div class="sum-row">
+            <span class="sum-label">Vendor&#8209;billed</span>
+            <span class="sum-meta"><a href="#" class="unpaid-shout">$6,200 unpaid &rarr;</a></span>
+            <span class="sum-value">$38,300<span class="cents">.00</span></span>
+          </div>
+          <div class="sum-row">
+            <span class="sum-label">Paid</span>
+            <span class="sum-meta">actually paid out</span>
+            <span class="sum-value">$32,100<span class="cents">.00</span></span>
+          </div>
+          <div class="sum-foot">
+            <span><strong>Committed</strong>&nbsp;reconciles with Budget</span>
+            <span>Sub time + worker invoices live on <a href="#">Labour &rarr;</a></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- View toggle: By type / By category -->
+      <div class="seg-toggle" role="radiogroup" aria-label="Group by">
+        <button class="seg-opt is-on" role="radio" aria-checked="true">By type</button>
+        <button class="seg-opt" role="radio" aria-checked="false">By category</button>
+      </div>
+
+      <!-- Sub-tabs: Vendor quotes / POs / Costs -->
+      <nav class="sub-tabs" role="tablist" aria-label="Spend sub-section">
+        <button class="sub-tab" role="tab">
+          Quotes
+          <span class="sub-tab-count is-warn">1</span>
+        </button>
+        <button class="sub-tab" role="tab">
+          POs
+          <span class="sub-tab-count">3</span>
+        </button>
+        <button class="sub-tab is-on" role="tab" aria-selected="true">
+          Costs
+          <span class="sub-tab-count">5</span>
+        </button>
+      </nav>
+
+      <!-- ═══════ COSTS sub-tab (default landing) ═══════ -->
+
+      <!-- Filter chips -->
+      <div class="filter-row" role="radiogroup" aria-label="Filter costs">
+        <button class="filter-chip is-on" role="radio" aria-checked="true">All <span class="count">5</span></button>
+        <button class="filter-chip" role="radio" aria-checked="false">Unpaid <span class="count">1</span></button>
+        <button class="filter-chip" role="radio" aria-checked="false">Paid <span class="count">4</span></button>
+      </div>
+
+      <!-- "+ Add cost" rust primary -->
+      <button class="btn-rust" type="button"><svg><use href="#i-plus"/></svg>Add cost</button>
+
+      <!-- Cost-gate sheet (the fork: receipt vs vendor bill) — preview -->
+      <div class="cost-gate-sheet" aria-label="Cost intake gate preview">
+        <span class="gate-eyebrow">When you tap Add cost</span>
+        <span class="gate-prompt">Did you pay this already?</span>
+        <div class="gate-options">
+          <button class="gate-opt"><strong>Yes</strong> &mdash; it&rsquo;s a receipt<span class="arrow">&rsaquo;</span></button>
+          <button class="gate-opt"><strong>No</strong> &mdash; it&rsquo;s a vendor bill<span class="arrow">&rsaquo;</span></button>
+        </div>
+      </div>
+
+      <!-- Cost cards (5 entries) -->
+      <section aria-label="Costs">
+
+        <!-- Coast Electric — Vendor bill · Unpaid -->
+        <div class="cost-card">
+          <div class="cost-card-head">
+            <div>
+              <div class="vendor">Coast Electric</div>
+              <div class="desc">rough-in materials</div>
+              <div class="meta"><span class="cat-cell">Electrical</span><span class="sep">&middot;</span>May 10</div>
+            </div>
+            <div>
+              <div class="amt">$4,100<span class="cents">.00</span></div>
+              <div class="amt-breakdown">Sub <strong>$3,904.76</strong> <span class="sep">&middot;</span> GST <strong>$195.24</strong></div>
+            </div>
+          </div>
+          <div class="cost-card-footer">
+            <span class="pill bill-unpaid">Vendor bill &middot; Unpaid</span>
+            <button class="row-action" type="button"><svg><use href="#i-check"/></svg>Mark paid</button>
+          </div>
+        </div>
+
+        <!-- BC Lumber — Vendor bill · Paid -->
+        <div class="cost-card">
+          <div class="cost-card-head">
+            <div>
+              <div class="vendor">BC Lumber</div>
+              <div class="desc">framing lumber</div>
+              <div class="meta"><span class="cat-cell">Framing</span><span class="sep">&middot;</span>May 2</div>
+            </div>
+            <div>
+              <div class="amt">$13,200<span class="cents">.00</span></div>
+              <div class="amt-breakdown">Sub <strong>$12,571.43</strong> <span class="sep">&middot;</span> GST <strong>$628.57</strong></div>
+            </div>
+          </div>
+          <div class="cost-card-footer">
+            <span class="pill bill-paid">Vendor bill &middot; Paid</span>
+          </div>
+        </div>
+
+        <!-- City of Langley — Paid receipt -->
+        <div class="cost-card">
+          <div class="cost-card-head">
+            <div>
+              <div class="vendor">City of Langley</div>
+              <div class="desc">building permit</div>
+              <div class="meta"><span class="cat-cell">Permits &amp; fees</span><span class="sep">&middot;</span>Mar 14</div>
+            </div>
+            <div>
+              <div class="amt">$1,850<span class="cents">.00</span></div>
+              <div class="amt-breakdown">GST exempt</div>
+            </div>
+          </div>
+          <div class="cost-card-footer">
+            <span class="pill paid-receipt">Paid receipt</span>
+          </div>
+        </div>
+
+        <!-- Site fuel — Paid receipt -->
+        <div class="cost-card">
+          <div class="cost-card-head">
+            <div>
+              <div class="vendor">Site fuel</div>
+              <div class="meta"><span class="cat-cell">Site costs</span><span class="sep">&middot;</span>May 15</div>
+            </div>
+            <div>
+              <div class="amt">$180<span class="cents">.00</span></div>
+              <div class="amt-breakdown">Sub <strong>$171.43</strong> <span class="sep">&middot;</span> GST <strong>$8.57</strong></div>
+            </div>
+          </div>
+          <div class="cost-card-footer">
+            <span class="pill paid-receipt">Paid receipt</span>
+          </div>
+        </div>
+
+        <!-- Misc hardware — Uncategorized (pill is the single flag; row tap opens categorize) -->
+        <div class="cost-card">
+          <div class="cost-card-head">
+            <div>
+              <div class="vendor">Misc hardware</div>
+              <div class="meta"><span class="cat-cell is-empty">&mdash;</span><span class="sep">&middot;</span>May 17</div>
+            </div>
+            <div>
+              <div class="amt">$96<span class="cents">.00</span></div>
+              <div class="amt-breakdown">Sub <strong>$91.43</strong> <span class="sep">&middot;</span> GST <strong>$4.57</strong></div>
+            </div>
+          </div>
+          <div class="cost-card-footer">
+            <span class="pill uncat">Uncategorized</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════ Sub-tab callout (design spec divider) ═══════ -->
+      <div class="sub-tab-callout" aria-hidden="true">
+        <span class="callout-eyebrow">When you switch sub-tab to &rarr;</span>
+        <span class="callout-title"><span class="glyph">&#10022;</span>Vendor quotes (1 pending)</span>
+        <span class="callout-meta">centerpiece &middot; Henry sub-quote review</span>
+      </div>
+
+      <!-- ═══════ VENDOR QUOTES sub-tab content ═══════ -->
+
+      <!-- Quote header card -->
+      <div class="quote-header">
+        <div class="quote-metric">
+          <span><strong>$18,000</strong>&nbsp;committed</span>
+          <span class="sep">&middot;</span>
+          <span class="pending"><strong>$288</strong>&nbsp;pending</span>
+        </div>
+        <div class="quote-header-actions">
+          <button class="btn-upload"><span class="glyph" aria-hidden="true">&#10022;</span>Upload quote</button>
+          <button class="btn-ghost-line"><svg><use href="#i-plus"/></svg>New</button>
+        </div>
+        <div class="upload-cap">Henry reads &amp; pre-fills the form</div>
+      </div>
+
+      <!-- TRIO — Pending review, expanded, balanced -->
+      <article class="quote-card is-pending" aria-expanded="true">
+        <div class="quote-card-head">
+          <div class="row-1">
+            <span class="vendor">TRIO Contracting Ltd</span>
+            <span class="total">$288<span class="cents">.14</span></span>
+          </div>
+          <div class="row-2">
+            <span class="label">structural &amp; finishes</span>
+          </div>
+          <div class="row-3">
+            <span class="pill warn">Pending review</span>
+            <span class="date">May 19</span>
+          </div>
+        </div>
+
+        <div class="quote-body">
+          <!-- Quote lines (read by Henry) -->
+          <div class="quote-section">
+            <div class="qs-eyebrow">Quote lines &mdash; read by Henry</div>
+            <div class="quote-line">
+              <span class="ql-name">Flooring</span>
+              <span class="ql-amt">$50<span class="cents">.00</span></span>
+            </div>
+            <div class="quote-line">
+              <span class="ql-name">Structural framing + roof</span>
+              <span class="ql-amt">$238<span class="cents">.14</span></span>
+            </div>
+          </div>
+
+          <!-- Category allocations -->
+          <div class="quote-section">
+            <div class="qs-eyebrow">Category allocations</div>
+
+            <div class="allocation-row">
+              <div class="ar-line">Flooring<span class="num">$50.00</span></div>
+              <div class="ar-target-row">
+                <span class="ar-arrow">&rarr;</span>
+                <span class="ar-category">Flooring</span>
+                <span class="ar-status ok">matched</span>
+              </div>
+            </div>
+
+            <div class="allocation-row is-no-match">
+              <div class="ar-line">Structural framing + roof<span class="num">$238.14</span></div>
+              <div class="ar-target-row">
+                <span class="ar-arrow">&rarr;</span>
+                <span class="ar-category is-missing">needs a category</span>
+                <span class="ar-status warn">no match</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Henry note -->
+          <div class="henry-note">
+            <span class="henry-mark"><span class="glyph">&#10022;</span>Henry</span>
+            <span class="henry-text">
+              Suggested but no matching category &mdash; pick one to allocate:
+              <span class="line">&bull; Structural framing + roof &mdash; <span class="amt">$238.14</span></span>
+            </span>
+            <button class="henry-cta">Pick category &#9662;</button>
+          </div>
+
+          <!-- Allocation tally -->
+          <div class="allocation-tally is-balanced">
+            <span class="icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span>Allocated <strong>$288.14</strong> of <strong>$288.14</strong> &mdash; balanced</span>
+          </div>
+
+          <!-- Quote actions -->
+          <div class="quote-actions">
+            <button class="btn-accept" type="button">Accept</button>
+            <button class="btn-quote-action" type="button">Reject</button>
+            <button class="btn-quote-action" type="button">Edit</button>
+            <button class="btn-quote-action is-muted" type="button" style="grid-column: 1/3;">Delete</button>
+            <span class="quote-hint">&#10003; balanced &mdash; Accept enabled</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Pacific Wallboard — Accepted (collapsed) -->
+      <article class="quote-card">
+        <div class="quote-card-head">
+          <div class="row-1">
+            <span class="vendor">Pacific Wallboard</span>
+            <span class="total">$8,400<span class="cents">.00</span></span>
+          </div>
+          <div class="row-2">
+            <span class="label">drywall &amp; finishing</span>
+          </div>
+          <div class="row-3">
+            <span class="pill ok">Accepted</span>
+            <span class="date">Apr 28</span>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- Bottom tab bar -->
+    <nav class="tab-bar" aria-label="Primary">
+      <div class="tab-item"><svg><use href="#i-dashboard"/></svg><span class="label">Today</span></div>
+      <div class="tab-item with-count"><svg><use href="#i-inbox"/></svg><span class="label">Inbox</span><span class="count">7</span></div>
+      <div class="tab-item active"><svg><use href="#i-folder"/></svg><span class="label">Projects</span></div>
+      <div class="tab-item"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></div>
+      <div class="tab-item"><svg><use href="#i-more"/></svg><span class="label">More</span></div>
+    </nav>
+
+  </div>
+</div>
+
+</body>
+</html>

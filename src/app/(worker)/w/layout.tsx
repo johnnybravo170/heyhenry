@@ -21,11 +21,14 @@ export default async function WorkerLayout({ children }: { children: ReactNode }
 
   return (
     <TenantProvider timezone={tenant.timezone}>
-      <div className="flex min-h-screen w-full flex-col">
-        <header className="border-b px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">{tenant.name}</p>
+      <div className="flex min-h-screen w-full flex-col bg-background">
+        <header className="border-border border-b bg-chrome px-4 py-3">
+          <p className="font-mono font-bold text-[11px] text-muted-foreground uppercase tracking-[0.08em]">
+            {tenant.name}
+          </p>
         </header>
-        <main className="flex-1 px-4 pb-24 pt-4">{children}</main>
+        {/* pb leaves room for the 64px nav + the raised Log FAB lift + safe area. */}
+        <main className="mx-auto w-full max-w-md flex-1 px-4 pt-4 pb-[8.5rem]">{children}</main>
         <WorkerBottomNav canInvoice={canInvoice} canLogExpenses={canLogExpenses} />
       </div>
     </TenantProvider>

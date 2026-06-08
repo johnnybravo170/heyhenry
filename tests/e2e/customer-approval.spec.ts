@@ -105,14 +105,22 @@ test.describe
       await context.clearCookies();
       await page.goto(`/approve/${approvalCode}`);
 
-      // Sanity: the diff renders, cost impact is visible.
-      await expect(page.getByText('Upgrade cabinet hardware')).toBeVisible();
+      // Sanity: the diff renders, cost impact is visible. The redesign
+      // (#310) renders the CO title as the document <h2> on the shared
+      // CustomerDocument shell — target the heading role rather than a
+      // bare text match so it stays unambiguous.
+      await expect(page.getByRole('heading', { name: 'Upgrade cabinet hardware' })).toBeVisible();
       await expect(page.getByText(/cost impact/i)).toBeVisible();
 
-      // Click Approve → name input → Confirm Approval.
-      await page.getByRole('button', { name: /^approve$/i }).click();
-      await page.getByPlaceholder('Your full name').fill('Jane Homeowner');
-      await page.getByRole('button', { name: /confirm approval/i }).click();
+      // Approval interaction (#310 ApprovalForm). The name field is now
+      // shown directly in the pending state — no separate "Approve"
+      // button reveals it — and the submit button carries the dynamic
+      // priced label ("Approve — +$…") instead of the old "Confirm
+      // Approval". Placeholder copy changed too. Fill the e-signature
+      // name input (label "Your full name") and submit via the priced
+      // approve button.
+      await page.getByLabel('Your full name').fill('Jane Homeowner');
+      await page.getByRole('button', { name: /^approve\s*—/i }).click();
 
       // UI confirms.
       await expect(page.getByText(/your contractor has been notified/i)).toBeVisible();
@@ -192,8 +200,16 @@ test.describe
       await context.clearCookies();
       await page.goto(`/approve/${approvalCode}`);
 
-      await page.getByRole('button', { name: /^decline$/i }).click();
-      await page.getByPlaceholder('Reason (optional)').fill('Out of budget');
+      // #310 ApprovalForm: the decline entry button is now "Decline…"
+      // (with ellipsis), the reason field is a labelled textarea
+      // ("Reason (optional)") with new placeholder copy, and the submit
+      // button stayed "Confirm decline". Open decline mode, fill the
+      // reason via its label, confirm.
+      await page
+        .getByRole('button', { name: /decline/i })
+        .first()
+        .click();
+      await page.getByLabel('Reason (optional)').fill('Out of budget');
       await page.getByRole('button', { name: /confirm decline/i }).click();
       await expect(page.getByText(/your contractor has been notified/i)).toBeVisible();
 

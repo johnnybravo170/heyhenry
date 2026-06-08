@@ -100,7 +100,7 @@ function CategoriesList({ categories }: { categories: PortalBudgetCategory[] }) 
                 style={{ width: `${Math.min(100, p)}%` }}
               />
             </div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
               <span>{p}% used</span>
               {over ? <span className="font-medium text-amber-700">Over budget</span> : null}
             </div>
@@ -185,7 +185,7 @@ function ProjectRollup({
               style={{ width: `${Math.min(100, spentPct)}%` }}
             />
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
             <span>{spentPct}% of budget</span>
             {spentOver ? <span className="font-medium text-amber-700">Over budget</span> : null}
           </div>
@@ -211,12 +211,12 @@ function ProjectRollup({
               style={{ width: `${Math.min(100, paidPct)}%` }}
             />
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">{paidPct}% of budget</div>
+          <div className="mt-1 text-xs text-muted-foreground">{paidPct}% of budget</div>
         </>
       ) : null}
 
       {summary.customer_contract_total_cents > total ? (
-        <p className="mt-3 border-t pt-2 text-[11px] text-muted-foreground">
+        <p className="mt-3 border-t pt-2 text-xs text-muted-foreground">
           Your contract total: {formatCents(summary.customer_contract_total_cents)} (incl.
           management fee + {summary.tax_label})
         </p>

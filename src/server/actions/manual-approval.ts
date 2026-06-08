@@ -172,39 +172,49 @@ export async function manuallyApproveEstimateAction(
     .eq('id', projectId);
   if (updErr) return { ok: false, error: updErr.message };
 
-  await admin.from('project_events').insert({
-    tenant_id: tenant.id,
-    project_id: projectId,
-    kind: 'estimate_approved',
-    meta: {
-      approved_by: parsed.data.customer_name,
-      method: parsed.data.method,
-      manual: true,
-      bypassed_send: bypassedSend,
-      proof_count: uploaded.paths.length,
-    },
-    actor: tenant.member.id,
-  });
+  // Post-commit side effects: the approval has already committed above, so a
+  // failure here must NOT surface as an approval error. A thrown snapshot/event
+  // write was tripping the route error boundary AFTER the status flip — the
+  // operator saw an error even though the estimate was approved, and only a
+  // refresh revealed the truth (Charlie founding-member session; ops doc
+  // cd85d021). Best-effort: log and continue.
+  try {
+    await admin.from('project_events').insert({
+      tenant_id: tenant.id,
+      project_id: projectId,
+      kind: 'estimate_approved',
+      meta: {
+        approved_by: parsed.data.customer_name,
+        method: parsed.data.method,
+        manual: true,
+        bypassed_send: bypassedSend,
+        proof_count: uploaded.paths.length,
+      },
+      actor: tenant.member.id,
+    });
 
-  await admin.from('worklog_entries').insert({
-    tenant_id: tenant.id,
-    entry_type: 'system',
-    title: 'Estimate approved (manual)',
-    body: `Estimate for "${project.name}" marked approved by ${parsed.data.customer_name} via ${manualApprovalMethodLabels[parsed.data.method]}${bypassedSend ? ' — recorded without sending to customer.' : '.'}`,
-    related_type: 'project',
-    related_id: projectId,
-  });
+    await admin.from('worklog_entries').insert({
+      tenant_id: tenant.id,
+      entry_type: 'system',
+      title: 'Estimate approved (manual)',
+      body: `Estimate for "${project.name}" marked approved by ${parsed.data.customer_name} via ${manualApprovalMethodLabels[parsed.data.method]}${bypassedSend ? ' — recorded without sending to customer.' : '.'}`,
+      related_type: 'project',
+      related_id: projectId,
+    });
 
-  // Capture the v1 scope snapshot — baseline for the diff-tracked +
-  // intentional-send post-approval edit flow (decision 6790ef2b).
-  const { snapshotProjectScope } = await import('@/lib/db/queries/project-scope-snapshots');
-  await snapshotProjectScope({
-    projectId,
-    tenantId: tenant.id,
-    label: 'Original estimate',
-    signedAt: now,
-    signedByName: parsed.data.customer_name,
-  });
+    // Capture the v1 scope snapshot — baseline for the diff-tracked +
+    // intentional-send post-approval edit flow (decision 6790ef2b).
+    const { snapshotProjectScope } = await import('@/lib/db/queries/project-scope-snapshots');
+    await snapshotProjectScope({
+      projectId,
+      tenantId: tenant.id,
+      label: 'Original estimate',
+      signedAt: now,
+      signedByName: parsed.data.customer_name,
+    });
+  } catch (e) {
+    console.error('[manuallyApproveEstimate] post-commit side effect failed:', e);
+  }
 
   revalidatePath(`/projects/${projectId}`);
   return { ok: true, id: projectId };

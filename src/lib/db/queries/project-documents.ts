@@ -89,7 +89,7 @@ export async function listSubcontractorsForProject(
   if (ids.length === 0) return [];
 
   const { data: contactRows } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, name, kind, email, phone')
     .in('id', ids)
     .is('deleted_at', null);
@@ -106,7 +106,7 @@ export async function listSubcontractorsForProject(
 export async function listSubAndVendorContactsForTenant(): Promise<ProjectSubContact[]> {
   const supabase = await createClient();
   const { data } = await supabase
-    .from('customers')
+    .from('contacts')
     .select('id, name, kind, email, phone')
     .in('kind', ['sub', 'vendor'])
     .is('deleted_at', null)

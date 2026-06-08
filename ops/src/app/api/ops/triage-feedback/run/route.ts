@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { type NextRequest, NextResponse } from 'next/server';
 import { finishAgentRun, recordAgentRun } from '@/lib/agents';
+import { generateContentWithRetry } from '@/lib/llm/gemini-retry';
 import { geminiFlashCostCents, trackOpsAiCall } from '@/lib/llm/telemetry';
 import { createServiceClient } from '@/lib/supabase';
 import {
@@ -344,7 +345,7 @@ EXISTING TODO CARDS (potential dedup targets):
 ${dedupCandidates.map((c) => `- ${c.id}: ${c.title}`).join('\n') || '(none)'}`;
 
   const t0 = Date.now();
-  const response = await ai.models.generateContent({
+  const response = await generateContentWithRetry(ai, {
     model: 'gemini-2.5-flash',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { responseMimeType: 'application/json', temperature: 0.1 },

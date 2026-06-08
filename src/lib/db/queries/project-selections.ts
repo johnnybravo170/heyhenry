@@ -2,7 +2,7 @@
  * Per-room material selections. Slice 4 of the Customer Portal build.
  * Drives the Selections tab on the project detail page and the
  * read-only "Selections" section on /portal/<slug>; will be snapshotted
- * by Slice 6 (Home Record).
+ * by Slice 6 (Property Record).
  */
 
 import { cache } from 'react';

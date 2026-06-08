@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChangeOrderForm } from '@/components/features/change-orders/change-order-form';
 import { getJob } from '@/lib/db/queries/jobs';
+import { isUuid } from '@/lib/validators/uuid';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,6 +20,7 @@ export default async function NewJobChangeOrderPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const job = await getJob(id);
   if (!job) notFound();
 

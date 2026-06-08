@@ -163,7 +163,7 @@ export async function commitPhotoImportAction(input: {
 
   const { data: proj } = await supabase
     .from('projects')
-    .select('id, name, customer_id')
+    .select('id, name, contact_id')
     .eq('id', input.projectId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -194,7 +194,7 @@ export async function commitPhotoImportAction(input: {
   const photoRows = toCreate.map((r) => ({
     tenant_id: tenant.id,
     project_id: input.projectId,
-    customer_id: (proj.customer_id as string | null) ?? null,
+    contact_id: (proj.contact_id as string | null) ?? null,
     uploader_user_id: user.id,
     storage_path: r.storagePath,
     mime: r.mime,

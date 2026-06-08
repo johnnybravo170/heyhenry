@@ -31,6 +31,7 @@ import { getJob, listWorklogForJob } from '@/lib/db/queries/jobs';
 import { countPhotosByJob } from '@/lib/db/queries/photos';
 import type { InvoiceStatus } from '@/lib/validators/invoice';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { isUuid } from '@/lib/validators/uuid';
 import { duplicateJobAction, rescheduleJobAction } from '@/server/actions/jobs';
 
 function shortId(id: string) {
@@ -39,6 +40,7 @@ function shortId(id: string) {
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const [job, tenant] = await Promise.all([getJob(id), getCurrentTenant()]);
   if (!job) notFound();

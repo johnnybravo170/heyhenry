@@ -1,0 +1,1932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Project secondary tabs · mobile · Photos · Documents · Notes — HeyHenry</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+    --shadow-pop:   0 2px 16px rgba(10,10,10,0.06);
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 0 80px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ──── Page header & frame grid ──── */
+  .page-head {
+    max-width: 1280px;
+    margin: 0 auto 24px;
+    padding: 0 28px;
+  }
+  .page-head h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .page-head p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    max-width: 720px;
+    font-size: 14px;
+  }
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .frame-label {
+    text-align: center;
+    width: 100%;
+  }
+  .frame-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .frame-title {
+    margin: 2px 0 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .frame-sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+    max-width: 320px;
+    margin-left: auto; margin-right: auto;
+  }
+  .frame-sub b { color: var(--ink-2); font-weight: 700; }
+
+  /* ──── Phone bezel ──── */
+  .phone {
+    width: 390px;
+    height: 824px;
+    background: #1a1612;
+    border-radius: 50px;
+    padding: 12px;
+    box-shadow:
+      0 0 0 1.5px #2a221b,
+      0 24px 64px rgba(10,10,10,0.18),
+      0 6px 18px rgba(10,10,10,0.08);
+    position: relative;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 38px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--sans);
+    background: var(--chrome);
+    z-index: 4;
+    position: relative;
+  }
+  .status-bar.is-dark { background: rgba(0,0,0,0.7); color: #fff; }
+  .status-bar .island {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 8px;
+    width: 110px;
+    height: 28px;
+    background: #000;
+    border-radius: 20px;
+  }
+  .status-right { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+  .status-right svg { width: 14px; height: 14px; }
+
+  /* App bar */
+  .app-bar {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    padding: 10px 14px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .app-back {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    color: var(--ink);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .app-back svg { width: 18px; height: 18px; }
+  .app-bar-title {
+    display: flex; flex-direction: column; min-width: 0; flex: 1;
+  }
+  .app-bar-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .app-bar-h {
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+  .app-bar-actions { display: flex; gap: 4px; }
+  .app-icn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    border: 0;
+  }
+  .app-icn svg { width: 18px; height: 18px; }
+
+  /* Secondary tab strip on mobile (horizontal scroll fine for tabs, NOT for content) */
+  .mtab-strip {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--hair);
+    background: var(--chrome);
+    padding: 0 14px;
+  }
+  .mtab {
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .mtab.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+  .mtab .ct {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+  .mtab.is-on .ct { color: var(--muted); }
+
+  /* Scrollable content */
+  .scroll {
+    flex: 1;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .scroll-inner { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* Bottom tab bar */
+  .bottom-bar {
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 6px 4px 18px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    flex-shrink: 0;
+  }
+  .bt-item {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .bt-item.is-on { color: var(--ink); }
+  .bt-item svg { width: 22px; height: 22px; }
+  .home-bar {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: var(--ink);
+    border-radius: 99px;
+  }
+
+  /* ────────────────────────────────────────
+     PHOTOS · capture-first
+     ──────────────────────────────────────── */
+
+  .capture-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .capture-head {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .capture-head .right {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+  .shutter-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 64px;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 4px;
+  }
+  .shutter-row .small-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    box-shadow: 0 1px 0 rgba(10,10,10,0.04);
+  }
+  .shutter-row .small-btn svg { width: 22px; height: 22px; }
+  .shutter {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    background: var(--rust);
+    border: 5px solid var(--card);
+    box-shadow:
+      0 0 0 3px var(--rust),
+      0 6px 16px rgba(194,65,12,0.3);
+    color: #fff;
+    display: grid; place-items: center;
+    margin: 0 auto;
+  }
+  .shutter svg { width: 32px; height: 32px; }
+  .capture-default {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 7px 10px;
+    background: var(--chip-fill);
+    border-radius: 9px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .capture-default svg { width: 12px; height: 12px; }
+  .capture-default .switch {
+    margin-left: auto;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+
+  /* Recent strip */
+  .recent-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .recent-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+  }
+  .recent-tile-img { position: absolute; inset: 0; }
+  .recent-tile .vb {
+    position: absolute;
+    bottom: 4px; left: 4px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 3px;
+    text-transform: uppercase;
+  }
+  .recent-tile .vb svg { width: 9px; height: 9px; }
+  .recent-tile .vb.is-client { color: var(--info); background: var(--info-soft); }
+  .recent-tile .tg {
+    position: absolute;
+    top: 4px; left: 4px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--warn);
+    text-transform: uppercase;
+  }
+  .recent-tile .tg.is-concern { color: var(--danger); background: var(--danger-soft); }
+
+  /* Henry chip on capture-just-taken */
+  .henry-toast {
+    margin-top: 4px;
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.25);
+    border-radius: 10px;
+    padding: 9px 11px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .henry-toast .glyph {
+    color: var(--rust);
+    font-size: 12px;
+  }
+  .henry-toast-text { flex: 1; min-width: 0; font-size: 12px; color: var(--ink); line-height: 1.4; }
+  .henry-toast-text b { color: var(--rust); font-weight: 700; }
+  .henry-toast button {
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Filter chips horizontal (the ONE allowed horizontal scroll for tabular-ish data) — but here per the user's feedback we use a bottom sheet, not horizontal scroll. So show buttons stacked / a bottom-sheet entry chip. */
+  .filter-bar-mobile {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .filter-bar-mobile .filter-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .filter-chip-mobile-trigger {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .filter-chip-mobile-trigger svg { width: 11px; height: 11px; }
+  .filter-chip-mobile-trigger .ct {
+    background: var(--ink);
+    color: #fff;
+    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .right-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .right-meta svg { width: 11px; height: 11px; }
+
+  /* Grid for photos on mobile */
+  .mphoto-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .mphoto {
+    aspect-ratio: 4 / 5;
+    border-radius: 12px;
+    border: 1px solid var(--hair);
+    overflow: hidden;
+    position: relative;
+    background: var(--chip-fill);
+  }
+  .mphoto.is-concern {
+    border: 2px solid rgba(185,28,28,0.4);
+    box-shadow: 0 0 0 2px rgba(185,28,28,0.08);
+  }
+  .mphoto-img { position: absolute; inset: 0; }
+  .mphoto .tg {
+    position: absolute;
+    top: 6px; left: 6px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 5px;
+    padding: 2px 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .mphoto .tg.is-concern { color: var(--danger); background: var(--danger-soft); }
+  .mphoto .tg.is-progress { color: var(--warn); }
+  .mphoto .tg.is-after { color: var(--ok); }
+  .mphoto .tg.is-before { color: var(--info); }
+  .mphoto .vb {
+    position: absolute;
+    bottom: 6px; left: 6px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 5px;
+    padding: 2px 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .mphoto .vb svg { width: 10px; height: 10px; }
+  .mphoto .vb.is-client { color: var(--info); background: var(--info-soft); }
+
+  /* Image styles (re-use desktop) */
+  .img-a { background: radial-gradient(circle at 30% 20%, #d4b48e 0%, transparent 40%), radial-gradient(circle at 80% 70%, #a17a4f 0%, transparent 60%), linear-gradient(170deg, #c69e6b 0%, #8a6840 100%); }
+  .img-b { background: linear-gradient(165deg, #5a6f5b 0%, #2f3d2e 100%), radial-gradient(circle at 70% 40%, #88a18a 0%, transparent 50%); }
+  .img-c { background: linear-gradient(180deg, #c7c1b2 0%, #8d8472 60%, #5d564a 100%); }
+  .img-d { background: linear-gradient(160deg, #8c7c66 0%, #5e503e 100%); background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 14px), linear-gradient(160deg, #8c7c66 0%, #5e503e 100%); }
+  .img-e { background: radial-gradient(circle at 40% 60%, #9aa698 0%, transparent 55%), linear-gradient(190deg, #b2bfa2 0%, #6c7864 100%); }
+  .img-f { background: linear-gradient(170deg, #c25a3e 0%, #5e2718 100%), radial-gradient(circle at 70% 30%, rgba(255,200,160,0.4) 0%, transparent 50%); }
+  .img-h { background: linear-gradient(165deg, #4a5a6e 0%, #1f2735 100%); }
+  .img-i { background: linear-gradient(180deg, #a8927a 0%, #6b5640 100%); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 6px, transparent 6px 12px), linear-gradient(180deg, #a8927a 0%, #6b5640 100%); }
+  .img-j { background: radial-gradient(ellipse at 50% 40%, #e0d6c3 0%, #b8a587 50%, #7a6549 100%); }
+  .img-g { background: linear-gradient(180deg, #d3c1a3 0%, #8d7556 100%); }
+  .img-k { background: linear-gradient(180deg, #7e6c54 0%, #443628 100%); background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 3px, transparent 3px 18px), linear-gradient(180deg, #7e6c54 0%, #443628 100%); }
+
+  /* Section eyebrow on mobile */
+  .m-eyebrow {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 4px 2px 2px;
+  }
+  .m-eyebrow .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .m-eyebrow .meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ────────────────────────────────────────
+     DOCUMENTS — mobile list
+     ──────────────────────────────────────── */
+
+  .mhome-record {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .mhr-body { padding: 14px 14px 12px; }
+  .mhr-eyebrow {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .mhr-eyebrow .glyph { font-size: 12px; line-height: 1; }
+  .mhr-body h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .mhr-body p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .mhr-meta {
+    margin-top: 8px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .mhr-meta b { color: var(--ink-2); font-weight: 700; }
+  .mhr-actions {
+    padding: 10px 14px;
+    border-top: 1px dashed var(--rule);
+    background: #FCFAF4;
+    display: flex; gap: 6px;
+  }
+  .mhr-actions button { flex: 1; height: 38px; }
+
+  /* Doc list */
+  .mdoc-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .mdoc-head {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--hair);
+    background: #FCFAF4;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mdoc-head .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .mdoc-head .ct {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .mdoc-row {
+    padding: 11px 14px;
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: 22px 1fr 28px;
+    gap: 10px;
+    align-items: center;
+  }
+  .mdoc-row:first-child { border-top: 0; }
+  .mdoc-file { color: var(--muted); }
+  .mdoc-file svg { width: 18px; height: 18px; }
+  .mdoc-meta { min-width: 0; }
+  .mdoc-title {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin-bottom: 4px;
+  }
+  .mdoc-sub {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .mdoc-sub .sep { color: var(--faint); }
+  .mvis {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .mvis svg { width: 10px; height: 10px; }
+  .mvis.is-client { color: var(--info); background: var(--info-soft); }
+  .mvis.is-internal { color: var(--muted); background: var(--chip-fill); }
+  .mdoc-icn {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .mdoc-icn svg { width: 14px; height: 14px; }
+
+  /* ────────────────────────────────────────
+     NOTES — mobile feed
+     ──────────────────────────────────────── */
+
+  .m-internal {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .m-internal svg { width: 11px; height: 11px; }
+  .m-internal b { color: var(--ink); font-weight: 700; margin: 0 2px; }
+
+  .m-ask-henry {
+    background: var(--card);
+    border: 1px solid rgba(194,65,12,0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .m-ask-head {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .m-ask-head .hint {
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    margin-left: 4px;
+  }
+  .m-ask-input-row {
+    display: flex; gap: 6px; align-items: center;
+    padding-top: 4px;
+  }
+  .m-ask-input {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    padding: 4px 0;
+    outline: none;
+    min-height: 32px;
+  }
+  .m-ask-input::placeholder { color: var(--faint); }
+  .m-ask-send {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--rust);
+    color: #fff;
+    border: 0;
+    display: grid; place-items: center;
+  }
+  .m-ask-send svg { width: 14px; height: 14px; }
+
+  .m-composer {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .m-composer textarea {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    min-height: 60px;
+  }
+  .m-composer textarea::placeholder { color: var(--faint); }
+  .m-composer-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 6px;
+  }
+  .m-composer-row .voice {
+    flex: 1;
+    height: 44px;
+    background: var(--chip-fill);
+    border-radius: 10px;
+    border: 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .m-composer-row .voice svg { width: 16px; height: 16px; }
+  .m-composer-row .add {
+    height: 44px;
+    padding: 0 16px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 10px;
+    border: 0;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .feed-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 11px 13px;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 10px;
+  }
+  .feed-card.is-event { background: #FCFAF4; }
+  .feed-card.is-henry-a, .feed-card.is-draft { border-color: rgba(194,65,12,0.25); }
+  .feed-icon {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    display: grid; place-items: center;
+    margin-top: 1px;
+  }
+  .feed-icon svg { width: 11px; height: 11px; }
+  .feed-icon.is-memo { background: var(--ok-soft); color: var(--ok); }
+  .feed-icon.is-henry-a, .feed-icon.is-draft { background: var(--rust-soft); color: var(--rust); }
+  .feed-icon.is-henry-q { background: var(--card); border: 1px solid var(--hair); color: var(--muted); }
+  .feed-eyebrow {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+  }
+  .feed-eyebrow.is-henry, .feed-eyebrow.is-draft { color: var(--rust); }
+  .feed-eyebrow.is-memo { color: var(--ok); }
+  .feed-eyebrow .glyph { color: var(--rust); font-size: 11px; }
+  .feed-text {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .feed-meta {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .feed-meta .sep { color: var(--faint); }
+  .feed-meta .author { font-family: var(--sans); font-size: 11px; text-transform: none; letter-spacing: 0; color: var(--ink-2); font-weight: 600; }
+  .draft-body {
+    margin-top: 4px;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194,65,12,0.18);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .draft-actions { margin-top: 6px; display: flex; gap: 6px; }
+  .draft-actions button {
+    background: var(--ink);
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .draft-actions button svg { width: 10px; height: 10px; }
+  .draft-actions button.ghost {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+  }
+  .memo-transcript {
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: #FCFAF4;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .memo-bottom {
+    margin-top: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .memo-bottom .play {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .memo-bottom .play svg { width: 9px; height: 9px; }
+  .memo-bottom .time {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ────────────────────────────────────────
+     Voice memo recording overlay
+     ──────────────────────────────────────── */
+  .memo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,10,0.55);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .memo-sheet {
+    background: var(--bg);
+    border-radius: 20px 20px 0 0;
+    padding: 18px 22px 28px;
+    box-shadow: 0 -10px 40px rgba(10,10,10,0.18);
+  }
+  .memo-handle {
+    width: 36px; height: 4px;
+    background: var(--rule);
+    border-radius: 99px;
+    margin: 0 auto 14px;
+  }
+  .memo-sheet h3 {
+    margin: 0;
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+  .memo-sheet .sub {
+    margin-top: 4px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .recording-circle {
+    margin: 24px auto;
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 6px solid var(--danger);
+    display: grid; place-items: center;
+    color: var(--danger);
+    position: relative;
+  }
+  .recording-circle svg { width: 36px; height: 36px; }
+  .recording-circle::before {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border-radius: 50%;
+    background: rgba(185,28,28,0.16);
+    z-index: -1;
+  }
+  .recording-time {
+    font-family: var(--mono);
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    margin: -4px 0 4px;
+  }
+  .recording-dot {
+    display: inline-flex; align-items: center; gap: 6px;
+    justify-content: center;
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--danger);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .recording-dot .pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+  }
+  .waveform {
+    margin-top: 18px;
+    height: 38px;
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+  }
+  .waveform i {
+    display: block;
+    width: 3px;
+    background: var(--ink-2);
+    border-radius: 99px;
+  }
+  .memo-actions {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .memo-actions button {
+    height: 48px;
+    border-radius: 12px;
+    border: 0;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .memo-actions .stop { background: var(--ink); color: #fff; }
+  .memo-actions .cancel { background: var(--card); color: var(--ink); border: 1px solid var(--hair); }
+  .memo-actions svg { width: 14px; height: 14px; }
+  .memo-pin {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    padding: 9px 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .memo-pin svg { width: 13px; height: 13px; color: var(--ink-2); }
+  .memo-pin b { color: var(--ink); }
+
+  /* ────────────────────────────────────────
+     Offline capture queue
+     ──────────────────────────────────────── */
+  .offline-banner {
+    background: var(--warn-soft);
+    border: 1px solid rgba(180,83,9,0.22);
+    border-radius: 10px;
+    padding: 11px 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .offline-banner svg { width: 16px; height: 16px; color: var(--warn); flex-shrink: 0; }
+  .offline-banner-text {
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .offline-banner-text b { color: var(--ink); font-weight: 700; }
+
+  .queue-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .queue-head {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hair);
+    background: #FCFAF4;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .queue-head .label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .queue-head .ct {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .queue-head .pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--warn);
+    margin-right: 2px;
+  }
+  .queue-row {
+    padding: 10px 12px;
+    border-top: 1px solid var(--hair);
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 10px;
+    align-items: center;
+  }
+  .queue-row:first-child { border-top: 0; }
+  .queue-thumb {
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--hair);
+    position: relative;
+  }
+  .queue-thumb-img { position: absolute; inset: 0; }
+  .queue-meta { min-width: 0; }
+  .queue-title {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    line-height: 1.3;
+  }
+  .queue-sub {
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .queue-status {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .queue-status svg { width: 10px; height: 10px; }
+  .queue-status.is-waiting { background: var(--chip-fill); color: var(--muted); }
+  .queue-status.is-syncing { background: var(--info-soft); color: var(--info); }
+  .queue-status.is-done { background: var(--ok-soft); color: var(--ok); }
+
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- Icon library -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+    <symbol id="i-file-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 14l2 2 4-4"/></symbol>
+    <symbol id="i-file-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-star-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6 4.6 1.6-4.6 1.6L12 15.4l-1.6-4.6L5.8 9.2l4.6-1.6z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-cloud-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 19 7"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-sticky" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M15 3v5h5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
+    <symbol id="i-battery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="10" y1="10" x2="10" y2="14"/><line x1="14" y1="10" x2="14" y2="14"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6.26a3 3 0 0 0 .83 2.07L17 14H7l1.17-1.17A3 3 0 0 0 9 10.76z"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+  </defs>
+</svg>
+
+
+<header class="page-head">
+  <h1>Project secondary tabs — mobile · Photos · Documents · Notes</h1>
+  <p>Mobile is <b>doing work</b>: photo capture in the field, voice memos, quick uploads. Tagging, document curation, and Home Record review wait for the desktop. Every photo carries a visibility <b>label + glyph</b>, never colour-only.</p>
+</header>
+
+<div class="grid">
+
+  <!-- ───────────── Frame 1 — Photos · capture-first hero ───────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 01</div>
+      <div class="frame-title">Photos · capture-first</div>
+      <div class="frame-sub">Shutter is the largest tap target. Last 4 captures strip shows tag + visibility at a glance. Quick toggle: default is <b>Internal</b>.</div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-wifi"/></svg><svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Glenwood Heights</span>
+            <span class="app-bar-h">Photos</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn"><svg><use href="#i-search"/></svg></button>
+            <button class="app-icn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab">Client</button>
+          <button class="mtab is-on">Photos <span class="ct">186</span></button>
+          <button class="mtab">Docs <span class="ct">14</span></button>
+          <button class="mtab">Notes <span class="ct">28</span></button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div class="capture-card">
+              <div class="capture-head">
+                <svg style="width:11px;height:11px;color:var(--ink-2)"><use href="#i-camera"/></svg>
+                Capture
+                <span class="right">Phase 04 · Rough-in</span>
+              </div>
+              <div class="shutter-row">
+                <button class="small-btn"><svg><use href="#i-image"/></svg></button>
+                <button class="shutter" aria-label="Capture photo"><svg><use href="#i-camera"/></svg></button>
+                <button class="small-btn"><svg><use href="#i-mic"/></svg></button>
+              </div>
+              <div class="capture-default">
+                <svg><use href="#i-lock"/></svg> Default · Internal
+                <span class="switch">Switch</span>
+              </div>
+            </div>
+
+            <div class="henry-toast">
+              <span class="glyph">&#10022;</span>
+              <span class="henry-toast-text">Last shot tagged <b>Progress</b> by Henry · 91% conf.</span>
+              <button>Undo</button>
+            </div>
+
+            <div class="m-eyebrow">
+              <span class="label">Recent captures</span>
+              <span class="meta">Today · 4 shots</span>
+            </div>
+            <div class="recent-strip">
+              <div class="recent-tile">
+                <div class="recent-tile-img img-c"></div>
+                <span class="tg">Progress</span>
+                <span class="vb"><svg><use href="#i-lock"/></svg> Internal</span>
+              </div>
+              <div class="recent-tile">
+                <div class="recent-tile-img img-a"></div>
+                <span class="tg">Progress</span>
+                <span class="vb"><svg><use href="#i-lock"/></svg> Internal</span>
+              </div>
+              <div class="recent-tile">
+                <div class="recent-tile-img img-h"></div>
+                <span class="tg is-concern">Concern</span>
+                <span class="vb"><svg><use href="#i-lock"/></svg> Internal</span>
+              </div>
+              <div class="recent-tile">
+                <div class="recent-tile-img img-j"></div>
+                <span class="tg">After</span>
+                <span class="vb is-client"><svg><use href="#i-globe"/></svg> Client</span>
+              </div>
+            </div>
+
+            <div class="m-eyebrow">
+              <span class="label">All photos</span>
+              <button class="filter-chip-mobile-trigger"><svg><use href="#i-filter"/></svg> Filter <span class="ct">3</span></button>
+            </div>
+            <div class="mphoto-grid">
+              <div class="mphoto">
+                <div class="mphoto-img img-e"></div>
+                <span class="tg is-after">After</span>
+                <span class="vb is-client"><svg><use href="#i-globe"/></svg> Client</span>
+              </div>
+              <div class="mphoto">
+                <div class="mphoto-img img-d"></div>
+                <span class="tg is-progress">Progress</span>
+                <span class="vb"><svg><use href="#i-lock"/></svg> Internal</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="bottom-bar">
+          <button class="bt-item"><svg><use href="#i-dashboard"/></svg>Home</button>
+          <button class="bt-item"><svg><use href="#i-inbox"/></svg>Inbox</button>
+          <button class="bt-item is-on"><svg><use href="#i-folder"/></svg>Projects</button>
+          <button class="bt-item"><svg><use href="#i-calendar"/></svg>Cal</button>
+          <button class="bt-item"><svg><use href="#i-users"/></svg>Me</button>
+        </nav>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── Frame 2 — Documents ───────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 02</div>
+      <div class="frame-title">Documents · list</div>
+      <div class="frame-sub">Home Record at the top as the closeout entry-point. Every doc shows <b>label+glyph</b> visibility. Copy uses <b>"client"</b> not homeowner.</div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-wifi"/></svg><svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Glenwood Heights</span>
+            <span class="app-bar-h">Documents</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn"><svg><use href="#i-upload"/></svg></button>
+            <button class="app-icn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab">Client</button>
+          <button class="mtab">Photos <span class="ct">186</span></button>
+          <button class="mtab is-on">Docs <span class="ct">14</span></button>
+          <button class="mtab">Notes <span class="ct">28</span></button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div class="mhome-record">
+              <div class="mhr-body">
+                <div class="mhr-eyebrow"><span class="glyph">&#10022;</span> Closeout · graduated flow</div>
+                <h4>Home Record</h4>
+                <p>Permanent handoff: phases, favourite photos, selections, decisions, COs, warranties.</p>
+                <div class="mhr-meta">
+                  <span>Built · <b>May 21</b></span>
+                  <span>Status · <b style="color:var(--warn)">Not emailed</b></span>
+                </div>
+              </div>
+              <div class="mhr-actions">
+                <button class="btn" style="background:var(--ink); color:#fff; border:0; border-radius:9px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:5px; font-size:14px;"><svg style="width:13px;height:13px"><use href="#i-arrow-up-right"/></svg>Open</button>
+                <button class="btn" style="background:var(--card); border:1px solid var(--hair); border-radius:9px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:5px; font-size:14px;"><svg style="width:13px;height:13px"><use href="#i-mail"/></svg>Email</button>
+              </div>
+            </div>
+
+            <div class="mdoc-card">
+              <div class="mdoc-head">
+                <span class="label">Contract</span><span class="ct">· 2</span>
+              </div>
+              <div class="mdoc-row">
+                <span class="mdoc-file"><svg><use href="#i-file-text"/></svg></span>
+                <div class="mdoc-meta">
+                  <div class="mdoc-title">Construction Agreement — Chen Glenwood.pdf</div>
+                  <div class="mdoc-sub">
+                    <span>1.8 MB</span><span class="sep">·</span>
+                    <span class="mvis is-client"><svg><use href="#i-globe"/></svg>Client visible</span>
+                  </div>
+                </div>
+                <button class="mdoc-icn"><svg><use href="#i-more"/></svg></button>
+              </div>
+              <div class="mdoc-row">
+                <span class="mdoc-file"><svg><use href="#i-file-text"/></svg></span>
+                <div class="mdoc-meta">
+                  <div class="mdoc-title">CO-002 Brushed-nickel pull-out.pdf</div>
+                  <div class="mdoc-sub">
+                    <span>620 KB</span><span class="sep">·</span>
+                    <span class="mvis is-client"><svg><use href="#i-globe"/></svg>Client visible</span>
+                  </div>
+                </div>
+                <button class="mdoc-icn"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+            <div class="mdoc-card">
+              <div class="mdoc-head">
+                <span class="label">Permit</span><span class="ct">· 3</span>
+              </div>
+              <div class="mdoc-row">
+                <span class="mdoc-file"><svg><use href="#i-file-check"/></svg></span>
+                <div class="mdoc-meta">
+                  <div class="mdoc-title">Building permit BP-19842.pdf</div>
+                  <div class="mdoc-sub">
+                    <span>842 KB</span><span class="sep">·</span>
+                    <span class="mvis is-client"><svg><use href="#i-globe"/></svg>Client</span>
+                  </div>
+                </div>
+                <button class="mdoc-icn"><svg><use href="#i-more"/></svg></button>
+              </div>
+              <div class="mdoc-row">
+                <span class="mdoc-file"><svg><use href="#i-file-check"/></svg></span>
+                <div class="mdoc-meta">
+                  <div class="mdoc-title">Electrical permit EP-7321.pdf</div>
+                  <div class="mdoc-sub">
+                    <span>540 KB</span><span class="sep">·</span>
+                    <span class="mvis is-client"><svg><use href="#i-globe"/></svg>Client</span>
+                  </div>
+                </div>
+                <button class="mdoc-icn"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+            <div class="mdoc-card">
+              <div class="mdoc-head">
+                <span class="label">Certificate of insurance</span><span class="ct">· 3</span>
+              </div>
+              <div class="mdoc-row">
+                <span class="mdoc-file"><svg><use href="#i-file-shield"/></svg></span>
+                <div class="mdoc-meta">
+                  <div class="mdoc-title">COI — Tomic Framing Ltd.pdf</div>
+                  <div class="mdoc-sub">
+                    <span>312 KB</span><span class="sep">·</span>
+                    <span class="mvis is-internal"><svg><use href="#i-lock"/></svg>Internal</span>
+                  </div>
+                </div>
+                <button class="mdoc-icn"><svg><use href="#i-more"/></svg></button>
+              </div>
+              <div class="mdoc-row">
+                <span class="mdoc-file"><svg><use href="#i-file-shield"/></svg></span>
+                <div class="mdoc-meta">
+                  <div class="mdoc-title">COI — Westland Mechanical.pdf</div>
+                  <div class="mdoc-sub">
+                    <span>302 KB</span><span class="sep">·</span>
+                    <span style="color:var(--danger); font-weight: 600;">Expired May 1</span>
+                  </div>
+                </div>
+                <button class="mdoc-icn"><svg><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="bottom-bar">
+          <button class="bt-item"><svg><use href="#i-dashboard"/></svg>Home</button>
+          <button class="bt-item"><svg><use href="#i-inbox"/></svg>Inbox</button>
+          <button class="bt-item is-on"><svg><use href="#i-folder"/></svg>Projects</button>
+          <button class="bt-item"><svg><use href="#i-calendar"/></svg>Cal</button>
+          <button class="bt-item"><svg><use href="#i-users"/></svg>Me</button>
+        </nav>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── Frame 3 — Notes ───────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 03</div>
+      <div class="frame-title">Notes · feed + Ask Henry</div>
+      <div class="frame-sub">"Internal only" banner pinned at top. Ask Henry is a <b>one-shot action</b> that drops the answer into the feed — not a chat thread.</div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-wifi"/></svg><svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Glenwood Heights</span>
+            <span class="app-bar-h">Notes</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn"><svg><use href="#i-mic"/></svg></button>
+            <button class="app-icn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab">Client</button>
+          <button class="mtab">Photos <span class="ct">186</span></button>
+          <button class="mtab">Docs <span class="ct">14</span></button>
+          <button class="mtab is-on">Notes <span class="ct">28</span></button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div class="m-internal">
+              <svg><use href="#i-lock"/></svg>
+              Notes are <b>internal only</b> · client never sees this feed
+            </div>
+
+            <div class="m-ask-henry">
+              <div class="m-ask-head">
+                <span style="font-size:12px; line-height:1;">&#10022;</span> Ask Henry
+                <span class="hint">· answer drops into the feed</span>
+              </div>
+              <div class="m-ask-input-row">
+                <input class="m-ask-input" placeholder="e.g. Variance risk?" />
+                <button class="m-ask-send"><svg><use href="#i-send"/></svg></button>
+              </div>
+            </div>
+
+            <div class="m-composer">
+              <textarea placeholder="Add a note about this project…"></textarea>
+              <div class="m-composer-row">
+                <button class="voice"><svg><use href="#i-mic"/></svg> Voice memo</button>
+                <button class="add">Add</button>
+              </div>
+            </div>
+
+            <div class="feed-card is-draft">
+              <span class="feed-icon is-draft"><svg><use href="#i-message"/></svg></span>
+              <div>
+                <span class="feed-eyebrow is-draft"><span class="glyph">&#10022;</span> Henry drafted a reply</span>
+                <div class="draft-body">Hi Daniel — yes, swapping to the brushed nickel pulls is no problem. I'll put together a one-line change order so we capture the cost difference (about $180)…</div>
+                <div class="draft-actions">
+                  <button><svg><use href="#i-copy"/></svg>Copy</button>
+                  <button class="ghost"><svg><use href="#i-pen"/></svg>Edit</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="feed-card">
+              <span class="feed-icon"><svg><use href="#i-sticky"/></svg></span>
+              <div>
+                <span class="feed-eyebrow">Note</span>
+                <div class="feed-text">Daniel mentioned they want to add a beverage fridge under the island. Need a dedicated 20A.</div>
+                <div class="feed-meta"><span class="author">Daniel</span><span class="sep">·</span><span>Yesterday 4:18 PM</span></div>
+              </div>
+            </div>
+
+            <div class="feed-card">
+              <span class="feed-icon is-memo"><svg><use href="#i-mic"/></svg></span>
+              <div>
+                <span class="feed-eyebrow is-memo">Voice memo · transcribed</span>
+                <div class="memo-transcript">"Just got off the phone with Mei. She's worried about the tile delivery — saw something online about a vendor shortage. Told her we ordered three weeks ago…"</div>
+                <div class="memo-bottom">
+                  <button class="play"><svg><use href="#i-play"/></svg>0:48</button>
+                  <span class="time">Today · 8:22 AM</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="feed-card is-event">
+              <span class="feed-icon"><svg><use href="#i-receipt"/></svg></span>
+              <div>
+                <span class="feed-eyebrow">Expense logged</span>
+                <div class="feed-text"><b style="color:var(--ink)">$842.30</b> · Home Depot · framing lumber + brackets</div>
+                <div class="feed-meta"><span>Yesterday · 2:14 PM</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="bottom-bar">
+          <button class="bt-item"><svg><use href="#i-dashboard"/></svg>Home</button>
+          <button class="bt-item"><svg><use href="#i-inbox"/></svg>Inbox</button>
+          <button class="bt-item is-on"><svg><use href="#i-folder"/></svg>Projects</button>
+          <button class="bt-item"><svg><use href="#i-calendar"/></svg>Cal</button>
+          <button class="bt-item"><svg><use href="#i-users"/></svg>Me</button>
+        </nav>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── Frame 4 — Voice memo recording overlay ───────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 04</div>
+      <div class="frame-title">Voice memo · recording</div>
+      <div class="frame-sub">Big tap targets, live waveform, single timer. Capture wins — transcription + AI extraction happen <b>after</b> stop.</div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-wifi"/></svg><svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <!-- the page beneath -->
+        <div class="app-bar">
+          <button class="app-back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Glenwood Heights</span>
+            <span class="app-bar-h">Notes</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+        <div class="mtab-strip">
+          <button class="mtab">Client</button>
+          <button class="mtab">Photos</button>
+          <button class="mtab">Docs</button>
+          <button class="mtab is-on">Notes</button>
+        </div>
+        <div class="scroll">
+          <div class="scroll-inner" style="opacity: 0.3;">
+            <div class="m-internal"><svg><use href="#i-lock"/></svg>Notes are <b>internal only</b></div>
+            <div class="m-composer">
+              <textarea placeholder="Add a note…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- overlay -->
+        <div class="memo-overlay">
+          <div class="memo-sheet">
+            <div class="memo-handle"></div>
+            <h3>Recording voice memo</h3>
+            <div class="sub">Capture first — Henry transcribes &amp; extracts after stop.</div>
+
+            <div class="recording-circle">
+              <svg><use href="#i-mic"/></svg>
+            </div>
+
+            <div class="recording-time">0:42</div>
+            <div class="recording-dot">
+              <span class="pulse"></span> Recording
+            </div>
+
+            <div class="waveform">
+              <i style="height: 8px"></i>
+              <i style="height: 18px"></i>
+              <i style="height: 28px"></i>
+              <i style="height: 14px"></i>
+              <i style="height: 22px"></i>
+              <i style="height: 32px"></i>
+              <i style="height: 26px"></i>
+              <i style="height: 12px"></i>
+              <i style="height: 20px"></i>
+              <i style="height: 30px"></i>
+              <i style="height: 16px"></i>
+              <i style="height: 24px"></i>
+              <i style="height: 14px"></i>
+              <i style="height: 18px"></i>
+              <i style="height: 8px"></i>
+              <i style="height: 12px"></i>
+              <i style="height: 22px"></i>
+              <i style="height: 28px"></i>
+              <i style="height: 16px"></i>
+              <i style="height: 20px"></i>
+              <i style="height: 24px"></i>
+              <i style="height: 14px"></i>
+              <i style="height: 18px"></i>
+              <i style="height: 26px"></i>
+            </div>
+
+            <div class="memo-pin">
+              <svg><use href="#i-pin"/></svg>
+              Will pin to <b>Phase 04 · Rough-in</b>
+            </div>
+
+            <div class="memo-actions">
+              <button class="cancel"><svg><use href="#i-x"/></svg> Cancel</button>
+              <button class="stop"><svg><use href="#i-stop"/></svg> Stop</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-bar" style="background: #fff;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── Frame 5 — Offline capture queue ───────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 05</div>
+      <div class="frame-title">Photos · offline queue</div>
+      <div class="frame-sub">Field reality: no signal at the back of the basement. Captures queue locally, sync on reconnect. <b>Per-photo status</b> + bulk retry.</div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg style="color:var(--danger)"><use href="#i-cloud-off"/></svg><svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Glenwood Heights · Offline</span>
+            <span class="app-bar-h">Photos</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn"><svg><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <div class="mtab-strip">
+          <button class="mtab">Client</button>
+          <button class="mtab is-on">Photos <span class="ct">186</span></button>
+          <button class="mtab">Docs</button>
+          <button class="mtab">Notes</button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner">
+
+            <div class="offline-banner">
+              <svg><use href="#i-cloud-off"/></svg>
+              <div class="offline-banner-text">
+                <b>You're offline.</b> Capture keeps working — 7 photos are waiting to sync. We'll push them up the moment you have signal.
+              </div>
+            </div>
+
+            <div class="capture-card">
+              <div class="capture-head">
+                <svg style="width:11px;height:11px;color:var(--ink-2)"><use href="#i-camera"/></svg>
+                Capture
+                <span class="right">Phase 04</span>
+              </div>
+              <div class="shutter-row">
+                <button class="small-btn"><svg><use href="#i-image"/></svg></button>
+                <button class="shutter" aria-label="Capture"><svg><use href="#i-camera"/></svg></button>
+                <button class="small-btn"><svg><use href="#i-mic"/></svg></button>
+              </div>
+              <div class="capture-default">
+                <svg><use href="#i-lock"/></svg> Default · Internal
+                <span class="switch">Switch</span>
+              </div>
+            </div>
+
+            <div class="queue-card">
+              <div class="queue-head">
+                <span class="pulse-dot"></span>
+                <span class="label">Pending sync</span>
+                <span class="ct">· 7 of 7 waiting</span>
+              </div>
+
+              <div class="queue-row">
+                <div class="queue-thumb"><div class="queue-thumb-img img-c"></div></div>
+                <div class="queue-meta">
+                  <div class="queue-title">3 photos · Phase 04 · Rough-in</div>
+                  <div class="queue-sub">Captured 8:14 AM · 4.8 MB</div>
+                </div>
+                <span class="queue-status is-waiting"><svg><use href="#i-clock"/></svg>Waiting</span>
+              </div>
+
+              <div class="queue-row">
+                <div class="queue-thumb"><div class="queue-thumb-img img-h"></div></div>
+                <div class="queue-meta">
+                  <div class="queue-title">1 photo · Concern flag</div>
+                  <div class="queue-sub">Captured 8:42 AM · 1.6 MB</div>
+                </div>
+                <span class="queue-status is-waiting"><svg><use href="#i-clock"/></svg>Waiting</span>
+              </div>
+
+              <div class="queue-row">
+                <div class="queue-thumb"><div class="queue-thumb-img img-d"></div></div>
+                <div class="queue-meta">
+                  <div class="queue-title">Voice memo · 1:24</div>
+                  <div class="queue-sub">Captured 9:02 AM · 720 KB</div>
+                </div>
+                <span class="queue-status is-waiting"><svg><use href="#i-clock"/></svg>Waiting</span>
+              </div>
+
+              <div class="queue-row">
+                <div class="queue-thumb"><div class="queue-thumb-img img-i"></div></div>
+                <div class="queue-meta">
+                  <div class="queue-title">2 photos · Phase 04</div>
+                  <div class="queue-sub">Captured 9:18 AM · 3.2 MB</div>
+                </div>
+                <span class="queue-status is-waiting"><svg><use href="#i-clock"/></svg>Waiting</span>
+              </div>
+
+              <div class="queue-row">
+                <div class="queue-thumb"><div class="queue-thumb-img img-j"></div></div>
+                <div class="queue-meta">
+                  <div class="queue-title">1 photo · Tagged After</div>
+                  <div class="queue-sub">Captured 9:32 AM · 1.4 MB</div>
+                </div>
+                <span class="queue-status is-waiting"><svg><use href="#i-clock"/></svg>Waiting</span>
+              </div>
+
+            </div>
+
+            <div class="m-eyebrow">
+              <span class="label">Already on this device</span>
+              <span class="meta">186 photos · indexed</span>
+            </div>
+
+          </div>
+        </div>
+
+        <nav class="bottom-bar">
+          <button class="bt-item"><svg><use href="#i-dashboard"/></svg>Home</button>
+          <button class="bt-item"><svg><use href="#i-inbox"/></svg>Inbox</button>
+          <button class="bt-item is-on"><svg><use href="#i-folder"/></svg>Projects</button>
+          <button class="bt-item"><svg><use href="#i-calendar"/></svg>Cal</button>
+          <button class="bt-item"><svg><use href="#i-users"/></svg>Me</button>
+        </nav>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── Frame 6 — Filter bottom sheet (no horizontal scroll) ───────────── -->
+  <div class="frame">
+    <div class="frame-label">
+      <div class="frame-num">Frame 06</div>
+      <div class="frame-title">Photos · filter bottom sheet</div>
+      <div class="frame-sub">Bottom sheet replaces the horizontal scroll-strip — every filter visible at once. Tag, visibility, and phase in one sheet.</div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="island"></span>
+          <span class="status-right"><svg><use href="#i-wifi"/></svg><svg><use href="#i-battery"/></svg></span>
+        </div>
+
+        <div class="app-bar">
+          <button class="app-back"><svg><use href="#i-arrow-left"/></svg></button>
+          <div class="app-bar-title">
+            <span class="app-bar-eyebrow">Glenwood Heights</span>
+            <span class="app-bar-h">Photos</span>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-icn"><svg><use href="#i-search"/></svg></button>
+          </div>
+        </div>
+        <div class="mtab-strip">
+          <button class="mtab">Client</button>
+          <button class="mtab is-on">Photos <span class="ct">186</span></button>
+          <button class="mtab">Docs</button>
+          <button class="mtab">Notes</button>
+        </div>
+
+        <div class="scroll">
+          <div class="scroll-inner" style="opacity: 0.35;">
+            <div class="mphoto-grid">
+              <div class="mphoto"><div class="mphoto-img img-a"></div><span class="tg is-progress">Progress</span><span class="vb"><svg><use href="#i-lock"/></svg>Internal</span></div>
+              <div class="mphoto"><div class="mphoto-img img-c"></div><span class="tg">Other</span><span class="vb"><svg><use href="#i-lock"/></svg>Internal</span></div>
+              <div class="mphoto"><div class="mphoto-img img-d"></div><span class="tg is-progress">Progress</span><span class="vb"><svg><use href="#i-lock"/></svg>Internal</span></div>
+              <div class="mphoto"><div class="mphoto-img img-e"></div><span class="tg is-after">After</span><span class="vb is-client"><svg><use href="#i-globe"/></svg>Client</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom sheet -->
+        <div class="memo-overlay">
+          <div class="memo-sheet" style="padding: 14px 18px 24px;">
+            <div class="memo-handle"></div>
+            <h3 style="text-align:left">Filter photos</h3>
+            <div class="sub" style="text-align:left">186 total · default view = all internal photos hidden from the client</div>
+
+            <div style="margin-top: 16px;">
+              <div style="font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Tag</div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                <button style="padding: 9px; background: var(--ink); color: #fff; border: 0; border-radius: 9px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">All · 186</button>
+                <button style="padding: 9px; background: var(--card); border: 1px solid var(--hair); color: var(--info); border-radius: 9px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Before · 22</button>
+                <button style="padding: 9px; background: var(--card); border: 1px solid var(--hair); color: var(--ok); border-radius: 9px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">After · 38</button>
+                <button style="padding: 9px; background: var(--card); border: 1px solid var(--hair); color: var(--warn); border-radius: 9px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Progress · 119</button>
+                <button style="padding: 9px; background: var(--danger-soft); border: 1px solid rgba(185,28,28,0.3); color: var(--danger); border-radius: 9px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Concern · 3</button>
+                <button style="padding: 9px; background: var(--card); border: 1px solid var(--hair); color: var(--muted); border-radius: 9px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Other · 4</button>
+              </div>
+            </div>
+
+            <div style="margin-top: 18px;">
+              <div style="font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Visibility</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <button style="padding: 11px; background: var(--card); border: 1px solid var(--hair); border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--ink-2); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;"><svg style="width:13px;height:13px"><use href="#i-lock"/></svg>Internal · 148</button>
+                <button style="padding: 11px; background: var(--info-soft); border: 1px solid rgba(30,64,175,0.22); border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--info); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;"><svg style="width:13px;height:13px"><use href="#i-globe"/></svg>Client · 38</button>
+              </div>
+            </div>
+
+            <div style="margin-top: 18px;">
+              <div style="font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Phase</div>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <button style="padding: 11px 14px; background: var(--card); border: 1px solid var(--hair); border-radius: 10px; display: flex; align-items: center; gap: 8px; text-align: left;"><span style="font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em;">P04</span><span style="font-size: 14px; font-weight: 600; color: var(--ink);">Rough-in &amp; mechanical</span><span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted);">12</span></button>
+                <button style="padding: 11px 14px; background: var(--card); border: 1px solid var(--hair); border-radius: 10px; display: flex; align-items: center; gap: 8px; text-align: left;"><span style="font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em;">P03</span><span style="font-size: 14px; font-weight: 600; color: var(--ink);">Framing</span><span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted);">36</span></button>
+                <button style="padding: 11px 14px; background: var(--card); border: 1px solid var(--hair); border-radius: 10px; display: flex; align-items: center; gap: 8px; text-align: left;"><span style="font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em;">P02</span><span style="font-size: 14px; font-weight: 600; color: var(--ink);">Demo</span><span style="margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted);">28</span></button>
+              </div>
+            </div>
+
+            <div style="margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button class="cancel" style="height: 48px; border-radius: 12px; background: var(--card); border: 1px solid var(--hair); font-weight: 600; font-size: 14px;">Reset</button>
+              <button style="height: 48px; border-radius: 12px; background: var(--ink); color: #fff; border: 0; font-weight: 600; font-size: 14px;">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-bar" style="background: #fff;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width: 1280px; margin: 36px auto 30px; padding: 20px 28px; border-top: 1px dashed var(--rule); color: var(--muted); font-size: 12px;">
+  <div><b style="color: var(--ink);">Mobile · Project secondary tabs · Photos · Documents · Notes</b> — capture-first; client-visibility label+glyph on every photo &amp; doc; voice memo + Ask-Henry-as-action; offline queue holds the field story.</div>
+  <div style="margin-top: 4px;">Bottom-sheet filter replaces horizontal scroll-strip on Photos. Home Record stays an entry-point card on Documents — graduates to its own render. Heavy Home Record generate/email flow not built here.</div>
+</div>
+
+</body>
+</html>

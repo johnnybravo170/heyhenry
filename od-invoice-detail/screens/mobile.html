@@ -1,0 +1,1692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Invoice detail — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───────────────────────────────────────────────────────────────────
+     HeyHenry Paper palette — mobile operator surface (390 px viewport).
+     Same restyle conventions as the desktop file, dialed for thumb
+     reachability and single-column. Doc-details stays collapsed.
+     The status-appropriate primary action is the ≥44 px thumb target
+     (Send on draft · Record payment on sent).
+  ──────────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --paper-soft:   #FBF6EC;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --interac:      #B61D24;
+    --interac-soft: #FCE8E8;
+
+    --radius-card:  12px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  /* ═══ Stage — desktop reviewer view of mobile frames ═══ */
+  .stage {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 28px 80px;
+  }
+  .frame-divider {
+    display: flex; align-items: baseline; gap: 16px;
+    flex-wrap: wrap;
+    margin: 56px 0 18px;
+  }
+  .frame-divider:first-child { margin-top: 12px; }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub { color: var(--muted); font-size: 12px; }
+
+  .row {
+    display: flex; gap: 28px; flex-wrap: wrap; justify-content: flex-start;
+  }
+
+  /* ═══ iPhone frame ═══ */
+  .phone {
+    width: 390px;
+    flex-shrink: 0;
+    border-radius: 44px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 18px 60px rgba(10, 10, 10, 0.16);
+    position: relative;
+  }
+  .phone-screen {
+    background: var(--bg);
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    height: 844px;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    padding: 0 26px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--sans);
+    font-size: 12px; font-weight: 700;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--bg);
+    position: relative;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 122px; height: 32px;
+    background: #0A0A0A;
+    border-radius: 22px;
+  }
+  .signal { width: 14px; height: 10px; display: inline-block; }
+  .wifi { width: 14px; height: 10px; }
+  .battery {
+    width: 22px; height: 11px;
+    border: 1.2px solid var(--ink);
+    border-radius: 2.5px;
+    position: relative;
+    margin-left: 2px;
+  }
+  .battery::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 1.5px; height: 5px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+  .battery::before {
+    content: '';
+    position: absolute;
+    left: 1px; top: 1px;
+    width: 16px; height: 7px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+
+  /* ═══ App top bar (mobile) ═══ */
+  .app-top {
+    flex-shrink: 0;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 12px;
+    min-height: 52px;
+  }
+  .app-top .back {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    display: grid; place-items: center;
+    color: var(--ink-2);
+    flex-shrink: 0;
+  }
+  .app-top .back svg { width: 14px; height: 14px; }
+  .app-top .center {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    text-align: center;
+  }
+  .app-top .center .ttl {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .app-top .center .sub {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .app-top .more {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: transparent;
+    display: grid; place-items: center;
+    color: var(--ink-2);
+    flex-shrink: 0;
+  }
+  .app-top .more svg { width: 16px; height: 16px; }
+
+  /* ═══ Scrollable content + sticky action bar ═══ */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px 14px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .action-bar {
+    flex-shrink: 0;
+    background: var(--chrome);
+    border-top: 1px solid var(--hair);
+    padding: 10px 16px 22px;
+    display: flex; gap: 8px;
+  }
+  .action-bar .btn-primary,
+  .action-bar .btn-secondary {
+    flex: 1;
+  }
+
+  /* ═══ Buttons (≥44 px on the action bar) ═══ */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; padding: 0 12px;
+    border-radius: var(--radius-input);
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn .icon { width: 13px; height: 13px; flex-shrink: 0; }
+  .btn-ghost { background: var(--card); border-color: var(--hair); color: var(--ink); }
+  .btn-quiet { background: transparent; color: var(--muted); }
+  .btn-sm    { height: 30px; padding: 0 10px; font-size: 12px; }
+
+  .btn-primary {
+    height: 48px;
+    border-radius: 12px;
+    background: var(--rust);
+    color: #fff;
+    border: 1px solid var(--rust);
+    font-size: 14px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+  }
+  .btn-primary .icon { width: 15px; height: 15px; }
+  .btn-secondary {
+    height: 48px;
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    font-size: 14px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+  }
+  .btn-secondary .icon { width: 15px; height: 15px; }
+  .btn-secondary.is-shrink { max-width: 110px; flex: 0 0 110px; }
+
+  /* ═══ Head card (invoice key + status — no UUID) ═══ */
+  .head {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 14px 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .head .eyebrow {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-wrap: wrap;
+  }
+  .head .eyebrow .doc-num {
+    color: var(--ink);
+    background: var(--chip-fill);
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  .head .eyebrow .sep { color: var(--faint); }
+  .head .ttl {
+    font-size: 18px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .head .meta {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .head .meta a { color: var(--ink-2); font-weight: 600; }
+  .head .meta .sep { color: var(--faint); margin: 0 5px; }
+
+  .head .total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-top: 10px;
+    border-top: 1px solid var(--hair);
+    margin-top: 4px;
+  }
+  .head .total-row .l {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .head .total-row .v {
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+    font-size: 22px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .head .total-row .v .cents {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* Status badge */
+  .status-row {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-badge svg { width: 11px; height: 11px; }
+  .status-draft { background: var(--chip-fill); color: var(--muted); }
+  .status-sent  { background: var(--info-soft); color: var(--info); }
+  .status-paid  { background: var(--ok-soft);   color: var(--ok); }
+  .status-void  { background: var(--chip-fill); color: var(--faint); }
+
+  /* ═══ Posture strip (sent / paid / void band) ═══ */
+  .posture {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-card);
+    border: 1px solid transparent;
+  }
+  .posture .ico {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .posture .ico svg { width: 14px; height: 14px; }
+  .posture .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .posture .body .pri { font-size: 14px; font-weight: 700; }
+  .posture .body .sec { font-size: 12px; line-height: 1.5; }
+  .posture-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180, 83, 9, 0.25);
+  }
+  .posture-warn .ico { background: rgba(180, 83, 9, 0.15); color: var(--warn); }
+  .posture-warn .pri { color: #7C3F0A; }
+  .posture-warn .sec { color: rgba(124, 63, 10, 0.85); }
+  .posture-success {
+    background: var(--ok-soft);
+    border-color: rgba(21, 128, 61, 0.22);
+  }
+  .posture-success .ico { background: rgba(21, 128, 61, 0.12); color: var(--ok); }
+  .posture-success .pri { color: #0F5C2C; }
+  .posture-success .sec { color: rgba(15, 92, 44, 0.85); }
+  .posture-neutral {
+    background: var(--chip-fill);
+    border-color: var(--rule);
+  }
+  .posture-neutral .ico { background: var(--card); color: var(--muted); }
+  .posture-neutral .pri { color: var(--ink-2); }
+  .posture-neutral .sec { color: var(--muted); }
+
+  /* ═══ Inline caution (drift / missing-GST) ═══ */
+  .inline-caution {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .inline-caution .ico {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .inline-caution .ico svg { width: 12px; height: 12px; }
+  .inline-caution .text { flex: 1; min-width: 0; }
+  .inline-caution .text strong { font-weight: 700; }
+  .inline-caution .text .delta { font-family: var(--mono); font-weight: 700; }
+  .inline-caution .text .fix-link {
+    display: inline-block;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .caution-warn {
+    background: var(--warn-soft);
+    border-color: rgba(180, 83, 9, 0.25);
+    color: #7C3F0A;
+  }
+  .caution-warn .ico { background: rgba(180, 83, 9, 0.15); color: var(--warn); }
+  .caution-warn .fix-link { color: var(--warn); text-decoration: underline; text-underline-offset: 2px; }
+  .caution-danger {
+    background: var(--danger-soft);
+    border-color: rgba(185, 28, 28, 0.22);
+    color: #7B1414;
+  }
+  .caution-danger .ico { background: rgba(185, 28, 28, 0.15); color: var(--danger); }
+  .caution-danger .fix-link { color: var(--danger); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ═══ Preview card (mobile — single column, controls collapse) ═══ */
+  .preview-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .preview-head {
+    padding: 13px 14px 10px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .preview-head .eye {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--paper-soft);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    color: var(--ink-2);
+  }
+  .preview-head .eye svg { width: 14px; height: 14px; }
+  .preview-head .text { flex: 1; min-width: 0; }
+  .preview-head .text h2 { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink); }
+  .preview-head .text .desc { margin: 3px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  .preview-controls {
+    padding: 12px 14px;
+    background: var(--paper-soft);
+    border-bottom: 1px solid var(--hair);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .seg-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .seg-row.cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .mode {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 7px 10px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .mode .n { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .mode .h {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+  }
+  .mode.active { background: var(--ink); border-color: var(--ink); }
+  .mode.active .n { color: #fff; }
+  .mode.active .h { color: rgba(255,255,255,0.7); }
+
+  .mgmt-toggle {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+  }
+  .mgmt-toggle .check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: grid; place-items: center;
+  }
+  .mgmt-toggle .label {
+    font-size: 12px; font-weight: 600; color: var(--ink);
+  }
+  .mgmt-toggle .sub {
+    font-family: var(--mono);
+    font-size: 11px; color: var(--muted);
+    margin-left: 4px;
+  }
+
+  .preview-body {
+    padding: 13px 14px 14px;
+  }
+  .preview-body .what {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 8px;
+  }
+  .preview-body .what::before, .preview-body .what::after {
+    content: ''; height: 1px; flex: 1; background: var(--hair);
+  }
+
+  .pv-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 9px 12px;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .pv-row .ttl {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    min-width: 0;
+  }
+  .pv-row .ttl .body {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .pv-row .val {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .pv-row .val .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+  .pv-row.is-mgmt { background: var(--paper-soft); }
+  .pv-row.is-credit { background: var(--info-soft); border-color: rgba(30, 64, 175, 0.18); }
+  .pv-row.is-credit .val { color: var(--info); }
+
+  .pv-totals {
+    margin-top: 8px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 10px;
+    padding: 10px 13px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .pv-totals-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px;
+  }
+  .pv-totals-row .lbl { color: var(--muted); }
+  .pv-totals-row .val { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink-2); }
+  .pv-totals-row .val .cents { color: var(--muted); font-size: 11px; }
+  .pv-totals-row.is-total {
+    border-top: 1px solid var(--hair);
+    padding-top: 6px;
+    margin-top: 4px;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+  }
+  .pv-totals-row.is-total .lbl { color: var(--ink); }
+  .pv-totals-row.is-total .val { color: var(--ink); font-weight: 700; }
+  .pv-totals-row.is-total .val .cents { color: var(--muted); font-size: 11px; font-weight: 500; }
+
+  .preview-apply {
+    padding: 10px 14px 12px;
+    border-top: 1px solid var(--hair);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px;
+  }
+  .preview-apply .meta {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .preview-apply .apply-btn {
+    background: var(--ink);
+    color: #fff;
+    border: 1px solid var(--ink);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 5px;
+    cursor: pointer;
+  }
+  .preview-apply .apply-btn svg { width: 11px; height: 11px; }
+
+  /* ═══ Amount breakdown (compact, for sent/paid/void) ═══ */
+  .breakdown-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 13px 14px;
+  }
+  .b-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px;
+    padding: 4px 0;
+    color: var(--ink-2);
+  }
+  .b-row .lbl { color: var(--muted); }
+  .b-row .val { font-variant-numeric: tabular-nums; font-weight: 500; }
+  .b-row .val .cents { color: var(--muted); font-size: 11px; }
+  .b-row.is-line .lbl { color: var(--ink); font-weight: 600; }
+  .b-row.is-line .lbl .desc {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 1px;
+    font-weight: 600;
+  }
+  .b-divider { border-top: 1px solid var(--hair); margin: 4px 0; }
+  .b-row.is-total {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    padding-top: 4px;
+  }
+  .b-row.is-total .lbl { color: var(--ink); }
+  .b-row.is-total .val { color: var(--ink); font-weight: 700; }
+  .b-row.is-total .val .cents { color: var(--muted); font-size: 12px; font-weight: 500; }
+
+  .reg-footer {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex; gap: 10px; flex-wrap: wrap;
+    letter-spacing: 0.02em;
+  }
+  .reg-footer .num { color: var(--ink-2); font-weight: 600; }
+  .reg-footer .sep { color: var(--faint); }
+
+  /* ═══ Customer note + context cards ═══ */
+  .note {
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .note .lbl {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .note .body {
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .note .edit {
+    font-size: 12px; font-weight: 600;
+    color: var(--rust);
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  .ctx-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 11px 13px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .ctx-card .ico {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--paper-soft);
+    display: grid; place-items: center;
+    color: var(--ink-2);
+    flex-shrink: 0;
+  }
+  .ctx-card .ico svg { width: 13px; height: 13px; }
+  .ctx-card .body { flex: 1; min-width: 0; }
+  .ctx-card .lbl {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ctx-card .name {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+  }
+  .ctx-card .meta { font-size: 11px; color: var(--muted); }
+  .ctx-card .meta .sep { color: var(--faint); margin: 0 4px; }
+  .ctx-card .chev {
+    width: 14px; height: 14px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .receipts {
+    display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+  }
+  .r-thumb {
+    width: 52px; height: 52px;
+    border-radius: 7px;
+    border: 1px solid var(--hair);
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+  }
+  .r-thumb.r-1 { background: linear-gradient(135deg, #c9a373 0%, #8a6c3f 100%); }
+  .r-thumb.r-2 { background: linear-gradient(160deg, #a59478 0%, #5a4c36 100%); }
+  .r-thumb.is-pdf {
+    background: var(--card);
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink-2);
+    text-align: center;
+    line-height: 1.1;
+  }
+  .r-thumb.is-pdf svg { width: 14px; height: 14px; color: var(--danger); margin-bottom: 2px; }
+
+  /* ═══ Document details disclosure (collapsed by default on mobile) ═══ */
+  .disclosure {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+  }
+  .disclosure-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+  }
+  .disclosure-head .chev {
+    width: 14px; height: 14px;
+    color: var(--muted);
+  }
+  .disclosure-head .text { flex: 1; min-width: 0; }
+  .disclosure-head .t { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .disclosure-head .s {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 1px;
+  }
+  .disclosure-head .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+    flex-shrink: 0;
+  }
+
+  /* History (compact list) */
+  .history {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 12px 14px;
+  }
+  .history .h-head {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .history ol {
+    list-style: none; margin: 0; padding: 0;
+    position: relative;
+    border-left: 1px solid var(--rule);
+    padding-left: 12px;
+    margin-left: 4px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .history li { position: relative; font-size: 12px; }
+  .history li::before {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1.5px solid var(--rule);
+    position: absolute;
+    left: -16px;
+    top: 4px;
+  }
+  .history li.is-current::before { background: var(--rust); border-color: var(--rust); }
+  .history li .t { color: var(--ink); font-weight: 600; }
+  .history li .w {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ═══ Bottom-sheet record-payment dialog (frame 5) ═══ */
+  .sheet-stage .phone-screen { background: rgba(10,10,10,0.40); position: relative; }
+  .sheet-stage .scroll { filter: blur(0); opacity: 0.4; pointer-events: none; }
+  .sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--bg);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -10px 40px rgba(10,10,10,0.20);
+    padding: 8px 0 22px;
+    display: flex; flex-direction: column;
+    max-height: 88%;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--rule);
+    border-radius: 999px;
+    margin: 4px auto 10px;
+  }
+  .sheet-head {
+    padding: 0 16px 10px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .sheet-head h2 {
+    margin: 0; font-size: 16px; font-weight: 700;
+    color: var(--ink);
+  }
+  .sheet-head .desc {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .sheet-head .desc .tot { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
+  .sheet-body {
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .sheet-field { display: flex; flex-direction: column; gap: 5px; }
+  .sheet-field label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .input {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-input);
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--ink);
+    font-family: inherit;
+    width: 100%;
+  }
+  .input.tabular { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .method-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .method {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 10px;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    background: var(--card);
+    font-size: 12px; font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    text-align: left;
+  }
+  .method .glyph {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: var(--paper-soft);
+    color: var(--ink-2);
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .method.interac { grid-column: span 2; }
+  .method.interac .glyph { background: var(--interac-soft); color: var(--interac); }
+  .method.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .method.is-on.interac { background: var(--interac); border-color: var(--interac); }
+  .method.is-on .glyph { background: rgba(255,255,255,0.2); color: #fff; }
+
+  .ocr-hint {
+    display: flex; align-items: flex-start; gap: 7px;
+    padding: 8px 10px;
+    background: var(--rust-soft);
+    border: 1px solid rgba(194, 65, 12, 0.18);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--rust);
+    line-height: 1.4;
+  }
+  .ocr-hint svg { width: 12px; height: 12px; flex-shrink: 0; margin-top: 1px; }
+  .ocr-hint b { font-weight: 700; }
+
+  .sheet-foot {
+    padding: 12px 16px 4px;
+    display: flex; gap: 8px;
+    border-top: 1px solid var(--hair);
+  }
+
+  /* Phone caption */
+  .phone-caption {
+    margin-top: 12px;
+    max-width: 390px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+  .phone-caption b { color: var(--ink); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-pdf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="1" y="14" width="3" height="6" rx="0.6"/><rect x="6" y="10" width="3" height="10" rx="0.6"/><rect x="11" y="6" width="3" height="14" rx="0.6"/><rect x="16" y="2" width="3" height="18" rx="0.6"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+
+  <!-- ────────────────────────────────────────────────────────────────
+       Row 1 — Draft + Sent (the two workbench postures)
+  ──────────────────────────────────────────────────────────────── -->
+  <div class="frame-divider">
+    <span class="num">Frames 1 & 2</span>
+    <span class="label">Draft + Sent — the workbench postures</span>
+    <span class="sub">390 × 844 · ≥44 px primary · single-column preview · doc-details collapsed</span>
+  </div>
+
+  <div class="row">
+
+    <!-- ════════════════════════════════════════════════════════════
+         PHONE A — DRAFT (preview-as-hero, Send is the one action)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>9:14</span>
+            <span class="right">
+              <svg class="signal"><use href="#i-signal"/></svg>
+              <svg class="wifi"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <header class="app-top">
+            <button class="back" aria-label="Back"><svg><use href="#i-arrow-left"/></svg></button>
+            <div class="center">
+              <span class="ttl">Invoice</span>
+              <span class="sub">INV-2026-0142 · Draw 3 of 5</span>
+            </div>
+            <button class="more" aria-label="More"><svg><use href="#i-more"/></svg></button>
+          </header>
+
+          <div class="scroll">
+
+            <!-- Head -->
+            <div class="head">
+              <div class="eyebrow">
+                <span class="doc-num">INV-2026-0142</span>
+                <span class="sep">·</span>
+                <span>Draw 3 of 5</span>
+              </div>
+              <div class="ttl">Hillcrest Kitchen Remodel</div>
+              <div class="meta"><a href="#">Helen Chao</a><span class="sep">·</span>Cost-plus · Abbotsford</div>
+              <div class="status-row">
+                <span class="status-badge status-draft">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/></svg>
+                  Draft
+                </span>
+                <span style="font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;">
+                  Created today 9:14 am
+                </span>
+              </div>
+              <div class="total-row">
+                <span class="l">Customer total</span>
+                <span class="v">$20,793<span class="cents">.37</span></span>
+              </div>
+            </div>
+
+            <!-- Inline caution: cost-basis drift -->
+            <div class="inline-caution caution-warn">
+              <span class="ico"><svg><use href="#i-alert"/></svg></span>
+              <div class="text">
+                <strong>Cost basis drifted.</strong>
+                Billed <span class="delta">$17,220.18</span>, now <span class="delta">$17,420.18</span>
+                — 2 expenses logged since 9:14 am.
+                <a href="#" class="fix-link">Regenerate draft</a>
+              </div>
+            </div>
+
+            <!-- Hero: customer-view preview -->
+            <div class="preview-card">
+              <div class="preview-head">
+                <div class="eye"><svg><use href="#i-eye"/></svg></div>
+                <div class="text">
+                  <h2>What the customer will see</h2>
+                  <p class="desc">Same total — pick the breakdown level.</p>
+                </div>
+              </div>
+
+              <div class="preview-controls">
+                <div class="seg-row cols-4">
+                  <button class="mode"><div class="n">Lump sum</div><div class="h">One total</div></button>
+                  <button class="mode"><div class="n">Sections</div><div class="h">Grouped</div></button>
+                  <button class="mode active"><div class="n">Categories</div><div class="h">Per category</div></button>
+                  <button class="mode"><div class="n">Detailed</div><div class="h">Every line</div></button>
+                </div>
+                <div class="mgmt-toggle">
+                  <span class="check"></span>
+                  <span class="label">Bake mgmt fee in</span>
+                  <span class="sub">Lump sum only</span>
+                </div>
+              </div>
+
+              <div class="preview-body">
+                <p class="what">↓ customer view ↓</p>
+
+                <div class="pv-row">
+                  <div class="ttl">Labour
+                    <span class="body">May 5 – May 19 · 142 hrs</span>
+                  </div>
+                  <div class="val">$11,800<span class="cents">.00</span></div>
+                </div>
+                <div class="pv-row">
+                  <div class="ttl">Materials &amp; Expenses
+                    <span class="body">Subfloor · hardware · delivery</span>
+                  </div>
+                  <div class="val">$5,420<span class="cents">.18</span></div>
+                </div>
+                <div class="pv-row is-mgmt">
+                  <div class="ttl">Project management (15%)</div>
+                  <div class="val">$2,583<span class="cents">.03</span></div>
+                </div>
+
+                <div class="pv-totals">
+                  <div class="pv-totals-row">
+                    <span class="lbl">Subtotal</span>
+                    <span class="val">$19,803<span class="cents">.21</span></span>
+                  </div>
+                  <div class="pv-totals-row">
+                    <span class="lbl">GST (5%)</span>
+                    <span class="val">$990<span class="cents">.16</span></span>
+                  </div>
+                  <div class="pv-totals-row is-total">
+                    <span class="lbl">Customer total</span>
+                    <span class="val">$20,793<span class="cents">.37</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="preview-apply">
+                <span class="meta">3 LINES · APPLIED 12M AGO</span>
+                <button class="apply-btn"><svg><use href="#i-check"/></svg>Apply</button>
+              </div>
+            </div>
+
+            <!-- Customer note -->
+            <div class="note">
+              <span class="lbl">Customer note</span>
+              <p class="body">“Thanks Helen — this draw covers framing, subfloor, first-pass hardware…”</p>
+              <a href="#" class="edit">Edit note</a>
+            </div>
+
+            <!-- Context (compact cards) -->
+            <div class="ctx-card">
+              <span class="ico"><svg><use href="#i-briefcase"/></svg></span>
+              <div class="body">
+                <div class="lbl">Project</div>
+                <div class="name">Hillcrest Kitchen Remodel</div>
+                <div class="meta">Cost-plus<span class="sep">·</span>3 of 5 draws billed</div>
+              </div>
+              <svg class="chev"><use href="#i-chevron-right"/></svg>
+            </div>
+
+            <!-- Doc details (collapsed on mobile) -->
+            <div class="disclosure">
+              <div class="disclosure-head">
+                <svg class="chev"><use href="#i-chevron-right"/></svg>
+                <div class="text">
+                  <div class="t">Document details</div>
+                  <div class="s">Payment instructions, terms, policies</div>
+                </div>
+                <span class="dot" title="Using tenant defaults"></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Sticky action bar: Send (rust) is the ONE action -->
+          <div class="action-bar">
+            <button class="btn-primary">
+              <svg class="icon"><use href="#i-send"/></svg>
+              Send · $20,793.37
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption">
+        FRAME 1 · <b>DRAFT</b> · preview is the hero · ≥44 px Send
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         PHONE B — SENT (warn-soft awaiting-payment, Record-payment primary)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>9:14</span>
+            <span class="right">
+              <svg class="signal"><use href="#i-signal"/></svg>
+              <svg class="wifi"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <header class="app-top">
+            <button class="back" aria-label="Back"><svg><use href="#i-arrow-left"/></svg></button>
+            <div class="center">
+              <span class="ttl">Invoice</span>
+              <span class="sub">INV-2026-0139 · Draw 2 of 4</span>
+            </div>
+            <button class="more" aria-label="More"><svg><use href="#i-more"/></svg></button>
+          </header>
+
+          <div class="scroll">
+
+            <div class="head">
+              <div class="eyebrow">
+                <span class="doc-num">INV-2026-0139</span>
+                <span class="sep">·</span>
+                <span>Draw 2 of 4</span>
+              </div>
+              <div class="ttl">Donahue Basement Suite</div>
+              <div class="meta"><a href="#">The Donahue Family</a><span class="sep">·</span>Sent May 17</div>
+              <div class="status-row">
+                <span class="status-badge status-sent">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" opacity="0.18"/></svg>
+                  Sent
+                </span>
+                <span style="font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;">
+                  Net-15 · due May 31
+                </span>
+              </div>
+              <div class="total-row">
+                <span class="l">Customer total</span>
+                <span class="v">$18,000<span class="cents">.00</span></span>
+              </div>
+            </div>
+
+            <!-- Posture strip: awaiting payment -->
+            <div class="posture posture-warn">
+              <span class="ico"><svg><use href="#i-hourglass"/></svg></span>
+              <div class="body">
+                <span class="pri">Awaiting payment · sent 6 days ago</span>
+                <span class="sec">Email opened twice · pay link clicked once · no payment yet. <strong>8 days to due date.</strong></span>
+              </div>
+            </div>
+
+            <!-- Breakdown -->
+            <div class="breakdown-card">
+              <div class="b-row"><span class="lbl">Subtotal</span><span class="val">$17,142<span class="cents">.86</span></span></div>
+              <div class="b-row is-line">
+                <div class="lbl">Framing — labour
+                  <span class="desc">May 1–14 · 86 hrs</span>
+                </div>
+                <span class="val">$8,600<span class="cents">.00</span></span>
+              </div>
+              <div class="b-row is-line">
+                <div class="lbl">Materials &amp; expenses
+                  <span class="desc">Lumber pkg 2 · subfloor</span>
+                </div>
+                <span class="val">$6,300<span class="cents">.86</span></span>
+              </div>
+              <div class="b-row is-line">
+                <div class="lbl">Project management (15%)
+                  <span class="desc">Inline · project default</span>
+                </div>
+                <span class="val">$2,242<span class="cents">.00</span></span>
+              </div>
+              <div class="b-row"><span class="lbl">GST (5%)</span><span class="val">$857<span class="cents">.14</span></span></div>
+              <div class="b-divider"></div>
+              <div class="b-row is-total"><span class="lbl">Customer total</span><span class="val">$18,000<span class="cents">.00</span></span></div>
+              <div class="reg-footer">
+                <span>GST: <span class="num">779 481 326 RT0001</span></span>
+                <span class="sep">·</span>
+                <span>WCB: <span class="num">418294-AC</span></span>
+              </div>
+            </div>
+
+            <!-- Secondary chase actions, just above the action bar -->
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-ghost" style="flex:1;">
+                <svg class="icon"><use href="#i-mail"/></svg>Resend
+              </button>
+              <button class="btn btn-ghost" style="flex:1;">
+                <svg class="icon"><use href="#i-link"/></svg>Copy link
+              </button>
+            </div>
+
+            <!-- Context -->
+            <div class="ctx-card">
+              <span class="ico"><svg><use href="#i-user"/></svg></span>
+              <div class="body">
+                <div class="lbl">Customer</div>
+                <div class="name">The Donahue Family</div>
+                <div class="meta">donahue.fam@protonmail.com</div>
+              </div>
+              <svg class="chev"><use href="#i-chevron-right"/></svg>
+            </div>
+
+            <!-- Doc details collapsed -->
+            <div class="disclosure">
+              <div class="disclosure-head">
+                <svg class="chev"><use href="#i-chevron-right"/></svg>
+                <div class="text">
+                  <div class="t">Document details</div>
+                  <div class="s">Sent with this invoice</div>
+                </div>
+                <span class="dot" title="Using tenant defaults"></span>
+              </div>
+            </div>
+
+            <!-- History (compact) -->
+            <div class="history">
+              <div class="h-head">History</div>
+              <ol>
+                <li class="is-current">
+                  <span class="t">Payment link clicked</span>
+                  <span class="w">May 21 · 11:02 am</span>
+                </li>
+                <li>
+                  <span class="t">Email opened (Helen Chao)</span>
+                  <span class="w">May 19 · 8:14 am</span>
+                </li>
+                <li>
+                  <span class="t">Sent · Stripe link generated</span>
+                  <span class="w">May 17 · 3:42 pm</span>
+                </li>
+              </ol>
+            </div>
+
+          </div>
+
+          <!-- Sticky action bar -->
+          <div class="action-bar">
+            <button class="btn-primary">
+              <svg class="icon"><use href="#i-check-circle"/></svg>
+              Record payment
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption">
+        FRAME 2 · <b>SENT</b> · warn-soft posture · Record-payment is the one action
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ────────────────────────────────────────────────────────────────
+       Row 2 — Paid + Void
+  ──────────────────────────────────────────────────────────────── -->
+  <div class="frame-divider">
+    <span class="num">Frames 3 & 4</span>
+    <span class="label">Paid + Void — closed postures</span>
+    <span class="sub">success-soft receipt with thumbnails · neutral closed with Duplicate</span>
+  </div>
+
+  <div class="row">
+
+    <!-- ════════════════════════════════════════════════════════════
+         PHONE C — PAID (success-soft receipt, receipt thumbnails)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>2:08</span>
+            <span class="right">
+              <svg class="signal"><use href="#i-signal"/></svg>
+              <svg class="wifi"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <header class="app-top">
+            <button class="back" aria-label="Back"><svg><use href="#i-arrow-left"/></svg></button>
+            <div class="center">
+              <span class="ttl">Invoice</span>
+              <span class="sub">INV-2026-0128 · Final</span>
+            </div>
+            <button class="more" aria-label="More"><svg><use href="#i-more"/></svg></button>
+          </header>
+
+          <div class="scroll">
+
+            <div class="head">
+              <div class="eyebrow">
+                <span class="doc-num">INV-2026-0128</span>
+                <span class="sep">·</span>
+                <span>Final invoice</span>
+              </div>
+              <div class="ttl">Petrov Bathroom Reno</div>
+              <div class="meta"><a href="#">Marcus &amp; Aisha Petrov</a><span class="sep">·</span>Chilliwack</div>
+              <div class="status-row">
+                <span class="status-badge status-paid">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Paid
+                </span>
+                <span style="font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;">
+                  May 19 · 2:08 pm
+                </span>
+              </div>
+              <div class="total-row">
+                <span class="l">Paid in full</span>
+                <span class="v">$11,000<span class="cents">.00</span></span>
+              </div>
+            </div>
+
+            <!-- Posture: paid receipt -->
+            <div class="posture posture-success">
+              <span class="ico"><svg><use href="#i-check-circle"/></svg></span>
+              <div class="body">
+                <span class="pri">Paid via Interac e-Transfer</span>
+                <span class="sec">Ref <strong>E-TR-7F32-X91Q</strong> · 6 min after send · recorded by Avery · receipt emailed.</span>
+              </div>
+            </div>
+
+            <!-- Breakdown (now receipt of record) -->
+            <div class="breakdown-card">
+              <div class="b-row"><span class="lbl">Subtotal</span><span class="val">$10,476<span class="cents">.19</span></span></div>
+              <div class="b-row is-line">
+                <div class="lbl">Bathroom reno — final
+                  <span class="desc">Per estimate · Mar 14</span>
+                </div>
+                <span class="val">$10,476<span class="cents">.19</span></span>
+              </div>
+              <div class="b-row"><span class="lbl">GST (5%)</span><span class="val">$523<span class="cents">.81</span></span></div>
+              <div class="b-divider"></div>
+              <div class="b-row is-total"><span class="lbl">Customer total</span><span class="val">$11,000<span class="cents">.00</span></span></div>
+              <div class="reg-footer">
+                <span>GST: <span class="num">779 481 326 RT0001</span></span>
+                <span class="sep">·</span>
+                <span>WCB: <span class="num">418294-AC</span></span>
+              </div>
+            </div>
+
+            <!-- Payment notes + receipts -->
+            <div class="note">
+              <span class="lbl">Payment notes &amp; receipts</span>
+              <p class="body">“Marcus sent via personal account — emailed confirmation right after. 2 photos + 1 bank PDF for the books.”</p>
+              <div class="receipts">
+                <a class="r-thumb r-1" href="#"></a>
+                <a class="r-thumb r-2" href="#"></a>
+                <a class="r-thumb is-pdf" href="#">
+                  <svg><use href="#i-pdf"/></svg>BANK<br/>PDF
+                </a>
+              </div>
+            </div>
+
+            <!-- Context -->
+            <div class="ctx-card">
+              <span class="ico"><svg><use href="#i-briefcase"/></svg></span>
+              <div class="body">
+                <div class="lbl">Project</div>
+                <div class="name">Petrov Bathroom Reno</div>
+                <div class="meta">Closed out · 100% paid</div>
+              </div>
+              <svg class="chev"><use href="#i-chevron-right"/></svg>
+            </div>
+
+            <div class="history">
+              <div class="h-head">History</div>
+              <ol>
+                <li class="is-current">
+                  <span class="t">Payment recorded · Interac · $11,000</span>
+                  <span class="w">May 19 · 2:08 pm</span>
+                </li>
+                <li>
+                  <span class="t">Email opened</span>
+                  <span class="w">May 19 · 2:01 pm</span>
+                </li>
+                <li>
+                  <span class="t">Sent · m.petrov@telus.net</span>
+                  <span class="w">May 19 · 1:58 pm</span>
+                </li>
+              </ol>
+            </div>
+
+          </div>
+
+          <!-- Sticky action bar: closed posture — Duplicate as primary -->
+          <div class="action-bar">
+            <button class="btn-secondary">
+              <svg class="icon"><use href="#i-printer"/></svg>Print
+            </button>
+            <button class="btn-secondary" style="background:var(--ink); color:#fff; border-color:var(--ink);">
+              <svg class="icon"><use href="#i-copy"/></svg>Duplicate
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption">
+        FRAME 3 · <b>PAID</b> · success-soft receipt · receipt thumbnails tappable
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         PHONE D — VOID (neutral, closed) + danger-soft inline caution
+    ═══════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>4:21</span>
+            <span class="right">
+              <svg class="signal"><use href="#i-signal"/></svg>
+              <svg class="wifi"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <header class="app-top">
+            <button class="back" aria-label="Back"><svg><use href="#i-arrow-left"/></svg></button>
+            <div class="center">
+              <span class="ttl">Invoice</span>
+              <span class="sub">INV-2026-0117 · Deposit</span>
+            </div>
+            <button class="more" aria-label="More"><svg><use href="#i-more"/></svg></button>
+          </header>
+
+          <div class="scroll">
+
+            <div class="head">
+              <div class="eyebrow">
+                <span class="doc-num">INV-2026-0117</span>
+                <span class="sep">·</span>
+                <span>Deposit</span>
+              </div>
+              <div class="ttl">Bandsma Cedar Deck</div>
+              <div class="meta"><a href="#">Graham Bandsma</a><span class="sep">·</span>Langley</div>
+              <div class="status-row">
+                <span class="status-badge status-void">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="5" y1="5" x2="19" y2="19"/></svg>
+                  Void
+                </span>
+                <span style="font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;">
+                  May 12 · by Avery
+                </span>
+              </div>
+              <div class="total-row">
+                <span class="l">Was</span>
+                <span class="v" style="color:var(--muted);">$2,362<span class="cents">.50</span></span>
+              </div>
+            </div>
+
+            <!-- Posture: neutral closed -->
+            <div class="posture posture-neutral">
+              <span class="ico"><svg><use href="#i-ban"/></svg></span>
+              <div class="body">
+                <span class="pri">Voided · pay link disabled</span>
+                <span class="sec">Customer pushed start to fall — re-issued as <strong>INV-2026-0124</strong> with revised scope.</span>
+              </div>
+            </div>
+
+            <!-- Inline caution (danger-soft variant — missing-GST shown
+                 for completeness; would normally appear on a draft) -->
+            <div class="inline-caution caution-danger">
+              <span class="ico"><svg><use href="#i-x-circle"/></svg></span>
+              <div class="text">
+                <strong>GST# was missing.</strong>
+                Send-gate caught it before the customer saw it.
+                <a href="#" class="fix-link">Add GST # in Settings</a>
+              </div>
+            </div>
+
+            <!-- Breakdown (greyed posture for void) -->
+            <div class="breakdown-card" style="opacity:0.85;">
+              <div class="b-row"><span class="lbl">Subtotal</span><span class="val">$2,250<span class="cents">.00</span></span></div>
+              <div class="b-row is-line">
+                <div class="lbl">Cedar deck — deposit (10%)
+                  <span class="desc">Per estimate EST-2026-0044</span>
+                </div>
+                <span class="val">$2,250<span class="cents">.00</span></span>
+              </div>
+              <div class="b-row"><span class="lbl">GST (5%)</span><span class="val">$112<span class="cents">.50</span></span></div>
+              <div class="b-divider"></div>
+              <div class="b-row is-total"><span class="lbl">Was customer total</span><span class="val" style="color:var(--muted);">$2,362<span class="cents">.50</span></span></div>
+              <div class="reg-footer">
+                <span>GST: <span style="color:var(--danger); font-weight:700;">— missing —</span></span>
+                <span class="sep">·</span>
+                <span>WCB: <span class="num">418294-AC</span></span>
+              </div>
+            </div>
+
+            <!-- Context: replaced by -->
+            <div class="ctx-card">
+              <span class="ico"><svg><use href="#i-briefcase"/></svg></span>
+              <div class="body">
+                <div class="lbl">Replaced by</div>
+                <div class="name">INV-2026-0124</div>
+                <div class="meta">Cedar Deck + Pergola · revised scope</div>
+              </div>
+              <svg class="chev"><use href="#i-chevron-right"/></svg>
+            </div>
+
+          </div>
+
+          <!-- Sticky action bar: Duplicate as the path forward -->
+          <div class="action-bar">
+            <button class="btn-secondary">
+              <svg class="icon"><use href="#i-printer"/></svg>Print
+            </button>
+            <button class="btn-secondary" style="background:var(--ink); color:#fff; border-color:var(--ink);">
+              <svg class="icon"><use href="#i-copy"/></svg>Duplicate to new draft
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption">
+        FRAME 4 · <b>VOID</b> · neutral closed · Duplicate is the path forward
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         PHONE E — RECORD-PAYMENT BOTTOM SHEET (Interac at parity)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div>
+      <div class="phone sheet-stage">
+        <div class="phone-screen">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>2:08</span>
+            <span class="right">
+              <svg class="signal"><use href="#i-signal"/></svg>
+              <svg class="wifi"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <!-- Faint backdrop of the sent invoice -->
+          <header class="app-top" style="opacity:0.4;">
+            <button class="back"><svg><use href="#i-arrow-left"/></svg></button>
+            <div class="center">
+              <span class="ttl">Invoice</span>
+              <span class="sub">INV-2026-0139</span>
+            </div>
+            <button class="more"><svg><use href="#i-more"/></svg></button>
+          </header>
+
+          <div class="scroll" style="opacity:0.25;">
+            <div class="head"><div class="eyebrow"><span class="doc-num">INV-2026-0139</span></div><div class="ttl">Donahue Basement Suite</div></div>
+            <div class="breakdown-card"><div class="b-row is-total"><span class="lbl">Customer total</span><span class="val">$18,000<span class="cents">.00</span></span></div></div>
+          </div>
+
+          <!-- The bottom sheet -->
+          <div class="sheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-head">
+              <h2>Record payment</h2>
+              <p class="desc">INV-2026-0139 · invoice total <span class="tot">$18,000.00</span></p>
+            </div>
+            <div class="sheet-body">
+
+              <div class="sheet-field">
+                <label>Amount received</label>
+                <input class="input tabular" value="$18,000.00" />
+              </div>
+
+              <div class="sheet-field">
+                <label>Method</label>
+                <div class="method-grid">
+                  <button class="method"><span class="glyph">$</span>Cash</button>
+                  <button class="method"><span class="glyph">CH</span>Cheque</button>
+                  <button class="method interac is-on">
+                    <span class="glyph">⇄</span>Interac e-Transfer
+                  </button>
+                  <button class="method"><span class="glyph">S</span>Stripe</button>
+                  <button class="method"><span class="glyph">•</span>Other</button>
+                </div>
+              </div>
+
+              <div class="sheet-field">
+                <label>Confirmation #</label>
+                <input class="input mono" value="E-TR-A8F1-Q34M" />
+              </div>
+
+              <div class="ocr-hint">
+                <svg><use href="#i-sparkles"/></svg>
+                <span><b>Henry</b> reads the first receipt photo and pre-fills amount + ref. Re-fires when you swap photos.</span>
+              </div>
+
+              <div class="sheet-field">
+                <label>Receipts (up to 10 · 10 MB each)</label>
+                <div style="display:flex; gap:6px; align-items:center; padding:10px; border:1px dashed var(--rule); border-radius:9px; background:var(--paper-soft); color:var(--muted); font-size:12px;">
+                  <svg style="width:14px; height:14px;"><use href="#i-paperclip"/></svg>
+                  Attach photo or PDF
+                </div>
+              </div>
+
+            </div>
+            <div class="sheet-foot">
+              <button class="btn-secondary" style="flex:1;">Cancel</button>
+              <button class="btn-primary" style="flex:2;">
+                <svg class="icon"><use href="#i-check"/></svg>
+                Mark paid
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="phone-caption">
+        FRAME 5 · <b>RECORD-PAYMENT SHEET</b> · Interac e-Transfer at parity · OCR-prefill
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

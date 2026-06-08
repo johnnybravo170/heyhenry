@@ -2,13 +2,19 @@
 
 Source of truth for the prompts running as Claude Code Routines at `claude.ai/code/routines`. Each markdown file here is paste-ready for the Routine "Instructions" field.
 
-## Fleet — HeyHenry routines (9)
+## Fleet — HeyHenry routines
 
-All 9 are Remote (Anthropic cloud sandbox). Other Local routines visible in claude.ai/code/routines (`Friday memory synthesis`, `Heyhenry feature matrix refresh`) belong to **HenryOS**, not HeyHenry, and are out of scope for this registry.
+Most are Remote (Anthropic cloud sandbox); `visual-qa-fixer` is the exception — it runs as a **Local** Claude Code routine on the Mac mini (co-located with the Hermes detector, sidesteps the 15/day Remote Max-plan cap, and has the git/repo access the auto-fix path needs). Other Local routines visible in claude.ai/code/routines (`Friday memory synthesis`, `Heyhenry feature matrix refresh`) belong to **HenryOS**, not HeyHenry, and are out of scope for this registry.
+
+## Command Center + collector model (2026-05-25)
+
+The **HeyHenry Command Center** (`daily-board-triage.md`) is the single weekday morning triage and the **sole synthesizer**. The research/idea scouts are now **collectors**: they keep doing their domain collection and write raw signal to their existing surface (the ideas pool), but they **no longer email Jonathan or build per-scout digests / report-cards addressed to him** — each scout file carries a `⚠ COLLECTOR MODE` banner that suspends those steps. The Command Center dedups across scouts, applies the why-now gate, and sends the ONE daily digest → `/admin/queue`. `weekly-dispatcher` is **retired** (its narrative roll-up folds into the Command Center).
+
+**When you reconcile drift, the banner wins** — the email/digest steps still physically exist below each banner for reference, but COLLECTOR MODE suspends them.
 
 ## Boundary: business-scout vs marketing-strategist
 
-Both routines write to `ops.ideas`. Hard separation by category:
+Both routines write to `ops.ideas` (as collectors). Hard separation by category:
 
 - **business-scout** owns: `revenue`, `retention`, `market-expansion`, `pricing`, `positioning`, `partnership`, `ops-efficiency`. Strategic moves with hard testability gates and ≥ 3 ops-surface citation requirement. Tagged `biz-scout`.
 - **marketing-strategist** owns: `content`, `launch`, `acquisition`. Tactical marketing brainstorms framed around named contractor archetypes (Will, JVD, John). Tagged `marketing-scout`.
@@ -17,15 +23,17 @@ Each routine's prompt explicitly hands off out-of-scope candidates to the siblin
 
 | File | Slug | Runtime | Cadence | What it does |
 |---|---|---|---|---|
+| `daily-board-triage.md` | `daily-board-triage` | Remote | Weekdays ~7 AM PT | **HeyHenry Command Center** — sole synthesizer. Triages board + ideas pool → 5 streams → `ops.decision_bundles` → ONE digest → `/admin/queue` |
 | `doc-writer.md` | `doc-writer` | Remote | Daily 5 AM | Engineer-audience module summaries from recent commits → `ops.knowledge_docs` + `ops.docs` |
-| `weekly-dispatcher.md` | `weekly-dispatcher` | Remote | Mon 6 AM | Narrative weekly digest → worklog + knowledge |
-| `ai-tools-scout.md` | `ai-tools-scout` | Remote | Daily 7 AM | AI/ML tooling scan → `ops.ideas` + email digest |
-| `business-scout.md` | `business-scout` | Remote | Daily 6 AM | Strategic moves synthesis → `ops.ideas` + email |
+| `ai-tools-scout.md` | `ai-tools-scout` | Remote | Daily 7 AM | **Collector** — AI/ML tooling scan → `ops.ideas` (no email) |
+| `business-scout.md` | `business-scout` | Remote | Daily 6 AM | **Collector** — strategic moves synthesis → `ops.ideas` (`biz-scout`, no email) |
 | `helpdesk-triage.md` | `helpdesk-triage` | Remote | Daily 9 AM | Codebase-grounded diagnosis on `triage:claude` kanban cards |
+| `visual-qa-fixer.md` | `visual-qa-fixer` | **Local** (Mini) | Daily (after detector) | Stage-4 of the Visual-QA Loop — claims `fix:claude` cards, gates, surfaces or auto-PRs render fixes w/ before/after (propose-mode default; **never merges**). Local Claude Code on the Mini; auths to Ops MCP via `.mcp.json` api-key bearer. Detector is the Hermes profile in `hermes/`. |
 | `security-probe.md` | `security-probe` | Remote | Daily 4 AM | Reviews production surfaces for security regressions → opens incidents |
-| `competitive-research.md` | `competitive-research` | Remote | Daily 6 AM | Refreshes `ops.competitors` corpus with structured findings |
-| `pain-points-research.md` | `pain-points-research` | Remote | Daily 7 AM | Mines contractor-community pain points → `ops.social_drafts` |
-| `marketing-strategist.md` | `marketing-strategist` | Remote | TBD | Tactical marketing (content / launch / acquisition only — strategic moves go to business-scout) → `ops.ideas` (`marketing-scout` tag) + email digest |
+| `competitive-research.md` | `competitive-research` | Remote | Daily 6 AM | **Collector** — refreshes `ops.competitors` corpus with structured findings |
+| `pain-points-research.md` | `pain-points-research` | Remote | Daily 7 AM | **Collector** — mines contractor-community pain points → `ops.social_drafts` |
+| `marketing-strategist.md` | `marketing-strategist` | Remote | TBD | **Collector** — tactical marketing (content / launch / acquisition; strategic moves go to business-scout) → `ops.ideas` (`marketing-scout`, no email) |
+| `weekly-dispatcher.md` | `weekly-dispatcher` | — | **RETIRED** | Folded into the Command Center daily digest. Do not schedule. |
 
 All connect to the **HeyHenry Ops MCP** at `https://ops.heyhenry.io/api/mcp`. The Local one previously sent email via AppleScript / Mail.app; that path was unreliable. Updated to use `ops_email_send` like the Remote scouts.
 
@@ -58,7 +66,7 @@ If `agent_run_start` fails, log it but continue — instrumentation must never g
 
 In-repo crons live under `ops/src/app/api/ops/<name>/run/route.ts` and use `ops/src/lib/agents/{recordAgentRun, finishAgentRun, withAgentRun}` instead of the MCP tools.
 
-## All 8 routines now have source-of-truth in this folder. Going forward:
+## Every routine has its source-of-truth in this folder. Going forward:
 
 - The cloud config at claude.ai/code/routines is what's actually running. The repo is the place it should match.
 - Drift detection is manual: when you edit a Routine in the cloud, paste the new content back into the corresponding `.md` here in the same session.

@@ -1,0 +1,1306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Gallery share — HeyHenry (mobile, the primary target)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ──────────────────────────────────────────────────────────────────
+     Closeout photo-gallery share — /g/[handle]
+     No-login, token-gated, brand-carrying. The GC texts the link, the
+     client opens it on a phone, scrolls the before/after, and — at the
+     deliberate growth moment — leaves a review. This is as much a
+     review-and-referral loop as a client deliverable.
+
+     Paper restyle onto the shared public letterhead (PublicBrandHeader),
+     phone-first. The ONE rust element on the client view is the Review
+     CTA — every other surface stays ink / neutral.
+
+     Strict type scale: 11px mono · 12 · 14 · 16; display 20 / 24 / 28.
+     HIDDEN_TAGS (concern · serial · materials · equipment) are stripped
+     server-side and never render here — only Before / After / Progress /
+     Noted / Other.
+  ─────────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --card:         #FFFFFF;
+    --paper-soft:   #FBF6EC;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #E6DBC2;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 0 56px;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  .ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ───── OD frame chrome ───── */
+  .frame-divider {
+    max-width: 1680px;
+    margin: 56px auto 14px;
+    padding: 0 28px;
+    display: flex; align-items: baseline; gap: 18px;
+    flex-wrap: wrap;
+  }
+  .frame-divider:first-of-type { margin-top: 8px; }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 24px; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .frame-pad {
+    max-width: 880px;
+    margin: 0 auto 14px;
+    padding: 0 28px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* ───── Phone row ───── */
+  .phone-row {
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 36px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .phone-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .phone-cell .cap {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    max-width: 390px;
+  }
+  .phone-cell .cap .url {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--card);
+    position: relative;
+    z-index: 5;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+  .home-indicator {
+    position: absolute;
+    bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px;
+    background: var(--ink);
+    border-radius: 999px;
+    opacity: 0.5;
+    z-index: 10;
+  }
+
+  /* ───── Mobile browser URL bar ───── */
+  .mob-url-bar {
+    height: 36px;
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: center; gap: 7px;
+    padding: 0 14px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .mob-url-bar .lock { width: 11px; height: 11px; color: var(--ok); flex-shrink: 0; }
+  .mob-url-bar .host { color: var(--faint); }
+  .mob-url-bar .path { color: var(--ink); font-weight: 600; }
+  .mob-url-bar .menu { margin-left: auto; color: var(--faint); font-size: 14px; letter-spacing: 0.1em; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     GC BRAND HEADER — the shared <PublicBrandHeader> shell.
+     Tenant logo + name + job context line + the trust line. Quiet
+     "secure" lock badge per the no-login boundary.
+  ═══════════════════════════════════════════════════════════════════ */
+  .gc-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 11px;
+    flex-shrink: 0;
+  }
+  .gc-logo {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
+  }
+  .gc-logo.brand-mapleridge { background: #4F2419; color: #F1E4D0; }
+  .gc-stack { display: flex; flex-direction: column; min-width: 0; }
+  .gc-name {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+  }
+  .gc-meta {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .gc-bar .right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .gc-bar .right .ico { width: 12px; height: 12px; color: var(--ok); }
+
+  /* ── Scroll body ── */
+  .surface {
+    flex: 1;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+  }
+  .surface::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 22px;
+    background: linear-gradient(to top, var(--bg), transparent);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .surface-pad { padding: 14px 14px 18px; display: flex; flex-direction: column; gap: 18px; }
+
+  /* ── Document title block (after the gc-bar) ── */
+  .doc-head {
+    padding: 0 2px;
+  }
+  .doc-head .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .doc-head .title {
+    margin-top: 4px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .doc-head .trust {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+    display: flex; gap: 6px; align-items: flex-start;
+  }
+  .doc-head .trust .ico { width: 12px; height: 12px; color: var(--ok); flex-shrink: 0; margin-top: 2px; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     TAG-GROUPED PHOTO GRID
+     Sections in order: Before · After · Progress · Noted · Other.
+     HIDDEN_TAGS (concern · serial · materials · equipment) are
+     stripped server-side — they NEVER appear here.
+  ═══════════════════════════════════════════════════════════════════ */
+  .tag-section { display: flex; flex-direction: column; gap: 10px; }
+  .tag-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 2px;
+  }
+  .tag-head h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.008em;
+  }
+  .tag-head .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  /* <figure> per the live component: photo area (aspect-square) +
+     optional <figcaption> below with hairline separator, muted 12px. */
+  .photo-tile {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    margin: 0;
+  }
+  .photo-tile .photo {
+    aspect-ratio: 1;
+    position: relative;
+    background: var(--paper-soft);
+    overflow: hidden;
+  }
+  .photo-tile .date {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: rgba(10,10,10,0.55);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 5px;
+    padding: 2px 6px;
+    letter-spacing: 0.02em;
+  }
+  .photo-tile figcaption {
+    border-top: 1px solid var(--hair);
+    padding: 7px 10px 8px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.003em;
+  }
+  .photo-tile.span2 { grid-column: span 2; }
+  .photo-tile.span2 .photo { aspect-ratio: 2.1 / 1; }
+
+  /* Simulated photo content — neutral kitchen-reno tones. The real
+     gallery loads signed URLs from the photos bucket; here we use
+     layered gradients so the grid rhythm is honest. */
+  .ph-before-1 { background: linear-gradient(160deg, #C9B89B 0%, #8D7A60 55%, #5F4E3A 100%); }
+  .ph-before-2 { background: linear-gradient(150deg, #8A7762 0%, #6E5D49 100%); }
+  .ph-before-3 { background: linear-gradient(170deg, #B2A089 0%, #8B7A63 50%, #6A5A45 100%); }
+  .ph-after-1  { background: linear-gradient(170deg, #F0E6D3 0%, #D8C7A8 45%, #B4A07E 100%); }
+  .ph-after-2  { background: linear-gradient(155deg, #E8DDC8 0%, #C3AE89 55%, #8B7556 100%); }
+  .ph-after-3  { background: linear-gradient(165deg, #F4ECDD 0%, #C9B894 50%, #8E7A55 100%); }
+  .ph-after-4  { background: linear-gradient(175deg, #F1E8D6 0%, #B69F7B 100%); }
+  .ph-prog-1   { background: linear-gradient(150deg, #9B8B73 0%, #5C4E3A 100%); }
+  .ph-prog-2   { background: linear-gradient(165deg, #B8A689 0%, #8C7A5E 100%); }
+  .ph-prog-3   { background: linear-gradient(155deg, #CDB996 0%, #91805F 100%); }
+  .ph-prog-4   { background: linear-gradient(170deg, #A8997C 0%, #6E5F46 100%); }
+  .ph-noted-1  { background: linear-gradient(160deg, #C2B398 0%, #87764D 100%); }
+  .ph-other-1  { background: linear-gradient(175deg, #DACFB8 0%, #A89880 100%); }
+
+  /* Subtle photo content hint — a low-opacity vector to suggest the
+     room without faking pixels. */
+  .photo-tile svg.scene {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0.18;
+    color: #fff;
+  }
+  .photo-tile .photo.darker svg.scene { opacity: 0.22; color: #FBF6EC; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     REVIEW CTA — THE ONE rust moment on the client view.
+     Placed right after the After section, where the transformation
+     has just landed. Earns the click.
+  ═══════════════════════════════════════════════════════════════════ */
+  .review-card {
+    background: var(--card);
+    border: 1px solid var(--rust);
+    border-radius: 14px;
+    padding: 16px 16px 14px;
+    box-shadow: 0 4px 14px -6px rgba(194,65,12,0.18);
+  }
+  .review-card .stars {
+    display: flex; gap: 3px;
+    color: var(--rust);
+    margin-bottom: 8px;
+  }
+  .review-card .stars .ico { width: 16px; height: 16px; fill: var(--rust); stroke: var(--rust); }
+  .review-card .ask {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+  }
+  .review-card .ask strong { font-weight: 700; }
+  .review-card .sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .review-cta {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 12px;
+    width: 100%;
+    height: 50px;
+    background: var(--rust);
+    color: #fff;
+    border: 0;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+  }
+  .review-cta .ico { width: 16px; height: 16px; fill: #fff; stroke: #fff; }
+  .review-cta .ext { width: 13px; height: 13px; opacity: 0.85; fill: none; stroke: #fff; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     BRAND FOOTER — website + socials + platform attribution.
+  ═══════════════════════════════════════════════════════════════════ */
+  .brand-foot {
+    text-align: center;
+    padding: 6px 4px 0;
+    border-top: 1px solid var(--hair);
+    margin-top: 8px;
+    padding-top: 16px;
+  }
+  .brand-foot .web {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .brand-foot .socials {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .brand-foot .socials a {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .brand-foot .socials a .ico { width: 13px; height: 13px; color: var(--muted); }
+  .brand-foot .attrib {
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .brand-foot .attrib strong { color: var(--muted); font-weight: 600; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     EMPTY / 404 / EXPIRED states — calm, branded, on-shell.
+  ═══════════════════════════════════════════════════════════════════ */
+  .empty-card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 36px 20px 32px;
+    text-align: center;
+  }
+  .empty-card .icon-wrap {
+    width: 48px; height: 48px;
+    margin: 0 auto 14px;
+    border-radius: 12px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    display: grid; place-items: center;
+    color: var(--muted);
+  }
+  .empty-card .icon-wrap .ico { width: 22px; height: 22px; }
+  .empty-card .title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.012em;
+  }
+  .empty-card .body {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .empty-card .why {
+    margin: 14px auto 0;
+    max-width: 280px;
+    background: var(--paper-soft);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .empty-card .why ul { margin: 4px 0 0; padding-left: 16px; }
+  .empty-card .why li { margin-top: 2px; }
+  .empty-card .contact {
+    margin-top: 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    padding: 8px 12px;
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    background: var(--card);
+  }
+  .empty-card .contact .ico { width: 12px; height: 12px; color: var(--muted); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     OPERATOR — share & govern strip (compact, shown for completeness;
+     true home is the operator photo tab). Ink actions, restrained
+     danger token for revoke. NOT the rust accent — that's reserved
+     for the client-side Review CTA.
+  ═══════════════════════════════════════════════════════════════════ */
+  .op-frame {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .op-panel {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 0;
+    overflow: hidden;
+  }
+  .op-panel .op-h {
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--hair);
+    display: flex; align-items: baseline; justify-content: space-between;
+    background: var(--paper-soft);
+  }
+  .op-panel .op-h .l {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .op-panel .op-h .sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .op-body {
+    padding: 16px 18px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 22px;
+  }
+  .op-row { display: flex; flex-direction: column; gap: 4px; }
+  .op-row .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .op-row .val {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .op-row .val.mono { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .op-row .val .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    margin-left: 8px;
+  }
+  .op-row .val .badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .op-row .meta {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .op-link-input {
+    grid-column: 1 / -1;
+    display: flex; align-items: stretch;
+    border: 1px solid var(--hair);
+    border-radius: 9px;
+    overflow: hidden;
+    background: var(--paper-soft);
+  }
+  .op-link-input .field {
+    flex: 1;
+    padding: 9px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    background: var(--paper-soft);
+    border: 0;
+    min-width: 0;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .op-link-input .copy {
+    border: 0;
+    border-left: 1px solid var(--hair);
+    background: var(--card);
+    padding: 0 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .op-link-input .copy .ico { width: 12px; height: 12px; }
+  .op-actions {
+    grid-column: 1 / -1;
+    display: flex; gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-top: 4px;
+  }
+  .op-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .op-btn-primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .op-btn-danger { color: var(--danger); border-color: #E8B5B5; }
+  .op-btn-danger:hover { background: var(--danger-soft); }
+  .op-btn .ico { width: 13px; height: 13px; }
+  .op-stats {
+    grid-column: 1 / -1;
+    display: flex; gap: 22px;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--hair);
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .op-stats .stat { display: flex; flex-direction: column; gap: 2px; }
+  .op-stats .stat .l {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .op-stats .stat .v {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.012em;
+  }
+  .op-stats .stat .v small { font-weight: 500; color: var(--muted); font-size: 12px; }
+
+  .boundary-note {
+    margin-top: 14px;
+    padding: 11px 13px;
+    background: var(--paper-soft);
+    border: 1px dashed var(--rule);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .boundary-note .ico { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+  .boundary-note strong { color: var(--ink-2); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="phone-row">
+  <div class="phone-cell">
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg class="ico" width="14" height="11" viewBox="0 0 14 11" aria-hidden>
+              <path d="M1 9 L1 7 M4 9 L4 5 M7 9 L7 3 M10 9 L10 1" />
+            </svg>
+            <svg class="ico" width="14" height="11" viewBox="0 0 14 11" aria-hidden>
+              <path d="M2 7 Q7 1 12 7" />
+              <path d="M4 8 Q7 4 10 8" />
+              <circle cx="7" cy="9" r="0.5" fill="currentColor" stroke="none" />
+            </svg>
+            <span class="battery"></span>
+          </div>
+        </div>
+
+        <!-- Browser URL -->
+        <div class="mob-url-bar">
+          <svg class="lock ico" viewBox="0 0 24 24" aria-hidden>
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+          </svg>
+          <span><span class="host">app.heyhenry.io</span><span class="path">/g/chen-kitchen-x7Tk9bQa</span></span>
+          <span class="menu">⋯</span>
+        </div>
+
+        <!-- GC brand header (PublicBrandHeader) -->
+        <div class="gc-bar">
+          <div class="gc-logo brand-mapleridge">MR</div>
+          <div class="gc-stack">
+            <div class="gc-name">Maple Ridge Renos</div>
+            <div class="gc-meta">Job gallery · Chen residence</div>
+          </div>
+          <div class="right">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+            </svg>
+            secure
+          </div>
+        </div>
+
+        <!-- Scroll body -->
+        <div class="surface">
+          <div class="surface-pad">
+
+            <!-- Document head: eyebrow + title + trust line -->
+            <div class="doc-head">
+              <div class="eyebrow">Job gallery</div>
+              <h1 class="title">Chen kitchen reno · Maple&nbsp;Ridge&nbsp;Renos</h1>
+              <div class="trust">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+                  <rect x="5" y="11" width="14" height="10" rx="2" />
+                  <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+                </svg>
+                Every photo is timestamped and kept on file by Maple&nbsp;Ridge&nbsp;Renos.
+              </div>
+            </div>
+
+            <!-- ── Before ── -->
+            <section class="tag-section">
+              <div class="tag-head">
+                <h2>Before</h2>
+                <span class="count">3 photos · Mar&nbsp;14</span>
+              </div>
+              <div class="photo-grid">
+                <figure class="photo-tile">
+                  <div class="photo ph-before-1">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="10" y="55" width="80" height="32" fill="currentColor" opacity="0.6"/>
+                    <rect x="14" y="59" width="22" height="14" fill="none" stroke="currentColor"/>
+                    <rect x="40" y="59" width="22" height="14" fill="none" stroke="currentColor"/>
+                    <rect x="66" y="59" width="22" height="14" fill="none" stroke="currentColor"/>
+                    <rect x="14" y="76" width="74" height="8" fill="none" stroke="currentColor"/>
+                  </svg>
+                    <span class="date">Mar&nbsp;14</span>
+                  </div>
+                  <figcaption>Old galley · north wall</figcaption>
+                </figure>
+                <figure class="photo-tile">
+                  <div class="photo ph-before-2">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="20" y="20" width="60" height="40" fill="none" stroke="currentColor"/>
+                    <rect x="25" y="25" width="50" height="30" fill="currentColor" opacity="0.5"/>
+                    <rect x="35" y="62" width="30" height="6" fill="currentColor" opacity="0.7"/>
+                  </svg>
+                    <span class="date">Mar&nbsp;14</span>
+                  </div>
+                  <figcaption>Existing range &amp; range hood</figcaption>
+                </figure>
+                <figure class="photo-tile span2">
+                  <div class="photo ph-before-3">
+                    <svg class="scene" viewBox="0 0 100 50" aria-hidden preserveAspectRatio="none">
+                    <rect x="5" y="30" width="90" height="14" fill="currentColor" opacity="0.55"/>
+                    <rect x="8" y="33" width="18" height="9" fill="none" stroke="currentColor"/>
+                    <rect x="30" y="33" width="18" height="9" fill="none" stroke="currentColor"/>
+                    <rect x="52" y="33" width="18" height="9" fill="none" stroke="currentColor"/>
+                    <rect x="74" y="33" width="18" height="9" fill="none" stroke="currentColor"/>
+                    <line x1="5" y1="12" x2="95" y2="12" stroke="currentColor" stroke-width="1"/>
+                  </svg>
+                    <span class="date">Mar&nbsp;14</span>
+                  </div>
+                  <figcaption>Original layout — looking toward the dining room</figcaption>
+                </figure>
+              </div>
+            </section>
+
+            <!-- ── After ── -->
+            <section class="tag-section">
+              <div class="tag-head">
+                <h2>After</h2>
+                <span class="count">4 photos · May&nbsp;22</span>
+              </div>
+              <div class="photo-grid">
+                <figure class="photo-tile span2">
+                  <div class="photo ph-after-1 darker">
+                    <svg class="scene" viewBox="0 0 100 50" aria-hidden preserveAspectRatio="none">
+                    <rect x="5" y="28" width="90" height="16" fill="currentColor" opacity="0.45"/>
+                    <rect x="8" y="30" width="20" height="12" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                    <rect x="32" y="30" width="20" height="12" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                    <rect x="56" y="30" width="20" height="12" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                    <rect x="80" y="30" width="14" height="12" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                    <line x1="5" y1="24" x2="95" y2="24" stroke="currentColor" stroke-width="0.8"/>
+                    <rect x="40" y="8" width="20" height="14" fill="currentColor" opacity="0.5"/>
+                  </svg>
+                    <span class="date">May&nbsp;22</span>
+                  </div>
+                  <figcaption>New galley · oak shaker doors, quartz counter</figcaption>
+                </figure>
+                <figure class="photo-tile">
+                  <div class="photo ph-after-2 darker">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="20" y="55" width="60" height="32" fill="currentColor" opacity="0.45"/>
+                    <rect x="22" y="58" width="56" height="3" fill="currentColor" opacity="0.7"/>
+                    <rect x="42" y="20" width="16" height="32" fill="currentColor" opacity="0.55"/>
+                    <line x1="20" y1="55" x2="80" y2="55" stroke="currentColor" stroke-width="0.6"/>
+                  </svg>
+                    <span class="date">May&nbsp;22</span>
+                  </div>
+                  <figcaption>Island &amp; pendant lighting</figcaption>
+                </figure>
+                <figure class="photo-tile">
+                  <div class="photo ph-after-3 darker">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="25" y="20" width="50" height="60" fill="none" stroke="currentColor" stroke-width="0.6"/>
+                    <rect x="28" y="23" width="44" height="32" fill="currentColor" opacity="0.45"/>
+                    <rect x="28" y="58" width="44" height="20" fill="currentColor" opacity="0.55"/>
+                    <circle cx="50" cy="68" r="2.5" fill="currentColor" opacity="0.8"/>
+                  </svg>
+                    <span class="date">May&nbsp;22</span>
+                  </div>
+                  <figcaption>Counter-depth fridge installed</figcaption>
+                </figure>
+                <figure class="photo-tile span2">
+                  <div class="photo ph-after-4 darker">
+                    <svg class="scene" viewBox="0 0 100 50" aria-hidden preserveAspectRatio="none">
+                    <line x1="5" y1="38" x2="95" y2="38" stroke="currentColor" stroke-width="0.8"/>
+                    <rect x="20" y="14" width="60" height="22" fill="currentColor" opacity="0.4"/>
+                    <line x1="20" y1="20" x2="80" y2="20" stroke="currentColor" stroke-width="0.5"/>
+                    <line x1="20" y1="28" x2="80" y2="28" stroke="currentColor" stroke-width="0.5"/>
+                  </svg>
+                    <span class="date">May&nbsp;22</span>
+                  </div>
+                  <figcaption>Subway tile backsplash · brushed-brass hardware</figcaption>
+                </figure>
+              </div>
+            </section>
+
+            <!-- ══ REVIEW CTA ══
+                 The deliberate growth moment — right after After. -->
+            <div class="review-card">
+              <div class="stars" aria-hidden>
+                <svg class="ico" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9" stroke-linejoin="round"/></svg>
+                <svg class="ico" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9" stroke-linejoin="round"/></svg>
+                <svg class="ico" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9" stroke-linejoin="round"/></svg>
+                <svg class="ico" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9" stroke-linejoin="round"/></svg>
+                <svg class="ico" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="ask">Loved how it turned out? <strong>Leave Maple&nbsp;Ridge&nbsp;Renos a review.</strong></div>
+              <div class="sub">It takes about a minute and lands on Google. Future clients lean on these.</div>
+              <a class="review-cta" href="#review">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9" stroke-linejoin="round"/></svg>
+                Leave Maple&nbsp;Ridge&nbsp;Renos a review
+                <svg class="ext" viewBox="0 0 24 24" aria-hidden><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M11 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+              </a>
+            </div>
+
+            <!-- ── Progress ── -->
+            <section class="tag-section">
+              <div class="tag-head">
+                <h2>Progress</h2>
+                <span class="count">4 photos · Apr&nbsp;1 – May&nbsp;15</span>
+              </div>
+              <div class="photo-grid">
+                <figure class="photo-tile">
+                  <div class="photo ph-prog-1">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <line x1="10" y1="20" x2="90" y2="20" stroke="currentColor" stroke-width="1.2"/>
+                    <line x1="10" y1="20" x2="10" y2="85" stroke="currentColor" stroke-width="1.2"/>
+                    <line x1="30" y1="20" x2="30" y2="85" stroke="currentColor" stroke-width="0.7"/>
+                    <line x1="50" y1="20" x2="50" y2="85" stroke="currentColor" stroke-width="0.7"/>
+                    <line x1="70" y1="20" x2="70" y2="85" stroke="currentColor" stroke-width="0.7"/>
+                    <line x1="90" y1="20" x2="90" y2="85" stroke="currentColor" stroke-width="1.2"/>
+                  </svg>
+                    <span class="date">Apr&nbsp;01</span>
+                  </div>
+                  <figcaption>Demo complete — studs exposed</figcaption>
+                </figure>
+                <figure class="photo-tile">
+                  <div class="photo ph-prog-2">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <line x1="10" y1="30" x2="90" y2="30" stroke="currentColor" stroke-width="1"/>
+                    <line x1="10" y1="60" x2="90" y2="60" stroke="currentColor" stroke-width="1"/>
+                    <line x1="10" y1="90" x2="90" y2="90" stroke="currentColor" stroke-width="1"/>
+                    <path d="M15 30 L25 22 L25 90" stroke="currentColor" stroke-width="0.8" fill="none"/>
+                    <path d="M75 30 L65 22 L65 90" stroke="currentColor" stroke-width="0.8" fill="none"/>
+                  </svg>
+                    <span class="date">Apr&nbsp;12</span>
+                  </div>
+                  <figcaption>Rough-in: plumbing + electrical</figcaption>
+                </figure>
+                <figure class="photo-tile">
+                  <div class="photo ph-prog-3">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="14" y="50" width="72" height="34" fill="none" stroke="currentColor"/>
+                    <line x1="38" y1="50" x2="38" y2="84" stroke="currentColor"/>
+                    <line x1="62" y1="50" x2="62" y2="84" stroke="currentColor"/>
+                    <rect x="14" y="40" width="72" height="6" fill="currentColor" opacity="0.5"/>
+                  </svg>
+                    <span class="date">May&nbsp;02</span>
+                  </div>
+                  <figcaption>Cabinet boxes set + leveled</figcaption>
+                </figure>
+                <figure class="photo-tile">
+                  <div class="photo ph-prog-4">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="10" y="50" width="80" height="20" fill="currentColor" opacity="0.4"/>
+                    <line x1="10" y1="55" x2="90" y2="55" stroke="currentColor" stroke-width="0.6"/>
+                    <line x1="10" y1="65" x2="90" y2="65" stroke="currentColor" stroke-width="0.6"/>
+                    <rect x="35" y="25" width="30" height="20" fill="currentColor" opacity="0.5"/>
+                  </svg>
+                    <span class="date">May&nbsp;15</span>
+                  </div>
+                  <figcaption>Counter template + faucet rough</figcaption>
+                </figure>
+              </div>
+            </section>
+
+            <!-- ── Noted (the `damage` tag → "Noted") ── -->
+            <section class="tag-section">
+              <div class="tag-head">
+                <h2>Noted</h2>
+                <span class="count">1 photo · Apr&nbsp;9</span>
+              </div>
+              <div class="photo-grid">
+                <figure class="photo-tile">
+                  <div class="photo ph-noted-1">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="20" y="30" width="60" height="40" fill="currentColor" opacity="0.4"/>
+                    <line x1="35" y1="40" x2="55" y2="60" stroke="currentColor" stroke-width="1.2"/>
+                    <line x1="50" y1="40" x2="35" y2="55" stroke="currentColor" stroke-width="0.7"/>
+                  </svg>
+                    <span class="date">Apr&nbsp;09</span>
+                  </div>
+                  <figcaption>Hairline crack on existing drywall — patched before paint</figcaption>
+                </figure>
+              </div>
+            </section>
+
+            <!-- ── Other ── -->
+            <section class="tag-section">
+              <div class="tag-head">
+                <h2>Other</h2>
+                <span class="count">1 photo</span>
+              </div>
+              <div class="photo-grid">
+                <figure class="photo-tile">
+                  <div class="photo ph-other-1">
+                    <svg class="scene" viewBox="0 0 100 100" aria-hidden>
+                    <rect x="15" y="15" width="70" height="70" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                    <circle cx="50" cy="50" r="14" fill="currentColor" opacity="0.4"/>
+                    <line x1="50" y1="36" x2="50" y2="20" stroke="currentColor" stroke-width="0.6"/>
+                  </svg>
+                    <span class="date">May&nbsp;20</span>
+                  </div>
+                  <figcaption>Cleanup &amp; final walkthrough</figcaption>
+                </figure>
+              </div>
+            </section>
+
+            <!-- Brand footer -->
+            <footer class="brand-foot">
+              <a class="web" href="#">mapleridgerenos.ca</a>
+              <div class="socials">
+                <a href="#"><svg class="ico" viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg> Google</a>
+                <a href="#"><svg class="ico" viewBox="0 0 24 24" aria-hidden><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg> Instagram</a>
+                <a href="#"><svg class="ico" viewBox="0 0 24 24" aria-hidden><path d="M15 3h-3a4 4 0 0 0-4 4v3H5v4h3v7h4v-7h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg> Facebook</a>
+              </div>
+              <div class="attrib">Shared by <strong>Maple&nbsp;Ridge&nbsp;Renos</strong> via Hey&nbsp;Henry</div>
+            </footer>
+
+          </div>
+        </div>
+
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<div class="phone-row">
+
+  <!-- ── Empty state ── -->
+  <div class="phone-cell">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg class="ico" width="14" height="11" viewBox="0 0 14 11" aria-hidden>
+              <path d="M1 9 L1 7 M4 9 L4 5 M7 9 L7 3 M10 9 L10 1" />
+            </svg>
+            <span class="battery"></span>
+          </div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="lock ico" viewBox="0 0 24 24" aria-hidden>
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+          </svg>
+          <span><span class="host">app.heyhenry.io</span><span class="path">/g/chen-kitchen-x7Tk9bQa</span></span>
+          <span class="menu">⋯</span>
+        </div>
+        <div class="gc-bar">
+          <div class="gc-logo brand-mapleridge">MR</div>
+          <div class="gc-stack">
+            <div class="gc-name">Maple Ridge Renos</div>
+            <div class="gc-meta">Job gallery · Chen residence</div>
+          </div>
+          <div class="right">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+            </svg>
+            secure
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-pad">
+            <div class="doc-head">
+              <div class="eyebrow">Job gallery</div>
+              <h1 class="title">Chen kitchen reno · Maple&nbsp;Ridge&nbsp;Renos</h1>
+              <div class="trust">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+                  <rect x="5" y="11" width="14" height="10" rx="2" />
+                  <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+                </svg>
+                Every photo is timestamped and kept on file by Maple&nbsp;Ridge&nbsp;Renos.
+              </div>
+            </div>
+            <div class="empty-card">
+              <div class="icon-wrap">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+                  <rect x="3" y="5" width="18" height="14" rx="2"/>
+                  <circle cx="9" cy="11" r="2"/>
+                  <path d="M21 17l-5-5-7 7"/>
+                </svg>
+              </div>
+              <div class="title">No photos yet</div>
+              <div class="body">Photos will appear here as they're captured on the job.</div>
+            </div>
+            <footer class="brand-foot">
+              <a class="web" href="#">mapleridgerenos.ca</a>
+              <div class="attrib">Shared by <strong>Maple&nbsp;Ridge&nbsp;Renos</strong> via Hey&nbsp;Henry</div>
+            </footer>
+          </div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ── 404 / revoked / expired ── -->
+  <div class="phone-cell">
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="island"></div>
+          <div class="right">
+            <svg class="ico" width="14" height="11" viewBox="0 0 14 11" aria-hidden>
+              <path d="M1 9 L1 7 M4 9 L4 5 M7 9 L7 3 M10 9 L10 1" />
+            </svg>
+            <span class="battery"></span>
+          </div>
+        </div>
+        <div class="mob-url-bar">
+          <svg class="lock ico" viewBox="0 0 24 24" aria-hidden>
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+          </svg>
+          <span><span class="host">app.heyhenry.io</span><span class="path">/g/&nbsp;…</span></span>
+          <span class="menu">⋯</span>
+        </div>
+        <!-- Generic HeyHenry letterhead — we can't show a tenant brand
+             when we don't know which tenant the token belonged to. -->
+        <div class="gc-bar">
+          <div class="gc-logo" style="background: var(--ink); color: #fff;">HH</div>
+          <div class="gc-stack">
+            <div class="gc-name">Hey&nbsp;Henry</div>
+            <div class="gc-meta">Shared galleries</div>
+          </div>
+          <div class="right">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+            </svg>
+            secure
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-pad">
+            <div class="empty-card">
+              <div class="icon-wrap">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+                  <path d="M12 2a10 10 0 1 0 10 10"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              </div>
+              <div class="title">This link can't be opened</div>
+              <div class="body">
+                It may have been revoked by the contractor, expired, or never existed. Nothing's wrong on your end.
+              </div>
+              <div class="why">
+                A few common reasons:
+                <ul>
+                  <li>The job link was rotated or revoked.</li>
+                  <li>The link is past its expiry date.</li>
+                  <li>It was typed or copied with a missing character.</li>
+                </ul>
+              </div>
+              <a class="contact" href="#">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                Contact your contractor
+              </a>
+            </div>
+            <footer class="brand-foot">
+              <div class="attrib"><strong>Hey&nbsp;Henry</strong> · the shared-link surface</div>
+            </footer>
+          </div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="op-frame">
+  <div class="op-panel">
+    <div class="op-h">
+      <div>
+        <span class="l">Gallery share · Chen kitchen reno</span>
+      </div>
+      <div class="sub">scope: job_full · 13 photos visible · internal photos hidden server-side</div>
+    </div>
+    <div class="op-body">
+
+      <div class="op-link-input">
+        <input class="field" type="text" readonly value="https://app.heyhenry.io/g/chen-kitchen-x7Tk9bQa" />
+        <button class="copy">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15V5a2 2 0 0 1 2-2h10"/>
+          </svg>
+          Copy
+        </button>
+      </div>
+
+      <div class="op-row">
+        <span class="lbl">Recipient</span>
+        <span class="val">Sarah Chen <span class="meta">· +1&nbsp;604&nbsp;555&nbsp;0148</span></span>
+        <span class="meta">Sent via SMS · May 22, 2:14 PM</span>
+      </div>
+
+      <div class="op-row">
+        <span class="lbl">Status</span>
+        <span class="val">
+          Active
+          <span class="badge"><span class="dot"></span> live</span>
+        </span>
+        <span class="meta">Created May 22 by you</span>
+      </div>
+
+      <div class="op-row">
+        <span class="lbl">Expires</span>
+        <span class="val">Never</span>
+        <span class="meta">Optional · set a date to auto-revoke</span>
+      </div>
+
+      <div class="op-row">
+        <span class="lbl">Token</span>
+        <span class="val mono">x7Tk9bQa</span>
+        <span class="meta">48-bit random · no enumeration</span>
+      </div>
+
+      <div class="op-stats">
+        <div class="stat">
+          <span class="l">Views</span>
+          <span class="v">3<small> &nbsp;total</small></span>
+        </div>
+        <div class="stat">
+          <span class="l">Last viewed</span>
+          <span class="v">Tue, May&nbsp;26 <small>· 8:42 AM</small></span>
+        </div>
+        <div class="stat">
+          <span class="l">Unique IPs</span>
+          <span class="v">2</span>
+        </div>
+      </div>
+
+      <div class="op-actions">
+        <button class="op-btn op-btn-primary">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+            <path d="M18 8a3 3 0 1 0-2.83-4M6 12a3 3 0 1 0 0 0M18 16a3 3 0 1 0-2.83 4"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          Send again
+        </button>
+        <button class="op-btn">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+            <circle cx="12" cy="12" r="9"/>
+            <polyline points="12 7 12 12 15 14"/>
+          </svg>
+          Set expiry
+        </button>
+        <button class="op-btn op-btn-danger">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden>
+            <path d="M3 12a9 9 0 1 0 3-6.7"/>
+            <polyline points="3 4 3 10 9 10"/>
+          </svg>
+          Revoke link
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

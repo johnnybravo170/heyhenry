@@ -70,7 +70,7 @@ async function main() {
     await sql`delete from public.quote_surfaces qs using public.quotes q where qs.quote_id=q.id and q.tenant_id=${tenantId}`;
     await sql`delete from public.quotes where tenant_id = ${tenantId}`;
     await sql`delete from public.catalog_items where tenant_id = ${tenantId}`;
-    await sql`delete from public.customers where tenant_id = ${tenantId}`;
+    await sql`delete from public.contacts where tenant_id = ${tenantId}`;
     console.log('[seed] wiped');
   }
 
@@ -175,7 +175,7 @@ async function main() {
       notes: 'Monthly lot wash, net-30',
     },
     {
-      type: 'agent',
+      type: 'commercial',
       name: 'Helen Fraser (ReMax)',
       email: 'hfraser@remax.ca',
       phone: '604-555-0155',
@@ -186,7 +186,7 @@ async function main() {
       notes: 'Pre-listing rush jobs, bill to brokerage',
     },
     {
-      type: 'agent',
+      type: 'commercial',
       name: 'Dave Hoang (Royal LePage)',
       email: 'dhoang@royallepage.ca',
       phone: '778-555-0188',
@@ -200,14 +200,14 @@ async function main() {
   for (const c of customers) {
     const [row] = await sql<
       Row[]
-    >`insert into public.customers ${sql({ ...c, tenant_id: tenantId })} returning id`;
+    >`insert into public.contacts ${sql({ ...c, tenant_id: tenantId })} returning id`;
     customerIds.push(row.id as string);
   }
   console.log(`[seed] ${customers.length} customers`);
 
   // --- Quotes + surfaces ---
   type QuoteSeed = {
-    customer_idx: number;
+    contact_idx: number;
     status: string;
     sent_days_ago?: number;
     accepted_days_ago?: number;
@@ -216,7 +216,7 @@ async function main() {
   };
   const quoteSeeds: QuoteSeed[] = [
     {
-      customer_idx: 0,
+      contact_idx: 0,
       status: 'accepted',
       sent_days_ago: 14,
       accepted_days_ago: 12,
@@ -227,7 +227,7 @@ async function main() {
       ],
     },
     {
-      customer_idx: 1,
+      contact_idx: 1,
       status: 'sent',
       sent_days_ago: 3,
       surfaces: [
@@ -236,7 +236,7 @@ async function main() {
       ],
     },
     {
-      customer_idx: 2,
+      contact_idx: 2,
       status: 'accepted',
       sent_days_ago: 8,
       accepted_days_ago: 6,
@@ -246,14 +246,14 @@ async function main() {
       ],
     },
     {
-      customer_idx: 3,
+      contact_idx: 3,
       status: 'rejected',
       sent_days_ago: 10,
       notes: 'Price too high, going with cheaper quote',
       surfaces: [{ surface_type: 'driveway', sqft: 520 }],
     },
     {
-      customer_idx: 4,
+      contact_idx: 4,
       status: 'accepted',
       sent_days_ago: 21,
       accepted_days_ago: 18,
@@ -265,7 +265,7 @@ async function main() {
       ],
     },
     {
-      customer_idx: 6,
+      contact_idx: 6,
       status: 'sent',
       sent_days_ago: 1,
       notes: 'Pre-listing rush — needs turnaround this week',
@@ -275,7 +275,7 @@ async function main() {
         { surface_type: 'deck', sqft: 320 },
       ],
     },
-    { customer_idx: 5, status: 'draft', surfaces: [{ surface_type: 'concrete_pad', sqft: 12000 }] },
+    { contact_idx: 5, status: 'draft', surfaces: [{ surface_type: 'concrete_pad', sqft: 12000 }] },
   ];
   const priceLookup = new Map(catalog.map((s) => [s.surface_type, s] as const));
   const quoteIds: string[] = [];
@@ -304,8 +304,8 @@ async function main() {
 
     const [quote] = await sql<
       Row[]
-    >`insert into public.quotes (tenant_id, customer_id, status, subtotal_cents, tax_cents, total_cents, notes, sent_at, accepted_at)
-      values (${tenantId}, ${customerIds[qs.customer_idx]}, ${qs.status}, ${subtotal}, ${tax_cents}, ${total_cents}, ${qs.notes ?? null}, ${sentAt}, ${acceptedAt}) returning id`;
+    >`insert into public.quotes (tenant_id, contact_id, status, subtotal_cents, tax_cents, total_cents, notes, sent_at, accepted_at)
+      values (${tenantId}, ${customerIds[qs.contact_idx]}, ${qs.status}, ${subtotal}, ${tax_cents}, ${total_cents}, ${qs.notes ?? null}, ${sentAt}, ${acceptedAt}) returning id`;
     quoteIds.push(quote.id as string);
     for (const sr of surfaceRows) {
       await sql`insert into public.quote_surfaces ${sql({ ...sr, quote_id: quote.id as string })}`;
@@ -315,7 +315,7 @@ async function main() {
 
   // --- Jobs (from accepted quotes) ---
   const acceptedIdxs = quoteSeeds
-    .map((q, i) => ({ i, status: q.status, customer_idx: q.customer_idx }))
+    .map((q, i) => ({ i, status: q.status, contact_idx: q.contact_idx }))
     .filter((q) => q.status === 'accepted');
   const jobSeeds = [
     {
@@ -334,17 +334,17 @@ async function main() {
     {
       quote_idx: undefined,
       status: 'booked',
-      customer_idx: 7,
+      contact_idx: 7,
       scheduled_days_ahead: 5,
       notes: 'Phone quote — no formal quote yet',
     }, // manual job
   ];
   const jobIds: string[] = [];
   for (const j of jobSeeds) {
-    const customer_id =
+    const contact_id =
       j.quote_idx !== undefined
-        ? customerIds[quoteSeeds[j.quote_idx].customer_idx]
-        : customerIds[j.customer_idx ?? 0];
+        ? customerIds[quoteSeeds[j.quote_idx].contact_idx]
+        : customerIds[j.contact_idx ?? 0];
     const quote_id = j.quote_idx !== undefined ? quoteIds[j.quote_idx] : null;
     const scheduled_at =
       'scheduled_days_ago' in j && j.scheduled_days_ago !== undefined
@@ -358,8 +358,8 @@ async function main() {
         : null;
     const [job] = await sql<
       Row[]
-    >`insert into public.jobs (tenant_id, customer_id, quote_id, status, scheduled_at, completed_at, notes)
-      values (${tenantId}, ${customer_id}, ${quote_id}, ${j.status}, ${scheduled_at}, ${completed_at}, ${('notes' in j ? j.notes : null) ?? null}) returning id`;
+    >`insert into public.jobs (tenant_id, contact_id, quote_id, status, scheduled_at, completed_at, notes)
+      values (${tenantId}, ${contact_id}, ${quote_id}, ${j.status}, ${scheduled_at}, ${completed_at}, ${('notes' in j ? j.notes : null) ?? null}) returning id`;
     jobIds.push(job.id as string);
   }
   console.log(`[seed] ${jobIds.length} jobs`);
@@ -368,7 +368,7 @@ async function main() {
   const invoices = [
     {
       job_idx: 0,
-      customer_idx: 0,
+      contact_idx: 0,
       status: 'paid',
       amount_cents: 67000,
       tax_cents: 3350,
@@ -377,13 +377,13 @@ async function main() {
     },
     {
       job_idx: 2,
-      customer_idx: 2,
+      contact_idx: 2,
       status: 'sent',
       amount_cents: 192000,
       tax_cents: 9600,
       sent_days_ago: 12,
     },
-    { job_idx: 3, customer_idx: 7, status: 'draft', amount_cents: 58000, tax_cents: 2900 },
+    { job_idx: 3, contact_idx: 7, status: 'draft', amount_cents: 58000, tax_cents: 2900 },
   ];
   for (const inv of invoices) {
     const sent_at =
@@ -394,8 +394,8 @@ async function main() {
       'paid_days_ago' in inv && inv.paid_days_ago !== undefined
         ? sql`now() - interval '${sql.unsafe(String(inv.paid_days_ago))} days'`
         : null;
-    await sql`insert into public.invoices (tenant_id, customer_id, job_id, status, amount_cents, tax_cents, sent_at, paid_at)
-      values (${tenantId}, ${customerIds[inv.customer_idx]}, ${jobIds[inv.job_idx]}, ${inv.status}, ${inv.amount_cents}, ${inv.tax_cents}, ${sent_at}, ${paid_at})`;
+    await sql`insert into public.invoices (tenant_id, contact_id, job_id, status, amount_cents, tax_cents, sent_at, paid_at)
+      values (${tenantId}, ${customerIds[inv.contact_idx]}, ${jobIds[inv.job_idx]}, ${inv.status}, ${inv.amount_cents}, ${inv.tax_cents}, ${sent_at}, ${paid_at})`;
   }
   console.log(`[seed] ${invoices.length} invoices`);
 

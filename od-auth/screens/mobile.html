@@ -1,0 +1,1514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Auth — the front door (mobile) · HeyHenry</title>
+<meta name="viewport" content="width=1360" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ───────────────────────────────────────────────────────────────────
+     Auth — login / check-email / signup / mfa / worker-join.
+     The brand's first impression. Calm Paper field, white card floats,
+     ink the primary action, rust used at most ONCE per surface and
+     never on a button. Banners are soft-pair status tokens (warn-soft,
+     ok-soft, info-soft) — never heavy colour blocks. Fields are
+     visibly defined (white surface · warm hairline · ink label above);
+     never warm-on-warm.
+     Type 11 mono / 12 / 14 / 16 / 20 / 24 / 28 only.
+  ─────────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:            #F3EBDB;
+    --chrome:        #F7F1E6;
+    --card:          #FFFFFF;
+    --paper-soft:    #FBF6EC;
+    --chip-fill:     #ECE3D0;
+
+    --ink:           #0A0A0A;
+    --ink-2:         #3A3A3A;
+    --muted:         #57534B;
+    --faint:         #A8A8A8;
+    --hair:          #E2D7C0;
+    --rule:          #D8CBB0;
+
+    --rust:          #C2410C;
+    --rust-soft:     #FEF0E3;
+    --ok:            #15803D;  --ok-soft:     #DCFCE7;
+    --warn:          #B45309;  --warn-soft:   #FEF3C7;
+    --danger:        #B91C1C;  --danger-soft: #FEE2E2;
+    --info:          #1E40AF;  --info-soft:   #E6EDFA;
+
+    --radius-card:   14px;
+    --radius-input:  11px;
+    --radius-button: 11px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #EFE5D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  .mono    { font-family: var(--mono); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+
+  /* ═══ Reviewer stage ═══ */
+  .stage { max-width: 1360px; margin: 0 auto; padding: 44px 28px 96px; }
+
+  .intro {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 16px;
+    padding: 24px 26px;
+    max-width: 900px;
+    margin-bottom: 12px;
+  }
+  .intro h1 {
+    margin: 0 0 12px;
+    font-size: 28px; font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .intro p {
+    margin: 0 0 10px;
+    font-size: 14px; color: var(--ink-2); line-height: 1.55;
+    max-width: 720px;
+  }
+  .intro .meta {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 14px;
+  }
+  .intro .meta b { color: var(--rust); }
+  .intro .pillrow { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .intro .pill {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink); background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    border-radius: 999px;
+    padding: 4px 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .frame-divider {
+    display: flex; align-items: baseline; gap: 16px;
+    flex-wrap: wrap;
+    margin: 64px 0 22px;
+  }
+  .frame-divider .num {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame-divider .label {
+    font-size: 24px; font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .frame-divider .sub { color: var(--muted); font-size: 12px; max-width: 720px; line-height: 1.5; }
+
+  .row {
+    display: flex; gap: 32px; flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  /* ═══ iPhone frame ═══ */
+  .phone {
+    width: 390px;
+    flex-shrink: 0;
+    border-radius: 44px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow: 0 22px 60px rgba(10,10,10,0.18);
+    position: relative;
+  }
+  .phone .caption {
+    position: absolute;
+    bottom: -34px; left: 0; right: 0;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .phone .caption b { color: var(--ink); }
+  .phone-screen {
+    background: var(--bg);
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    min-height: 760px;
+    display: flex; flex-direction: column;
+  }
+  .phone-screen.tall { min-height: 920px; }
+  .phone-screen.short { min-height: 640px; }
+  .status-bar {
+    height: 44px;
+    padding: 0 26px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--sans);
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--bg);
+    position: relative;
+    z-index: 2;
+  }
+  .status-bar .right { display: flex; align-items: center; gap: 5px; }
+  .dynamic-island {
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 122px; height: 32px;
+    background: #0A0A0A;
+    border-radius: 22px;
+    z-index: 3;
+  }
+  .signal { width: 16px; height: 11px; }
+  .wifi { width: 16px; height: 11px; }
+  .battery {
+    width: 24px; height: 12px;
+    border: 1.2px solid var(--ink);
+    border-radius: 3px;
+    position: relative;
+    margin-left: 2px;
+    display: inline-block;
+  }
+  .battery::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 1.5px; height: 6px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+  .battery::before {
+    content: '';
+    position: absolute;
+    left: 1px; top: 1px;
+    width: 18px; height: 8px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+
+  /* ═══ Auth frame (inside the phone screen) ═══ */
+  .auth-frame {
+    flex: 1;
+    background: var(--bg);
+    padding: 20px 16px 20px;
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .auth-frame .home-indicator {
+    margin-top: auto;
+    width: 134px; height: 5px;
+    border-radius: 999px;
+    background: var(--ink);
+    opacity: 0.85;
+  }
+
+  /* HeyHenry wordmark (mark + name) — small, calm, centered above card */
+  .wordmark {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 4px;
+  }
+  .wordmark .h {
+    width: 28px; height: 28px;
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 6px;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 14px;
+    letter-spacing: -0.02em;
+  }
+  .wordmark .name {
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .auth-footer {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: -4px;
+  }
+
+  /* ═══ Card (the white surface that floats on Paper) ═══ */
+  .card {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    padding: 20px 18px;
+  }
+  .card-head { margin-bottom: 16px; }
+  .card-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .card-title {
+    margin: 0 0 4px;
+    font-size: 24px; font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  .card-title.smaller { font-size: 20px; }
+  .card-desc {
+    margin: 0;
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5;
+  }
+  .card-desc strong { color: var(--ink); font-weight: 700; }
+
+  /* ═══ Form primitives ═══ */
+  .form { display: flex; flex-direction: column; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .label {
+    font-size: 12px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .input {
+    width: 100%;
+    height: 44px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-input);
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 16px; font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    line-height: 1;
+    display: flex; align-items: center;
+  }
+  .input.placeholder { color: var(--faint); font-weight: 400; }
+  .input.numeric {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5em;
+    padding-left: 18px;
+    text-align: left;
+  }
+  .input.focused {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(10,10,10,0.08);
+  }
+  .input .caret {
+    display: inline-block;
+    width: 1px; height: 20px;
+    background: var(--ink);
+    margin-left: 1px;
+    animation: blink 1.1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .helper {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .helper strong { color: var(--ink); font-weight: 600; }
+  .err {
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+    padding-top: 2px;
+  }
+  .err .ico {
+    width: 14px; height: 14px;
+    border-radius: 999px;
+    background: var(--danger);
+    color: #fff;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 16px;
+    border-radius: var(--radius-button);
+    font-family: inherit;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.005em;
+    border: 1px solid transparent;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .btn-ink {
+    background: var(--ink);
+    color: #FFFFFF;
+    border-color: var(--ink);
+  }
+  .btn-ghost {
+    background: var(--card);
+    color: var(--ink);
+    border-color: var(--rule);
+  }
+  .btn[disabled], .btn.disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* "or" divider between password sign-in and magic-link sign-in */
+  .or-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 14px 0 12px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .or-divider::before, .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--hair);
+  }
+
+  /* Footer link row */
+  .link-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .link-row a, .link {
+    color: var(--muted);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .link-row a:hover, .link:hover { color: var(--ink); text-decoration: underline; }
+  .link-rust {
+    color: var(--rust);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+  }
+  .link-ink {
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .stack-link {
+    display: block;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .legal {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+  .legal a { text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Status banners (soft-pair tokens — the big delta from the current
+     amber/green/blue heavy blocks) */
+  .banner {
+    border: 1px solid;
+    border-radius: 11px;
+    padding: 11px 12px 11px 36px;
+    font-size: 12px;
+    line-height: 1.5;
+    position: relative;
+    font-weight: 500;
+  }
+  .banner strong { font-weight: 700; }
+  .banner .b-ico {
+    position: absolute;
+    top: 11px; left: 12px;
+    width: 16px; height: 16px;
+    border-radius: 999px;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 800;
+    color: #fff;
+  }
+  .banner.warn   { background: var(--warn-soft);   border-color: #F1D88B; color: var(--warn); }
+  .banner.warn   .b-ico { background: var(--warn); }
+  .banner.warn   strong { color: var(--ink); }
+  .banner.ok     { background: var(--ok-soft);     border-color: #BBE6C6; color: var(--ok); }
+  .banner.ok     .b-ico { background: var(--ok); }
+  .banner.ok     strong { color: var(--ink); }
+  .banner.info   { background: var(--info-soft);   border-color: #C8D5F0; color: var(--info); }
+  .banner.info   .b-ico { background: var(--info); }
+  .banner.info   strong { color: var(--ink); }
+  .banner .more  { display: block; margin-top: 4px; }
+  .banner .more a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Trial pill (the one rust accent on signup) */
+  .trial-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--rust-soft);
+    border: 1px solid #F1C9A2;
+    border-radius: 999px;
+    padding: 5px 11px 5px 9px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .trial-pill .dot {
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: var(--rust);
+  }
+
+  /* Checkbox */
+  .cbx-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding-top: 4px;
+  }
+  .cbx {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--rule);
+    border-radius: 5px;
+    flex-shrink: 0;
+    background: var(--card);
+    display: grid; place-items: center;
+    margin-top: 2px;
+  }
+  .cbx.checked {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .cbx-row .lbl {
+    font-size: 12px; color: var(--muted); line-height: 1.5;
+  }
+  .cbx-row .lbl a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Mode toggle (worker join) */
+  .seg {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--chip-fill);
+    border: 1px solid var(--hair);
+    border-radius: 11px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .seg button {
+    height: 36px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+  }
+  .seg button.on {
+    background: var(--card);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.08);
+  }
+
+  /* Employer logo header (worker join) */
+  .emp-logo {
+    width: 76px; height: 76px;
+    border: 1px solid var(--hair);
+    background: var(--paper-soft);
+    border-radius: 14px;
+    display: grid; place-items: center;
+    margin: 0 auto 14px;
+    color: var(--ink);
+  }
+  .emp-logo .mark {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 28px; letter-spacing: -0.04em;
+    color: var(--ink);
+    font-family: var(--sans);
+  }
+  .emp-logo .mark-sub {
+    position: absolute;
+    margin-top: 42px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  /* Invite-info subline on worker join (powered by HeyHenry) */
+  .pwd-by {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .pwd-by b { color: var(--ink); }
+
+  /* "Already signed in" row */
+  .signed-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--paper-soft);
+    border: 1px solid var(--hair);
+    border-radius: 11px;
+    padding: 11px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .signed-row .av {
+    width: 32px; height: 32px;
+    background: var(--chip-fill);
+    color: var(--ink);
+    border-radius: 999px;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 12px;
+    flex-shrink: 0;
+  }
+  .signed-row b { color: var(--ink); font-weight: 700; }
+  .signed-row .alt {
+    color: var(--muted);
+    margin-top: 2px;
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .signed-row .alt a { text-decoration: underline; text-underline-offset: 2px; }
+
+  /* OTP / 6-digit input as visible boxes (an alt rendering) */
+  .otp {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .otp .box {
+    height: 56px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-input);
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 24px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0;
+  }
+  .otp .box.empty { color: var(--faint); }
+  .otp .box.focused {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(10,10,10,0.08);
+  }
+
+  /* Spec sidecar — a small note beside each frame row to call out
+     the formatting discipline applied */
+  .spec {
+    flex: 1; min-width: 320px; max-width: 420px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 14px;
+    padding: 20px 22px;
+  }
+  .spec h3 {
+    margin: 0 0 12px;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--rust);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .spec h4 {
+    margin: 0 0 6px;
+    font-size: 16px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+  .spec p {
+    margin: 0 0 12px;
+    font-size: 12px; color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .spec ul {
+    margin: 0 0 10px; padding: 0; list-style: none;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .spec li {
+    font-size: 12px; color: var(--ink-2); line-height: 1.5;
+    padding-left: 18px; position: relative;
+  }
+  .spec li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 7px;
+    width: 8px; height: 8px;
+    border-radius: 999px;
+    background: var(--rust);
+  }
+  .spec li.was::before { background: var(--muted); }
+  .spec li b { color: var(--ink); font-weight: 700; }
+  .spec .kv {
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 6px 14px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--hair);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .spec .kv b { color: var(--ink); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- SVG icon defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m0 0l6-6m-6 6l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m0 0l-6-6m6 6l-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><path d="M4 6h16v12H4z M4 6l8 7 8-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 16 11"><path d="M1 8.5v2M5 6v4.5M9 3.5v7M13 1v9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 16 11"><path d="M1 4.5C3 2.5 5.4 1.5 8 1.5s5 1 7 3M3 6.5C4.5 5 6.2 4.3 8 4.3s3.5.7 5 2.2M5 8.5C5.8 7.7 6.9 7.3 8 7.3s2.2.4 3 1.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       SURFACE 01 — LOGIN
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div class="frame-divider" style="margin-top:0">
+    <span class="num">Surface 01</span>
+    <span class="label">Login</span>
+  </div>
+
+  <div class="row">
+
+    <!-- Phone 1.1 — Default login -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:42</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <h2 class="card-title">Sign in to HeyHenry</h2>
+                <p class="card-desc">Welcome back.</p>
+              </div>
+
+              <form class="form">
+                <div class="field">
+                  <label class="label" for="lp-1-email">Email</label>
+                  <div class="input" id="lp-1-email">marcus@bluebirdreno.ca</div>
+                </div>
+                <div class="field">
+                  <label class="label" for="lp-1-pwd">Password</label>
+                  <div class="input focused" id="lp-1-pwd">
+                    <span style="letter-spacing:0.18em;color:var(--ink)">••••••••••</span><span class="caret"></span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-ink" style="margin-top:6px">Sign in</button>
+              </form>
+
+              <div class="or-divider"><span>or</span></div>
+              <button type="button" class="btn btn-ghost">
+                <svg style="width:16px;height:16px;color:var(--muted)"><use href="#i-mail"/></svg>
+                Email me a sign-in link
+              </button>
+
+              <div class="link-row">
+                <a>Forgot your password?</a>
+                <a>No account? <span style="color:var(--ink);font-weight:700">Sign up</span></a>
+              </div>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>1.1</b> &middot; Default login</div>
+      </div>
+    </div>
+
+    <!-- Phone 1.2 — Recovery banner after MFA removal -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:42</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <h2 class="card-title">Sign in to HeyHenry</h2>
+                <p class="card-desc">Welcome back.</p>
+              </div>
+
+              <form class="form">
+                <div class="banner warn" role="status">
+                  <span class="b-ico">!</span>
+                  <strong>Two-factor was removed from your account.</strong>
+                  Sign in, then set it up again from Settings &rarr; Security.
+                </div>
+
+                <div class="field">
+                  <label class="label" for="lp-2-email">Email</label>
+                  <div class="input" id="lp-2-email">marcus@bluebirdreno.ca</div>
+                </div>
+                <div class="field">
+                  <label class="label" for="lp-2-pwd">Password</label>
+                  <div class="input"><span class="placeholder" style="color:var(--faint)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span></div>
+                </div>
+                <button type="button" class="btn btn-ink" style="margin-top:6px">Sign in</button>
+              </form>
+
+              <div class="or-divider"><span>or</span></div>
+              <button type="button" class="btn btn-ghost">
+                <svg style="width:16px;height:16px;color:var(--muted)"><use href="#i-mail"/></svg>
+                Email me a sign-in link
+              </button>
+
+              <div class="link-row">
+                <a>Forgot your password?</a>
+                <a>No account? <span style="color:var(--ink);font-weight:700">Sign up</span></a>
+              </div>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>1.2</b> &middot; ?recovery=1 (MFA removed)</div>
+      </div>
+    </div>
+
+    <!-- Phone 1.3 — Inline error (rate-limit / no-enumeration uniform) -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:42</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <h2 class="card-title">Sign in to HeyHenry</h2>
+                <p class="card-desc">Welcome back.</p>
+              </div>
+
+              <form class="form">
+                <div class="field">
+                  <label class="label" for="lp-3-email">Email</label>
+                  <div class="input">marcus@bluebirdreno.ca</div>
+                </div>
+                <div class="field">
+                  <label class="label" for="lp-3-pwd">Password</label>
+                  <div class="input">
+                    <span style="letter-spacing:0.18em">••••••••</span>
+                  </div>
+                  <div class="err" role="alert">
+                    <span class="ico">!</span>
+                    <span>We couldn&rsquo;t sign you in with that email and password.</span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-ink" style="margin-top:2px">Sign in</button>
+              </form>
+
+              <div class="or-divider"><span>or</span></div>
+              <button type="button" class="btn btn-ghost">
+                <svg style="width:16px;height:16px;color:var(--muted)"><use href="#i-mail"/></svg>
+                Email me a sign-in link
+              </button>
+
+              <div class="link-row">
+                <a>Forgot your password?</a>
+                <a>No account? <span style="color:var(--ink);font-weight:700">Sign up</span></a>
+              </div>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>1.3</b> &middot; Inline error · role="alert"</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       SURFACE 02 — CHECK EMAIL  (the passwordless landing)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div class="frame-divider">
+    <span class="num">Surface 02</span>
+    <span class="label">Magic link &amp; check email</span>
+  </div>
+
+  <div class="row">
+
+    <!-- Phone 2.1 — Check email -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:43</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <div style="width:44px;height:44px;border-radius:11px;background:var(--rust-soft);color:var(--rust);display:grid;place-items:center;margin-bottom:14px">
+                  <svg style="width:20px;height:20px"><use href="#i-mail"/></svg>
+                </div>
+                <h2 class="card-title">Check your inbox</h2>
+                <p class="card-desc">We sent a sign-in link to <strong>marcus@bluebirdreno.ca</strong>.</p>
+              </div>
+
+              <p style="font-size:14px;color:var(--ink-2);line-height:1.5;margin:0 0 18px">
+                Click the link in the email to land back here, signed in. You can close this tab once you do.
+              </p>
+
+              <button type="button" class="btn btn-ghost">
+                <svg style="width:16px;height:16px;color:var(--muted)"><use href="#i-arrow-left"/></svg>
+                Back to sign in
+              </button>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>2.1</b> &middot; Check email</div>
+      </div>
+    </div>
+
+    <!-- Phone 2.2 — Request magic link (the page before) -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:42</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <h2 class="card-title">Email me a sign-in link</h2>
+                <p class="card-desc">One click and you&rsquo;re in. No password to remember.</p>
+              </div>
+
+              <form class="form">
+                <div class="field">
+                  <label class="label" for="ml-email">Email</label>
+                  <div class="input focused">marcus@bluebirdreno.ca<span class="caret"></span></div>
+                </div>
+                <button type="button" class="btn btn-ink">Send me a magic link</button>
+              </form>
+
+              <a class="stack-link">Back to password sign-in</a>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>2.2</b> &middot; Magic link request (the step before)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       SURFACE 03 — SIGNUP  (the multi-field provisioning form)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div class="frame-divider">
+    <span class="num">Surface 03</span>
+    <span class="label">Signup</span>
+  </div>
+
+  <div class="row">
+
+    <!-- Phone 3.1 — Signup default + referral + 14-day trial pill -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen tall">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:44</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <h2 class="card-title">Get started with HeyHenry</h2>
+                <p class="card-desc">Run your jobs from the truck. We handle the paperwork.</p>
+                <div style="margin-top:12px">
+                  <span class="trial-pill"><span class="dot"></span>14-day free trial &middot; no card</span>
+                </div>
+              </div>
+
+              <form class="form">
+                <div class="banner ok" role="status">
+                  <span class="b-ico">&#10003;</span>
+                  <strong>You were referred by a fellow contractor</strong> &mdash; your trial gets bumped to 14 days.
+                </div>
+
+                <div class="field-row">
+                  <div class="field">
+                    <label class="label" for="su-fn">First name</label>
+                    <div class="input">Marcus</div>
+                  </div>
+                  <div class="field">
+                    <label class="label" for="su-ln">Last name</label>
+                    <div class="input">Reyes</div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label class="label" for="su-bn">Business name</label>
+                  <div class="input">Bluebird Reno &amp; Renovations</div>
+                </div>
+
+                <div class="field">
+                  <label class="label" for="su-em">Email</label>
+                  <div class="input">marcus@bluebirdreno.ca</div>
+                </div>
+
+                <div class="field">
+                  <label class="label" for="su-ph">Mobile phone</label>
+                  <div class="input">+1 604 555 1234</div>
+                  <p class="helper">We text a 6-digit code to verify it.</p>
+                </div>
+
+                <div class="field">
+                  <label class="label" for="su-pw">Password</label>
+                  <div class="input"><span style="letter-spacing:0.18em">••••••••••</span></div>
+                  <p class="helper">At least 8 characters with one letter and one number.</p>
+                </div>
+
+                <div class="cbx-row">
+                  <div class="cbx checked">&#10003;</div>
+                  <div class="lbl">I agree to the <a>Terms of Service</a> and <a>Privacy Policy</a>.</div>
+                </div>
+
+                <button type="button" class="btn btn-ink" style="margin-top:4px">Create my account</button>
+              </form>
+
+              <a class="stack-link">Already have an account? <span style="color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px">Sign in</span></a>
+
+              <p class="legal">14-day free trial. Cancel any time &mdash; see <a>refund policy</a>.</p>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>3.1</b> &middot; Signup · ?ref + 14-day trial</div>
+      </div>
+    </div>
+
+    <!-- Phone 3.2 — Already-registered (the recovery line, never a dead-end) -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen tall">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:45</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <h2 class="card-title">Get started with HeyHenry</h2>
+                <p class="card-desc">Run your jobs from the truck. We handle the paperwork.</p>
+              </div>
+
+              <form class="form">
+                <div class="banner warn" role="alert" style="padding-bottom:14px">
+                  <span class="b-ico">!</span>
+                  <strong>An account with this email already exists.</strong>
+                  <span class="more">
+                    <a>Sign in instead &rarr;</a>
+                  </span>
+                </div>
+
+                <div class="field-row">
+                  <div class="field">
+                    <label class="label">First name</label>
+                    <div class="input">Marcus</div>
+                  </div>
+                  <div class="field">
+                    <label class="label">Last name</label>
+                    <div class="input">Reyes</div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label class="label">Business name</label>
+                  <div class="input">Bluebird Reno &amp; Renovations</div>
+                </div>
+
+                <div class="field">
+                  <label class="label">Email</label>
+                  <div class="input">marcus@bluebirdreno.ca</div>
+                </div>
+
+                <div class="field">
+                  <label class="label">Mobile phone</label>
+                  <div class="input">+1 604 555 1234</div>
+                  <p class="helper">We text a 6-digit code to verify it.</p>
+                </div>
+
+                <div class="field">
+                  <label class="label">Password</label>
+                  <div class="input"><span style="letter-spacing:0.18em">••••••••••</span></div>
+                  <p class="helper">At least 8 characters with one letter and one number.</p>
+                </div>
+
+                <div class="cbx-row">
+                  <div class="cbx checked">&#10003;</div>
+                  <div class="lbl">I agree to the <a>Terms of Service</a> and <a>Privacy Policy</a>.</div>
+                </div>
+
+                <button type="button" class="btn btn-ink" style="margin-top:4px">Create my account</button>
+              </form>
+
+              <a class="stack-link">Already have an account? <span style="color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px">Sign in</span></a>
+
+              <p class="legal">14-day free trial. Cancel any time &mdash; see <a>refund policy</a>.</p>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>3.2</b> &middot; Already-registered recovery (no dead-end)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       SURFACE 04 — MFA  (the 6-digit challenge)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div class="frame-divider">
+    <span class="num">Surface 04</span>
+    <span class="label">MFA</span>
+  </div>
+
+  <div class="row">
+
+    <!-- Phone 4.1 — MFA empty / focused -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:43</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <div style="width:44px;height:44px;border-radius:11px;background:var(--info-soft);color:var(--info);display:grid;place-items:center;margin-bottom:14px">
+                  <svg style="width:20px;height:20px"><use href="#i-shield"/></svg>
+                </div>
+                <h2 class="card-title">Two-factor authentication</h2>
+                <p class="card-desc">Enter the 6-digit code from your authenticator app.</p>
+              </div>
+
+              <form class="form">
+                <div class="field">
+                  <label class="label">Code</label>
+                  <div class="otp">
+                    <div class="box focused">4</div>
+                    <div class="box">2</div>
+                    <div class="box">7</div>
+                    <div class="box">1</div>
+                    <div class="box empty">&middot;</div>
+                    <div class="box empty">&middot;</div>
+                  </div>
+                  <p class="helper">From <strong>1Password</strong>, Authy, Google Authenticator&hellip; whichever you set up.</p>
+                </div>
+                <button type="button" class="btn btn-ink disabled" disabled style="margin-top:6px">Verify</button>
+              </form>
+
+              <div class="link-row">
+                <a>Use a recovery code</a>
+                <a>Cancel</a>
+              </div>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>4.1</b> &middot; MFA · partial (4 of 6)</div>
+      </div>
+    </div>
+
+    <!-- Phone 4.2 — MFA error state -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:44</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <div style="width:44px;height:44px;border-radius:11px;background:var(--info-soft);color:var(--info);display:grid;place-items:center;margin-bottom:14px">
+                  <svg style="width:20px;height:20px"><use href="#i-shield"/></svg>
+                </div>
+                <h2 class="card-title">Two-factor authentication</h2>
+                <p class="card-desc">Enter the 6-digit code from your authenticator app.</p>
+              </div>
+
+              <form class="form">
+                <div class="field">
+                  <label class="label">Code</label>
+                  <div class="otp">
+                    <div class="box">4</div>
+                    <div class="box">2</div>
+                    <div class="box">7</div>
+                    <div class="box">1</div>
+                    <div class="box">0</div>
+                    <div class="box">9</div>
+                  </div>
+                  <div class="err" role="alert">
+                    <span class="ico">!</span>
+                    <span>That code didn&rsquo;t match. Codes refresh every 30 seconds &mdash; try the next one.</span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-ink" style="margin-top:6px">Verify</button>
+              </form>
+
+              <div class="link-row">
+                <a>Use a recovery code</a>
+                <a>Cancel</a>
+              </div>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>4.2</b> &middot; MFA · wrong code</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       SURFACE 05 — WORKER JOIN  (employer-branded, three paths)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div class="frame-divider">
+    <span class="num">Surface 05</span>
+    <span class="label">Worker join</span>
+  </div>
+
+  <div class="row">
+
+    <!-- Phone 5.1 — Worker join · New account (default mode) -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:46</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <!-- HeyHenry wordmark stays in the frame, but small/calm -->
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head" style="text-align:center">
+                <!-- Employer logo: stylized "BR" mark for Bluebird Reno -->
+                <div class="emp-logo">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                    <div class="mark" style="background:var(--ink);color:#fff;width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:20px;letter-spacing:-0.02em">BR</div>
+                  </div>
+                </div>
+                <h2 class="card-title smaller">Join Bluebird Reno</h2>
+                <p class="card-desc">Bluebird Reno has invited you to join their team on HeyHenry.</p>
+              </div>
+
+              <div class="seg" style="margin-bottom:16px">
+                <button class="on" type="button">New account</button>
+                <button type="button">Already have an account</button>
+              </div>
+
+              <form class="form">
+                <div class="field">
+                  <label class="label">Name</label>
+                  <div class="input">Devon Park</div>
+                </div>
+                <div class="field">
+                  <label class="label">Email</label>
+                  <div class="input">devon.park@gmail.com</div>
+                </div>
+                <div class="field">
+                  <label class="label">Password</label>
+                  <div class="input"><span style="letter-spacing:0.18em">••••••••</span></div>
+                  <p class="helper">At least 8 characters with one letter and one number.</p>
+                </div>
+                <button type="button" class="btn btn-ink" style="margin-top:4px">Join Bluebird Reno</button>
+              </form>
+
+              <p class="pwd-by">Powered by <b>HeyHenry</b></p>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>5.1</b> &middot; Join · new account (default)</div>
+      </div>
+    </div>
+
+    <!-- Phone 5.2 — Worker join · already signed in (one-click) -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:47</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head" style="text-align:center">
+                <div class="emp-logo">
+                  <div class="mark" style="background:var(--ink);color:#fff;width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:20px;letter-spacing:-0.02em">BR</div>
+                </div>
+                <h2 class="card-title smaller">Join Bluebird Reno</h2>
+                <p class="card-desc">Bluebird Reno has invited you to join their team on HeyHenry.</p>
+              </div>
+
+              <div class="signed-row">
+                <div class="av">DP</div>
+                <div style="flex:1;min-width:0">
+                  <div>You&rsquo;re signed in as <b>devon.park@gmail.com</b>.</div>
+                  <div class="alt">Not you? <a>Sign in with a different account</a></div>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-ink" style="margin-top:14px">Join Bluebird Reno</button>
+
+              <p class="pwd-by">Powered by <b>HeyHenry</b></p>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>5.2</b> &middot; Join · already signed in (one click)</div>
+      </div>
+    </div>
+
+    <!-- Phone 5.3 — Worker join · invalid invite -->
+    <div>
+      <div class="phone">
+        <div class="phone-screen short">
+          <div class="dynamic-island"></div>
+          <div class="status-bar">
+            <span>8:48</span>
+            <span class="right">
+              <svg class="signal" style="color:var(--ink)"><use href="#i-signal"/></svg>
+              <svg class="wifi" style="color:var(--ink)"><use href="#i-wifi"/></svg>
+              <span class="battery"></span>
+            </span>
+          </div>
+
+          <div class="auth-frame">
+            <a class="wordmark" aria-label="HeyHenry">
+              <span class="h">H</span><span class="name">HeyHenry</span>
+            </a>
+
+            <div class="card">
+              <div class="card-head">
+                <div style="width:44px;height:44px;border-radius:11px;background:var(--warn-soft);color:var(--warn);display:grid;place-items:center;margin-bottom:14px">
+                  <span style="font-weight:800;font-size:20px;line-height:1">!</span>
+                </div>
+                <h2 class="card-title">Invite not valid</h2>
+                <p class="card-desc">This invite link is no longer valid &mdash; it may have expired or been replaced by a newer one.</p>
+              </div>
+
+              <p style="font-size:14px;color:var(--ink-2);line-height:1.55;margin:0 0 18px">
+                <strong>Reach out to your employer</strong> for a fresh invite. They can send you a new link from their Team settings in under a minute.
+              </p>
+
+              <button type="button" class="btn btn-ghost">
+                <svg style="width:16px;height:16px;color:var(--muted)"><use href="#i-arrow-left"/></svg>
+                Back to HeyHenry.io
+              </button>
+
+              <p class="pwd-by">Powered by <b>HeyHenry</b></p>
+            </div>
+
+            <p class="auth-footer">Built for contractors. Made in Canada.</p>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+        <div class="caption"><b>5.3</b> &middot; Join · invalid invite</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

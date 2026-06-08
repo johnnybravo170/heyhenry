@@ -85,13 +85,13 @@ describe.skipIf(!canRun)('photos RLS isolation (integration)', () => {
         .insert({ tenant_id: tenantIdA, user_id: userIdA, role: 'owner' });
 
       const custA = await admin
-        .from('customers')
+        .from('contacts')
         .insert({ tenant_id: tenantIdA, type: 'residential', name: `A-${stamp}` })
         .select('id')
         .single();
       const jobA = await admin
         .from('jobs')
-        .insert({ tenant_id: tenantIdA, customer_id: custA.data?.id, status: 'booked' })
+        .insert({ tenant_id: tenantIdA, contact_id: custA.data?.id, status: 'booked' })
         .select('id')
         .single();
       const jobIdA = jobA.data?.id as string;
@@ -139,13 +139,13 @@ describe.skipIf(!canRun)('photos RLS isolation (integration)', () => {
         .insert({ tenant_id: tenantIdB, user_id: userIdB, role: 'owner' });
 
       const custB = await admin
-        .from('customers')
+        .from('contacts')
         .insert({ tenant_id: tenantIdB, type: 'commercial', name: `B-${stamp}` })
         .select('id')
         .single();
       const jobB = await admin
         .from('jobs')
-        .insert({ tenant_id: tenantIdB, customer_id: custB.data?.id, status: 'booked' })
+        .insert({ tenant_id: tenantIdB, contact_id: custB.data?.id, status: 'booked' })
         .select('id')
         .single();
       const jobIdB = jobB.data?.id as string;

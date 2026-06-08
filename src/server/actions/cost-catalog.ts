@@ -11,7 +11,7 @@ export type CostCatalogActionResult = { ok: true; id: string } | { ok: false; er
 
 const materialSchema = z.object({
   id: z.string().uuid().optional(),
-  category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead']),
+  category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead', 'supply_install']),
   cost_code: z.string().trim().max(50).optional().or(z.literal('')),
   label: z.string().trim().min(1, 'Label is required').max(200),
   description: z.string().trim().max(1000).optional().or(z.literal('')),

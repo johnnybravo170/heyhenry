@@ -5,6 +5,7 @@
  * Mutations live in `src/server/actions/mfa.ts`.
  */
 
+import { cache } from 'react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -13,7 +14,16 @@ export type MfaStatus = {
   recoveryCodesRemaining: number;
 };
 
-export async function getMfaStatus(): Promise<MfaStatus | null> {
+/**
+ * Request-deduped via React `cache()`. The Settings → Security page renders
+ * BOTH the enrollment card (page) and the MFA enforcement banner (dashboard
+ * layout, via getMfaEnforcement) in one render, and each needs this status.
+ * Without dedup they'd make two independent `auth.mfa.listFactors()` calls
+ * that can disagree under a token-refresh race / eventual consistency —
+ * producing a "set up 2FA" banner next to an "already enrolled" card. One
+ * call per request guarantees they always agree.
+ */
+export const getMfaStatus = cache(async (): Promise<MfaStatus | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,4 +47,4 @@ export async function getMfaStatus(): Promise<MfaStatus | null> {
     .is('consumed_at', null);
 
   return { enrolled: true, recoveryCodesRemaining: count ?? 0 };
-}
+});

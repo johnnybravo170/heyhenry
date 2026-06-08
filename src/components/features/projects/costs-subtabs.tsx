@@ -27,16 +27,24 @@ const TABS = [
 
 export type CostsSubtabKey = (typeof TABS)[number]['key'];
 
-export function CostsSubtabs({ counts }: { counts: Record<CostsSubtabKey, number> }) {
+/** Per-subtab count + optional semantic hint ("1 pending", "3 active"). When
+ *  `hint` is set it replaces the plain count on the desktop chip; `warn` tints
+ *  it amber (work waiting). The bare `count` still drives the mobile select. */
+export type CostsSubtabCount = { count: number; hint?: string; warn?: boolean };
+
+export function CostsSubtabs({ counts }: { counts: Record<CostsSubtabKey, CostsSubtabCount> }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // Default landing = Costs (the money-out ledger), matching CostsTab's own
+  // `sub` resolution + the brief. Keeps the highlighted pill in sync with the
+  // rendered section when no `?sub=` is present.
   const current: CostsSubtabKey =
-    (TABS.find((t) => t.key === searchParams?.get('sub'))?.key as CostsSubtabKey) ?? 'quotes';
+    (TABS.find((t) => t.key === searchParams?.get('sub'))?.key as CostsSubtabKey) ?? 'costs';
 
   function navigate(key: CostsSubtabKey) {
     const params = new URLSearchParams(searchParams?.toString());
-    if (key === 'quotes') params.delete('sub');
+    if (key === 'costs') params.delete('sub');
     else params.set('sub', key);
     const qs = params.toString();
     const base = pathname ?? '/';
@@ -51,31 +59,51 @@ export function CostsSubtabs({ counts }: { counts: Record<CostsSubtabKey, number
         onChange={(e) => navigate(e.target.value as CostsSubtabKey)}
         className="mb-4 block w-full rounded-md border bg-background px-3 py-2 text-sm md:hidden"
       >
-        {TABS.map((t) => (
-          <option key={t.key} value={t.key}>
-            {t.label} ({counts[t.key]})
-          </option>
-        ))}
+        {TABS.map((t) => {
+          const c = counts[t.key];
+          return (
+            <option key={t.key} value={t.key}>
+              {t.label} ({c.hint ?? c.count})
+            </option>
+          );
+        })}
       </select>
       <div className="mb-4 hidden flex-wrap gap-2 md:flex">
-        {TABS.map((t) => (
-          <button
-            type="button"
-            key={t.key}
-            onClick={() => navigate(t.key)}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-              current === t.key
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-muted bg-card text-muted-foreground hover:bg-muted/50',
-            )}
-          >
-            {t.label}
-            <Badge variant="secondary" className="h-4 min-w-[16px] px-1 text-[10px] leading-none">
-              {counts[t.key]}
-            </Badge>
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const c = counts[t.key];
+          return (
+            <button
+              type="button"
+              key={t.key}
+              onClick={() => navigate(t.key)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                current === t.key
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-muted bg-card text-muted-foreground hover:bg-muted/50',
+              )}
+            >
+              {t.label}
+              {c.hint ? (
+                <span
+                  className={cn(
+                    'font-medium',
+                    c.warn ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground',
+                  )}
+                >
+                  {c.hint}
+                </span>
+              ) : (
+                <Badge
+                  variant="secondary"
+                  className="h-4 min-w-[16px] px-1 text-[10px] leading-none"
+                >
+                  {c.count}
+                </Badge>
+              )}
+            </button>
+          );
+        })}
       </div>
     </>
   );
@@ -91,7 +119,8 @@ export function CostsSubtabs({ counts }: { counts: Record<CostsSubtabKey, number
  * old links don't 404 into an empty Quotes tab.
  */
 export function parseCostsSubtab(value: string | string[] | undefined): CostsSubtabKey {
-  if (value === 'pos' || value === 'costs') return value;
+  if (value === 'quotes' || value === 'pos' || value === 'costs') return value;
+  // Legacy pre-unification deep-links fold into the unified Costs ledger.
   if (value === 'bills' || value === 'expenses') return 'costs';
-  return 'quotes';
+  return 'costs';
 }

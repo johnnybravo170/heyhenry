@@ -5,6 +5,19 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [new URL('https://*.supabase.co/storage/**')],
   },
+  // The Property Record was formerly the "Home Record". Its public share
+  // links are a permanent contract — every record already emailed to a
+  // customer points at /home-record/<slug> (and /download, /download-zip).
+  // Permanently redirect the whole old subtree so no shared link ever 404s.
+  async redirects() {
+    return [
+      {
+        source: '/home-record/:path*',
+        destination: '/property-record/:path*',
+        permanent: true,
+      },
+    ];
+  },
   // The single `src/pages/api/henry/gemini-proxy.ts` route triggers Next's
   // pages-compat type augmentation in next-env.d.ts, which flips
   // useSearchParams/useParams/usePathname return types to nullable across
@@ -20,6 +33,14 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // `read-excel-file/node` (used by `src/server/actions/coa-mapping.ts`)
+  // depends on `unzipper`, which has a dynamic `require('@aws-sdk/client-s3')`
+  // in an S3-source code path we never hit (we feed it a Buffer). Turbopack
+  // / webpack try to statically resolve the require and fail the build with
+  // "Module not found: @aws-sdk/client-s3". Marking these as external keeps
+  // them out of the bundle and resolved at runtime from node_modules, where
+  // the unused branch stays inert.
+  serverExternalPackages: ['read-excel-file', 'unzipper'],
   experimental: {
     serverActions: {
       // Photo uploads travel through server actions as multipart FormData.

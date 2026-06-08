@@ -2,7 +2,7 @@
 
 /**
  * Soft-delete confirmation for a job. Mirrors Track A's
- * `DeleteCustomerButton`: the server action redirects to `/jobs` on success,
+ * `DeleteContactButton`: the server action redirects to `/jobs` on success,
  * so reaching the post-action branch implies an error that we surface via
  * toast.
  */

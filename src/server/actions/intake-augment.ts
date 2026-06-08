@@ -15,6 +15,7 @@ import {
 } from '@/lib/ai/intake-augment-prompt';
 import { type AttachedFile, gateway, isAiError } from '@/lib/ai-gateway';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { uploadToStorage } from '@/lib/storage/photos';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -47,7 +48,7 @@ export async function parseProjectAugmentAction(formData: FormData): Promise<Par
   const supabase = await createClient();
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, name, description, customers:customer_id (name)')
+    .select('id, name, description, contacts:contact_id (name)')
     .eq('id', projectId)
     .maybeSingle();
   if (projErr || !project) {
@@ -56,14 +57,16 @@ export async function parseProjectAugmentAction(formData: FormData): Promise<Par
 
   const { data: categoryRows } = await supabase
     .from('project_budget_categories')
-    .select('id, name, section, project_cost_lines (label)')
+    .select(
+      'id, name, section_row:project_budget_sections!section_id(name), project_cost_lines (label)',
+    )
     .eq('project_id', projectId)
     .order('display_order');
 
   const existingCategories =
     categoryRows?.map((b) => ({
       name: b.name as string,
-      section: (b.section as string | null) ?? null,
+      section: (b.section_row as unknown as { name: string } | null)?.name ?? null,
       lines: ((b.project_cost_lines as Array<{ label: string }> | null) ?? []).map((l) => l.label),
     })) ?? [];
 
@@ -86,9 +89,9 @@ export async function parseProjectAugmentAction(formData: FormData): Promise<Par
   }
 
   // Build the intro text: project context + category roster.
-  const customerName = Array.isArray(project.customers)
-    ? (project.customers[0] as { name?: string } | undefined)?.name
-    : (project.customers as { name?: string } | null)?.name;
+  const customerName = Array.isArray(project.contacts)
+    ? (project.contacts[0] as { name?: string } | undefined)?.name
+    : (project.contacts as { name?: string } | null)?.name;
   const categoryRoster = existingCategories.length
     ? existingCategories
         .map((b) => {
@@ -282,11 +285,21 @@ export async function applyProjectAugmentAction(formData: FormData): Promise<App
       (existing ?? []).reduce((m, b) => Math.max(m, (b.display_order as number) ?? 0), 0) + 1;
 
     if (input.new_categories.length) {
+      // Resolve distinct section names → section row ids; set section_id and
+      // let the DB trigger mirror the legacy `section` string.
+      const sectionIdByName = new Map<string, string>();
+      for (const b of input.new_categories) {
+        const name = b.section?.trim() || 'General';
+        if (sectionIdByName.has(name)) continue;
+        const resolved = await resolveBudgetSectionId(supabase, tenant.id, input.projectId, name);
+        if ('error' in resolved) return { ok: false, error: `Sections: ${resolved.error}` };
+        sectionIdByName.set(name, resolved.id);
+      }
       const rows = input.new_categories.map((b, i) => ({
         project_id: input.projectId,
         tenant_id: tenant.id,
         name: b.name,
-        section: b.section?.trim() || 'General',
+        section_id: sectionIdByName.get(b.section?.trim() || 'General') ?? null,
         display_order: nextOrder + i,
       }));
       const { data: inserted, error } = await supabase

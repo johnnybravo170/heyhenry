@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { ProjectSelection } from '@/lib/db/queries/project-selections';
+import { rollupVariance, selectionVariance } from '@/lib/selections/variance';
 import { resizeImage } from '@/lib/storage/resize-image';
 import { cn } from '@/lib/utils';
 import {
@@ -38,6 +39,7 @@ import {
   addCustomerSelectionAction,
   deleteCustomerSelectionAction,
 } from '@/server/actions/project-selections';
+import { ByTag, VarianceDelta } from './selection-variance-ui';
 
 type PortalSelection = ProjectSelection & {
   /** Resolved server-side: signed URL for image_storage_path or photo_refs[0]. */
@@ -69,7 +71,7 @@ export function PortalSelectionsPanel({
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Record what you&rsquo;ve actually chosen — paint chips, tile, fixture model numbers.
-          Survives into your final Home Record.
+          Survives into your final Property Record.
         </p>
       </div>
 
@@ -88,21 +90,27 @@ export function PortalSelectionsPanel({
         </div>
       ) : (
         <div className="space-y-4">
-          {groups.map((group) => (
-            <div key={group.room} className="rounded-lg border bg-card">
-              <h3 className="border-b px-4 py-2 text-sm font-semibold">{group.room}</h3>
-              <ul className="divide-y">
-                {group.items.map((sel) => (
-                  <SelectionRow
-                    key={sel.id}
-                    portalSlug={portalSlug}
-                    selection={sel}
-                    onDeleted={refresh}
-                  />
-                ))}
-              </ul>
-            </div>
-          ))}
+          {groups.map((group) => {
+            const roomRollup = rollupVariance(group.items, 'Room');
+            return (
+              <div key={group.room} className="rounded-lg border bg-card">
+                <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+                  <h3 className="text-sm font-semibold">{group.room}</h3>
+                  <VarianceDelta tone={roomRollup.tone} label={roomRollup.label} />
+                </div>
+                <ul className="divide-y">
+                  {group.items.map((sel) => (
+                    <SelectionRow
+                      key={sel.id}
+                      portalSlug={portalSlug}
+                      selection={sel}
+                      onDeleted={refresh}
+                    />
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
@@ -351,6 +359,9 @@ function SelectionRow({
   const isCustomer = selection.created_by === 'customer';
   const headline = [selection.brand, selection.name].filter(Boolean).join(' ');
   const detail = [selection.code, selection.finish].filter(Boolean).join(' • ');
+  // CLIENT BOUNDARY: allowance vs THEIR actual + a labelled delta. No
+  // margin/markup, no supplier, no SKU, no Start-CO. See the brief.
+  const variance = selectionVariance(selection.allowance_cents, selection.actual_cost_cents);
 
   function handleDelete() {
     if (!window.confirm('Remove this selection?')) return;
@@ -381,21 +392,15 @@ function SelectionRow({
         ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
               {selectionCategoryLabels[selection.category as SelectionCategory] ??
                 selection.category}
             </span>
             {headline ? <span className="text-sm font-medium">{headline}</span> : null}
-            {isCustomer ? (
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-800">
-                Added by you
-              </span>
-            ) : null}
+            <ByTag createdBy={selection.created_by} selfLabel={isCustomer} />
           </div>
           <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             {detail ? <span>{detail}</span> : null}
-            {selection.supplier ? <span>{selection.supplier}</span> : null}
-            {selection.sku ? <span>SKU {selection.sku}</span> : null}
             {selection.warranty_url ? (
               <a
                 href={selection.warranty_url}
@@ -407,6 +412,11 @@ function SelectionRow({
               </a>
             ) : null}
           </div>
+          {variance ? (
+            <div className="mt-1">
+              <VarianceDelta tone={variance.tone} label={variance.label} />
+            </div>
+          ) : null}
           {selection.notes ? (
             <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
               {selection.notes}

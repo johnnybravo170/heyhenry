@@ -3,6 +3,7 @@ import {
   getKeyMetrics,
   getRecentActivity,
   getTodaysJobs,
+  type TodaysJob,
 } from '@/lib/db/queries/dashboard';
 import { formatCad, formatDate } from '../format';
 import type { AiTool } from '../types';
@@ -13,12 +14,20 @@ export function setDashboardTimezone(tz: string) {
   _timezone = tz;
 }
 
+/** Vertical is injected at tool-creation time so the snapshot matches the
+ * owner dashboard: renovation/tile GCs work in projects (not jobs/quotes)
+ * and don't see Today's Jobs. */
+let _isRenovation = false;
+export function setDashboardVertical(vertical: string | null | undefined) {
+  _isRenovation = vertical === 'renovation' || vertical === 'tile';
+}
+
 export const dashboardTools: AiTool[] = [
   {
     definition: {
       name: 'get_dashboard',
       description:
-        "Today's business snapshot: today's jobs, key metrics (revenue, outstanding, open jobs, pending quotes), items needing attention, and recent activity.",
+        "Today's business snapshot: today's jobs (field-service verticals), key metrics (revenue, outstanding, and active work), items needing attention, and recent activity.",
       input_schema: {
         type: 'object',
         properties: {},
@@ -27,37 +36,45 @@ export const dashboardTools: AiTool[] = [
     handler: async () => {
       try {
         const [todaysJobs, metrics, attention, activity] = await Promise.all([
-          getTodaysJobs(_timezone),
-          getKeyMetrics(_timezone),
-          getAttentionItems(_timezone),
+          // GCs work in projects, not a per-day job board — skip Today's Jobs.
+          _isRenovation ? Promise.resolve<TodaysJob[]>([]) : getTodaysJobs(_timezone),
+          getKeyMetrics(_timezone, _isRenovation),
+          getAttentionItems(_timezone, _isRenovation),
           getRecentActivity(),
         ]);
 
         let output = `Dashboard Snapshot\n${'='.repeat(40)}\n\n`;
 
-        // Key metrics
+        // Key metrics — the operational pair swaps by vertical to match the UI.
         output += `Revenue this month: ${formatCad(metrics.revenueThisMonthCents)}\n`;
         output += `Outstanding (unpaid): ${formatCad(metrics.outstandingCents)}\n`;
-        output += `Open jobs: ${metrics.openJobsCount}\n`;
-        output += `Pending quotes: ${metrics.pendingQuotesCount}\n`;
-
-        // Today's jobs
-        if (todaysJobs.length > 0) {
-          output += `\nToday's Jobs\n${'-'.repeat(30)}\n`;
-          for (const job of todaysJobs) {
-            const time = job.scheduled_at
-              ? new Date(job.scheduled_at).toLocaleTimeString('en-CA', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  timeZone: _timezone,
-                })
-              : 'Unscheduled';
-            const name = job.customer?.name ?? 'Unknown';
-            const city = job.customer?.city ? ` (${job.customer.city})` : '';
-            output += `  ${time} - ${name}${city} [${job.status}]\n`;
-          }
+        if (_isRenovation) {
+          output += `Active projects: ${metrics.activeProjectsCount}\n`;
+          output += `Awaiting approval: ${metrics.awaitingApprovalCount}\n`;
         } else {
-          output += `\nNo jobs scheduled for today.\n`;
+          output += `Open jobs: ${metrics.openJobsCount}\n`;
+          output += `Pending quotes: ${metrics.pendingQuotesCount}\n`;
+        }
+
+        // Today's jobs (field-service verticals only; GCs don't use it)
+        if (!_isRenovation) {
+          if (todaysJobs.length > 0) {
+            output += `\nToday's Jobs\n${'-'.repeat(30)}\n`;
+            for (const job of todaysJobs) {
+              const time = job.scheduled_at
+                ? new Date(job.scheduled_at).toLocaleTimeString('en-CA', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZone: _timezone,
+                  })
+                : 'Unscheduled';
+              const name = job.customer?.name ?? 'Unknown';
+              const city = job.customer?.city ? ` (${job.customer.city})` : '';
+              output += `  ${time} - ${name}${city} [${job.status}]\n`;
+            }
+          } else {
+            output += `\nNo jobs scheduled for today.\n`;
+          }
         }
 
         // Attention items

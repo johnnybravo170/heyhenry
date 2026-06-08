@@ -40,6 +40,11 @@ export async function runAutoMatchAction(input: {
 }): Promise<AutoMatchResult> {
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in.' };
+  // Owner+admin only — re-running feeds the paid-state review queue.
+  // (FLAG FOR OPS to allow members.)
+  if (tenant.member.role !== 'owner' && tenant.member.role !== 'admin') {
+    return { ok: false, error: 'Only an owner or admin can run bank matching.' };
+  }
 
   const supabase = await createClient();
 
@@ -153,6 +158,7 @@ export async function runAutoMatchAction(input: {
 
   revalidatePath('/business-health');
   revalidatePath('/business-health/bank-import');
+  revalidatePath('/business-health/bank-review');
 
   return {
     ok: true,

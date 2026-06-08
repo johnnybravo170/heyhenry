@@ -11,6 +11,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { audit } from '@/lib/audit';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
+import { resolveBudgetSectionId } from '@/lib/db/queries/project-budget-categories';
 import { createClient } from '@/lib/supabase/server';
 import {
   emptyToNull,
@@ -26,7 +27,7 @@ export type ProjectActionResult =
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export async function createProjectAction(input: {
-  customer_id: string;
+  contact_id: string;
   name: string;
   description?: string;
   start_date?: string;
@@ -52,7 +53,7 @@ export async function createProjectAction(input: {
     .from('projects')
     .insert({
       tenant_id: tenant.id,
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       name: parsed.data.name,
       description: emptyToNull(parsed.data.description),
       start_date: emptyToNull(parsed.data.start_date),
@@ -111,7 +112,7 @@ export async function createProjectAction(input: {
 
 export async function updateProjectAction(input: {
   id: string;
-  customer_id: string;
+  contact_id: string;
   name: string;
   description?: string;
   start_date?: string;
@@ -135,7 +136,7 @@ export async function updateProjectAction(input: {
   const { error } = await supabase
     .from('projects')
     .update({
-      customer_id: parsed.data.customer_id,
+      contact_id: parsed.data.contact_id,
       name: parsed.data.name,
       description: emptyToNull(parsed.data.description),
       start_date: emptyToNull(parsed.data.start_date),
@@ -192,6 +193,47 @@ export async function updateProjectStartDateAction(input: {
   const { error } = await supabase
     .from('projects')
     .update({ start_date: input.start_date, updated_at: new Date().toISOString() })
+    .eq('id', input.id)
+    .is('deleted_at', null);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/projects');
+  revalidatePath(`/projects/${input.id}`);
+  return { ok: true, id: input.id };
+}
+
+/**
+ * Patch just the description. Used by the Project Details card's inline
+ * editor. Empty string clears it. Single-field action so the card doesn't
+ * have to reconstruct the full project record.
+ */
+export async function updateProjectDescriptionAction(input: {
+  id: string;
+  description: string;
+}): Promise<ProjectActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('projects')
+    .update({ description: emptyToNull(input.description), updated_at: new Date().toISOString() })
+    .eq('id', input.id)
+    .is('deleted_at', null);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/projects');
+  revalidatePath(`/projects/${input.id}`);
+  return { ok: true, id: input.id };
+}
+
+/**
+ * Patch just the target_end_date. Sibling to `updateProjectStartDateAction`
+ * for the Project Details card. `null` clears the value.
+ */
+export async function updateProjectTargetEndDateAction(input: {
+  id: string;
+  target_end_date: string | null;
+}): Promise<ProjectActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('projects')
+    .update({ target_end_date: input.target_end_date, updated_at: new Date().toISOString() })
     .eq('id', input.id)
     .is('deleted_at', null);
   if (error) return { ok: false, error: error.message };
@@ -384,44 +426,16 @@ export async function transitionLifecycleStageAction(input: {
   return { ok: true, id: parsed.data.id };
 }
 
-/**
- * Resume an on-hold project back to the stage it was in before the hold.
- * Falls back to `planning` if the pre-hold stage is missing (shouldn't
- * happen, but defensive).
- */
-export async function resumeProjectAction(input: { id: string }): Promise<ProjectActionResult> {
-  const tenant = await getCurrentTenant();
-  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
-
-  const supabase = await createClient();
-  const { data: current, error: loadErr } = await supabase
-    .from('projects')
-    .select('id, lifecycle_stage, resumed_from_stage, name')
-    .eq('id', input.id)
-    .is('deleted_at', null)
-    .maybeSingle();
-
-  if (loadErr) return { ok: false, error: loadErr.message };
-  if (!current) return { ok: false, error: 'Project not found.' };
-
-  if (current.lifecycle_stage !== 'on_hold') {
-    return { ok: false, error: 'Project is not on hold.' };
-  }
-
-  const target = (current.resumed_from_stage as LifecycleStage | null) ?? 'planning';
-  return transitionLifecycleStageAction({ id: input.id, stage: target });
-}
-
 export async function cloneProjectAction(input: {
   source_id: string;
-  customer_id: string;
+  contact_id: string;
   name: string;
   clone_budget_categories: boolean;
   clone_notes: boolean;
   keep_line_photos?: boolean;
 }): Promise<ProjectActionResult> {
   if (!input.source_id) return { ok: false, error: 'Missing source project id.' };
-  if (!input.customer_id) return { ok: false, error: 'Pick a customer.' };
+  if (!input.contact_id) return { ok: false, error: 'Pick a customer.' };
   const name = input.name.trim();
   if (!name) return { ok: false, error: 'Project name is required.' };
 
@@ -445,7 +459,7 @@ export async function cloneProjectAction(input: {
     .from('projects')
     .insert({
       tenant_id: tenant.id,
-      customer_id: input.customer_id,
+      contact_id: input.contact_id,
       name,
       description: source.description,
       start_date: null,
@@ -486,22 +500,37 @@ export async function cloneProjectAction(input: {
   if (input.clone_budget_categories) {
     const { data: srcCategories } = await supabase
       .from('project_budget_categories')
-      .select('id, name, section, description, estimate_cents, display_order, is_visible_in_report')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), description, estimate_cents, display_order, is_visible_in_report',
+      )
       .eq('project_id', input.source_id);
 
     // Pre-generate new category UUIDs so we can remap cost-line category ids
     // without a second round-trip to read back inserted rows.
     const categoryIdMap = new Map<string, string>();
     if (srcCategories && srcCategories.length > 0) {
+      // Clone sections into the NEW project: resolve each distinct source
+      // section *name* to a section row on the cloned project — section_id
+      // can't be copied (it points at the source project's sections). The DB
+      // trigger mirrors the name into the legacy `section` string.
+      const sectionIdByName = new Map<string, string>();
+      for (const b of srcCategories) {
+        const name = (b.section_row as unknown as { name: string } | null)?.name?.trim();
+        if (!name || sectionIdByName.has(name)) continue;
+        const resolved = await resolveBudgetSectionId(supabase, tenant.id, created.id, name);
+        if ('error' in resolved) continue;
+        sectionIdByName.set(name, resolved.id);
+      }
       const rows = srcCategories.map((b) => {
         const newId = crypto.randomUUID();
         categoryIdMap.set(b.id, newId);
+        const sectionName = (b.section_row as unknown as { name: string } | null)?.name?.trim();
         return {
           id: newId,
           tenant_id: tenant.id,
           project_id: created.id,
           name: b.name,
-          section: b.section,
+          section_id: sectionName ? (sectionIdByName.get(sectionName) ?? null) : null,
           description: b.description,
           estimate_cents: b.estimate_cents,
           display_order: b.display_order,

@@ -94,7 +94,7 @@ export async function enrollStaleQuoteFollowupAction(input: {
   const { data: project } = await supabase
     .from('projects')
     .select(
-      'id, name, estimate_sent_at, customers:customer_id (name, email, phone, do_not_auto_message)',
+      'id, name, estimate_sent_at, contacts:contact_id (name, email, phone, do_not_auto_message)',
     )
     .eq('id', input.projectId)
     .is('deleted_at', null)
@@ -103,7 +103,7 @@ export async function enrollStaleQuoteFollowupAction(input: {
   if (!project) return { ok: false, error: 'Project not found.' };
 
   const p = project as Record<string, unknown>;
-  const customerRaw = p.customers as Record<string, unknown> | null;
+  const customerRaw = p.contacts as Record<string, unknown> | null;
   const email = customerRaw?.email as string | null;
   if (!email) return { ok: false, error: 'Customer has no email on file.' };
   if (customerRaw?.do_not_auto_message) {

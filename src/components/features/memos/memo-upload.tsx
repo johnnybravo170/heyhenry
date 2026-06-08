@@ -60,13 +60,14 @@ type WorkItem = {
   referenced_photo_indexes?: number[];
 };
 
-type CostCategory = 'material' | 'labour' | 'sub' | 'equipment' | 'overhead';
+type CostCategory = 'material' | 'labour' | 'sub' | 'equipment' | 'overhead' | 'supply_install';
 const CATEGORIES: { value: CostCategory; label: string }[] = [
   { value: 'material', label: 'Material' },
   { value: 'labour', label: 'Labour' },
   { value: 'sub', label: 'Sub' },
   { value: 'equipment', label: 'Equipment' },
   { value: 'overhead', label: 'Overhead' },
+  { value: 'supply_install', label: 'Supply & install' },
 ];
 
 type MemoRow = {

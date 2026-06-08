@@ -11,11 +11,13 @@ import { NEEDS_OWNER_ATTENTION_TAG } from '@/lib/ar/system-sequences';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type MoneyAtRiskRow = {
-  contactId: string;
+  /** ar_contacts.id — the AR-system contact this risk row was tagged on. */
+  arContactId: string;
   contactName: string;
   contactEmail: string | null;
   contactPhone: string | null;
-  customerId: string | null;
+  /** contacts.id of the matched customer record (navigable to /contacts/[id]). */
+  contactId: string | null;
   projectId: string | null;
   projectName: string | null;
   totalCents: number | null;
@@ -65,61 +67,74 @@ export async function listMoneyAtRisk(tenantId: string): Promise<MoneyAtRiskRow[
 
   const customerByContact = new Map<string, { id: string; name: string }>();
 
-  if (emails.length > 0) {
-    const { data: byEmail } = await admin
-      .from('customers')
-      .select('id, name, email')
-      .eq('tenant_id', tenantId)
-      .in('email', emails);
-    for (const c of byEmail ?? []) {
-      const row = c as { id: string; name: string; email: string | null };
-      const matchEmail = row.email?.toLowerCase() ?? '';
-      const contact = rows.find((r) => r.ar_contacts?.email?.toLowerCase() === matchEmail);
-      if (contact?.ar_contacts) {
-        customerByContact.set(contact.ar_contacts.id, { id: row.id, name: row.name });
-      }
+  // Resolve matching customers by email and phone in parallel (the two lookups
+  // are independent), and index the tagged AR contacts by email/phone so each
+  // match is O(1) instead of an O(n*m) rows.find() per returned customer. The
+  // phone list preserves the original "first tagged contact not already matched"
+  // semantics.
+  const arByEmail = new Map<string, NonNullable<RawRow['ar_contacts']>>();
+  const arByPhone = new Map<string, NonNullable<RawRow['ar_contacts']>[]>();
+  for (const r of rows) {
+    if (!r.ar_contacts) continue;
+    const e = r.ar_contacts.email?.toLowerCase();
+    if (e && !arByEmail.has(e)) arByEmail.set(e, r.ar_contacts);
+    const p = r.ar_contacts.phone;
+    if (p) {
+      const arr = arByPhone.get(p) ?? [];
+      arr.push(r.ar_contacts);
+      arByPhone.set(p, arr);
     }
   }
-  if (phones.length > 0) {
-    const { data: byPhone } = await admin
-      .from('customers')
-      .select('id, name, phone')
-      .eq('tenant_id', tenantId)
-      .in('phone', phones);
-    for (const c of byPhone ?? []) {
-      const row = c as { id: string; name: string; phone: string | null };
-      const contact = rows.find(
-        (r) =>
-          r.ar_contacts?.phone === row.phone &&
-          r.ar_contacts &&
-          !customerByContact.has(r.ar_contacts.id),
-      );
-      if (contact?.ar_contacts) {
-        customerByContact.set(contact.ar_contacts.id, { id: row.id, name: row.name });
-      }
-    }
+
+  const [emailRes, phoneRes] = await Promise.all([
+    emails.length > 0
+      ? admin
+          .from('contacts')
+          .select('id, name, email')
+          .eq('tenant_id', tenantId)
+          .in('email', emails)
+      : Promise.resolve({ data: [] as { id: string; name: string; email: string | null }[] }),
+    phones.length > 0
+      ? admin
+          .from('contacts')
+          .select('id, name, phone')
+          .eq('tenant_id', tenantId)
+          .in('phone', phones)
+      : Promise.resolve({ data: [] as { id: string; name: string; phone: string | null }[] }),
+  ]);
+
+  for (const c of emailRes.data ?? []) {
+    const row = c as { id: string; name: string; email: string | null };
+    const contact = arByEmail.get(row.email?.toLowerCase() ?? '');
+    if (contact) customerByContact.set(contact.id, { id: row.id, name: row.name });
+  }
+  for (const c of phoneRes.data ?? []) {
+    const row = c as { id: string; name: string; phone: string | null };
+    if (!row.phone) continue;
+    const contact = (arByPhone.get(row.phone) ?? []).find((ar) => !customerByContact.has(ar.id));
+    if (contact) customerByContact.set(contact.id, { id: row.id, name: row.name });
   }
 
   // For each customer, fetch the most recent pending-approval project.
-  const customerIds = Array.from(new Set(Array.from(customerByContact.values()).map((c) => c.id)));
+  const contactIds = Array.from(new Set(Array.from(customerByContact.values()).map((c) => c.id)));
   const projectByCustomer = new Map<string, { id: string; name: string; totalCents: number }>();
 
-  if (customerIds.length > 0) {
+  if (contactIds.length > 0) {
     const { data: projects } = await admin
       .from('projects')
-      .select('id, name, customer_id, estimate_sent_at')
-      .in('customer_id', customerIds)
+      .select('id, name, contact_id, estimate_sent_at')
+      .in('contact_id', contactIds)
       .eq('estimate_status', 'pending_approval')
       .is('deleted_at', null)
       .order('estimate_sent_at', { ascending: false });
 
     // Pick the most-recent per customer + sum cost lines for the total.
     const seenCustomers = new Set<string>();
-    const projectsToTotal: { id: string; customerId: string; name: string }[] = [];
-    for (const p of (projects ?? []) as Array<{ id: string; name: string; customer_id: string }>) {
-      if (seenCustomers.has(p.customer_id)) continue;
-      seenCustomers.add(p.customer_id);
-      projectsToTotal.push({ id: p.id, customerId: p.customer_id, name: p.name });
+    const projectsToTotal: { id: string; contactId: string; name: string }[] = [];
+    for (const p of (projects ?? []) as Array<{ id: string; name: string; contact_id: string }>) {
+      if (seenCustomers.has(p.contact_id)) continue;
+      seenCustomers.add(p.contact_id);
+      projectsToTotal.push({ id: p.id, contactId: p.contact_id, name: p.name });
     }
     if (projectsToTotal.length > 0) {
       const projIds = projectsToTotal.map((p) => p.id);
@@ -135,7 +150,7 @@ export async function listMoneyAtRisk(tenantId: string): Promise<MoneyAtRiskRow[
         );
       }
       for (const p of projectsToTotal) {
-        projectByCustomer.set(p.customerId, {
+        projectByCustomer.set(p.contactId, {
           id: p.id,
           name: p.name,
           totalCents: totalByProject.get(p.id) ?? 0,
@@ -161,11 +176,11 @@ export async function listMoneyAtRisk(tenantId: string): Promise<MoneyAtRiskRow[
         (Date.now() - new Date(taggedAt).getTime()) / (24 * 60 * 60 * 1000),
       );
       return {
-        contactId: c.id,
+        arContactId: c.id,
         contactName: fullName,
         contactEmail: c.email,
         contactPhone: c.phone,
-        customerId: linked?.id ?? null,
+        contactId: linked?.id ?? null,
         projectId: project?.id ?? null,
         projectName: project?.name ?? null,
         totalCents: project?.totalCents ?? null,

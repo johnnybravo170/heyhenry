@@ -1,5 +1,6 @@
 import { TimeExpenseTab } from '@/components/features/projects/time-expense-tab';
 import { WorkerInvoicesSection } from '@/components/features/projects/worker-invoices-section';
+import { Money } from '@/components/ui/money';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { getOperatorProfile } from '@/lib/db/queries/profile';
 import { getProject } from '@/lib/db/queries/projects';
@@ -41,6 +42,21 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
         .order('created_at'),
     ]);
   const ownerRateCents = operatorProfile?.defaultHourlyRateCents ?? null;
+
+  // Labour summary roll-up (computed server-side, passed to the body panel).
+  // Hours: straight sum of every time-entry's hours.
+  // Labour cost: sum of hours × the entry's own hourly_rate_cents (null rate
+  //   contributes nothing — matches the table's "Billed" column exactly).
+  // Awaiting: worker invoices in the operator's approval queue (submitted).
+  const summaryTotalHours = timeEntries.reduce((s, e) => s + Number(e.hours), 0);
+  const summaryLabourCostCents = timeEntries.reduce(
+    (s, e) => s + Math.round(Number(e.hours) * (e.hourly_rate_cents ?? 0)),
+    0,
+  );
+  const awaitingInvoices = workerInvoices.filter((inv) => inv.status === 'submitted');
+  const summaryAwaitingCount = awaitingInvoices.length;
+  const summaryAwaitingCents = awaitingInvoices.reduce((s, inv) => s + inv.total_cents, 0);
+
   const costLines = (
     (costLinesRes.data ?? []) as Array<{
       id: string;
@@ -56,7 +72,71 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* Summary roll-up — twin of the Costs "Money out" panel. Internal
+          labour view: hours, hours×rate cost, and the worker-invoice
+          approval queue. Billed work surfaces on Spend. */}
+      <div className="rounded-xl border bg-card">
+        <div className="flex items-baseline justify-between border-b px-4 py-2.5">
+          <span className="text-sm font-semibold">Labour</span>
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+            Internal · hours &amp; worker invoices
+          </span>
+        </div>
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 px-4 py-3 sm:grid-cols-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Total hours
+            </span>
+            <span className="text-lg font-semibold tabular-nums">
+              {summaryTotalHours}
+              <span className="ml-0.5 text-sm font-normal text-muted-foreground">h</span>
+            </span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Labour cost
+            </span>
+            <Money cents={summaryLabourCostCents} className="text-lg font-semibold" />
+            <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              Hours × rate
+            </span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Awaiting you
+            </span>
+            {summaryAwaitingCount > 0 ? (
+              <>
+                <span className="text-lg font-semibold tabular-nums">
+                  {summaryAwaitingCount}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">
+                    invoice{summaryAwaitingCount === 1 ? '' : 's'}
+                  </span>
+                </span>
+                <a
+                  href="#worker-invoices"
+                  className="text-xs font-semibold text-brand hover:underline"
+                >
+                  <Money cents={summaryAwaitingCents} className="text-brand" /> to approve →
+                </a>
+              </>
+            ) : (
+              <span className="text-lg font-semibold text-muted-foreground">All approved</span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-1 border-t px-4 py-2 text-xs text-muted-foreground">
+          <span>Hours roll into Budget actuals · billed work shows on</span>
+          <a
+            href={`/projects/${projectId}?tab=costs`}
+            className="font-medium text-foreground hover:underline"
+          >
+            Spend →
+          </a>
+        </div>
+      </div>
+
+      <div id="worker-invoices">
         <h3 className="mb-2 text-sm font-semibold">Worker invoices</h3>
         <WorkerInvoicesSection invoices={workerInvoices} />
       </div>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TenantDetail } from '@/components/features/admin/tenant-detail';
 import { getTenantDetail } from '@/lib/db/queries/admin';
+import { isUuid } from '@/lib/validators/uuid';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -9,6 +10,7 @@ type Props = {
 
 export default async function AdminTenantDetailPage({ params }: Props) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const tenant = await getTenantDetail(id);
 
   if (!tenant) {

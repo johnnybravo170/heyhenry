@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { InvoiceStatusBadge } from '@/components/features/worker/worker-invoice-status-badge';
@@ -7,6 +7,9 @@ import { requireWorker } from '@/lib/auth/helpers';
 import { getInvoice, getInvoiceLines } from '@/lib/db/queries/worker-invoices';
 import { getOrCreateWorkerProfile } from '@/lib/db/queries/worker-profiles';
 import { formatCurrency } from '@/lib/pricing/calculator';
+import { statusToneClass } from '@/lib/ui/status-tokens';
+import { cn } from '@/lib/utils';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +19,7 @@ export default async function WorkerInvoiceDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { tenant } = await requireWorker();
   const profile = await getOrCreateWorkerProfile(tenant.id, tenant.member.id);
 
@@ -49,9 +53,17 @@ export default async function WorkerInvoiceDetailPage({
       </div>
 
       {invoice.rejection_reason ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          <div className="font-medium">Rejected</div>
-          <div>{invoice.rejection_reason}</div>
+        <div
+          className={cn(
+            'flex items-start gap-2.5 rounded-xl border p-3 text-sm',
+            statusToneClass.danger,
+          )}
+        >
+          <XCircle className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <div className="font-bold">Rejected</div>
+            <div className="mt-0.5">{invoice.rejection_reason}</div>
+          </div>
         </div>
       ) : null}
 

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { QuoteForm } from '@/components/features/quotes/quote-form';
 import { requireTenant } from '@/lib/auth/helpers';
 import { listMapQuoteCatalog } from '@/lib/db/queries/catalog-items';
-import { listCustomers } from '@/lib/db/queries/customers';
+import { listContacts } from '@/lib/db/queries/contacts';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createQuoteAction } from '@/server/actions/quotes';
 
@@ -14,7 +14,7 @@ export const metadata = {
   title: 'New quote — HeyHenry',
 };
 
-function parseCustomerId(value: string | string[] | undefined): string | null {
+function parseContactId(value: string | string[] | undefined): string | null {
   if (typeof value !== 'string') return null;
   return /^[0-9a-f-]{36}$/i.test(value) ? value : null;
 }
@@ -31,12 +31,13 @@ export default async function NewQuotePage({
   }
 
   const resolvedParams = await searchParams;
-  const prefilledCustomerId = parseCustomerId(resolvedParams.customer_id);
+  const prefilledContactId = parseContactId(resolvedParams.contact_id);
 
   const [customers, catalog, taxCtx] = await Promise.all([
-    listCustomers({ limit: 500 }),
+    listContacts({ limit: 500 }),
     listMapQuoteCatalog(),
-    canadianTax.getContext(tenant.id),
+    // Customer-facing: the rate here must match the total the customer signs.
+    canadianTax.getCustomerFacingContext(tenant.id),
   ]);
 
   return (
@@ -80,10 +81,10 @@ export default async function NewQuotePage({
       ) : (
         <QuoteForm
           mode="create"
-          customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+          contacts={customers.map((c) => ({ id: c.id, name: c.name }))}
           catalog={catalog}
           taxRate={taxCtx.totalRate}
-          defaults={prefilledCustomerId ? { customer_id: prefilledCustomerId } : undefined}
+          defaults={prefilledContactId ? { contact_id: prefilledContactId } : undefined}
           action={createQuoteAction}
           cancelHref="/quotes"
         />

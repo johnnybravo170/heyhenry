@@ -2,19 +2,35 @@
 
 Durable reference for the four-class email system at HeyHenry. Designed to scale to 10k tenants without reputation cross-contamination, and to coexist with Google Workspace on the root domain.
 
-**Last updated:** 2026-05-08
-**Status:** Phase 1 partially live (transactional + marketing split exists in code, DNS not fully cut over yet)
+**Sister doc:** [docs/email-templates.md](./email-templates.md) covers the visual + content layer (the `renderEmailShell` standardization, callout/CTA variants, subject-line conventions, CASL category picking, pre-ship verification).
+
+**Last updated:** 2026-05-29
+**Status:** Live on Postmark. Stream routing + the per-class From split (transactional / marketing / tenant-originated) are implemented in code (`src/lib/email/send.ts`). What remains operator-side is confirming each sending subdomain is DKIM/Return-Path verified in the Postmark dashboard and that DNS is fully cut over (see "Current state").
+
+## The provider: Postmark with message streams
+
+We send through **Postmark** (`src/lib/email/client.ts`, `src/lib/email/send.ts`). Postmark partitions a server into **message streams**, each with its own reputation, per-stream tracking settings, and independent suppression list. We run three outbound streams:
+
+| Stream ID | Constant | Default sender | Purpose |
+|---|---|---|---|
+| `outbound-transactional` | `STREAM_TRANSACTIONAL` | `HeyHenry <noreply@mail.heyhenry.io>` | auth, welcome, receipts, invoices, platform notices |
+| `outbound-marketing` | `STREAM_MARKETING` | `HeyHenry <newsletters@send.heyhenry.io>` | drip, broadcasts (CASL-bound, via the AR engine) |
+| `outbound-tenants` | `STREAM_TENANTS` | `noreply@tenants.heyhenry.io` (display name = tenant) | emails our tenants send to THEIR customers |
+
+`send.ts` auto-routes every call to one of these streams: a tenant From header → `outbound-tenants`; a CEM CASL category (`implied_consent_*`, `express_consent`) → `outbound-marketing`; everything else → `outbound-transactional`. Tracking follows the stream — opens + link tracking ON for marketing/tenants, OFF for transactional (auth-adjacent mail gets pre-clicked by Gmail's link scanner, which inflates click counts and burns one-time tokens).
 
 ## The four classes of email
 
 | Class | Sender domain | Volume estimate (10k tenants) | Reputation poisoning risk |
 |---|---|---|---|
 | **Corporate (receive)** | `heyhenry.io` (root) — Google Workspace | n/a (inbound only) | Low — but if root domain reputation tanks because we sent from root, our own mail starts going to spam |
-| **Transactional** | `mail.heyhenry.io` — Resend | ~10k–50k/month (welcomes, receipts, password resets) | Medium — auth-flow failures hurt revenue directly |
-| **Marketing** | `send.heyhenry.io` — Resend | ~50k–500k/month (drip, broadcasts) | High — one campaign can get flagged |
-| **Tenant-originated** | `tenants.heyhenry.io` — Resend (Phase 2) | **2M+/month** at 10k tenants | Highest — one tenant's spammy behaviour shouldn't tank everyone |
+| **Transactional** | `mail.heyhenry.io` — Postmark (`outbound-transactional`) | ~10k–50k/month (welcomes, receipts, password resets) | Medium — auth-flow failures hurt revenue directly |
+| **Marketing** | `send.heyhenry.io` — Postmark (`outbound-marketing`) | ~50k–500k/month (drip, broadcasts) | High — one campaign can get flagged |
+| **Tenant-originated** | `tenants.heyhenry.io` — Postmark (`outbound-tenants`) | **2M+/month** at 10k tenants | Highest — one tenant's spammy behaviour shouldn't tank everyone |
 
-**The fundamental rule:** never let one class poison another. The way you isolate is subdomains, because each subdomain has its own reputation in inbox-provider eyes (Gmail, Outlook, Apple Mail).
+**The fundamental rule:** never let one class poison another. Isolation comes from two layers that reinforce each other:
+- **Sending subdomain** — each class sends from its own subdomain, so reputation is isolated in inbox-provider eyes (Gmail, Outlook, Apple Mail).
+- **Postmark stream** — each class is a separate stream, so suppression lists, bounce handling, and tracking are isolated inside Postmark too.
 
 ## Target architecture
 
@@ -24,15 +40,15 @@ heyhenry.io                    Google Workspace (RECEIVE only)
   ├─ hello@heyhenry.io         → shared inbox (already advertised on marketing site)
   └─ support@heyhenry.io       → shared inbox
 
-mail.heyhenry.io               Resend (SEND, transactional)
+mail.heyhenry.io               Postmark — stream: outbound-transactional
   └─ noreply@mail.heyhenry.io  → auth, welcome, receipts, invoices
                                   reply-to set per-tenant or to hello@
 
-send.heyhenry.io               Resend (SEND, marketing)
+send.heyhenry.io               Postmark — stream: outbound-marketing
   └─ newsletters@send.heyhenry.io → drip, broadcast (CASL-bound)
                                     handled by AR engine in src/lib/ar/
 
-tenants.heyhenry.io            Resend (SEND, tenant-originated) — Phase 2
+tenants.heyhenry.io            Postmark — stream: outbound-tenants
   └─ noreply@tenants.heyhenry.io → emails our tenants send to THEIR customers
                                     From: "Acme Renos" <noreply@tenants.heyhenry.io>
                                     Reply-To: tenant's contact email
@@ -40,96 +56,61 @@ tenants.heyhenry.io            Resend (SEND, tenant-originated) — Phase 2
 
 ## Why each piece matters
 
-**Don't send from root.** Once Google Workspace is on `heyhenry.io`, we can technically send from any address there too (SPF can include both Google and Resend). But a marketing complaint or a spammy tenant on the root domain risks blacklisting `jonathan@heyhenry.io`. Always send from a subdomain.
+**Don't send from root.** Once Google Workspace is on `heyhenry.io`, we can technically send from any address there too (SPF can include both Google and Postmark). But a marketing complaint or a spammy tenant on the root domain risks blacklisting `jonathan@heyhenry.io`. Always send from a subdomain.
 
-**Marketing on its own subdomain.** Already in place (`send.heyhenry.io`, used by the AR engine). Spam complaints there don't touch transactional. CASL unsubscribe headers etc. are handled there.
+**Marketing on its own subdomain + stream.** `send.heyhenry.io` / `outbound-marketing`, driven by the AR engine. Spam complaints there land on the marketing stream's suppression list and reputation, not transactional. CASL unsubscribe headers etc. are handled there.
 
-**Tenant-originated on its OWN subdomain.** This is the volume one — at 10k tenants and 200 emails/tenant/month that's 2M+ emails/month. If one tenant blasts 1000 customers with a deal that gets reported, we want that hit to land on `tenants.heyhenry.io`, not `mail.heyhenry.io` where password-reset emails live. Currently NOT split — every tenant-sent email goes through the transactional path (FROM_EMAIL). This is fine at 10 tenants, dangerous at 1k.
+**Tenant-originated on its OWN subdomain + stream.** This is the volume one — at 10k tenants and 200 emails/tenant/month that's 2M+ emails/month. If one tenant blasts 1000 customers with a deal that gets reported, that hit lands on `tenants.heyhenry.io` / `outbound-tenants`, not `mail.heyhenry.io` where password-reset emails live. The split is wired: any `sendEmail` call with a `tenantId` (and no explicit `from`) builds the tenant From header via `getTenantFromHeader()` and routes to `outbound-tenants`.
 
-## Current state (2026-05-08)
+## Current state (2026-05-29)
 
-**Code is ready for the split:**
-- `src/lib/email/client.ts` exports `FROM_EMAIL` (transactional) and `FROM_EMAIL_MARKETING`
-- Reads `RESEND_FROM_EMAIL_TRANSACTIONAL` and `RESEND_FROM_EMAIL_MARKETING` env vars
-- Falls back to legacy `RESEND_FROM_EMAIL` for compatibility during cutover
+**Code routes all three classes correctly:**
+- `src/lib/email/client.ts` exports `FROM_EMAIL` / `FROM_EMAIL_TRANSACTIONAL`, `FROM_EMAIL_MARKETING`, `FROM_EMAIL_TENANTS_ADDR`, and the three `STREAM_*` IDs.
+- Reads `POSTMARK_FROM_EMAIL_TRANSACTIONAL`, `POSTMARK_FROM_EMAIL_MARKETING`, `POSTMARK_FROM_EMAIL_TENANTS` env vars; falls back to the verified-sender defaults baked into `client.ts` when unset.
+- `src/lib/email/send.ts` picks the stream + From + tracking flags per send (see "The provider" above).
+- Engagement + deliverability events flow back via the Postmark webhook at `src/app/api/ar/webhooks/postmark/route.ts` (Delivery / Bounce / SpamComplaint / Open / Click → updates `ar_send_log`, writes the suppression list, and flips the CASL `do_not_auto_message` kill switch on a complaint).
 
-**DNS / env not fully cut over:**
-- Production `RESEND_FROM_EMAIL=noreply@heyhenry.io` (root domain)
-- Verified Resend domain is currently the root `heyhenry.io`
-- `mail.heyhenry.io` and `send.heyhenry.io` not yet verified in Resend (or DNS not configured)
-- `tenants.heyhenry.io` doesn't exist yet (Phase 2)
-- Google Workspace not yet set up
+**Operator-side, confirm before assuming clean deliverability:**
+- `POSTMARK_SERVER_TOKEN` set in the Vercel environment.
+- `mail.heyhenry.io`, `send.heyhenry.io`, `tenants.heyhenry.io` each verified in the Postmark dashboard (DKIM + custom Return-Path), with the matching DNS records live.
+- DMARC on the root domain.
+- Google Workspace on the root (corporate receive) — separate, MX-only.
 
-## Phased rollout plan
+## DNS + Postmark verification
 
-### Phase 1 — Transactional + Marketing split (kanban [c88f3fb1](https://ops.heyhenry.io/admin/kanban/dev))
+Each sending subdomain needs to be added in the **Postmark dashboard → Sender Signatures / Domains**, which generates the exact records to publish at the heyhenry.io DNS host. Postmark verification uses, per domain:
+- **DKIM** — a `TXT`/`CNAME` record at the Postmark-issued DKIM selector for the subdomain.
+- **Return-Path (bounce alignment)** — a `CNAME` (e.g. `pm-bounces.<subdomain>` → Postmark's bounce host) so bounces align for DMARC.
+- **SPF** — include Postmark's sending host in the subdomain's SPF (`include:spf.mtasv.net`), if you publish SPF on the bounce/return-path domain.
 
-**Owner: ops (DNS work) + dev (env vars)**
+Always copy the exact record values from the Postmark dashboard rather than hand-typing them — they're per-domain and rotate.
 
-DNS records to add at the heyhenry.io DNS host (Cloudflare or wherever):
-- `mail` subdomain:
-  - `TXT mail "v=spf1 include:_spf.resend.com ~all"`
-  - `TXT resend._domainkey.mail "<DKIM key from Resend dashboard>"`
-  - (Optional) `MX mail` records for bounce-routing if you want to handle bounces actively
-- `send` subdomain:
-  - `TXT send "v=spf1 include:_spf.resend.com ~all"`
-  - `TXT resend._domainkey.send "<DKIM key from Resend dashboard>"`
-- Root domain DMARC (covers all):
-  - `TXT _dmarc "v=DMARC1; p=none; rua=mailto:dmarc@heyhenry.io; pct=100"`
-  - Set `p=none` initially for monitoring; tighten to `p=quarantine` after 30 days of clean reports
+Root-domain DMARC covers all subdomains:
+- `TXT _dmarc "v=DMARC1; p=none; rua=mailto:dmarc@heyhenry.io; pct=100"`
+- Set `p=none` initially for monitoring; tighten to `p=quarantine` after 30 days of clean reports.
 
-Resend dashboard:
-- Add `mail.heyhenry.io` as a verified domain
-- Add `send.heyhenry.io` as a verified domain
-- Wait for green checkmarks on SPF/DKIM
+Verification after publishing:
+- Confirm green checkmarks (DKIM + Return-Path) on each domain in the Postmark dashboard.
+- Send a test on each stream, inspect headers in Gmail (View original → SPF: PASS, DKIM: PASS, DMARC: PASS).
 
-Vercel env vars:
-- `RESEND_FROM_EMAIL_TRANSACTIONAL=noreply@mail.heyhenry.io`
-- `RESEND_FROM_EMAIL_MARKETING=newsletters@send.heyhenry.io` (or whatever local-part you choose)
-- (Don't remove `RESEND_FROM_EMAIL` yet — keep as fallback during cutover)
-
-Verification:
-- Send a test transactional email, inspect headers in Gmail (View original → check SPF: PASS, DKIM: PASS)
-- Send a test marketing email same checks
-
-After 1 week of clean sends and zero deliverability regressions:
-- Remove the legacy `RESEND_FROM_EMAIL` env var
-- Update `client.ts` fallback chain to drop the legacy reference
-
-### Phase 2 — Tenant-originated subdomain (kanban TBD, Phase 2 card)
-
-**Owner: dev**
-
-Trigger: when active-tenant count crosses ~50, OR when a single tenant starts sending more than 5k emails/month. Either signal means tenant volume is large enough that mixing it with transactional is risky.
-
-DNS:
-- Add `tenants.heyhenry.io` SPF + DKIM records (same shape as Phase 1)
-- Verify in Resend
-
-Code:
-- Add `FROM_EMAIL_TENANT` constant to `src/lib/email/client.ts`
-- Add `RESEND_FROM_EMAIL_TENANT` env var
-- Update `getTenantFromHeader()` in `src/lib/email/from.ts` to use `tenants.heyhenry.io` for the from-address (with tenant's display name and reply-to set to their `contact_email`)
-- Audit every callsite of `sendEmail` — categorize as transactional / marketing / tenant-originated, route to the right FROM constant
-
-### Phase 3 — Dedicated IPs + sharding (when needed)
+## Phase 3 — Dedicated IPs + sharding (when needed, NOT built)
 
 **Owner: dev + ops**
 
-Trigger: when shared IP volumes start showing reputation flags, or any single domain crosses ~100k/day.
+Trigger: when shared-IP volumes start showing reputation flags, or any single domain crosses ~100k/day.
 
-- Move `tenants.heyhenry.io` to a dedicated IP pool in Resend
-- Move `mail.heyhenry.io` to a dedicated IP pool (separate from tenants)
-- If a major tenant starts dominating volume, shard tenant subdomain to `t1.heyhenry.io`, `t2.heyhenry.io`, etc.
+- Move `tenants.heyhenry.io` to a dedicated IP pool in Postmark.
+- Move `mail.heyhenry.io` to a dedicated IP pool (separate from tenants).
+- If a major tenant starts dominating volume, shard the tenant subdomain to `t1.heyhenry.io`, `t2.heyhenry.io`, etc.
 
-This is a "we'll know when we get there" phase. Resend has dedicated IPs at higher tiers; SendGrid/Postmark same. Don't over-engineer until reputation actually shows signs of stress.
+This is a "we'll know when we get there" phase. Postmark offers dedicated IPs at higher tiers. Don't over-engineer until reputation actually shows signs of stress.
 
 ## Google Workspace coexistence
 
-Google Workspace receives mail on the root domain via MX records. It does NOT conflict with our Resend sending because:
-- Sending uses subdomains (`mail.*`, `send.*`, `tenants.*`) — no MX records needed there
-- SPF/DKIM/DMARC for the root domain are Google-only
-- SPF/DKIM/DMARC for the subdomains are Resend-only
+Google Workspace receives mail on the root domain via MX records. It does NOT conflict with our Postmark sending because:
+- Sending uses subdomains (`mail.*`, `send.*`, `tenants.*`) — no MX records needed there.
+- SPF/DKIM/DMARC for the root domain are Google-only.
+- SPF/DKIM/Return-Path for the subdomains are Postmark-only.
 
 Setup steps for Google Workspace (kanban [9360c1c8 ops board](https://ops.heyhenry.io/admin/kanban/ops) — extend or spawn new):
 - Sign up for Google Workspace at the heyhenry.io domain
@@ -141,11 +122,11 @@ Setup steps for Google Workspace (kanban [9360c1c8 ops board](https://ops.heyhen
 ## What NOT to do
 
 - **Never put Google Workspace on a sending subdomain** — keeps reputation isolated
-- **Never send from root domain** in production code — even if Google Workspace SPF includes Resend (it doesn't by default), we want isolation
+- **Never send from root domain** in production code — even if Google Workspace SPF includes Postmark (it doesn't by default), we want isolation
 - **Never reuse `noreply@` across subdomains** for different classes — each class needs its own from-address so unsubscribe and reply behaviour is class-appropriate
 
 ## Open questions for future work
 
-- **Bounce handling**: Resend reports bounces but we currently don't act on them (no `email_bounced_at` flag on tenants). Add when bounce volume becomes a real signal.
+- **Bounce handling**: the Postmark webhook already records bounces on `ar_send_log` and writes the AR suppression list. We do NOT yet act on bounces for non-AR transactional mail (no `email_bounced_at` flag on tenants). Add when bounce volume becomes a real signal.
 - **Reply routing for `noreply@mail.*`**: today these emails have reply-to set per-tenant. For our own auth/welcome emails (no tenant context), reply-to is `hello@heyhenry.io`. Want to formalize this in the welcome email helper.
-- **Inbound parsing**: do we need to receive email at any subdomain (e.g., for inbound estimate-request parsing)? If so, set up MX on that subdomain pointing at our inbound webhook (Resend or SendGrid Inbound Parse).
+- **Inbound parsing**: inbound email is handled via Postmark inbound on `inbound.heyhenry.io` (see [INBOUND_EMAIL_PLAN.md](../INBOUND_EMAIL_PLAN.md)). If we ever need to receive at another subdomain, point its MX at the Postmark inbound webhook.

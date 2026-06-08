@@ -53,6 +53,8 @@ Your job — the same regardless of flavour, but the signals live in different p
 
 4d. "(BY OTHERS)" EXCLUSION CATEGORIES — when the speaker explicitly says the customer, the customer's family member, a painter friend, a relative who is a tradesperson, or any other party OUTSIDE the contractor's crew is handling part of the scope ("Tony's son-in-law is a painter, he'll do the fill and caulk"; "the customer is doing the demo themselves"; "the homeowner's pulling the carpet and tack strip"), create a category whose name ends with "(by others)" — e.g. "Demo (by others)", "Fill & Caulk (by others)", "Carpet Tear-Out (by others)". Put the lines in there with qty: 0 and unit_price_cents: 0, with notes explaining who is doing it and any prep / coordination requirements the contractor mentioned (e.g. "Reminded customer to remove all tack strip"). This makes scope boundaries explicit on the customer-facing estimate so there's no later "wait, who was doing what?" — the categories show up in the document with zero pricing, communicating that the contractor is aware of those tasks but they are NOT in the quote. Do NOT silently drop these scope items just because they're not billable; documenting them in the estimate is the whole point.
 
+4e. TAX, FEES, AND TOTALS ARE NOT SCOPE — never emit a budget category or cost line for: sales tax (GST / HST / PST / QST), a subtotal or grand total, or a management / markup / overhead / admin fee expressed as a percentage of the job or as a trailing line on a quote. These are computed or configured elsewhere in the system — tax is applied at estimate/invoice time, and the management fee is a project-level setting — so they are NOT scope the contractor prices line-by-line. When a source quote ends with "Management fee 15% … / GST … / Total …", extract only the real scope categories ABOVE those lines and drop the tax/fee/total rows. (A stated management-fee % or tax figure can be reflected later via the project's own fee/tax settings, not as a category.)
+
 5. QUANTITY DISCIPLINE — extract every number the speaker states, paired with its unit:
    - "657 square feet" → qty: 657, unit: "sq ft"
    - "9 sixteen-foot lengths" → qty: 144, unit: "lineal ft" (do the math when both numbers are stated)
@@ -80,9 +82,10 @@ Your job — the same regardless of flavour, but the signals live in different p
 
 8b. REASONING (RECEIPTS) — for EVERY line you produce, fill the "reasoning" field with one short, specific sentence (max ~200 chars) explaining why this line is in the draft. Cite the specific phrase, measurement, or photo that justifies it. The operator clicks an info icon next to the line to see this; weak reasoning ("standard scope item") is worse than honest specificity ("Tony said 657 sq ft of carpet to come out — tear-out implied as start of scope"). Never fabricate a citation. If the line is genuinely inferred from renovation patterns rather than a direct mention, say so plainly ("inferred — flooring scope this size always needs transition strips").
 
-9. Draft a short reply in the contractor's voice — see VOICE rules below.
-   - For CUSTOMER INPUT (flavour A): reply is a message the contractor can send back to the customer. Answer their questions, address opt-outs, propose next step.
-   - For CONTRACTOR VOICE MEMO (flavour B): reply is a short text the contractor can send the customer later ("Hey Tony, I put together some numbers on the flooring at 2452 Mountain — want to swing by Tuesday to go over them?"). It's a follow-up, not a response.
+9. Decide whether a customer reply would obviously help — do NOT write it. Set reply_warranted TRUE only when there's a real reason to message the customer:
+   - CUSTOMER INPUT (flavour A): the customer asked a question, raised an opt-out, or is plainly waiting on a response.
+   - CONTRACTOR VOICE MEMO (flavour B): there's a concrete follow-up that moves the job forward (numbers to share, a visit to book) AND there's a customer to send it to.
+   Set reply_warranted FALSE for a bare scope with no customer message and no follow-up hook — just a name and an address, photos with no question, an empty drop. When TRUE, put a short fragment in reply_reason naming the trigger ("customer asked about timeline"); when FALSE, reply_reason is null. The contractor drafts the actual reply on demand later — your job here is only the yes/no call. Do not manufacture a reason to reply.
 
 10. Customer extraction discipline — especially on voice memos:
     - If ANY proper noun appears in the filename or transcript that is plausibly the customer's first name, put it in customer.name. A first name alone is better than null.
@@ -90,6 +93,12 @@ Your job — the same regardless of flavour, but the signals live in different p
     - Extract phone / email if the contractor reads one aloud.
 
 11. Tag artifact roles so the contractor knows which is which.
+
+12. TAX REGISTRATION NUMBERS — if any Canadian GST/HST registration number appears on a document (format: nine digits then "RT" then four digits, e.g. "123456789 RT0001" or "123456789RT0001"), record each one in detected_tax_ids. For each, set:
+    - number: the number exactly as printed.
+    - placement: "sender" if it sits in the document's header / letterhead / sender block (top of page, beside the issuing business's name + address — i.e. the company that PRODUCED the document); "recipient" if it's in a bill-to / ship-to / customer block; "other" if you can't tell.
+    - near_business_name: the business name printed nearest the number, or null.
+    Do NOT guess or invent a number — only record one you can actually read. Empty array if none appear. (Deciding whether a "sender" number belongs to this contractor happens downstream; you only report what's on the page and where.)
 
 Return ONLY JSON matching the schema. Use empty arrays / null for anything you cannot confidently extract. Never invent details that aren't in the input, but DO extract everything that IS there — especially filename context.
 
@@ -189,7 +198,38 @@ export const INTAKE_JSON_SCHEMA = {
         },
         required: ['competitive', 'competitor_count', 'urgency', 'upsells', 'design_intent'],
       },
-      reply_draft: { type: 'string' },
+      detected_tax_ids: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            number: {
+              type: 'string',
+              description:
+                'GST/HST registration number exactly as printed, e.g. "123456789 RT0001".',
+            },
+            placement: {
+              type: 'string',
+              enum: ['sender', 'recipient', 'other'],
+              description:
+                'sender = header/letterhead/issuer block (the business that produced the doc); recipient = bill-to/ship-to/customer block; other = unclear.',
+            },
+            near_business_name: { type: ['string', 'null'] },
+          },
+          required: ['number', 'placement', 'near_business_name'],
+        },
+      },
+      reply_warranted: {
+        type: 'boolean',
+        description:
+          'TRUE only when a customer reply would obviously help (an inbound question, an opt-out, or a concrete follow-up with a customer to send it to). FALSE for a bare scope with no customer message. The reply itself is drafted on demand, not here — never manufacture a reason.',
+      },
+      reply_reason: {
+        type: ['string', 'null'],
+        description:
+          'When reply_warranted is true, a short fragment naming the trigger ("customer asked about timeline"). Null when false.',
+      },
       image_roles: {
         type: 'array',
         items: {
@@ -207,7 +247,16 @@ export const INTAKE_JSON_SCHEMA = {
         },
       },
     },
-    required: ['customer', 'project', 'categories', 'signals', 'reply_draft', 'image_roles'],
+    required: [
+      'customer',
+      'project',
+      'categories',
+      'signals',
+      'detected_tax_ids',
+      'reply_warranted',
+      'reply_reason',
+      'image_roles',
+    ],
   },
 } as const;
 
@@ -245,7 +294,34 @@ export type ParsedIntake = {
     upsells: Array<{ label: string; reason: string }>;
     design_intent: string[];
   };
-  reply_draft: string;
+  /**
+   * GST/HST registration numbers detected on the dropped documents, with where
+   * they sat (sender/letterhead vs recipient block). Ownership ("is this the
+   * operator's own number?") is decided downstream against the tenant profile.
+   * Optional in the type — drafts pre-dating the field have none — but required
+   * in the schema for fresh responses.
+   */
+  detected_tax_ids?: Array<{
+    number: string;
+    placement: 'sender' | 'recipient' | 'other';
+    near_business_name: string | null;
+  }>;
+  /**
+   * Henry's yes/no call on whether a customer reply would obviously help.
+   * The reply itself is drafted on demand (draftIntakeReplyAction), not
+   * during the parse — so we never manufacture an email nobody asked for.
+   * Optional in the type: drafts predating this change have no flag.
+   */
+  reply_warranted?: boolean;
+  /** Short fragment naming the reply trigger when warranted; null otherwise. */
+  reply_reason?: string | null;
+  /**
+   * The drafted reply text. No longer produced by the parse — populated
+   * client-side when the operator clicks "Draft a reply" on review, and
+   * editable from there. Optional: persisted drafts predating this change
+   * may still carry one.
+   */
+  reply_draft?: string | null;
   image_roles: Array<{
     index: number;
     role: 'screenshot' | 'reference' | 'measurement' | 'pdf_quote' | 'pdf_doc' | 'other';

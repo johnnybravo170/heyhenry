@@ -43,9 +43,11 @@ export default async function ImportsSettingsPage() {
 
   const rows: ImportBatchRow[] = (batches ?? []).map((b) => ({
     id: b.id as string,
-    kind: b.kind as 'customers' | 'projects' | 'invoices' | 'expenses',
+    // All six entity kinds land here (incl. photos / time_entries) — the
+    // list component dispatches rollback per-kind across all of them.
+    kind: b.kind as ImportBatchRow['kind'],
     sourceFilename: (b.source_filename as string | null) ?? null,
-    summary: (b.summary as { created?: number; merged?: number; skipped?: number }) ?? {},
+    summary: (b.summary as ImportBatchRow['summary']) ?? {},
     note: (b.note as string | null) ?? null,
     createdAt: b.created_at as string,
     createdByEmail: b.created_by ? (emailByUserId.get(b.created_by as string) ?? null) : null,

@@ -7,21 +7,34 @@
 
 import { escapeHtml, safeUrl } from '@/lib/email/escape';
 
+// TODO(email-shell): migrate to renderEmailShell on next touch
 export function referralInviteHtml({
   referrerName,
   referralUrl,
+  note,
 }: {
   referrerName: string;
   referralUrl: string;
+  /**
+   * Optional personal note from the referrer (the editable, Henry-draftable
+   * peer-to-peer message). When present it replaces the canned body so the
+   * invite reads in the operator's own voice. Plain text — escaped + newlines
+   * to <br>.
+   */
+  note?: string;
 }): string {
   const safeName = escapeHtml(referrerName);
+  const trimmedNote = note?.trim();
+  const bodyHtml = trimmedNote
+    ? `<div style="white-space: pre-wrap; color: #0a0a0a;">${escapeHtml(trimmedNote).replace(/\n/g, '<br />')}</div>`
+    : `<p>Hey there,</p>
+  <p>${safeName} uses HeyHenry to run their contracting business and thought you'd find it useful too.</p>
+  <p>HeyHenry helps contractors manage quotes, jobs, invoices, and customers in one place. No spreadsheets, no juggling apps.</p>`;
   return `<!DOCTYPE html>
 <html>
 <body style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h2 style="color: #0a0a0a;">${safeName} thinks you'd love HeyHenry</h2>
-  <p>Hey there,</p>
-  <p>${safeName} uses HeyHenry to run their contracting business and thought you'd find it useful too.</p>
-  <p>HeyHenry helps contractors manage quotes, jobs, invoices, and customers in one place. No spreadsheets, no juggling apps.</p>
+  ${bodyHtml}
   <p>
     <a href="${safeUrl(referralUrl)}" style="display: inline-block; padding: 12px 24px; background: #0a0a0a; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">
       Start your free 14-day trial
@@ -45,9 +58,17 @@ export function referralInviteSubject(referrerName: string): string {
 export function referralInviteSms({
   referrerName,
   referralUrl,
+  note,
 }: {
   referrerName: string;
   referralUrl: string;
+  /** Optional personal note (Henry-draftable). Replaces the canned body when set. */
+  note?: string;
 }): string {
+  const trimmedNote = note?.trim();
+  if (trimmedNote) {
+    // The referrer's own words. Only append the link if they didn't include it.
+    return trimmedNote.includes(referralUrl) ? trimmedNote : `${trimmedNote} ${referralUrl}`;
+  }
   return `${referrerName} invited you to try HeyHenry — quotes, jobs & invoices in one place. ${referralUrl}`;
 }

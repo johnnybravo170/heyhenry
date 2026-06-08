@@ -1,5 +1,5 @@
 import { getCurrentTenant } from '@/lib/auth/helpers';
-import { getCustomer, getCustomerRelated, listCustomers } from '@/lib/db/queries/customers';
+import { getCustomer, getCustomerRelated, listContacts } from '@/lib/db/queries/contacts';
 import { createClient } from '@/lib/supabase/server';
 import { formatDate } from '../format';
 import { resolveCustomer } from '../helpers/resolve-customer';
@@ -32,7 +32,7 @@ export const customerTools: AiTool[] = [
     },
     handler: async (input) => {
       try {
-        const rows = await listCustomers({
+        const rows = await listContacts({
           search: input.search as string | undefined,
           type: input.type as 'residential' | 'commercial' | 'agent' | undefined,
           limit: Math.min((input.limit as number) || 20, 100),
@@ -56,7 +56,7 @@ export const customerTools: AiTool[] = [
 
         return output;
       } catch (e) {
-        return `Failed to list customers: ${e instanceof Error ? e.message : String(e)}`;
+        return `Failed to list contacts: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   },
@@ -134,7 +134,7 @@ export const customerTools: AiTool[] = [
 
         const supabase = await createClient();
         const { data, error } = await supabase
-          .from('customers')
+          .from('contacts')
           .insert({
             tenant_id: tenant.id,
             name: input.name as string,
@@ -224,7 +224,7 @@ export const customerTools: AiTool[] = [
         updates.updated_at = new Date().toISOString();
 
         const supabase = await createClient();
-        const { error } = await supabase.from('customers').update(updates).eq('id', resolved.id);
+        const { error } = await supabase.from('contacts').update(updates).eq('id', resolved.id);
 
         if (error) {
           return `Failed to update customer: ${error.message}`;

@@ -53,17 +53,22 @@ async function shrinkIfNeeded(file: File): Promise<File> {
   }
 }
 
-type Category = { id: string; name: string; section: 'interior' | 'exterior' | 'general' };
+type Category = { id: string; name: string; section: string };
 
 export function ProjectIntakeZone({
   projectId,
   categories = [],
+  appearance = 'primary',
 }: {
   projectId: string;
   /** Project's existing budget categories. Used to resolve AI sub-quote
    * allocation category-names back to real IDs before handing off to the
    * sub-quote review dialog. */
   categories?: Category[];
+  /** `primary` = bold black CTA (standalone surfaces). `ghost` = light
+   * `✦ Add` chip for the lean project header, where it shouldn't compete
+   * with the global "New Project" CTA. */
+  appearance?: 'primary' | 'ghost';
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -370,14 +375,23 @@ export function ProjectIntakeZone({
       }}
     >
       <DialogTrigger asChild>
-        {/* Primary + bolder than the surrounding small action chips on
-            purpose. This is the universal drop zone for anything related
-            to this project — photos, bills, vendor quotes, sketches — and
-            it has to be impossible to miss. */}
-        <Button className="gap-2 px-4 py-2 shadow-sm">
-          <Sparkles className="size-4" />
-          Add to project
-        </Button>
+        {appearance === 'ghost' ? (
+          // Lean-header chip: light ghost so the project's capture front
+          // door doesn't compete with the global "New Project" CTA.
+          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+            <Sparkles className="size-3.5" />
+            Add
+          </Button>
+        ) : (
+          // Primary + bolder than the surrounding small action chips on
+          // purpose. This is the universal drop zone for anything related
+          // to this project — photos, bills, vendor quotes, sketches — and
+          // it has to be impossible to miss.
+          <Button className="gap-2 px-4 py-2 shadow-sm">
+            <Sparkles className="size-4" />
+            Add to project
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl lg:max-w-4xl xl:max-w-5xl">
         <DialogHeader>

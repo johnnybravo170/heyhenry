@@ -8,6 +8,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { QuoteStatus } from '@/lib/validators/quote';
+import { isUuid } from '@/lib/validators/uuid';
 
 export type QuoteCustomerSummary = {
   id: string;
@@ -46,7 +47,7 @@ export type QuoteLineItemRow = {
 export type QuoteRow = {
   id: string;
   tenant_id: string;
-  customer_id: string;
+  contact_id: string;
   status: QuoteStatus;
   subtotal_cents: number;
   tax_cents: number;
@@ -72,7 +73,7 @@ export type QuoteWithRelations = QuoteWithCustomer & {
 
 export type QuoteListFilters = {
   status?: QuoteStatus;
-  customer_id?: string;
+  contact_id?: string;
   limit?: number;
   offset?: number;
 };
@@ -80,9 +81,9 @@ export type QuoteListFilters = {
 export type QuoteStatusCounts = Record<QuoteStatus | 'all', number>;
 
 const QUOTE_COLUMNS =
-  'id, tenant_id, customer_id, status, subtotal_cents, tax_cents, total_cents, pdf_url, sent_at, accepted_at, notes, auto_followup_enabled, created_at, updated_at, deleted_at';
+  'id, tenant_id, contact_id, status, subtotal_cents, tax_cents, total_cents, pdf_url, sent_at, accepted_at, notes, auto_followup_enabled, created_at, updated_at, deleted_at';
 
-const QUOTE_WITH_CUSTOMER_SELECT = `${QUOTE_COLUMNS}, customers:customer_id (id, name, email, phone, address_line1, city, province, postal_code)`;
+const QUOTE_WITH_CUSTOMER_SELECT = `${QUOTE_COLUMNS}, contacts:contact_id (id, name, email, phone, address_line1, city, province, postal_code)`;
 
 function extractCustomer(raw: unknown): QuoteCustomerSummary | null {
   if (!raw) return null;
@@ -103,7 +104,7 @@ function extractCustomer(raw: unknown): QuoteCustomerSummary | null {
 }
 
 function normalizeQuote(row: Record<string, unknown>): QuoteWithCustomer {
-  const { customers: customerRaw, ...rest } = row;
+  const { contacts: customerRaw, ...rest } = row;
   return {
     ...(rest as QuoteRow),
     customer: extractCustomer(customerRaw),
@@ -118,7 +119,7 @@ export async function listQuotes(filters: QuoteListFilters = {}): Promise<QuoteW
   let query = supabase.from('quotes').select(QUOTE_WITH_CUSTOMER_SELECT).is('deleted_at', null);
 
   if (filters.status) query = query.eq('status', filters.status);
-  if (filters.customer_id) query = query.eq('customer_id', filters.customer_id);
+  if (filters.contact_id) query = query.eq('contact_id', filters.contact_id);
 
   const { data, error } = await query
     .order('created_at', { ascending: false })
@@ -131,6 +132,7 @@ export async function listQuotes(filters: QuoteListFilters = {}): Promise<QuoteW
 }
 
 export async function getQuote(id: string): Promise<QuoteWithRelations | null> {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -180,7 +182,9 @@ export async function getQuote(id: string): Promise<QuoteWithRelations | null> {
 
 export async function countQuotesByStatus(): Promise<QuoteStatusCounts> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from('quotes').select('status').is('deleted_at', null);
+  // Single GROUP BY aggregate over quotes_tenant_status_idx (tenant-scoped via
+  // count_quotes_by_status RPC) instead of transferring one row per quote.
+  const { data, error } = await supabase.rpc('count_quotes_by_status');
 
   if (error) {
     throw new Error(`Failed to count quotes: ${error.message}`);
@@ -194,12 +198,13 @@ export async function countQuotesByStatus(): Promise<QuoteStatusCounts> {
     rejected: 0,
     expired: 0,
   };
-  for (const row of data ?? []) {
-    const s = (row as { status?: string }).status as QuoteStatus;
+  for (const row of (data ?? []) as Array<{ status: string; count: number }>) {
+    const s = row.status as QuoteStatus;
+    const n = Number(row.count);
     if (s in counts) {
-      counts[s] += 1;
+      counts[s] += n;
     }
-    counts.all += 1;
+    counts.all += n;
   }
   return counts;
 }

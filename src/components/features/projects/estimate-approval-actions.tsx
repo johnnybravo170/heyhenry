@@ -10,7 +10,9 @@
  *
  *   - "Mark approved" / "Mark declined" buttons (off-platform approvals)
  *   - "Reset to draft" — for revising a sent estimate
- *   - "Copy approval link" — operator quality of life
+ *   - "Preview & send" — opens the estimate preview page (the client's
+ *     estimate link lives inside there; the old standalone "Copy link" was
+ *     consolidated into this single door)
  *   - "Create invoice from estimate" — the post-approval entry into the
  *     invoicing flow
  *   - Declined-state banner with reason (no other UI showed this)
@@ -22,13 +24,15 @@
  * manual approval if needed (e.g. customer said yes by phone).
  */
 
-import { Pencil } from 'lucide-react';
+import { Eye, ReceiptText, RotateCcw, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
+import type { StatusTone } from '@/lib/ui/status-tokens';
 import {
   type ManualApprovalMethod,
   manualApprovalMethodLabels,
@@ -58,7 +62,6 @@ type Props = {
 export function EstimateApprovalActions({
   projectId,
   status,
-  approvalCode,
   approvedByName,
   approvedAt,
   declinedAt,
@@ -76,12 +79,6 @@ export function EstimateApprovalActions({
     open: boolean;
     mode: 'approve' | 'decline';
   }>({ open: false, mode: 'approve' });
-
-  function copyApprovalLink() {
-    if (!approvalCode) return;
-    const url = `${window.location.origin}/estimate/${approvalCode}`;
-    navigator.clipboard.writeText(url).then(() => toast.success('Link copied'));
-  }
 
   function resetEstimate() {
     if (!confirm('Reset estimate to draft? The approval link will be invalidated.')) return;
@@ -119,6 +116,32 @@ export function EstimateApprovalActions({
   // Mark approved/declined needs costLineCount > 0; everything else needs
   // a non-draft status.
   if (!canMarkApproval && !canCopyOrPreview) return null;
+
+  // Eyebrow status: this footer acts on the client-FACING document, not the
+  // budget table — the eyebrow makes that unambiguous.
+  const statusLabel =
+    status === 'pending_approval'
+      ? 'Sent'
+      : status === 'approved'
+        ? 'Approved'
+        : status === 'declined'
+          ? 'Declined'
+          : 'Draft';
+  // Tokenized status tone — drives the shared <StatusBadge> so this pill
+  // matches every other status pill in the app at exactly the canonical
+  // size. Draft → neutral, Sent → info, Approved → success, Declined → danger.
+  const statusTone: StatusTone =
+    status === 'approved'
+      ? 'success'
+      : status === 'pending_approval'
+        ? 'info'
+        : status === 'declined'
+          ? 'danger'
+          : 'neutral';
+  // Before approval you PREVIEW & SEND (primary); you bill AFTER approval, so
+  // "Create invoice" is quiet/disabled until then. Once approved the primary
+  // flips to "Create invoice from estimate".
+  const sendIsPrimary = !canCreateInvoice;
 
   const formatDate = (iso: string) =>
     new Intl.DateTimeFormat('en-CA', {
@@ -194,48 +217,99 @@ export function EstimateApprovalActions({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {canCopyOrPreview ? (
-          <>
-            <Button size="sm" variant="outline" onClick={copyApprovalLink}>
-              Copy link
-            </Button>
-            <Button asChild size="sm" variant="outline">
+      {/* Client-estimate footer — Paper card. The eyebrow names the object
+          (the client-facing document), so these controls don't read as
+          acting on the budget table. */}
+      <div className="overflow-hidden rounded-xl border bg-card">
+        <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3">
+          <span className="inline-flex items-center gap-2 font-mono text-eyebrow font-bold uppercase tracking-wide text-muted-foreground">
+            <span className="text-foreground">Client estimate</span>
+            <span className="text-muted-foreground/50">·</span>
+            {/* Canonical StatusBadge — was an inline span at the wrong size
+                before #76cfd6c8; now matches every other status pill in the app. */}
+            <StatusBadge tone={statusTone} label={statusLabel} />
+          </span>
+          <span className="ml-auto font-mono text-eyebrow uppercase tracking-wide text-muted-foreground">
+            {status === 'approved' && approvedByName ? (
+              <>
+                Signed by <strong className="font-bold text-foreground/80">{approvedByName}</strong>
+                {approvedAt ? ` · ${formatDate(approvedAt)}` : ''}
+              </>
+            ) : status === 'pending_approval' ? (
+              'Awaiting client approval'
+            ) : status === 'declined' ? (
+              'Client declined — revise & resend'
+            ) : (
+              "Client can't see this yet"
+            )}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-end gap-2.5 px-4 py-3">
+          {canMarkApproval ? (
+            <div className="mr-auto flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setManualDialog({ open: true, mode: 'approve' })}
+              >
+                Mark approved
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setManualDialog({ open: true, mode: 'decline' })}
+              >
+                Mark declined
+              </Button>
+            </div>
+          ) : null}
+
+          {/* Preview & send — consolidates the old "Copy link" + "Preview &
+              share" doors. The client's estimate link lives inside the
+              preview page. */}
+          {canCopyOrPreview ? (
+            <Button asChild size="sm" variant={sendIsPrimary ? 'default' : 'outline'}>
               <Link href={`/projects/${projectId}/estimate/preview`}>
-                <Pencil className="size-3.5" />
-                Preview &amp; {status === 'pending_approval' ? 'resend' : 'share'}
+                {status === 'approved' ? (
+                  <>
+                    <Eye className="size-3.5" />
+                    View signed estimate
+                  </>
+                ) : (
+                  <>
+                    <Send className="size-3.5" />
+                    Preview &amp; send
+                  </>
+                )}
               </Link>
             </Button>
-          </>
-        ) : null}
-        {canMarkApproval ? (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setManualDialog({ open: true, mode: 'approve' })}
-            >
-              Mark approved
+          ) : null}
+
+          {canReset || canCreateInvoice ? (
+            <span className="hidden h-5 w-px bg-border sm:block" aria-hidden="true" />
+          ) : null}
+
+          {canReset ? (
+            <Button size="sm" variant="ghost" onClick={resetEstimate} disabled={isPending}>
+              <RotateCcw className="size-3.5" />
+              {status === 'pending_approval' ? 'Reset' : 'Reset to draft'}
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setManualDialog({ open: true, mode: 'decline' })}
-            >
-              Mark declined
-            </Button>
-          </>
-        ) : null}
-        {canReset ? (
-          <Button size="sm" variant="ghost" onClick={resetEstimate} disabled={isPending}>
-            {status === 'pending_approval' ? 'Reset' : 'Reset to draft'}
-          </Button>
-        ) : null}
-        {canCreateInvoice ? (
-          <Button size="sm" onClick={createInvoice} disabled={isPending}>
+          ) : null}
+
+          {/* Create invoice: quiet/disabled before approval (you bill AFTER
+              the client approves); primary once approved. */}
+          <Button
+            size="sm"
+            variant={canCreateInvoice ? 'default' : 'outline'}
+            onClick={createInvoice}
+            disabled={isPending || !canCreateInvoice}
+            title={canCreateInvoice ? undefined : 'Available after the client approves'}
+          >
+            <ReceiptText className="size-3.5" />
             Create invoice from estimate
           </Button>
-        ) : null}
+        </div>
       </div>
 
       <ManualApprovalDialog

@@ -7,7 +7,7 @@
 
 import { sql } from 'drizzle-orm';
 import { check, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { customers } from './customers';
+import { contacts } from './contacts';
 import { jobs } from './jobs';
 import { tenants } from './tenants';
 
@@ -18,7 +18,7 @@ export const invoices = pgTable(
     tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
-    customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'restrict' }),
+    contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'restrict' }),
     jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
     status: text('status').default('draft').notNull(),
     amountCents: integer('amount_cents').default(0).notNull(),

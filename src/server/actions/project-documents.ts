@@ -9,7 +9,7 @@
  * RLS policy (split_part on path → current_tenant_id) authorizes the
  * write.
  *
- * Soft-delete via deleted_at — keeps history for the Home Record audit
+ * Soft-delete via deleted_at — keeps history for the Property Record audit
  * trail. Storage object is removed in the same call so we don't carry
  * dead bytes.
  */

@@ -2,7 +2,7 @@
 
 /**
  * Server actions for portal-publishing photos. Slice 2 of the Customer
- * Portal & Home Record build.
+ * Portal & Property Record build.
  *
  * Photos already exist in `photos` with a single internal `tag`. These
  * actions touch only the `portal_tags` array (multi-valued, homeowner-
@@ -65,7 +65,7 @@ export async function togglePhotoClientVisibleAction(
 
 /**
  * Attach the photo to a phase (or detach by passing null). Powers the
- * inline-on-timeline rendering on /portal/<slug> and on the Home Record.
+ * inline-on-timeline rendering on /portal/<slug> and on the Property Record.
  */
 export async function setPhotoPhaseAction(
   photoId: string,

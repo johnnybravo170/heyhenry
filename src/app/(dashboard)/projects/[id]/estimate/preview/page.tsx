@@ -15,6 +15,7 @@ import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { CustomerViewMode } from '@/lib/validators/project-customer-view';
+import { isUuid } from '@/lib/validators/uuid';
 
 export const metadata = {
   title: 'Preview estimate — HeyHenry',
@@ -24,6 +25,7 @@ const LOGO_SIGN_SECONDS = 60 * 60 * 24 * 30;
 
 export default async function EstimatePreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const { data: project } = await supabase
@@ -33,8 +35,8 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
        estimate_status, estimate_approved_at, estimate_approved_by_name,
        estimate_declined_reason, terms_text, document_type,
        customer_view_mode, customer_summary_md,
-       customer_id, tenant_id,
-       customers:customer_id (name, email, additional_emails, address_line1, tax_exempt),
+       contact_id, tenant_id,
+       contacts:contact_id (name, email, additional_emails, address_line1, tax_exempt),
        tenants:tenant_id (name, logo_storage_path, gst_number, wcb_number, timezone)`,
     )
     .eq('id', id)
@@ -45,7 +47,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
 
   const p = project as Record<string, unknown>;
   const tenantRaw = p.tenants as Record<string, unknown> | null;
-  const customerRaw = p.customers as Record<string, unknown> | null;
+  const customerRaw = p.contacts as Record<string, unknown> | null;
   const managementFeeRate = Number(p.management_fee_rate) || 0;
   const taxExempt = Boolean(customerRaw?.tax_exempt);
   const taxCtx = await canadianTax.getCustomerFacingContext(p.tenant_id as string);
@@ -74,7 +76,9 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
       .order('created_at', { ascending: true }),
     supabase
       .from('project_budget_categories')
-      .select('id, name, section, description, display_order, estimate_cents')
+      .select(
+        'id, name, section_row:project_budget_sections!section_id(name), description, display_order, estimate_cents',
+      )
       .eq('project_id', id),
   ]);
   const categoryInfo = new Map<
@@ -90,7 +94,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
   for (const b of categories ?? []) {
     categoryInfo.set(b.id as string, {
       name: (b.name as string) ?? '',
-      section: (b.section as string | null) ?? null,
+      section: (b.section_row as unknown as { name: string } | null)?.name ?? null,
       description: (b.description as string | null) ?? null,
       order: (b.display_order as number) ?? 0,
       estimateCents: (b.estimate_cents as number) ?? 0,
@@ -184,7 +188,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
     <div className="mx-auto max-w-2xl px-4 pb-10">
       <EstimatePreviewSendBar
         projectId={id}
-        customerId={p.customer_id as string}
+        contactId={p.contact_id as string}
         customerName={(customerRaw?.name as string) ?? 'Customer'}
         customerEmail={(customerRaw?.email as string | null) ?? null}
         customerAdditionalEmails={(customerRaw?.additional_emails as string[] | null) ?? []}
@@ -203,6 +207,7 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
         initialMode={
           ((p.customer_view_mode as CustomerViewMode | null) ?? 'detailed') as CustomerViewMode
         }
+        initialSummaryMd={(p.customer_summary_md as string | null) ?? null}
       />
 
       <div className="rounded-lg border bg-card p-6 shadow-sm">

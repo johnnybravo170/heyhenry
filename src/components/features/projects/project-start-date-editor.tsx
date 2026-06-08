@@ -97,10 +97,11 @@ export function ProjectStartDateEditor({
     : 'not set — uses today';
 
   return (
-    <span className="group inline-flex items-center gap-1 text-xs text-muted-foreground">
-      <span>
-        Project start: <span className="font-medium text-foreground">{label}</span>
+    <span className="group inline-flex items-center gap-2">
+      <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+        Project start
       </span>
+      <span className="font-semibold tabular-nums text-foreground">{label}</span>
       <button
         type="button"
         onClick={() => setEditing(true)}

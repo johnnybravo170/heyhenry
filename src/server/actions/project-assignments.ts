@@ -85,6 +85,63 @@ export async function assignWorkerAction(
   return { ok: true };
 }
 
+const updateRatesSchema = z.object({
+  assignment_id: z.string().uuid(),
+  pay_rate_dollars: z.string().trim().optional().default(''),
+  charge_rate_dollars: z.string().trim().optional().default(''),
+  notes: z.string().trim().max(500).optional().default(''),
+});
+
+/**
+ * Update an existing roster assignment's per-job rate overrides + note.
+ * Blank pay/charge clears the override (null = inherit the worker's account
+ * default — the variance RPC COALESCEs to the default downstream). Used by
+ * the Crew roster's per-row override disclosure.
+ */
+export async function updateAssignmentRatesAction(
+  input: z.input<typeof updateRatesSchema>,
+): Promise<{ ok: boolean; error?: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  try {
+    assertOwnerOrAdmin(tenant.member.role);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Forbidden.' };
+  }
+
+  const parsed = updateRatesSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Invalid input.' };
+  const v = parsed.data;
+
+  const pay = parseRate(v.pay_rate_dollars, 'Pay rate');
+  if (pay.error) return { ok: false, error: pay.error };
+  const charge = parseRate(v.charge_rate_dollars, 'Charge rate');
+  if (charge.error) return { ok: false, error: charge.error };
+
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from('project_assignments')
+    .select('project_id')
+    .eq('id', v.assignment_id)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: 'Assignment not found.' };
+
+  const { error } = await admin
+    .from('project_assignments')
+    .update({
+      hourly_rate_cents: pay.cents,
+      charge_rate_cents: charge.cents,
+      notes: v.notes || null,
+    })
+    .eq('id', v.assignment_id)
+    .eq('tenant_id', tenant.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/projects/${existing.project_id}`);
+  return { ok: true };
+}
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const bulkAssignSchema = z.object({
@@ -315,6 +372,96 @@ export async function moveAssignmentToAction(
   if (v.target_project_id !== existing.project_id) {
     revalidatePath(`/projects/${v.target_project_id}`);
   }
+  revalidatePath('/calendar');
+  return { ok: true };
+}
+
+const reassignWorkerSchema = z.object({
+  assignment_id: z.string().uuid(),
+  target_worker_profile_id: z.string().uuid(),
+  target_date: z.string().regex(DATE_RE),
+});
+
+/**
+ * Reassign a single dated assignment to a DIFFERENT worker (same project),
+ * landing on `target_date`. Used by the by-worker calendar pivot when a job
+ * chip is dragged onto another crew member's row. Distinct from
+ * `moveAssignmentToAction`, which keeps the worker and moves project/date.
+ *
+ * Per-assignment rate overrides are dropped on reassign (they were the old
+ * worker's job-specific rates) so the new worker's account defaults apply;
+ * the note carries (it's job context, not worker-specific).
+ */
+export async function reassignAssignmentToWorkerAction(
+  input: z.input<typeof reassignWorkerSchema>,
+): Promise<{ ok: boolean; error?: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  try {
+    assertOwnerOrAdmin(tenant.member.role);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Forbidden.' };
+  }
+
+  const parsed = reassignWorkerSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Invalid input.' };
+  const v = parsed.data;
+
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from('project_assignments')
+    .select('id, project_id, worker_profile_id, scheduled_date, notes')
+    .eq('id', v.assignment_id)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: 'Assignment not found.' };
+
+  // No-op if it's already that worker on that date.
+  if (
+    existing.worker_profile_id === v.target_worker_profile_id &&
+    existing.scheduled_date === v.target_date
+  ) {
+    return { ok: true };
+  }
+
+  // Verify the target worker belongs to this tenant.
+  const { data: wp } = await admin
+    .from('worker_profiles')
+    .select('id')
+    .eq('id', v.target_worker_profile_id)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+  if (!wp) return { ok: false, error: 'Worker not found in this tenant.' };
+
+  // Idempotent target slot — clear any conflicting (project, worker, date) row.
+  await admin
+    .from('project_assignments')
+    .delete()
+    .eq('tenant_id', tenant.id)
+    .eq('project_id', existing.project_id)
+    .eq('worker_profile_id', v.target_worker_profile_id)
+    .eq('scheduled_date', v.target_date);
+
+  const { error: delErr } = await admin
+    .from('project_assignments')
+    .delete()
+    .eq('id', v.assignment_id)
+    .eq('tenant_id', tenant.id);
+  if (delErr) return { ok: false, error: delErr.message };
+
+  const { error: insErr } = await admin.from('project_assignments').insert({
+    tenant_id: tenant.id,
+    project_id: existing.project_id,
+    worker_profile_id: v.target_worker_profile_id,
+    scheduled_date: v.target_date,
+    hourly_rate_cents: null,
+    charge_rate_cents: null,
+    notes: existing.notes,
+  });
+  if (insErr) return { ok: false, error: insErr.message };
+
+  revalidatePath(`/projects/${existing.project_id}`);
   revalidatePath('/calendar');
   return { ok: true };
 }

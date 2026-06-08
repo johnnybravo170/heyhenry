@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Dashboard — HeyHenry (mobile)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:           #F3EBDB;
+    --chrome:       #F7F1E6;
+    --nav-active:   #E8DEC9;
+    --card:         #FFFFFF;
+    --chip-fill:    #ECE3D0;
+    --ink:          #0A0A0A;
+    --ink-2:        #3A3A3A;
+    --muted:        #57534B;
+    --faint:        #A8A8A8;
+    --hair:         #E2D7C0;
+    --rule:         #D8CBB0;
+
+    --rust:         #C2410C;
+    --rust-soft:    #FEF0E3;
+    --ok:           #15803D;  --ok-soft:    #DCFCE7;
+    --warn:         #B45309;  --warn-soft:  #FEF3C7;
+    --danger:       #B91C1C;  --danger-soft:#FEE2E2;
+    --info:         #1E40AF;  --info-soft:  #E6EDFA;
+
+    --radius-card:  14px;
+    --radius-input: 9px;
+
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: #ECE3D0;
+    color: var(--ink-2);
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+  button { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ───── Phone frame ───── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    background: #0A0A0A;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.3) inset;
+    position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px;
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: var(--chrome);
+    position: relative;
+  }
+  .status-bar .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 30px; background: #0A0A0A; border-radius: 999px;
+  }
+  .status-bar .right {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .battery {
+    width: 22px; height: 11px; border: 1.2px solid var(--ink);
+    border-radius: 3px; position: relative;
+  }
+  .battery::after {
+    content: ''; position: absolute; right: -3px; top: 2.5px;
+    width: 2px; height: 4px; background: var(--ink); border-radius: 1px;
+  }
+  .battery::before {
+    content: ''; position: absolute; left: 1px; top: 1px;
+    width: 14px; height: 5px; background: var(--ink); border-radius: 1px;
+  }
+
+  /* ───── App header ───── */
+  .app-header {
+    padding: 12px 18px 12px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--hair);
+    flex-shrink: 0;
+  }
+  .app-greet {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--ink);
+    margin: 0;
+  }
+  /* ───── Scroll area ───── */
+  .scroll-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 12px 14px 24px;
+    margin-bottom: 88px;
+    display: flex; flex-direction: column;
+    gap: 12px;
+  }
+  .scroll-area > * { flex-shrink: 0; }
+
+  /* ───── Day-read (Henry orientation line in header) ───── */
+  .day-read {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 6px;
+  }
+  .day-read .day-mark {
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .day-read .day-mark svg { width: 11px; height: 11px; }
+  .day-read .day-label {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .day-read .day-text {
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .day-read .day-text strong { color: var(--ink); font-weight: 700; }
+  .day-read--clear .day-mark { background: var(--ok-soft); color: var(--ok); }
+  .day-read--clear .day-label { color: var(--ok); }
+
+  /* ───── Celebration banner ───── */
+  .banner {
+    background: var(--ok-soft);
+    border: 1px solid rgba(21, 128, 61, 0.22);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .banner-row {
+    display: flex; align-items: center; gap: 9px;
+  }
+  .banner-mark {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--ok);
+    color: #fff;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .banner-mark svg { width: 12px; height: 12px; }
+  .banner-text {
+    flex: 1;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .banner-text strong { color: var(--ink); font-weight: 700; }
+  .banner-dismiss {
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .banner-dismiss svg { width: 14px; height: 14px; }
+  .banner-cta {
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--ok);
+    color: #fff;
+    border: 0;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: inherit;
+  }
+  .banner-cta svg { width: 13px; height: 13px; }
+  .banner-ago {
+    color: var(--ok);
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-left: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* ───── Section card ───── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius-card);
+    overflow: clip;
+  }
+  .card-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .card-count {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    background: var(--chip-fill);
+    padding: 1px 7px;
+    border-radius: 999px;
+  }
+  .card-meta {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ───── Needs lists (Today / Blocked / Needs You) ───── */
+  .needs-list {
+    padding: 4px 14px 12px;
+    display: flex; flex-direction: column;
+  }
+  .need-row {
+    padding: 10px 0;
+    border-top: 1px dashed var(--rule);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .need-row:first-child { border-top: 0; padding-top: 6px; }
+  .need-line {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .need-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+  }
+  .need-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .need-meta.is-overdue { color: var(--danger); }
+  .need-tag {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .need-tag.tag-client { background: var(--warn-soft); color: var(--warn); }
+  .need-tag.tag-material { background: var(--info-soft); color: var(--info); }
+  .need-sub {
+    font-size: 12px; color: var(--muted); font-weight: 500;
+  }
+  .need-sub strong { color: var(--ink-2); font-weight: 600; }
+  .need-actions {
+    display: flex; gap: 6px;
+    margin-top: 6px;
+  }
+  .btn-need {
+    flex: 1;
+    height: 44px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--hair);
+    background: var(--card);
+    color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-need.is-primary {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+
+  /* ───── Chase rows ───── */
+  .chase-list { padding: 0; }
+  .chase-row {
+    padding: 12px 14px;
+    border-bottom: 1px dashed var(--rule);
+    display: flex; flex-direction: column; gap: 6px;
+    cursor: pointer;
+  }
+  .chase-row:last-child { border-bottom: 0; }
+  .chase-row:active { background: var(--chip-fill); }
+  .chase-top {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chase-pri {
+    display: inline-grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--faint);
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    background: var(--chip-fill);
+    flex-shrink: 0;
+  }
+  .chase-row:nth-child(1) .chase-pri { color: var(--danger); background: var(--danger-soft); }
+  .chase-who {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+  }
+  .chase-amt {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .chase-amt .cents { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .chase-amt.is-danger { color: var(--danger); }
+  .chase-amt.is-danger .cents { color: rgba(185, 28, 28, 0.5); }
+  .chase-what {
+    font-size: 12px; color: var(--muted); font-weight: 500;
+    padding-left: 26px;
+  }
+  .chase-what .sep { color: var(--faint); margin: 0 4px; }
+  .chase-flag-row {
+    display: flex; align-items: center; gap: 8px;
+    padding-left: 26px;
+  }
+  .chase-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--rust-soft);
+    color: var(--rust);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .chase-pill svg { width: 10px; height: 10px; }
+  .chase-mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .chase-action {
+    margin-left: auto;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    color: var(--ink);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .chase-action svg { width: 11px; height: 11px; }
+
+  /* ───── Recent activity (collapsed) ───── */
+  .activity-toggle {
+    width: 100%;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border-top: 1px solid var(--hair);
+  }
+  .activity-toggle svg { width: 11px; height: 11px; }
+
+  /* ───── Bottom tab bar ───── */
+  .tabbar {
+    position: absolute;
+    left: 12px; right: 12px;
+    bottom: 12px;
+    height: 64px;
+    background: var(--chrome);
+    border: 1px solid var(--hair);
+    border-radius: 16px;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    z-index: 50;
+    box-shadow: 0 2px 14px rgba(10, 10, 10, 0.05);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: 0;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .tab .tab-icon { width: 20px; height: 20px; }
+  .tab.is-active {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .tab .tab-pill {
+    margin-left: 4px;
+    background: var(--rust);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    padding: 0 5px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    min-width: 16px; height: 14px;
+    display: inline-grid; place-items: center;
+  }
+
+  .mono { font-family: var(--mono); }
+  ::selection { background: var(--rust-soft); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.89 2 2 2z"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-7"/><path d="M16 12h-7"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- iOS status bar -->
+    <div class="status-bar">
+      <div class="island"></div>
+      <span>9:42</span>
+      <span class="right"><span>5G</span><span class="battery"></span></span>
+    </div>
+
+    <!-- App header -->
+    <header class="app-header">
+      <h1 class="app-greet">Good afternoon, Jonathan.</h1>
+      <div class="day-read" aria-label="Henry orientation">
+        <span class="day-mark"><svg><use href="#i-sparkles"/></svg></span>
+        <span class="day-label">Henry</span>
+        <span class="day-text"><strong>3 things</strong> need you today.</span>
+      </div>
+    </header>
+
+    <!-- Scrollable content area -->
+    <div class="scroll-area">
+
+      <!-- ─── Graham accepted banner ─── -->
+      <section class="banner">
+        <div class="banner-row">
+          <div class="banner-mark"><svg><use href="#i-check"/></svg></div>
+          <div class="banner-text">
+            <strong>Graham Bandsma</strong> accepted Bathroom Upgrade.
+            <span class="banner-ago">2d ago</span>
+          </div>
+          <button class="banner-dismiss" aria-label="Dismiss"><svg><use href="#i-x"/></svg></button>
+        </div>
+        <button class="banner-cta">Open the project <svg><use href="#i-arrow-right"/></svg></button>
+      </section>
+
+      <!-- ─── Today (leads on mobile) ─── -->
+      <section class="card" aria-label="Today">
+        <div class="card-head">
+          <span class="card-title">Today</span>
+          <span class="card-count">4</span>
+          <span class="card-meta">Apr 24&ndash;26</span>
+        </div>
+        <div class="needs-list">
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Plumbing rough &mdash; shower</span>
+              <span class="need-meta is-overdue">Overdue</span>
+            </div>
+            <div class="need-sub">Hillcrest Kitchen &middot; <strong>Helen Chao</strong> &middot; Apr 24</div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Excavation + gravel</span>
+              <span class="need-meta">Apr 25</span>
+            </div>
+            <div class="need-sub">Cedar Deck &middot; <strong>Graham Bandsma</strong></div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Vanity install</span>
+              <span class="need-meta">Apr 26</span>
+            </div>
+            <div class="need-sub">Basement Suite &middot; <strong>Donahue Family</strong></div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Cabinet install</span>
+              <span class="need-meta">Apr 26</span>
+            </div>
+            <div class="need-sub">Hillcrest Kitchen &middot; <strong>Helen Chao</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Needs You (decisions) ─── -->
+      <section class="card" aria-label="Needs you">
+        <div class="card-head">
+          <span class="card-title">Needs you</span>
+          <span class="card-count">2</span>
+        </div>
+        <div class="needs-list">
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Verify: Tear out tile + tub</span>
+            </div>
+            <div class="need-sub">Hillcrest Kitchen &middot; <strong>Helen Chao</strong> &middot; Apr 24</div>
+            <div class="need-actions">
+              <button class="btn-need is-primary">Verify</button>
+              <button class="btn-need">Reject</button>
+            </div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Change order &mdash; <strong>$1,450</strong></span>
+            </div>
+            <div class="need-sub">Sumas Mountain &middot; <strong>Sarah &amp; Mike Thompson</strong></div>
+            <div class="need-actions">
+              <button class="btn-need is-primary">Approve</button>
+              <button class="btn-need">Review</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Needs Attention chase ─── -->
+      <section class="card" aria-label="Needs attention chase list">
+        <div class="card-head">
+          <span class="card-title">Needs attention</span>
+          <span class="card-count">4</span>
+          <span class="card-meta">Money first</span>
+        </div>
+        <div class="chase-list">
+          <div class="chase-row" role="link" tabindex="0">
+            <div class="chase-top">
+              <span class="chase-pri">1</span>
+              <span class="chase-who">The Patel Family</span>
+              <span class="chase-amt is-danger">$2,016<span class="cents">.00</span></span>
+            </div>
+            <div class="chase-what">Invoice <span class="sep">&middot;</span> 46 days overdue <span class="sep">&middot;</span> Billing</div>
+            <div class="chase-flag-row">
+              <span class="chase-pill"><svg><use href="#i-sparkles"/></svg>Henry chased</span>
+              <button class="chase-action">I called them</button>
+            </div>
+          </div>
+          <div class="chase-row" role="link" tabindex="0">
+            <div class="chase-top">
+              <span class="chase-pri">2</span>
+              <span class="chase-who">Mike Dawson</span>
+              <span class="chase-amt">&mdash;</span>
+            </div>
+            <div class="chase-what">Pending quote <span class="sep">&middot;</span> 32 days no response</div>
+            <div class="chase-flag-row">
+              <span class="chase-mono">Stale &middot; 32d</span>
+              <button class="chase-action"><svg><use href="#i-phone"/></svg>Call</button>
+            </div>
+          </div>
+          <div class="chase-row" role="link" tabindex="0">
+            <div class="chase-top">
+              <span class="chase-pri">3</span>
+              <span class="chase-who">The Lin Family</span>
+              <span class="chase-amt">$18,150<span class="cents">.00</span></span>
+            </div>
+            <div class="chase-what">Estimate <span class="sep">&middot;</span> sent 5d, not viewed</div>
+            <div class="chase-flag-row">
+              <span class="chase-mono">Aging &middot; 5d</span>
+              <button class="chase-action">Nudge</button>
+            </div>
+          </div>
+          <div class="chase-row" role="link" tabindex="0">
+            <div class="chase-top">
+              <span class="chase-pri">4</span>
+              <span class="chase-who">Sarah Chen</span>
+              <span class="chase-amt">&mdash;</span>
+            </div>
+            <div class="chase-what">Follow-up call <span class="sep">&middot;</span> 25 days overdue</div>
+            <div class="chase-flag-row">
+              <span class="chase-mono">Owed &middot; 25d</span>
+              <button class="chase-action"><svg><use href="#i-phone"/></svg>Call</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Blocked ─── -->
+      <section class="card" aria-label="Blocked">
+        <div class="card-head">
+          <span class="card-title">Blocked</span>
+          <span class="card-count">5</span>
+          <span class="card-meta">Who to chase</span>
+        </div>
+        <div class="needs-list">
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Confirm grout colour</span>
+              <span class="need-tag tag-client">Client</span>
+            </div>
+            <div class="need-sub">Hillcrest Kitchen &middot; <strong>Helen Chao</strong></div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Helen to pick slab</span>
+              <span class="need-tag tag-client">Client</span>
+            </div>
+            <div class="need-sub">Hillcrest Kitchen &middot; <strong>Helen Chao</strong></div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Heated floor electrical</span>
+              <span class="need-tag tag-material">Material</span>
+            </div>
+            <div class="need-sub">Basement Suite &middot; <strong>Donahue Family</strong></div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Window delivery</span>
+              <span class="need-tag tag-material">Material</span>
+            </div>
+            <div class="need-sub">Sumas Mountain &middot; <strong>Marcus Petrov</strong></div>
+          </div>
+          <div class="need-row">
+            <div class="need-line">
+              <span class="need-name">Concrete pad pour</span>
+              <span class="need-tag">Sub</span>
+            </div>
+            <div class="need-sub">Cedar Deck &middot; <strong>Graham Bandsma</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Recent activity (collapsed) ─── -->
+      <section class="card" aria-label="Recent activity">
+        <div class="card-head">
+          <span class="card-title">Recent activity</span>
+          <span class="card-meta">18 items</span>
+        </div>
+        <button class="activity-toggle">View all<svg><use href="#i-chevron-down"/></svg></button>
+      </section>
+
+    </div>
+
+    <!-- ─── Bottom tab bar ─── -->
+    <nav class="tabbar" aria-label="Primary navigation">
+      <button class="tab is-active">
+        <svg class="tab-icon"><use href="#i-dashboard"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="tab">
+        <svg class="tab-icon"><use href="#i-folder"/></svg>
+        <span>Projects</span>
+      </button>
+      <button class="tab">
+        <svg class="tab-icon"><use href="#i-inbox"/></svg>
+        <span>Inbox<span class="tab-pill">7</span></span>
+      </button>
+      <button class="tab">
+        <svg class="tab-icon"><use href="#i-receipt"/></svg>
+        <span>Billing</span>
+      </button>
+      <button class="tab">
+        <svg class="tab-icon"><use href="#i-more"/></svg>
+        <span>More</span>
+      </button>
+    </nav>
+
+  </div>
+</div>
+
+</body>
+</html>

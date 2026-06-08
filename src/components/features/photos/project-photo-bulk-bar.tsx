@@ -113,7 +113,7 @@ export function ProjectPhotoBulkBar({ photos, tenantJobTypes, phases, projectId 
         return;
       }
       toast.success(
-        visible ? `${ids.length} now visible to homeowner` : `${ids.length} hidden from homeowner`,
+        visible ? `${ids.length} now visible to client` : `${ids.length} hidden from client`,
       );
     });
   }

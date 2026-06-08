@@ -12,7 +12,7 @@ import { listPaymentSources, toLite } from '@/lib/db/queries/payment-sources';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 
 export const metadata = {
-  title: 'Log overhead expense — HeyHenry',
+  title: 'Log general overhead expense — HeyHenry',
 };
 
 export default async function NewOverheadExpensePage() {
@@ -38,7 +38,7 @@ export default async function NewOverheadExpensePage() {
       </Link>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Log overhead expense</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Log general overhead expense</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             For purchases that aren&apos;t tied to a project — fuel, tools, office, software, etc.
           </p>

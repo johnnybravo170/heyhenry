@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { IntakeDropzone } from '@/components/features/contacts/intake-dropzone';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DecisionToggle } from '@/components/ui/decision-toggle';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -366,6 +367,12 @@ function PreviewStage({
                     value={r.decision}
                     hasMatch={r.projectMatch.tier !== null}
                     disabled={pending}
+                    label={r.proposed.name || undefined}
+                    mergeHint={{
+                      matched:
+                        'Skip the insert; treat as the existing project (Phase C will hang invoices off it).',
+                      none: 'No project match found to merge with',
+                    }}
                     onChange={(v) => updateRow(r.rowKey, (row) => ({ ...row, decision: v }))}
                   />
                 </td>
@@ -436,58 +443,6 @@ function CustomerCell({ row }: { row: RowState }) {
     );
   }
   return <span className="text-xs text-muted-foreground">— unattached —</span>;
-}
-
-function DecisionToggle({
-  value,
-  hasMatch,
-  disabled,
-  onChange,
-}: {
-  value: 'create' | 'merge' | 'skip';
-  hasMatch: boolean;
-  disabled: boolean;
-  onChange: (v: 'create' | 'merge' | 'skip') => void;
-}) {
-  return (
-    <div className="inline-flex overflow-hidden rounded-md border text-xs">
-      <button
-        type="button"
-        onClick={() => onChange('create')}
-        disabled={disabled}
-        className={`px-2 py-1 ${value === 'create' ? 'bg-primary text-primary-foreground' : 'bg-transparent hover:bg-muted'}`}
-      >
-        Create
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('merge')}
-        disabled={disabled || !hasMatch}
-        title={
-          hasMatch
-            ? 'Skip the insert; treat as the existing project (Phase C will hang invoices off it).'
-            : 'No project match found to merge with'
-        }
-        className={`border-l px-2 py-1 ${
-          value === 'merge'
-            ? 'bg-primary text-primary-foreground'
-            : hasMatch
-              ? 'bg-transparent hover:bg-muted'
-              : 'cursor-not-allowed bg-muted/30 text-muted-foreground'
-        }`}
-      >
-        Merge
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('skip')}
-        disabled={disabled}
-        className={`border-l px-2 py-1 ${value === 'skip' ? 'bg-muted text-foreground' : 'bg-transparent hover:bg-muted'}`}
-      >
-        Skip
-      </button>
-    </div>
-  );
 }
 
 function DoneStage({

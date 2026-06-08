@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { CustomerPicker } from '@/components/features/customers/customer-picker';
+import { ContactPicker } from '@/components/features/contacts/contact-picker';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -46,7 +46,7 @@ export type JobFormDefaults = Partial<JobInput> & { id?: string };
 
 export type JobFormProps = {
   mode: 'create' | 'edit';
-  customers: JobFormCustomerOption[];
+  contacts: JobFormCustomerOption[];
   defaults?: JobFormDefaults;
   action: (input: JobInput & { id?: string }) => Promise<JobActionResult>;
   submitLabel?: string;
@@ -54,7 +54,7 @@ export type JobFormProps = {
 };
 
 const EMPTY: JobInput = {
-  customer_id: '',
+  contact_id: '',
   quote_id: '',
   status: 'booked',
   scheduled_at: '',
@@ -63,7 +63,7 @@ const EMPTY: JobInput = {
 
 export function JobForm({
   mode,
-  customers,
+  contacts,
   defaults,
   action,
   submitLabel,
@@ -90,19 +90,19 @@ export function JobForm({
   });
 
   const watched = form.watch();
-  const selectedCustomer = customers.find((c) => c.id === watched.customer_id);
+  const selectedCustomer = contacts.find((c) => c.id === watched.contact_id);
 
   useHenryForm({
     formId: mode === 'create' ? 'job-create' : `job-edit-${defaults?.id ?? ''}`,
     title: mode === 'create' ? 'Creating a new job' : 'Editing a job',
     fields: [
       {
-        name: 'customer_id',
+        name: 'contact_id',
         label: 'Customer',
         type: 'text',
         description:
           'Customer reference. Give the customer name; setField resolves to the UUID. If no match, call list_customers first.',
-        currentValue: selectedCustomer?.name ?? watched.customer_id,
+        currentValue: selectedCustomer?.name ?? watched.contact_id,
       },
       {
         name: 'status',
@@ -120,16 +120,16 @@ export function JobForm({
       { name: 'notes', label: 'Notes', type: 'textarea', currentValue: watched.notes },
     ],
     setField: (name, value) => {
-      if (name === 'customer_id') {
+      if (name === 'contact_id') {
         // Accept either UUID or a (possibly partial) customer name.
-        if (customers.some((c) => c.id === value)) {
-          form.setValue('customer_id', value, { shouldValidate: true });
+        if (contacts.some((c) => c.id === value)) {
+          form.setValue('contact_id', value, { shouldValidate: true });
           return true;
         }
         const needle = value.trim().toLowerCase();
-        const match = customers.find((c) => c.name.toLowerCase().includes(needle));
+        const match = contacts.find((c) => c.name.toLowerCase().includes(needle));
         if (match) {
-          form.setValue('customer_id', match.id, { shouldValidate: true });
+          form.setValue('contact_id', match.id, { shouldValidate: true });
           return true;
         }
         return false;
@@ -184,13 +184,13 @@ export function JobForm({
         <div className="grid gap-4 rounded-xl border bg-card p-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="customer_id"
+            name="contact_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Customer</FormLabel>
                 <FormControl>
-                  <CustomerPicker
-                    customers={customers}
+                  <ContactPicker
+                    contacts={contacts}
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     placeholder="Pick a customer"
