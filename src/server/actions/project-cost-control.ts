@@ -260,6 +260,10 @@ export async function upsertBillWithAttachmentAction(
   const cost_line_id = (formData.get('cost_line_id') as string | null)?.trim() || null;
   const cost_code = (formData.get('cost_code') as string | null)?.trim() || null;
   const vendor_gst_number = (formData.get('vendor_gst_number') as string | null)?.trim() || null;
+  // Cost-plus overhead flag (card #11). 'false' marks the bill as project
+  // overhead the contractor absorbs — counts toward margin but excluded
+  // from the cost-plus customer invoice. Default-true at the DB level.
+  const isNonBillable = formData.get('is_billable') === 'false';
   const attachmentFile = formData.get('attachment');
 
   if (!project_id) return { ok: false, error: 'Missing project_id.' };
@@ -310,6 +314,7 @@ export async function upsertBillWithAttachmentAction(
     cost_line_id: cost_line_id || null,
     external_ref: cost_code,
     vendor_gst_number,
+    is_billable: !isNonBillable,
     updated_at: new Date().toISOString(),
   };
   if (attachment_storage_path) row.attachment_storage_path = attachment_storage_path;
