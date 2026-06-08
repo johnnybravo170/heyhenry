@@ -1,11 +1,12 @@
 'use client';
 
-import { BarChart3, BrainCircuit, LayoutDashboard, Mail, Users } from 'lucide-react';
+import { BarChart3, BrainCircuit, LayoutDashboard, Mail, Rocket, Users } from 'lucide-react';
 import { NavLink } from './nav-link';
 
 const ADMIN_NAV = [
   { href: '/admin/overview', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/tenants', label: 'Tenants', icon: Users },
+  { href: '/admin/activation', label: 'Activation', icon: Rocket },
   { href: '/admin/henry', label: 'Henry', icon: BarChart3 },
   { href: '/admin/ar/sequences', label: 'Autoresponder', icon: Mail },
   { href: '/admin/ai-gateway', label: 'AI Gateway', icon: BrainCircuit },

@@ -203,6 +203,24 @@ export function InvoiceActions({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        {/* Manual out-of-band payment: a GC who took a cheque / e-transfer
+            before ever emailing the invoice records it without sending first
+            (Card #8). */}
+        <RecordPaymentDialog
+          invoiceId={invoiceId}
+          invoiceTotalCents={invoiceTotalCents}
+          hasStripe={hasStripe}
+          trigger={
+            <Button variant="outline" size="sm" disabled={isPending}>
+              {isPending ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <CheckCircle className="size-3.5" />
+              )}
+              Mark paid
+            </Button>
+          }
+        />
         <VoidButton onVoid={handleVoid} isPending={isPending} />
         <GstNumberPromptDialog
           open={gstPromptOpen}

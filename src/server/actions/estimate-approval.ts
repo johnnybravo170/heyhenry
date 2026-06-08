@@ -323,50 +323,60 @@ export async function approveEstimateAction(
 
   if (updErr) return { ok: false, error: updErr.message };
 
-  await emitProjectEvent(admin, {
-    tenant_id: p.tenant_id as string,
-    project_id: p.id as string,
-    kind: 'estimate_approved',
-    meta: { approved_by: name },
-    actor: 'customer',
-  });
+  // Post-commit side effects: the approval has already committed above, so a
+  // failure here must NOT surface as an approval error. A thrown event/snapshot
+  // write was tripping the route error boundary AFTER the status flip — the
+  // approver saw an error even though the estimate was approved, and only a
+  // refresh revealed the truth (Charlie founding-member session; ops doc
+  // cd85d021). Best-effort: log and continue.
+  try {
+    await emitProjectEvent(admin, {
+      tenant_id: p.tenant_id as string,
+      project_id: p.id as string,
+      kind: 'estimate_approved',
+      meta: { approved_by: name },
+      actor: 'customer',
+    });
 
-  // Notify the operator who sent the estimate. Best-effort — failures
-  // don't block the customer-facing approval response.
-  notifyOperatorOfApproval({
-    admin,
-    tenantId: p.tenant_id as string,
-    projectId: p.id as string,
-    projectName: p.name as string,
-  }).catch((err) => {
-    console.warn('Failed to notify operator of estimate approval:', err);
-  });
+    // Notify the operator who sent the estimate. Best-effort — failures
+    // don't block the customer-facing approval response.
+    notifyOperatorOfApproval({
+      admin,
+      tenantId: p.tenant_id as string,
+      projectId: p.id as string,
+      projectName: p.name as string,
+    }).catch((err) => {
+      console.warn('Failed to notify operator of estimate approval:', err);
+    });
 
-  // Henry suggestion: seed tasks from estimate scope categories.
-  const { onEstimateApproved } = await import('@/server/ai/triggers');
-  await onEstimateApproved(p.id as string);
+    // Henry suggestion: seed tasks from estimate scope categories.
+    const { onEstimateApproved } = await import('@/server/ai/triggers');
+    await onEstimateApproved(p.id as string);
 
-  // Capture the v1 scope snapshot — baseline for the diff-tracked +
-  // intentional-send post-approval edit flow (decision 6790ef2b).
-  const { snapshotProjectScope } = await import('@/lib/db/queries/project-scope-snapshots');
-  await snapshotProjectScope({
-    projectId: p.id as string,
-    tenantId: p.tenant_id as string,
-    label: 'Original estimate',
-    signedAt: now,
-    signedByName: name,
-  });
+    // Capture the v1 scope snapshot — baseline for the diff-tracked +
+    // intentional-send post-approval edit flow (decision 6790ef2b).
+    const { snapshotProjectScope } = await import('@/lib/db/queries/project-scope-snapshots');
+    await snapshotProjectScope({
+      projectId: p.id as string,
+      tenantId: p.tenant_id as string,
+      label: 'Original estimate',
+      signedAt: now,
+      signedByName: name,
+    });
 
-  // No authenticated user on the customer-facing approval path — record as
-  // a customer-side event (userId null) with the typed name as evidence.
-  await audit({
-    tenantId: p.tenant_id as string,
-    userId: null,
-    action: 'estimate.approved',
-    resourceType: 'project',
-    resourceId: p.id as string,
-    metadata: { approved_by_name: name },
-  });
+    // No authenticated user on the customer-facing approval path — record as
+    // a customer-side event (userId null) with the typed name as evidence.
+    await audit({
+      tenantId: p.tenant_id as string,
+      userId: null,
+      action: 'estimate.approved',
+      resourceType: 'project',
+      resourceId: p.id as string,
+      metadata: { approved_by_name: name },
+    });
+  } catch (e) {
+    console.error('[approveEstimate] post-commit side effect failed:', e);
+  }
 
   return { ok: true, id: p.id as string };
 }

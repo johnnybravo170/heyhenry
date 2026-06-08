@@ -23,6 +23,7 @@ import { GoogleGenAI } from '@google/genai';
 import { type NextRequest, NextResponse } from 'next/server';
 import { finishAgentRun, recordAgentRun } from '@/lib/agents';
 import { contentHash, embedText } from '@/lib/embed';
+import { generateContentWithRetry } from '@/lib/llm/gemini-retry';
 import { geminiFlashCostCents, trackOpsAiCall } from '@/lib/llm/telemetry';
 import { createServiceClient } from '@/lib/supabase';
 
@@ -450,7 +451,7 @@ USER-FACING FILES CHANGED:
 ${filesBlock}`;
 
   const t0 = Date.now();
-  const response = await ai.models.generateContent({
+  const response = await generateContentWithRetry(ai, {
     model: MODEL,
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { responseMimeType: 'application/json', temperature: 0.2 },

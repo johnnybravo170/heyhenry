@@ -126,7 +126,13 @@ export async function saveProjectAsTemplateAction(
       description: b.description ?? undefined,
       lines: (linesByCategory.get(b.id) ?? []).map((l) => ({
         label: l.label,
-        category: l.category as 'material' | 'labour' | 'sub' | 'equipment' | 'overhead',
+        category: l.category as
+          | 'material'
+          | 'labour'
+          | 'sub'
+          | 'equipment'
+          | 'overhead'
+          | 'supply_install',
         qty: l.qty,
         unit: l.unit,
         // Per-row "include prices" toggle: when off, store unit_price_cents=0

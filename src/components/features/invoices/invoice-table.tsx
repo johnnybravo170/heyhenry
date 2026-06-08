@@ -69,7 +69,9 @@ export function InvoiceTable({ invoices }: { invoices: InvoiceWithCustomer[] }) 
                   {formatDate(inv.paid_at, { timezone })}
                 </TableCell>
                 <TableCell className="text-right">
-                  {inv.status === 'sent' ? (
+                  {/* Mark paid from draft AND sent — out-of-band payment can be
+                      recorded before sending (Card #8). */}
+                  {inv.status === 'draft' || inv.status === 'sent' ? (
                     <RecordPaymentDialog
                       invoiceId={inv.id}
                       invoiceTotalCents={total}

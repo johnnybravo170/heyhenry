@@ -28,6 +28,7 @@
 import { randomUUID } from 'node:crypto';
 import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
+import { HUMAN_VOICE_RULES } from '@/lib/ai/human-voice';
 import {
   INTAKE_JSON_SCHEMA,
   INTAKE_SYSTEM_PROMPT,
@@ -978,6 +979,86 @@ export type AcceptInboundResult =
   | { ok: true; projectId: string }
   | { ok: false; error: string; duplicates?: ContactMatch[] };
 
+export type DraftIntakeReplyResult = { ok: true; reply: string } | { ok: false; error: string };
+
+const INTAKE_REPLY_MODEL = 'gpt-4o-mini';
+
+const INTAKE_REPLY_SYSTEM = `You are drafting a short text or email a Canadian general contractor will send a customer about a job they just scoped. Write it in the contractor's own voice — like they're texting from their truck. Answer any question the customer asked, acknowledge any opt-out, and end on one concrete next step (a time, a question, an action). Two to three short paragraphs, max. Return ONLY the message body — no subject line, no sign-off platitudes, and no "Hi [name]" unless you actually know the name.
+
+${HUMAN_VOICE_RULES}`;
+
+/**
+ * On-demand reply draft for the New-Project review screen. The parse no
+ * longer writes a reply (it only flags whether one is warranted); this
+ * runs when the operator clicks "Draft a reply", so Henry never composes
+ * an email nobody asked for. Text-only and cheap — grounded in the parsed
+ * customer / scope / signals plus the original message, with no image
+ * re-send.
+ */
+export async function draftIntakeReplyAction(
+  draft: ParsedIntake,
+  draftId?: string,
+): Promise<DraftIntakeReplyResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  // Pull the original customer message / voice-memo transcript back so the
+  // reply answers what was actually said, not just the structured scope.
+  // Best-effort — a missing draft just means a thinner prompt.
+  let sourceText: string | null = null;
+  if (draftId) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('intake_drafts')
+      .select('pasted_text, transcript')
+      .eq('id', draftId)
+      .maybeSingle();
+    sourceText = [data?.pasted_text, data?.transcript].filter(Boolean).join('\n\n').trim() || null;
+  }
+
+  const s = draft.signals;
+  const categoryNames = draft.categories.map((c) => c.name).filter(Boolean);
+  const userBlock = [
+    `Customer: ${draft.customer.name ?? '(unknown)'}`,
+    draft.customer.address ? `Address: ${draft.customer.address}` : null,
+    `Project: ${draft.project.name}`,
+    draft.project.description ? `Description: ${draft.project.description}` : null,
+    categoryNames.length ? `Scope areas: ${categoryNames.join(', ')}` : null,
+    s?.competitive ? 'Note: customer is shopping other quotes (competitive).' : null,
+    s?.urgency && s.urgency !== 'normal' ? `Urgency: ${s.urgency}.` : null,
+    s?.upsells?.length ? `Possible add-ons: ${s.upsells.map((u) => u.label).join('; ')}.` : null,
+    draft.reply_reason ? `Why a reply helps: ${draft.reply_reason}` : null,
+    '',
+    sourceText
+      ? `ORIGINAL MESSAGE / MEMO:\n${sourceText}`
+      : 'No original message text available — keep the reply general but grounded in the scope above.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  try {
+    const res = await gateway().runChat({
+      kind: 'chat',
+      task: 'intake_reply_draft',
+      tenant_id: tenant.id,
+      model_override: INTAKE_REPLY_MODEL,
+      system: INTAKE_REPLY_SYSTEM,
+      messages: [{ role: 'user', content: userBlock }],
+    });
+    const reply = res.text.trim();
+    if (!reply) return { ok: false, error: 'Henry returned an empty reply. Try again.' };
+    return { ok: true, reply };
+  } catch (err) {
+    if (isAiError(err)) {
+      if (err.kind === 'quota')
+        return { ok: false, error: 'Henry is temporarily unavailable across providers.' };
+      if (err.kind === 'overload' || err.kind === 'rate_limit')
+        return { ok: false, error: 'Henry is busy right now. Try again in a moment.' };
+    }
+    return { ok: false, error: 'Henry could not draft a reply. Try again.' };
+  }
+}
+
 export async function acceptInboundLeadAction(
   draft: ParsedIntake,
   options?: {
@@ -1122,7 +1203,19 @@ export async function acceptInboundLeadAction(
     }
     await supabase
       .from('intake_drafts')
-      .update({ accepted_project_id: proj.id, artifacts: [] })
+      .update({
+        accepted_project_id: proj.id,
+        // Mark the draft consumed. Without this it sits at the default
+        // disposition='pending_review' forever and shows as "1 forwarded
+        // item waiting on you" on the very project it just created — a
+        // phantom that links to an empty inbox. It WAS applied (to create
+        // this project), so stamp the full apply lifecycle.
+        disposition: 'applied',
+        applied_at: new Date().toISOString(),
+        applied_destination_kind: 'project',
+        applied_destination_id: proj.id,
+        artifacts: [],
+      })
       .eq('id', options.draftId);
   }
 
