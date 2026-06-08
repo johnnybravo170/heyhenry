@@ -15,10 +15,12 @@ type Props = {
   feature: Feature;
   tier?: Plan;
   label?: string;
+  /** Optional context line under the headline — what the upgrade unlocks here. */
+  description?: string;
   className?: string;
 };
 
-export function LockedFeature({ feature, tier, label, className }: Props) {
+export function LockedFeature({ feature, tier, label, description, className }: Props) {
   const required = tier ?? requiredTier(feature);
   return (
     <div
@@ -33,6 +35,7 @@ export function LockedFeature({ feature, tier, label, className }: Props) {
           {label ?? feature} is on the {PLAN_LABEL[required]} plan
         </span>
       </div>
+      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       <Button asChild size="sm" variant="default">
         <Link href={`/settings/billing?upgrade=${required}`}>
           Upgrade to {PLAN_LABEL[required]}
