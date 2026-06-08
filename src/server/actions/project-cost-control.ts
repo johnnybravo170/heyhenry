@@ -20,7 +20,7 @@ const costLineSchema = z.object({
   project_id: z.string().uuid(),
   budget_category_id: z.string().uuid().optional().or(z.literal('')),
   catalog_item_id: z.string().uuid().optional().or(z.literal('')),
-  category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead']),
+  category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead', 'supply_install']),
   label: z.string().trim().min(1, 'Label is required').max(300),
   qty: z.coerce.number().positive('Quantity must be positive'),
   unit: z.string().trim().min(1).max(50),

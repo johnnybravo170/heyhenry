@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 export type MaterialsCatalogRow = {
   id: string;
   tenant_id: string;
-  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead';
+  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead' | 'supply_install';
   cost_code: string | null;
   label: string;
   description: string | null;

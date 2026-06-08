@@ -112,7 +112,11 @@ export function QuickLogTimeButton({ ownerRateCents }: { ownerRateCents: number 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 min-w-11 gap-1 sm:min-h-0 sm:min-w-0"
+        >
           <Clock className="size-3.5" />
           <span className="hidden sm:inline">Log time</span>
         </Button>
