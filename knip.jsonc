@@ -29,12 +29,7 @@
     "src/server/actions/inbound-email.ts",
     "src/server/actions/onboarding-verification.ts",
     "src/lib/ai/schedule-bootstrap.ts",
-    "src/widget/client/submit-lead.ts",
-    // TEMP: LockedFeature shipped unwired in e386d8a4 (nothing imports or
-    // renders it yet), which red-lined main on the dead-code gate. Ignored to
-    // unblock the pipeline; wire it into a gated feature OR remove it, then
-    // delete this entry. Tracked on the Dev board.
-    "src/components/features/billing/locked-feature.tsx"
+    "src/widget/client/submit-lead.ts"
   ],
 
   // @radix-ui/react-hover-card: unused UI primitive — candidate for removal later.
