@@ -99,7 +99,14 @@ const applySchema = z.object({
         lines: z.array(
           z.object({
             label: z.string(),
-            category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead']),
+            category: z.enum([
+              'material',
+              'labour',
+              'sub',
+              'equipment',
+              'overhead',
+              'supply_install',
+            ]),
             qty: z.number(),
             unit: z.string(),
             notes: z.string().optional(),

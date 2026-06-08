@@ -12,7 +12,22 @@ import { upsertCostLineAction } from '@/server/actions/project-cost-control';
 import { CostLinePhotoStrip } from './cost-line-photo-strip';
 import { LastUsedPriceHints } from './last-used-price-hints';
 
-const CATEGORIES = ['material', 'labour', 'sub', 'equipment', 'overhead'] as const;
+const CATEGORIES = [
+  'material',
+  'labour',
+  'sub',
+  'equipment',
+  'overhead',
+  'supply_install',
+] as const;
+const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
+  material: 'material',
+  labour: 'labour',
+  sub: 'sub',
+  equipment: 'equipment',
+  overhead: 'overhead',
+  supply_install: 'Supply & install',
+};
 
 function centsToDisplay(cents: number) {
   return (cents / 100).toFixed(2);
@@ -218,7 +233,7 @@ export function CostLineForm({
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {CATEGORY_LABELS[c]}
               </option>
             ))}
           </select>

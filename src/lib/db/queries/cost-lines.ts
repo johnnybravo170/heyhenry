@@ -6,7 +6,7 @@ export type CostLineRow = {
   project_id: string;
   budget_category_id: string | null;
   catalog_item_id: string | null;
-  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead';
+  category: 'material' | 'labour' | 'sub' | 'equipment' | 'overhead' | 'supply_install';
   label: string;
   qty: number;
   unit: string;

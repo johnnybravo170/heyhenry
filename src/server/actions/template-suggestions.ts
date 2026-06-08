@@ -195,7 +195,13 @@ export async function getTemplateSuggestionsAction(): Promise<TemplateSuggestion
         section: b.section_row?.name ?? '',
         lines: (linesByCategoryId.get(b.id) ?? []).map((l) => ({
           label: l.label,
-          category: l.category as 'material' | 'labour' | 'sub' | 'equipment' | 'overhead',
+          category: l.category as
+            | 'material'
+            | 'labour'
+            | 'sub'
+            | 'equipment'
+            | 'overhead'
+            | 'supply_install',
           qty: l.qty,
           unit: l.unit,
         })),
