@@ -1,6 +1,13 @@
 /**
  * GST display mode for draws (milestone invoices).
  *
+ * DEPRECATED (EXPAND/CONTRACT): GST is now ALWAYS added on top for new
+ * invoices and draws — the inclusive mode and the per-project / per-tenant
+ * `draw_gst_mode` selectors were removed from the UI and write paths. This
+ * module + the `invoices.tax_inclusive` and `*.draw_gst_mode` columns are
+ * kept ONLY to read the legacy inclusive rows until a later "contract"
+ * migration drops them. Do not wire new write paths to this.
+ *
  *  - 'inclusive': the operator's entered total IS the all-in customer total;
  *    GST is embedded and backed out (incl. $X GST). Stored as
  *    tax_inclusive=true, amount_cents=total, tax_cents=embedded portion.

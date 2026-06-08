@@ -19,19 +19,15 @@ import { loadInvoiceCustomerViewInputs } from '@/lib/db/queries/invoice-customer
 import type { InvoiceLineItem } from '@/lib/db/queries/invoices';
 import { computeCostPlusBreakdown } from '@/lib/invoices/cost-plus-markup';
 import { buildCustomerViewLineItems } from '@/lib/invoices/customer-view-line-items';
-import {
-  type DrawGstMode,
-  type InvoicingPrefs,
-  isDrawGstMode,
-  resolveDrawGstMode,
-} from '@/lib/invoices/draw-gst-mode';
 import { invoiceDocNumber } from '@/lib/invoices/totals';
-import { getPrefs, updatePrefs } from '@/lib/prefs/tenant-prefs';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { getPaymentProvider } from '@/lib/providers/factory';
 import { createClient } from '@/lib/supabase/server';
 import {
   canTransition,
+  drawDeleteSchema,
+  drawEditSchema,
+  type InvoiceStatus,
   invoiceCreateSchema,
   invoiceMarkPaidSchema,
   invoiceSendSchema,
@@ -137,16 +133,15 @@ export async function createInvoiceAction(input: {
     .maybeSingle();
   const taxExempt = Boolean(cust?.tax_exempt);
   const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
-  // Draws default to tax-inclusive: operator types ONE total ($12,500) and
-  // we back-compute the GST portion. Invoices keep add-tax-on-top.
+  // GST is ALWAYS added on top now, draws included: the entered amount is the
+  // pre-tax subtotal and GST is computed on top of it. The `tax_inclusive`
+  // column is kept (written false) for the existing inclusive rows until a
+  // later "contract" migration drops it. EXPAND now / CONTRACT later — do not
+  // recompute or migrate the legacy inclusive rows here.
   const docType = input.docType === 'draw' ? 'draw' : 'invoice';
-  const taxInclusive = docType === 'draw';
+  const taxInclusive = false;
   const amountCents = quoteTotalCents;
-  const taxCents = taxExempt
-    ? 0
-    : taxInclusive
-      ? Math.round((amountCents * taxCtx.totalRate) / (1 + taxCtx.totalRate))
-      : Math.round(amountCents * taxCtx.totalRate);
+  const taxCents = taxExempt ? 0 : Math.round(amountCents * taxCtx.totalRate);
 
   // Validate.
   const parsed = invoiceCreateSchema.safeParse({
@@ -734,7 +729,10 @@ export async function markInvoicePaidAction(input: {
     return { ok: false, error: invErr?.message ?? 'Invoice not found.' };
   }
 
-  if (!canTransition(invoice.status as 'sent', 'paid')) {
+  // Allow draft -> paid as well as sent -> paid: a GC who collected an
+  // out-of-band cheque / e-transfer before ever sending the invoice can
+  // record the payment directly. paid/void stay terminal (validTransitions).
+  if (!canTransition(invoice.status as InvoiceStatus, 'paid')) {
     return { ok: false, error: `Cannot mark as paid from status "${invoice.status}".` };
   }
 
@@ -1146,7 +1144,7 @@ export async function createMilestoneInvoiceAction(input: {
 
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, contact_id, name, draw_gst_mode')
+    .select('id, contact_id, name')
     .eq('id', input.projectId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -1162,31 +1160,24 @@ export async function createMilestoneInvoiceAction(input: {
   }));
   const totalCents = items.reduce((s, li) => s + li.total_cents, 0);
 
-  // Draws inherit their GST display mode from the project (falling back to
-  // the tenant default, then 'inclusive'). The operator types the same line
-  // items either way; only how GST is presented differs:
-  //   - inclusive: entered total IS the all-in; GST backed out ("incl. $X GST")
-  //   - on_top:    entered total is the subtotal; GST added ("+ $X GST")
-  const [{ data: cust }, invoicingPrefs] = await Promise.all([
-    supabase.from('contacts').select('tax_exempt').eq('id', project.contact_id).maybeSingle(),
-    getPrefs<InvoicingPrefs>(tenant.id, 'invoicing'),
-  ]);
-  const gstMode = resolveDrawGstMode(project.draw_gst_mode, invoicingPrefs.drawGstMode);
+  // GST is ALWAYS added on top now: the entered line items are the pre-tax
+  // subtotal and GST is computed on top. Follow the tax-exclusive convention
+  // in invoices/totals.ts — amount_cents=0, additive line_items, tax on top.
+  // The `tax_inclusive` column + project/tenant draw_gst_mode are kept for the
+  // legacy inclusive rows until a later "contract" migration drops them.
+  // EXPAND now / CONTRACT later — do not migrate the legacy inclusive rows.
+  const { data: cust } = await supabase
+    .from('contacts')
+    .select('tax_exempt')
+    .eq('id', project.contact_id)
+    .maybeSingle();
   const taxExempt = Boolean(cust?.tax_exempt);
   const { canadianTax } = await import('@/lib/providers/tax/canadian');
   const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
   const rate = taxCtx.totalRate;
 
-  // Inclusive: amount_cents carries the all-in total, GST embedded.
-  // On-top: follow the tax-exclusive convention in invoices/totals.ts —
-  // amount_cents=0, additive line_items, GST added on top.
-  const inclusive = gstMode === 'inclusive';
-  const taxCents = taxExempt
-    ? 0
-    : inclusive
-      ? Math.round((totalCents * rate) / (1 + rate))
-      : Math.round(totalCents * rate);
-  const amountCents = inclusive ? totalCents : 0;
+  const taxCents = taxExempt ? 0 : Math.round(totalCents * rate);
+  const amountCents = 0;
 
   const pct =
     typeof input.percentComplete === 'number' &&
@@ -1203,7 +1194,7 @@ export async function createMilestoneInvoiceAction(input: {
       contact_id: project.contact_id,
       status: 'draft',
       doc_type: 'draw',
-      tax_inclusive: inclusive,
+      tax_inclusive: false,
       amount_cents: amountCents,
       tax_cents: taxCents,
       line_items: items,
@@ -1230,47 +1221,154 @@ export async function createMilestoneInvoiceAction(input: {
 }
 
 /**
- * Set (or clear) a project's draw GST display mode. `mode: null` clears the
- * override so the project inherits the tenant default. Only affects NEW draws;
- * existing invoices keep their per-row tax_inclusive flag.
+ * Edit a project draw (milestone invoice). Allowed while the draw is unpaid
+ * (draft / sent); once a payment is recorded (status 'paid'), the draw is
+ * immutable — the operator must void instead. Mirrors the owner-draws CRUD
+ * shape. GST is recomputed on top from the new line items (Card #1 convention).
  */
-export async function setProjectDrawGstModeAction(input: {
-  projectId: string;
-  mode: DrawGstMode | null;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const tenant = await getCurrentTenant();
-  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
-  if (input.mode !== null && !isDrawGstMode(input.mode)) {
-    return { ok: false, error: 'Invalid GST mode.' };
+export async function editDrawAction(input: {
+  invoiceId: string;
+  label: string;
+  percentComplete?: number | null;
+  lineItems: { description: string; quantity: number; unitPriceCents: number }[];
+}): Promise<InvoiceActionResult> {
+  const parsed = drawEditSchema.safeParse({
+    invoice_id: input.invoiceId,
+    label: input.label,
+    percent_complete: input.percentComplete ?? null,
+    line_items: input.lineItems.map((li) => ({
+      description: li.description,
+      quantity: li.quantity,
+      unit_price_cents: li.unitPriceCents,
+    })),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? 'Validation failed.',
+      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from('projects')
-    .update({ draw_gst_mode: input.mode })
-    .eq('id', input.projectId)
-    .is('deleted_at', null);
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
 
-  if (error) return { ok: false, error: error.message };
-  revalidatePath(`/projects/${input.projectId}`);
-  return { ok: true };
+  const supabase = await createClient();
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, status, doc_type, project_id, contact_id')
+    .eq('id', parsed.data.invoice_id)
+    .is('deleted_at', null)
+    .single();
+
+  if (invErr || !invoice) return { ok: false, error: invErr?.message ?? 'Draw not found.' };
+  if (invoice.doc_type !== 'draw') return { ok: false, error: 'Only draws can be edited here.' };
+  if (invoice.status === 'paid') {
+    return { ok: false, error: 'A paid draw can no longer be edited. Void it instead.' };
+  }
+  if (invoice.status === 'void') {
+    return { ok: false, error: 'A voided draw can no longer be edited.' };
+  }
+
+  const items: InvoiceLineItem[] = parsed.data.line_items.map((li) => ({
+    description: li.description,
+    quantity: li.quantity,
+    unit_price_cents: li.unit_price_cents,
+    total_cents: li.quantity * li.unit_price_cents,
+  }));
+  const totalCents = items.reduce((s, li) => s + li.total_cents, 0);
+
+  // GST is always added on top (Card #1): line items are the pre-tax subtotal,
+  // amount_cents=0, tax_cents = subtotal * rate. Honors customer tax-exempt.
+  const { data: cust } = invoice.contact_id
+    ? await supabase
+        .from('contacts')
+        .select('tax_exempt')
+        .eq('id', invoice.contact_id)
+        .maybeSingle()
+    : { data: null };
+  const taxExempt = Boolean(cust?.tax_exempt);
+  const { canadianTax } = await import('@/lib/providers/tax/canadian');
+  const taxCtx = await canadianTax.getCustomerFacingContext(tenant.id);
+  const taxCents = taxExempt ? 0 : Math.round(totalCents * taxCtx.totalRate);
+
+  const { error: updateErr } = await supabase
+    .from('invoices')
+    .update({
+      customer_note: parsed.data.label,
+      percent_complete: parsed.data.percent_complete ?? null,
+      line_items: items,
+      amount_cents: 0,
+      tax_cents: taxCents,
+      tax_inclusive: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', invoice.id);
+
+  if (updateErr) return { ok: false, error: `Failed to update draw: ${updateErr.message}` };
+
+  if (invoice.project_id) revalidatePath(`/projects/${invoice.project_id}`);
+  revalidatePath(`/invoices/${invoice.id}`);
+  revalidatePath('/invoices');
+  return { ok: true, id: invoice.id };
 }
 
 /**
- * Set the tenant-wide default draw GST display mode. Stored in the
- * `invoicing` tenant-prefs namespace; projects without their own override
- * inherit this. Defaults to 'inclusive' when never set.
+ * Delete a project draw (milestone invoice). Hard-delete is allowed only while
+ * the draw is unpaid (draft / sent). Once a payment is recorded (status
+ * 'paid'), removal is via void only — the financial record must persist.
  */
-export async function setTenantDrawGstModeAction(input: {
-  mode: DrawGstMode;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function deleteDrawAction(input: { invoiceId: string }): Promise<InvoiceActionResult> {
+  const parsed = drawDeleteSchema.safeParse({ invoice_id: input.invoiceId });
+  if (!parsed.success) return { ok: false, error: 'Invalid draw id.' };
+
   const tenant = await getCurrentTenant();
   if (!tenant) return { ok: false, error: 'Not signed in or missing tenant.' };
-  if (!isDrawGstMode(input.mode)) return { ok: false, error: 'Invalid GST mode.' };
 
-  await updatePrefs(tenant.id, 'invoicing', { drawGstMode: input.mode });
-  revalidatePath('/settings');
-  return { ok: true };
+  const supabase = await createClient();
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, status, doc_type, project_id')
+    .eq('id', parsed.data.invoice_id)
+    .is('deleted_at', null)
+    .single();
+
+  if (invErr || !invoice) return { ok: false, error: invErr?.message ?? 'Draw not found.' };
+  if (invoice.doc_type !== 'draw') return { ok: false, error: 'Only draws can be deleted here.' };
+  if (invoice.status === 'paid') {
+    return { ok: false, error: 'A paid draw cannot be deleted. Void it instead.' };
+  }
+
+  const now = new Date().toISOString();
+  const { error: delErr } = await supabase
+    .from('invoices')
+    .update({ deleted_at: now, updated_at: now })
+    .eq('id', invoice.id);
+
+  if (delErr) return { ok: false, error: `Failed to delete draw: ${delErr.message}` };
+
+  await supabase.from('worklog_entries').insert({
+    tenant_id: tenant.id,
+    entry_type: 'system',
+    title: 'Draw deleted',
+    body: `Draw #${invoice.id.slice(0, 8)} was deleted.`,
+    related_type: 'project',
+    related_id: invoice.project_id,
+  });
+
+  const user = await getCurrentUser();
+  await audit({
+    tenantId: tenant.id,
+    userId: user?.id ?? null,
+    action: 'invoice.deleted',
+    resourceType: 'invoice',
+    resourceId: invoice.id,
+    metadata: { doc_type: 'draw', prior_status: invoice.status, project_id: invoice.project_id },
+  });
+
+  if (invoice.project_id) revalidatePath(`/projects/${invoice.project_id}`);
+  revalidatePath('/invoices');
+  return { ok: true, id: invoice.id };
 }
 
 export async function createInvoiceFromEstimateAction(input: {
