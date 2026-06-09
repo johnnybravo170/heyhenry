@@ -13,6 +13,7 @@
  */
 
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ type WorkerProfile = {
   default_hourly_rate_cents: number | null;
   default_charge_rate_cents: number | null;
   gst_number: string | null;
+  contact_id?: string | null;
 };
 
 function boolToTri(v: boolean | null): 'inherit' | 'yes' | 'no' {
@@ -221,6 +223,15 @@ export function WorkerSettingsRow({
           ) : null}
           <span className="font-normal normal-case">/ hr</span>
         </div>
+      ) : null}
+
+      {profile.contact_id ? (
+        <Link
+          href={`/contacts/${profile.contact_id}`}
+          className="inline-flex w-max items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          Contact card →
+        </Link>
       ) : null}
     </div>
   );

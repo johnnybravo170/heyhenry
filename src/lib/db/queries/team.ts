@@ -24,6 +24,7 @@ export type TeamMemberRow = {
     display_name: string | null;
     business_name: string | null;
     gst_number: string | null;
+    contact_id: string | null;
   } | null;
 };
 
@@ -60,7 +61,7 @@ export async function listTeamMembers(tenantId: string): Promise<TeamMemberRow[]
   const { data: profiles } = await admin
     .from('worker_profiles')
     .select(
-      'id, tenant_member_id, worker_type, can_log_expenses, can_invoice, default_hourly_rate_cents, default_charge_rate_cents, display_name, business_name, gst_number',
+      'id, tenant_member_id, worker_type, can_log_expenses, can_invoice, default_hourly_rate_cents, default_charge_rate_cents, display_name, business_name, gst_number, contact_id',
     )
     .eq('tenant_id', tenantId);
   const profilesByMember = new Map((profiles ?? []).map((p) => [p.tenant_member_id as string, p]));
@@ -87,9 +88,35 @@ export async function listTeamMembers(tenantId: string): Promise<TeamMemberRow[]
             display_name: wp.display_name as string | null,
             business_name: wp.business_name as string | null,
             gst_number: wp.gst_number as string | null,
+            contact_id: (wp.contact_id as string | null) ?? null,
           }
         : null,
     });
+  }
+
+  // Backfill: create a contact card for any worker that doesn't have one yet.
+  // Covers workers who joined before the contact_id column was added.
+  for (const item of enriched) {
+    if (item.role !== 'worker' || !item.worker_profile || item.worker_profile.contact_id) continue;
+    const wp = item.worker_profile;
+    try {
+      const { data: contact } = await admin
+        .from('contacts')
+        .insert({
+          tenant_id: tenantId,
+          kind: wp.worker_type === 'subcontractor' ? 'sub' : 'other',
+          name: wp.display_name ?? item.email.split('@')[0],
+          ...(item.email !== 'unknown' ? { email: item.email } : {}),
+        })
+        .select('id')
+        .single();
+      if (contact?.id) {
+        await admin.from('worker_profiles').update({ contact_id: contact.id }).eq('id', wp.id);
+        wp.contact_id = contact.id;
+      }
+    } catch {
+      // best-effort; a worker without a contact card is still fully functional
+    }
   }
 
   return enriched;

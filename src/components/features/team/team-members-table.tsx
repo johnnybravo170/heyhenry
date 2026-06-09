@@ -17,12 +17,14 @@
 import {
   AlertTriangle,
   ChevronDown,
+  Contact,
   Loader2,
   Lock,
   MoreHorizontal,
   ShieldCheck,
   Trash2,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Fragment, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import {
@@ -127,6 +129,14 @@ function MemberMenu({ member, onExpand }: { member: TeamMemberRow; onExpand?: ()
                 <ChevronDown className="size-3.5" />
                 Edit rates &amp; capabilities
               </DropdownMenuItem>
+              {member.worker_profile?.contact_id ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/contacts/${member.worker_profile.contact_id}`}>
+                    <Contact className="size-3.5" />
+                    View contact card
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
             </>
           ) : null}

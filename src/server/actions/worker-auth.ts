@@ -21,6 +21,46 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { workerSignupSchema } from '@/lib/validators/worker-invite';
 
+/**
+ * Create a contacts card for a newly joined worker and link it back to
+ * their worker_profile via contact_id. Best-effort — a failure here does
+ * not break the join flow. Idempotent: skips if contact_id already set.
+ */
+async function createContactForWorker(
+  admin: ReturnType<typeof createAdminClient>,
+  opts: {
+    tenantId: string;
+    memberId: string;
+    name: string | null;
+    email: string | null;
+    workerType: string;
+  },
+): Promise<void> {
+  const { data: profile } = await admin
+    .from('worker_profiles')
+    .select('id, contact_id')
+    .eq('tenant_member_id', opts.memberId)
+    .maybeSingle();
+
+  if (!profile || profile.contact_id) return;
+
+  const displayName = opts.name?.trim() || opts.email?.split('@')[0] || 'Worker';
+  const { data: contact, error } = await admin
+    .from('contacts')
+    .insert({
+      tenant_id: opts.tenantId,
+      kind: opts.workerType === 'subcontractor' ? 'sub' : 'other',
+      name: displayName,
+      ...(opts.email ? { email: opts.email } : {}),
+    })
+    .select('id')
+    .single();
+
+  if (error || !contact) return;
+
+  await admin.from('worker_profiles').update({ contact_id: contact.id }).eq('id', profile.id);
+}
+
 export type WorkerSignupResult =
   | { ok: true }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
@@ -107,6 +147,15 @@ export async function workerSignupAction(input: {
 
     // 6. Mark invite as used.
     await markInviteUsed(invite.id, userId);
+
+    // 7. Create a contact card for this worker (best-effort, non-fatal).
+    await createContactForWorker(admin, {
+      tenantId: invite.tenant_id,
+      memberId: member.id,
+      name,
+      email,
+      workerType: invite.invite_prefs?.worker_type ?? 'employee',
+    }).catch(() => {});
   } catch (err) {
     // Roll back the auth user on failure.
     await admin.auth.admin.deleteUser(userId).catch(() => {});
@@ -215,6 +264,16 @@ export async function workerLoginAndJoinAction(input: {
   }
 
   await markInviteUsed(invite.id, userId).catch(() => {});
+
+  // Create a contact card for this worker (best-effort, non-fatal).
+  await createContactForWorker(admin, {
+    tenantId: invite.tenant_id,
+    memberId: member.id,
+    name: (signInData.user.user_metadata?.full_name as string | null) ?? null,
+    email: signInData.user.email ?? null,
+    workerType: invite.invite_prefs?.worker_type ?? 'employee',
+  }).catch(() => {});
+
   return { ok: true };
 }
 
@@ -287,5 +346,15 @@ export async function joinTenantWithSessionAction(inviteCode: string): Promise<W
   }
 
   await markInviteUsed(invite.id, user.id).catch(() => {});
+
+  // Create a contact card for this worker (best-effort, non-fatal).
+  await createContactForWorker(admin, {
+    tenantId: invite.tenant_id,
+    memberId: member.id,
+    name: (user.user_metadata?.full_name as string | null) ?? null,
+    email: user.email ?? null,
+    workerType: invite.invite_prefs?.worker_type ?? 'employee',
+  }).catch(() => {});
+
   return { ok: true };
 }
