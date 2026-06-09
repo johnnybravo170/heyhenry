@@ -148,6 +148,10 @@ function ExpenseDialogBody({
   // returned null. Drives a "Henry couldn't pick one" hint so the missing
   // suggestion is visible, not silent.
   const [categoryMiss, setCategoryMiss] = useState(false);
+  // Human-readable summary of which core fields OCR read (amount / vendor /
+  // date). Shown persistently below the dropzone so it isn't lost if the
+  // toast scrolls off-screen on a phone.
+  const [ocrSummary, setOcrSummary] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Closure-stable references to the loaded lookups + the load promise.
@@ -284,6 +288,7 @@ function ExpenseDialogBody({
   async function runExtract(file: File) {
     setExtracting(true);
     setExtractError(null);
+    setOcrSummary(null);
     setSuggestedFromOcr(false);
     setCategoryMiss(false);
     try {
@@ -317,7 +322,15 @@ function ExpenseDialogBody({
       if (candidates.length > 0) {
         fd.append('category_options', JSON.stringify(candidates));
       }
-      const res = await withTimeout(extractReceiptFieldsAction(fd), OCR_TIMEOUT_MS);
+      // Auto-retry once on thrown errors (transient provider failures) before
+      // surfacing the error; the retry propagates if it also throws.
+      const res = await (async () => {
+        try {
+          return await withTimeout(extractReceiptFieldsAction(fd), OCR_TIMEOUT_MS);
+        } catch {
+          return await withTimeout(extractReceiptFieldsAction(fd), OCR_TIMEOUT_MS);
+        }
+      })();
       if (!res.ok) {
         setExtractError(res.error);
         return;
@@ -386,6 +399,26 @@ function ExpenseDialogBody({
       }
 
       toast.success('Receipt read — review and save.');
+
+      // Inline summary of which core fields OCR extracted. Shown persistently
+      // so it isn't lost when the toast scrolls off-screen on a phone.
+      const coreNames = ['amount', 'vendor', 'date'] as const;
+      const coreRead = [
+        fields.amountCents != null,
+        Boolean(fields.vendor),
+        Boolean(fields.expenseDate),
+      ];
+      const readLabels = coreNames.filter((_, i) => coreRead[i]);
+      const missLabels = coreNames.filter((_, i) => !coreRead[i]);
+      if (readLabels.length > 0) {
+        const joinList = (a: string[]) =>
+          a.length === 1 ? a[0] : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`;
+        setOcrSummary(
+          missLabels.length === 0
+            ? 'Amount, vendor, and date filled in — review and save.'
+            : `Henry read ${joinList(readLabels)}. Check ${joinList(missLabels)}.`,
+        );
+      }
     } catch (err) {
       // Timeout or thrown network error. Inline chip is the durable
       // surface; toast can scroll off-screen on phones.
@@ -581,6 +614,9 @@ function ExpenseDialogBody({
               Retry
             </Button>
           </div>
+        ) : null}
+        {!extracting && !extractError && ocrSummary ? (
+          <p className="mt-1 text-xs text-muted-foreground">{ocrSummary}</p>
         ) : null}
       </div>
 
