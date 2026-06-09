@@ -43,6 +43,26 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
     ]);
   const ownerRateCents = operatorProfile?.defaultHourlyRateCents ?? null;
 
+  // Resolve display names for crew workers. display_name is often null on
+  // auto-created profiles — fall back to business_name, then the member's
+  // first+last name so the picker never shows the generic "Worker" label.
+  const memberNamesRes =
+    crewWorkers.length > 0
+      ? await supabase
+          .from('tenant_members')
+          .select('id, first_name, last_name')
+          .in(
+            'id',
+            crewWorkers.map((w) => w.tenant_member_id),
+          )
+      : { data: [] as { id: string; first_name: string | null; last_name: string | null }[] };
+  const memberNameById = new Map(
+    (memberNamesRes.data ?? []).map((m) => [
+      m.id,
+      [m.first_name, m.last_name].filter(Boolean).join(' ') || null,
+    ]),
+  );
+
   // Labour summary roll-up (computed server-side, passed to the body panel).
   // Hours: straight sum of every time-entry's hours.
   // Labour cost: sum of hours × the entry's own hourly_rate_cents (null rate
@@ -146,7 +166,8 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
         costLines={costLines}
         workers={crewWorkers.map((w) => ({
           id: w.id,
-          display_name: w.display_name,
+          display_name:
+            w.display_name ?? w.business_name ?? memberNameById.get(w.tenant_member_id) ?? null,
           default_hourly_rate_cents: w.default_hourly_rate_cents,
         }))}
         ownerRateCents={ownerRateCents}
@@ -159,8 +180,14 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
           // Prefer worker display name; otherwise resolve owner/admin from
           // tenant_members + auth email so we don't fall back to
           // "Owner/admin" when the person actually has a name set.
+          const workerName = wp
+            ? (wp.display_name ??
+              wp.business_name ??
+              memberNameById.get(wp.tenant_member_id) ??
+              null)
+            : null;
           const posterName =
-            wp?.display_name ?? (e.user_id ? operatorNames.get(e.user_id) : undefined) ?? null;
+            workerName ?? (e.user_id ? operatorNames.get(e.user_id) : undefined) ?? null;
           const cat = e.budget_category_id
             ? project.budget_categories.find((b) => b.id === e.budget_category_id)
             : null;
