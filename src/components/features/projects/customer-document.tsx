@@ -221,7 +221,7 @@ export function CustomerDocument({
       {totals ? (
         <div className="mt-4 space-y-1 text-sm">
           {totals.rows.map((row) => (
-            <div key={row.label} className="flex justify-between">
+            <div key={row.label} className="flex justify-between pr-4">
               <span className="text-muted-foreground">
                 {row.label}
                 {row.meta ? (
@@ -233,7 +233,7 @@ export function CustomerDocument({
               <Money cents={row.cents} signed={row.signed} />
             </div>
           ))}
-          <div className="flex justify-between border-t pt-2 text-base font-semibold">
+          <div className="flex justify-between border-t pt-2 pr-4 text-base font-semibold">
             <span>{totals.totalLabel ?? 'Total'}</span>
             <Money cents={totals.totalCents} emphasis signed={totals.rows.some((r) => r.signed)} />
           </div>
