@@ -5,8 +5,8 @@
  */
 
 import { Fragment } from 'react';
+import { Money } from '@/components/ui/money';
 import { RichTextDisplay } from '@/components/ui/rich-text-display';
-import { formatCurrency } from '@/lib/pricing/calculator';
 import type { StatusTone } from '@/lib/ui/status-tokens';
 import type { CustomerViewMode } from '@/lib/validators/project-customer-view';
 import { type CustomerDocTotalsRow, CustomerDocument } from './customer-document';
@@ -176,7 +176,7 @@ function renderLumpSum(
     <div className="overflow-hidden rounded-md border">
       <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 bg-foreground/5 px-4 py-3 text-sm">
         <div className="font-medium">Project work — {projectName}</div>
-        <span className="font-semibold tabular-nums">{formatCurrency(total)}</span>
+        <Money cents={total} />
       </div>
       {summary ? (
         <div className="px-4 py-3 text-sm text-muted-foreground">
@@ -208,7 +208,7 @@ function renderSections(lines: EstimateRenderLine[]) {
             className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-b px-4 py-3 last:border-0"
           >
             <span className="font-medium">{sec.section ?? 'Other work'}</span>
-            <span className="font-medium tabular-nums">{formatCurrency(sectionTotal)}</span>
+            <Money cents={sectionTotal} />
           </div>
         );
       })}
@@ -244,7 +244,7 @@ function renderCategories(lines: EstimateRenderLine[]) {
                  *  cost lines live in the "Detailed" mode so this stays the
                  *  terser rung on the ladder (Categories < Detailed). */}
                 <span className="font-medium">{g.categoryName}</span>
-                <span className="font-medium tabular-nums">{formatCurrency(categoryTotal)}</span>
+                <Money cents={categoryTotal} />
               </div>
             );
           })}
@@ -312,9 +312,7 @@ function renderDetailed(lines: EstimateRenderLine[]) {
                         {g.lines.length} {g.lines.length === 1 ? 'item' : 'items'}
                       </span>
                     </div>
-                    <span className="font-medium tabular-nums">
-                      {formatCurrency(categoryTotal)}
-                    </span>
+                    <Money cents={categoryTotal} />
                   </summary>
                   <div className="bg-muted/10 px-4 pb-3 pt-1">
                     {g.description?.trim() ? (
@@ -345,9 +343,7 @@ function renderDetailed(lines: EstimateRenderLine[]) {
                                 </div>
                               ) : null}
                             </div>
-                            <span className="text-sm tabular-nums">
-                              {formatCurrency(l.line_price_cents)}
-                            </span>
+                            <Money cents={l.line_price_cents} />
                           </div>
                         );
                       })}
