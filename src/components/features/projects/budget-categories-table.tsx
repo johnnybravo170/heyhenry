@@ -611,7 +611,7 @@ export function BudgetCategoriesTable({
                   {/* Section heading — sits OUTSIDE and ABOVE the section card,
                       so a section clearly brackets its own card of categories
                       rather than reading as another row in a shared table. */}
-                  <div className="mb-2 grid grid-cols-[24px_minmax(0,1fr)_110px_110px_110px_160px] items-start gap-x-2 px-1">
+                  <div className="mb-2 grid grid-cols-[24px_minmax(0,1fr)_110px_110px_110px_160px] items-start gap-x-2 px-3">
                     <button
                       type="button"
                       onClick={() => toggleSection(section)}
