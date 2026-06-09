@@ -581,7 +581,7 @@ export function BudgetCategoriesTable({
               )}
             >
               <span />
-              <span>Category</span>
+              <span />
               <span className="text-right">Estimate</span>
               <span className="text-right">Spent</span>
               <span className="text-right">Committed</span>
@@ -1153,11 +1153,6 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                   className="text-left text-base font-semibold hover:text-foreground"
                 >
                   {line.budget_category_name}
-                  {categoryLines.length > 0 ? (
-                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                      {categoryLines.length} line{categoryLines.length === 1 ? '' : 's'}
-                    </span>
-                  ) : null}
                 </button>
                 <button
                   type="button"
