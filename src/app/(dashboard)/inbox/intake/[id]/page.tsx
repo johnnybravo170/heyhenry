@@ -96,11 +96,17 @@ export default async function IntakeDraftDetailPage({
     email_from: null,
     accepted_project_id: draft.accepted_project_id,
     recognized_customer_id: draft.recognized_customer_id,
+    recognized_project_id: draft.recognized_project_id,
     applied_destination_kind: null,
     applied_destination_id: null,
     applied_at: null,
     created_at: draft.created_at,
   };
+
+  // Resolve recognized_project_id to a name for the hint chip.
+  const recognizedProject = draft.recognized_project_id
+    ? (projects.find((p) => p.id === draft.recognized_project_id) ?? null)
+    : null;
 
   return (
     <div className="space-y-5">
@@ -134,6 +140,17 @@ export default async function IntakeDraftDetailPage({
         </p>
       )}
 
+      {/* Recognized project hint */}
+      {recognizedProject && (
+        <p className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">Matched project: </span>
+          <Link href={`/projects/${recognizedProject.id}`} className="font-medium hover:underline">
+            {recognizedProject.name}
+          </Link>
+          <span className="ml-1 text-xs text-muted-foreground">(from email text)</span>
+        </p>
+      )}
+
       {/* Artifacts */}
       {draft.artifacts.length > 0 && (
         <section className="space-y-2">
@@ -142,6 +159,7 @@ export default async function IntakeDraftDetailPage({
             {draft.artifacts.map((a) => {
               const isImage = a.mime?.startsWith('image/');
               const isPdf = a.mime === 'application/pdf';
+              const bill = a.bill_extract ?? null;
               return (
                 <div key={a.path} className="rounded-lg border bg-card p-3">
                   <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/30">
@@ -167,6 +185,14 @@ export default async function IntakeDraftDetailPage({
                     {a.kind ? (KIND_LABEL[a.kind] ?? a.kind) : 'Unclassified'}
                   </p>
                   {a.label && <p className="truncate text-xs text-muted-foreground">{a.label}</p>}
+                  {/* Bill extract from PDF OCR — amount / vendor / date */}
+                  {bill && (bill.amountCents != null || bill.vendor || bill.date) ? (
+                    <div className="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
+                      {bill.amountCents != null && <p>${(bill.amountCents / 100).toFixed(2)}</p>}
+                      {bill.vendor && <p className="truncate">{bill.vendor}</p>}
+                      {bill.date && <p>{bill.date}</p>}
+                    </div>
+                  ) : null}
                   {a.signedUrl && (
                     <a
                       href={a.signedUrl}

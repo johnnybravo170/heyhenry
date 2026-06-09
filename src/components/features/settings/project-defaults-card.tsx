@@ -80,7 +80,8 @@ export function ProjectDefaultsCard({ defaultManagementFeeRate }: Props) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Applied to new projects at creation. Existing projects keep their current rate.
+            Applied to new projects at creation. To update an existing project, open its Details
+            panel and edit the fee there.
           </p>
         </div>
       </CardContent>

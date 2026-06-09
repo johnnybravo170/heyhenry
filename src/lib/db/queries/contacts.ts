@@ -39,6 +39,7 @@ export type CustomerRow = {
   province: string | null;
   postal_code: string | null;
   gst_number: string | null;
+  wcb_number: string | null;
   notes: string | null;
   do_not_auto_message: boolean;
   do_not_auto_message_at: string | null;
@@ -89,7 +90,7 @@ export type CustomerListFilters = {
 };
 
 const CUSTOMER_COLUMNS =
-  'id, tenant_id, kind, type, name, email, additional_emails, phone, address_line1, city, province, postal_code, gst_number, notes, do_not_auto_message, do_not_auto_message_at, do_not_auto_message_source, created_at, updated_at, deleted_at';
+  'id, tenant_id, kind, type, name, email, additional_emails, phone, address_line1, city, province, postal_code, gst_number, wcb_number, notes, do_not_auto_message, do_not_auto_message_at, do_not_auto_message_source, created_at, updated_at, deleted_at';
 
 /**
  * For the duration of the contacts-unification rollout (Slice A), readers

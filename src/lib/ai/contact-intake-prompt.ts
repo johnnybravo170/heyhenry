@@ -30,7 +30,8 @@ Rules:
 2. Do NOT produce any estimate, categories, cost lines, or reply draft. This is contact capture only.
 3. Keep \`notes\` short (2-6 sentences max). It should summarize what the artifact tells us about this contact, so the contractor has context when they open the detail page later. Include anything useful that doesn't fit the structured fields (specialty, hours, payment terms, referral context).
 4. Trade is only relevant for sub-trades. Leave null for every other kind.
-5. Canadian context: addresses are Canadian (provinces like BC, ON, AB). Parse postal codes if present. Phone numbers are 10-digit; keep whatever format is given.`;
+5. Canadian context: addresses are Canadian (provinces like BC, ON, AB). Parse postal codes if present. Phone numbers are 10-digit; keep whatever format is given.
+6. For vendor and sub kinds: extract \`gst_number\` when a GST/HST Business Number is visible on the artifact (labeled "GST Reg #", "HST #", "BN", "Business Number" — Canadian format 9 digits + "RT" + 4 digits like "123456789RT0001", or just the 9-digit root). Leave null if not present.`;
 
 export const CONTACT_INTAKE_JSON_SCHEMA = {
   name: 'contact_intake',
@@ -48,6 +49,8 @@ export const CONTACT_INTAKE_JSON_SCHEMA = {
       province: { type: ['string', 'null'] },
       postal_code: { type: ['string', 'null'] },
       trade: { type: ['string', 'null'] },
+      /** GST/HST Business Number — vendor/sub only. */
+      gst_number: { type: ['string', 'null'] },
       notes: { type: 'string' },
     },
     required: [
@@ -60,6 +63,7 @@ export const CONTACT_INTAKE_JSON_SCHEMA = {
       'province',
       'postal_code',
       'trade',
+      'gst_number',
       'notes',
     ],
   },
@@ -75,5 +79,7 @@ export type ParsedContact = {
   province: string | null;
   postal_code: string | null;
   trade: string | null;
+  /** GST/HST Business Number if visible on the artifact. */
+  gst_number: string | null;
   notes: string;
 };

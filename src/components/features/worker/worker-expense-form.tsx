@@ -66,6 +66,9 @@ export function WorkerExpenseForm({ projects, tenantTaxRate }: Props) {
   // True after an OCR call where we passed a category list but the model
   // returned null. Surface this so the missing suggestion isn't silent.
   const [categoryMiss, setCategoryMiss] = useState(false);
+  // Human-readable summary of which core fields OCR read, shown inline
+  // so the operator knows what still needs manual entry.
+  const [ocrSummary, setOcrSummary] = useState<string | null>(null);
 
   // Payment-source state — mirrors the standalone overhead-expense-form.
   const [paymentSources, setPaymentSources] = useState<PaymentSourceLite[]>([]);
@@ -145,6 +148,7 @@ export function WorkerExpenseForm({ projects, tenantTaxRate }: Props) {
   async function runExtract(file: File) {
     setExtracting(true);
     setExtractError(null);
+    setOcrSummary(null);
     setSuggestedFromOcr(false);
     setCategoryMiss(false);
     try {
@@ -159,7 +163,15 @@ export function WorkerExpenseForm({ projects, tenantTaxRate }: Props) {
           JSON.stringify(categories.map((c) => ({ id: c.id, label: c.name }))),
         );
       }
-      const res = await withTimeout(extractReceiptFieldsAction(fd), OCR_TIMEOUT_MS);
+      // Auto-retry once on thrown errors (transient provider failures) before
+      // surfacing the error; the retry propagates if it also throws.
+      const res = await (async () => {
+        try {
+          return await withTimeout(extractReceiptFieldsAction(fd), OCR_TIMEOUT_MS);
+        } catch {
+          return await withTimeout(extractReceiptFieldsAction(fd), OCR_TIMEOUT_MS);
+        }
+      })();
       if (!res.ok) {
         setExtractError(res.error);
         return;
@@ -237,6 +249,24 @@ export function WorkerExpenseForm({ projects, tenantTaxRate }: Props) {
         toast.success(`Read ${filled} field${filled === 1 ? '' : 's'} from the receipt.`);
       } else {
         toast.message("Couldn't read anything clearly — fill in below.");
+      }
+
+      // Inline summary: which of the three core fields (amount, vendor, date)
+      // did OCR actually extract? Shown persistently so the operator on a
+      // phone knows what still needs manual entry — unlike the toast, which
+      // scrolls off-screen.
+      const coreNames = ['amount', 'vendor', 'date'] as const;
+      const coreRead = [amountCents != null, Boolean(v), Boolean(expenseDate)];
+      const readLabels = coreNames.filter((_, i) => coreRead[i]);
+      const missLabels = coreNames.filter((_, i) => !coreRead[i]);
+      if (readLabels.length > 0) {
+        const joinList = (a: string[]) =>
+          a.length === 1 ? a[0] : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`;
+        setOcrSummary(
+          missLabels.length === 0
+            ? 'Amount, vendor, and date filled in — review and save.'
+            : `Henry read ${joinList(readLabels)}. Check ${joinList(missLabels)}.`,
+        );
       }
     } catch (err) {
       // Timeout or thrown network error. Stay quiet on toast — the inline
@@ -348,6 +378,9 @@ export function WorkerExpenseForm({ projects, tenantTaxRate }: Props) {
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Sparkles className="size-3" /> {receipt.name}
           </p>
+        ) : null}
+        {!extracting && !extractError && ocrSummary ? (
+          <p className="text-xs text-muted-foreground">{ocrSummary}</p>
         ) : null}
         {extractError ? (
           <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-2 py-1.5">

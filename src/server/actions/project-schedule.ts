@@ -618,6 +618,8 @@ export type ScheduleTaskPatch = {
   confidence?: 'rough' | 'firm';
   client_visible?: boolean;
   notes?: string | null;
+  /** Custom bar colour token (e.g. 'blue', 'red'). Null clears back to phase colour. */
+  bar_color?: string | null;
 };
 
 /**
@@ -1026,6 +1028,7 @@ export type CreateScheduleTaskInput = {
   works_weekends?: boolean;
   client_visible?: boolean;
   notes?: string | null;
+  bar_color?: string | null;
 };
 
 /**
@@ -1074,6 +1077,7 @@ export async function createScheduleTaskAction(
       client_visible: input.client_visible ?? true,
       display_order: nextOrder,
       notes: input.notes ?? null,
+      bar_color: input.bar_color ?? null,
     })
     .select('id')
     .single();

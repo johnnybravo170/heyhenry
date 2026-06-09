@@ -30,6 +30,8 @@ export default async function EditContactPage({ params }: { params: Promise<{ id
     province: customer.province ?? '',
     postalCode: customer.postal_code ?? '',
     notes: customer.notes ?? '',
+    gstNumber: customer.gst_number ?? '',
+    wcbNumber: customer.wcb_number ?? '',
   };
 
   // Thin wrapper that matches the form's action signature (always has an id

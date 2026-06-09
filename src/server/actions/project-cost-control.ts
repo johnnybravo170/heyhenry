@@ -23,7 +23,7 @@ const costLineSchema = z.object({
   category: z.enum(['material', 'labour', 'sub', 'equipment', 'overhead', 'supply_install']),
   label: z.string().trim().min(1, 'Label is required').max(300),
   qty: z.coerce.number().positive('Quantity must be positive'),
-  unit: z.string().trim().min(1).max(50),
+  unit: z.string().trim().max(50).optional().or(z.literal('')),
   unit_cost_cents: z.coerce.number().int().min(0),
   unit_price_cents: z.coerce.number().int().min(0),
   markup_pct: z.coerce.number().min(0).max(1000),
@@ -153,7 +153,7 @@ const poSchema = z.object({
       z.object({
         label: z.string().trim().min(1).max(300),
         qty: z.coerce.number().positive(),
-        unit: z.string().trim().min(1).max(50),
+        unit: z.string().trim().max(50).optional().or(z.literal('')),
         unit_cost_cents: z.coerce.number().int().min(0),
         cost_line_id: z.string().uuid().optional().or(z.literal('')),
       }),

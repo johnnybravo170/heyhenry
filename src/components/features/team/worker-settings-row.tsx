@@ -13,6 +13,7 @@
  */
 
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,8 @@ type WorkerProfile = {
   can_invoice: boolean | null;
   default_hourly_rate_cents: number | null;
   default_charge_rate_cents: number | null;
+  gst_number: string | null;
+  contact_id?: string | null;
 };
 
 function boolToTri(v: boolean | null): 'inherit' | 'yes' | 'no' {
@@ -74,6 +77,7 @@ export function WorkerSettingsRow({
       ? (profile.default_charge_rate_cents / 100).toFixed(2)
       : '',
   );
+  const [gstNumber, setGstNumber] = useState(profile.gst_number ?? '');
 
   const payCents = dollarsToCents(payRate);
   const chargeCents = dollarsToCents(chargeRate);
@@ -92,6 +96,7 @@ export function WorkerSettingsRow({
         can_invoice: canInvoice,
         default_pay_rate_dollars: payRate,
         default_charge_rate_dollars: chargeRate,
+        gst_number: gstNumber,
       });
       if (!result.ok) {
         toast.error(result.error ?? 'Failed to save.');
@@ -183,6 +188,20 @@ export function WorkerSettingsRow({
             aria-label="Charge rate — what you bill the client, CAD per hour"
           />
         </div>
+        {workerType === 'subcontractor' ? (
+          <div className="space-y-1 md:col-span-2">
+            <Label className="text-xs">
+              GST/HST # <span className="font-normal text-muted-foreground">for T5018</span>
+            </Label>
+            <Input
+              className="min-h-11"
+              value={gstNumber}
+              onChange={(e) => setGstNumber(e.target.value)}
+              placeholder="123456789RT0001"
+              aria-label="Subcontractor GST/HST number"
+            />
+          </div>
+        ) : null}
         <div className="flex items-end md:col-span-1">
           <Button onClick={handleSave} disabled={pending} size="sm" className="min-h-11 w-full">
             {pending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
@@ -204,6 +223,15 @@ export function WorkerSettingsRow({
           ) : null}
           <span className="font-normal normal-case">/ hr</span>
         </div>
+      ) : null}
+
+      {profile.contact_id ? (
+        <Link
+          href={`/contacts/${profile.contact_id}`}
+          className="inline-flex w-max items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          Contact card →
+        </Link>
       ) : null}
     </div>
   );

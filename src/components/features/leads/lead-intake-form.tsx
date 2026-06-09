@@ -258,22 +258,7 @@ function computeMissingInfoQuestions(draft: ParsedIntake | null): MissingInfoQue
       field: 'customer.name',
     });
   }
-  if (!draft.customer.address?.trim()) {
-    out.push({
-      id: 'missing-customer-address',
-      prompt: cn ? `What's the project address for ${cn}?` : "What's the project address?",
-      placeholder: 'e.g. 2452 Mountain Drive',
-      field: 'customer.address',
-    });
-  }
-  if (!draft.customer.phone?.trim()) {
-    out.push({
-      id: 'missing-customer-phone',
-      prompt: cn ? `Phone for ${cn}?` : 'A phone number for this customer?',
-      placeholder: 'e.g. (604) 555-1234',
-      field: 'customer.phone',
-    });
-  }
+  // address + phone are editable in the ReviewDraft Customer section — no need to surface them twice
   return out;
 }
 

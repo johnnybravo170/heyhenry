@@ -69,6 +69,7 @@ export function ScheduleTaskEditor({
           client_visible: mode.task.client_visible,
           works_weekends: mode.task.works_weekends,
           notes: mode.task.notes ?? '',
+          bar_color: mode.task.bar_color ?? '',
         }
       : {
           name: '',
@@ -79,6 +80,7 @@ export function ScheduleTaskEditor({
           client_visible: true,
           works_weekends: false,
           notes: '',
+          bar_color: '',
         };
 
   const [name, setName] = useState(initial.name);
@@ -89,6 +91,7 @@ export function ScheduleTaskEditor({
   const [clientVisible, setClientVisible] = useState(initial.client_visible);
   const [worksWeekends, setWorksWeekends] = useState(initial.works_weekends);
   const [notes, setNotes] = useState(initial.notes);
+  const [barColor, setBarColor] = useState(initial.bar_color);
   // "Depends on" picker — predecessors are stored as a Set so toggling
   // is O(1). Default-populated from the auto-bootstrapped phase edges.
   const [predecessorIds, setPredecessorIds] = useState<Set<string>>(
@@ -129,6 +132,7 @@ export function ScheduleTaskEditor({
               confidence,
               client_visible: clientVisible,
               notes: notes.trim() || null,
+              bar_color: barColor || null,
             })
           : await createScheduleTaskAction(mode.projectId, {
               name: name.trim(),
@@ -137,6 +141,7 @@ export function ScheduleTaskEditor({
               works_weekends: worksWeekends,
               client_visible: clientVisible,
               notes: notes.trim() || null,
+              bar_color: barColor || null,
             });
       if (!res.ok) {
         setError(res.error);
@@ -304,6 +309,39 @@ export function ScheduleTaskEditor({
               className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-sm"
             />
           </label>
+
+          <div className="block text-xs font-medium">
+            <span className="block text-muted-foreground">Bar colour</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                { value: '', label: 'Auto', bg: 'bg-muted border' },
+                { value: 'slate', label: 'Slate', bg: 'bg-slate-500' },
+                { value: 'red', label: 'Red', bg: 'bg-red-500' },
+                { value: 'orange', label: 'Orange', bg: 'bg-orange-500' },
+                { value: 'amber', label: 'Amber', bg: 'bg-amber-500' },
+                { value: 'green', label: 'Green', bg: 'bg-green-500' },
+                { value: 'teal', label: 'Teal', bg: 'bg-teal-500' },
+                { value: 'blue', label: 'Blue', bg: 'bg-blue-500' },
+                { value: 'purple', label: 'Purple', bg: 'bg-purple-500' },
+                { value: 'pink', label: 'Pink', bg: 'bg-pink-500' },
+                { value: 'brown', label: 'Brown', bg: 'bg-stone-600' },
+              ].map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setBarColor(c.value)}
+                  title={c.label}
+                  className={`flex h-6 w-6 items-center justify-center rounded-full ${c.bg} transition-transform ${
+                    barColor === c.value
+                      ? 'scale-125 ring-2 ring-foreground ring-offset-1'
+                      : 'opacity-70 hover:opacity-100'
+                  }`}
+                  aria-pressed={barColor === c.value}
+                  aria-label={c.label}
+                />
+              ))}
+            </div>
+          </div>
 
           {candidatePredecessors.length > 0 ? (
             <div className="block text-xs font-medium">
