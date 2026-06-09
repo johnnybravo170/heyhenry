@@ -57,6 +57,7 @@ export type IntakeDraftRow = {
   parsed_by: string | null;
   error_message: string | null;
   recognized_customer_id: string | null;
+  recognized_project_id: string | null;
   accepted_project_id: string | null;
   created_at: string;
   updated_at: string;
@@ -76,7 +77,7 @@ export async function loadIntakeDraft(id: string): Promise<IntakeDraftRow | null
   const { data, error } = await supabase
     .from('intake_drafts')
     .select(
-      'id, status, source, disposition, customer_name, pasted_text, transcript, artifacts, augmentations, ai_extraction, parsed_by, error_message, recognized_customer_id, accepted_project_id, created_at, updated_at',
+      'id, status, source, disposition, customer_name, pasted_text, transcript, artifacts, augmentations, ai_extraction, parsed_by, error_message, recognized_customer_id, recognized_project_id, accepted_project_id, created_at, updated_at',
     )
     .eq('id', id)
     .maybeSingle();
@@ -132,6 +133,7 @@ export type InboxIntakeRow = {
   email_from: string | null;
   accepted_project_id: string | null;
   recognized_customer_id: string | null;
+  recognized_project_id: string | null;
   applied_destination_kind: string | null;
   applied_destination_id: string | null;
   applied_at: string | null;
@@ -163,7 +165,7 @@ export async function listInboxIntake(filter: InboxIntakeFilter = {}): Promise<I
     .from('intake_drafts')
     .select(
       `id, source, disposition, status, customer_name, pasted_text,
-       artifacts, accepted_project_id, recognized_customer_id,
+       artifacts, accepted_project_id, recognized_customer_id, recognized_project_id,
        applied_destination_kind, applied_destination_id,
        applied_at, created_at,
        inbound_emails!intake_draft_id ( subject, from_address, from_name )`,
@@ -242,6 +244,7 @@ export async function listInboxIntake(filter: InboxIntakeFilter = {}): Promise<I
         : (env?.from_address ?? null),
       accepted_project_id: (row.accepted_project_id as string | null) ?? null,
       recognized_customer_id: (row.recognized_customer_id as string | null) ?? null,
+      recognized_project_id: (row.recognized_project_id as string | null) ?? null,
       applied_destination_kind: (row.applied_destination_kind as string | null) ?? null,
       applied_destination_id: (row.applied_destination_id as string | null) ?? null,
       applied_at: (row.applied_at as string | null) ?? null,

@@ -126,6 +126,12 @@ const ARTIFACT_KINDS = [
 ] as const;
 export type IntakeArtifactKind = (typeof ARTIFACT_KINDS)[number];
 
+export type BillExtract = {
+  amountCents: number | null;
+  vendor: string | null;
+  date: string | null;
+};
+
 export type IntakeArtifact = {
   path: string;
   name: string;
@@ -133,6 +139,9 @@ export type IntakeArtifact = {
   size: number;
   kind: IntakeArtifactKind | null;
   label: string | null;
+  /** OCR extraction for PDF invoices/bills arriving via inbound email. Set
+   *  by the email processor when it detects a PDF attachment; null otherwise. */
+  bill_extract?: BillExtract | null;
 };
 
 /**
