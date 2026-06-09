@@ -53,6 +53,7 @@ export type CustomerFormInput = {
   postalCode?: string;
   notes?: string;
   gstNumber?: string;
+  wcbNumber?: string;
   /**
    * When true, skip the duplicate check. Callers set this after the operator
    * has seen the duplicates banner and explicitly chosen "Create anyway".
@@ -139,6 +140,7 @@ export async function createCustomerAction(
       postal_code: emptyToNull(parsed.data.postalCode),
       notes: emptyToNull(parsed.data.notes),
       gst_number: emptyToNull(parsed.data.gstNumber),
+      wcb_number: emptyToNull(parsed.data.wcbNumber),
     })
     .select('id')
     .single();
@@ -203,6 +205,7 @@ export async function updateCustomerAction(
       postal_code: emptyToNull(parsed.data.postalCode),
       notes: emptyToNull(parsed.data.notes),
       gst_number: emptyToNull(parsed.data.gstNumber),
+      wcb_number: emptyToNull(parsed.data.wcbNumber),
       updated_at: new Date().toISOString(),
     })
     .eq('id', parsed.data.id)

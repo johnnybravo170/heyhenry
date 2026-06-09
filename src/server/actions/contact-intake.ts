@@ -149,6 +149,7 @@ export async function acceptInboundContactAction(input: {
       city: draft.city?.trim() || null,
       province: draft.province?.trim() || null,
       postal_code: draft.postal_code?.trim() || null,
+      gst_number: draft.gst_number?.trim() || null,
     })
     .select('id')
     .single();
@@ -196,7 +197,7 @@ export async function attachIntakeToContactAction(input: {
 
   const { data: existing, error: loadErr } = await supabase
     .from('contacts')
-    .select('id, email, phone, address_line1, city, province, postal_code')
+    .select('id, email, phone, address_line1, city, province, postal_code, gst_number')
     .eq('id', input.contactId)
     .is('deleted_at', null)
     .single();
@@ -217,6 +218,9 @@ export async function attachIntakeToContactAction(input: {
   if (!existing.province && draft.province?.trim()) patch.province = draft.province.trim();
   if (!existing.postal_code && draft.postal_code?.trim()) {
     patch.postal_code = draft.postal_code.trim();
+  }
+  if (!existing.gst_number && draft.gst_number?.trim()) {
+    patch.gst_number = draft.gst_number.trim();
   }
   if (Object.keys(patch).length > 0) {
     patch.updated_at = new Date().toISOString();

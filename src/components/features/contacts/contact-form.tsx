@@ -79,6 +79,7 @@ const EMPTY: CustomerCreateInput = {
   postalCode: '',
   notes: '',
   gstNumber: '',
+  wcbNumber: '',
 };
 
 export function ContactForm({ mode, defaults, action, submitLabel, cancelHref }: ContactFormProps) {
@@ -645,7 +646,7 @@ export function ContactForm({ mode, defaults, action, submitLabel, cancelHref }:
         </div>
 
         {watchedKind === 'vendor' || watchedKind === 'sub' ? (
-          <div className="rounded-xl border bg-card p-4">
+          <div className="grid gap-4 rounded-xl border bg-card p-4 md:grid-cols-2">
             <FormField
               control={form.control}
               name="gstNumber"
@@ -662,6 +663,26 @@ export function ContactForm({ mode, defaults, action, submitLabel, cancelHref }:
                 </FormItem>
               )}
             />
+            {watchedKind === 'sub' ? (
+              <FormField
+                control={form.control}
+                name="wcbNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      WCB/WSIB #{' '}
+                      <span className="font-normal text-muted-foreground">
+                        WorkSafeBC clearance
+                      </span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="12345678" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
           </div>
         ) : null}
 

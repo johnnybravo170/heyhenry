@@ -136,6 +136,8 @@ export const customerCreateSchema = z.object({
   notes: optionalText(2000, 'Notes'),
   /** GST/HST registration number — relevant for vendor/sub contacts. */
   gstNumber: optionalText(40, 'GST number'),
+  /** WCB/WSIB account number — relevant for sub-trade contacts. */
+  wcbNumber: optionalText(40, 'WCB number'),
   /**
    * Set by the form after the operator sees the duplicates banner and
    * clicks "Create anyway". Server skips the dedup check when true.
