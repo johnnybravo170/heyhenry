@@ -847,7 +847,7 @@ export function BudgetCategoriesTable({
                         <div
                           className={cn(
                             GRID,
-                            'border-b border-[#E2D7C0] bg-[#FBF6EA] px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
+                            'border-b border-[#E2D7C0] px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
                           )}
                         >
                           <span />
@@ -910,7 +910,7 @@ export function BudgetCategoriesTable({
                         </SortableContext>
                         {/* Contextual "+ Add category to {section}" */}
                         {addCategoryForSection === section ? (
-                          <div className="border-t border-[#E2D7C0] py-1 pl-[50px] pr-3">
+                          <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-1 pl-[50px] pr-3">
                             <AddBudgetCategoryForm
                               projectId={projectId}
                               kind="category"
@@ -921,7 +921,7 @@ export function BudgetCategoriesTable({
                             />
                           </div>
                         ) : (
-                          <div className="border-t border-[#E2D7C0] py-2 pl-[50px] pr-3">
+                          <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-2 pl-[50px] pr-3">
                             <button
                               type="button"
                               onClick={() => {
