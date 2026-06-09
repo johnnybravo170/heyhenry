@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * "Terms & notes" editor on the estimate tab. Bound to `projects.terms_text`.
+ * "Terms & notes" editor on the estimate review/preview screen. Bound to `projects.terms_text`.
  *
  * Chip row above the textarea renders every tenant snippet as a one-click
  * insert shortcut — clicking a chip drops that snippet's body at the cursor

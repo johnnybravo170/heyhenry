@@ -6,9 +6,11 @@ import {
   EstimateRender,
   type EstimateRenderLine,
 } from '@/components/features/projects/estimate-render';
+import { EstimateTermsEditor } from '@/components/features/projects/estimate-terms-editor';
 import { resolveTenantAutoFollowupEnabled } from '@/lib/ar/system-sequences';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { hasFeature } from '@/lib/billing/features';
+import { listEstimateSnippets } from '@/lib/db/queries/estimate-snippets';
 import { runEstimatePreflight } from '@/lib/estimate/preflight';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { canadianTax } from '@/lib/providers/tax/canadian';
@@ -172,6 +174,8 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
     })),
   });
 
+  const snippets = await listEstimateSnippets();
+
   // Auto-followup checkbox — defaults to tenant setting, gated to Growth plan.
   const tenantCtx = await getCurrentTenant();
   const autoFollowupAvailable = tenantCtx
@@ -208,6 +212,12 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
           ((p.customer_view_mode as CustomerViewMode | null) ?? 'detailed') as CustomerViewMode
         }
         initialSummaryMd={(p.customer_summary_md as string | null) ?? null}
+      />
+
+      <EstimateTermsEditor
+        projectId={id}
+        initialTermsText={(p.terms_text as string | null) ?? null}
+        snippets={snippets}
       />
 
       <div className="rounded-lg border bg-card p-6 shadow-sm">

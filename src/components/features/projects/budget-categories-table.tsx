@@ -2,12 +2,11 @@
 
 /**
  * Budget scope table — each SECTION is a free-standing heading that sits above
- * its OWN bordered card; the card carries the column header (Category / Estimate
- * / Spent / Committed / Remaining) and that section's category + cost-line rows,
- * which share one aligned grid. No nested sub-tables: a cost line's value sits in
- * the column that matches its state (Estimate always; then Spent / Committed /
- * Remaining). Sections collapse for scan and show an estimate + over/projected-
- * over summary on the heading when closed.
+ * its OWN bordered card; a single global column header (Category / Estimate /
+ * Spent / Committed / Remaining) sits above all sections. No nested sub-tables:
+ * a cost line's value sits in the column that matches its state (Estimate always;
+ * then Spent / Committed / Remaining). Sections collapse for scan and show an
+ * estimate + over/projected-over summary on the heading when closed.
  *
  * Shared component, two postures: authoring (planning — everything expanded for
  * build/price) and execution (active+ — collapsed, actuals-forward), switched
@@ -533,7 +532,6 @@ export function BudgetCategoriesTable({
   }
 
   const sectionEntries = sectionGroups;
-  const categoryCount = lines.length;
   // State-aware expand/collapse: if every section is collapsed (and nothing is
   // expanded), the only useful action is "Expand all"; otherwise "Collapse all".
   const allCollapsed =
@@ -546,10 +544,6 @@ export function BudgetCategoriesTable({
       <div className="flex flex-col gap-3">
         {/* Scope head */}
         <div className="flex flex-wrap items-center gap-2">
-          <Eyebrow>
-            Scope · {sectionEntries.length} section{sectionEntries.length === 1 ? '' : 's'} ·{' '}
-            {categoryCount} categor{categoryCount === 1 ? 'y' : 'ies'}
-          </Eyebrow>
           <div className="ml-auto flex items-center gap-2">
             {headerActions}
             <Button
@@ -579,6 +573,20 @@ export function BudgetCategoriesTable({
 
         <div className="overflow-x-auto">
           <div className="min-w-[720px] space-y-6">
+            {/* Single global column header — shared across all sections. */}
+            <div
+              className={cn(
+                GRID,
+                'px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground',
+              )}
+            >
+              <span />
+              <span>Category</span>
+              <span className="text-right">Estimate</span>
+              <span className="text-right">Spent</span>
+              <span className="text-right">Committed</span>
+              <span className="text-right font-semibold text-foreground">Remaining</span>
+            </div>
             {sectionEntries.map(({ entity, lines: sectionLines }) => {
               const section = entity.name;
               const collapsed = collapsedSections.has(section);
@@ -655,9 +663,6 @@ export function BudgetCategoriesTable({
                             {section}
                           </button>
                         )}
-                        <span className="text-eyebrow font-medium text-muted-foreground">
-                          {sectionLines.length} categor{sectionLines.length === 1 ? 'y' : 'ies'}
-                        </span>
                         {!isRenaming && isRealSection ? (
                           <button
                             type="button"
@@ -833,18 +838,7 @@ export function BudgetCategoriesTable({
                           >
                             {entity.description_md}
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditSectionDescValue('');
-                              setEditingSectionDescId(entity.id);
-                            }}
-                            className="w-fit text-left text-xs text-muted-foreground/50 hover:text-foreground"
-                          >
-                            + Add description
-                          </button>
-                        )
+                        ) : null
                       ) : null}
                     </div>
                     {/* Section subtotal — set off to the right, NOT aligned to
@@ -869,23 +863,9 @@ export function BudgetCategoriesTable({
                     </div>
                   </div>
 
-                  {/* Section card — its own bordered block carrying the column
-                      header row and this section's category rows. */}
+                  {/* Section card — rows share the global column header above. */}
                   {!collapsed ? (
                     <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-md">
-                      <div
-                        className={cn(
-                          GRID,
-                          'border-b bg-muted/30 px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
-                        )}
-                      >
-                        <span />
-                        <span>Category</span>
-                        <span className="text-right">Estimate</span>
-                        <span className="text-right">Spent</span>
-                        <span className="text-right">Committed</span>
-                        <span className="text-right">Remaining</span>
-                      </div>
                       <SortableContext
                         items={sectionLines.map((l) => l.budget_category_id)}
                         strategy={verticalListSortingStrategy}
@@ -958,7 +938,6 @@ export function BudgetCategoriesTable({
                           >
                             <Plus className="size-3" />
                             Add category to {section}
-                            <Eyebrow className="ml-1.5">Name · estimate · description</Eyebrow>
                           </button>
                         </div>
                       )}
@@ -1287,15 +1266,15 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           <span className="mt-0.5 flex items-center justify-end gap-1.5">
             <span
               className={cn(
-                'text-right text-eyebrow',
+                'text-right text-sm font-semibold tabular-nums',
                 line.actual_cents > line.estimate_cents
                   ? 'text-destructive'
                   : line.actual_cents + line.committed_cents > line.estimate_cents
                     ? 'text-amber-700 dark:text-amber-300'
-                    : 'text-muted-foreground',
+                    : 'text-foreground',
               )}
             >
-              <Money cents={Math.abs(line.remaining_cents)} /> left
+              <Money cents={Math.abs(line.remaining_cents)} />
             </span>
             {categoryLines.length === 0 && !line.budget_category_description ? (
               <Button

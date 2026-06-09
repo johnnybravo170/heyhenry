@@ -9,7 +9,6 @@ import {
 import { EstimateApprovalActions } from '@/components/features/projects/estimate-approval-actions';
 import { EstimateFeedbackCard } from '@/components/features/projects/estimate-feedback-card';
 import { EstimateSentBanner } from '@/components/features/projects/estimate-sent-banner';
-import { EstimateTermsEditor } from '@/components/features/projects/estimate-terms-editor';
 import { ProjectDocumentTypeToggle } from '@/components/features/projects/project-document-type-toggle';
 import { SaveAsTemplateButton } from '@/components/features/projects/save-as-template-button';
 import { ScopeScaffoldGenerator } from '@/components/features/projects/scope-scaffold-generator';
@@ -19,7 +18,6 @@ import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getProjectChangeOrderContributions } from '@/lib/db/queries/change-orders';
 import { getCostLineActualsByProject } from '@/lib/db/queries/cost-line-actuals';
 import { getProjectProgress, getVarianceReport, listCostLines } from '@/lib/db/queries/cost-lines';
-import { listEstimateSnippets } from '@/lib/db/queries/estimate-snippets';
 import { listMaterialsCatalog } from '@/lib/db/queries/materials-catalog';
 import { getBudgetVsActual } from '@/lib/db/queries/project-budget-categories';
 import { getEstimateViewStats } from '@/lib/db/queries/project-events';
@@ -64,7 +62,6 @@ export default async function BudgetTabServer({
     actualsByLineId,
     tenant,
     viewStats,
-    snippets,
     progress,
     variance,
     diff,
@@ -79,7 +76,6 @@ export default async function BudgetTabServer({
     getCostLineActualsByProject(projectId),
     getCurrentTenant(),
     getEstimateViewStats(projectId),
-    listEstimateSnippets(),
     getProjectProgress(projectId),
     getVarianceReport(projectId),
     getUnsentDiff(projectId),
@@ -266,16 +262,9 @@ export default async function BudgetTabServer({
       ) : null}
 
       {project ? (
-        <>
-          <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-card px-4 py-2">
-            <ProjectDocumentTypeToggle projectId={projectId} initialValue={project.document_type} />
-          </div>
-          <EstimateTermsEditor
-            projectId={projectId}
-            initialTermsText={project.terms_text}
-            snippets={snippets}
-          />
-        </>
+        <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-card px-4 py-2">
+          <ProjectDocumentTypeToggle projectId={projectId} initialValue={project.document_type} />
+        </div>
       ) : null}
     </div>
   );
