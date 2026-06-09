@@ -218,9 +218,10 @@ export default async function EstimatePreviewPage({ params }: { params: Promise<
         projectId={id}
         initialTermsText={(p.terms_text as string | null) ?? null}
         snippets={snippets}
+        defaultCollapsed
       />
 
-      <div className="rounded-lg border bg-card p-6 shadow-sm">
+      <div className="mt-6 rounded-lg border bg-card p-6 shadow-sm">
         <p className="mb-4 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Preview — this is what {(customerRaw?.name as string) ?? 'the customer'} will see
         </p>

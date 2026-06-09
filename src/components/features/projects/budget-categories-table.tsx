@@ -611,7 +611,7 @@ export function BudgetCategoriesTable({
                   {/* Section heading — sits OUTSIDE and ABOVE the section card,
                       so a section clearly brackets its own card of categories
                       rather than reading as another row in a shared table. */}
-                  <div className="mb-2 flex items-start gap-2 px-1">
+                  <div className="mb-2 grid grid-cols-[24px_minmax(0,1fr)_110px_110px_110px_160px] items-start gap-x-2 px-1">
                     <button
                       type="button"
                       onClick={() => toggleSection(section)}
@@ -841,26 +841,25 @@ export function BudgetCategoriesTable({
                         ) : null
                       ) : null}
                     </div>
-                    {/* Section subtotal — set off to the right, NOT aligned to
-                        the per-category money columns, so the band reads as a
-                        separator rather than a data row. */}
-                    <div className="flex shrink-0 items-baseline gap-2.5 pt-0.5 text-right">
-                      <span className="text-sm font-semibold tabular-nums text-foreground">
-                        <Money cents={estimate} />
-                      </span>
-                      <span
-                        className={cn(
-                          'font-mono text-eyebrow tabular-nums',
-                          seg.actuallyOver
-                            ? 'text-destructive'
-                            : seg.projectedOver
-                              ? 'text-amber-700 dark:text-amber-300'
-                              : 'text-muted-foreground',
-                        )}
-                      >
-                        {seg.usedPct}% used
-                      </span>
-                    </div>
+                    {/* Section subtotal — aligned to the Estimate + Remaining
+                        columns so they read as column totals above the card. */}
+                    <span className="text-right text-sm font-semibold tabular-nums text-foreground">
+                      <Money cents={estimate} />
+                    </span>
+                    <span />
+                    <span />
+                    <span
+                      className={cn(
+                        'text-right font-mono text-eyebrow tabular-nums',
+                        seg.actuallyOver
+                          ? 'text-destructive'
+                          : seg.projectedOver
+                            ? 'text-amber-700 dark:text-amber-300'
+                            : 'text-muted-foreground',
+                      )}
+                    >
+                      {seg.usedPct}% used
+                    </span>
                   </div>
 
                   {/* Section card — rows share the global column header above. */}
@@ -1480,7 +1479,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
             ) : (
               <button
                 type="button"
-                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-[#C8B68C]/80 bg-card/40 px-3 py-2 font-medium text-sm text-muted-foreground transition-colors hover:border-foreground/50 hover:bg-card hover:text-foreground"
+                className="flex w-full items-center justify-start gap-1.5 rounded-md border border-dashed border-[#C8B68C]/80 bg-card/40 px-3 py-2 font-medium text-sm text-muted-foreground transition-colors hover:border-foreground/50 hover:bg-card hover:text-foreground"
                 onClick={() => {
                   setAddingLineFor(line.budget_category_id);
                   setEditingLine(null);

@@ -13,24 +13,28 @@
  * patchProjectTermsTextAction.
  */
 
-import { Check, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import type { EstimateSnippetRow } from '@/lib/db/queries/estimate-snippets';
+import { cn } from '@/lib/utils';
 import { patchProjectTermsTextAction } from '@/server/actions/estimate-snippets';
 
 export function EstimateTermsEditor({
   projectId,
   initialTermsText,
   snippets,
+  defaultCollapsed = false,
 }: {
   projectId: string;
   initialTermsText: string | null;
   snippets: EstimateSnippetRow[];
+  defaultCollapsed?: boolean;
 }) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [value, setValue] = useState(() => {
     // First-time population ONLY when terms_text is genuinely unset (null).
     // An empty string means the operator deleted the content on purpose —
@@ -124,56 +128,76 @@ export function EstimateTermsEditor({
 
   return (
     <section className="rounded-xl border bg-card">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3">
-        <div>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className="flex w-full flex-wrap items-center justify-between gap-2 px-5 py-3"
+      >
+        <div className="text-left">
           <h2 className="text-sm font-semibold">Terms &amp; notes</h2>
-          <p className="text-xs text-muted-foreground">
-            Appears at the bottom of the customer-facing estimate. Autosaves.
-          </p>
+          {collapsed && value.trim() ? (
+            <p className="line-clamp-1 max-w-[480px] text-xs text-muted-foreground">
+              {value.trim()}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Appears at the bottom of the customer-facing estimate. Autosaves.
+            </p>
+          )}
         </div>
-        <SaveIndicator state={saveState} />
-      </header>
+        <div className="flex items-center gap-2">
+          <SaveIndicator state={saveState} />
+          <ChevronDown
+            className={cn(
+              'size-4 text-muted-foreground transition-transform',
+              !collapsed && 'rotate-180',
+            )}
+          />
+        </div>
+      </button>
 
-      <div className="flex flex-col gap-3 p-5">
-        {snippets.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {snippets.map((s) => (
-              <Button
-                key={s.id}
-                type="button"
-                size="xs"
-                variant="outline"
-                onClick={() => insertSnippet(s.body)}
-                title={s.body}
-              >
-                + {s.label}
+      {!collapsed ? (
+        <div className="flex flex-col gap-3 border-t p-5">
+          {snippets.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {snippets.map((s) => (
+                <Button
+                  key={s.id}
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  onClick={() => insertSnippet(s.body)}
+                  title={s.body}
+                >
+                  + {s.label}
+                </Button>
+              ))}
+              <Button type="button" size="xs" variant="ghost" asChild>
+                <Link href="/settings/estimate-snippets">Manage snippets</Link>
               </Button>
-            ))}
-            <Button type="button" size="xs" variant="ghost" asChild>
-              <Link href="/settings/estimate-snippets">Manage snippets</Link>
-            </Button>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            No snippets in your library yet.{' '}
-            <Link
-              href="/settings/estimate-snippets"
-              className="text-foreground underline hover:text-primary"
-            >
-              Add some in settings
-            </Link>{' '}
-            so they show up here as one-click chips.
-          </p>
-        )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No snippets in your library yet.{' '}
+              <Link
+                href="/settings/estimate-snippets"
+                className="text-foreground underline hover:text-primary"
+              >
+                Add some in settings
+              </Link>{' '}
+              so they show up here as one-click chips.
+            </p>
+          )}
 
-        <Textarea
-          ref={textareaRef}
-          rows={10}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Anything worth saying alongside the estimate — scope assumptions, exclusions, warranty, deposit terms, etc."
-        />
-      </div>
+          <Textarea
+            ref={textareaRef}
+            rows={10}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Anything worth saying alongside the estimate — scope assumptions, exclusions, warranty, deposit terms, etc."
+          />
+        </div>
+      ) : null}
     </section>
   );
 }
