@@ -21,6 +21,9 @@ const timeEntrySchema = z.object({
    *  the entry's labour rolls up to the line's per-line Spent column on
    *  the Budget tab, not just the category total. */
   cost_line_id: z.string().uuid().optional().or(z.literal('')),
+  /** When the GC logs time on behalf of a crew member, set this to the
+   *  worker's profile id. Null = owner/admin logged the hours. */
+  worker_profile_id: z.string().uuid().optional().or(z.literal('')),
   hours: z.coerce.number().positive({ message: 'Hours must be greater than 0.' }),
   // Required: without a rate the entry contributes $0 to the Budget tab's
   // "Spent by source" rollup, so it looks like no labour was logged at all.
@@ -52,6 +55,7 @@ export async function logTimeAction(input: {
   job_id?: string;
   budget_category_id?: string;
   cost_line_id?: string;
+  worker_profile_id?: string;
   hours: number;
   hourly_rate_cents: number;
   notes?: string;
@@ -93,6 +97,7 @@ export async function logTimeAction(input: {
       job_id: jobId,
       budget_category_id: parsed.data.budget_category_id || null,
       cost_line_id: parsed.data.cost_line_id || null,
+      worker_profile_id: parsed.data.worker_profile_id || null,
       hours: parsed.data.hours,
       hourly_rate_cents: parsed.data.hourly_rate_cents,
       notes: parsed.data.notes?.trim() || null,
@@ -116,6 +121,7 @@ export async function updateTimeEntryAction(input: {
   job_id?: string;
   budget_category_id?: string;
   cost_line_id?: string;
+  worker_profile_id?: string;
   hours: number;
   hourly_rate_cents: number;
   notes?: string;
@@ -143,6 +149,7 @@ export async function updateTimeEntryAction(input: {
       job_id: parsed.data.job_id || null,
       budget_category_id: parsed.data.budget_category_id || null,
       cost_line_id: parsed.data.cost_line_id || null,
+      worker_profile_id: parsed.data.worker_profile_id || null,
       hours: parsed.data.hours,
       hourly_rate_cents: parsed.data.hourly_rate_cents,
       notes: parsed.data.notes?.trim() || null,
