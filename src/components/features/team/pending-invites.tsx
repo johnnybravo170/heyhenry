@@ -124,9 +124,15 @@ function InviteRow({ invite }: { invite: WorkerInviteRow }) {
         {new Intl.DateTimeFormat(undefined, { timeZone: tz }).format(new Date(invite.created_at))}
       </span>
       <div className="flex flex-wrap justify-start gap-1.5 sm:justify-end">
-        <Button variant="outline" size="sm" className="min-h-9" onClick={copyLink}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-9"
+          onClick={copyLink}
+          title={!invite.invited_email ? 'Copy link to share — this is how you resend' : undefined}
+        >
           <Copy className="size-3.5" />
-          Copy link
+          {invite.invited_email ? 'Copy link' : 'Copy invite link'}
         </Button>
         {canResend ? (
           <Button

@@ -52,6 +52,7 @@ export type CustomerFormInput = {
   province?: string;
   postalCode?: string;
   notes?: string;
+  gstNumber?: string;
   /**
    * When true, skip the duplicate check. Callers set this after the operator
    * has seen the duplicates banner and explicitly chosen "Create anyway".
@@ -137,6 +138,7 @@ export async function createCustomerAction(
       province: emptyToNull(parsed.data.province),
       postal_code: emptyToNull(parsed.data.postalCode),
       notes: emptyToNull(parsed.data.notes),
+      gst_number: emptyToNull(parsed.data.gstNumber),
     })
     .select('id')
     .single();
@@ -200,6 +202,7 @@ export async function updateCustomerAction(
       province: emptyToNull(parsed.data.province),
       postal_code: emptyToNull(parsed.data.postalCode),
       notes: emptyToNull(parsed.data.notes),
+      gst_number: emptyToNull(parsed.data.gstNumber),
       updated_at: new Date().toISOString(),
     })
     .eq('id', parsed.data.id)

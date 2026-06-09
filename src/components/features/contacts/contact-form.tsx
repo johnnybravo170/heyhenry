@@ -78,6 +78,7 @@ const EMPTY: CustomerCreateInput = {
   province: 'BC',
   postalCode: '',
   notes: '',
+  gstNumber: '',
 };
 
 export function ContactForm({ mode, defaults, action, submitLabel, cancelHref }: ContactFormProps) {
@@ -642,6 +643,27 @@ export function ContactForm({ mode, defaults, action, submitLabel, cancelHref }:
             />
           </div>
         </div>
+
+        {watchedKind === 'vendor' || watchedKind === 'sub' ? (
+          <div className="rounded-xl border bg-card p-4">
+            <FormField
+              control={form.control}
+              name="gstNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    GST/HST number{' '}
+                    <span className="font-normal text-muted-foreground">for T5018 / invoicing</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="123456789RT0001" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        ) : null}
 
         <div className="rounded-xl border bg-card p-4">
           <FormField

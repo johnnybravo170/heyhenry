@@ -26,6 +26,20 @@ import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { phaseColorFor } from '@/lib/ui/gantt-phase-colors';
 import { statusToneClass } from '@/lib/ui/status-tokens';
 
+/** Maps bar_color token → Tailwind bg class for custom task colours. */
+const BAR_COLOR_CLASSES: Record<string, string> = {
+  slate: 'bg-slate-500',
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  amber: 'bg-amber-500',
+  green: 'bg-green-500',
+  teal: 'bg-teal-500',
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  pink: 'bg-pink-500',
+  brown: 'bg-stone-600',
+};
+
 const MONTH_FORMAT = new Intl.DateTimeFormat('en-CA', { month: 'short', year: 'numeric' });
 const DAY_FMT = new Intl.DateTimeFormat('en-CA', {
   weekday: 'short',
@@ -442,11 +456,14 @@ export function ScheduleGantt({
                   ? tradeTypicalPhase?.[task.trade_template_id]
                   : null;
                 const phaseColors = phaseColorFor(projectPhaseName ?? tradeTypical ?? null);
+                const customBarBg = task.bar_color ? BAR_COLOR_CLASSES[task.bar_color] : null;
                 const barClasses = isDone
                   ? 'bg-emerald-500'
-                  : isFirm
-                    ? phaseColors.firm
-                    : phaseColors.rough;
+                  : customBarBg
+                    ? customBarBg
+                    : isFirm
+                      ? phaseColors.firm
+                      : phaseColors.rough;
                 const NameCell = interactive ? 'button' : 'div';
                 const BarCell = interactive ? 'button' : 'div';
                 const isFirstRow = !firstRowAssigned;

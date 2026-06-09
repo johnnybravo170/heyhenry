@@ -70,10 +70,11 @@ function capLabel(value: boolean | null, verb: string): { text: string; on: bool
   return { text: verb, on: true }; // true OR inherit-default-on read as "can"
 }
 
-function MemberMenu({ member }: { member: TeamMemberRow }) {
+function MemberMenu({ member, onExpand }: { member: TeamMemberRow; onExpand?: () => void }) {
   const [pending, startTransition] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const isOwner = member.role === 'owner';
+  const isWorker = member.role === 'worker' && member.worker_profile;
 
   function handleRemove() {
     startTransition(async () => {
@@ -105,7 +106,13 @@ function MemberMenu({ member }: { member: TeamMemberRow }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-9" disabled={pending}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9"
+            disabled={pending}
+            title="Member options"
+          >
             {pending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
@@ -114,6 +121,15 @@ function MemberMenu({ member }: { member: TeamMemberRow }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
+          {isWorker && onExpand ? (
+            <>
+              <DropdownMenuItem onSelect={onExpand}>
+                <ChevronDown className="size-3.5" />
+                Edit rates &amp; capabilities
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           {/* DEFERRED — role mutation needs updateMemberRoleAction + RLS. */}
           <DropdownMenuItem disabled className="flex-col items-start gap-0.5">
             <span className="flex items-center gap-2">
@@ -225,7 +241,7 @@ function MemberRow({ member, isOwnerViewer }: { member: TeamMemberRow; isOwnerVi
     <Fragment>
       <div
         className={cn(
-          'flex flex-col gap-3 border-b px-4 py-3.5 last:border-b-0 sm:grid sm:grid-cols-[1.8fr_0.9fr_1.3fr_0.7fr_44px] sm:items-center sm:gap-3.5',
+          'flex flex-col gap-3 border-b px-4 py-3.5 last:border-b-0 sm:grid sm:grid-cols-[1.8fr_0.9fr_1.3fr_0.7fr_80px] sm:items-center sm:gap-3.5',
           isOwner && 'bg-nav-active/15',
         )}
       >
@@ -282,14 +298,17 @@ function MemberRow({ member, isOwnerViewer }: { member: TeamMemberRow; isOwnerVi
               className="size-9"
               onClick={() => setExpanded((v) => !v)}
               aria-expanded={expanded}
-              title="Rate &amp; capability"
+              title={expanded ? 'Close settings' : 'Edit rates & capabilities'}
             >
               <ChevronDown
                 className={cn('size-4 transition-transform', expanded && 'rotate-180')}
               />
             </Button>
           ) : null}
-          <MemberMenu member={member} />
+          <MemberMenu
+            member={member}
+            onExpand={isWorker ? () => setExpanded((v) => !v) : undefined}
+          />
         </div>
       </div>
 
@@ -321,7 +340,7 @@ export function TeamMembersTable({
   return (
     <div>
       {/* Column header — desktop only; rows are self-labelling on mobile. */}
-      <div className="hidden grid-cols-[1.8fr_0.9fr_1.3fr_0.7fr_44px] gap-3.5 border-b bg-paper px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:grid">
+      <div className="hidden grid-cols-[1.8fr_0.9fr_1.3fr_0.7fr_80px] gap-3.5 border-b bg-paper px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:grid">
         <div>Person</div>
         <div>Role</div>
         <div>What they do</div>

@@ -137,7 +137,9 @@ export function AddToCrewDialog({
       }
       setJoinUrl(result.joinUrl ?? null);
       setSentTo(email.trim() || null);
-      toast.success(email.trim() ? `Invite sent to ${email.trim()}.` : 'Invite link created.');
+      toast.success(email.trim() ? `Invite sent to ${email.trim()}.` : 'Invite link created.', {
+        duration: 8000,
+      });
     });
   }
 

@@ -199,35 +199,33 @@ function TimeForm({
             required
           />
         </div>
-        {workers.length > 0 && (
-          <div>
-            <span className="mb-1 block text-xs font-medium">Worker</span>
-            <select
-              value={workerProfileId}
-              onChange={(e) => {
-                setWorkerProfileId(e.target.value);
-                // Pre-fill rate from the selected worker's default rate.
-                if (e.target.value) {
-                  const w = workers.find((w) => w.id === e.target.value);
-                  if (w?.default_hourly_rate_cents != null) {
-                    setRate(String(w.default_hourly_rate_cents / 100));
-                  }
-                } else if (!editing) {
-                  // Switching back to owner/admin — restore the owner default.
-                  setRate(defaultRateCents ? String(defaultRateCents / 100) : '');
+        <div>
+          <span className="mb-1 block text-xs font-medium">Worker</span>
+          <select
+            value={workerProfileId}
+            onChange={(e) => {
+              setWorkerProfileId(e.target.value);
+              // Pre-fill rate from the selected worker's default rate.
+              if (e.target.value) {
+                const w = workers.find((w) => w.id === e.target.value);
+                if (w?.default_hourly_rate_cents != null) {
+                  setRate(String(w.default_hourly_rate_cents / 100));
                 }
-              }}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Me (owner/admin)</option>
-              {workers.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.display_name ?? 'Worker'}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+              } else if (!editing) {
+                // Switching back to owner/admin — restore the owner default.
+                setRate(defaultRateCents ? String(defaultRateCents / 100) : '');
+              }
+            }}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          >
+            <option value="">Me (owner/admin)</option>
+            {workers.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.display_name ?? 'Worker'}
+              </option>
+            ))}
+          </select>
+        </div>
         {categories.length > 0 && (
           <div>
             <span className="mb-1 block text-xs font-medium">Category</span>

@@ -64,6 +64,7 @@ const ownerSchema = z.object({
   can_invoice: z.enum(['inherit', 'yes', 'no']),
   default_pay_rate_dollars: z.string().trim().optional().default(''),
   default_charge_rate_dollars: z.string().trim().optional().default(''),
+  gst_number: z.string().trim().max(40).optional().default(''),
 });
 
 function parseRate(input: string): { cents: number | null; error?: string } {
@@ -106,6 +107,7 @@ export async function updateWorkerCapabilitiesAction(
       can_invoice: triToBool(v.can_invoice),
       default_hourly_rate_cents: pay.cents,
       default_charge_rate_cents: charge.cents,
+      gst_number: v.gst_number || null,
     });
     revalidatePath('/settings/team');
     return { ok: true };
