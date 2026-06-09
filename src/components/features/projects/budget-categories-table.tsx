@@ -596,7 +596,7 @@ export function BudgetCategoriesTable({
                 <SectionDroppable key={entity.id ?? '__other__'} section={section}>
                   {/* Section card — heading IS the card header so the section
                       visually OWNS its categories (not just a label above them). */}
-                  <div className=”overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-sm”>
+                  <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-sm">
                     {/* Section header — warm well tint, strong rule only when expanded */}
                     <div
                       className={cn(
@@ -605,23 +605,23 @@ export function BudgetCategoriesTable({
                       )}
                     >
                       <button
-                        type=”button”
+                        type="button"
                         onClick={() => toggleSection(section)}
                         aria-expanded={!collapsed}
                         aria-label={collapsed ? `Expand ${section}` : `Collapse ${section}`}
-                        className=”mt-0.5 text-foreground/70 hover:text-foreground”
+                        className="mt-0.5 text-foreground/70 hover:text-foreground"
                       >
                         {collapsed ? (
-                          <ChevronRight className=”size-5” />
+                          <ChevronRight className="size-5" />
                         ) : (
-                          <ChevronDown className=”size-5” />
+                          <ChevronDown className="size-5" />
                         )}
                       </button>
-                      <div className=”flex min-w-0 flex-1 flex-col gap-1”>
-                        <div className=”flex min-w-0 flex-wrap items-center gap-2”>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
                           {isRenaming ? (
                             <Input
-                              className=”h-7 w-auto min-w-[180px] font-mono text-sm font-bold uppercase tracking-[0.04em]”
+                              className="h-7 w-auto min-w-[180px] font-mono text-sm font-bold uppercase tracking-[0.04em]"
                               value={editSectionValue}
                               onChange={(e) => setEditSectionValue(e.target.value)}
                               onKeyDown={(e) => {
@@ -648,24 +648,24 @@ export function BudgetCategoriesTable({
                             />
                           ) : (
                             <button
-                              type=”button”
+                              type="button"
                               onClick={() => toggleSection(section)}
-                              className=”text-left font-mono text-sm font-bold uppercase tracking-[0.04em] text-foreground”
+                              className="text-left font-mono text-sm font-bold uppercase tracking-[0.04em] text-foreground"
                             >
                               {section}
                             </button>
                           )}
                           {!isRenaming && isRealSection ? (
                             <button
-                              type=”button”
+                              type="button"
                               onClick={() => {
                                 setEditSectionValue(section);
                                 setEditingSectionName(section);
                               }}
                               aria-label={`Rename ${section}`}
-                              className=”rounded p-0.5 text-muted-foreground/60 hover:bg-[#EFE4CB] hover:text-foreground”
+                              className="rounded p-0.5 text-muted-foreground/60 hover:bg-[#EFE4CB] hover:text-foreground"
                             >
-                              <Pencil className=”size-3” />
+                              <Pencil className="size-3" />
                             </button>
                           ) : null}
                           {/* Delete offered only on empty real sections */}
@@ -673,17 +673,17 @@ export function BudgetCategoriesTable({
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <button
-                                  type=”button”
+                                  type="button"
                                   aria-label={`Delete ${section}`}
-                                  title=”Delete section”
-                                  className=”rounded p-0.5 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive”
+                                  title="Delete section"
+                                  className="rounded p-0.5 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive"
                                 >
-                                  <Trash2 className=”size-3” />
+                                  <Trash2 className="size-3" />
                                 </button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete “{section}”?</AlertDialogTitle>
+                                  <AlertDialogTitle>Delete "{section}"?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     This removes the empty section heading. It has no categories, so
                                     no scope or spend is affected.
@@ -694,7 +694,7 @@ export function BudgetCategoriesTable({
                                   <AlertDialogAction
                                     onClick={() => removeSection(entity.id as string)}
                                     disabled={isPending}
-                                    className=”bg-destructive/10 text-destructive hover:bg-destructive/20”
+                                    className="bg-destructive/10 text-destructive hover:bg-destructive/20"
                                   >
                                     Delete section
                                   </AlertDialogAction>
@@ -705,10 +705,10 @@ export function BudgetCategoriesTable({
                           {/* Quiet variance chips — show when collapsed */}
                           {collapsed && overCats.length > 0 ? (
                             <StatusBadge
-                              tone=”danger”
-                              className=”font-medium normal-case tracking-normal”
+                              tone="danger"
+                              className="font-medium normal-case tracking-normal"
                             >
-                              <span className=”tabular-nums”>
+                              <span className="tabular-nums">
                                 <Money
                                   cents={overCats.reduce(
                                     (s, l) => s + (l.actual_cents - l.estimate_cents),
@@ -718,16 +718,16 @@ export function BudgetCategoriesTable({
                               </span>{' '}
                               over
                               {overCats.length > 1 ? (
-                                <span className=”ml-1 opacity-70”>({overCats.length})</span>
+                                <span className="ml-1 opacity-70">({overCats.length})</span>
                               ) : null}
                             </StatusBadge>
                           ) : null}
                           {collapsed && projOverCats.length > 0 ? (
                             <StatusBadge
-                              tone=”warning”
-                              className=”font-medium normal-case tracking-normal”
+                              tone="warning"
+                              className="font-medium normal-case tracking-normal"
                             >
-                              <span className=”tabular-nums”>{projOverCats.length}</span> projected
+                              <span className="tabular-nums">{projOverCats.length}</span> projected
                               over
                             </StatusBadge>
                           ) : null}
@@ -735,10 +735,10 @@ export function BudgetCategoriesTable({
                         {/* Section description — only real sections */}
                         {isRealSection ? (
                           isEditingDesc ? (
-                            <div className=”space-y-1”>
-                              <div className=”flex justify-end”>
+                            <div className="space-y-1">
+                              <div className="flex justify-end">
                                 <button
-                                  type=”button”
+                                  type="button"
                                   onMouseDown={(e) => e.preventDefault()}
                                   onClick={() => {
                                     const sid = entity.id as string;
@@ -757,18 +757,18 @@ export function BudgetCategoriesTable({
                                     });
                                   }}
                                   disabled={draftingSectionId === entity.id}
-                                  className=”inline-flex items-center gap-1 text-eyebrow text-brand hover:text-brand/80 disabled:opacity-60”
+                                  className="inline-flex items-center gap-1 text-eyebrow text-brand hover:text-brand/80 disabled:opacity-60"
                                 >
                                   {draftingSectionId === entity.id ? (
-                                    <Loader2 className=”size-3 animate-spin” />
+                                    <Loader2 className="size-3 animate-spin" />
                                   ) : (
-                                    <Sparkles className=”size-3” />
+                                    <Sparkles className="size-3" />
                                   )}
                                   Draft from line items
                                 </button>
                               </div>
                               <Textarea
-                                className=”min-h-[3.5rem] resize-y text-xs”
+                                className="min-h-[3.5rem] resize-y text-xs"
                                 rows={2}
                                 value={editSectionDescValue}
                                 onChange={(e) => setEditSectionDescValue(e.target.value)}
@@ -802,19 +802,19 @@ export function BudgetCategoriesTable({
                                     else toast.error(r.error);
                                   });
                                 }}
-                                placeholder=”Section description. Enter to save, Shift+Enter for new line.”
+                                placeholder="Section description. Enter to save, Shift+Enter for new line."
                                 autoFocus
                               />
                             </div>
                           ) : entity.description_md ? (
                             <button
-                              type=”button”
+                              type="button"
                               onClick={() => {
                                 setEditSectionDescValue(entity.description_md ?? '');
                                 setEditingSectionDescId(entity.id);
                               }}
                               title={entity.description_md}
-                              className=”line-clamp-1 text-left text-xs text-muted-foreground/80 hover:text-foreground”
+                              className="line-clamp-1 text-left text-xs text-muted-foreground/80 hover:text-foreground"
                             >
                               {entity.description_md}
                             </button>
@@ -822,8 +822,8 @@ export function BudgetCategoriesTable({
                         ) : null}
                       </div>
                       {/* Section subtotal — right of header, not column-aligned */}
-                      <div className=”flex shrink-0 items-baseline gap-2 text-right”>
-                        <span className=”text-sm font-semibold tabular-nums text-foreground”>
+                      <div className="flex shrink-0 items-baseline gap-2 text-right">
+                        <span className="text-sm font-semibold tabular-nums text-foreground">
                           <Money cents={estimate} />
                         </span>
                         <span
@@ -852,10 +852,10 @@ export function BudgetCategoriesTable({
                         >
                           <span />
                           <span>Category</span>
-                          <span className=”text-right”>Estimate</span>
-                          <span className=”text-right”>Spent</span>
-                          <span className=”text-right”>Committed</span>
-                          <span className=”text-right”>Remaining</span>
+                          <span className="text-right">Estimate</span>
+                          <span className="text-right">Spent</span>
+                          <span className="text-right">Committed</span>
+                          <span className="text-right">Remaining</span>
                         </div>
                         <SortableContext
                           items={sectionLines.map((l) => l.budget_category_id)}
@@ -908,12 +908,12 @@ export function BudgetCategoriesTable({
                             />
                           ))}
                         </SortableContext>
-                        {/* Contextual “+ Add category to {section}” */}
+                        {/* Contextual "+ Add category to {section}" */}
                         {addCategoryForSection === section ? (
-                          <div className=”border-t border-[#E2D7C0] py-1 pl-[50px] pr-3”>
+                          <div className="border-t border-[#E2D7C0] py-1 pl-[50px] pr-3">
                             <AddBudgetCategoryForm
                               projectId={projectId}
-                              kind=”category”
+                              kind="category"
                               existingSections={allSections.filter(Boolean)}
                               lockedSection={section}
                               nested
@@ -921,16 +921,16 @@ export function BudgetCategoriesTable({
                             />
                           </div>
                         ) : (
-                          <div className=”border-t border-[#E2D7C0] py-2 pl-[50px] pr-3”>
+                          <div className="border-t border-[#E2D7C0] py-2 pl-[50px] pr-3">
                             <button
-                              type=”button”
+                              type="button"
                               onClick={() => {
                                 setAddCategoryForSection(section);
                                 setAddCategoryMode('closed');
                               }}
-                              className=”inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground”
+                              className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
                             >
-                              <Plus className=”size-3” />
+                              <Plus className="size-3" />
                               Add category to {section}
                             </button>
                           </div>
