@@ -13,6 +13,13 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@heyhenry/ops", "dev"],
       "port": 3100
+    },
+    {
+      "name": "od-renders",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4200"],
+      "port": 4200,
+      "cwd": "/Users/jonathanboettcher/Claude/heyhenry-app/od-project-hub/screens"
     }
   ]
 }

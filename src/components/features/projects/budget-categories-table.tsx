@@ -621,7 +621,7 @@ export function BudgetCategoriesTable({
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {isRenaming ? (
                           <Input
-                            className="h-7 w-auto min-w-[180px] font-mono text-eyebrow font-bold uppercase tracking-[0.06em]"
+                            className="h-7 w-auto min-w-[180px] font-mono text-sm font-bold uppercase tracking-[0.04em]"
                             value={editSectionValue}
                             onChange={(e) => setEditSectionValue(e.target.value)}
                             onKeyDown={(e) => {
@@ -650,7 +650,7 @@ export function BudgetCategoriesTable({
                           <button
                             type="button"
                             onClick={() => toggleSection(section)}
-                            className="text-left font-mono text-eyebrow font-bold uppercase tracking-[0.06em] text-foreground"
+                            className="text-left font-mono text-sm font-bold uppercase tracking-[0.04em] text-foreground"
                           >
                             {section}
                           </button>
@@ -876,7 +876,7 @@ export function BudgetCategoriesTable({
                       <div
                         className={cn(
                           GRID,
-                          'border-b bg-muted/60 px-3 py-2 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground',
+                          'border-b bg-muted/30 px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
                         )}
                       >
                         <span />
