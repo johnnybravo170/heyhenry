@@ -55,6 +55,11 @@ type Expense = {
 };
 
 type CostLineSummary = { id: string; label: string; budget_category_id: string | null };
+type WorkerSummary = {
+  id: string;
+  display_name: string | null;
+  default_hourly_rate_cents: number | null;
+};
 
 const SHORT_MONTHS = [
   'Jan',
@@ -83,6 +88,7 @@ function TimeForm({
   projectId,
   categories,
   costLines,
+  workers,
   defaultRateCents,
   editing,
   onDone,
@@ -90,6 +96,7 @@ function TimeForm({
   projectId: string;
   categories: BudgetCategorySummary[];
   costLines: CostLineSummary[];
+  workers: WorkerSummary[];
   defaultRateCents?: number | null;
   /** When set, the form runs in edit mode and updates the entry on submit. */
   editing?: TimeEntry | null;
@@ -99,6 +106,7 @@ function TimeForm({
   const [error, setError] = useState('');
   const [date, setDate] = useState(editing?.entry_date ?? new Date().toISOString().slice(0, 10));
   const [hours, setHours] = useState(editing ? String(editing.hours) : '');
+  const [workerProfileId, setWorkerProfileId] = useState(editing?.worker_profile_id ?? '');
   const [rate, setRate] = useState(
     editing?.hourly_rate_cents != null
       ? String(editing.hourly_rate_cents / 100)
@@ -138,6 +146,7 @@ function TimeForm({
         hourly_rate_cents: rateCents,
         budget_category_id: categoryId || undefined,
         cost_line_id: costLineId || undefined,
+        worker_profile_id: workerProfileId || undefined,
         notes: notes || undefined,
         confirm_empty: needsEmptyConfirm || undefined,
       };
@@ -190,6 +199,35 @@ function TimeForm({
             required
           />
         </div>
+        {workers.length > 0 && (
+          <div>
+            <span className="mb-1 block text-xs font-medium">Worker</span>
+            <select
+              value={workerProfileId}
+              onChange={(e) => {
+                setWorkerProfileId(e.target.value);
+                // Pre-fill rate from the selected worker's default rate.
+                if (e.target.value) {
+                  const w = workers.find((w) => w.id === e.target.value);
+                  if (w?.default_hourly_rate_cents != null) {
+                    setRate(String(w.default_hourly_rate_cents / 100));
+                  }
+                } else if (!editing) {
+                  // Switching back to owner/admin — restore the owner default.
+                  setRate(defaultRateCents ? String(defaultRateCents / 100) : '');
+                }
+              }}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Me (owner/admin)</option>
+              {workers.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.display_name ?? 'Worker'}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         {categories.length > 0 && (
           <div>
             <span className="mb-1 block text-xs font-medium">Category</span>
@@ -538,6 +576,7 @@ export function TimeExpenseTab({
   projectId,
   categories,
   costLines = [],
+  workers = [],
   timeEntries,
   expenses,
   ownerRateCents,
@@ -549,6 +588,9 @@ export function TimeExpenseTab({
    *  the time-entry form so labour rolls into per-line Spent on the
    *  Budget tab, not just the category total. */
   costLines?: CostLineSummary[];
+  /** Crew workers for this tenant; enables the GC to log time on behalf
+   *  of a worker from the office view. */
+  workers?: WorkerSummary[];
   timeEntries: TimeEntry[];
   expenses: Expense[];
   ownerRateCents?: number | null;
@@ -689,6 +731,7 @@ export function TimeExpenseTab({
               projectId={projectId}
               categories={categories}
               costLines={costLines}
+              workers={workers}
               defaultRateCents={ownerRateCents}
               editing={editingTime}
               onDone={() => {

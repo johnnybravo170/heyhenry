@@ -144,6 +144,11 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
         projectId={projectId}
         categories={project.budget_categories}
         costLines={costLines}
+        workers={crewWorkers.map((w) => ({
+          id: w.id,
+          display_name: w.display_name,
+          default_hourly_rate_cents: w.default_hourly_rate_cents,
+        }))}
         ownerRateCents={ownerRateCents}
         showExpenses={false}
         expenses={[]}
