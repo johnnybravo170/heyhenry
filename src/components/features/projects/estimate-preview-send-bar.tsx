@@ -181,7 +181,7 @@ export function EstimatePreviewSendBar({
   }
 
   return (
-    <div className="sticky top-0 z-30 -mx-4 mb-6 flex items-center justify-between gap-3 border-b bg-background px-4 py-3 shadow-sm">
+    <div className="-mx-4 mb-6 flex items-center justify-between gap-3 border-b bg-background px-4 py-3 shadow-sm">
       <Button
         variant="ghost"
         size="sm"
