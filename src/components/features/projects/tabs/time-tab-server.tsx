@@ -46,15 +46,15 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
   // Resolve display names for crew workers. display_name is often null on
   // auto-created profiles — fall back to business_name, then the member's
   // first+last name so the picker never shows the generic "Worker" label.
+  const linkedMemberIds = crewWorkers
+    .map((w) => w.tenant_member_id)
+    .filter((id): id is string => id !== null);
   const memberNamesRes =
-    crewWorkers.length > 0
+    linkedMemberIds.length > 0
       ? await supabase
           .from('tenant_members')
           .select('id, first_name, last_name')
-          .in(
-            'id',
-            crewWorkers.map((w) => w.tenant_member_id),
-          )
+          .in('id', linkedMemberIds)
       : { data: [] as { id: string; first_name: string | null; last_name: string | null }[] };
   const memberNameById = new Map(
     (memberNamesRes.data ?? []).map((m) => [
@@ -167,7 +167,11 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
         workers={crewWorkers.map((w) => ({
           id: w.id,
           display_name:
-            w.display_name ?? w.business_name ?? memberNameById.get(w.tenant_member_id) ?? null,
+            w.display_name ??
+            w.business_name ??
+            (w.tenant_member_id ? (memberNameById.get(w.tenant_member_id) ?? null) : null) ??
+            w.gc_managed_name ??
+            null,
           default_hourly_rate_cents: w.default_hourly_rate_cents,
         }))}
         ownerRateCents={ownerRateCents}
@@ -183,7 +187,8 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
           const workerName = wp
             ? (wp.display_name ??
               wp.business_name ??
-              memberNameById.get(wp.tenant_member_id) ??
+              (wp.tenant_member_id ? (memberNameById.get(wp.tenant_member_id) ?? null) : null) ??
+              wp.gc_managed_name ??
               null)
             : null;
           const posterName =

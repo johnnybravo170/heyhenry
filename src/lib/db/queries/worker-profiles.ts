@@ -3,8 +3,11 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export type WorkerProfileRow = {
   id: string;
   tenant_id: string;
-  tenant_member_id: string;
+  /** Null for GC-managed workers who have no app account. */
+  tenant_member_id: string | null;
   worker_type: 'employee' | 'subcontractor';
+  /** Name set by the GC for profiles with no app account. */
+  gc_managed_name: string | null;
   display_name: string | null;
   phone: string | null;
   business_name: string | null;
@@ -22,7 +25,7 @@ export type WorkerProfileRow = {
 };
 
 const COLUMNS =
-  'id, tenant_id, tenant_member_id, worker_type, display_name, phone, business_name, gst_number, address, default_hourly_rate_cents, default_charge_rate_cents, tax_rate, can_log_expenses, can_invoice, nudge_email, nudge_sms, created_at, updated_at';
+  'id, tenant_id, tenant_member_id, worker_type, gc_managed_name, display_name, phone, business_name, gst_number, address, default_hourly_rate_cents, default_charge_rate_cents, tax_rate, can_log_expenses, can_invoice, nudge_email, nudge_sms, created_at, updated_at';
 
 /** Get a worker's profile by tenant_member id. Auto-creates on first read. */
 export async function getOrCreateWorkerProfile(
@@ -48,6 +51,38 @@ export async function getOrCreateWorkerProfile(
   return created as WorkerProfileRow;
 }
 
+/** Create a GC-managed worker profile with no app account. */
+export async function createGcManagedWorkerProfile(
+  tenantId: string,
+  input: {
+    gc_managed_name: string;
+    phone?: string | null;
+    worker_type?: 'employee' | 'subcontractor';
+    default_hourly_rate_cents?: number | null;
+    default_charge_rate_cents?: number | null;
+    can_log_expenses?: boolean | null;
+    can_invoice?: boolean | null;
+  },
+): Promise<WorkerProfileRow> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('worker_profiles')
+    .insert({
+      tenant_id: tenantId,
+      gc_managed_name: input.gc_managed_name,
+      phone: input.phone ?? null,
+      worker_type: input.worker_type ?? 'employee',
+      default_hourly_rate_cents: input.default_hourly_rate_cents ?? null,
+      default_charge_rate_cents: input.default_charge_rate_cents ?? null,
+      can_log_expenses: input.can_log_expenses ?? null,
+      can_invoice: input.can_invoice ?? null,
+    })
+    .select(COLUMNS)
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed to create worker profile.');
+  return data as WorkerProfileRow;
+}
+
 export async function listWorkerProfiles(tenantId: string): Promise<WorkerProfileRow[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -56,6 +91,33 @@ export async function listWorkerProfiles(tenantId: string): Promise<WorkerProfil
     .eq('tenant_id', tenantId);
   if (error) throw new Error(error.message);
   return (data ?? []) as WorkerProfileRow[];
+}
+
+/** GC-managed profiles only — no app account (tenant_member_id IS NULL). */
+export async function listGcManagedWorkers(tenantId: string): Promise<WorkerProfileRow[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('worker_profiles')
+    .select(COLUMNS)
+    .eq('tenant_id', tenantId)
+    .is('tenant_member_id', null)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as WorkerProfileRow[];
+}
+
+export async function deleteGcManagedWorkerProfile(
+  tenantId: string,
+  profileId: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('worker_profiles')
+    .delete()
+    .eq('id', profileId)
+    .eq('tenant_id', tenantId)
+    .is('tenant_member_id', null);
+  if (error) throw new Error(error?.message ?? 'Failed to delete worker profile.');
 }
 
 export type WorkerProfileUpdate = Partial<{

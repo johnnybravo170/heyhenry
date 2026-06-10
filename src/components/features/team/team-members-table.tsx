@@ -23,6 +23,7 @@ import {
   MoreHorizontal,
   ShieldCheck,
   Trash2,
+  UserX,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useState, useTransition } from 'react';
@@ -47,8 +48,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import type { TeamMemberRow } from '@/lib/db/queries/team';
+import type { WorkerProfileRow } from '@/lib/db/queries/worker-profiles';
 import { cn } from '@/lib/utils';
-import { removeTeamMemberAction } from '@/server/actions/team';
+import { removeGcManagedWorkerAction, removeTeamMemberAction } from '@/server/actions/team';
 import { displayRoleFor, RoleBadge } from './role-badge';
 import { WorkerSettingsRow } from './worker-settings-row';
 
@@ -335,15 +337,158 @@ function MemberRow({ member, isOwnerViewer }: { member: TeamMemberRow; isOwnerVi
   );
 }
 
+function GcWorkerMenu({ worker }: { worker: WorkerProfileRow }) {
+  const [pending, startTransition] = useTransition();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const workerLabel =
+    worker.gc_managed_name ?? worker.display_name ?? worker.business_name ?? 'this worker';
+
+  function handleRemove() {
+    startTransition(async () => {
+      const result = await removeGcManagedWorkerAction(worker.id);
+      if (!result.ok) {
+        toast.error(result.error ?? 'Failed to remove worker.');
+        return;
+      }
+      toast.success(`${workerLabel} removed from the crew.`);
+    });
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9"
+            disabled={pending}
+            title="Worker options"
+          >
+            {pending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <MoreHorizontal className="size-4 text-muted-foreground" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setConfirmOpen(true);
+            }}
+          >
+            <Trash2 className="size-3.5" />
+            Remove from crew
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {workerLabel} from the crew?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They'll be removed from all pickers and can no longer be assigned to jobs. Time
+              entries they're on are kept. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep them</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemove}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function GcManagedWorkerRow({ worker }: { worker: WorkerProfileRow }) {
+  const displayName =
+    worker.gc_managed_name ?? worker.display_name ?? worker.business_name ?? 'Unknown';
+  const isSub = worker.worker_type === 'subcontractor';
+
+  return (
+    <div className="flex flex-col gap-3 border-b px-4 py-3.5 last:border-b-0 sm:grid sm:grid-cols-[1.8fr_0.9fr_1.3fr_0.7fr_80px] sm:items-center sm:gap-3.5">
+      {/* Person */}
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold text-foreground/80">
+          {initials(displayName)}
+        </span>
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-semibold text-foreground">{displayName}</span>
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <UserX className="size-3" aria-hidden />
+            No app account
+          </span>
+        </span>
+      </div>
+
+      {/* Role */}
+      <div>
+        <RoleBadge role={isSub ? 'subcontractor' : 'employee'} />
+      </div>
+
+      {/* What they do */}
+      <div className="min-w-0">
+        <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          <span
+            className={cn(
+              worker.can_log_expenses !== false ? 'text-foreground/80' : 'line-through',
+            )}
+          >
+            Logs expenses
+          </span>
+          <span className="text-muted-foreground/50">·</span>
+          {isSub && !worker.gst_number ? (
+            <span
+              className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800"
+              title="Missing GST # — needed for year-end T5018"
+            >
+              <AlertTriangle className="size-3" aria-hidden />
+              GST # missing
+            </span>
+          ) : (
+            <span
+              className={cn(worker.can_invoice !== false ? 'text-foreground/80' : 'line-through')}
+            >
+              Submits invoices
+            </span>
+          )}
+        </span>
+      </div>
+
+      {/* No join date — GC-managed */}
+      <span className="font-mono text-[11px] text-muted-foreground/60">GC-managed</span>
+
+      {/* Actions */}
+      <div className="flex items-center justify-end gap-0.5">
+        <GcWorkerMenu worker={worker} />
+      </div>
+    </div>
+  );
+}
+
 export function TeamMembersTable({
   members,
+  gcWorkers,
   isOwnerViewer,
 }: {
   members: TeamMemberRow[];
+  gcWorkers: WorkerProfileRow[];
   /** Owner sees the Labour-margin read inside the worker editor. */
   isOwnerViewer: boolean;
 }) {
-  if (members.length === 0) {
+  const hasAny = members.length > 0 || gcWorkers.length > 0;
+  if (!hasAny) {
     return <p className="px-4 py-6 text-sm text-muted-foreground">No crew yet.</p>;
   }
 
@@ -359,6 +504,9 @@ export function TeamMembersTable({
       </div>
       {members.map((member) => (
         <MemberRow key={member.id} member={member} isOwnerViewer={isOwnerViewer} />
+      ))}
+      {gcWorkers.map((worker) => (
+        <GcManagedWorkerRow key={worker.id} worker={worker} />
       ))}
     </div>
   );
