@@ -22,6 +22,10 @@ import {
   listInvitesByTenantId,
   revokeInvite,
 } from '@/lib/db/queries/worker-invites';
+import {
+  createGcManagedWorkerProfile,
+  deleteGcManagedWorkerProfile,
+} from '@/lib/db/queries/worker-profiles';
 
 async function originFromHeaders(): Promise<string> {
   const h = await headers();
@@ -281,5 +285,85 @@ export async function sendWorkerInviteEmailAction(
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Failed to send invite.' };
+  }
+}
+
+export async function addWorkerDirectAction(input: {
+  name: string;
+  phone?: string;
+  worker_type?: 'employee' | 'subcontractor';
+  default_hourly_rate_cents?: number | null;
+  default_charge_rate_cents?: number | null;
+  can_log_expenses?: boolean | null;
+  can_invoice?: boolean | null;
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  try {
+    assertOwnerOrAdmin(tenant.member.role);
+  } catch {
+    return { ok: false, error: 'Only owners and admins can add crew members.' };
+  }
+
+  const name = input.name.trim();
+  if (!name) return { ok: false, error: 'Name is required.' };
+
+  try {
+    const profile = await createGcManagedWorkerProfile(tenant.id, {
+      gc_managed_name: name,
+      phone: input.phone?.trim() || null,
+      worker_type: input.worker_type ?? 'employee',
+      default_hourly_rate_cents: input.default_hourly_rate_cents ?? null,
+      default_charge_rate_cents: input.default_charge_rate_cents ?? null,
+      can_log_expenses: input.can_log_expenses ?? null,
+      can_invoice: input.can_invoice ?? null,
+    });
+    const user = await getCurrentUser();
+    await audit({
+      tenantId: tenant.id,
+      userId: user?.id ?? null,
+      action: 'team.gc_worker_added',
+      resourceType: 'worker_profile',
+      resourceId: profile.id,
+      metadata: { name, worker_type: input.worker_type ?? 'employee' },
+    });
+    revalidatePath('/settings/team');
+    return { ok: true, id: profile.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Failed to add crew member.' };
+  }
+}
+
+export async function removeGcManagedWorkerAction(
+  profileId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+
+  try {
+    assertOwnerOrAdmin(tenant.member.role);
+  } catch {
+    return { ok: false, error: 'Only owners and admins can remove crew members.' };
+  }
+
+  try {
+    await deleteGcManagedWorkerProfile(tenant.id, profileId);
+    const user = await getCurrentUser();
+    await audit({
+      tenantId: tenant.id,
+      userId: user?.id ?? null,
+      action: 'team.gc_worker_removed',
+      resourceType: 'worker_profile',
+      resourceId: profileId,
+      metadata: {},
+    });
+    revalidatePath('/settings/team');
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Failed to remove crew member.',
+    };
   }
 }

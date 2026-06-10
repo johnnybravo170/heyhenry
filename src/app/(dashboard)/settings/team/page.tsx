@@ -23,6 +23,7 @@ import { requireTenant } from '@/lib/auth/helpers';
 import { getPrimaryOperatorName } from '@/lib/db/queries/profile';
 import { listTeamMembers } from '@/lib/db/queries/team';
 import { listInvitesByTenantId } from '@/lib/db/queries/worker-invites';
+import { listGcManagedWorkers } from '@/lib/db/queries/worker-profiles';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 /** Humanize a member into a name for Henry's signal lines. */
@@ -51,8 +52,9 @@ export default async function TeamPage() {
   const isOwnerViewer = tenant.member.role === 'owner';
 
   const admin = createAdminClient();
-  const [members, invites, tenantRow] = await Promise.all([
+  const [members, gcWorkers, invites, tenantRow] = await Promise.all([
     listTeamMembers(tenant.id),
+    listGcManagedWorkers(tenant.id),
     listInvitesByTenantId(tenant.id),
     admin
       .from('tenants')
@@ -64,8 +66,8 @@ export default async function TeamPage() {
   ]);
   const defaults = tenantRow.data;
 
-  const memberCount = members.length;
-  const onlyOwner = members.length === 1 && members[0]?.role === 'owner';
+  const memberCount = members.length + gcWorkers.length;
+  const onlyOwner = members.length === 1 && members[0]?.role === 'owner' && gcWorkers.length === 0;
 
   // ── Henry roster-gap signals (read-only) ──
   const signals: string[] = [];
@@ -79,6 +81,17 @@ export default async function TeamPage() {
       );
     }
     if (wp.default_hourly_rate_cents === null) {
+      signals.push(`${name} has no pay rate yet — their time costs Labour at $0/hr.`);
+    }
+  }
+  for (const w of gcWorkers) {
+    const name = w.gc_managed_name ?? w.display_name ?? w.business_name ?? 'A worker';
+    if (w.worker_type === 'subcontractor' && !w.gst_number) {
+      signals.push(
+        `${name} is set up as a subcontractor but has no GST # on file — year-end T5018 will need it.`,
+      );
+    }
+    if (w.default_hourly_rate_cents === null) {
       signals.push(`${name} has no pay rate yet — their time costs Labour at $0/hr.`);
     }
   }
@@ -155,7 +168,7 @@ export default async function TeamPage() {
             <AddToCrewDialog isOwnerViewer={isOwnerViewer} />
           </header>
 
-          <TeamMembersTable members={members} isOwnerViewer={isOwnerViewer} />
+          <TeamMembersTable members={members} gcWorkers={gcWorkers} isOwnerViewer={isOwnerViewer} />
 
           <PendingInvites invites={invites} />
         </section>
