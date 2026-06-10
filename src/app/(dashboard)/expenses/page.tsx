@@ -1,6 +1,7 @@
-import { ChevronRight, Plus, Receipt, Sparkles, Upload } from 'lucide-react';
+import { Plus, Receipt, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { ExpenseDropzone } from '@/components/features/expenses/expense-dropzone';
 import {
   type ExpensePeriodPreset,
   ExpensesFilterBar,
@@ -206,29 +207,7 @@ export default async function OverheadExpensesPage({
       ) : null}
 
       {/* Receipt drop-zone — the primary "log a cost" path (Henry chrome). */}
-      <Link
-        href="/expenses/import"
-        className="flex items-center gap-4 rounded-xl border border-dashed border-brand/40 border-l-[3px] border-l-brand bg-brand/5 px-5 py-4 transition-colors hover:bg-brand/10"
-      >
-        <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand/20 bg-card text-brand">
-          <Upload className="size-5" aria-hidden />
-        </span>
-        <span className="flex flex-1 flex-col gap-0.5">
-          <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-brand">
-            ✦ Henry · fastest path
-          </span>
-          <span className="font-medium text-foreground">
-            Drop receipts here. Henry reads vendor, date, amount, and GST.
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Up to 50 at once · JPG, PNG, HEIC, PDF ·{' '}
-            <Link href="/expenses/new" className="font-semibold text-foreground hover:underline">
-              or log one manually
-            </Link>
-          </span>
-        </span>
-        <ChevronRight className="size-4 shrink-0 text-brand" aria-hidden />
-      </Link>
+      <ExpenseDropzone />
 
       {isFirstRun ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border bg-card py-16 text-center">
