@@ -20,7 +20,7 @@ import {
   extractRecipientCandidates,
   resolveRecipientToTenantAlias,
 } from '@/lib/inbound-email/alias-resolver';
-import { sendUnknownSenderBounce } from '@/lib/inbound-email/bounce';
+import { sendAttachmentTooLargeBounce, sendUnknownSenderBounce } from '@/lib/inbound-email/bounce';
 import {
   type CustomerMessageHandlerInput,
   handleCustomerInboundMessage,
@@ -189,6 +189,7 @@ export async function POST(request: Request) {
   // the HTML body). Inline phone photos can be 4–6 MB encoded; keeping them
   // would bloat the DB row and can cause the insert to fail. Real
   // attachments (PDFs, etc.) keep their content for downstream OCR.
+  const hasStrippedImages = (payload.Attachments ?? []).some((a) => a.ContentID);
   const attachments = (payload.Attachments ?? []).map((a) => ({
     filename: a.Name,
     contentType: a.ContentType,
@@ -227,6 +228,18 @@ export async function POST(request: Request) {
     draftId = result.draftId;
   } catch (err) {
     console.error('[inbound-email] processing failed', inserted.id, err);
+  }
+
+  // If inline images were stripped, let the sender know to use the app.
+  if (hasStrippedImages) {
+    try {
+      await sendAttachmentTooLargeBounce({
+        to: payload.From,
+        originalSubject: payload.Subject ?? '(no subject)',
+      });
+    } catch (err) {
+      console.error('[inbound-email] attachment-too-large bounce failed', err);
+    }
   }
 
   return NextResponse.json({ ok: true, id: inserted.id, draftId });
