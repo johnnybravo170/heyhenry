@@ -1392,7 +1392,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                       <span className={dashCell}>—</span>
                     )}
                   </span>
-                  <span className="flex items-center justify-end gap-1 text-right text-sm font-medium text-muted-foreground">
+                  <span className="flex items-center justify-end gap-1.5 text-right text-sm font-medium text-muted-foreground">
                     {remaining !== 0 ? (
                       <span className={cn(remaining < 0 && 'text-destructive')}>
                         <Money cents={Math.abs(remaining)} />
@@ -1400,18 +1400,6 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                     ) : (
                       <span className={dashCell}>—</span>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingLine(cl);
-                        setAddingLineFor(null);
-                      }}
-                      aria-label={`Edit ${cl.label}`}
-                      title="Edit this line"
-                      className="rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground"
-                    >
-                      <Pencil className="size-3" />
-                    </button>
                     <button
                       type="button"
                       onClick={() => deleteLine(cl.id)}
