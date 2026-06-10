@@ -1,13 +1,17 @@
 'use client';
 
 /**
- * Confirm dialog for a vendor bill staged in the universal inbox.
+ * Confirm dialog for a vendor bill (or overhead expense) staged in the
+ * universal inbox.
  *
- * Pre-fills from a hint (V1 used `email.extracted`; V2 passes through the
- * existing prop until per-kind extraction lands in V3), lets the operator
- * edit anything that looks off, and calls applyIntakeIntentAction so a
- * project_costs row is inserted and the intake_drafts row is stamped
- * applied + linked to the new destination.
+ * Pre-fills from OCR / email extraction, lets the operator edit anything
+ * off, then routes to either:
+ *   - Project bill   → applyIntakeIntentAction intent='vendor_bill'
+ *   - Overhead       → applyIntakeIntentAction intent='overhead_expense'
+ *
+ * Mode toggle matches the QuickLogExpenseButton so the two surfaces feel
+ * consistent. The same pre-filled vendor / amount / date / GST flows
+ * through to both modes.
  */
 
 import { useEffect, useState, useTransition } from 'react';
@@ -32,6 +36,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useTenantTimezone } from '@/lib/auth/tenant-context';
 import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
+import { listExpenseCategoryOptionsAction } from '@/server/actions/expenses';
 import { applyIntakeIntentAction } from '@/server/actions/inbox-intake';
 
 export type StagedBillExtracted = {
@@ -44,8 +50,10 @@ export type StagedBillExtracted = {
   cost_code?: string;
 };
 
+type Mode = 'project' | 'overhead';
 type ProjectOption = { id: string; name: string };
-type CategoryOption = { id: string; name: string };
+type BudgetCategoryOption = { id: string; name: string };
+type OverheadCategoryOption = { id: string; label: string; isParentHeader: boolean };
 
 function dollarsToCents(s: string): number {
   const n = Number(s.replace(/[^0-9.-]/g, ''));
@@ -73,36 +81,51 @@ export function StagedBillConfirmDialog({
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
-  /** intake_drafts.id — V2 universal apply path. */
   draftId: string;
   extracted: StagedBillExtracted | null;
   projects: ProjectOption[];
-  /** Pre-selected from project_match; operator can override. */
   defaultProjectId: string | null;
   onApplied: () => void;
 }) {
   const tenantTz = useTenantTimezone();
   const [pending, startTransition] = useTransition();
-  const [projectId, setProjectId] = useState(defaultProjectId ?? '');
+
+  const [mode, setMode] = useState<Mode>('project');
+
+  // Shared fields
   const [vendor, setVendor] = useState(extracted?.vendor ?? '');
   const [vendorGst, setVendorGst] = useState(extracted?.vendor_gst_number ?? '');
   const [billDate, setBillDate] = useState(extracted?.bill_date ?? todayISO(tenantTz));
   const [amount, setAmount] = useState(centsToDollars(extracted?.amount_cents));
   const [gst, setGst] = useState('');
   const [description, setDescription] = useState(extracted?.description ?? '');
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(false);
 
-  // Load budget categories whenever the picked project changes.
+  // Project mode
+  const [projectId, setProjectId] = useState(defaultProjectId ?? '');
+  const [categoryId, setCategoryId] = useState<string>('');
+  const [budgetCategories, setBudgetCategories] = useState<BudgetCategoryOption[]>([]);
+  const [loadingBudgetCategories, setLoadingBudgetCategories] = useState(false);
+
+  // Overhead mode
+  const [overheadCategoryId, setOverheadCategoryId] = useState('');
+  const [overheadCategories, setOverheadCategories] = useState<OverheadCategoryOption[]>([]);
+
+  // Load overhead categories once on mount.
+  useEffect(() => {
+    listExpenseCategoryOptionsAction().then((res) => {
+      if (res.ok) setOverheadCategories(res.options);
+    });
+  }, []);
+
+  // Load budget categories when project changes.
   useEffect(() => {
     if (!projectId) {
-      setCategories([]);
+      setBudgetCategories([]);
       setCategoryId('');
       return;
     }
     let cancelled = false;
-    setLoadingCategories(true);
+    setLoadingBudgetCategories(true);
     const supabase = createClient();
     supabase
       .from('project_budget_categories')
@@ -111,8 +134,8 @@ export function StagedBillConfirmDialog({
       .order('display_order')
       .then(({ data }) => {
         if (cancelled) return;
-        setCategories(((data ?? []) as { id: string; name: string }[]) ?? []);
-        setLoadingCategories(false);
+        setBudgetCategories(((data ?? []) as { id: string; name: string }[]) ?? []);
+        setLoadingBudgetCategories(false);
       });
     return () => {
       cancelled = true;
@@ -121,43 +144,75 @@ export function StagedBillConfirmDialog({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!projectId) {
-      toast.error('Pick a project.');
-      return;
-    }
-    if (!vendor.trim()) {
-      toast.error('Vendor is required.');
-      return;
-    }
+
     const amountCents = dollarsToCents(amount);
+    const gstCents = dollarsToCents(gst);
+
     if (amountCents <= 0) {
       toast.error('Amount must be greater than zero.');
       return;
     }
 
-    startTransition(async () => {
-      const result = await applyIntakeIntentAction({
-        draftId,
-        intent: 'vendor_bill',
-        projectId,
-        fields: {
-          vendor: vendor.trim(),
-          vendorGstNumber: vendorGst.trim() || undefined,
-          billDate,
-          amountCents,
-          gstCents: dollarsToCents(gst),
-          description: description.trim() || undefined,
-          budgetCategoryId: categoryId || undefined,
-        },
-      });
-      if (!result.ok) {
-        toast.error(result.error);
+    if (mode === 'project') {
+      if (!projectId) {
+        toast.error('Pick a project.');
         return;
       }
-      toast.success('Bill applied to project.');
-      onApplied();
-      onOpenChange(false);
-    });
+      if (!vendor.trim()) {
+        toast.error('Vendor is required.');
+        return;
+      }
+      startTransition(async () => {
+        const result = await applyIntakeIntentAction({
+          draftId,
+          intent: 'vendor_bill',
+          projectId,
+          fields: {
+            vendor: vendor.trim(),
+            vendorGstNumber: vendorGst.trim() || undefined,
+            billDate,
+            amountCents,
+            gstCents,
+            description: description.trim() || undefined,
+            budgetCategoryId: categoryId || undefined,
+          },
+        });
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success('Bill applied to project.');
+        onApplied();
+        onOpenChange(false);
+      });
+    } else {
+      if (!overheadCategoryId) {
+        toast.error('Pick a category.');
+        return;
+      }
+      startTransition(async () => {
+        const result = await applyIntakeIntentAction({
+          draftId,
+          intent: 'overhead_expense',
+          fields: {
+            categoryId: overheadCategoryId,
+            amountCents,
+            gstCents,
+            vendor: vendor.trim() || undefined,
+            vendorGstNumber: vendorGst.trim() || undefined,
+            expenseDate: billDate,
+            description: description.trim() || undefined,
+          },
+        });
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success('Logged as overhead expense.');
+        onApplied();
+        onOpenChange(false);
+      });
+    }
   }
 
   return (
@@ -172,21 +227,69 @@ export function StagedBillConfirmDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <Label htmlFor="bill-project">Project</Label>
-            <Select value={projectId} onValueChange={setProjectId} disabled={pending}>
-              <SelectTrigger id="bill-project">
-                <SelectValue placeholder="Pick project" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Mode toggle */}
+          <div className="flex rounded-md border p-0.5">
+            {(['project', 'overhead'] as Mode[]).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                disabled={pending}
+                className={cn(
+                  'flex-1 rounded py-1.5 text-sm font-medium transition-colors',
+                  mode === m
+                    ? 'bg-foreground text-background'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {m === 'project' ? 'Project bill' : 'Overhead expense'}
+              </button>
+            ))}
           </div>
+
+          {mode === 'project' ? (
+            <div>
+              <Label htmlFor="bill-project">Project</Label>
+              <Select value={projectId} onValueChange={setProjectId} disabled={pending}>
+                <SelectTrigger id="bill-project">
+                  <SelectValue placeholder="Pick project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="bill-overhead-cat">Category</Label>
+              <Select
+                value={overheadCategoryId}
+                onValueChange={setOverheadCategoryId}
+                disabled={pending}
+              >
+                <SelectTrigger id="bill-overhead-cat">
+                  <SelectValue placeholder="Pick a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {overheadCategories.map((c) =>
+                    c.isParentHeader ? (
+                      <SelectItem key={c.id} value={c.id} disabled>
+                        {c.label}
+                      </SelectItem>
+                    ) : (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.label}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
@@ -196,7 +299,7 @@ export function StagedBillConfirmDialog({
                 value={vendor}
                 onChange={(e) => setVendor(e.target.value)}
                 placeholder="e.g. Smith Painting"
-                required
+                required={mode === 'project'}
                 disabled={pending}
               />
             </div>
@@ -246,33 +349,35 @@ export function StagedBillConfirmDialog({
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="bill-category">Budget category</Label>
-            <Select
-              value={categoryId}
-              onValueChange={setCategoryId}
-              disabled={pending || !projectId || loadingCategories}
-            >
-              <SelectTrigger id="bill-category">
-                <SelectValue
-                  placeholder={
-                    !projectId
-                      ? 'Pick a project first'
-                      : loadingCategories
-                        ? 'Loading…'
-                        : 'Pick a category (optional)'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {mode === 'project' && (
+            <div>
+              <Label htmlFor="bill-category">Budget category</Label>
+              <Select
+                value={categoryId}
+                onValueChange={setCategoryId}
+                disabled={pending || !projectId || loadingBudgetCategories}
+              >
+                <SelectTrigger id="bill-category">
+                  <SelectValue
+                    placeholder={
+                      !projectId
+                        ? 'Pick a project first'
+                        : loadingBudgetCategories
+                          ? 'Loading…'
+                          : 'Pick a category (optional)'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {budgetCategories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="bill-description">Description</Label>
@@ -296,7 +401,7 @@ export function StagedBillConfirmDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? 'Applying…' : 'Apply to project'}
+              {pending ? 'Applying…' : mode === 'project' ? 'Apply to project' : 'Log as overhead'}
             </Button>
           </div>
         </form>
