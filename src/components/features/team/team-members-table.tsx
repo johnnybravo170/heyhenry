@@ -425,7 +425,7 @@ function GcManagedWorkerRow({ worker }: { worker: WorkerProfileRow }) {
         </span>
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-semibold text-foreground">{displayName}</span>
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1 text-eyebrow text-muted-foreground">
             <UserX className="size-3" aria-hidden />
             No app account
           </span>
@@ -450,7 +450,7 @@ function GcManagedWorkerRow({ worker }: { worker: WorkerProfileRow }) {
           <span className="text-muted-foreground/50">·</span>
           {isSub && !worker.gst_number ? (
             <span
-              className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800"
+              className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-100 px-1.5 py-0.5 font-mono text-eyebrow font-semibold text-amber-800"
               title="Missing GST # — needed for year-end T5018"
             >
               <AlertTriangle className="size-3" aria-hidden />
@@ -467,7 +467,7 @@ function GcManagedWorkerRow({ worker }: { worker: WorkerProfileRow }) {
       </div>
 
       {/* No join date — GC-managed */}
-      <span className="font-mono text-[11px] text-muted-foreground/60">GC-managed</span>
+      <span className="font-mono text-eyebrow text-muted-foreground/60">GC-managed</span>
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-0.5">
