@@ -9,15 +9,13 @@
  * Calls applyScopeToProject directly, the same primitive as intake + AI scaffold.
  */
 
-import { timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { applyScopeToProject } from '@/lib/db/queries/project-budget-categories';
+import { isValidImportToken } from '@/lib/import/auth';
+import { FORBIDDEN_LINE_LABEL } from '@/lib/import/helpers';
 import { normalizePhone } from '@/lib/phone';
 import { createAdminClient } from '@/lib/supabase/admin';
-
-// Labels that are project-level settings, not budget line items.
-const FORBIDDEN_LINE_LABEL = /gst|hst|pst|management fee|subtotal|total/i;
 
 const LineSchema = z.object({
   label: z.string().min(1),
@@ -52,6 +50,17 @@ const ImportProjectSchema = z.object({
       .default('planning'),
     is_cost_plus: z.boolean().default(false),
     management_fee_rate: z.number().min(0).max(1).optional(),
+    start_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    end_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    site_address_line1: z.string().optional(),
+    site_city: z.string().optional(),
+    site_postal: z.string().optional(),
   }),
   budget: z
     .object({
@@ -67,21 +76,6 @@ const ImportProjectSchema = z.object({
 });
 
 type ImportProjectInput = z.infer<typeof ImportProjectSchema>;
-
-function isValidToken(authHeader: string | null): boolean {
-  const expected = process.env.HEYHENRY_IMPORT_TOKEN;
-  if (!expected) return false;
-
-  const match = /^Bearer\s+(\S+)$/i.exec(authHeader ?? '');
-  const provided = match?.[1];
-  if (!provided) return false;
-
-  try {
-    return timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
 
 /** Dedup check scoped to tenant using the admin client. */
 async function findExistingContact(
@@ -139,7 +133,7 @@ async function findExistingContact(
 }
 
 export async function POST(req: NextRequest) {
-  if (!isValidToken(req.headers.get('authorization'))) {
+  if (!isValidImportToken(req.headers.get('authorization'))) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -239,6 +233,11 @@ export async function POST(req: NextRequest) {
       lifecycle_stage: body.project.lifecycle_stage,
       is_cost_plus: body.project.is_cost_plus,
       management_fee_rate: body.project.management_fee_rate ?? null,
+      start_date: body.project.start_date ?? null,
+      target_end_date: body.project.end_date ?? null,
+      site_address_line1: body.project.site_address_line1?.trim() || null,
+      site_city: body.project.site_city?.trim() || null,
+      site_postal: body.project.site_postal?.trim() || null,
       intake_source: 'import',
       intake_signals: { importer: 'claude-laptop' },
     })
