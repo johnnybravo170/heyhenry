@@ -43,7 +43,8 @@ export type IntakeIntent =
   | 'document'
   | 'photo'
   | 'message'
-  | 'project';
+  | 'project'
+  | 'overhead_expense';
 
 export type IntakeActionResult = { ok: true; id: string } | { ok: false; error: string };
 
@@ -54,6 +55,17 @@ const PHOTOS_BUCKET = 'photos';
 // ---------------------------------------------------------------------------
 // Apply — dispatcher
 // ---------------------------------------------------------------------------
+
+const overheadFields = z.object({
+  categoryId: z.string().uuid('Pick a category.'),
+  amountCents: z.coerce.number().int().min(1, 'Amount must be greater than zero.'),
+  gstCents: z.coerce.number().int().min(0).default(0),
+  vendor: z.string().trim().optional(),
+  vendorGstNumber: z.string().trim().optional(),
+  expenseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD.'),
+  description: z.string().trim().optional(),
+});
+export type IntakeOverheadFields = z.input<typeof overheadFields>;
 
 const billFields = z.object({
   vendor: z.string().trim().min(1, 'Vendor is required.'),
@@ -103,7 +115,8 @@ export type ApplyIntakeInput =
   | { draftId: string; intent: 'sub_quote'; projectId: string; fields: IntakeSubQuoteFields }
   | { draftId: string; intent: 'document'; projectId: string; fields: IntakeDocumentFields }
   | { draftId: string; intent: 'photo'; projectId: string; fields: IntakePhotoFields }
-  | { draftId: string; intent: 'message'; projectId: string; fields: IntakeMessageFields };
+  | { draftId: string; intent: 'message'; projectId: string; fields: IntakeMessageFields }
+  | { draftId: string; intent: 'overhead_expense'; fields: IntakeOverheadFields };
 
 export async function applyIntakeIntentAction(
   input: ApplyIntakeInput,
@@ -126,7 +139,13 @@ export async function applyIntakeIntentAction(
     return { ok: false, error: 'This item has already been applied. Undo first to re-route.' };
   }
 
-  let destinationKind: 'vendor_bill' | 'sub_quote' | 'document' | 'photo' | 'message';
+  let destinationKind:
+    | 'vendor_bill'
+    | 'sub_quote'
+    | 'document'
+    | 'photo'
+    | 'message'
+    | 'overhead_expense';
   let destinationId: string;
 
   switch (input.intent) {
@@ -285,6 +304,36 @@ export async function applyIntakeIntentAction(
       destinationId = msg.id as string;
       break;
     }
+
+    case 'overhead_expense': {
+      const parsed = overheadFields.safeParse(input.fields);
+      if (!parsed.success) {
+        return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid overhead fields.' };
+      }
+      const f = parsed.data;
+      const totalCents = f.amountCents + f.gstCents;
+      const { data: expense, error } = await supabase
+        .from('expenses')
+        .insert({
+          tenant_id: tenant.id,
+          category_id: f.categoryId,
+          amount_cents: totalCents,
+          pre_tax_amount_cents: f.amountCents,
+          tax_cents: f.gstCents,
+          vendor: f.vendor || null,
+          vendor_gst_number: f.vendorGstNumber || null,
+          expense_date: f.expenseDate,
+          description: f.description || null,
+        })
+        .select('id')
+        .single();
+      if (error || !expense) {
+        return { ok: false, error: error?.message ?? 'Overhead expense insert failed.' };
+      }
+      destinationKind = 'overhead_expense';
+      destinationId = expense.id as string;
+      break;
+    }
   }
 
   // Stamp the draft.
@@ -297,13 +346,13 @@ export async function applyIntakeIntentAction(
       applied_by: user.id,
       applied_destination_kind: destinationKind,
       applied_destination_id: destinationId,
-      accepted_project_id: input.projectId,
+      accepted_project_id: 'projectId' in input ? input.projectId : null,
     })
     .eq('id', input.draftId);
   if (stampErr) return { ok: false, error: `Draft stamp failed: ${stampErr.message}` };
 
   revalidatePath('/inbox/intake');
-  revalidatePath(`/projects/${input.projectId}`);
+  if ('projectId' in input) revalidatePath(`/projects/${input.projectId}`);
   return { ok: true, id: destinationId };
 }
 
@@ -598,6 +647,8 @@ function destinationTable(kind: string): string | null {
       return 'project_messages';
     case 'sub_quote':
       return 'project_sub_quotes';
+    case 'overhead_expense':
+      return 'expenses';
     default:
       return null;
   }
