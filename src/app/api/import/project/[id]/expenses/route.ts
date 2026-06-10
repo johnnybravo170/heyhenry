@@ -3,8 +3,11 @@
  * Batch-append historical material purchases, bills, and sub costs.
  *
  * Auth: Bearer HEYHENRY_IMPORT_TOKEN, service-role admin client.
- * Stores raw hard_cost_cents only — markup/tax is rendered, never stored.
+ * Stores raw hard_cost_cents only — markup is rendered, never stored.
  * is_billable controls whether a row enters the cost-plus invoice base.
+ *
+ * amount_cents on project_costs is GROSS (hard_cost_cents + gst_cents).
+ * The paid_at consistency check requires paid_at IS NOT NULL when paid.
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
@@ -18,8 +21,14 @@ const ExpenseSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
   vendor: z.string().optional(),
   hard_cost_cents: z.number().int().min(0),
+  gst_cents: z.number().int().min(0).default(0),
   is_billable: z.boolean().default(true),
-  category: z.string().optional(),
+  source_type: z.enum(['receipt', 'vendor_bill']).default('vendor_bill'),
+  payment_status: z.enum(['paid', 'unpaid']).default('unpaid'),
+  paid_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   budget_category_id: z.string().uuid().optional(),
 });
 
@@ -44,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { expenses, options } = parsed.data;
   const dryRun = options?.dry_run ?? false;
 
-  // Reject management fee / margin / precomputed total columns.
+  // Reject management fee / margin / precomputed total labels.
   for (const e of expenses) {
     if (FORBIDDEN_LINE_LABEL.test(e.label)) {
       return NextResponse.json(
@@ -66,23 +75,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json(dryRunEnvelope('expenses', expenses, expenses.length));
   }
 
-  const rows = expenses.map((e) => ({
-    tenant_id: tenantId,
-    project_id: projectId,
-    description: e.label.trim(),
-    vendor: e.vendor?.trim() || null,
-    amount_cents: e.hard_cost_cents,
-    is_billable: e.is_billable,
-    category: e.category?.trim() || null,
-    budget_category_id: e.budget_category_id ?? null,
-    expense_date: e.date,
-    import_source_row_id: e.source_row_id,
-    // user_id is nullable (foundation migration) — no session on this path
-    user_id: null as string | null,
-  }));
+  const rows = expenses.map((e) => {
+    const isPaid = e.payment_status === 'paid';
+    const paidAt = isPaid ? `${e.paid_date ?? e.date}T00:00:00.000Z` : null;
+
+    return {
+      tenant_id: tenantId,
+      project_id: projectId,
+      description: e.label.trim(),
+      vendor: e.vendor?.trim() || null,
+      cost_date: e.date,
+      source_type: e.source_type,
+      payment_status: e.payment_status,
+      paid_at: paidAt,
+      amount_cents: e.hard_cost_cents + e.gst_cents,
+      pre_tax_amount_cents: e.hard_cost_cents,
+      gst_cents: e.gst_cents,
+      is_billable: e.is_billable,
+      budget_category_id: e.budget_category_id ?? null,
+      status: 'active' as const,
+      import_source_row_id: e.source_row_id,
+    };
+  });
 
   const { data, error } = await admin
-    .from('expenses')
+    .from('project_costs')
     .upsert(rows, { onConflict: 'tenant_id,import_source_row_id', ignoreDuplicates: false })
     .select('id');
 

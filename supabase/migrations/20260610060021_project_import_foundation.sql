@@ -8,17 +8,13 @@
 ALTER TABLE public.time_entries
   ALTER COLUMN user_id DROP NOT NULL;
 
--- Same rationale for expenses: the import path has no signed-in user.
-ALTER TABLE public.expenses
-  ALTER COLUMN user_id DROP NOT NULL;
-
 -- 2. Add import_source_row_id to every append-target table.
 --    Per-table column approach: simpler than a central ledger, no extra join.
 --    Partial unique indexes enforce one DB row per source row per tenant.
 ALTER TABLE public.time_entries
   ADD COLUMN IF NOT EXISTS import_source_row_id TEXT;
 
-ALTER TABLE public.expenses
+ALTER TABLE public.project_costs
   ADD COLUMN IF NOT EXISTS import_source_row_id TEXT;
 
 ALTER TABLE public.invoices
@@ -36,8 +32,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uidx_time_entries_import_dedup
   ON public.time_entries (tenant_id, import_source_row_id)
   WHERE import_source_row_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uidx_expenses_import_dedup
-  ON public.expenses (tenant_id, import_source_row_id)
+CREATE UNIQUE INDEX IF NOT EXISTS uidx_project_costs_import_dedup
+  ON public.project_costs (tenant_id, import_source_row_id)
   WHERE import_source_row_id IS NOT NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uidx_invoices_import_dedup
