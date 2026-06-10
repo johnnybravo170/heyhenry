@@ -9,9 +9,37 @@
  */
 
 import { sendEmail } from '@/lib/email/send';
+import { inboundAttachmentTooLargeHtml } from '@/lib/email/templates/inbound-attachment-too-large';
 import { inboundBounceEmailHtml } from '@/lib/email/templates/inbound-bounce';
 
 const HENRY_FROM = 'Henry <henry@inbound.heyhenry.io>';
+
+export async function sendAttachmentTooLargeBounce(args: {
+  to: string;
+  originalSubject: string;
+}): Promise<void> {
+  const subject = args.originalSubject.toLowerCase().startsWith('re:')
+    ? args.originalSubject
+    : `Re: ${args.originalSubject || '(no subject)'}`;
+
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.heyhenry.io').replace(/\/$/, '');
+
+  const result = await sendEmail({
+    to: args.to,
+    subject,
+    html: inboundAttachmentTooLargeHtml({ appUrl }),
+    from: HENRY_FROM,
+    caslCategory: 'response_to_request',
+    relatedType: 'other',
+  });
+
+  if (!result.ok) {
+    console.warn('[inbound-email/bounce] attachment-too-large send failed', {
+      to: args.to,
+      error: result.error,
+    });
+  }
+}
 
 export async function sendUnknownSenderBounce(args: {
   to: string;

@@ -20,7 +20,7 @@ import {
   extractRecipientCandidates,
   resolveRecipientToTenantAlias,
 } from '@/lib/inbound-email/alias-resolver';
-import { sendUnknownSenderBounce } from '@/lib/inbound-email/bounce';
+import { sendAttachmentTooLargeBounce, sendUnknownSenderBounce } from '@/lib/inbound-email/bounce';
 import {
   type CustomerMessageHandlerInput,
   handleCustomerInboundMessage,
@@ -38,6 +38,7 @@ type PostmarkAttachment = {
   ContentType: string;
   Content: string;
   ContentLength: number;
+  ContentID?: string; // set for inline images (cid:... references in HTML body)
 };
 
 type PostmarkHeader = { Name: string; Value: string };
@@ -70,13 +71,24 @@ export async function POST(request: Request) {
   try {
     payload = (await request.json()) as PostmarkInbound;
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    // Body parse failure — most likely an oversized payload that Vercel
+    // truncated (inline phone photos can push the JSON past the platform
+    // limit). Return 200 so Postmark stops retrying; the email is
+    // unrecoverable without the full body.
+    console.warn('[inbound-email] failed to parse request body — likely oversized payload');
+    return NextResponse.json({ ok: true, dropped: 'parse_failed' });
   }
 
   // Idempotency: Postmark may retry on 5xx. MessageID is unique per
   // inbound email; claim it before any side effects.
+  // Pass only envelope metadata — NOT the full payload — because the
+  // payload can contain MBs of base64 attachment content.
   if (payload.MessageID) {
-    const claim = await claimWebhookEvent('postmark:inbound', payload.MessageID, payload);
+    const claim = await claimWebhookEvent('postmark:inbound', payload.MessageID, {
+      from: payload.From,
+      subject: payload.Subject,
+      attachmentCount: payload.Attachments?.length ?? 0,
+    });
     if (claim.alreadyProcessed) {
       return NextResponse.json({ ok: true, deduplicated: true });
     }
@@ -173,10 +185,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, bounced: true });
   }
 
+  // Strip base64 from inline images (ContentID set = cid:... reference in
+  // the HTML body). Inline phone photos can be 4–6 MB encoded; keeping them
+  // would bloat the DB row and can cause the insert to fail. Real
+  // attachments (PDFs, etc.) keep their content for downstream OCR.
+  const hasStrippedImages = (payload.Attachments ?? []).some((a) => a.ContentID);
   const attachments = (payload.Attachments ?? []).map((a) => ({
     filename: a.Name,
     contentType: a.ContentType,
-    base64: a.Content,
+    base64: a.ContentID ? undefined : a.Content || undefined,
     size: a.ContentLength,
   }));
 
@@ -192,7 +209,7 @@ export async function POST(request: Request) {
       body_text: payload.TextBody ?? null,
       body_html: payload.HtmlBody ?? null,
       attachments,
-      raw_payload: payload as unknown as Record<string, unknown>,
+      raw_payload: null,
       status: 'pending',
     })
     .select('id')
@@ -211,6 +228,18 @@ export async function POST(request: Request) {
     draftId = result.draftId;
   } catch (err) {
     console.error('[inbound-email] processing failed', inserted.id, err);
+  }
+
+  // If inline images were stripped, let the sender know to use the app.
+  if (hasStrippedImages) {
+    try {
+      await sendAttachmentTooLargeBounce({
+        to: payload.From,
+        originalSubject: payload.Subject ?? '(no subject)',
+      });
+    } catch (err) {
+      console.error('[inbound-email] attachment-too-large bounce failed', err);
+    }
   }
 
   return NextResponse.json({ ok: true, id: inserted.id, draftId });
@@ -239,7 +268,7 @@ async function handleTenantAliasInbound({
   const attachments = (payload.Attachments ?? []).map((a) => ({
     filename: a.Name,
     contentType: a.ContentType,
-    base64: a.Content,
+    base64: a.ContentID ? undefined : a.Content || undefined,
     size: a.ContentLength,
   }));
 
@@ -255,7 +284,7 @@ async function handleTenantAliasInbound({
       body_text: payload.TextBody ?? null,
       body_html: payload.HtmlBody ?? null,
       attachments,
-      raw_payload: payload as unknown as Record<string, unknown>,
+      raw_payload: null,
       status: 'pending',
     })
     .select('id')
