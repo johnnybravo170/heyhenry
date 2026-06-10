@@ -600,7 +600,7 @@ export function BudgetCategoriesTable({
                     {/* Section header — warm well tint, strong rule only when expanded */}
                     <div
                       className={cn(
-                        'flex items-start gap-2 bg-[#F5ECD5] px-3 py-3',
+                        'flex items-start gap-2 bg-[#E8D5AF] px-3 py-3',
                         !collapsed && 'border-b border-[#C8B68C]',
                       )}
                     >
