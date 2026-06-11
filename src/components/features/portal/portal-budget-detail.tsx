@@ -92,6 +92,11 @@ function CategoriesList({ categories }: { categories: PortalBudgetCategory[] }) 
                 {formatCents(cat.spent_cents)} of {formatCents(cat.total_cents)}
               </span>
             </div>
+            {cat.description_md ? (
+              <div className="mt-1 text-xs text-muted-foreground">
+                <RichTextDisplay markdown={cat.description_md} />
+              </div>
+            ) : null}
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
               <div
                 className={`h-2 rounded-full transition-all ${

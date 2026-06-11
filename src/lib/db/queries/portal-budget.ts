@@ -26,6 +26,7 @@ import type { CustomerViewMode } from '@/lib/validators/project-customer-view';
 export type PortalBudgetCategory = {
   id: string;
   name: string;
+  description_md: string | null;
   display_order: number;
   /** Customer-facing section this category rolls up into when view mode = 'sections'. */
   customer_section_id: string | null;
@@ -98,7 +99,9 @@ export async function getPortalBudgetSummary(
   ] = await Promise.all([
     admin
       .from('project_budget_categories')
-      .select('id, name, estimate_cents, display_order, is_visible_in_report, customer_section_id')
+      .select(
+        'id, name, description_md, estimate_cents, display_order, is_visible_in_report, customer_section_id',
+      )
       .eq('project_id', projectId)
       .order('display_order', { ascending: true })
       .order('name', { ascending: true }),
@@ -207,6 +210,7 @@ export async function getPortalBudgetSummary(
   type CategoryRow = {
     id: string;
     name: string;
+    description_md: string | null;
     estimate_cents: number;
     display_order: number;
     is_visible_in_report: boolean;
@@ -230,6 +234,7 @@ export async function getPortalBudgetSummary(
       visibleCategories.push({
         id: cat.id,
         name: cat.name,
+        description_md: cat.description_md,
         display_order: cat.display_order,
         customer_section_id: cat.customer_section_id,
         total_cents: total,
