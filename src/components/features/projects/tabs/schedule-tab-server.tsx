@@ -14,6 +14,7 @@ import { ProjectStartDateEditor } from '@/components/features/projects/project-s
 import { ScheduleBootstrapPanel } from '@/components/features/projects/schedule-bootstrap-panel';
 import { ScheduleInteractive } from '@/components/features/projects/schedule-interactive';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { getCanadianHolidays } from '@/lib/date/ca-holidays';
 import {
   listCoScheduleSuggestions,
   listScheduleTasksForProject,
@@ -26,7 +27,7 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
   // tenant lookup hydrates the Supabase session in this RSC so parallel
   // RLS-gated reads don't run as anon (which would silently return
   // empty arrays for `TO authenticated`-only policies like ours).
-  await getCurrentTenant();
+  const tenant = await getCurrentTenant();
   const supabase = await createClient();
 
   // Tasks + project_type_templates + trade-count rows load in parallel.
@@ -43,6 +44,7 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
     { data: dependencyRows },
     { data: projectMeta },
     coSuggestions,
+    { data: tenantRow },
   ] = await Promise.all([
     listScheduleTasksForProject(projectId),
     supabase.from('project_type_templates').select('id, slug, name, description'),
@@ -72,7 +74,27 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
     // Approved, not-yet-dismissed change orders → the CO→schedule Henry
     // prompt (brief touchpoint #3, vault gotcha #13).
     listCoScheduleSuggestions(projectId),
+    // Tenant province for stat-holiday computation (skips holidays in
+    // working-day math and dims holiday cells in the Gantt).
+    tenant
+      ? supabase.from('tenants').select('province').eq('id', tenant.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+
+  // Compute stat holidays for the tenant's province covering the schedule
+  // year range (prev year → +5). Flat array serializes cleanly as RSC props.
+  const province =
+    ((tenantRow as Record<string, unknown> | null)?.province as string | null | undefined) ?? null;
+  const currentYear = new Date().getUTCFullYear();
+  const holidays = [
+    currentYear - 1,
+    currentYear,
+    currentYear + 1,
+    currentYear + 2,
+    currentYear + 3,
+    currentYear + 4,
+    currentYear + 5,
+  ].flatMap((y) => getCanadianHolidays(province, y));
 
   const pn = projectMeta as Record<string, unknown> | null;
   const startDate = (pn?.start_date as string | null) ?? null;
@@ -152,6 +174,7 @@ export default async function ScheduleTabServer({ projectId }: { projectId: stri
         pendingNotifyAt={pendingNotifyAt}
         predecessorsByTaskId={predecessorsByTaskId}
         coSuggestions={coSuggestions}
+        holidays={holidays}
       />
     </div>
   );

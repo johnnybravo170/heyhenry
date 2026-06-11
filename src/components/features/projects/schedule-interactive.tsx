@@ -75,6 +75,7 @@ export function ScheduleInteractive({
   pendingNotifyAt,
   predecessorsByTaskId,
   coSuggestions,
+  holidays,
 }: {
   projectId: string;
   tasks: ProjectScheduleTask[];
@@ -93,10 +94,14 @@ export function ScheduleInteractive({
   /** Approved, not-yet-dismissed change orders awaiting scheduling —
    *  the CO→schedule Henry prompt (brief touchpoint #3). */
   coSuggestions: CoScheduleSuggestion[];
+  /** ISO date → holiday name. Passed from the server component after
+   *  computing via ca-holidays for the tenant's province. */
+  holidays?: Array<{ date: string; name: string }>;
 }) {
   const router = useRouter();
   const timezone = useTenantTimezone();
   const [, startTransition] = useTransition();
+  const holidayMap = new Map((holidays ?? []).map((h) => [h.date, h.name]));
   const [editingTask, setEditingTask] = useState<ProjectScheduleTask | null>(null);
   const [creating, setCreating] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
@@ -579,6 +584,7 @@ export function ScheduleInteractive({
           phases={phases}
           tradeTypicalPhase={tradeTypicalPhase}
           behindTaskIds={behindTaskIds}
+          holidays={holidayMap}
           onTaskClick={setEditingTask}
           onTaskUpdate={handleTaskUpdate}
           onMarkDone={handleMarkDone}
