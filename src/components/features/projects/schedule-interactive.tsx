@@ -17,7 +17,7 @@
  * component; this is the single client boundary for the edit UX.
  */
 
-import { ListChecks, MoreHorizontal } from 'lucide-react';
+import { CalendarArrowUp, ListChecks, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
@@ -56,6 +56,7 @@ import type { CoScheduleSuggestion, ProjectScheduleTask } from '@/lib/db/queries
 import { statusToneClass } from '@/lib/ui/status-tokens';
 import {
   acceptCoScheduleSuggestionAction,
+  bulkShiftProjectAction,
   cancelScheduleNotifyAction,
   dismissCoScheduleSuggestionAction,
   notifyCustomerOfScheduleChangeAction,
@@ -74,6 +75,7 @@ export function ScheduleInteractive({
   pendingNotifyAt,
   predecessorsByTaskId,
   coSuggestions,
+  holidays,
 }: {
   projectId: string;
   tasks: ProjectScheduleTask[];
@@ -92,14 +94,20 @@ export function ScheduleInteractive({
   /** Approved, not-yet-dismissed change orders awaiting scheduling —
    *  the CO→schedule Henry prompt (brief touchpoint #3). */
   coSuggestions: CoScheduleSuggestion[];
+  /** ISO date → holiday name. Passed from the server component after
+   *  computing via ca-holidays for the tenant's province. */
+  holidays?: Array<{ date: string; name: string }>;
 }) {
   const router = useRouter();
   const timezone = useTenantTimezone();
   const [, startTransition] = useTransition();
+  const holidayMap = new Map((holidays ?? []).map((h) => [h.date, h.name]));
   const [editingTask, setEditingTask] = useState<ProjectScheduleTask | null>(null);
   const [creating, setCreating] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [autoLinkOpen, setAutoLinkOpen] = useState(false);
+  const [shiftOpen, setShiftOpen] = useState(false);
+  const [shiftDays, setShiftDays] = useState(5);
   const [previewOpen, setPreviewOpen] = useState(false);
   // The active Henry cascade explainer (transient, dismissible). Set when
   // a date/duration edit ripples ≥1 downstream task; cleared on Undo,
@@ -371,6 +379,22 @@ export function ScheduleInteractive({
     });
   };
 
+  const handleShift = () => {
+    startTransition(async () => {
+      const res = await bulkShiftProjectAction({ projectId, deltaDays: shiftDays });
+      if (!res.ok) {
+        toast.error(`Could not shift: ${res.error}`);
+        return;
+      }
+      toast.success(
+        `Shifted ${res.count} ${res.count === 1 ? 'task' : 'tasks'} by ${Math.abs(shiftDays)} working ${Math.abs(shiftDays) === 1 ? 'day' : 'days'}${shiftDays < 0 ? ' earlier' : ' later'}.`,
+      );
+      setShiftOpen(false);
+      setShiftDays(5);
+      router.refresh();
+    });
+  };
+
   // Firm + client-visible tasks for the Preview-as-customer drawer (the
   // portal renders firm bars only). Mapped to the portal view shape.
   const previewTasks = visibleTasks
@@ -500,6 +524,10 @@ export function ScheduleInteractive({
                 <ListChecks className="size-4" />
                 Auto-link dependencies
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setShiftOpen(true)}>
+                <CalendarArrowUp className="size-4" />
+                Shift timeline…
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onSelect={() => setClearOpen(true)}>
                 Clear &amp; start over
@@ -556,6 +584,7 @@ export function ScheduleInteractive({
           phases={phases}
           tradeTypicalPhase={tradeTypicalPhase}
           behindTaskIds={behindTaskIds}
+          holidays={holidayMap}
           onTaskClick={setEditingTask}
           onTaskUpdate={handleTaskUpdate}
           onMarkDone={handleMarkDone}
@@ -596,6 +625,81 @@ export function ScheduleInteractive({
         onOpenChange={setAutoLinkOpen}
         hideTrigger
       />
+
+      {/* Shift timeline dialog — bulk-move all tasks by N working days. */}
+      {shiftOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <button
+            type="button"
+            aria-label="Close shift dialog"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setShiftOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shift-timeline-title"
+            className="relative w-full max-w-sm rounded-lg border bg-background p-5 shadow-lg"
+          >
+            <h3 id="shift-timeline-title" className="mb-1 text-base font-semibold">
+              Shift timeline
+            </h3>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Move every task forward or backward. Weekends are skipped automatically.
+            </p>
+            <div className="mb-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShiftDays((d) => d - 1)}
+                className="flex size-8 items-center justify-center rounded border text-sm font-medium hover:bg-muted"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                value={shiftDays}
+                onChange={(e) => setShiftDays(Number(e.target.value))}
+                className="w-20 rounded border px-2 py-1 text-center text-sm tabular-nums"
+                step={1}
+              />
+              <button
+                type="button"
+                onClick={() => setShiftDays((d) => d + 1)}
+                className="flex size-8 items-center justify-center rounded border text-sm font-medium hover:bg-muted"
+              >
+                +
+              </button>
+              <span className="text-sm text-muted-foreground">working days</span>
+            </div>
+            {shiftDays !== 0 ? (
+              <p className="mb-4 text-xs text-muted-foreground">
+                {shiftDays > 0 ? `Push the entire project ` : `Pull the entire project `}
+                <strong>
+                  {Math.abs(shiftDays)} working {Math.abs(shiftDays) === 1 ? 'day' : 'days'}
+                </strong>
+                {shiftDays > 0 ? ' later.' : ' earlier.'}
+              </p>
+            ) : null}
+            <div className="flex gap-2">
+              <Button type="button" size="sm" disabled={shiftDays === 0} onClick={handleShift}>
+                Shift {shiftDays > 0 ? 'forward' : 'back'} {Math.abs(shiftDays)}{' '}
+                {Math.abs(shiftDays) === 1 ? 'day' : 'days'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShiftOpen(false);
+                  setShiftDays(5);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Preview as customer — the firm-bar portal view, so the operator
           sees exactly what the client sees before locking / notifying. */}
@@ -638,7 +742,7 @@ export function ScheduleInteractive({
                   client-visible for it to appear here.
                 </p>
               ) : (
-                <PortalScheduleGantt tasks={previewTasks} />
+                <PortalScheduleGantt tasks={previewTasks} holidays={holidayMap} />
               )}
             </div>
           </div>

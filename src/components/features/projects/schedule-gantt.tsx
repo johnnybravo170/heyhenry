@@ -19,7 +19,7 @@
  *    through to `onTaskClick`.
  */
 
-import { Check, Lock } from 'lucide-react';
+import { Check, Lock, ShieldCheck } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
@@ -140,9 +140,15 @@ type DayMeta = {
   isToday: boolean;
   /** When this day starts a new week, the day-of-month label to show. */
   weekStartLabel: number | null;
+  isHoliday: boolean;
+  holidayName: string | null;
 };
 
-function computeDayMeta(earliest: Date, totalDays: number): DayMeta[] {
+function computeDayMeta(
+  earliest: Date,
+  totalDays: number,
+  holidays?: ReadonlyMap<string, string>,
+): DayMeta[] {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const todayIndex = diffDays(today, earliest);
@@ -151,13 +157,15 @@ function computeDayMeta(earliest: Date, totalDays: number): DayMeta[] {
     const d = addDays(earliest, i);
     const dow = d.getUTCDay();
     const isMonday = dow === 1;
+    const isoStr = d.toISOString().slice(0, 10);
+    const holidayName = holidays?.get(isoStr) ?? null;
     meta.push({
       isWeekend: dow === 0 || dow === 6,
       isMonday,
       isToday: i === todayIndex,
-      // Show day-of-month at every Monday + the very first day so labels
-      // are evenly spaced and the leading edge always has a marker.
       weekStartLabel: isMonday || i === 0 ? d.getUTCDate() : null,
+      isHoliday: holidayName !== null,
+      holidayName,
     });
   }
   return meta;
@@ -177,7 +185,7 @@ function DayBacking({ meta }: { meta: DayMeta[] }) {
           key={i}
           aria-hidden="true"
           className={`pointer-events-none ${
-            m.isWeekend ? 'bg-muted/40' : ''
+            m.isWeekend ? 'bg-muted/40' : m.isHoliday ? 'bg-amber-100/60 dark:bg-amber-900/20' : ''
           } ${m.isMonday ? 'border-l border-border/60' : ''} ${
             m.isToday ? 'border-l-2 border-brand' : ''
           }`}
@@ -204,6 +212,7 @@ export function ScheduleGantt({
   phases,
   tradeTypicalPhase,
   behindTaskIds,
+  holidays,
   onTaskClick,
   onTaskUpdate,
   onMarkDone,
@@ -218,6 +227,9 @@ export function ScheduleGantt({
   /** Task ids that are behind (working-day end < today, not done) — get a
    *  danger-soft outline + glyph. Shared with the digest + slip source. */
   behindTaskIds?: string[];
+  /** ISO date → holiday name. Dims holiday columns amber in the backing and
+   *  shows a tooltip dot in the day-number header. */
+  holidays?: ReadonlyMap<string, string>;
   onTaskClick?: (task: ProjectScheduleTask) => void;
   onTaskUpdate?: (
     taskId: string,
@@ -252,7 +264,7 @@ export function ScheduleGantt({
   const totalDays = Math.max(1, diffDays(latest, earliest));
 
   const months = monthHeaderSegments(earliest, totalDays);
-  const dayMeta = computeDayMeta(earliest, totalDays);
+  const dayMeta = computeDayMeta(earliest, totalDays, holidays);
   const interactive = Boolean(onTaskClick);
   const draggable = Boolean(onTaskUpdate);
 
@@ -427,6 +439,22 @@ export function ScheduleGantt({
               </div>
             ) : null,
           )}
+          {/* Holiday indicator dots — amber dot on the header cell with
+              a native browser tooltip for the holiday name. Header cells
+              have normal pointer events so the title tooltip works. */}
+          {dayMeta.map((m, i) =>
+            m.isHoliday && !m.isWeekend ? (
+              <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: positional
+                key={`h-${i}`}
+                title={m.holidayName ?? 'Statutory holiday'}
+                className="flex cursor-default items-end justify-center pb-0.5"
+                style={{ gridRow: 2, gridColumnStart: i + 1 }}
+              >
+                <span className="size-1 rounded-full bg-amber-500" aria-hidden="true" />
+              </div>
+            ) : null,
+          )}
           {/* Bottom border under both header rows (visual separator) */}
           <div
             className="border-b"
@@ -457,13 +485,18 @@ export function ScheduleGantt({
                   : null;
                 const phaseColors = phaseColorFor(projectPhaseName ?? tradeTypical ?? null);
                 const customBarBg = task.bar_color ? BAR_COLOR_CLASSES[task.bar_color] : null;
+                const isInspection = task.kind === 'inspection';
                 const barClasses = isDone
                   ? 'bg-emerald-500'
                   : customBarBg
                     ? customBarBg
-                    : isFirm
-                      ? phaseColors.firm
-                      : phaseColors.rough;
+                    : isInspection
+                      ? isFirm
+                        ? 'bg-amber-500'
+                        : 'bg-amber-400/70'
+                      : isFirm
+                        ? phaseColors.firm
+                        : phaseColors.rough;
                 const NameCell = interactive ? 'button' : 'div';
                 const BarCell = interactive ? 'button' : 'div';
                 const isFirstRow = !firstRowAssigned;
@@ -507,6 +540,12 @@ export function ScheduleGantt({
                         interactive ? 'cursor-pointer rounded hover:bg-muted/50' : ''
                       }`}
                     >
+                      {isInspection && (
+                        <ShieldCheck
+                          className="mr-1.5 size-3.5 shrink-0 text-amber-600"
+                          aria-hidden="true"
+                        />
+                      )}
                       <span className={isDone ? 'text-muted-foreground line-through' : ''}>
                         {task.name}
                       </span>
@@ -591,6 +630,12 @@ export function ScheduleGantt({
                             }}
                           />
                         ))}
+                        {isInspection && (
+                          <ShieldCheck
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 m-auto size-3 text-white/90"
+                          />
+                        )}
                         {/* Hover/focus tooltip — instant (no native-title delay).
                             Hides during active drag so it doesn't follow the
                             cursor and obscure the bar. */}

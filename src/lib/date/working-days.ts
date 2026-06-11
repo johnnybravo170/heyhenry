@@ -3,8 +3,10 @@
  * Schedule Gantt (`project-schedule.ts`, `schedule-gantt.tsx`) and the
  * crew Calendar (`owner-calendar.tsx`). Pure functions, unit-testable.
  *
- * "Working day" = Mon–Fri. Weekends (Sat/Sun) carry no work and are
- * skipped when advancing a duration. Holidays are out of scope for v1.
+ * "Working day" = Mon–Fri, excluding statutory holidays. Weekends (Sat/Sun)
+ * always carry no work. Statutory holidays are optionally skipped when a
+ * `ReadonlySet<string>` of ISO YYYY-MM-DD dates is passed — see `ca-holidays.ts`
+ * for the Canadian provincial holiday lookup that builds those sets.
  *
  * Day-of-week is read via `getUTCDay()`, so callers must anchor Dates in
  * UTC midnight (`new Date('YYYY-MM-DDT00:00:00Z')`) for these to mean
@@ -18,6 +20,17 @@
 export function isWeekend(value: Date | number): boolean {
   const dow = typeof value === 'number' ? value : value.getUTCDay();
   return dow === 0 || dow === 6;
+}
+
+/** True when `date` is in the `holidays` set (ISO YYYY-MM-DD strings). */
+export function isHoliday(date: Date, holidays: ReadonlySet<string>): boolean {
+  return holidays.has(date.toISOString().slice(0, 10));
+}
+
+/** A day is non-working when it's a weekend OR a statutory holiday. */
+function isNonWorking(d: Date, holidays?: ReadonlySet<string>): boolean {
+  if (isWeekend(d)) return true;
+  return Boolean(holidays && holidays.size > 0 && isHoliday(d, holidays));
 }
 
 function addUtcDays(d: Date, days: number): Date {
@@ -38,14 +51,14 @@ function addUtcDays(d: Date, days: number): Date {
  * last work day) and for "successor start = predecessor end + lag + 1
  * working day".
  */
-export function addWorkingDays(start: Date, n: number): Date {
+export function addWorkingDays(start: Date, n: number, holidays?: ReadonlySet<string>): Date {
   if (n === 0) return new Date(start);
   const step = n > 0 ? 1 : -1;
   let remaining = Math.abs(n);
   let cursor = new Date(start);
   while (remaining > 0) {
     cursor = addUtcDays(cursor, step);
-    if (!isWeekend(cursor)) remaining -= 1;
+    if (!isNonWorking(cursor, holidays)) remaining -= 1;
   }
   return cursor;
 }
@@ -56,7 +69,7 @@ export function addWorkingDays(start: Date, n: number): Date {
  * 0 when they're the same day or only weekends separate them. Negative
  * when `to` precedes `from`.
  */
-export function workingDaysBetween(from: Date, to: Date): number {
+export function workingDaysBetween(from: Date, to: Date, holidays?: ReadonlySet<string>): number {
   const a = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
   const b = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()));
   if (a.getTime() === b.getTime()) return 0;
@@ -66,7 +79,7 @@ export function workingDaysBetween(from: Date, to: Date): number {
   let count = 0;
   while (cursor.getTime() < end.getTime()) {
     cursor = addUtcDays(cursor, 1);
-    if (!isWeekend(cursor)) count += 1;
+    if (!isNonWorking(cursor, holidays)) count += 1;
   }
   return forward ? count : -count;
 }
@@ -85,12 +98,14 @@ export function workingDaysBetween(from: Date, to: Date): number {
 export function workingDayEnd(
   start: Date,
   durationDays: number,
-  opts: { basis: 'working' | 'calendar'; worksWeekends: boolean },
+  opts: { basis: 'working' | 'calendar'; worksWeekends: boolean; holidays?: ReadonlySet<string> },
 ): Date {
   const span = Math.max(1, durationDays) - 1;
   if (opts.basis === 'calendar' || opts.worksWeekends) {
     return addUtcDays(start, span);
   }
-  const begin = isWeekend(start) ? addWorkingDays(start, 1) : start;
-  return addWorkingDays(begin, span);
+  const begin = isNonWorking(start, opts.holidays)
+    ? addWorkingDays(start, 1, opts.holidays)
+    : start;
+  return addWorkingDays(begin, span, opts.holidays);
 }

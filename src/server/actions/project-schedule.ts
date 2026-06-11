@@ -21,6 +21,7 @@
 import { revalidatePath } from 'next/cache';
 import { classifyCategoryName } from '@/lib/ai/phase-classifier';
 import { getCurrentTenant } from '@/lib/auth/helpers';
+import { buildHolidaySet } from '@/lib/date/ca-holidays';
 import { addWorkingDays, isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ScheduleConfidence, ScheduleDurationBasis } from '@/lib/db/queries/project-schedule';
 import { createClient } from '@/lib/supabase/server';
@@ -159,19 +160,48 @@ function buildPhaseAwareEdges(input: {
   return edges;
 }
 
-function layoutTasksSerial(trades: ResolvedTrade[], startDate: Date): LaidOutTask[] {
+/**
+ * Fetch the province code for a tenant. One query; result is used to build
+ * the holiday set so schedule math skips stat holidays correctly.
+ */
+async function getTenantProvince(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('tenants')
+    .select('province')
+    .eq('id', tenantId)
+    .maybeSingle();
+  return ((data as Record<string, unknown> | null)?.province as string | null | undefined) ?? null;
+}
+
+/** Rolling 7-year window (prev year … +5) for holiday precomputation. */
+function holidayYears(): number[] {
+  const y = new Date().getUTCFullYear();
+  return [y - 1, y, y + 1, y + 2, y + 3, y + 4, y + 5];
+}
+
+function layoutTasksSerial(
+  trades: ResolvedTrade[],
+  startDate: Date,
+  holidays?: ReadonlySet<string>,
+): LaidOutTask[] {
   // Tasks are authored as duration_basis='working' (the bootstrap default),
   // so the serial walk advances in WORKING days: each task starts the
   // working day after the previous one's inclusive working-day end. The
   // first task rolls to a working day if the project start is a weekend.
-  let cursorStart = isWeekend(startDate) ? addWorkingDays(startDate, 1) : new Date(startDate);
+  let cursorStart = isWeekend(startDate)
+    ? addWorkingDays(startDate, 1, holidays)
+    : new Date(startDate);
   return trades.map((trade, idx) => {
     const taskStart = new Date(cursorStart);
     const end = workingDayEnd(taskStart, trade.duration_days, {
       basis: 'working',
       worksWeekends: false,
+      holidays,
     });
-    cursorStart = addWorkingDays(end, 1);
+    cursorStart = addWorkingDays(end, 1, holidays);
     return {
       trade,
       planned_start_date: taskStart.toISOString().slice(0, 10),
@@ -254,7 +284,9 @@ export async function bootstrapProjectScheduleAction(
   // those positions. Result: predictable, debuggable order. We can
   // re-introduce AI later for within-phase decisions (parallel vs
   // serial rough-ins) once the foundations are right.
-  const laidOut = layoutTasksSerial(trades, startDate);
+  const province = await getTenantProvince(supabase, tenant.id);
+  const holidays = buildHolidaySet(province, holidayYears());
+  const laidOut = layoutTasksSerial(trades, startDate, holidays);
 
   const inserts = laidOut.map(({ trade, planned_start_date, display_order }) => ({
     tenant_id: tenant.id,
@@ -620,6 +652,7 @@ export type ScheduleTaskPatch = {
   notes?: string | null;
   /** Custom bar colour token (e.g. 'blue', 'red'). Null clears back to phase colour. */
   bar_color?: string | null;
+  kind?: 'trade' | 'inspection';
 };
 
 /**
@@ -660,7 +693,7 @@ async function cascadeForwardFromTask(
   projectId: string,
   originatingTaskId: string,
 ): Promise<CascadeResult> {
-  const [{ data: tasks }, { data: edges }] = await Promise.all([
+  const [{ data: tasks }, { data: edges }, { data: projRow }] = await Promise.all([
     supabase
       .from('project_schedule_tasks')
       .select(
@@ -672,11 +705,16 @@ async function cascadeForwardFromTask(
       .from('project_schedule_dependencies')
       .select('predecessor_task_id, successor_task_id, kind, lag_days')
       .eq('project_id', projectId),
+    supabase.from('projects').select('tenant_id').eq('id', projectId).maybeSingle(),
   ]);
 
   if (!tasks || !edges || tasks.length === 0 || edges.length === 0) {
     return { count: 0, moved: [], finishBefore: null, finishAfter: null };
   }
+
+  const tenantId = (projRow as Record<string, unknown> | null)?.tenant_id as string | null;
+  const province = tenantId ? await getTenantProvince(supabase, tenantId) : null;
+  const holidays = buildHolidaySet(province, holidayYears());
 
   type T = {
     id: string;
@@ -711,12 +749,20 @@ async function cascadeForwardFromTask(
   // (working or calendar depending on the successor's appetite — but the
   // successor lands on the next WORKING day when it skips weekends).
   const inclusiveEnd = (t: T): Date =>
-    workingDayEnd(t.start, t.duration, { basis: t.basis, worksWeekends: t.worksWeekends });
+    workingDayEnd(t.start, t.duration, {
+      basis: t.basis,
+      worksWeekends: t.worksWeekends,
+      holidays,
+    });
 
   // Same end-date math, but for an arbitrary start (used to derive the
   // project finish from the pre-cascade start snapshot).
   const endFor = (t: T, start: Date): Date =>
-    workingDayEnd(start, t.duration, { basis: t.basis, worksWeekends: t.worksWeekends });
+    workingDayEnd(start, t.duration, {
+      basis: t.basis,
+      worksWeekends: t.worksWeekends,
+      holidays,
+    });
 
   // Project finish BEFORE this cascade — the latest inclusive end across
   // every task using its pre-cascade start.
@@ -774,7 +820,7 @@ async function cascadeForwardFromTask(
       let minStart: Date;
       if (edge.kind === 'start_to_start') {
         minStart = succWorking
-          ? addWorkingDays(pred.start, edge.lag)
+          ? addWorkingDays(pred.start, edge.lag, holidays)
           : new Date(pred.start.getTime() + edge.lag * dayMs);
       } else if (edge.kind === 'finish_to_finish') {
         const predEnd = new Date(inclusiveEnd(pred).getTime() + dayMs);
@@ -785,7 +831,7 @@ async function cascadeForwardFromTask(
         const predLast = inclusiveEnd(pred);
         if (succWorking) {
           // Land on the next working day, then push out by lag working days.
-          minStart = addWorkingDays(addWorkingDays(predLast, 1), edge.lag);
+          minStart = addWorkingDays(addWorkingDays(predLast, 1, holidays), edge.lag, holidays);
         } else {
           minStart = new Date(predLast.getTime() + dayMs + edge.lag * dayMs);
         }
@@ -1029,6 +1075,7 @@ export type CreateScheduleTaskInput = {
   client_visible?: boolean;
   notes?: string | null;
   bar_color?: string | null;
+  kind?: 'trade' | 'inspection';
 };
 
 /**
@@ -1078,6 +1125,7 @@ export async function createScheduleTaskAction(
       display_order: nextOrder,
       notes: input.notes ?? null,
       bar_color: input.bar_color ?? null,
+      kind: input.kind ?? 'trade',
     })
     .select('id')
     .single();
@@ -1184,6 +1232,69 @@ export async function dismissCoScheduleSuggestionAction(input: {
 
   revalidatePath(`/projects/${input.projectId}`);
   return { ok: true };
+}
+
+/**
+ * Bulk-shift every active task on a project by `deltaDays` working days.
+ * Positive = forward, negative = backward. Each task's planned_start_date
+ * is independently shifted via addWorkingDays so weekends are always
+ * skipped — a task on Friday shifted forward 1 lands on Monday.
+ *
+ * Does NOT run cascadeForwardFromTask (dependencies are already satisfied
+ * by definition when every task shifts uniformly). Does NOT queue a
+ * customer notification — the operator should review and notify manually
+ * after a bulk shift since it's a high-impact change.
+ */
+export async function bulkShiftProjectAction(input: {
+  projectId: string;
+  deltaDays: number;
+}): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  if (input.deltaDays === 0) return { ok: true, count: 0 };
+
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  const supabase = await createClient();
+
+  const [{ data: project }, { data: tasks }] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('id, portal_slug, tenant_id')
+      .eq('id', input.projectId)
+      .single(),
+    supabase
+      .from('project_schedule_tasks')
+      .select('id, planned_start_date')
+      .eq('project_id', input.projectId)
+      .is('deleted_at', null),
+  ]);
+  if (!project) return { ok: false, error: 'Project not found.' };
+  if (!tasks || tasks.length === 0) return { ok: true, count: 0 };
+
+  const tenantId = (project as Record<string, unknown>).tenant_id as string | null;
+  const province = tenantId ? await getTenantProvince(supabase, tenantId) : null;
+  const holidays = buildHolidaySet(province, holidayYears());
+
+  const rows = tasks as Array<{ id: string; planned_start_date: string }>;
+  const updates = rows.map((t) => {
+    const newStart = addWorkingDays(
+      new Date(`${t.planned_start_date}T00:00:00Z`),
+      input.deltaDays,
+      holidays,
+    );
+    return supabase
+      .from('project_schedule_tasks')
+      .update({
+        planned_start_date: newStart.toISOString().slice(0, 10),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', t.id);
+  });
+  await Promise.all(updates);
+
+  revalidatePath(`/projects/${input.projectId}`);
+  const portalSlug = (project as Record<string, unknown>).portal_slug as string | null | undefined;
+  if (portalSlug) revalidatePath(`/portal/${portalSlug}`);
+  return { ok: true, count: rows.length };
 }
 
 /**

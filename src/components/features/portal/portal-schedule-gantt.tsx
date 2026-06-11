@@ -12,6 +12,7 @@
  * if today falls in range.
  */
 
+import { ShieldCheck } from 'lucide-react';
 import { isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { phaseColorFor } from '@/lib/ui/gantt-phase-colors';
@@ -102,9 +103,15 @@ type DayMeta = {
   isMonday: boolean;
   isToday: boolean;
   weekStartLabel: number | null;
+  isHoliday: boolean;
+  holidayName: string | null;
 };
 
-function computeDayMeta(earliest: Date, totalDays: number): DayMeta[] {
+function computeDayMeta(
+  earliest: Date,
+  totalDays: number,
+  holidays?: ReadonlyMap<string, string>,
+): DayMeta[] {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const todayIndex = diffDays(today, earliest);
@@ -113,11 +120,15 @@ function computeDayMeta(earliest: Date, totalDays: number): DayMeta[] {
     const d = addDays(earliest, i);
     const dow = d.getUTCDay();
     const isMonday = dow === 1;
+    const isoStr = d.toISOString().slice(0, 10);
+    const holidayName = holidays?.get(isoStr) ?? null;
     meta.push({
       isWeekend: dow === 0 || dow === 6,
       isMonday,
       isToday: i === todayIndex,
       weekStartLabel: isMonday || i === 0 ? d.getUTCDate() : null,
+      isHoliday: holidayName !== null,
+      holidayName,
     });
   }
   return meta;
@@ -132,7 +143,7 @@ function DayBacking({ meta }: { meta: DayMeta[] }) {
           key={i}
           aria-hidden="true"
           className={`pointer-events-none ${
-            m.isWeekend ? 'bg-muted/40' : ''
+            m.isWeekend ? 'bg-muted/40' : m.isHoliday ? 'bg-amber-100/60 dark:bg-amber-900/20' : ''
           } ${m.isMonday ? 'border-l border-border/60' : ''} ${
             m.isToday ? 'border-l-2 border-amber-500/80' : ''
           }`}
@@ -150,7 +161,13 @@ export type PortalScheduleTaskView = ProjectScheduleTask & {
   phaseName: string | null;
 };
 
-export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[] }) {
+export function PortalScheduleGantt({
+  tasks,
+  holidays,
+}: {
+  tasks: PortalScheduleTaskView[];
+  holidays?: ReadonlyMap<string, string>;
+}) {
   if (tasks.length === 0) return null;
 
   const starts = tasks.map((t) => parseDate(t.planned_start_date));
@@ -160,7 +177,7 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
   const totalDays = Math.max(1, diffDays(latest, earliest));
 
   const months = monthHeaderSegments(earliest, totalDays);
-  const dayMeta = computeDayMeta(earliest, totalDays);
+  const dayMeta = computeDayMeta(earliest, totalDays, holidays);
   // minmax(12px, 1fr) keeps each day-column at least 12px wide on
   // narrow screens; the outer wrapper scrolls horizontally instead of
   // compressing bars to invisible dots.
@@ -199,6 +216,19 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
               </div>
             ) : null,
           )}
+          {dayMeta.map((m, i) =>
+            m.isHoliday && !m.isWeekend ? (
+              <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: positional
+                key={`h-${i}`}
+                title={m.holidayName ?? 'Statutory holiday'}
+                className="flex cursor-default items-end justify-center pb-0.5"
+                style={{ gridRow: 2, gridColumnStart: i + 1 }}
+              >
+                <span className="size-1 rounded-full bg-amber-500" aria-hidden="true" />
+              </div>
+            ) : null,
+          )}
           <div
             className="border-b"
             style={{ gridRow: 3, gridColumnStart: 1, gridColumnEnd: `span ${totalDays}` }}
@@ -222,10 +252,16 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
             if (isWeekend(addDays(taskStart, c))) weekendOffsets.push(c);
           }
           const isDone = task.status === 'done';
+          const isInspection = task.kind === 'inspection';
           return (
             <div key={task.id} className="contents">
               <div className="sticky left-0 z-20 flex min-h-8 flex-col justify-center truncate bg-card py-1 pr-2 text-sm">
-                <span className={isDone ? 'text-muted-foreground line-through' : ''}>
+                <span
+                  className={`flex items-center gap-1 ${isDone ? 'text-muted-foreground line-through' : ''}`}
+                >
+                  {isInspection && (
+                    <ShieldCheck className="size-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+                  )}
                   {task.name}
                 </span>
                 {task.warning ? (
@@ -242,9 +278,11 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
                   className={`group relative my-1 h-5 self-center rounded-md shadow-sm ${
                     isDone
                       ? 'bg-emerald-500'
-                      : task.warning
+                      : isInspection
                         ? 'bg-amber-500'
-                        : phaseColorFor(task.phaseName).firm
+                        : task.warning
+                          ? 'bg-amber-500'
+                          : phaseColorFor(task.phaseName).firm
                   }`}
                   style={{
                     gridRow: 1,
@@ -264,6 +302,12 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
                       }}
                     />
                   ))}
+                  {isInspection && (
+                    <ShieldCheck
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 m-auto size-3 text-white/90"
+                    />
+                  )}
                   <span
                     role="tooltip"
                     className="pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
