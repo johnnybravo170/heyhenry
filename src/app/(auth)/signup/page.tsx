@@ -226,16 +226,25 @@ function SignupForm() {
           </div>
           {alreadyRegisteredEmail ? (
             <div
-              className="space-y-2 rounded-md border border-amber-200 bg-amber-100 p-3 text-sm text-amber-800"
+              className="space-y-3 rounded-md border border-amber-200 bg-amber-100 p-3 text-sm text-amber-800"
               role="alert"
             >
-              <p>An account with this email already exists.</p>
-              <Link
-                href={`/login?email=${encodeURIComponent(alreadyRegisteredEmail)}`}
-                className="inline-block font-medium underline underline-offset-2"
-              >
-                Sign in instead →
-              </Link>
+              <p className="font-medium">You already have a HeyHenry account.</p>
+              <p>Sign in with your password, or get a one-click email link — no password needed.</p>
+              <div className="flex flex-col gap-2 pt-1">
+                <Link
+                  href={`/login?email=${encodeURIComponent(alreadyRegisteredEmail)}`}
+                  className="inline-flex items-center justify-center rounded-md border border-amber-400 bg-white/60 px-3 py-2 font-medium hover:bg-white/80 transition-colors"
+                >
+                  Sign in with password →
+                </Link>
+                <Link
+                  href={`/magic-link?email=${encodeURIComponent(alreadyRegisteredEmail)}`}
+                  className="inline-flex items-center justify-center rounded-md px-3 py-2 font-medium underline underline-offset-2 hover:text-amber-900"
+                >
+                  Email me a sign-in link instead
+                </Link>
+              </div>
             </div>
           ) : null}
           {error ? (

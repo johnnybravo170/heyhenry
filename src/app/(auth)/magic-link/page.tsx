@@ -10,8 +10,8 @@
  */
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,8 +26,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { requestMagicLinkAction } from '@/server/actions/auth';
 
-export default function MagicLinkPage() {
+function MagicLinkForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefilledEmail = searchParams?.get('email')?.trim() || '';
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +65,7 @@ export default function MagicLinkPage() {
               name="email"
               type="email"
               autoComplete="email"
+              defaultValue={prefilledEmail}
               required
               disabled={pending}
             />
@@ -86,5 +89,13 @@ export default function MagicLinkPage() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function MagicLinkPage() {
+  return (
+    <Suspense fallback={null}>
+      <MagicLinkForm />
+    </Suspense>
   );
 }
