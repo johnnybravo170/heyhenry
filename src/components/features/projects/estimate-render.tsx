@@ -84,6 +84,8 @@ export type EstimateRenderProps = {
   /** Optional project-level scope summary, used in lump_sum mode as the body
    *  under the headline total. Markdown rendered via RichTextDisplay. */
   customerSummaryMd?: string | null;
+  /** Tenant-level override for the grand-total row label (default "Total"). */
+  totalLabel?: string;
 };
 
 function formatDate(iso: string | null | undefined, tz: string | null | undefined): string | null {
@@ -382,6 +384,7 @@ export function EstimateRender({
   documentType = 'estimate',
   customerViewMode = 'detailed',
   customerSummaryMd,
+  totalLabel,
 }: EstimateRenderProps) {
   const docLabel = documentType === 'quote' ? 'Quote' : 'Estimate';
   const subtotal = lines.reduce((s, l) => s + l.line_price_cents, 0);
@@ -432,7 +435,7 @@ export function EstimateRender({
   const totals =
     customerViewMode === 'lump_sum' && totalsRows.length === 0
       ? null
-      : { rows: totalsRows, totalCents: total };
+      : { rows: totalsRows, totalCents: total, totalLabel };
 
   return (
     <CustomerDocument

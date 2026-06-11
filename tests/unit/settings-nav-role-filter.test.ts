@@ -10,7 +10,7 @@ import {
  * The role × destination matrix is the headline of the settings redesign.
  * These tests pin it so an Ops tweak to ROLE_HIDDEN_HREFS surfaces here as
  * a deliberate diff, not a silent regression. Counts are asserted against
- * the foot copy in the OD render (owner ≈ 26 of 27, member ≈ 21 of 27).
+ * the foot copy in the OD render (owner ≈ 26 of 28, member ≈ 21 of 28).
  */
 
 const RENO = 'renovation'; // GC vertical — hides Pricebook
@@ -33,8 +33,8 @@ const OWNER_ONLY_DESTINATIONS = [
 ];
 
 describe('settings nav role filter', () => {
-  it('has 27 total destinations across all groups', () => {
-    expect(ALL_SETTINGS_ITEMS).toHaveLength(27);
+  it('has 28 total destinations across all groups', () => {
+    expect(ALL_SETTINGS_ITEMS).toHaveLength(28);
   });
 
   describe('owner', () => {
@@ -47,10 +47,10 @@ describe('settings nav role filter', () => {
       }
     });
 
-    it('sees Pricebook on a non-GC vertical (full 27)', () => {
+    it('sees Pricebook on a non-GC vertical (full 28)', () => {
       const visible = visibleHrefs('owner', PW);
       expect(visible.has('/settings/pricebook')).toBe(true);
-      expect(visible.size).toBe(27);
+      expect(visible.size).toBe(28); // all 28 items visible
     });
   });
 
@@ -93,33 +93,33 @@ describe('settings nav role filter', () => {
 });
 
 describe('settings nav foot counts', () => {
-  it('owner on a GC vertical: 26 of 27 shown, 1 hidden for vertical, 4 graduate', () => {
+  it('owner on a GC vertical: 27 of 28 shown, 1 hidden for vertical, 4 graduate', () => {
     const c = getSettingsNavCounts({ role: 'owner', vertical: RENO });
     expect(c).toEqual({
-      total: 27,
-      shown: 26,
+      total: 28,
+      shown: 27,
       hiddenForRole: 0,
       hiddenForVertical: 1,
       graduate: 4,
     });
   });
 
-  it('member on a GC vertical: 21 of 27 shown, 5 hidden for role, 1 hidden for vertical, 2 graduate', () => {
+  it('member on a GC vertical: 22 of 28 shown, 5 hidden for role, 1 hidden for vertical, 2 graduate', () => {
     const c = getSettingsNavCounts({ role: 'member', vertical: RENO });
     expect(c).toEqual({
-      total: 27,
-      shown: 21,
+      total: 28,
+      shown: 22,
       hiddenForRole: 5,
       hiddenForVertical: 1,
       graduate: 2,
     });
   });
 
-  it('admin on a GC vertical: 23 of 27 shown, 3 hidden for role, 1 hidden for vertical, 3 graduate', () => {
+  it('admin on a GC vertical: 24 of 28 shown, 3 hidden for role, 1 hidden for vertical, 3 graduate', () => {
     const c = getSettingsNavCounts({ role: 'admin', vertical: RENO });
     expect(c).toEqual({
-      total: 27,
-      shown: 23,
+      total: 28,
+      shown: 24,
       hiddenForRole: 3,
       hiddenForVertical: 1,
       graduate: 3,

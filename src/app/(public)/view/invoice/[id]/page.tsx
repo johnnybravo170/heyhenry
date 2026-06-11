@@ -10,6 +10,7 @@ import {
 } from '@/components/features/projects/customer-document';
 import { PublicViewLogger } from '@/components/features/public/public-view-logger';
 import { formatDate } from '@/lib/date/format';
+import { buildLabelMap, listTenantMemory } from '@/lib/db/queries/tenant-memory';
 import { invoiceDocNumber } from '@/lib/invoices/totals';
 import { formatCurrency } from '@/lib/pricing/calculator';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -83,7 +84,7 @@ export default async function PublicInvoiceViewPage({
     );
   }
 
-  const [{ data: tenant }, { data: customer }] = await Promise.all([
+  const [{ data: tenant }, { data: customer }, labelRows] = await Promise.all([
     supabase
       .from('tenants')
       .select(
@@ -96,6 +97,7 @@ export default async function PublicInvoiceViewPage({
       .select('name, email, phone, address_line1, city, province, postal_code')
       .eq('id', invoice.contact_id)
       .single(),
+    listTenantMemory(invoice.tenant_id as string, 'label.'),
   ]);
 
   // Sign the GC logo (private photos bucket) — the invoice now carries the
@@ -205,6 +207,12 @@ export default async function PublicInvoiceViewPage({
     totalsRows.push({ label: taxRowLabel, cents: invoice.tax_cents, meta: taxMeta });
   }
 
+  const invoiceLabelMap = buildLabelMap(labelRows);
+  // Tenant override takes precedence. Without one, preserve the existing
+  // "Due now" call-to-action for sent invoices and "Total" otherwise.
+  const invoiceTotalLabel =
+    invoiceLabelMap['label.invoice.total'] ?? (isSent ? 'Due now' : 'Total');
+
   const interac: InteracDetails = {
     recipientEmail: extractEtransferEmail(resolvedDocs.payment_instructions),
     amountLabel: `${formatCurrency(totalCents)} CAD`,
@@ -227,7 +235,7 @@ export default async function PublicInvoiceViewPage({
         customerAddress={customerAddress}
         projectName={isDraw && percentComplete !== null ? `${percentComplete}% complete` : null}
         projectLabel="Progress"
-        totals={{ rows: totalsRows, totalCents, totalLabel: isSent ? 'Due now' : 'Total' }}
+        totals={{ rows: totalsRows, totalCents, totalLabel: invoiceTotalLabel }}
         termsText={isSent ? null : (resolvedDocs.terms ?? null)}
         gstNumber={gstNumber}
         wcbNumber={wcbNumber}
