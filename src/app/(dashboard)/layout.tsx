@@ -12,6 +12,7 @@ import { Header } from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar';
 import { getCurrentTenant, getCurrentUser, isPlatformAdmin } from '@/lib/auth/helpers';
 import { TenantProvider } from '@/lib/auth/tenant-context';
+import { getInboxPendingCount } from '@/lib/db/queries/intake-drafts';
 import { listUserMemberships } from '@/lib/db/queries/memberships';
 import { getOperatorProfile } from '@/lib/db/queries/profile';
 import { HenryScreenProvider } from '@/lib/henry/screen-context';
@@ -52,15 +53,28 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const timezone = tenant?.timezone || 'America/Vancouver';
   const vertical = tenant?.vertical || 'renovation';
-  const [operatorProfile, memberships, verticalPack, isAdmin, taxCtx] = await Promise.all([
-    tenant && currentUser ? getOperatorProfile(tenant.id, currentUser.id) : Promise.resolve(null),
-    currentUser ? listUserMemberships(currentUser.id) : Promise.resolve([]),
-    loadVerticalPack(vertical),
-    currentUser ? isPlatformAdmin(currentUser.id) : Promise.resolve(false),
-    // Tax rate drives the auto-split chip on the Log Expense quick-action.
-    // When no tenant context exists the chip is disabled (rate=0).
-    tenant ? canadianTax.getCustomerFacingContext(tenant.id) : Promise.resolve(null),
-  ]);
+  const [operatorProfile, memberships, verticalPack, isAdmin, taxCtx, inboxPendingCount] =
+    await Promise.all([
+      tenant && currentUser ? getOperatorProfile(tenant.id, currentUser.id) : Promise.resolve(null),
+      currentUser ? listUserMemberships(currentUser.id) : Promise.resolve([]),
+      loadVerticalPack(vertical),
+      currentUser ? isPlatformAdmin(currentUser.id) : Promise.resolve(false),
+      // Tax rate drives the auto-split chip on the Log Expense quick-action.
+      // When no tenant context exists the chip is disabled (rate=0).
+      tenant ? canadianTax.getCustomerFacingContext(tenant.id) : Promise.resolve(null),
+      tenant ? getInboxPendingCount() : Promise.resolve(0),
+    ]);
+  // Inject live counts and dividers into nav items. Badge/dividerBefore are display-only
+  // and not persisted in the pack — computed here at render time.
+  const navItems = verticalPack.navItems.map((item) => ({
+    ...item,
+    badge:
+      item.href === '/inbox' || item.href === '/inbox/intake'
+        ? inboxPendingCount || undefined
+        : item.badge,
+    dividerBefore: item.href === '/referrals' ? true : item.dividerBefore,
+  }));
+
   const ownerRateCents = operatorProfile?.defaultHourlyRateCents ?? null;
   const tenantTaxRate = taxCtx?.totalRate ?? 0;
   // Signup didn't require a name until 2026-05. Operators who pre-date that
@@ -84,10 +98,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <div className="h-1 w-full" style={{ backgroundColor: accentColor }} aria-hidden />
         ) : null}
         <div className="flex min-h-screen w-full overflow-x-hidden">
-          <SidebarNav navItems={verticalPack.navItems} />
+          <SidebarNav navItems={navItems} />
           <div className="flex min-h-screen min-w-0 flex-1 flex-col">
             <Header
-              navItems={verticalPack.navItems}
+              navItems={navItems}
               ownerRateCents={ownerRateCents}
               tenantTaxRate={tenantTaxRate}
               memberships={memberships}

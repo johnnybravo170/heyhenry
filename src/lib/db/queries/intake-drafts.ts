@@ -252,3 +252,13 @@ export async function listInboxIntake(filter: InboxIntakeFilter = {}): Promise<I
     };
   });
 }
+
+/** Count of inbox items awaiting operator action (pending_review + error disposition). */
+export async function getInboxPendingCount(): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from('intake_drafts')
+    .select('id', { count: 'exact', head: true })
+    .in('disposition', ['pending_review', 'error']);
+  return count ?? 0;
+}

@@ -15,6 +15,8 @@ type NavLinkProps = {
   collapsed?: boolean;
   /** Plain-text version of the label, used as the title attribute when collapsed. */
   label?: string;
+  /** Live count badge (e.g. pending Inbox items). Calm/muted styling — not a loud alert dot. */
+  badge?: number;
 };
 
 export function NavLink({
@@ -25,6 +27,7 @@ export function NavLink({
   className,
   collapsed = false,
   label,
+  badge,
 }: NavLinkProps) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname?.startsWith(`${href}/`);
@@ -43,8 +46,17 @@ export function NavLink({
         className,
       )}
     >
-      {Icon ? <Icon className="size-4" /> : null}
-      {collapsed ? null : <span>{children}</span>}
+      {Icon ? <Icon className="size-4 shrink-0" /> : null}
+      {collapsed ? null : (
+        <>
+          <span className="flex-1">{children}</span>
+          {badge && badge > 0 ? (
+            <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground tabular-nums">
+              {badge > 99 ? '99+' : badge}
+            </span>
+          ) : null}
+        </>
+      )}
     </Link>
   );
 }

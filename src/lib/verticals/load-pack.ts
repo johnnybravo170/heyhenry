@@ -16,6 +16,10 @@ export type VerticalNavItem = {
   label: string;
   /** Lucide icon name. Resolved to a component on the client. */
   icon: string;
+  /** Render a horizontal rule above this item to visually separate it from the group above. */
+  dividerBefore?: boolean;
+  /** Live count badge shown on the nav item (e.g. Inbox pending items). Injected at render time — not stored in DB packs. */
+  badge?: number;
 };
 
 export type VerticalPack = {
@@ -35,6 +39,7 @@ const FALLBACK_NAV: VerticalNavItem[] = [
   { href: '/invoices', label: 'Billing', icon: 'FileText' },
   { href: '/expenses', label: 'Expenses', icon: 'Receipt' },
   { href: '/inbox/intake', label: 'Inbox', icon: 'Inbox' },
+  { href: '/referrals', label: 'Refer & Earn', icon: 'Gift', dividerBefore: true },
   { href: '/settings', label: 'Settings', icon: 'Settings' },
 ];
 

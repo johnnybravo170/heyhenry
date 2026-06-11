@@ -59,9 +59,24 @@ describe('runEstimatePreflight — zero line items', () => {
 });
 
 describe('runEstimatePreflight — envelope vs lines mismatch', () => {
-  it('flags a category where the envelope is set but no lines exist (the Connect Contracting bug)', () => {
+  it('does NOT flag a flat category (envelope set, no lines) — the envelope IS the price', () => {
+    // Structure-is-earned design: a flat category with an envelope but no
+    // cost lines is intentional (the "Add work" entry point). Mismatch only
+    // fires when lines exist and disagree with the envelope.
     const result = runEstimatePreflight({
       lines: [],
+      categories: [cat('cat-1', 'Painting (downstairs)', 500000)],
+    });
+    expect(result.mismatches).toHaveLength(0);
+    expect(result.totalIssues).toBe(0);
+  });
+
+  it('flags a category where lines exist but their total diverges from the envelope', () => {
+    // This is the true mismatch: the operator set $5000 as the envelope
+    // but the lines only add up to $0 — the lines are what will be sent
+    // to the customer, not the envelope.
+    const result = runEstimatePreflight({
+      lines: [line('a', 'Painting', 0, 'cat-1')],
       categories: [cat('cat-1', 'Painting (downstairs)', 500000)],
     });
     expect(result.mismatches).toHaveLength(1);
