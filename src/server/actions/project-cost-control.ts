@@ -340,6 +340,30 @@ export async function upsertBillWithAttachmentAction(
   return { ok: true, id: data.id as string };
 }
 
+export async function categorizeBillAction(input: {
+  id: string;
+  project_id: string;
+  budget_category_id: string | null;
+  cost_line_id: string | null;
+}): Promise<CostControlResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('project_costs')
+    .update({
+      budget_category_id: input.budget_category_id || null,
+      cost_line_id: input.cost_line_id || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.id)
+    .eq('tenant_id', tenant.id)
+    .eq('source_type', 'vendor_bill');
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/projects/${input.project_id}`);
+  return { ok: true, id: input.id };
+}
+
 /** @deprecated use upsertBillWithAttachmentAction */
 export async function upsertBillAction(input: unknown): Promise<CostControlResult> {
   const billSchema = z.object({

@@ -316,7 +316,12 @@ function ReceiptForm({
         </div>
         {categories.length > 0 && (
           <div>
-            <Label htmlFor="receipt-category">Category</Label>
+            <Label htmlFor="receipt-category">
+              Category{' '}
+              <span className="font-normal text-muted-foreground">
+                (optional — no pick = unallocated)
+              </span>
+            </Label>
             <select
               id="receipt-category"
               value={categoryId}
@@ -326,7 +331,7 @@ function ReceiptForm({
               }}
               className="h-10 w-full rounded-md border bg-background px-3 text-sm"
             >
-              <option value="">— none —</option>
+              <option value="">— None (unallocated) —</option>
               {categories.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
@@ -797,7 +802,7 @@ function EditReceiptDialog({
                 disabled={pending}
                 className="mt-1 block w-full rounded-md border px-3 py-2 text-sm"
               >
-                <option value="">— None —</option>
+                <option value="">— None (unallocated) —</option>
                 {categories.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
