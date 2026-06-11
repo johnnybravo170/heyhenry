@@ -456,14 +456,8 @@ export function CostsTab({
         </div>
       </div>
 
-      {/* Scope head — procurement framing + By type / By category lens. */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Procurement{' '}
-          <span className="font-normal text-muted-foreground/60">
-            · external money-out workflow
-          </span>
-        </div>
+      {/* By type / By category lens toggle. */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex rounded-md border bg-muted/30 p-0.5 text-xs">
           <a
             href={`/projects/${projectId}?tab=costs${focusCategoryId ? `&focus=${focusCategoryId}` : ''}${focusLineId ? `&focus_line=${focusLineId}` : ''}`}

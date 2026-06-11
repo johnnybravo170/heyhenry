@@ -250,10 +250,10 @@ export default async function ProjectDetailPage({
   // card folds the internal Notes feed into the Overview timeline.)
   const primaryTabs: { key: Tab; label: string }[] = [
     { key: 'budget', label: 'Budget' },
-    { key: 'costs', label: 'Spend' },
+    { key: 'costs', label: 'Costs' },
     { key: 'time', label: 'Labour' },
     { key: 'schedule', label: 'Schedule' },
-    { key: 'invoices', label: 'Billing' },
+    { key: 'invoices', label: 'Invoices' },
     { key: 'overview', label: 'Overview' },
   ];
   // Client is the documented exception to the unified issue-TYPE badge

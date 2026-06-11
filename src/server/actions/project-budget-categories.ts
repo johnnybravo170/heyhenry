@@ -311,12 +311,16 @@ export async function addBudgetCategoryAction(input: {
 
   const supabase = await createClient();
 
-  // Resolve (or create) the section entity, then set section_id. There is no
-  // legacy `section` string column to write — readers join the section entity.
+  // Resolve (or create) the section entity, then set section_id. Empty section
+  // means a flat (unsectioned) category — section_id stays null and it renders
+  // in the synthetic "Other" group (Rule 1: no section chrome unless sections exist).
   const sectionName = input.section.trim();
-  if (!sectionName) return { ok: false, error: 'Section is required.' };
-  const resolved = await resolveSectionId(supabase, tenant.id, input.project_id, sectionName);
-  if ('error' in resolved) return { ok: false, error: resolved.error };
+  const sectionId = sectionName
+    ? await resolveSectionId(supabase, tenant.id, input.project_id, sectionName).then((r) =>
+        'error' in r ? null : r.id,
+      )
+    : null;
+  if (sectionName && !sectionId) return { ok: false, error: 'Failed to resolve section.' };
 
   // Determine next display_order
   const { data: existing } = await supabase
@@ -336,7 +340,7 @@ export async function addBudgetCategoryAction(input: {
       project_id: input.project_id,
       tenant_id: tenant.id,
       name: input.name,
-      section_id: resolved.id,
+      section_id: sectionId,
       description: input.description || null,
       estimate_cents: input.estimate_cents ?? 0,
       display_order: nextOrder,

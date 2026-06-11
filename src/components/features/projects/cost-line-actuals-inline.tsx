@@ -54,7 +54,7 @@ export function CostLineActualsInline({
     return (
       <div className="px-3 py-2 text-xs text-muted-foreground">
         Nothing has been spent against{' '}
-        <span className="font-medium text-foreground">{costLineLabel}</span> yet. Bills, expenses,
+        <span className="font-medium text-foreground">{costLineLabel}</span> yet. Bills, receipts,
         and time entries can be assigned to this line on their own forms.
       </div>
     );
@@ -91,7 +91,7 @@ export function CostLineActualsInline({
             <span className="font-semibold tabular-nums">
               {formatCurrency(data.expenses_cents)}
             </span>
-            <span className="text-muted-foreground"> in expenses</span>
+            <span className="text-muted-foreground"> in receipts</span>
           </span>
         ) : null}
         {data.po_cents > 0 ? (
