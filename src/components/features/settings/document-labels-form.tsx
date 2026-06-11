@@ -33,7 +33,7 @@ function SlotField({ slot, currentValue }: { slot: DocumentLabelSlot; currentVal
       <div className="flex items-baseline justify-between gap-2">
         <Label htmlFor={`label-${slot}`}>{meta.label}</Label>
         {!isDefault && (
-          <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+          <span className="text-eyebrow font-mono uppercase tracking-wide text-muted-foreground">
             Custom
           </span>
         )}
