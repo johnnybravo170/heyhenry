@@ -100,6 +100,8 @@ type BudgetCategoriesTableProps = {
   actualsByLineId?: Record<string, CostLineActualsSummary>;
   /** Authoring posture (planning) → expanded; execution (active+) → collapsed. */
   defaultExpanded?: boolean;
+  /** Heading rendered above the table (e.g. "Scope of Work"). */
+  heading?: string;
   headerActions?: React.ReactNode;
   /**
    * All sections for the project in render order (incl. EMPTY ones). When
@@ -190,6 +192,7 @@ export function BudgetCategoriesTable({
   coContributionsByCategoryId = {},
   actualsByLineId = {},
   defaultExpanded = true,
+  heading,
   headerActions,
   sections: sectionsProp,
 }: BudgetCategoriesTableProps) {
@@ -532,6 +535,10 @@ export function BudgetCategoriesTable({
   }
 
   const sectionEntries = sectionGroups;
+  // Rule 1 (structure-is-earned): render flat when no REAL sections exist — only
+  // the synthetic "Other" group (entity.id === null). Section chrome appears only
+  // once the operator deliberately creates a section.
+  const hasRealSections = orderedSectionEntities.some((e) => e.id !== null);
   // State-aware expand/collapse: if every section is collapsed (and nothing is
   // expanded), the only useful action is "Expand all"; otherwise "Collapse all".
   const allCollapsed =
@@ -544,21 +551,28 @@ export function BudgetCategoriesTable({
       <div className="flex flex-col gap-3">
         {/* Scope head */}
         <div className="flex flex-wrap items-center gap-2">
+          {heading ? (
+            <h2 className="font-mono text-sm font-bold uppercase tracking-[0.06em] text-foreground/80">
+              {heading}
+            </h2>
+          ) : null}
           <div className="ml-auto flex items-center gap-2">
             {headerActions}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={allCollapsed ? expandAll : collapseAll}
-              aria-pressed={!allCollapsed}
-            >
-              {allCollapsed ? (
-                <Maximize2 className="size-3.5" />
-              ) : (
-                <Minimize2 className="size-3.5" />
-              )}
-              {allCollapsed ? 'Expand all' : 'Collapse all'}
-            </Button>
+            {(hasRealSections || lines.length > 0) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={allCollapsed ? expandAll : collapseAll}
+                aria-pressed={!allCollapsed}
+              >
+                {allCollapsed ? (
+                  <Maximize2 className="size-3.5" />
+                ) : (
+                  <Minimize2 className="size-3.5" />
+                )}
+                {allCollapsed ? 'Expand all' : 'Collapse all'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -573,208 +587,348 @@ export function BudgetCategoriesTable({
 
         <div className="overflow-x-auto">
           <div className="min-w-[720px] space-y-3">
-            {sectionEntries.map(({ entity, lines: sectionLines }) => {
-              const section = entity.name;
-              const collapsed = collapsedSections.has(section);
-              const estimate = sectionLines.reduce((s, l) => s + l.estimate_cents, 0);
-              const spent = sectionLines.reduce((s, l) => s + l.actual_cents, 0);
-              const committed = sectionLines.reduce((s, l) => s + l.committed_cents, 0);
-              const seg = budgetSegments(estimate, spent, committed);
-              // Collapsed-summary chips: categories over / projected-over.
-              const overCats = sectionLines.filter((l) => l.actual_cents > l.estimate_cents);
-              const projOverCats = sectionLines.filter(
-                (l) =>
-                  l.actual_cents <= l.estimate_cents &&
-                  l.actual_cents + l.committed_cents > l.estimate_cents,
-              );
-              const isRenaming = editingSectionName === section;
-              // "Other" (id null) is synthetic — no entity to rename/describe.
-              const isRealSection = entity.id !== null;
-              const isEditingDesc = isRealSection && editingSectionDescId === entity.id;
-
-              return (
-                <SectionDroppable key={entity.id ?? '__other__'} section={section}>
-                  {/* Section card — heading IS the card header so the section
-                      visually OWNS its categories (not just a label above them). */}
-                  <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-sm">
-                    {/* Section header — warm well tint, strong rule only when expanded */}
+            {/* Rule 1: flat rendering when no real sections exist — one bordered card,
+                no section chrome. Transitions to the sectioned layout the moment a
+                real section is created (hasRealSections flips). */}
+            {!hasRealSections ? (
+              <>
+                <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-sm">
+                  {(sectionGroups[0]?.lines.length ?? 0) > 0 ? (
+                    <>
+                      <div
+                        className={cn(
+                          GRID,
+                          'border-b border-[#E2D7C0] px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
+                        )}
+                      >
+                        <span />
+                        <span>Category</span>
+                        <span className="text-right">Estimate</span>
+                        <span className="text-right">Spent</span>
+                        <span className="text-right">Committed</span>
+                        <span className="text-right">Remaining</span>
+                      </div>
+                      <SortableContext
+                        items={(sectionGroups[0]?.lines ?? []).map((l) => l.budget_category_id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {(sectionGroups[0]?.lines ?? []).map((line) => (
+                          <BudgetCategoryRow
+                            key={line.budget_category_id}
+                            line={line}
+                            isExpanded={expanded.has(line.budget_category_id)}
+                            categoryLines={linesByBudgetCategory.get(line.budget_category_id) ?? []}
+                            toggleExpand={toggleExpand}
+                            editingId={editingId}
+                            editValue={editValue}
+                            setEditValue={setEditValue}
+                            setEditingId={setEditingId}
+                            isPending={isPending}
+                            saveEdit={saveEdit}
+                            startEdit={startEdit}
+                            editingNameId={editingNameId}
+                            editNameValue={editNameValue}
+                            setEditNameValue={setEditNameValue}
+                            setEditingNameId={setEditingNameId}
+                            saveEditName={saveEditName}
+                            startEditName={startEditName}
+                            editingDescId={editingDescId}
+                            editDescValue={editDescValue}
+                            setEditDescValue={setEditDescValue}
+                            setEditingDescId={setEditingDescId}
+                            saveEditDesc={saveEditDesc}
+                            startEditDesc={startEditDesc}
+                            removeCategory={removeCategory}
+                            addingLineFor={addingLineFor}
+                            setAddingLineFor={setAddingLineFor}
+                            editingLine={editingLine}
+                            setEditingLine={setEditingLine}
+                            deleteLine={deleteLine}
+                            projectId={projectId}
+                            catalog={catalog}
+                            coContributions={
+                              coContributionsByCategoryId[line.budget_category_id] ?? []
+                            }
+                            actualsByLineId={actualsByLineId}
+                            showHighlight={highlight && line.budget_category_id === focusCategoryId}
+                            isFocused={line.budget_category_id === focusCategoryId}
+                          />
+                        ))}
+                      </SortableContext>
+                    </>
+                  ) : null}
+                  {/* Flat add-work footer */}
+                  {addCategoryForSection === '__flat__' ? (
+                    <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-1 px-3">
+                      <AddBudgetCategoryForm
+                        projectId={projectId}
+                        kind="category"
+                        existingSections={[]}
+                        noSection
+                        nested
+                        onDone={() => setAddCategoryForSection(null)}
+                      />
+                    </div>
+                  ) : (
                     <div
                       className={cn(
-                        'flex items-start gap-2 bg-[#E8D5AF] px-3 py-3',
-                        !collapsed && 'border-b border-[#C8B68C]',
+                        'bg-[#F9F4EE] py-2 px-3',
+                        (sectionGroups[0]?.lines.length ?? 0) > 0 && 'border-t border-[#E2D7C0]',
                       )}
                     >
                       <button
                         type="button"
-                        onClick={() => toggleSection(section)}
-                        aria-expanded={!collapsed}
-                        aria-label={collapsed ? `Expand ${section}` : `Collapse ${section}`}
-                        className="mt-0.5 text-foreground/70 hover:text-foreground"
+                        onClick={() => {
+                          setAddCategoryForSection('__flat__');
+                          setAddCategoryMode('closed');
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
                       >
-                        {collapsed ? (
-                          <ChevronRight className="size-5" />
-                        ) : (
-                          <ChevronDown className="size-5" />
-                        )}
+                        <Plus className="size-3" />
+                        Add work
                       </button>
-                      <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          {isRenaming ? (
-                            <Input
-                              className="h-7 w-auto min-w-[180px] font-mono text-sm font-bold uppercase tracking-[0.04em]"
-                              value={editSectionValue}
-                              onChange={(e) => setEditSectionValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === 'Escape') {
-                                  if (e.key === 'Enter') {
-                                    const t = editSectionValue.trim();
-                                    if (t && t !== section && entity.id) {
+                    </div>
+                  )}
+                </div>
+                {/* "+ Add section" stays available; surfaces structure on demand */}
+                <div className="flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setAddCategoryForSection(null);
+                      setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
+                    }}
+                  >
+                    <Plus className="size-3.5" />
+                    {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
+                  </Button>
+                </div>
+              </>
+            ) : null}
+
+            {/* Sectioned rendering (hasRealSections = true) */}
+            {hasRealSections &&
+              sectionEntries.map(({ entity, lines: sectionLines }) => {
+                const section = entity.name;
+                const collapsed = collapsedSections.has(section);
+                const estimate = sectionLines.reduce((s, l) => s + l.estimate_cents, 0);
+                const spent = sectionLines.reduce((s, l) => s + l.actual_cents, 0);
+                const committed = sectionLines.reduce((s, l) => s + l.committed_cents, 0);
+                const seg = budgetSegments(estimate, spent, committed);
+                // Collapsed-summary chips: categories over / projected-over.
+                const overCats = sectionLines.filter((l) => l.actual_cents > l.estimate_cents);
+                const projOverCats = sectionLines.filter(
+                  (l) =>
+                    l.actual_cents <= l.estimate_cents &&
+                    l.actual_cents + l.committed_cents > l.estimate_cents,
+                );
+                const isRenaming = editingSectionName === section;
+                // "Other" (id null) is synthetic — no entity to rename/describe.
+                const isRealSection = entity.id !== null;
+                const isEditingDesc = isRealSection && editingSectionDescId === entity.id;
+
+                return (
+                  <SectionDroppable key={entity.id ?? '__other__'} section={section}>
+                    {/* Section card — heading IS the card header so the section
+                      visually OWNS its categories (not just a label above them). */}
+                    <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-sm">
+                      {/* Section header — warm well tint, strong rule only when expanded */}
+                      <div
+                        className={cn(
+                          'flex items-start gap-2 bg-[#E8D5AF] px-3 py-3',
+                          !collapsed && 'border-b border-[#C8B68C]',
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleSection(section)}
+                          aria-expanded={!collapsed}
+                          aria-label={collapsed ? `Expand ${section}` : `Collapse ${section}`}
+                          className="mt-0.5 text-foreground/70 hover:text-foreground"
+                        >
+                          {collapsed ? (
+                            <ChevronRight className="size-5" />
+                          ) : (
+                            <ChevronDown className="size-5" />
+                          )}
+                        </button>
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            {isRenaming ? (
+                              <Input
+                                className="h-7 w-auto min-w-[180px] font-mono text-sm font-bold uppercase tracking-[0.04em]"
+                                value={editSectionValue}
+                                onChange={(e) => setEditSectionValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Escape') {
+                                    if (e.key === 'Enter') {
+                                      const t = editSectionValue.trim();
+                                      if (t && t !== section && entity.id) {
+                                        startTransition(async () => {
+                                          const r = await updateBudgetSectionAction({
+                                            id: entity.id as string,
+                                            project_id: projectId,
+                                            name: t,
+                                          });
+                                          if (!r.ok) toast.error(r.error);
+                                        });
+                                      }
+                                    }
+                                    setEditingSectionName(null);
+                                  }
+                                }}
+                                onBlur={() => setEditingSectionName(null)}
+                                autoFocus
+                                disabled={isPending}
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => toggleSection(section)}
+                                className="text-left font-mono text-sm font-bold uppercase tracking-[0.04em] text-foreground"
+                              >
+                                {section}
+                              </button>
+                            )}
+                            {!isRenaming && isRealSection ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditSectionValue(section);
+                                  setEditingSectionName(section);
+                                }}
+                                aria-label={`Rename ${section}`}
+                                className="rounded p-0.5 text-muted-foreground/60 hover:bg-[#EFE4CB] hover:text-foreground"
+                              >
+                                <Pencil className="size-3" />
+                              </button>
+                            ) : null}
+                            {/* Delete offered only on empty real sections */}
+                            {!isRenaming && isRealSection && sectionLines.length === 0 ? (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <button
+                                    type="button"
+                                    aria-label={`Delete ${section}`}
+                                    title="Delete section"
+                                    className="rounded p-0.5 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive"
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete "{section}"?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This removes the empty section heading. It has no categories,
+                                      so no scope or spend is affected.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isPending}>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => removeSection(entity.id as string)}
+                                      disabled={isPending}
+                                      className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+                                    >
+                                      Delete section
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            ) : null}
+                            {/* Quiet variance chips — show when collapsed */}
+                            {collapsed && overCats.length > 0 ? (
+                              <StatusBadge
+                                tone="danger"
+                                className="font-medium normal-case tracking-normal"
+                              >
+                                <span className="tabular-nums">
+                                  <Money
+                                    cents={overCats.reduce(
+                                      (s, l) => s + (l.actual_cents - l.estimate_cents),
+                                      0,
+                                    )}
+                                  />
+                                </span>{' '}
+                                over
+                                {overCats.length > 1 ? (
+                                  <span className="ml-1 opacity-70">({overCats.length})</span>
+                                ) : null}
+                              </StatusBadge>
+                            ) : null}
+                            {collapsed && projOverCats.length > 0 ? (
+                              <StatusBadge
+                                tone="warning"
+                                className="font-medium normal-case tracking-normal"
+                              >
+                                <span className="tabular-nums">{projOverCats.length}</span>{' '}
+                                projected over
+                              </StatusBadge>
+                            ) : null}
+                          </div>
+                          {/* Section description — only real sections */}
+                          {isRealSection ? (
+                            isEditingDesc ? (
+                              <div className="space-y-1">
+                                <div className="flex justify-end">
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => {
+                                      const sid = entity.id as string;
+                                      setDraftingSectionId(sid);
+                                      startTransition(async () => {
+                                        const r = await draftBudgetSectionDescriptionAction({
+                                          section_id: sid,
+                                        });
+                                        setDraftingSectionId(null);
+                                        if (r.ok) {
+                                          setEditSectionDescValue(r.text);
+                                          toast.success('Drafted — review and save.');
+                                        } else {
+                                          toast.error(r.error);
+                                        }
+                                      });
+                                    }}
+                                    disabled={draftingSectionId === entity.id}
+                                    className="inline-flex items-center gap-1 text-eyebrow text-brand hover:text-brand/80 disabled:opacity-60"
+                                  >
+                                    {draftingSectionId === entity.id ? (
+                                      <Loader2 className="size-3 animate-spin" />
+                                    ) : (
+                                      <Sparkles className="size-3" />
+                                    )}
+                                    Draft from line items
+                                  </button>
+                                </div>
+                                <Textarea
+                                  className="min-h-[3.5rem] resize-y text-xs"
+                                  rows={2}
+                                  value={editSectionDescValue}
+                                  onChange={(e) => setEditSectionDescValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                      e.preventDefault();
+                                      const id = entity.id as string;
                                       startTransition(async () => {
                                         const r = await updateBudgetSectionAction({
-                                          id: entity.id as string,
+                                          id,
                                           project_id: projectId,
-                                          name: t,
+                                          description_md: editSectionDescValue.trim(),
                                         });
-                                        if (!r.ok) toast.error(r.error);
+                                        if (r.ok) {
+                                          toast.success('Section description updated');
+                                          setEditingSectionDescId(null);
+                                        } else toast.error(r.error);
                                       });
                                     }
-                                  }
-                                  setEditingSectionName(null);
-                                }
-                              }}
-                              onBlur={() => setEditingSectionName(null)}
-                              autoFocus
-                              disabled={isPending}
-                            />
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => toggleSection(section)}
-                              className="text-left font-mono text-sm font-bold uppercase tracking-[0.04em] text-foreground"
-                            >
-                              {section}
-                            </button>
-                          )}
-                          {!isRenaming && isRealSection ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditSectionValue(section);
-                                setEditingSectionName(section);
-                              }}
-                              aria-label={`Rename ${section}`}
-                              className="rounded p-0.5 text-muted-foreground/60 hover:bg-[#EFE4CB] hover:text-foreground"
-                            >
-                              <Pencil className="size-3" />
-                            </button>
-                          ) : null}
-                          {/* Delete offered only on empty real sections */}
-                          {!isRenaming && isRealSection && sectionLines.length === 0 ? (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <button
-                                  type="button"
-                                  aria-label={`Delete ${section}`}
-                                  title="Delete section"
-                                  className="rounded p-0.5 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive"
-                                >
-                                  <Trash2 className="size-3" />
-                                </button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete "{section}"?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This removes the empty section heading. It has no categories, so
-                                    no scope or spend is affected.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => removeSection(entity.id as string)}
-                                    disabled={isPending}
-                                    className="bg-destructive/10 text-destructive hover:bg-destructive/20"
-                                  >
-                                    Delete section
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          ) : null}
-                          {/* Quiet variance chips — show when collapsed */}
-                          {collapsed && overCats.length > 0 ? (
-                            <StatusBadge
-                              tone="danger"
-                              className="font-medium normal-case tracking-normal"
-                            >
-                              <span className="tabular-nums">
-                                <Money
-                                  cents={overCats.reduce(
-                                    (s, l) => s + (l.actual_cents - l.estimate_cents),
-                                    0,
-                                  )}
-                                />
-                              </span>{' '}
-                              over
-                              {overCats.length > 1 ? (
-                                <span className="ml-1 opacity-70">({overCats.length})</span>
-                              ) : null}
-                            </StatusBadge>
-                          ) : null}
-                          {collapsed && projOverCats.length > 0 ? (
-                            <StatusBadge
-                              tone="warning"
-                              className="font-medium normal-case tracking-normal"
-                            >
-                              <span className="tabular-nums">{projOverCats.length}</span> projected
-                              over
-                            </StatusBadge>
-                          ) : null}
-                        </div>
-                        {/* Section description — only real sections */}
-                        {isRealSection ? (
-                          isEditingDesc ? (
-                            <div className="space-y-1">
-                              <div className="flex justify-end">
-                                <button
-                                  type="button"
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  onClick={() => {
-                                    const sid = entity.id as string;
-                                    setDraftingSectionId(sid);
-                                    startTransition(async () => {
-                                      const r = await draftBudgetSectionDescriptionAction({
-                                        section_id: sid,
-                                      });
-                                      setDraftingSectionId(null);
-                                      if (r.ok) {
-                                        setEditSectionDescValue(r.text);
-                                        toast.success('Drafted — review and save.');
-                                      } else {
-                                        toast.error(r.error);
-                                      }
-                                    });
+                                    if (e.key === 'Escape') setEditingSectionDescId(null);
                                   }}
-                                  disabled={draftingSectionId === entity.id}
-                                  className="inline-flex items-center gap-1 text-eyebrow text-brand hover:text-brand/80 disabled:opacity-60"
-                                >
-                                  {draftingSectionId === entity.id ? (
-                                    <Loader2 className="size-3 animate-spin" />
-                                  ) : (
-                                    <Sparkles className="size-3" />
-                                  )}
-                                  Draft from line items
-                                </button>
-                              </div>
-                              <Textarea
-                                className="min-h-[3.5rem] resize-y text-xs"
-                                rows={2}
-                                value={editSectionDescValue}
-                                onChange={(e) => setEditSectionDescValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
+                                  onBlur={() => {
                                     const id = entity.id as string;
                                     startTransition(async () => {
                                       const r = await updateBudgetSectionAction({
@@ -782,192 +936,178 @@ export function BudgetCategoriesTable({
                                         project_id: projectId,
                                         description_md: editSectionDescValue.trim(),
                                       });
-                                      if (r.ok) {
-                                        toast.success('Section description updated');
-                                        setEditingSectionDescId(null);
-                                      } else toast.error(r.error);
+                                      if (r.ok) setEditingSectionDescId(null);
+                                      else toast.error(r.error);
                                     });
-                                  }
-                                  if (e.key === 'Escape') setEditingSectionDescId(null);
+                                  }}
+                                  placeholder="Section description. Enter to save, Shift+Enter for new line."
+                                  autoFocus
+                                />
+                              </div>
+                            ) : entity.description_md ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditSectionDescValue(entity.description_md ?? '');
+                                  setEditingSectionDescId(entity.id);
                                 }}
-                                onBlur={() => {
-                                  const id = entity.id as string;
-                                  startTransition(async () => {
-                                    const r = await updateBudgetSectionAction({
-                                      id,
-                                      project_id: projectId,
-                                      description_md: editSectionDescValue.trim(),
-                                    });
-                                    if (r.ok) setEditingSectionDescId(null);
-                                    else toast.error(r.error);
-                                  });
-                                }}
-                                placeholder="Section description. Enter to save, Shift+Enter for new line."
-                                autoFocus
+                                title={entity.description_md}
+                                className="line-clamp-1 text-left text-xs text-muted-foreground/80 hover:text-foreground"
+                              >
+                                {entity.description_md}
+                              </button>
+                            ) : null
+                          ) : null}
+                        </div>
+                        {/* Section subtotal — right of header, not column-aligned */}
+                        <div className="flex shrink-0 items-baseline gap-2 text-right">
+                          <span className="text-sm font-semibold tabular-nums text-foreground">
+                            <Money cents={estimate} />
+                          </span>
+                          <span
+                            className={cn(
+                              'font-mono text-eyebrow tabular-nums',
+                              seg.actuallyOver
+                                ? 'text-destructive'
+                                : seg.projectedOver
+                                  ? 'text-amber-700 dark:text-amber-300'
+                                  : 'text-muted-foreground',
+                            )}
+                          >
+                            {seg.usedPct}% used
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Section body — column labels + category rows */}
+                      {!collapsed ? (
+                        <>
+                          <div
+                            className={cn(
+                              GRID,
+                              'border-b border-[#E2D7C0] px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
+                            )}
+                          >
+                            <span />
+                            <span>Category</span>
+                            <span className="text-right">Estimate</span>
+                            <span className="text-right">Spent</span>
+                            <span className="text-right">Committed</span>
+                            <span className="text-right">Remaining</span>
+                          </div>
+                          <SortableContext
+                            items={sectionLines.map((l) => l.budget_category_id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {sectionLines.map((line) => (
+                              <BudgetCategoryRow
+                                key={line.budget_category_id}
+                                line={line}
+                                isExpanded={expanded.has(line.budget_category_id)}
+                                categoryLines={
+                                  linesByBudgetCategory.get(line.budget_category_id) ?? []
+                                }
+                                toggleExpand={toggleExpand}
+                                editingId={editingId}
+                                editValue={editValue}
+                                setEditValue={setEditValue}
+                                setEditingId={setEditingId}
+                                isPending={isPending}
+                                saveEdit={saveEdit}
+                                startEdit={startEdit}
+                                editingNameId={editingNameId}
+                                editNameValue={editNameValue}
+                                setEditNameValue={setEditNameValue}
+                                setEditingNameId={setEditingNameId}
+                                saveEditName={saveEditName}
+                                startEditName={startEditName}
+                                editingDescId={editingDescId}
+                                editDescValue={editDescValue}
+                                setEditDescValue={setEditDescValue}
+                                setEditingDescId={setEditingDescId}
+                                saveEditDesc={saveEditDesc}
+                                startEditDesc={startEditDesc}
+                                removeCategory={removeCategory}
+                                addingLineFor={addingLineFor}
+                                setAddingLineFor={setAddingLineFor}
+                                editingLine={editingLine}
+                                setEditingLine={setEditingLine}
+                                deleteLine={deleteLine}
+                                projectId={projectId}
+                                catalog={catalog}
+                                coContributions={
+                                  coContributionsByCategoryId[line.budget_category_id] ?? []
+                                }
+                                actualsByLineId={actualsByLineId}
+                                showHighlight={
+                                  highlight && line.budget_category_id === focusCategoryId
+                                }
+                                isFocused={line.budget_category_id === focusCategoryId}
+                              />
+                            ))}
+                          </SortableContext>
+                          {/* Contextual "+ Add category to {section}" */}
+                          {addCategoryForSection === section ? (
+                            <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-1 pl-[50px] pr-3">
+                              <AddBudgetCategoryForm
+                                projectId={projectId}
+                                kind="category"
+                                existingSections={allSections.filter(Boolean)}
+                                lockedSection={section}
+                                nested
+                                onDone={() => setAddCategoryForSection(null)}
                               />
                             </div>
-                          ) : entity.description_md ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditSectionDescValue(entity.description_md ?? '');
-                                setEditingSectionDescId(entity.id);
-                              }}
-                              title={entity.description_md}
-                              className="line-clamp-1 text-left text-xs text-muted-foreground/80 hover:text-foreground"
-                            >
-                              {entity.description_md}
-                            </button>
-                          ) : null
-                        ) : null}
-                      </div>
-                      {/* Section subtotal — right of header, not column-aligned */}
-                      <div className="flex shrink-0 items-baseline gap-2 text-right">
-                        <span className="text-sm font-semibold tabular-nums text-foreground">
-                          <Money cents={estimate} />
-                        </span>
-                        <span
-                          className={cn(
-                            'font-mono text-eyebrow tabular-nums',
-                            seg.actuallyOver
-                              ? 'text-destructive'
-                              : seg.projectedOver
-                                ? 'text-amber-700 dark:text-amber-300'
-                                : 'text-muted-foreground',
+                          ) : (
+                            <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-2 pl-[50px] pr-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddCategoryForSection(section);
+                                  setAddCategoryMode('closed');
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
+                              >
+                                <Plus className="size-3" />
+                                Add work to {section}
+                              </button>
+                            </div>
                           )}
-                        >
-                          {seg.usedPct}% used
-                        </span>
-                      </div>
+                        </>
+                      ) : null}
                     </div>
+                  </SectionDroppable>
+                );
+              })}
 
-                    {/* Section body — column labels + category rows */}
-                    {!collapsed ? (
-                      <>
-                        <div
-                          className={cn(
-                            GRID,
-                            'border-b border-[#E2D7C0] px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
-                          )}
-                        >
-                          <span />
-                          <span>Category</span>
-                          <span className="text-right">Estimate</span>
-                          <span className="text-right">Spent</span>
-                          <span className="text-right">Committed</span>
-                          <span className="text-right">Remaining</span>
-                        </div>
-                        <SortableContext
-                          items={sectionLines.map((l) => l.budget_category_id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {sectionLines.map((line) => (
-                            <BudgetCategoryRow
-                              key={line.budget_category_id}
-                              line={line}
-                              isExpanded={expanded.has(line.budget_category_id)}
-                              categoryLines={
-                                linesByBudgetCategory.get(line.budget_category_id) ?? []
-                              }
-                              toggleExpand={toggleExpand}
-                              editingId={editingId}
-                              editValue={editValue}
-                              setEditValue={setEditValue}
-                              setEditingId={setEditingId}
-                              isPending={isPending}
-                              saveEdit={saveEdit}
-                              startEdit={startEdit}
-                              editingNameId={editingNameId}
-                              editNameValue={editNameValue}
-                              setEditNameValue={setEditNameValue}
-                              setEditingNameId={setEditingNameId}
-                              saveEditName={saveEditName}
-                              startEditName={startEditName}
-                              editingDescId={editingDescId}
-                              editDescValue={editDescValue}
-                              setEditDescValue={setEditDescValue}
-                              setEditingDescId={setEditingDescId}
-                              saveEditDesc={saveEditDesc}
-                              startEditDesc={startEditDesc}
-                              removeCategory={removeCategory}
-                              addingLineFor={addingLineFor}
-                              setAddingLineFor={setAddingLineFor}
-                              editingLine={editingLine}
-                              setEditingLine={setEditingLine}
-                              deleteLine={deleteLine}
-                              projectId={projectId}
-                              catalog={catalog}
-                              coContributions={
-                                coContributionsByCategoryId[line.budget_category_id] ?? []
-                              }
-                              actualsByLineId={actualsByLineId}
-                              showHighlight={
-                                highlight && line.budget_category_id === focusCategoryId
-                              }
-                              isFocused={line.budget_category_id === focusCategoryId}
-                            />
-                          ))}
-                        </SortableContext>
-                        {/* Contextual "+ Add category to {section}" */}
-                        {addCategoryForSection === section ? (
-                          <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-1 pl-[50px] pr-3">
-                            <AddBudgetCategoryForm
-                              projectId={projectId}
-                              kind="category"
-                              existingSections={allSections.filter(Boolean)}
-                              lockedSection={section}
-                              nested
-                              onDone={() => setAddCategoryForSection(null)}
-                            />
-                          </div>
-                        ) : (
-                          <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-2 pl-[50px] pr-3">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAddCategoryForSection(section);
-                                setAddCategoryMode('closed');
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
-                            >
-                              <Plus className="size-3" />
-                              Add category to {section}
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    ) : null}
-                  </div>
-                </SectionDroppable>
-              );
-            })}
-
-            {/* Catch-all bottom add-row — "+ Add category" (with section picker)
-                and "+ Add section". */}
-            <div className="flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setAddCategoryForSection(null);
-                  setAddCategoryMode((m) => (m === 'category' ? 'closed' : 'category'));
-                }}
-              >
-                <Plus className="size-3.5" />
-                {addCategoryMode === 'category' ? 'Cancel' : 'Add category'}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setAddCategoryForSection(null);
-                  setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
-                }}
-              >
-                <Plus className="size-3.5" />
-                {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
-              </Button>
-            </div>
+            {/* Catch-all bottom add-row (sectioned mode) — "+ Add work" (with section
+                picker) and "+ Add section". */}
+            {hasRealSections && (
+              <div className="flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setAddCategoryForSection(null);
+                    setAddCategoryMode((m) => (m === 'category' ? 'closed' : 'category'));
+                  }}
+                >
+                  <Plus className="size-3.5" />
+                  {addCategoryMode === 'category' ? 'Cancel' : 'Add work'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setAddCategoryForSection(null);
+                    setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
+                  }}
+                >
+                  <Plus className="size-3.5" />
+                  {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1493,7 +1633,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                     href={`/projects/${projectId}?tab=costs&focus=${line.budget_category_id}`}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    Expenses{' '}
+                    Receipts{' '}
                     <Money cents={line.expense_cents} className="font-medium text-foreground" />
                   </Link>
                 ) : null}
@@ -1515,13 +1655,16 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
  *     categories get added inside it afterward.
  *   - `category`: Name + Section (pick existing / new) + Estimate +
  *     Description. With `lockedSection` (the contextual foot-of-section
- *     variant) the Section picker is hidden and pre-filled.
+ *     variant) the Section picker is hidden and pre-filled. With `noSection`
+ *     (flat mode), the section field is hidden entirely and the category is
+ *     saved without a section (section_id = null, appears in synthetic Other).
  */
 function AddBudgetCategoryForm({
   projectId,
   kind,
   existingSections,
   lockedSection,
+  noSection = false,
   nested = false,
   onDone,
 }: {
@@ -1530,13 +1673,16 @@ function AddBudgetCategoryForm({
   existingSections: string[];
   /** Contextual variant: parent section known → hide + pre-fill the picker. */
   lockedSection?: string;
+  /** Flat-mode variant: hide the section field, save with section_id = null. */
+  noSection?: boolean;
   /** Render nested under a section (tighter, no outer margin). */
   nested?: boolean;
   onDone: () => void;
 }) {
   const isSection = kind === 'section';
   const [name, setName] = useState('');
-  const initialIsCustom = !lockedSection && (isSection || existingSections.length === 0);
+  const initialIsCustom =
+    !lockedSection && !noSection && (isSection || existingSections.length === 0);
   const [section, setSection] = useState(
     lockedSection ?? (initialIsCustom ? '' : (existingSections[0] ?? '')),
   );
@@ -1570,8 +1716,9 @@ function AddBudgetCategoryForm({
       return;
     }
 
-    const sectionTrimmed = section.trim();
-    if (!sectionTrimmed) {
+    // noSection = flat mode: submit with empty section → server saves section_id = null.
+    const sectionTrimmed = noSection ? '' : section.trim();
+    if (!noSection && !sectionTrimmed) {
       toast.error('Section is required');
       return;
     }
@@ -1598,14 +1745,16 @@ function AddBudgetCategoryForm({
     >
       {/* Header bar — kind badge + title, so the form is never ambiguous. */}
       <div className="flex flex-wrap items-center gap-2.5 border-b bg-muted/40 px-4 py-2.5">
-        <StatusBadge tone="neutral" label={isSection ? 'New section' : 'New category'} />
+        <StatusBadge tone="neutral" label={isSection ? 'New section' : 'New item'} />
 
         <span className="font-bold text-base text-foreground">
-          {isSection ? 'Add a budget section' : 'Add a budget category'}
+          {isSection ? 'Add a budget section' : 'Add work'}
         </span>
         <Eyebrow className="ml-auto">
           {isSection ? (
             'Name + description'
+          ) : noSection ? (
+            'Name + price'
           ) : lockedSection ? (
             <>
               In <strong className="font-bold text-foreground/80">{lockedSection}</strong>
@@ -1621,8 +1770,10 @@ function AddBudgetCategoryForm({
         <div
           className={cn(
             'grid grid-cols-1 gap-3.5',
-            // Section mode: just a name. Category mode: name + section + estimate.
-            !isSection && 'sm:grid-cols-[2fr_1.4fr_1.1fr]',
+            // Section mode: just a name. Category mode: name + section + estimate
+            // (or just name + estimate in noSection/flat mode).
+            !isSection && !noSection && 'sm:grid-cols-[2fr_1.4fr_1.1fr]',
+            !isSection && noSection && 'sm:grid-cols-[2fr_1.1fr]',
           )}
         >
           <div className="flex min-w-0 flex-col gap-1.5">
@@ -1636,13 +1787,13 @@ function AddBudgetCategoryForm({
               id="add-cat-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={isSection ? 'e.g. Mechanical & HVAC' : 'e.g. Cabinets & millwork'}
+              placeholder={isSection ? 'e.g. Mechanical & HVAC' : 'e.g. Demolition, Tile, Cabinets'}
               required
               autoFocus
             />
           </div>
 
-          {isSection ? null : (
+          {isSection ? null : noSection ? null : (
             <>
               <div className="flex min-w-0 flex-col gap-1.5">
                 <label
@@ -1717,31 +1868,53 @@ function AddBudgetCategoryForm({
               </div>
             </>
           )}
+          {/* Flat mode (noSection): estimate field without section picker */}
+          {!isSection && noSection ? (
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <label
+                htmlFor="add-cat-estimate"
+                className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Price <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
+              </label>
+              <Input
+                id="add-cat-estimate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={estimate}
+                onChange={(e) => setEstimate(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+          ) : null}
         </div>
 
-        <div className="mt-3.5 flex flex-col gap-1.5">
-          <label
-            htmlFor="add-cat-desc"
-            className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
-          >
-            Description{' '}
-            <span className="font-normal text-muted-foreground/70 normal-case tracking-normal">
-              optional
-            </span>
-          </label>
-          <Textarea
-            id="add-cat-desc"
-            rows={3}
-            className="min-h-[4.5rem] resize-y"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={
-              isSection
-                ? "What's in this section? e.g. furnace replacement, ductwork relocation, suite air handling."
-                : 'e.g. Demo existing tile, prep subfloor, install LVP'
-            }
-          />
-        </div>
+        {!noSection ? (
+          <div className="mt-3.5 flex flex-col gap-1.5">
+            <label
+              htmlFor="add-cat-desc"
+              className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              Description{' '}
+              <span className="font-normal text-muted-foreground/70 normal-case tracking-normal">
+                optional
+              </span>
+            </label>
+            <Textarea
+              id="add-cat-desc"
+              rows={3}
+              className="min-h-[4.5rem] resize-y"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={
+                isSection
+                  ? "What's in this section? e.g. furnace replacement, ductwork relocation, suite air handling."
+                  : 'e.g. Demo existing tile, prep subfloor, install LVP'
+              }
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* Footer — hint + quiet Cancel + primary Add */}
@@ -1749,7 +1922,9 @@ function AddBudgetCategoryForm({
         <span className="text-xs text-muted-foreground">
           {isSection
             ? 'A section groups related categories. Create it empty, then add categories inside it.'
-            : 'A category is a budget line item under a section. GST applied at the project level.'}
+            : noSection
+              ? 'Name + price. Add detail (line items, descriptions) by expanding the row.'
+              : 'A category is a budget line item under a section. GST applied at the project level.'}
         </span>
         <span className="flex-1" />
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>
@@ -1757,7 +1932,7 @@ function AddBudgetCategoryForm({
         </Button>
         <Button type="submit" size="sm" disabled={isPending}>
           <Plus className="size-3.5" />
-          {isPending ? 'Adding…' : isSection ? 'Add section' : 'Add category'}
+          {isPending ? 'Adding…' : isSection ? 'Add section' : 'Add work'}
         </Button>
       </div>
     </form>

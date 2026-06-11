@@ -115,12 +115,18 @@ export function EstimatePreflightWarnings({ preflight, projectId, variant = 'car
         ) : null}
 
         {projectId ? (
-          <div>
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/projects/${projectId}?tab=budget`}
               className="inline-flex items-center rounded-md border border-amber-400 bg-white px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900/40"
             >
               Fix in Budget tab
+            </Link>
+            <Link
+              href={`/projects/${projectId}/estimate/preview`}
+              className="inline-flex items-center rounded-md border border-amber-400/50 bg-white/60 px-2.5 py-1 text-xs font-medium text-amber-800 hover:bg-amber-50 dark:border-amber-700/50 dark:bg-amber-950/50 dark:text-amber-200 dark:hover:bg-amber-900/20"
+            >
+              Preview what your customer sees →
             </Link>
           </div>
         ) : null}

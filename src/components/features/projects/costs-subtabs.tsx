@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const TABS = [
-  { key: 'quotes', label: 'Vendor quotes' },
+  { key: 'quotes', label: 'Sub quotes' },
   { key: 'pos', label: 'POs' },
   { key: 'costs', label: 'Costs' },
 ] as const;

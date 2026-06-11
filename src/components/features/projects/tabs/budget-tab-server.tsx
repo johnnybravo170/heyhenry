@@ -246,6 +246,7 @@ export default async function BudgetTabServer({
         coContributionsByCategoryId={Object.fromEntries(coContributions.byCategoryId)}
         actualsByLineId={Object.fromEntries(actualsByLineId)}
         defaultExpanded={defaultExpanded}
+        heading="Scope of Work"
         headerActions={showSaveAsTemplate ? <SaveAsTemplateButton projectId={projectId} /> : null}
         sections={budget.sections}
       />
