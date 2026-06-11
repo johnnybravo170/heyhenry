@@ -14,12 +14,16 @@ import {
   NoopProvider,
   type RouteConfig,
   type RouterAttemptEvent,
+  type RouterCallFailedEvent,
 } from '@/lib/ai-gateway';
 
 function buildGateway(opts: {
   providers?: Partial<Record<'openai' | 'gemini' | 'anthropic' | 'noop', AiProvider>>;
   routing?: Record<string, RouteConfig>;
-  hooks?: { onAttempt: (e: RouterAttemptEvent) => void };
+  hooks?: {
+    onAttempt?: (e: RouterAttemptEvent) => void;
+    onCallFailed?: (e: RouterCallFailedEvent) => void;
+  };
 }) {
   return createGateway(opts);
 }
@@ -309,6 +313,105 @@ describe('hooks — failure isolation', () => {
       messages: [{ role: 'user', content: 'x' }],
     });
     expect(res.text).toBe('still-works');
+  });
+});
+
+describe('hooks — onCallFailed', () => {
+  it('NOT fired when a fallback recovers the call', async () => {
+    const callFailedEvents: RouterCallFailedEvent[] = [];
+    const gw = buildGateway({
+      providers: {
+        gemini: new NoopProvider({ kind: 'fail', error_kind: 'overload' }),
+        openai: new NoopProvider({ kind: 'echo', canned_text: 'recovered' }),
+      },
+      routing: {
+        my_task: {
+          primary: { provider: 'gemini' },
+          fallback_chain: ['gemini', 'openai'],
+        },
+      },
+      hooks: { onCallFailed: (e) => callFailedEvents.push(e) },
+    });
+    const res = await gw.runChat({
+      kind: 'chat',
+      task: 'my_task',
+      messages: [{ role: 'user', content: 'x' }],
+    });
+    expect(res.text).toBe('recovered');
+    // Fallback saved the call — onCallFailed must NOT fire.
+    expect(callFailedEvents).toHaveLength(0);
+  });
+
+  it('fired when all providers fail', async () => {
+    const callFailedEvents: RouterCallFailedEvent[] = [];
+    const gw = buildGateway({
+      providers: {
+        gemini: new NoopProvider({ kind: 'fail', error_kind: 'overload' }),
+        openai: new NoopProvider({ kind: 'fail', error_kind: 'overload' }),
+      },
+      routing: {
+        my_task: {
+          primary: { provider: 'gemini' },
+          fallback_chain: ['gemini', 'openai'],
+        },
+      },
+      hooks: { onCallFailed: (e) => callFailedEvents.push(e) },
+    });
+    await expect(
+      gw.runChat({ kind: 'chat', task: 'my_task', messages: [{ role: 'user', content: 'x' }] }),
+    ).rejects.toMatchObject({ kind: 'overload' });
+    expect(callFailedEvents).toHaveLength(1);
+    expect(callFailedEvents[0]).toMatchObject({
+      task: 'my_task',
+      error_kind: 'overload',
+      attempts_made: 2,
+    });
+  });
+
+  it('fired with attempts_made=0 when all providers are circuit-broken', async () => {
+    const callFailedEvents: RouterCallFailedEvent[] = [];
+    const breaker = new CircuitBreaker();
+    breaker.recordFailure('gemini', 'quota');
+    breaker.recordFailure('openai', 'quota');
+    const gw = createGateway({
+      providers: {
+        gemini: new NoopProvider({ kind: 'echo', canned_text: 'never' }),
+        openai: new NoopProvider({ kind: 'echo', canned_text: 'never' }),
+      },
+      routing: {
+        my_task: {
+          primary: { provider: 'gemini' },
+          fallback_chain: ['gemini', 'openai'],
+        },
+      },
+      breaker,
+      hooks: { onCallFailed: (e) => callFailedEvents.push(e) },
+    });
+    await expect(
+      gw.runChat({ kind: 'chat', task: 'my_task', messages: [{ role: 'user', content: 'x' }] }),
+    ).rejects.toMatchObject({ message: expect.stringMatching(/circuit-broken/i) });
+    expect(callFailedEvents).toHaveLength(1);
+    expect(callFailedEvents[0]).toMatchObject({ error_kind: 'overload', attempts_made: 0 });
+  });
+
+  it('onCallFailed errors do NOT fail the user call', async () => {
+    const gw = buildGateway({
+      providers: {
+        gemini: new NoopProvider({ kind: 'fail', error_kind: 'overload' }),
+      },
+      routing: {
+        my_task: { primary: { provider: 'gemini' }, fallback_chain: ['gemini'] },
+      },
+      hooks: {
+        onCallFailed: () => {
+          throw new Error('alert hook exploded');
+        },
+      },
+    });
+    // Call still rejects with the AI error, not with the hook error.
+    await expect(
+      gw.runChat({ kind: 'chat', task: 'my_task', messages: [{ role: 'user', content: 'x' }] }),
+    ).rejects.toBeInstanceOf(AiError);
   });
 });
 

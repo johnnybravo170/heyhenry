@@ -46,8 +46,29 @@ export type RouterAttemptEvent = {
   latency_ms: number;
 };
 
+/**
+ * Fired once when the entire call fails — all providers in the fallback
+ * chain exhausted, or all circuit-broken. NOT fired when a fallback
+ * provider succeeds after a mid-chain error.
+ */
+export type RouterCallFailedEvent = {
+  task: string;
+  tenant_id?: string | null;
+  /** Error kind from the last provider attempted. */
+  error_kind: AiErrorKind;
+  error_message?: string;
+  /** Last provider attempted, or 'noop' when all were circuit-broken. */
+  provider: ProviderName;
+  /** Count of providers actually attempted (excludes breaker-skipped). */
+  attempts_made: number;
+};
+
 export type RouterHooks = {
   /** Fired per attempt. Errors thrown here are swallowed — never fail
    *  the user's call because telemetry hiccupped. */
   onAttempt?: (event: RouterAttemptEvent) => void | Promise<void>;
+  /** Fired once when the entire call fails — all providers exhausted or
+   *  all circuit-broken. NOT fired when a fallback succeeds. Errors
+   *  thrown here are swallowed. */
+  onCallFailed?: (event: RouterCallFailedEvent) => void | Promise<void>;
 };
