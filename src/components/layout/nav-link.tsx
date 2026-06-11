@@ -51,7 +51,7 @@ export function NavLink({
         <>
           <span className="flex-1">{children}</span>
           {badge && badge > 0 ? (
-            <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground tabular-nums">
+            <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-eyebrow font-medium leading-none text-muted-foreground tabular-nums">
               {badge > 99 ? '99+' : badge}
             </span>
           ) : null}
