@@ -30,6 +30,7 @@ import {
   Tag,
   Trash2,
   TrendingUp,
+  Type,
   Upload,
   User,
   Users,
@@ -74,6 +75,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { title: 'Budget templates', href: '/settings/budget-category-templates', icon: Layers },
       { title: 'Estimate snippets', href: '/settings/estimate-snippets', icon: FileText },
       { title: 'Quotes', href: '/settings/quotes', icon: FileText },
+      { title: 'Document labels', href: '/settings/document-labels', icon: Type },
     ],
   },
   {

@@ -2,6 +2,11 @@ import {
   EstimateRender,
   type EstimateRenderLine,
 } from '@/components/features/projects/estimate-render';
+import {
+  buildLabelMap,
+  listTenantMemory,
+  resolveDocumentLabel,
+} from '@/lib/db/queries/tenant-memory';
 import { canadianTax } from '@/lib/providers/tax/canadian';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { CustomerViewMode } from '@/lib/validators/project-customer-view';
@@ -123,8 +128,13 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
   const status = p.estimate_status as 'draft' | 'pending_approval' | 'approved' | 'declined';
 
   const taxExempt = Boolean(customerRaw?.tax_exempt);
-  const taxCtx = await canadianTax.getCustomerFacingContext(p.tenant_id as string);
+  const [taxCtx, labelRows] = await Promise.all([
+    canadianTax.getCustomerFacingContext(p.tenant_id as string),
+    listTenantMemory(p.tenant_id as string, 'label.'),
+  ]);
   const effectiveGstRate = taxExempt ? 0 : taxCtx.totalRate;
+  const labelMap = buildLabelMap(labelRows);
+  const estimateTotalLabel = resolveDocumentLabel('estimate.total', labelMap);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -154,6 +164,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ code:
           ((p.customer_view_mode as CustomerViewMode | null) ?? 'detailed') as CustomerViewMode
         }
         customerSummaryMd={(p.customer_summary_md as string | null) ?? null}
+        totalLabel={estimateTotalLabel}
       />
 
       {status === 'pending_approval' ? (
