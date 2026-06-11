@@ -330,7 +330,11 @@ describe('hooks — onCallFailed', () => {
           fallback_chain: ['gemini', 'openai'],
         },
       },
-      hooks: { onCallFailed: (e) => callFailedEvents.push(e) },
+      hooks: {
+        onCallFailed: (e) => {
+          callFailedEvents.push(e);
+        },
+      },
     });
     const res = await gw.runChat({
       kind: 'chat',
@@ -355,7 +359,11 @@ describe('hooks — onCallFailed', () => {
           fallback_chain: ['gemini', 'openai'],
         },
       },
-      hooks: { onCallFailed: (e) => callFailedEvents.push(e) },
+      hooks: {
+        onCallFailed: (e) => {
+          callFailedEvents.push(e);
+        },
+      },
     });
     await expect(
       gw.runChat({ kind: 'chat', task: 'my_task', messages: [{ role: 'user', content: 'x' }] }),
@@ -385,7 +393,11 @@ describe('hooks — onCallFailed', () => {
         },
       },
       breaker,
-      hooks: { onCallFailed: (e) => callFailedEvents.push(e) },
+      hooks: {
+        onCallFailed: (e) => {
+          callFailedEvents.push(e);
+        },
+      },
     });
     await expect(
       gw.runChat({ kind: 'chat', task: 'my_task', messages: [{ role: 'user', content: 'x' }] }),
