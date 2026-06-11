@@ -26,7 +26,7 @@ import { AnthropicProvider } from './providers/anthropic';
 import { GeminiProvider } from './providers/gemini';
 import { NoopProvider } from './providers/noop';
 import { OpenAiProvider } from './providers/openai';
-import type { RouteConfig, RoutePick, RouterHooks } from './router-types';
+import type { RouteConfig, RoutePick, RouterCallFailedEvent, RouterHooks } from './router-types';
 import { lookupRoute } from './routing';
 import { createTelemetryHook } from './telemetry';
 import type {
@@ -131,6 +131,7 @@ export class Gateway {
 
     let lastError: unknown;
     let allSkippedByBreaker = true;
+    let attemptsCount = 0;
     for (let i = 0; i < order.length; i++) {
       const pick = order[i];
       const provider = this.providers[pick.provider];
@@ -140,6 +141,7 @@ export class Gateway {
       // "we knew not to bother" rather than "we tried and failed."
       if (this.breaker.shouldSkip(pick.provider)) continue;
       allSkippedByBreaker = false;
+      attemptsCount++;
       try {
         return await this.attempt(req, provider, pick.provider, i, pick, call);
       } catch (err) {
@@ -152,14 +154,35 @@ export class Gateway {
     // If every provider in the chain was breaker-open, surface a
     // user-visible error rather than silently throwing nothing.
     if (allSkippedByBreaker) {
-      throw new AiError({
+      const finalErr = new AiError({
         kind: 'overload',
         provider: 'noop',
         message: `All providers for task "${req.task}" are circuit-broken. Recovery in progress.`,
       });
+      this.fireCallFailed({
+        task: req.task,
+        tenant_id: req.tenant_id,
+        error_kind: 'overload',
+        error_message: finalErr.message,
+        provider: 'noop',
+        attempts_made: 0,
+      });
+      throw finalErr;
     }
 
-    if (lastError) throw lastError;
+    if (lastError) {
+      if (isAiError(lastError)) {
+        this.fireCallFailed({
+          task: req.task,
+          tenant_id: req.tenant_id,
+          error_kind: lastError.kind,
+          error_message: lastError.message?.slice(0, 500),
+          provider: lastError.provider,
+          attempts_made: attemptsCount,
+        });
+      }
+      throw lastError;
+    }
     throw new AiError({
       kind: 'auth',
       provider: 'noop',
@@ -255,6 +278,19 @@ export class Gateway {
       // Swallow — same reason.
     }
   }
+
+  private fireCallFailed(event: RouterCallFailedEvent): void {
+    const fn = this.hooks?.onCallFailed;
+    if (!fn) return;
+    try {
+      const maybe = fn(event);
+      if (maybe instanceof Promise) {
+        maybe.catch(() => {});
+      }
+    } catch {
+      // Swallow.
+    }
+  }
 }
 
 function pickPrimaryPick(route: RouteConfig): RoutePick {
@@ -324,6 +360,17 @@ function composeHooks(...hooks: RouterHooks[]): RouterHooks {
           if (maybe instanceof Promise) maybe.catch(() => {});
         } catch {
           // Swallow — composition must not let one hook break another.
+        }
+      }
+    },
+    onCallFailed: (event) => {
+      for (const h of hooks) {
+        if (!h.onCallFailed) continue;
+        try {
+          const maybe = h.onCallFailed(event);
+          if (maybe instanceof Promise) maybe.catch(() => {});
+        } catch {
+          // Swallow.
         }
       }
     },

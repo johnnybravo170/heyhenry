@@ -37,6 +37,7 @@ export type {
   RouteConfig,
   RoutePick,
   RouterAttemptEvent,
+  RouterCallFailedEvent,
   RouterHooks,
 } from './router-types';
 export { DEFAULT_ROUTE, lookupRoute, ROUTING } from './routing';
