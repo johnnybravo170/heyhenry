@@ -16,7 +16,7 @@
  */
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { SourcePill } from '@/components/ui/source-pill';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { ProjectBillRow } from '@/lib/db/queries/project-bills';
@@ -24,9 +24,16 @@ import type { SubQuoteRow } from '@/lib/db/queries/project-sub-quotes';
 import type { PurchaseOrderRow } from '@/lib/db/queries/purchase-orders';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/pricing/calculator';
 import { cn } from '@/lib/utils';
+import { updateExpenseAction } from '@/server/actions/expenses';
+import { categorizeBillAction } from '@/server/actions/project-cost-control';
 import type { ExpenseItem } from './project-costs-section';
 
-type Category = { id: string; name: string; section: string };
+type Category = {
+  id: string;
+  name: string;
+  section: string;
+  cost_lines: Array<{ id: string; label: string }>;
+};
 
 type Row = {
   kind: 'quote' | 'po' | 'bill' | 'expense';
@@ -37,12 +44,14 @@ type Row = {
 };
 
 export function CostsByCategoryView({
+  projectId,
   categories,
   bills,
   expenses,
   subQuotes,
   purchaseOrders,
 }: {
+  projectId: string;
   categories: Category[];
   bills: ProjectBillRow[];
   expenses: ExpenseItem[];
@@ -136,7 +145,13 @@ export function CostsByCategoryView({
   return (
     <div className="space-y-6">
       {unallocated.length > 0 ? (
-        <CategoryBlock name="Uncategorized" rows={unallocated} tone="warning" />
+        <CategoryBlock
+          name="Uncategorized"
+          rows={unallocated}
+          tone="warning"
+          categories={categories}
+          projectId={projectId}
+        />
       ) : null}
 
       {Array.from(sectionsByName.entries()).map(([section, sectionCategories]) => (
@@ -166,6 +181,8 @@ function CategoryBlock({
   name,
   rows,
   tone,
+  categories,
+  projectId,
 }: {
   name: string;
   rows: Row[];
@@ -173,8 +190,12 @@ function CategoryBlock({
    * a chip). `focus` = the drilled-into category (neutral primary ring, a
    * distinct meaning from "uncategorized"). */
   tone?: 'warning' | 'focus';
+  categories?: Category[];
+  projectId?: string;
 }) {
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const subtotal = rows.reduce((s, r) => s + r.amount_cents, 0);
+  const showAssign = tone === 'warning' && categories && categories.length > 0 && projectId;
   return (
     <div
       className={cn(
@@ -195,24 +216,161 @@ function CategoryBlock({
       </div>
       <table className="w-full text-sm">
         <tbody>
-          {rows.map((r) => (
-            <tr key={`${r.kind}:${r.id}`} className="border-b last:border-0">
-              <td className="px-3 py-1.5 w-20">
-                <KindChip kind={r.kind} />
-              </td>
-              <td className="px-3 py-1.5">
-                <div>{r.label}</div>
-                {r.sublabel ? (
-                  <div className="text-xs text-muted-foreground">{r.sublabel}</div>
+          {rows.map((r) => {
+            const rowKey = `${r.kind}:${r.id}`;
+            const canAssign = showAssign && (r.kind === 'bill' || r.kind === 'expense');
+            const isExpanded = expandedKey === rowKey;
+            return (
+              <tr key={rowKey} className="border-b last:border-0">
+                <td className="px-3 py-1.5 w-20">
+                  <KindChip kind={r.kind} />
+                </td>
+                <td className="px-3 py-1.5">
+                  <div>{r.label}</div>
+                  {r.sublabel ? (
+                    <div className="text-xs text-muted-foreground">{r.sublabel}</div>
+                  ) : null}
+                </td>
+                <td className="px-3 py-1.5 text-right tabular-nums">
+                  {isExpanded ? (
+                    <AssignInline
+                      kind={r.kind as 'bill' | 'expense'}
+                      id={r.id}
+                      projectId={projectId ?? ''}
+                      categories={categories ?? []}
+                      onDone={() => setExpandedKey(null)}
+                      onCancel={() => setExpandedKey(null)}
+                    />
+                  ) : (
+                    <span>{formatCurrency(r.amount_cents)}</span>
+                  )}
+                </td>
+                {canAssign ? (
+                  <td className="px-3 py-1.5 w-16 text-right">
+                    {!isExpanded ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedKey(rowKey)}
+                        className="text-xs text-primary hover:underline underline-offset-2"
+                      >
+                        Assign
+                      </button>
+                    ) : null}
+                  </td>
+                ) : showAssign ? (
+                  <td />
                 ) : null}
-              </td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
-                {formatCurrency(r.amount_cents)}
-              </td>
-            </tr>
-          ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function AssignInline({
+  kind,
+  id,
+  projectId,
+  categories,
+  onDone,
+  onCancel,
+}: {
+  kind: 'bill' | 'expense';
+  id: string;
+  projectId: string;
+  categories: Category[];
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [categoryId, setCategoryId] = useState('');
+  const [costLineId, setCostLineId] = useState('');
+  const [error, setError] = useState('');
+  const [pending, startTransition] = useTransition();
+
+  const lines = categories.find((c) => c.id === categoryId)?.cost_lines ?? [];
+
+  function handleSave() {
+    if (!categoryId) {
+      setError('Pick a category.');
+      return;
+    }
+    setError('');
+    startTransition(async () => {
+      const result =
+        kind === 'expense'
+          ? await updateExpenseAction({
+              id,
+              budget_category_id: categoryId,
+              cost_line_id: costLineId || null,
+            })
+          : await categorizeBillAction({
+              id,
+              project_id: projectId,
+              budget_category_id: categoryId,
+              cost_line_id: costLineId || null,
+            });
+      if (result.ok) {
+        onDone();
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 py-1 text-left">
+      <select
+        value={categoryId}
+        onChange={(e) => {
+          setCategoryId(e.target.value);
+          setCostLineId('');
+        }}
+        disabled={pending}
+        className="block w-full rounded border px-2 py-1 text-xs"
+      >
+        <option value="">— Category —</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      {categoryId && lines.length > 0 ? (
+        <select
+          value={costLineId}
+          onChange={(e) => setCostLineId(e.target.value)}
+          disabled={pending}
+          className="block w-full rounded border px-2 py-1 text-xs"
+        >
+          <option value="">— Line item (optional) —</option>
+          {lines.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+      ) : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={pending || !categoryId}
+          className="rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground disabled:opacity-50"
+        >
+          {pending ? 'Saving…' : 'Save'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={pending}
+          className="text-xs text-muted-foreground hover:underline underline-offset-2"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }

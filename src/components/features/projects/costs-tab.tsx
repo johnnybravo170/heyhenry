@@ -510,6 +510,7 @@ export function CostsTab({
 
       {groupByCategory ? (
         <CostsByCategoryView
+          projectId={projectId}
           categories={categories}
           bills={filteredBills}
           expenses={filteredExpenses}

@@ -689,7 +689,10 @@ function ExpenseDialogBody({
                 htmlFor="exp-category"
                 className="mb-1 block text-xs font-medium text-muted-foreground"
               >
-                Category (optional)
+                Category{' '}
+                <span className="font-normal text-muted-foreground">
+                  (optional — no pick = unallocated)
+                </span>
               </Label>
               <Select
                 value={budgetCategoryId}
@@ -740,7 +743,7 @@ function ExpenseDialogBody({
               >
                 Line item{' '}
                 <span className="font-normal text-muted-foreground">
-                  — optional, tags this expense to a specific line
+                  — optional, tags to a specific budget line
                 </span>
               </Label>
               <Select value={costLineId} onValueChange={(v) => setCostLineId(v)} disabled={busy}>
