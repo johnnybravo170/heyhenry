@@ -51,7 +51,7 @@ function Progress({ pct, overBudget }: { pct: number; overBudget: boolean }) {
       {overBudget ? (
         // Text-only flag (no leading icon, no border) — Paper danger tone:
         // soft red fill, ink red text, semibold.
-        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
           Over budget
         </span>
       ) : null}
