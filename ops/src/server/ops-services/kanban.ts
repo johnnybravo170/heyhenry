@@ -39,6 +39,17 @@ async function logEvent(
   });
 }
 
+/**
+ * A bad/non-existent `id` makes `.update().eq('id', id)` a silent zero-row
+ * no-op (PostgREST returns no error) and `logEvent` swallows its own insert
+ * error — so a fat-fingered UUID reports success while changing nothing.
+ * Mutators call this once they know whether a real row was hit, so a bad id
+ * throws instead of lying. Mirrors moveCard's existing "Card not found" guard.
+ */
+function cardNotFound(id: string): never {
+  throw new Error(`Card not found: ${id}`);
+}
+
 async function resolveBoardId(service: Svc, slug: string): Promise<string | null> {
   const { data } = await service
     .schema('ops')
@@ -238,8 +249,14 @@ export async function updateCard(ctx: ActorCtx, id: string, input: UpdateCardInp
   }
   if (Object.keys(changed).length === 0) return { ok: true as const, changed: false };
 
-  const { error } = await service.schema('ops').from('kanban_cards').update(patch).eq('id', id);
+  const { data, error } = await service
+    .schema('ops')
+    .from('kanban_cards')
+    .update(patch)
+    .eq('id', id)
+    .select('id');
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) cardNotFound(id);
 
   await logEvent(service, id, ctx, 'edited', null, { fields: Object.keys(changed) });
   return { ok: true as const, changed: true };
@@ -385,7 +402,8 @@ export async function assignCard(ctx: ActorCtx, id: string, to: string | null) {
     .select('assignee')
     .eq('id', id)
     .maybeSingle();
-  const prev = (cur?.assignee as string | null) ?? null;
+  if (!cur) cardNotFound(id);
+  const prev = (cur.assignee as string | null) ?? null;
 
   const { error } = await service
     .schema('ops')
@@ -400,6 +418,13 @@ export async function assignCard(ctx: ActorCtx, id: string, to: string | null) {
 
 export async function commentCard(ctx: ActorCtx, id: string, body: string) {
   const service = createServiceClient();
+  const { data: cur } = await service
+    .schema('ops')
+    .from('kanban_cards')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle();
+  if (!cur) cardNotFound(id);
   await logEvent(service, id, ctx, 'commented', body, {});
   return { ok: true as const };
 }
@@ -412,7 +437,8 @@ export async function blockCard(ctx: ActorCtx, id: string, blockedById: string) 
     .select('blocked_by')
     .eq('id', id)
     .maybeSingle();
-  const list = ((cur?.blocked_by as string[] | null) ?? []).slice();
+  if (!cur) cardNotFound(id);
+  const list = ((cur.blocked_by as string[] | null) ?? []).slice();
   if (!list.includes(blockedById)) list.push(blockedById);
 
   const { error } = await service
@@ -434,7 +460,8 @@ export async function unblockCard(ctx: ActorCtx, id: string, blockedById: string
     .select('blocked_by')
     .eq('id', id)
     .maybeSingle();
-  const list = ((cur?.blocked_by as string[] | null) ?? []).filter((x) => x !== blockedById);
+  if (!cur) cardNotFound(id);
+  const list = ((cur.blocked_by as string[] | null) ?? []).filter((x) => x !== blockedById);
 
   const { error } = await service
     .schema('ops')
@@ -449,12 +476,14 @@ export async function unblockCard(ctx: ActorCtx, id: string, blockedById: string
 
 export async function archiveCard(ctx: ActorCtx, id: string) {
   const service = createServiceClient();
-  const { error } = await service
+  const { data, error } = await service
     .schema('ops')
     .from('kanban_cards')
     .update({ archived_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) cardNotFound(id);
   await logEvent(service, id, ctx, 'archived', null, {});
   return { ok: true as const };
 }

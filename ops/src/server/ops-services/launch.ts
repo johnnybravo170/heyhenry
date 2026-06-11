@@ -459,11 +459,15 @@ export type SizePoints = (typeof FIBONACCI_SIZES)[number];
 
 export async function setCardSize(id: string, points: SizePoints | null) {
   const service = createServiceClient();
-  const { error } = await service
+  const { data, error } = await service
     .schema('ops')
     .from('kanban_cards')
     .update({ size_points: points, updated_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
   if (error) throw new Error(error.message);
+  // A bad/non-existent id is a silent zero-row no-op here — throw instead of
+  // reporting ok:true. (Mirrors the kanban service's cardNotFound guard.)
+  if (!data || data.length === 0) throw new Error(`Card not found: ${id}`);
   return { ok: true as const };
 }
