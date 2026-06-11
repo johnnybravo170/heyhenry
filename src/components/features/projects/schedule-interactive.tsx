@@ -742,7 +742,7 @@ export function ScheduleInteractive({
                   client-visible for it to appear here.
                 </p>
               ) : (
-                <PortalScheduleGantt tasks={previewTasks} />
+                <PortalScheduleGantt tasks={previewTasks} holidays={holidayMap} />
               )}
             </div>
           </div>

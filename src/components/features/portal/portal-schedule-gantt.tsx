@@ -102,9 +102,15 @@ type DayMeta = {
   isMonday: boolean;
   isToday: boolean;
   weekStartLabel: number | null;
+  isHoliday: boolean;
+  holidayName: string | null;
 };
 
-function computeDayMeta(earliest: Date, totalDays: number): DayMeta[] {
+function computeDayMeta(
+  earliest: Date,
+  totalDays: number,
+  holidays?: ReadonlyMap<string, string>,
+): DayMeta[] {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const todayIndex = diffDays(today, earliest);
@@ -113,11 +119,15 @@ function computeDayMeta(earliest: Date, totalDays: number): DayMeta[] {
     const d = addDays(earliest, i);
     const dow = d.getUTCDay();
     const isMonday = dow === 1;
+    const isoStr = d.toISOString().slice(0, 10);
+    const holidayName = holidays?.get(isoStr) ?? null;
     meta.push({
       isWeekend: dow === 0 || dow === 6,
       isMonday,
       isToday: i === todayIndex,
       weekStartLabel: isMonday || i === 0 ? d.getUTCDate() : null,
+      isHoliday: holidayName !== null,
+      holidayName,
     });
   }
   return meta;
@@ -132,7 +142,7 @@ function DayBacking({ meta }: { meta: DayMeta[] }) {
           key={i}
           aria-hidden="true"
           className={`pointer-events-none ${
-            m.isWeekend ? 'bg-muted/40' : ''
+            m.isWeekend ? 'bg-muted/40' : m.isHoliday ? 'bg-amber-100/60 dark:bg-amber-900/20' : ''
           } ${m.isMonday ? 'border-l border-border/60' : ''} ${
             m.isToday ? 'border-l-2 border-amber-500/80' : ''
           }`}
@@ -150,7 +160,13 @@ export type PortalScheduleTaskView = ProjectScheduleTask & {
   phaseName: string | null;
 };
 
-export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[] }) {
+export function PortalScheduleGantt({
+  tasks,
+  holidays,
+}: {
+  tasks: PortalScheduleTaskView[];
+  holidays?: ReadonlyMap<string, string>;
+}) {
   if (tasks.length === 0) return null;
 
   const starts = tasks.map((t) => parseDate(t.planned_start_date));
@@ -160,7 +176,7 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
   const totalDays = Math.max(1, diffDays(latest, earliest));
 
   const months = monthHeaderSegments(earliest, totalDays);
-  const dayMeta = computeDayMeta(earliest, totalDays);
+  const dayMeta = computeDayMeta(earliest, totalDays, holidays);
   // minmax(12px, 1fr) keeps each day-column at least 12px wide on
   // narrow screens; the outer wrapper scrolls horizontally instead of
   // compressing bars to invisible dots.
@@ -196,6 +212,19 @@ export function PortalScheduleGantt({ tasks }: { tasks: PortalScheduleTaskView[]
                 style={{ gridRow: 2, gridColumnStart: i + 1 }}
               >
                 {m.weekStartLabel}
+              </div>
+            ) : null,
+          )}
+          {dayMeta.map((m, i) =>
+            m.isHoliday && !m.isWeekend ? (
+              <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: positional
+                key={`h-${i}`}
+                title={m.holidayName ?? 'Statutory holiday'}
+                className="flex cursor-default items-end justify-center pb-0.5"
+                style={{ gridRow: 2, gridColumnStart: i + 1 }}
+              >
+                <span className="size-1 rounded-full bg-amber-500" aria-hidden="true" />
               </div>
             ) : null,
           )}

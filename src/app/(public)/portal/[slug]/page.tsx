@@ -32,6 +32,7 @@ import { PublicViewLogger } from '@/components/features/public/public-view-logge
 import { StatusBadge } from '@/components/ui/status-badge';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { TenantProvider } from '@/lib/auth/tenant-context';
+import { getCanadianHolidays } from '@/lib/date/ca-holidays';
 import {
   getPortalBudgetSummary,
   type PortalBudgetSummary,
@@ -124,7 +125,7 @@ export default async function PortalPage({
     .select(
       `id, name, tenant_id, lifecycle_stage, percent_complete, start_date, target_end_date,
        portal_slug, portal_enabled, portal_show_budget,
-       tenants:tenant_id (name, logo_storage_path, portal_show_budget, timezone),
+       tenants:tenant_id (name, logo_storage_path, portal_show_budget, timezone, province),
        contacts:contact_id (name)`,
     )
     .eq('portal_slug', slug)
@@ -155,6 +156,8 @@ export default async function PortalPage({
     | null;
   const portalTenantObj = Array.isArray(portalTenantNode) ? portalTenantNode[0] : portalTenantNode;
   const tenantTz = portalTenantObj?.timezone ?? undefined;
+  const tenantProvince =
+    ((portalTenantObj as Record<string, unknown> | null)?.province as string | null) ?? null;
   const tenant = p.tenants as Record<string, unknown> | null;
   const customer = p.contacts as Record<string, unknown> | null;
   const businessName = (tenant?.name as string) ?? 'Your Contractor';
@@ -227,6 +230,7 @@ export default async function PortalPage({
   let initialMessages: MessageRow[] = [];
 
   let scheduleTasks: PortalScheduleTaskView[] = [];
+  let scheduleHolidayMap: ReadonlyMap<string, string> = new Map();
 
   if (tab === 'project') {
     // Round 1: kick off every row query in parallel.
@@ -693,6 +697,17 @@ export default async function PortalPage({
         phaseName,
       };
     });
+    const currentYear = new Date().getUTCFullYear();
+    const portalHolidays = [
+      currentYear - 1,
+      currentYear,
+      currentYear + 1,
+      currentYear + 2,
+      currentYear + 3,
+      currentYear + 4,
+      currentYear + 5,
+    ].flatMap((y) => getCanadianHolidays(tenantProvince, y));
+    scheduleHolidayMap = new Map(portalHolidays.map((h) => [h.date, h.name]));
   }
 
   const cadFormat = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
@@ -870,7 +885,7 @@ export default async function PortalPage({
                 <p className="text-xs text-muted-foreground">
                   Dates are estimates and may shift. ⚠ marks days you may want to plan to be out.
                 </p>
-                <PortalScheduleGantt tasks={scheduleTasks} />
+                <PortalScheduleGantt tasks={scheduleTasks} holidays={scheduleHolidayMap} />
               </div>
             ) : (
               <p className="py-12 text-center text-sm text-muted-foreground">
