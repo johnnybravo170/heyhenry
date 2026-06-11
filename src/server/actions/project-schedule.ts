@@ -1187,6 +1187,60 @@ export async function dismissCoScheduleSuggestionAction(input: {
 }
 
 /**
+ * Bulk-shift every active task on a project by `deltaDays` working days.
+ * Positive = forward, negative = backward. Each task's planned_start_date
+ * is independently shifted via addWorkingDays so weekends are always
+ * skipped — a task on Friday shifted forward 1 lands on Monday.
+ *
+ * Does NOT run cascadeForwardFromTask (dependencies are already satisfied
+ * by definition when every task shifts uniformly). Does NOT queue a
+ * customer notification — the operator should review and notify manually
+ * after a bulk shift since it's a high-impact change.
+ */
+export async function bulkShiftProjectAction(input: {
+  projectId: string;
+  deltaDays: number;
+}): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  if (input.deltaDays === 0) return { ok: true, count: 0 };
+
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  const supabase = await createClient();
+
+  const { data: project } = await supabase
+    .from('projects')
+    .select('id, portal_slug')
+    .eq('id', input.projectId)
+    .single();
+  if (!project) return { ok: false, error: 'Project not found.' };
+
+  const { data: tasks } = await supabase
+    .from('project_schedule_tasks')
+    .select('id, planned_start_date')
+    .eq('project_id', input.projectId)
+    .is('deleted_at', null);
+  if (!tasks || tasks.length === 0) return { ok: true, count: 0 };
+
+  const rows = tasks as Array<{ id: string; planned_start_date: string }>;
+  const updates = rows.map((t) => {
+    const newStart = addWorkingDays(new Date(`${t.planned_start_date}T00:00:00Z`), input.deltaDays);
+    return supabase
+      .from('project_schedule_tasks')
+      .update({
+        planned_start_date: newStart.toISOString().slice(0, 10),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', t.id);
+  });
+  await Promise.all(updates);
+
+  revalidatePath(`/projects/${input.projectId}`);
+  const portalSlug = (project as Record<string, unknown>).portal_slug as string | null | undefined;
+  if (portalSlug) revalidatePath(`/portal/${portalSlug}`);
+  return { ok: true, count: rows.length };
+}
+
+/**
  * Resolve the trade list for a non-blank bootstrap source. Pure-ish
  * (just hits the DB twice in the worst case) — extracted so the call
  * site reads as a single line.
