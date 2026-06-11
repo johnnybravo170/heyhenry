@@ -84,10 +84,11 @@ export function runEstimatePreflight(input: {
   const mismatches: MismatchWarning[] = [];
   for (const cat of input.categories) {
     if (cat.estimate_cents <= 0) continue;
-    const linesTotal = (linesByCategory.get(cat.id) ?? []).reduce(
-      (sum, l) => sum + l.line_price_cents,
-      0,
-    );
+    const catLines = linesByCategory.get(cat.id) ?? [];
+    // Flat (envelope-priced) categories have no lines by design — the envelope IS the price.
+    // Only warn when lines exist but their total diverges from the envelope.
+    if (catLines.length === 0) continue;
+    const linesTotal = catLines.reduce((sum, l) => sum + l.line_price_cents, 0);
     const diff = cat.estimate_cents - linesTotal;
     if (Math.abs(diff) > MISMATCH_TOLERANCE_CENTS) {
       mismatches.push({

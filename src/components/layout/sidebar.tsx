@@ -27,16 +27,21 @@ function NavList({
       {navItems.map((item) => {
         const Icon = resolveIcon(item.icon);
         return (
-          <NavLink
-            key={item.href}
-            href={item.href}
-            icon={Icon}
-            onNavigate={onNavigate}
-            collapsed={collapsed}
-            label={item.label}
-          >
-            {item.label}
-          </NavLink>
+          <div key={item.href}>
+            {item.dividerBefore ? (
+              <hr className={cn('my-1 border-sidebar-border/50', collapsed ? 'mx-1' : 'mx-2')} />
+            ) : null}
+            <NavLink
+              href={item.href}
+              icon={Icon}
+              onNavigate={onNavigate}
+              collapsed={collapsed}
+              label={item.label}
+              badge={item.badge}
+            >
+              {item.label}
+            </NavLink>
+          </div>
         );
       })}
     </nav>

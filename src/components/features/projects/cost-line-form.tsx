@@ -223,7 +223,7 @@ export function CostLineForm({
         </div>
         <div>
           <label htmlFor="cl-cat" className="mb-1 block text-xs font-medium">
-            Category
+            Cost type
           </label>
           <select
             id="cl-cat"
