@@ -654,10 +654,13 @@ export default async function PortalPage({
       admin
         .from('project_schedule_tasks')
         .select(
-          'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, duration_basis, works_weekends, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes',
+          'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, duration_basis, works_weekends, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes, kind',
         )
         .eq('project_id', projectId)
         .eq('client_visible', true)
+        // Inspection tasks only appear on the portal once dates are locked
+        // (firm) — rough inspections are internal planning placeholders.
+        .or('kind.neq.inspection,confidence.eq.firm')
         .is('deleted_at', null)
         .order('display_order', { ascending: true }),
       admin.from('trade_templates').select('id, slug, disruption_level, typical_phase'),

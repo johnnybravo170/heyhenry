@@ -83,6 +83,9 @@ export function ScheduleTaskEditor({
           bar_color: '',
         };
 
+  const [taskKind, setTaskKind] = useState<'trade' | 'inspection'>(
+    mode.kind === 'edit' ? (mode.task.kind ?? 'trade') : 'trade',
+  );
   const [name, setName] = useState(initial.name);
   const [startDate, setStartDate] = useState(initial.planned_start_date);
   const [duration, setDuration] = useState(initial.planned_duration_days);
@@ -133,6 +136,7 @@ export function ScheduleTaskEditor({
               client_visible: clientVisible,
               notes: notes.trim() || null,
               bar_color: barColor || null,
+              kind: taskKind,
             })
           : await createScheduleTaskAction(mode.projectId, {
               name: name.trim(),
@@ -142,6 +146,7 @@ export function ScheduleTaskEditor({
               client_visible: clientVisible,
               notes: notes.trim() || null,
               bar_color: barColor || null,
+              kind: taskKind,
             });
       if (!res.ok) {
         setError(res.error);
@@ -212,6 +217,22 @@ export function ScheduleTaskEditor({
         </h3>
 
         <div className="mt-4 space-y-3">
+          <div className="flex gap-4 text-xs font-medium">
+            {(['trade', 'inspection'] as const).map((k) => (
+              <label key={k} className="flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="task-kind"
+                  value={k}
+                  checked={taskKind === k}
+                  onChange={() => setTaskKind(k)}
+                  className="rounded"
+                />
+                {k === 'trade' ? 'Trade / scope' : 'Inspection gate'}
+              </label>
+            ))}
+          </div>
+
           <label className="block text-xs font-medium">
             <span className="block text-muted-foreground">Name</span>
             <input

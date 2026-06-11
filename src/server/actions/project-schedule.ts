@@ -652,6 +652,7 @@ export type ScheduleTaskPatch = {
   notes?: string | null;
   /** Custom bar colour token (e.g. 'blue', 'red'). Null clears back to phase colour. */
   bar_color?: string | null;
+  kind?: 'trade' | 'inspection';
 };
 
 /**
@@ -1074,6 +1075,7 @@ export type CreateScheduleTaskInput = {
   client_visible?: boolean;
   notes?: string | null;
   bar_color?: string | null;
+  kind?: 'trade' | 'inspection';
 };
 
 /**
@@ -1123,6 +1125,7 @@ export async function createScheduleTaskAction(
       display_order: nextOrder,
       notes: input.notes ?? null,
       bar_color: input.bar_color ?? null,
+      kind: input.kind ?? 'trade',
     })
     .select('id')
     .single();

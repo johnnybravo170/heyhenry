@@ -12,6 +12,7 @@
  * if today falls in range.
  */
 
+import { ShieldCheck } from 'lucide-react';
 import { isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
 import { phaseColorFor } from '@/lib/ui/gantt-phase-colors';
@@ -251,10 +252,16 @@ export function PortalScheduleGantt({
             if (isWeekend(addDays(taskStart, c))) weekendOffsets.push(c);
           }
           const isDone = task.status === 'done';
+          const isInspection = task.kind === 'inspection';
           return (
             <div key={task.id} className="contents">
               <div className="sticky left-0 z-20 flex min-h-8 flex-col justify-center truncate bg-card py-1 pr-2 text-sm">
-                <span className={isDone ? 'text-muted-foreground line-through' : ''}>
+                <span
+                  className={`flex items-center gap-1 ${isDone ? 'text-muted-foreground line-through' : ''}`}
+                >
+                  {isInspection && (
+                    <ShieldCheck className="size-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+                  )}
                   {task.name}
                 </span>
                 {task.warning ? (
@@ -271,9 +278,11 @@ export function PortalScheduleGantt({
                   className={`group relative my-1 h-5 self-center rounded-md shadow-sm ${
                     isDone
                       ? 'bg-emerald-500'
-                      : task.warning
+                      : isInspection
                         ? 'bg-amber-500'
-                        : phaseColorFor(task.phaseName).firm
+                        : task.warning
+                          ? 'bg-amber-500'
+                          : phaseColorFor(task.phaseName).firm
                   }`}
                   style={{
                     gridRow: 1,
@@ -293,6 +302,12 @@ export function PortalScheduleGantt({
                       }}
                     />
                   ))}
+                  {isInspection && (
+                    <ShieldCheck
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 m-auto size-3 text-white/90"
+                    />
+                  )}
                   <span
                     role="tooltip"
                     className="pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"

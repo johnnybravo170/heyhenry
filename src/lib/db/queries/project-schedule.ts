@@ -38,10 +38,12 @@ export type ProjectScheduleTask = {
   notes: string | null;
   /** Custom bar colour token (e.g. 'blue', 'red'). Null = use phase/trade colour. */
   bar_color: string | null;
+  /** Task kind — 'trade' for sub work, 'inspection' for city/engineer gate tasks. */
+  kind: 'trade' | 'inspection';
 };
 
 const TASK_COLUMNS =
-  'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, duration_basis, works_weekends, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes, bar_color';
+  'id, project_id, name, trade_template_id, budget_category_id, phase_id, planned_start_date, planned_duration_days, duration_basis, works_weekends, actual_start_date, actual_end_date, status, confidence, client_visible, display_order, notes, bar_color, kind';
 
 /** RLS-aware list of active tasks for the operator-side Gantt view. */
 export const listScheduleTasksForProject = cache(

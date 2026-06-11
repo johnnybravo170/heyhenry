@@ -19,7 +19,7 @@
  *    through to `onTaskClick`.
  */
 
-import { Check, Lock } from 'lucide-react';
+import { Check, Lock, ShieldCheck } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { isWeekend, workingDayEnd } from '@/lib/date/working-days';
 import type { ProjectScheduleTask } from '@/lib/db/queries/project-schedule';
@@ -485,13 +485,18 @@ export function ScheduleGantt({
                   : null;
                 const phaseColors = phaseColorFor(projectPhaseName ?? tradeTypical ?? null);
                 const customBarBg = task.bar_color ? BAR_COLOR_CLASSES[task.bar_color] : null;
+                const isInspection = task.kind === 'inspection';
                 const barClasses = isDone
                   ? 'bg-emerald-500'
                   : customBarBg
                     ? customBarBg
-                    : isFirm
-                      ? phaseColors.firm
-                      : phaseColors.rough;
+                    : isInspection
+                      ? isFirm
+                        ? 'bg-amber-500'
+                        : 'bg-amber-400/70'
+                      : isFirm
+                        ? phaseColors.firm
+                        : phaseColors.rough;
                 const NameCell = interactive ? 'button' : 'div';
                 const BarCell = interactive ? 'button' : 'div';
                 const isFirstRow = !firstRowAssigned;
@@ -535,6 +540,12 @@ export function ScheduleGantt({
                         interactive ? 'cursor-pointer rounded hover:bg-muted/50' : ''
                       }`}
                     >
+                      {isInspection && (
+                        <ShieldCheck
+                          className="mr-1.5 size-3.5 shrink-0 text-amber-600"
+                          aria-hidden="true"
+                        />
+                      )}
                       <span className={isDone ? 'text-muted-foreground line-through' : ''}>
                         {task.name}
                       </span>
@@ -619,6 +630,12 @@ export function ScheduleGantt({
                             }}
                           />
                         ))}
+                        {isInspection && (
+                          <ShieldCheck
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 m-auto size-3 text-white/90"
+                          />
+                        )}
                         {/* Hover/focus tooltip — instant (no native-title delay).
                             Hides during active drag so it doesn't follow the
                             cursor and obscure the bar. */}

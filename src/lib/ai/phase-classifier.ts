@@ -30,6 +30,64 @@ type Rule = {
 };
 
 const RULES: Rule[] = [
+  // INSPECTION GATES — must precede trade rules so "plumbing inspection"
+  // matches the inspection rule rather than the plumbing-rough rule.
+  // Most-specific keywords (multi-word) come first within each rule.
+  {
+    phase: 'inspection_final',
+    label: 'Final / occupancy inspection',
+    sequencePosition: 96,
+    keywords: ['occupancy inspection', 'final inspection', 'possession inspection'],
+  },
+  {
+    phase: 'inspection_framing',
+    label: 'Framing inspection',
+    sequencePosition: 22,
+    keywords: ['framing inspection', 'frame inspection'],
+  },
+  {
+    phase: 'inspection_plumbing',
+    label: 'Plumbing rough-in inspection',
+    sequencePosition: 36,
+    keywords: ['plumbing rough-in inspection', 'plumbing inspection', 'drain inspection'],
+  },
+  {
+    phase: 'inspection_electrical',
+    label: 'Electrical rough-in inspection',
+    sequencePosition: 39,
+    keywords: ['electrical rough-in inspection', 'electrical inspection', 'wiring inspection'],
+  },
+  {
+    phase: 'inspection_hvac',
+    label: 'Mechanical / gas inspection',
+    sequencePosition: 41,
+    keywords: ['hvac inspection', 'mechanical inspection', 'gas inspection'],
+  },
+  {
+    phase: 'inspection_engineer',
+    label: 'Engineer / city inspection',
+    sequencePosition: 44,
+    keywords: [
+      'engineer inspection',
+      'city inspection',
+      'building inspection',
+      'municipal inspection',
+    ],
+  },
+  {
+    phase: 'inspection_insulation',
+    label: 'Insulation inspection',
+    sequencePosition: 46,
+    keywords: ['insulation inspection'],
+  },
+  // Generic fallback: anything with "inspection" not caught above lands at 44
+  // (the rough-in gate, between HVAC and insulation).
+  {
+    phase: 'inspection',
+    label: 'Inspection',
+    sequencePosition: 44,
+    keywords: ['inspection'],
+  },
   // 0–10 site prep / demo
   {
     phase: 'demo',
