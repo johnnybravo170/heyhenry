@@ -32,16 +32,18 @@ Run the loop a human used to hand-carry — **prompt → OD render → critique 
 ## Checkpoint cadence (the autonomy knob)
 Default: surface to the human **after round 1's render** (confirm direction), **at the end**, and **immediately** on an `awaiting_input` question or a regression (a round that introduces new issues). Iterate autonomously in between. Tunable per request ("full auto, just show me the result" or "stop after every round").
 
-## The Paper discipline — lock into every prompt (canonical: `DESIGN.md`)
-`DESIGN.md` (repo root) is the single source of truth; the render must never diverge from it. Bake this reconciled clause into every R1 prompt (and re-assert it on format passes), then self-audit the HTML before finishing:
+## The White Ledger discipline — lock into every prompt (canonical: `DESIGN.md` v2)
+`DESIGN.md` (repo root, v2 "White Ledger", June 2026) is the single source of truth; the render must never diverge from it. Reference render: `od-project-hub/screens/budget-white-v1.html`. Bake this reconciled clause into every R1 prompt (and re-assert it on format passes), then self-audit the HTML before finishing:
 
-- **Type scale — closed set, no strays.** Body/label tier = **11px JetBrains-mono** (eyebrows / labels / pills / counts) · **12** · **14** · **16** only. Display (page H1 + big stat numbers, sparingly) = **20 / 24 / 28 / 36**. **No 8 / 9 / 10 / 13 / 15 / 22 / 40px** anywhere. Scan CSS *and* inline `style=` and collapse every stray. (Don't touch SVG width/height.)
-- **One ink, one accent.** Default buttons are **ink** (`#0A0A0A`); **exactly one rust** (`#C2410C`) hero CTA per screen; rust otherwise only on **✦ Henry** + active/selected states + inline accents. Never a second rust button.
-- **Money** = `tabular-nums`, right-aligned, **de-emph cents** (smaller + muted), whole-dollars padded to align — one treatment everywhere (the `<Money>` primitive's behaviour).
-- **Status** via the soft-pair tokens (ok / warn / danger / info), never heavy fills; the `DRAFT` / over-budget / CO chips are status, **not** rust.
-- **Tone:** warm-neutral surfaces + the 4-step ink ramp (`#0A0A0A → #3A3A3A → #57534B → #A8A8A8`); no off-palette greys/blacks; don't invent hex outside `DESIGN.md`.
+- **Surfaces:** page `#F8F8F7`, cards `#FFFFFF` with `rgba(10,10,10,0.10)` hairlines + whisper shadow. **The cream/tan family (`#F3EBDB` etc.) is retired** — zero warm surface tints.
+- **Type — one voice.** Inter only, sentence case only. **The 11px mono-caps label tier is retired**: labels = 12px/500/`#57534B` sentence case; mono ONLY for literal id chips; **no uppercase, no italics**. Closed scale: **12 / 14 / 16** + display **20 / 24 / 28 / 36**. No 8/9/10/11/13/15/22/40px anywhere (don't touch SVG width/height).
+- **One ink, one accent.** Default buttons ink `#0A0A0A`; **exactly one rust** (`#C2410C`) hero CTA per screen; rust otherwise only ✦ Henry + active states + inline accents.
+- **Money:** `tabular-nums`, right-aligned; **cents only at the source-entry tier**, dropped above it; numbers sit on the title's baseline (`align-items: baseline`, icon cells `align-self: center`); `row-gap: 0` on row grids.
+- **Status at the datum, never a panel wash.** Soft pairs only; no full-width tinted bands; Remaining < 0 → danger on bar + value.
+- **Table grammar:** fills = state only (open-parent tint + hover — nothing else); **brackets include their header row** (category 3px `#AFAFAD`, line 2px `#D4D4D2`, painted above row backgrounds); hairlines between siblings; rows sized by tier (~69/43/31), descent quiets monotonically.
+- **Composition:** ≤2 objects above the table (position strip + one card); no legends, no ambient percentages (exception flags only), no meta-counts, no disabled buttons, no nested cards; column headers once (name column header blank); document state on the card's ribbon with ONE visible state action.
 
-This mirrors the app-side enforcement (Ops decision *"Paper design-system enforcement rulings"* + the `design-tokens` CI lint). Keep the two in sync — if `DESIGN.md` changes, update this clause.
+This mirrors the app-side enforcement (the `design-tokens` CI lint — updated via the White Ledger build card). Keep the two in sync — if `DESIGN.md` changes, update this clause.
 
 ## Watch-fors
 - **OD render artifacts vs. real defects.** Oversized glyph/icon overflow bleeding over buttons is an OD *render bug* (a re-render usually fixes it) — flag it as such, don't critique it as a design decision, and don't let it mask the real UI underneath. Verify against the saved render HTML; don't guess the cause.
