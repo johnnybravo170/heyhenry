@@ -99,7 +99,32 @@ export async function GET(req: Request) {
       }),
     );
   }
-  return handle(req);
+  // Refuse the standalone GET/SSE notification stream. This endpoint is
+  // STATELESS (sessionIdGenerator: undefined) — there's no persistent session
+  // to push server->client messages on, and Vercel guillotines any long-lived
+  // response at `maxDuration` (30s). If we let the SDK open the GET SSE stream
+  // it flaps every 30s and the client eventually drops the connector for good
+  // ("connects, then can't get back in"). The GET/SSE stream is OPTIONAL in the
+  // MCP spec — a server MAY return 405 and a compliant client falls back to
+  // plain POST request/response, which is all a stateless server can serve and
+  // is unaffected by maxDuration. Do NOT route GET into the transport.
+  return withCors(
+    new Response(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: null,
+        error: {
+          code: -32000,
+          message:
+            'Method not allowed: this MCP endpoint is request/response only (stateless; no server-initiated SSE stream).',
+        },
+      }),
+      {
+        status: 405,
+        headers: { 'content-type': 'application/json', allow: 'POST, OPTIONS' },
+      },
+    ),
+  );
 }
 
 export async function OPTIONS() {
