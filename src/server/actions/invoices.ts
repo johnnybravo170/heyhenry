@@ -1493,7 +1493,7 @@ export async function generateFinalInvoiceAction(input: {
 
   const { data: project, error: projErr } = await supabase
     .from('projects')
-    .select('id, contact_id, name, management_fee_rate, is_cost_plus')
+    .select('id, contact_id, name, management_fee_rate, is_cost_plus, apply_mgmt_fee_to_labour')
     .eq('id', input.projectId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -1503,6 +1503,9 @@ export async function generateFinalInvoiceAction(input: {
 
   const mgmtRate = (project.management_fee_rate as number) ?? 0.12;
   const isCostPlus = project.is_cost_plus !== false; // default-true semantics
+  // Per-project override takes precedence; NULL inherits tenant default.
+  const applyMgmtFeeToLabour =
+    (project.apply_mgmt_fee_to_labour as boolean | null) ?? tenant.applyMgmtFeeToLabour;
 
   // Path selection now reads `project.is_cost_plus` directly. Previously
   // this branched on `variance.estimated_cents > 0` — i.e. "no priced
@@ -1617,6 +1620,7 @@ export async function generateFinalInvoiceAction(input: {
       expenses,
       priorInvoices,
       mgmtRate,
+      applyMgmtFeeToLabour,
     });
 
     // Reconciliation guardrail: the helper's view of the cost basis
@@ -1632,6 +1636,10 @@ export async function generateFinalInvoiceAction(input: {
     const drift = breakdownCostBasis - rollup.invoiceCostBasisCents;
     if (Math.abs(drift) > 100) {
       driftWarning = `Cost-basis check: invoice billing ${formatCurrency(breakdownCostBasis)} but raw cost rollup shows ${formatCurrency(rollup.invoiceCostBasisCents)} (Δ ${formatCurrency(Math.abs(drift))}). Possible missing cost source or math drift — review the draft before sending.`;
+    }
+    if (breakdown.fallbackEntryCount > 0) {
+      const note = `${breakdown.fallbackEntryCount} time ${breakdown.fallbackEntryCount === 1 ? 'entry has' : 'entries have'} no charge rate — billed at pay rate. Review before sending.`;
+      driftWarning = driftWarning ? `${driftWarning}\n${note}` : note;
     }
 
     if (breakdown.labourCents > 0) {

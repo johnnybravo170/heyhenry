@@ -50,7 +50,7 @@ export async function getCurrentTenantFromReq(req: IncomingMessage): Promise<Cur
   const { data: member } = await supabase
     .from('tenant_members')
     .select(
-      'id, role, phone, phone_verified_at, tenants(id, name, slug, timezone, vertical, plan, subscription_status, trial_ends_at, deleted_at)',
+      'id, role, phone, phone_verified_at, tenants(id, name, slug, timezone, vertical, plan, subscription_status, trial_ends_at, deleted_at, apply_mgmt_fee_to_labour)',
     )
     .eq('user_id', user.id)
     .eq('is_active_for_user', true)
@@ -72,6 +72,7 @@ export async function getCurrentTenantFromReq(req: IncomingMessage): Promise<Cur
       'trialing') as CurrentTenant['subscriptionStatus'],
     trialEndsAt: (tenant.trial_ends_at as string | null) ?? null,
     deletedAt: (tenant.deleted_at as string | null) ?? null,
+    applyMgmtFeeToLabour: (tenant.apply_mgmt_fee_to_labour as boolean | null) ?? true,
     member: {
       id: member.id,
       role: member.role,

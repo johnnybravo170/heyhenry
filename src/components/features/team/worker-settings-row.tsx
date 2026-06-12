@@ -167,7 +167,10 @@ export function WorkerSettingsRow({
             min="0"
             className="min-h-11"
             value={payRate}
-            onChange={(e) => setPayRate(e.target.value)}
+            onChange={(e) => {
+              setPayRate(e.target.value);
+              if (!chargeRate.trim()) setChargeRate(e.target.value);
+            }}
             placeholder="—"
             aria-label="Pay rate — what you pay them, CAD per hour"
           />

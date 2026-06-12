@@ -129,6 +129,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     billedCostBasisCents: number;
     currentCostBasisCents: number;
   } | null = null;
+  let fallbackEntryCount = 0;
   if (isDraft && invoice.project_id) {
     const { data: projectRow } = await supabase
       .from('projects')
@@ -149,6 +150,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             currentCostBasisCents: rollup.invoiceCostBasisCents,
           };
         }
+        fallbackEntryCount = rollup.timeEntries.filter(
+          (t) => t.charge_rate_cents == null && t.hourly_rate_cents != null,
+        ).length;
       }
     }
   }
@@ -323,6 +327,15 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           projectId={driftBanner.projectId}
           billedCostBasisCents={driftBanner.billedCostBasisCents}
           currentCostBasisCents={driftBanner.currentCostBasisCents}
+        />
+      ) : null}
+
+      {fallbackEntryCount > 0 ? (
+        <PostureStrip
+          tone="warning"
+          icon={<Hourglass className="size-4" aria-hidden />}
+          primary={`${fallbackEntryCount} time ${fallbackEntryCount === 1 ? 'entry has' : 'entries have'} no charge rate`}
+          secondary="Labour billed at pay rate instead. Set a charge rate on the worker profile to fix."
         />
       ) : null}
 

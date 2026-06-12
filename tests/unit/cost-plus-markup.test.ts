@@ -110,6 +110,7 @@ describe('computeCostPlusBreakdown', () => {
       materialsCents: 0,
       mgmtFeeCents: 0,
       priorBilledCents: 0,
+      fallbackEntryCount: 0,
     });
   });
 
@@ -182,6 +183,39 @@ describe('computeCostPlusBreakdown', () => {
     // The overhead is real cost ($200) but never on the invoice — exactly
     // the gap between "what hits margin" and "what the customer pays".
     expect(allCostsMaterials - invoice.materialsCents).toBe(20000);
+  });
+
+  it('bills labour at charge_rate_cents when set, falling back to hourly_rate_cents', () => {
+    const breakdown = computeCostPlusBreakdown({
+      timeEntries: [
+        { hours: 10, hourly_rate_cents: 5000, charge_rate_cents: 8000 }, // $80 charge
+        { hours: 5, hourly_rate_cents: 6000, charge_rate_cents: null }, // null → fallback to $60
+        { hours: 2, hourly_rate_cents: null, charge_rate_cents: null }, // both null → $0
+      ],
+      expenses: [],
+      priorInvoices: [],
+      mgmtRate: 0.1,
+    });
+    // 10×8000 + 5×6000 + 0 = 80000 + 30000 = 110000
+    expect(breakdown.labourCents).toBe(110000);
+    // entries 2 and 3 have no charge rate; only entry 2 has hourly_rate_cents (fallback counted)
+    expect(breakdown.fallbackEntryCount).toBe(1);
+    expect(breakdown.mgmtFeeCents).toBe(11000); // 10% of 110000
+  });
+
+  it('JVD model: applyMgmtFeeToLabour=false applies fee to materials only', () => {
+    // JVD: margin is baked into the charge rate; fee-on-labour would double-count it.
+    const breakdown = computeCostPlusBreakdown({
+      timeEntries: [{ hours: 10, hourly_rate_cents: 5000, charge_rate_cents: 8000 }],
+      expenses: [{ amount_cents: 56500, pre_tax_amount_cents: 50000 }],
+      priorInvoices: [],
+      mgmtRate: 0.15,
+      applyMgmtFeeToLabour: false,
+    });
+    expect(breakdown.labourCents).toBe(80000); // 10 × $80
+    expect(breakdown.materialsCents).toBe(50000);
+    // Fee base = materials only = 50000; fee = round(50000 × 0.15) = 7500
+    expect(breakdown.mgmtFeeCents).toBe(7500);
   });
 
   it('applies markup over labour + materials together (not separately)', () => {

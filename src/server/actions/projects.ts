@@ -335,6 +335,43 @@ export async function updateProjectIsCostPlusAction(input: {
 }
 
 /**
+ * Set the per-project apply_mgmt_fee_to_labour override.
+ * NULL = inherit tenant default (use updateProjectApplyMgmtFeeToLabourAction
+ * with null to reset to tenant default).
+ */
+export async function updateProjectApplyMgmtFeeToLabourAction(input: {
+  id: string;
+  applyMgmtFeeToLabour: boolean | null;
+}): Promise<ProjectActionResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not authenticated.' };
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from('projects')
+    .select('name')
+    .eq('id', input.id)
+    .is('deleted_at', null)
+    .single();
+  if (!existing) return { ok: false, error: 'Project not found.' };
+
+  const { error } = await supabase
+    .from('projects')
+    .update({
+      apply_mgmt_fee_to_labour: input.applyMgmtFeeToLabour,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.id)
+    .is('deleted_at', null);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/projects');
+  revalidatePath(`/projects/${input.id}`);
+  return { ok: true, id: input.id };
+}
+
+/**
  * Move a project through its lifecycle. The only sanctioned way to change
  * `lifecycle_stage` outside of the estimate-approval flow. Writes a
  * worklog entry so there's a paper trail.

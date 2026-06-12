@@ -18,6 +18,7 @@ import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { BillingModeEditor } from '@/components/features/projects/billing-mode-editor';
 import { ManagementFeeEditor } from '@/components/features/projects/management-fee-editor';
+import { MgmtFeeLabourEditor } from '@/components/features/projects/mgmt-fee-labour-editor';
 import { ProjectStatusBadge } from '@/components/features/projects/project-status-badge';
 import {
   Dialog,
@@ -46,6 +47,10 @@ type Props = {
   targetEndDate: string | null;
   isCostPlus: boolean;
   managementFeeRate: number;
+  /** Per-project override — null = inherit tenant default. */
+  applyMgmtFeeToLabour: boolean | null;
+  /** Tenant default, shown as the resolved value when applyMgmtFeeToLabour is null. */
+  tenantApplyMgmtFeeToLabour: boolean;
   lifecycleStage: LifecycleStage;
   /** Crew roster section — injected by the server so the roster checklist
    * (card "Project Hub — Crew split") can hydrate against real workers. */
@@ -61,6 +66,8 @@ export function ProjectDetailsCard({
   targetEndDate,
   isCostPlus,
   managementFeeRate,
+  applyMgmtFeeToLabour,
+  tenantApplyMgmtFeeToLabour,
   lifecycleStage,
   crewSlot,
 }: Props) {
@@ -164,10 +171,18 @@ export function ProjectDetailsCard({
             <div className="flex flex-wrap items-center gap-2">
               <BillingModeEditor projectId={projectId} isCostPlus={isCostPlus} />
               {isCostPlus ? (
-                <span className="inline-flex items-center gap-1 text-muted-foreground">
-                  <span>·</span> Mgmt fee
-                  <ManagementFeeEditor projectId={projectId} rate={managementFeeRate} />
-                </span>
+                <>
+                  <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <span>·</span> Mgmt fee
+                    <ManagementFeeEditor projectId={projectId} rate={managementFeeRate} />
+                  </span>
+                  <span className="text-muted-foreground">·</span>
+                  <MgmtFeeLabourEditor
+                    projectId={projectId}
+                    applyMgmtFeeToLabour={applyMgmtFeeToLabour}
+                    tenantDefault={tenantApplyMgmtFeeToLabour}
+                  />
+                </>
               ) : null}
             </div>
           </Row>

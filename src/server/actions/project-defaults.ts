@@ -51,6 +51,44 @@ export async function getDefaultManagementFeeRate(): Promise<number> {
   return 0.12;
 }
 
+/** Read the tenant's apply_mgmt_fee_to_labour default. Falls back to true. */
+export async function getDefaultApplyMgmtFeeToLabour(): Promise<boolean> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return true;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('tenants')
+    .select('apply_mgmt_fee_to_labour')
+    .eq('id', tenant.id)
+    .single();
+
+  const stored = data?.apply_mgmt_fee_to_labour;
+  return stored == null ? true : !!stored;
+}
+
+/** Persist the tenant's apply_mgmt_fee_to_labour default. Owner/admin only. */
+export async function updateDefaultApplyMgmtFeeToLabourAction(input: {
+  applyMgmtFeeToLabour: boolean;
+}): Promise<ProjectDefaultsResult> {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { ok: false, error: 'Not signed in.' };
+  if (tenant.member.role !== 'owner' && tenant.member.role !== 'admin') {
+    return { ok: false, error: 'Only owners and admins can change tenant defaults.' };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('tenants')
+    .update({ apply_mgmt_fee_to_labour: input.applyMgmtFeeToLabour })
+    .eq('id', tenant.id);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/settings');
+  return { ok: true };
+}
+
 /** Persist the tenant's default mgmt fee rate. Owner/admin only. */
 export async function updateDefaultManagementFeeRateAction(
   input: z.input<typeof mgmtFeeRateSchema>,

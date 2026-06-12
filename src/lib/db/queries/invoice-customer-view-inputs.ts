@@ -48,7 +48,9 @@ export async function loadInvoiceCustomerViewInputs(
 
   const { data: project } = await supabase
     .from('projects')
-    .select('id, name, customer_summary_md, customer_view_mode, management_fee_rate, is_cost_plus')
+    .select(
+      'id, name, customer_summary_md, customer_view_mode, management_fee_rate, is_cost_plus, apply_mgmt_fee_to_labour',
+    )
     .eq('id', projectId)
     .is('deleted_at', null)
     .maybeSingle();
@@ -57,6 +59,9 @@ export async function loadInvoiceCustomerViewInputs(
 
   const isCostPlus = (project.is_cost_plus as boolean | null) !== false;
   const mgmtRate = Number((project.management_fee_rate as number | null) ?? 0.12);
+  // Tenant default not loaded here (customer view is project-scoped); NULL project
+  // override falls back to true (matches generateFinalInvoiceAction default).
+  const applyMgmtFeeToLabour = (project.apply_mgmt_fee_to_labour as boolean | null) ?? true;
 
   const [{ data: costLineRows }, { data: categoryRows }, { data: priorInvoiceRows }] =
     await Promise.all([
@@ -105,6 +110,7 @@ export async function loadInvoiceCustomerViewInputs(
       expenses,
       priorInvoices: [],
       mgmtRate,
+      applyMgmtFeeToLabour,
     });
 
     // Two aggregations of the same labour + materials total:
@@ -121,7 +127,7 @@ export async function loadInvoiceCustomerViewInputs(
     const [timeCatRes, costCatRes] = await Promise.all([
       supabase
         .from('time_entries')
-        .select('budget_category_id, cost_line_id, hours, hourly_rate_cents')
+        .select('budget_category_id, cost_line_id, hours, hourly_rate_cents, charge_rate_cents')
         .eq('project_id', projectId),
       supabase
         .from('project_costs')
@@ -135,8 +141,10 @@ export async function loadInvoiceCustomerViewInputs(
       cost_line_id: string | null;
       hours: number;
       hourly_rate_cents: number | null;
+      charge_rate_cents: number | null;
     }[]) {
-      const cents = Math.round(Number(t.hours) * (t.hourly_rate_cents ?? 0));
+      const invoiceRate = t.charge_rate_cents ?? t.hourly_rate_cents ?? 0;
+      const cents = Math.round(Number(t.hours) * invoiceRate);
       if (cents <= 0) continue;
       const catKey = t.budget_category_id ?? '';
       byCategoryCents[catKey] = (byCategoryCents[catKey] ?? 0) + cents;
