@@ -69,6 +69,8 @@ Never pure black; the page background is never pure white (cards need something 
 - **Remaining column:** value with a 3px bar stacked UNDER it (same number-over-bar grammar as the strip), right-aligned to the column edge. No percentage. Negative → danger on bar + value (reads as a red underline beneath the problem number).
 - **Third-tier entries:** faint indented rows on white — no header band, no tinted box, no total footer (the parent's Spent cell is the total). Amounts align into the page's Spent column.
 - **Add affordances are scoped, one per level:** dashed "+ Add ‹child›" row inside each container; one page-level add at the bottom. Never two add-buttons side by side.
+- **Each tier indents one ~20px step from its parent; sections sit flush left.** The outline shape is the containment cue between section and category — never add a third rail. Brackets mark *open* containers; indent is the resting-state depth cue.
+- **Containers never distribute air.** No flex/grid `gap` between structural rows — anonymous spacing reads as unfinished because no element owns it (and it creates unhoverable dead zones). Spacing belongs to the element that means it: chapter rows carry 14px margin above their 2px rule and ~12px padding below it (headings bind downward, snug to their first child); the first section is ruleless, flush under the column band. Reference renders: `budget-flat.html` (flat state) · `budget-sectioned.html` (chapter sections).
 
 ## Component Stylings
 
