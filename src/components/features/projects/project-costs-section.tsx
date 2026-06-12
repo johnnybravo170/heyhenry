@@ -29,6 +29,10 @@ import { Paperclip } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import {
+  type ExpenseSplit,
+  ExpenseSplitRows,
+} from '@/components/features/expenses/expense-split-rows';
 import { ReceiptPreviewButton } from '@/components/features/expenses/receipt-preview-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -253,19 +257,38 @@ function ReceiptForm({
   const [costLineId, setCostLineId] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
   const [nonBillable, setNonBillable] = useState(false);
+  // null = single category; array = split mode
+  const [splits, setSplits] = useState<ExpenseSplit[] | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    const amountCents = displayToCents(amountRaw);
+    if (splits && splits.length >= 2) {
+      const splitSum = splits.reduce((s, r) => s + r.grossCents, 0);
+      if (splitSum !== amountCents) {
+        setError('Splits must total the receipt amount.');
+        return;
+      }
+    }
     startTransition(async () => {
       const fd = new FormData();
       fd.set('project_id', projectId);
       fd.set('expense_date', date);
-      fd.set('amount_cents', String(displayToCents(amountRaw)));
+      fd.set('amount_cents', String(amountCents));
       fd.set('vendor', vendor);
       fd.set('description', description);
-      fd.set('budget_category_id', categoryId);
-      if (costLineId) fd.set('cost_line_id', costLineId);
+      if (splits && splits.length >= 2) {
+        fd.set(
+          'splits',
+          JSON.stringify(
+            splits.map((s) => ({ budgetCategoryId: s.budgetCategoryId, grossCents: s.grossCents })),
+          ),
+        );
+      } else {
+        fd.set('budget_category_id', categoryId);
+        if (costLineId) fd.set('cost_line_id', costLineId);
+      }
       if (receipt) fd.set('receipt', receipt);
       if (nonBillable) fd.set('is_billable', 'false');
       const res = await logExpenseWithReceiptAction(fd);
@@ -315,53 +338,96 @@ function ReceiptForm({
           />
         </div>
         {categories.length > 0 && (
-          <div>
-            <Label htmlFor="receipt-category">
-              Category{' '}
-              <span className="font-normal text-muted-foreground">
-                (optional — no pick = unallocated)
-              </span>
-            </Label>
-            <select
-              id="receipt-category"
-              value={categoryId}
-              onChange={(e) => {
-                setCategoryId(e.target.value);
-                setCostLineId('');
-              }}
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-            >
-              <option value="">— None (unallocated) —</option>
-              {categories.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+          <div className="sm:col-span-4">
+            {splits !== null ? (
+              <>
+                <ExpenseSplitRows
+                  categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+                  totalGrossCents={displayToCents(amountRaw)}
+                  value={splits}
+                  onChange={setSplits}
+                  disabled={pending}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSplits(null)}
+                  disabled={pending}
+                  className="mt-1 text-[11px] text-muted-foreground underline hover:text-foreground"
+                >
+                  Back to single category
+                </button>
+              </>
+            ) : (
+              <>
+                <Label htmlFor="receipt-category">
+                  Category{' '}
+                  <span className="font-normal text-muted-foreground">
+                    (optional — no pick = unallocated)
+                  </span>
+                </Label>
+                <select
+                  id="receipt-category"
+                  value={categoryId}
+                  onChange={(e) => {
+                    setCategoryId(e.target.value);
+                    setCostLineId('');
+                  }}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">— None (unallocated) —</option>
+                  {categories.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                {categories.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const totalCents = displayToCents(amountRaw);
+                      setSplits([
+                        {
+                          id: crypto.randomUUID(),
+                          budgetCategoryId: categoryId,
+                          grossCents: totalCents,
+                        },
+                        { id: crypto.randomUUID(), budgetCategoryId: '', grossCents: 0 },
+                      ]);
+                    }}
+                    disabled={pending}
+                    className="mt-1 text-[11px] text-muted-foreground underline hover:text-foreground"
+                  >
+                    Split across categories
+                  </button>
+                )}
+              </>
+            )}
           </div>
         )}
-        {(() => {
-          const lines = categories.find((b) => b.id === categoryId)?.cost_lines ?? [];
-          if (!categoryId || lines.length === 0) return null;
-          return (
-            <div>
-              <Label htmlFor="receipt-line">Line item</Label>
-              <select
-                id="receipt-line"
-                value={costLineId}
-                onChange={(e) => setCostLineId(e.target.value)}
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-              >
-                <option value="">— category only —</option>
-                {lines.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          );
-        })()}
+        {splits === null &&
+          (() => {
+            const lines = categories.find((b) => b.id === categoryId)?.cost_lines ?? [];
+            if (!categoryId || lines.length === 0) return null;
+            return (
+              <div>
+                <Label htmlFor="receipt-line">Line item</Label>
+                <select
+                  id="receipt-line"
+                  value={costLineId}
+                  onChange={(e) => setCostLineId(e.target.value)}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">— category only —</option>
+                  {lines.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
         <div className="sm:col-span-2">
           <Label htmlFor="receipt-desc">Description</Label>
           <Input

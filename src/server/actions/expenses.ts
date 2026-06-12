@@ -322,31 +322,93 @@ export async function logExpenseWithReceiptAction(
   const paymentSourceId =
     parsed.data.payment_source_id?.trim() || (await getDefaultPaymentSourceId());
 
+  const sharedBase = {
+    tenant_id: tenant.id,
+    user_id: user.id,
+    project_id: parsed.data.project_id,
+    vendor: parsed.data.vendor?.trim() || null,
+    vendor_gst_number: parsed.data.vendor_gst_number?.trim() || null,
+    description: parsed.data.description?.trim() || null,
+    cost_date: parsed.data.expense_date,
+    payment_source_id: paymentSourceId,
+    card_last4: parsed.data.card_last4?.trim() || null,
+    is_billable: parsed.data.is_billable === false ? false : undefined,
+    source_type: 'receipt',
+    payment_status: 'paid',
+    paid_at: new Date().toISOString(),
+    status: 'active',
+  };
+
+  // Multi-split path: create N project_costs rows sharing vendor / date /
+  // payment info. GST is distributed proportionally; the receipt file is
+  // attached to the first row only (others reference the same receipt
+  // implicitly through description / date). Splits must sum exactly to
+  // the total amount.
+  const rawSplits = formData.get('splits');
+  if (rawSplits) {
+    let splits: Array<{ budgetCategoryId: string; grossCents: number }>;
+    try {
+      splits = JSON.parse(String(rawSplits));
+      if (!Array.isArray(splits) || splits.length < 2) throw new Error();
+    } catch {
+      if (receiptStoragePath)
+        await admin.storage.from(RECEIPTS_BUCKET).remove([receiptStoragePath]);
+      return { ok: false, error: 'Invalid splits data.' };
+    }
+
+    const splitSum = splits.reduce((s, r) => s + r.grossCents, 0);
+    if (splitSum !== parsed.data.amount_cents) {
+      if (receiptStoragePath)
+        await admin.storage.from(RECEIPTS_BUCKET).remove([receiptStoragePath]);
+      return { ok: false, error: 'Splits must total the receipt amount.' };
+    }
+
+    const totalGst = parsed.data.tax_cents ?? 0;
+    const totalGross = parsed.data.amount_cents;
+    // Distribute GST proportionally; last split absorbs rounding residual.
+    let runningGst = 0;
+    const rows = splits.map((split, i) => {
+      const isLast = i === splits.length - 1;
+      const gst = isLast
+        ? totalGst - runningGst
+        : Math.round(totalGst * (split.grossCents / totalGross));
+      runningGst += isLast ? 0 : gst;
+      const preTax = split.grossCents - gst;
+      return {
+        ...sharedBase,
+        budget_category_id: split.budgetCategoryId || null,
+        cost_line_id: null,
+        amount_cents: split.grossCents,
+        pre_tax_amount_cents: preTax >= 0 ? preTax : null,
+        gst_cents: gst >= 0 ? gst : 0,
+        attachment_storage_path: i === 0 ? receiptStoragePath : null,
+      };
+    });
+
+    const { data: inserted, error: insErr } = await admin
+      .from('project_costs')
+      .insert(rows)
+      .select('id');
+    if (insErr || !inserted?.length) {
+      if (receiptStoragePath)
+        await admin.storage.from(RECEIPTS_BUCKET).remove([receiptStoragePath]);
+      return { ok: false, error: insErr?.message ?? 'Failed to log splits.' };
+    }
+    revalidatePath(`/projects/${parsed.data.project_id}`);
+    return { ok: true, id: (inserted[0] as { id: string }).id };
+  }
+
+  // Single-row path (no splits).
   const { data, error } = await admin
     .from('project_costs')
     .insert({
-      tenant_id: tenant.id,
-      user_id: user.id,
-      project_id: parsed.data.project_id,
+      ...sharedBase,
       budget_category_id: parsed.data.budget_category_id || null,
       cost_line_id: parsed.data.cost_line_id || null,
       amount_cents: parsed.data.amount_cents,
       pre_tax_amount_cents: parsed.data.pre_tax_amount_cents ?? null,
       gst_cents: parsed.data.tax_cents ?? 0,
-      vendor: parsed.data.vendor?.trim() || null,
-      vendor_gst_number: parsed.data.vendor_gst_number?.trim() || null,
-      description: parsed.data.description?.trim() || null,
       attachment_storage_path: receiptStoragePath,
-      cost_date: parsed.data.expense_date,
-      payment_source_id: paymentSourceId,
-      card_last4: parsed.data.card_last4?.trim() || null,
-      // Cost-plus overhead flag (card #11). Default-true at the DB level;
-      // only write false when the operator marked it non-billable.
-      is_billable: parsed.data.is_billable === false ? false : undefined,
-      source_type: 'receipt',
-      payment_status: 'paid',
-      paid_at: new Date().toISOString(),
-      status: 'active',
     })
     .select('id')
     .single();
