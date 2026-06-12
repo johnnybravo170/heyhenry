@@ -17,7 +17,7 @@ import type {
   WebhookEvent,
 } from '../types';
 
-const API_VERSION = '2026-03-25.dahlia' as const;
+const API_VERSION = '2026-05-27.dahlia' as const;
 
 export class StripeConnectPaymentProvider implements PaymentProvider {
   readonly name = 'stripe';

@@ -33,7 +33,7 @@
  */
 
 import { PassThrough } from 'node:stream';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import type { PropertyRecordSnapshotV1 } from '@/lib/db/queries/property-records';
 import { type PortalPhotoTag, portalPhotoTagLabels } from '@/lib/validators/portal-photo';
 import { type DocumentType, documentTypeLabels } from '@/lib/validators/project-document';
@@ -181,7 +181,7 @@ export async function generatePropertyRecordZip(
   pdfBytes: Buffer | null,
 ): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
-    const archive = archiver('zip', { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
     const passthrough = new PassThrough();
     const chunks: Buffer[] = [];
 
