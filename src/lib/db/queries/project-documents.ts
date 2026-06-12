@@ -36,7 +36,7 @@ export const listDocumentsForProject = cache(
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
-    const rows = ((data ?? []) as unknown as ProjectDocument[]) ?? [];
+    const rows = (data ?? []) as unknown as ProjectDocument[];
     if (rows.length === 0) return [];
 
     // Sign URLs in one batch.
@@ -111,5 +111,5 @@ export async function listSubAndVendorContactsForTenant(): Promise<ProjectSubCon
     .in('kind', ['sub', 'vendor'])
     .is('deleted_at', null)
     .order('name', { ascending: true });
-  return ((data ?? []) as unknown as ProjectSubContact[]) ?? [];
+  return (data ?? []) as unknown as ProjectSubContact[];
 }

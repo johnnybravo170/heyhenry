@@ -144,7 +144,7 @@ export function StagedBillConfirmDialog({
       .order('display_order')
       .then(({ data }) => {
         if (cancelled) return;
-        setBudgetCategories(((data ?? []) as { id: string; name: string }[]) ?? []);
+        setBudgetCategories((data ?? []) as { id: string; name: string }[]);
         setLoadingBudgetCategories(false);
       });
     return () => {
