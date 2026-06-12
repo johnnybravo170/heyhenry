@@ -98,11 +98,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // Load all existing project_cost_lines for label-based resolution of changed/removed lines.
-  const { data: costLines } = await admin
+  // NB: project_cost_lines has no deleted_at column — removals are hard
+  // deletes (see applyV2ChangeOrderDiff). Filtering on it errors the select,
+  // which silently emptied the label map and skipped every changed/removed line.
+  const { data: costLines, error: costLinesErr } = await admin
     .from('project_cost_lines')
     .select('id, label, budget_category_id, category')
-    .eq('project_id', projectId)
-    .is('deleted_at', null);
+    .eq('project_id', projectId);
+  if (costLinesErr) {
+    return NextResponse.json(
+      { error: 'cost_lines_load_failed', detail: costLinesErr.message },
+      { status: 500 },
+    );
+  }
 
   const linesByLabel = new Map<
     string,
