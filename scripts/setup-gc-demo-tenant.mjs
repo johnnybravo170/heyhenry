@@ -22,13 +22,20 @@ import { createClient } from '@supabase/supabase-js';
 const TENANT_NAME = 'Maple Ridge Renos';
 const OWNER_EMAIL = 'gcdemo@example.com';
 const WORKER_EMAIL = 'gcdemo+worker@example.com';
-// Shared demo password — not a secret (tenant is demo-flagged + inert). Vault too.
-const PASSWORD = 'GcDemo-2026!';
 const DEMO_PROJECT_NAME = 'Maple Heights Full Home Reno';
 
-const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GC_DEMO_PASSWORD } = process.env;
 if (!NEXT_PUBLIC_SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Need NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in env.');
+  process.exit(1);
+}
+// Shared demo password — sourced from env, never committed. The tenant is
+// demo-flagged and inert, but credentials still don't belong in git. Value
+// lives in 1Password:
+//   export GC_DEMO_PASSWORD="$(op read op://Agents/gc-demo-password/password)"
+const PASSWORD = GC_DEMO_PASSWORD;
+if (!PASSWORD) {
+  console.error('Need GC_DEMO_PASSWORD in env (op read op://Agents/gc-demo-password/password).');
   process.exit(1);
 }
 const supabase = createClient(NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -317,8 +324,9 @@ async function main() {
   await seedGcData(tenantId);
 
   console.log(`\nGC demo ready — ${TENANT_NAME} (${tenantId})`);
-  console.log(`  owner   ${OWNER_EMAIL}  /  ${PASSWORD}  → /dashboard`);
-  console.log(`  worker  ${WORKER_EMAIL}  /  ${PASSWORD}  → /w`);
+  console.log('  password: from $GC_DEMO_PASSWORD (not printed)');
+  console.log(`  owner   ${OWNER_EMAIL}  → /dashboard`);
+  console.log(`  worker  ${WORKER_EMAIL}  → /w`);
 }
 
 main().catch((e) => {

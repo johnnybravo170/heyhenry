@@ -26,13 +26,18 @@ const TENANT_ID = '7098bd96-9cdd-47af-a412-3679af4cb536';
 const OWNER_EMAIL = 'overflowtest@example.com';
 const WORKER_EMAIL = 'overflowtest+worker@example.com';
 const BOOKKEEPER_EMAIL = 'overflowtest+bookkeeper@example.com';
-// Shared QA password. Not a secret — the tenant is demo-flagged and inert
-// (no real email/SMS, excluded from metrics). Stored in the ops vault too.
-const PASSWORD = 'QaTenant-2026!';
-
-const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, QA_TENANT_PASSWORD } = process.env;
 if (!NEXT_PUBLIC_SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Need NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in env.');
+  process.exit(1);
+}
+// Shared QA password — sourced from env, never committed. The tenant is
+// demo-flagged and inert (no real email/SMS, excluded from metrics), but
+// credentials still don't belong in git. Value lives in 1Password:
+//   export QA_TENANT_PASSWORD="$(op read op://Agents/qa-tenant-password/password)"
+const PASSWORD = QA_TENANT_PASSWORD;
+if (!PASSWORD) {
+  console.error('Need QA_TENANT_PASSWORD in env (op read op://Agents/qa-tenant-password/password).');
   process.exit(1);
 }
 
@@ -116,9 +121,10 @@ async function main() {
   await ensureMember(bookkeeperId, 'bookkeeper', 'QA', 'Bookkeeper');
 
   console.log('\nQA tenant ready — Overflow Test Co (' + TENANT_ID + ')');
-  console.log('  owner       ' + OWNER_EMAIL + '  /  ' + PASSWORD + '  → /dashboard');
-  console.log('  worker      ' + WORKER_EMAIL + '  /  ' + PASSWORD + '  → /w');
-  console.log('  bookkeeper  ' + BOOKKEEPER_EMAIL + '  /  ' + PASSWORD + '  → /bk');
+  console.log('  password: from $QA_TENANT_PASSWORD (not printed)');
+  console.log('  owner       ' + OWNER_EMAIL + '  → /dashboard');
+  console.log('  worker      ' + WORKER_EMAIL + '  → /w');
+  console.log('  bookkeeper  ' + BOOKKEEPER_EMAIL + '  → /bk');
 }
 
 main().catch((e) => {

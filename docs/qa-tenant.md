@@ -34,11 +34,17 @@ populated.
 
 Set up / re-seed with `node scripts/setup-gc-demo-tenant.mjs` (idempotent).
 
-**Password (both roles): `GcDemo-2026!`.** Canonical source is the `PASSWORD`
-const in `scripts/setup-gc-demo-tenant.mjs`; the seed script is what actually
-sets it, so grep there if this doc ever drifts. Mirrored in the ops knowledge
-vault (search "QA tenant credentials") for convenience. Not a real secret (both
-tenants are inert, see below).
+**Passwords are no longer committed to git.** Each seed script reads its
+password from an env var, failing closed if unset:
+
+- Overflow Test Co → `QA_TENANT_PASSWORD` (`op://Agents/qa-tenant-password/password`)
+- Maple Ridge Renos → `GC_DEMO_PASSWORD` (`op://Agents/gc-demo-password/password`)
+
+Export the value from 1Password before re-seeding, e.g.
+`export GC_DEMO_PASSWORD="$(op read op://Agents/gc-demo-password/password)"`.
+The canonical source is the 1Password `Agents` vault (mirrored in the ops
+knowledge vault, search "QA tenant credentials"). Both tenants are inert (see
+below), but credentials still don't belong in the repo.
 
 ## What `is_demo` does
 
