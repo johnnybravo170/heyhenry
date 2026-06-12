@@ -550,7 +550,12 @@ export function BudgetCategoriesTable({
     expanded.size === 0;
 
   return (
-    <DndContext sensors={dndSensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+    <DndContext
+      id="budget-categories-dnd"
+      sensors={dndSensors}
+      collisionDetection={closestCorners}
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex flex-col gap-3">
         {/* Scope head */}
         <div className="flex flex-wrap items-center gap-2">

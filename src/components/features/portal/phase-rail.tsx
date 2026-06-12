@@ -263,6 +263,7 @@ export function PhaseRail({ phases, projectId, phasePhotos = [] }: PhaseRailProp
 
       {editing ? (
         <DndContext
+          id="portal-phase-rail-dnd"
           sensors={dndSensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}

@@ -130,6 +130,7 @@ export function JobBoard({ board }: { board: JobBoardData }) {
 
   return (
     <DndContext
+      id="job-board-dnd"
       sensors={sensors}
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
