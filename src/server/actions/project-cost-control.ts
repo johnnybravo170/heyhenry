@@ -2,7 +2,6 @@
 
 import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
-import sharp from 'sharp';
 import { z } from 'zod';
 import { getCurrentTenant, getCurrentUser } from '@/lib/auth/helpers';
 import { uploadToStorage } from '@/lib/storage/photos';
@@ -513,6 +512,7 @@ export async function attachCostLinePhotoAction(formData: FormData): Promise<Cos
   if (isHeic) {
     try {
       const buf = Buffer.from(await file.arrayBuffer());
+      const { default: sharp } = await import('sharp');
       const jpeg = await sharp(buf).rotate().jpeg({ quality: 85 }).toBuffer();
       uploadBody = jpeg;
       uploadContentType = 'image/jpeg';
