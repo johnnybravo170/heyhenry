@@ -53,6 +53,18 @@ function formatTime(iso: string): string {
 }
 
 function summarize(row: InboxIntakeRow): string {
+  // For receipts/bills, prefer extracted vendor + amount over the raw email subject.
+  if (row.bill_extract?.vendor || row.bill_extract?.amountCents) {
+    const parts: string[] = [];
+    if (row.bill_extract.vendor) parts.push(row.bill_extract.vendor);
+    if (row.bill_extract.amountCents) {
+      parts.push(
+        `$${(row.bill_extract.amountCents / 100).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      );
+    }
+    if (row.bill_extract.date) parts.push(row.bill_extract.date);
+    return parts.join(' · ');
+  }
   if (row.email_subject) return row.email_subject;
   if (row.customer_name) return `Lead: ${row.customer_name}`;
   if (row.primary_kind) return KIND_LABEL[row.primary_kind] ?? 'Intake';

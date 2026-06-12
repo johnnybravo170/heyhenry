@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { isUuid } from '@/lib/validators/uuid';
 import type {
+  BillExtract,
   IntakeArtifact,
   IntakeArtifactKind,
   IntakeAugmentation,
@@ -138,6 +139,9 @@ export type InboxIntakeRow = {
   applied_destination_id: string | null;
   applied_at: string | null;
   created_at: string;
+  /** OCR extraction from the first artifact that has bill data. Null when
+   *  OCR hasn't run or found nothing. Used to pre-fill StagedBillConfirmDialog. */
+  bill_extract: BillExtract | null;
 };
 
 export type InboxIntakeFilter = {
@@ -249,6 +253,9 @@ export async function listInboxIntake(filter: InboxIntakeFilter = {}): Promise<I
       applied_destination_id: (row.applied_destination_id as string | null) ?? null,
       applied_at: (row.applied_at as string | null) ?? null,
       created_at: row.created_at as string,
+      bill_extract:
+        (artifacts.find((a) => a?.bill_extract != null)?.bill_extract as BillExtract | null) ??
+        null,
     };
   });
 }
