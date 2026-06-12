@@ -89,7 +89,13 @@ function withinWindow(targetHHMM: string, nowHHMM: string): boolean {
   return nowMins >= targetMins && nowMins < targetMins + WINDOW_MINUTES;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = request.headers.get('authorization');
+  const expected = `Bearer ${process.env.CRON_SECRET}`;
+  if (!process.env.CRON_SECRET || auth !== expected) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const admin = createAdminClient();
   const now = new Date();
   const dedupeCutoff = new Date(now.getTime() - DEDUPE_HOURS * 60 * 60 * 1000).toISOString();

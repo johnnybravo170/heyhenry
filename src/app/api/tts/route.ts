@@ -9,32 +9,11 @@
  */
 
 import { getCurrentTenant } from '@/lib/auth/helpers';
-
-// ---------------------------------------------------------------------------
-// Rate limiting (in-memory, good enough for v1)
-// ---------------------------------------------------------------------------
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const MAX_CHARS = 500;
 const MAX_REQUESTS_PER_HOUR = 50;
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(tenantId: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(tenantId);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(tenantId, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return true;
-  }
-
-  if (entry.count >= MAX_REQUESTS_PER_HOUR) {
-    return false;
-  }
-
-  entry.count += 1;
-  return true;
-}
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Route handler
@@ -80,8 +59,12 @@ export async function POST(request: Request) {
     });
   }
 
-  // 4. Rate limit
-  if (!checkRateLimit(tenant.id)) {
+  // 4. Rate limit — Postgres-backed so it holds across lambda instances.
+  const rate = await checkRateLimit(`tts:tenant:${tenant.id}`, {
+    limit: MAX_REQUESTS_PER_HOUR,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+  });
+  if (!rate.ok) {
     return new Response(JSON.stringify({ error: 'TTS rate limit exceeded (50/hour)' }), {
       status: 429,
       headers: { 'Content-Type': 'application/json' },

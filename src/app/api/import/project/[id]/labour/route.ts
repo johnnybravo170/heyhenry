@@ -110,7 +110,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .select('id');
 
   if (error) {
-    return NextResponse.json({ error: 'insert_failed', detail: error.message }, { status: 500 });
+    console.error('[import/labour] insert failed', error.message);
+    return NextResponse.json({ error: 'insert_failed' }, { status: 500 });
   }
 
   await admin.from('worklog_entries').insert({

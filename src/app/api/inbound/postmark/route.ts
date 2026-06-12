@@ -26,7 +26,7 @@ import {
   handleCustomerInboundMessage,
 } from '@/lib/inbound-email/customer-message-handler';
 import { processInboundEmail } from '@/lib/inbound-email/processor';
-import { resolveSenderToTenant } from '@/lib/inbound-email/sender-resolver';
+import { resolveSenderToTenant, senderPassesEmailAuth } from '@/lib/inbound-email/sender-resolver';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { claimWebhookEvent } from '@/lib/webhooks/idempotency';
 
@@ -109,17 +109,15 @@ export async function POST(request: Request) {
   // 2. Otherwise fall through to the shared-inbox `henry@heyhenry.io`
   // path: resolve the SENDER against tenant members + customer replies,
   // bounce on unknown.
-  const tenantId = await resolveSenderToTenant(payload.From);
-
-  // TEMP DEBUG — remove once happy-path smoke test confirmed
-  console.log(
-    '[inbound-debug]',
-    JSON.stringify({
-      rawFrom: payload.From,
-      resolvedTenantId: tenantId,
-      subject: payload.Subject,
-    }),
-  );
+  //
+  // The tenant-member shortcut writes straight into that tenant's intake as
+  // if the owner forwarded the mail, so we must NOT honor it for a spoofed
+  // From. Only trust the match when the SPF/DKIM verdict Postmark forwarded
+  // doesn't explicitly fail; otherwise drop to null and let the
+  // customer-reply / bounce path handle it (no tenant attribution).
+  const resolvedTenantId = await resolveSenderToTenant(payload.From);
+  const tenantId =
+    resolvedTenantId && senderPassesEmailAuth(payload.Headers ?? []) ? resolvedTenantId : null;
 
   // Sender isn't a tenant member — try the customer-reply branch
   // (Phase 2 of PROJECT_MESSAGING_PLAN.md). The handler resolves to a

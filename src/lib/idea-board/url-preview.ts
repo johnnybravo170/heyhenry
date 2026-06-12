@@ -29,6 +29,7 @@ export type UrlPreview = {
 
 const FETCH_TIMEOUT_MS = 5_000;
 const MAX_BODY_BYTES = 1_000_000;
+const MAX_REDIRECT_HOPS = 3;
 
 const PINTEREST_HOST_RE = /(^|\.)pinterest\.[a-z.]+$|(^|\.)pin\.it$/i;
 
@@ -113,6 +114,65 @@ async function isResolvableToPublicAddress(hostname: string): Promise<boolean> {
   }
 }
 
+/**
+ * Re-run the host guard on a single hostname (literal or DNS-resolved).
+ * Mirrors the entry-point checks in fetchUrlPreview so every redirect hop
+ * is held to the same SSRF bar as the original URL.
+ */
+async function isHostnameSafe(hostname: string): Promise<boolean> {
+  const host = hostname.toLowerCase();
+  if (!host || isUnsafeHostname(host)) return false;
+  return isResolvableToPublicAddress(host);
+}
+
+/**
+ * fetch() with `redirect: 'manual'`, following Location ourselves up to
+ * MAX_REDIRECT_HOPS and re-validating the host of every hop BEFORE we
+ * connect to it. A bare `redirect: 'follow'` validates the host once and
+ * then lets the platform chase a 30x into 169.254.169.254 / a private IP —
+ * the TOCTOU that defeats the up-front guard. The caller has already
+ * validated `url`'s host; we validate each subsequent hop.
+ */
+async function fetchWithValidatedRedirects(
+  url: string,
+  init: RequestInit,
+  signal: AbortSignal,
+): Promise<{ ok: true; response: Response } | { ok: false; error: string }> {
+  let current = url;
+  for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
+    const res = await fetch(current, { ...init, signal, redirect: 'manual' });
+
+    // 3xx with a Location header → validate the next hop, then continue.
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (!location) return { ok: false, error: 'redirect missing Location' };
+      if (hop >= MAX_REDIRECT_HOPS) return { ok: false, error: 'too many redirects' };
+
+      let nextUrl: URL;
+      try {
+        nextUrl = new URL(location, current);
+      } catch {
+        return { ok: false, error: 'invalid redirect target' };
+      }
+      if (nextUrl.protocol !== 'http:' && nextUrl.protocol !== 'https:') {
+        return { ok: false, error: 'redirect to non-http(s) scheme' };
+      }
+      if (!(await isHostnameSafe(nextUrl.hostname))) {
+        return { ok: false, error: 'redirect to a private network' };
+      }
+      // Drain the redirect response body so the connection can be reused.
+      try {
+        await res.body?.cancel();
+      } catch {}
+      current = nextUrl.toString();
+      continue;
+    }
+
+    return { ok: true, response: res };
+  }
+  return { ok: false, error: 'too many redirects' };
+}
+
 async function fetchPinterestOembed(
   pinUrl: string,
 ): Promise<{ ok: true; preview: UrlPreview } | { ok: false; error: string }> {
@@ -120,11 +180,13 @@ async function fetchPinterestOembed(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(oembedUrl, {
-      signal: controller.signal,
-      redirect: 'follow',
-      headers: { Accept: 'application/json' },
-    });
+    const fetched = await fetchWithValidatedRedirects(
+      oembedUrl,
+      { headers: { Accept: 'application/json' } },
+      controller.signal,
+    );
+    if (!fetched.ok) return { ok: false, error: fetched.error };
+    const res = fetched.response;
     if (!res.ok) return { ok: false, error: `oEmbed ${res.status}` };
     const data = (await res.json()) as { thumbnail_url?: string; title?: string };
     return {
@@ -147,14 +209,18 @@ async function fetchOpenGraphPreview(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url.toString(), {
-      signal: controller.signal,
-      redirect: 'follow',
-      headers: {
-        Accept: 'text/html,application/xhtml+xml',
-        'User-Agent': 'HeyHenry-IdeaBoard/1.0 (+https://heyhenry.io)',
+    const fetched = await fetchWithValidatedRedirects(
+      url.toString(),
+      {
+        headers: {
+          Accept: 'text/html,application/xhtml+xml',
+          'User-Agent': 'HeyHenry-IdeaBoard/1.0 (+https://heyhenry.io)',
+        },
       },
-    });
+      controller.signal,
+    );
+    if (!fetched.ok) return { ok: false, error: fetched.error };
+    const res = fetched.response;
     if (!res.ok) return { ok: false, error: `${res.status}` };
     const ct = (res.headers.get('content-type') ?? '').toLowerCase();
     if (ct && !ct.includes('text/html') && !ct.includes('application/xhtml')) {
