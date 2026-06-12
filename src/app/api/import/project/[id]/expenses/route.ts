@@ -13,6 +13,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardImportRequest, resolveProject } from '@/lib/import/auth';
+import { buildCostLineResolver } from '@/lib/import/cost-lines';
 import { dryRunEnvelope, FORBIDDEN_LINE_LABEL, zodErrorResponse } from '@/lib/import/helpers';
 
 const ExpenseSchema = z.object({
@@ -30,6 +31,10 @@ const ExpenseSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   budget_category_id: z.string().uuid().optional(),
+  /** Optional cost-line attribution by label (case-insensitive), scoped to
+   *  budget_category_id when given. Unresolved labels keep the row
+   *  category-attributed and are reported in `unmatched_cost_lines`. */
+  cost_line: z.string().min(1).optional(),
 });
 
 const BodySchema = z.object({
@@ -75,6 +80,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json(dryRunEnvelope('expenses', expenses, expenses.length));
   }
 
+  const lineResolver = await buildCostLineResolver(
+    admin,
+    projectId,
+    expenses.some((e) => e.cost_line),
+  );
+  const unmatchedCostLines: string[] = [];
+
   const rows = expenses.map((e) => {
     const isPaid = e.payment_status === 'paid';
     const paidAt = isPaid ? `${e.paid_date ?? e.date}T00:00:00.000Z` : null;
@@ -93,6 +105,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       gst_cents: e.gst_cents,
       is_billable: e.is_billable,
       budget_category_id: e.budget_category_id ?? null,
+      cost_line_id: e.cost_line
+        ? (lineResolver(e.cost_line, e.budget_category_id) ??
+          (unmatchedCostLines.push(e.cost_line), null))
+        : null,
       status: 'active' as const,
       import_source_row_id: e.source_row_id,
     };
@@ -117,5 +133,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     related_id: projectId,
   });
 
-  return NextResponse.json({ ok: true, count: data?.length ?? 0 });
+  return NextResponse.json({
+    ok: true,
+    count: data?.length ?? 0,
+    unmatched_cost_lines: [...new Set(unmatchedCostLines)],
+  });
 }
