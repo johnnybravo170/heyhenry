@@ -293,6 +293,8 @@ export default async function ProjectDetailPage({
               targetEndDate={project.target_end_date}
               isCostPlus={project.is_cost_plus}
               managementFeeRate={project.management_fee_rate}
+              applyMgmtFeeToLabour={project.apply_mgmt_fee_to_labour ?? null}
+              tenantApplyMgmtFeeToLabour={tenant?.applyMgmtFeeToLabour ?? true}
               lifecycleStage={project.lifecycle_stage as LifecycleStage}
               crewSlot={crewSlot}
             />

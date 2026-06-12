@@ -38,6 +38,8 @@ import { createClient } from '@/lib/supabase/server';
 export type CostBasisTimeEntry = {
   hours: number;
   hourly_rate_cents: number | null;
+  /** Optional — null/undefined treated as "no charge rate set, fall back to pay rate". */
+  charge_rate_cents?: number | null;
 };
 
 export type CostBasisExpenseRow = {
@@ -56,8 +58,17 @@ export type ProjectCostBasisRollup = {
   expenseRows: CostBasisExpenseRow[];
   billRows: CostBasisBillRow[];
 
-  /** Σ hours × hourly_rate_cents over all time entries. */
+  /**
+   * Σ hours × hourly_rate_cents — the worker's *pay* rate. Used for
+   * job-cost / margin accounting only (what the GC actually pays out).
+   */
   labourCents: number;
+  /**
+   * Σ hours × charge_rate_cents (fallback: hourly_rate_cents). The
+   * customer-facing labour number that lands on the invoice line.
+   * Distinct from labourCents when workers have charge rates set.
+   */
+  labourInvoiceCents: number;
   /** Σ pre_tax_amount_cents ?? amount_cents over expenses — the cost
    *  basis the cost-plus invoice will bill on the Materials line. */
   expensesPreTaxCents: number;
@@ -68,9 +79,9 @@ export type ProjectCostBasisRollup = {
 
   /**
    * What `computeCostPlusBreakdown` will produce for
-   * `labourCents + materialsCents`. The cost-plus invoice's pre-tax
-   * cost basis — the number the management fee and bottom-of-invoice
-   * GST get applied to. Used by the drift banner.
+   * `labourCents + materialsCents`. Uses labourInvoiceCents (charge
+   * rate) so the drift banner stays accurate when charge rates differ
+   * from pay rates.
    */
   invoiceCostBasisCents: number;
 };
@@ -94,8 +105,12 @@ export function summarizeCostBasisRows(rows: {
   billRows: ReadonlyArray<CostBasisBillRow>;
 }): ProjectCostBasisRollup {
   let labourCents = 0;
+  let labourInvoiceCents = 0;
   for (const t of rows.timeEntries) {
-    labourCents += Math.round(Number(t.hours) * (t.hourly_rate_cents ?? 0));
+    const hours = Number(t.hours);
+    labourCents += Math.round(hours * (t.hourly_rate_cents ?? 0));
+    const invoiceRate = t.charge_rate_cents ?? t.hourly_rate_cents ?? 0;
+    labourInvoiceCents += Math.round(hours * invoiceRate);
   }
 
   let expensesPreTaxCents = 0;
@@ -115,10 +130,11 @@ export function summarizeCostBasisRows(rows: {
     expenseRows: rows.expenseRows as CostBasisExpenseRow[],
     billRows: rows.billRows as CostBasisBillRow[],
     labourCents,
+    labourInvoiceCents,
     expensesPreTaxCents,
     expensesGrossCents,
     billsCents,
-    invoiceCostBasisCents: labourCents + expensesPreTaxCents + billsCents,
+    invoiceCostBasisCents: labourInvoiceCents + expensesPreTaxCents + billsCents,
   };
 }
 
@@ -172,7 +188,10 @@ export async function getProjectCostBasisRollup(
   const supabase = await createClient();
 
   const [timeRes, costRes] = await Promise.all([
-    supabase.from('time_entries').select('hours, hourly_rate_cents').eq('project_id', projectId),
+    supabase
+      .from('time_entries')
+      .select('hours, hourly_rate_cents, charge_rate_cents')
+      .eq('project_id', projectId),
     // Unified read across receipts + vendor bills. status='active' mirrors
     // the legacy implicit-active behavior of `expenses` (which has no
     // status column) and the no-void state of `project_bills` (which

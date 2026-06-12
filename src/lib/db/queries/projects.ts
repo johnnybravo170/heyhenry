@@ -40,6 +40,8 @@ export type ProjectRow = {
    * `generateFinalInvoiceAction` for path selection.
    */
   is_cost_plus: boolean;
+  /** NULL = inherit tenant default. */
+  apply_mgmt_fee_to_labour: boolean | null;
   start_date: string | null;
   target_end_date: string | null;
   percent_complete: number;
@@ -117,7 +119,7 @@ export type ProjectListFilters = {
 export type LifecycleStageCounts = Record<LifecycleStage, number>;
 
 const PROJECT_COLUMNS =
-  'id, tenant_id, contact_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, is_cost_plus, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, estimate_approval_method, estimate_approved_by_member_id, estimate_approval_proof_paths, estimate_approval_notes, terms_text, document_type, is_over_budget, deleted_at, created_at, updated_at';
+  'id, tenant_id, contact_id, name, description, lifecycle_stage, resumed_from_stage, management_fee_rate, is_cost_plus, apply_mgmt_fee_to_labour, start_date, target_end_date, percent_complete, estimate_status, estimate_approval_code, estimate_sent_at, estimate_approved_at, estimate_approved_by_name, estimate_declined_at, estimate_declined_reason, estimate_approval_method, estimate_approved_by_member_id, estimate_approval_proof_paths, estimate_approval_notes, terms_text, document_type, is_over_budget, deleted_at, created_at, updated_at';
 
 const PROJECT_WITH_CUSTOMER_SELECT = `${PROJECT_COLUMNS}, contacts:contact_id (id, name, type, city, province)`;
 
