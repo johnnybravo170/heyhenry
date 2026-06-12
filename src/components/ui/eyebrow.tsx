@@ -1,11 +1,10 @@
 /**
- * The Paper "eyebrow" — the small uppercase mono label that sits over data
- * across the app ("REMAINING", "SPENT BY SOURCE", "CLIENT ESTIMATE · DRAFT").
+ * White Ledger label — 12px Inter, sentence case, muted tone.
  *
- * One place, one treatment (DESIGN.md §Typography): the closed-scale 11px mono
- * eyebrow step (`text-eyebrow`), one tracking (0.06em), one muted tone. Replaces
- * the per-file copy-pasted `font-mono` + arbitrary-11px + uppercase + muted
- * string so the eyebrow can't drift label-to-label.
+ * DESIGN.md v2 (June 2026): the JetBrains-Mono uppercase eyebrow tier is
+ * retired. Labels are now Inter 12px/500, sentence case — "Remaining", not
+ * "REMAINING". One component, one treatment. JetBrains Mono is reserved only
+ * for literal id chips (e.g. #a3f2).
  *
  * Renders a <span> by default; pass `as="p"` for a block label.
  */
@@ -24,10 +23,7 @@ export function Eyebrow({
 }) {
   return (
     <Tag
-      className={cn(
-        'font-mono text-eyebrow uppercase tracking-[0.06em] text-muted-foreground',
-        className,
-      )}
+      className={cn('text-meta font-medium tracking-[-0.005em] text-muted-foreground', className)}
     >
       {children}
     </Tag>

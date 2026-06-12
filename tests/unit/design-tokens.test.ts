@@ -1,11 +1,12 @@
 /**
- * Design-token guardrail — keeps the Paper closed type scale from drifting.
+ * Design-token guardrail — keeps the White Ledger closed type scale from drifting.
  *
- * DESIGN.md (canonical) + the named `@theme` size tokens in
- * `src/app/globals.css` define a closed scale: 11 (mono eyebrow) / 12 / 14 / 16
- * for body+label, {20,24,28,36} for display. The two ways that scale drifts are
- * arbitrary `text-[<n>px]` utilities and raw inline `font-size:` — both bypass
- * the tokens. (Root cause of the Budget/Scope formatting drift.)
+ * DESIGN.md v2 (canonical) + the named `@theme` size tokens in
+ * `src/app/globals.css` define a closed scale: 12 / 14 / 16 for body+label,
+ * {20,24,28,36} for display. The 11px mono-eyebrow tier is RETIRED in v2.
+ * The two ways the scale drifts are arbitrary `text-[<n>px]` utilities and raw
+ * inline `font-size:` — both bypass the tokens. (Root cause of the
+ * Budget/Scope formatting drift.)
  *
  * This is a RATCHET, not a hard ban. ~600 such usages already exist across the
  * app, so a per-file baseline (tests/unit/design-tokens.baseline.json) records

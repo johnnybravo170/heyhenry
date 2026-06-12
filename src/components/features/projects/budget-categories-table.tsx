@@ -154,7 +154,7 @@ function MiniBar({
   const s = budgetSegments(estimate, spent, committed);
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#ECE3D0]">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         {s.spentWithin !== '0%' ? (
           <span className="block h-full bg-foreground" style={{ width: s.spentWithin }} />
         ) : null}
@@ -162,7 +162,7 @@ function MiniBar({
           <span className="block h-full bg-destructive" style={{ width: s.spentOver }} />
         ) : null}
         {s.committedWithin !== '0%' ? (
-          <span className="block h-full bg-[#7A6A4D]" style={{ width: s.committedWithin }} />
+          <span className="block h-full bg-muted-foreground" style={{ width: s.committedWithin }} />
         ) : null}
         {s.committedOver !== '0%' ? (
           <span className="block h-full bg-destructive" style={{ width: s.committedOver }} />
@@ -170,7 +170,7 @@ function MiniBar({
       </div>
       <span
         className={cn(
-          'shrink-0 font-mono text-eyebrow tabular-nums',
+          'shrink-0 text-meta tabular-nums',
           s.actuallyOver
             ? 'text-destructive'
             : s.projectedOver
@@ -552,9 +552,7 @@ export function BudgetCategoriesTable({
         {/* Scope head */}
         <div className="flex flex-wrap items-center gap-2">
           {heading ? (
-            <h2 className="font-mono text-sm font-bold uppercase tracking-[0.06em] text-foreground/80">
-              {heading}
-            </h2>
+            <h2 className="text-base font-bold tracking-tight text-foreground">{heading}</h2>
           ) : null}
           <div className="ml-auto flex items-center gap-2">
             {headerActions}
@@ -592,13 +590,13 @@ export function BudgetCategoriesTable({
                 real section is created (hasRealSections flips). */}
             {!hasRealSections ? (
               <>
-                <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-sm">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
                   {(sectionGroups[0]?.lines.length ?? 0) > 0 ? (
                     <>
                       <div
                         className={cn(
                           GRID,
-                          'border-b border-[#E2D7C0] px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
+                          'border-b px-3 py-1 text-meta text-muted-foreground/60',
                         )}
                       >
                         <span />
@@ -659,7 +657,7 @@ export function BudgetCategoriesTable({
                   ) : null}
                   {/* Flat add-work footer */}
                   {addCategoryForSection === '__flat__' ? (
-                    <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-1 px-3">
+                    <div className="border-t px-3 py-1">
                       <AddBudgetCategoryForm
                         projectId={projectId}
                         kind="category"
@@ -672,8 +670,8 @@ export function BudgetCategoriesTable({
                   ) : (
                     <div
                       className={cn(
-                        'bg-[#F9F4EE] py-2 px-3',
-                        (sectionGroups[0]?.lines.length ?? 0) > 0 && 'border-t border-[#E2D7C0]',
+                        'bg-paper-soft px-3 py-2',
+                        (sectionGroups[0]?.lines.length ?? 0) > 0 && 'border-t',
                       )}
                     >
                       <button
@@ -682,7 +680,7 @@ export function BudgetCategoriesTable({
                           setAddCategoryForSection('__flat__');
                           setAddCategoryMode('closed');
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-card hover:text-foreground"
                       >
                         <Plus className="size-3" />
                         Add work
@@ -710,37 +708,49 @@ export function BudgetCategoriesTable({
               </>
             ) : null}
 
-            {/* Sectioned rendering (hasRealSections = true) */}
-            {hasRealSections &&
-              sectionEntries.map(({ entity, lines: sectionLines }) => {
-                const section = entity.name;
-                const collapsed = collapsedSections.has(section);
-                const estimate = sectionLines.reduce((s, l) => s + l.estimate_cents, 0);
-                const spent = sectionLines.reduce((s, l) => s + l.actual_cents, 0);
-                const committed = sectionLines.reduce((s, l) => s + l.committed_cents, 0);
-                const seg = budgetSegments(estimate, spent, committed);
-                // Collapsed-summary chips: categories over / projected-over.
-                const overCats = sectionLines.filter((l) => l.actual_cents > l.estimate_cents);
-                const projOverCats = sectionLines.filter(
-                  (l) =>
-                    l.actual_cents <= l.estimate_cents &&
-                    l.actual_cents + l.committed_cents > l.estimate_cents,
-                );
-                const isRenaming = editingSectionName === section;
-                // "Other" (id null) is synthetic — no entity to rename/describe.
-                const isRealSection = entity.id !== null;
-                const isEditingDesc = isRealSection && editingSectionDescId === entity.id;
+            {/* Sectioned rendering (hasRealSections = true) — ONE card, sections
+                are chapter divider rows (16px/700, strong rule + air).
+                DESIGN.md v2: no per-section floating cards. */}
+            {hasRealSections && (
+              <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                {/* Global column headers — once at top of the card */}
+                <div className={cn(GRID, 'border-b px-3 py-1 text-meta text-muted-foreground/60')}>
+                  <span />
+                  <span>Category</span>
+                  <span className="text-right">Estimate</span>
+                  <span className="text-right">Spent</span>
+                  <span className="text-right">Committed</span>
+                  <span className="text-right">Remaining</span>
+                </div>
 
-                return (
-                  <SectionDroppable key={entity.id ?? '__other__'} section={section}>
-                    {/* Section card — heading IS the card header so the section
-                      visually OWNS its categories (not just a label above them). */}
-                    <div className="overflow-hidden rounded-xl border border-[#D8CBB0] bg-card shadow-sm">
-                      {/* Section header — warm well tint, strong rule only when expanded */}
+                {sectionEntries.map(({ entity, lines: sectionLines }, sectionIdx) => {
+                  const section = entity.name;
+                  const collapsed = collapsedSections.has(section);
+                  const estimate = sectionLines.reduce((s, l) => s + l.estimate_cents, 0);
+                  const spent = sectionLines.reduce((s, l) => s + l.actual_cents, 0);
+                  const committed = sectionLines.reduce((s, l) => s + l.committed_cents, 0);
+                  const seg = budgetSegments(estimate, spent, committed);
+                  // Collapsed-summary chips: categories over / projected-over.
+                  const overCats = sectionLines.filter((l) => l.actual_cents > l.estimate_cents);
+                  const projOverCats = sectionLines.filter(
+                    (l) =>
+                      l.actual_cents <= l.estimate_cents &&
+                      l.actual_cents + l.committed_cents > l.estimate_cents,
+                  );
+                  const isRenaming = editingSectionName === section;
+                  // "Other" (id null) is synthetic — no entity to rename/describe.
+                  const isRealSection = entity.id !== null;
+                  const isEditingDesc = isRealSection && editingSectionDescId === entity.id;
+
+                  return (
+                    <SectionDroppable key={entity.id ?? '__other__'} section={section}>
+                      {/* Chapter divider row — strong rule above (except first section). */}
                       <div
                         className={cn(
-                          'flex items-start gap-2 bg-[#E8D5AF] px-3 py-3',
-                          !collapsed && 'border-b border-[#C8B68C]',
+                          'flex items-start gap-2 px-3',
+                          sectionIdx === 0
+                            ? 'pt-3 pb-1'
+                            : 'border-t-2 border-foreground/[0.12] pt-5 pb-1',
                         )}
                       >
                         <button
@@ -760,7 +770,7 @@ export function BudgetCategoriesTable({
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
                             {isRenaming ? (
                               <Input
-                                className="h-7 w-auto min-w-[180px] font-mono text-sm font-bold uppercase tracking-[0.04em]"
+                                className="h-7 w-auto min-w-[180px] text-base font-bold"
                                 value={editSectionValue}
                                 onChange={(e) => setEditSectionValue(e.target.value)}
                                 onKeyDown={(e) => {
@@ -789,7 +799,7 @@ export function BudgetCategoriesTable({
                               <button
                                 type="button"
                                 onClick={() => toggleSection(section)}
-                                className="text-left font-mono text-sm font-bold uppercase tracking-[0.04em] text-foreground"
+                                className="text-left text-base font-bold text-foreground"
                               >
                                 {section}
                               </button>
@@ -802,7 +812,7 @@ export function BudgetCategoriesTable({
                                   setEditingSectionName(section);
                                 }}
                                 aria-label={`Rename ${section}`}
-                                className="rounded p-0.5 text-muted-foreground/60 hover:bg-[#EFE4CB] hover:text-foreground"
+                                className="rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground"
                               >
                                 <Pencil className="size-3" />
                               </button>
@@ -898,7 +908,7 @@ export function BudgetCategoriesTable({
                                       });
                                     }}
                                     disabled={draftingSectionId === entity.id}
-                                    className="inline-flex items-center gap-1 text-eyebrow text-brand hover:text-brand/80 disabled:opacity-60"
+                                    className="inline-flex items-center gap-1 text-meta text-brand hover:text-brand/80 disabled:opacity-60"
                                   >
                                     {draftingSectionId === entity.id ? (
                                       <Loader2 className="size-3 animate-spin" />
@@ -962,42 +972,11 @@ export function BudgetCategoriesTable({
                             ) : null
                           ) : null}
                         </div>
-                        {/* Section subtotal — right of header, not column-aligned */}
-                        <div className="flex shrink-0 items-baseline gap-2 text-right">
-                          <span className="text-sm font-semibold tabular-nums text-foreground">
-                            <Money cents={estimate} />
-                          </span>
-                          <span
-                            className={cn(
-                              'font-mono text-eyebrow tabular-nums',
-                              seg.actuallyOver
-                                ? 'text-destructive'
-                                : seg.projectedOver
-                                  ? 'text-amber-700 dark:text-amber-300'
-                                  : 'text-muted-foreground',
-                            )}
-                          >
-                            {seg.usedPct}% used
-                          </span>
-                        </div>
                       </div>
 
-                      {/* Section body — column labels + category rows */}
+                      {/* Section body — category rows (col headers are global, at top of outer card) */}
                       {!collapsed ? (
                         <>
-                          <div
-                            className={cn(
-                              GRID,
-                              'border-b border-[#E2D7C0] px-3 py-1 font-mono text-eyebrow uppercase tracking-wide text-muted-foreground/60',
-                            )}
-                          >
-                            <span />
-                            <span>Category</span>
-                            <span className="text-right">Estimate</span>
-                            <span className="text-right">Spent</span>
-                            <span className="text-right">Committed</span>
-                            <span className="text-right">Remaining</span>
-                          </div>
                           <SortableContext
                             items={sectionLines.map((l) => l.budget_category_id)}
                             strategy={verticalListSortingStrategy}
@@ -1051,7 +1030,7 @@ export function BudgetCategoriesTable({
                           </SortableContext>
                           {/* Contextual "+ Add category to {section}" */}
                           {addCategoryForSection === section ? (
-                            <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-1 pl-[50px] pr-3">
+                            <div className="border-t px-3 py-1 pl-[50px]">
                               <AddBudgetCategoryForm
                                 projectId={projectId}
                                 kind="category"
@@ -1062,14 +1041,14 @@ export function BudgetCategoriesTable({
                               />
                             </div>
                           ) : (
-                            <div className="border-t border-[#E2D7C0] bg-[#F9F4EE] py-2 pl-[50px] pr-3">
+                            <div className="border-t bg-paper-soft py-2 pl-[50px] pr-3">
                               <button
                                 type="button"
                                 onClick={() => {
                                   setAddCategoryForSection(section);
                                   setAddCategoryMode('closed');
                                 }}
-                                className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-[#D8CBB0] px-2.5 py-1.5 font-semibold text-xs text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-[#FFFCF7] hover:text-foreground"
+                                className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-foreground/60 hover:bg-card hover:text-foreground"
                               >
                                 <Plus className="size-3" />
                                 Add work to {section}
@@ -1078,37 +1057,35 @@ export function BudgetCategoriesTable({
                           )}
                         </>
                       ) : null}
-                    </div>
-                  </SectionDroppable>
-                );
-              })}
+                    </SectionDroppable>
+                  );
+                })}
 
-            {/* Catch-all bottom add-row (sectioned mode) — "+ Add work" (with section
-                picker) and "+ Add section". */}
-            {hasRealSections && (
-              <div className="flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setAddCategoryForSection(null);
-                    setAddCategoryMode((m) => (m === 'category' ? 'closed' : 'category'));
-                  }}
-                >
-                  <Plus className="size-3.5" />
-                  {addCategoryMode === 'category' ? 'Cancel' : 'Add work'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setAddCategoryForSection(null);
-                    setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
-                  }}
-                >
-                  <Plus className="size-3.5" />
-                  {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
-                </Button>
+                {/* Add work + add section footer — inside the outer card */}
+                <div className="flex items-center gap-1 border-t bg-paper-soft px-3 py-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setAddCategoryForSection(null);
+                      setAddCategoryMode((m) => (m === 'category' ? 'closed' : 'category'));
+                    }}
+                  >
+                    <Plus className="size-3.5" />
+                    {addCategoryMode === 'category' ? 'Cancel' : 'Add work'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setAddCategoryForSection(null);
+                      setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
+                    }}
+                  >
+                    <Plus className="size-3.5" />
+                    {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -1225,15 +1202,15 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
   const style = { transform: CSS.Transform.toString(transform), transition };
 
   const editingThis = editingId === line.budget_category_id;
-  // Contained well: an open category + its lines read as ONE soft warm-neutral
-  // group with a tonal left accent rule (NOT rust) — "you're working in here".
+  // Contained well: an open category + its lines read as ONE soft neutral group
+  // with a 3px ink left-bracket rail — "you're working in here".
   const wellOpen = isExpanded && !isDragging;
 
   return (
     <div
       className={cn(
         wellOpen &&
-          'relative border-t border-b border-[#D8CBB0] bg-[#F7EFDB] shadow-[inset_3px_0_0_0_#B89968]',
+          'relative border-t border-b bg-secondary shadow-[inset_3px_0_0_0_rgba(10,10,10,0.18)]',
       )}
     >
       <div
@@ -1243,7 +1220,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
         className={cn(
           GRID,
           'group border-b px-3 py-2 transition-colors',
-          wellOpen ? 'border-b-0 bg-[#F2E9D4]' : 'hover:bg-[#FFFCF7]',
+          wellOpen ? 'border-b-0 bg-secondary' : 'hover:bg-accent',
           showHighlight && 'bg-primary/10 ring-2 ring-inset ring-primary/40',
           isDragging && 'relative z-20 bg-background opacity-90 shadow-md',
         )}
@@ -1463,7 +1440,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           a left guide rail runs down under the category name with subtle
           elbow connectors into each line. */}
       {wellOpen ? (
-        <div className="relative bg-[#F7EFDB] pb-3 before:pointer-events-none before:absolute before:bottom-[22px] before:left-[50px] before:top-0 before:w-px before:bg-[#C8B68C]/70 before:content-['']">
+        <div className="relative bg-secondary pb-3 before:pointer-events-none before:absolute before:bottom-[22px] before:left-[50px] before:top-0 before:w-px before:bg-border before:content-['']">
           {categoryLines.map((cl, lineIdx) => {
             const a = actualsByLineId[cl.id];
             const spent = a ? a.labour_cents + a.bills_cents + a.expenses_cents : 0;
@@ -1474,21 +1451,17 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
             const dashCell = 'inline-block font-light tabular-nums text-muted-foreground/50';
             return (
               <div key={cl.id}>
-                {/* LINE row — the anchor tier. Bright near-paper surface (clearly
-                    lighter than the warm-cream category band above), discrete
-                    band with a crisp hairline above (except the first), semibold
-                    ink line name — the eye lands on the name first. */}
+                {/* LINE row — 2px left bracket via the well's inset shadow. */}
                 <div
                   className={cn(
                     GRID,
-                    'bg-[#FCF8EE] px-3 py-2 hover:bg-[#FFFCF7]',
-                    lineIdx > 0 && 'border-t border-[#E5D6B4]',
+                    'bg-paper-soft px-3 py-2 hover:bg-accent',
+                    lineIdx > 0 && 'border-t',
                   )}
                 >
                   <span />
-                  {/* Deeper indent + elbow connector off the left guide rail —
-                      LINE clearly sits under the CATEGORY. */}
-                  <div className="relative flex min-w-0 flex-col pl-4 before:pointer-events-none before:absolute before:left-0 before:top-1/2 before:h-px before:w-2.5 before:bg-[#C8B68C]/70 before:content-['']">
+                  {/* Indent + elbow connector */}
+                  <div className="relative flex min-w-0 flex-col pl-4 before:pointer-events-none before:absolute before:left-0 before:top-1/2 before:h-px before:w-2.5 before:bg-border before:content-['']">
                     <button
                       type="button"
                       onClick={() => toggleLineSpend(cl.id)}
@@ -1502,7 +1475,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                       )}
                       <span>
                         {cl.label}
-                        <span className="ml-1.5 font-mono text-eyebrow font-medium tracking-[0.02em] text-muted-foreground/70">
+                        <span className="ml-1.5 text-meta font-medium text-muted-foreground/70">
                           {Number(cl.qty)} {cl.unit}
                           {cl.unit_price_cents > 0 ? (
                             <>
@@ -1558,7 +1531,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                      Faint cream tint (darker than the bright line-row above so
                      it never out-shines its parent), indented under the line, and
                      a 3px left accent rail tying it back to the line. */
-                  <div className="relative mx-3 my-1 ml-[80px] mr-3 overflow-hidden rounded-r-lg border border-[#E5D6B4] border-l-[3px] border-l-[#B89968] bg-[#F1E7CD] py-2">
+                  <div className="relative mx-3 my-1 ml-[80px] mr-3 overflow-hidden rounded-r-lg border border-l-[3px] border-l-foreground/[0.15] bg-muted/50 py-2">
                     <CostLineActualsInline
                       projectId={projectId}
                       costLineId={cl.id}
@@ -1601,7 +1574,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
             ) : (
               <button
                 type="button"
-                className="flex w-full items-center justify-start gap-1.5 rounded-md border border-dashed border-[#C8B68C]/80 bg-card/40 px-3 py-2 font-medium text-sm text-muted-foreground transition-colors hover:border-foreground/50 hover:bg-card hover:text-foreground"
+                className="flex w-full items-center justify-start gap-1.5 rounded-md border border-dashed bg-card/40 px-3 py-2 font-medium text-sm text-muted-foreground transition-colors hover:border-foreground/50 hover:bg-card hover:text-foreground"
                 onClick={() => {
                   setAddingLineFor(line.budget_category_id);
                   setEditingLine(null);
@@ -1806,10 +1779,7 @@ function AddBudgetCategoryForm({
           )}
         >
           <div className="flex min-w-0 flex-col gap-1.5">
-            <label
-              htmlFor="add-cat-name"
-              className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
-            >
+            <label htmlFor="add-cat-name" className="text-meta font-semibold text-muted-foreground">
               {isSection ? 'Section name' : 'Name'} <span className="text-brand">*</span>
             </label>
             <Input
@@ -1827,7 +1797,7 @@ function AddBudgetCategoryForm({
               <div className="flex min-w-0 flex-col gap-1.5">
                 <label
                   htmlFor="add-cat-section"
-                  className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
+                  className="text-meta font-semibold text-muted-foreground"
                 >
                   Section <span className="text-brand">*</span>
                 </label>
@@ -1850,7 +1820,7 @@ function AddBudgetCategoryForm({
                           setIsCustomSection(false);
                           setSection(existingSections[0] ?? '');
                         }}
-                        className="shrink-0 text-eyebrow text-muted-foreground hover:text-foreground hover:underline"
+                        className="shrink-0 text-meta text-muted-foreground hover:text-foreground hover:underline"
                       >
                         ← Pick existing
                       </button>
@@ -1880,7 +1850,7 @@ function AddBudgetCategoryForm({
               <div className="flex min-w-0 flex-col gap-1.5">
                 <label
                   htmlFor="add-cat-estimate"
-                  className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
+                  className="text-meta font-semibold text-muted-foreground"
                 >
                   Estimate{' '}
                   <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
@@ -1902,7 +1872,7 @@ function AddBudgetCategoryForm({
             <div className="flex min-w-0 flex-col gap-1.5">
               <label
                 htmlFor="add-cat-estimate"
-                className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
+                className="text-meta font-semibold text-muted-foreground"
               >
                 Price <span className="font-normal text-muted-foreground/70 lowercase">CAD</span>
               </label>
@@ -1921,10 +1891,7 @@ function AddBudgetCategoryForm({
 
         {!noSection ? (
           <div className="mt-3.5 flex flex-col gap-1.5">
-            <label
-              htmlFor="add-cat-desc"
-              className="font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground"
-            >
+            <label htmlFor="add-cat-desc" className="text-meta font-semibold text-muted-foreground">
               Description{' '}
               <span className="font-normal text-muted-foreground/70 normal-case tracking-normal">
                 optional
@@ -1947,7 +1914,7 @@ function AddBudgetCategoryForm({
       </div>
 
       {/* Footer — hint + quiet Cancel + primary Add */}
-      <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-dashed bg-[#FCFAF4] px-4 py-3">
+      <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-dashed bg-paper-soft px-4 py-3">
         <span className="text-xs text-muted-foreground">
           {isSection
             ? 'A section groups related categories. Create it empty, then add categories inside it.'

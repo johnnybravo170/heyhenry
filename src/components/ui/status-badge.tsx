@@ -5,9 +5,10 @@
  * are thin wrappers around this component. Centralising the chip shape here
  * means it can't drift between features.
  *
- * Shape: Paper eyebrow — 11px JetBrains Mono, uppercase, tracking-[0.06em],
- * soft-pair fill via `statusToneClass` from `status-tokens.ts`. Never rust
- * (rust = ✦ Henry + one hero CTA only, DESIGN.md).
+ * Shape: White Ledger label — 12px Inter, sentence case ("Active", not
+ * "ACTIVE"), soft-pair fill via `statusToneClass` from `status-tokens.ts`.
+ * DESIGN.md v2: mono-caps eyebrow tier retired.
+ * Never rust (rust = ✦ Henry + one hero CTA only, DESIGN.md).
  *
  * Dot-prefix variant ("• Active") — use `dot={true}` for live-state chips.
  * Icon variant — pass a Lucide `icon` for WCAG SC 1.4.1 compliance (don't
@@ -28,15 +29,14 @@ import { cn } from '@/lib/utils';
  * lands at the exact same size + radius + type treatment. NEVER inline this
  * spec in a span; route through a primitive that imports `pillShape`.
  *
- * `!text-eyebrow` is important on purpose: every `statusToneClass[*]` value
- * ships a `text-<colour>-<n>` class, which `tailwind-merge` (via `cn`) treats
- * as the same `text-*` group and silently strips `text-eyebrow`. Without the
- * `!` the pill inherits the parent font-size — that's why pills have been
- * rendering at 14/16/20px depending on context instead of the canonical 11.
+ * DESIGN.md v2: 12px Inter, sentence case. The `!` on `!text-meta` is still
+ * required — statusToneClass values include a `text-<colour>-<n>` class that
+ * tailwind-merge treats as the same `text-*` group and silently strips the
+ * size token without `!important`.
  */
 export const pillShape =
   'inline-flex items-center gap-1 rounded px-[7px] py-0.5 ' +
-  'font-mono !text-eyebrow font-bold uppercase tracking-[0.06em]';
+  'font-sans !text-meta font-semibold tracking-[-0.005em]';
 
 export function StatusBadge({
   tone,
