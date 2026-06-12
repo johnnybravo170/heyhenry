@@ -87,6 +87,13 @@ export type BudgetLine = {
    * differ for margin or rounding).
    */
   lines_total_cents: number;
+  /**
+   * The raw stored envelope from project_budget_categories.estimate_cents —
+   * before the single-source override that sets estimate_cents = lines_total
+   * when lines exist. Use this to show allocation progress ("$350 of $500
+   * allocated") in the authoring view.
+   */
+  envelope_cents: number;
   is_visible_in_report: boolean;
 };
 
@@ -518,6 +525,7 @@ export async function getBudgetVsActual(projectId: string): Promise<BudgetSummar
       // is effectively reserved against the envelope.
       remaining_cents: estimate_cents - spent_committed_cents,
       lines_total_cents,
+      envelope_cents: b.estimate_cents,
       is_visible_in_report: b.is_visible_in_report,
     };
   });
