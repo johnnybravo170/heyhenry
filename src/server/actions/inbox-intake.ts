@@ -67,6 +67,11 @@ const overheadFields = z.object({
 });
 export type IntakeOverheadFields = z.input<typeof overheadFields>;
 
+const splitRowSchema = z.object({
+  budgetCategoryId: z.string().uuid().optional().or(z.literal('')),
+  grossCents: z.coerce.number().int().min(1),
+});
+
 const billFields = z.object({
   vendor: z.string().trim().min(1, 'Vendor is required.'),
   vendorGstNumber: z.string().trim().optional(),
@@ -76,6 +81,8 @@ const billFields = z.object({
   description: z.string().trim().optional(),
   budgetCategoryId: z.string().uuid().optional(),
   costLineId: z.string().uuid().optional(),
+  /** When present (≥2 items), create one project_costs row per split. */
+  splits: z.array(splitRowSchema).min(2).optional(),
 });
 export type IntakeBillFields = z.input<typeof billFields>;
 
@@ -155,29 +162,68 @@ export async function applyIntakeIntentAction(
         return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid bill fields.' };
       }
       const f = parsed.data;
-      const { data: bill, error } = await supabase
-        .from('project_costs')
-        .insert({
-          tenant_id: tenant.id,
-          project_id: input.projectId,
-          vendor: f.vendor,
-          vendor_gst_number: f.vendorGstNumber || null,
-          cost_date: f.billDate,
-          description: f.description || null,
-          amount_cents: f.amountCents + f.gstCents,
-          pre_tax_amount_cents: f.amountCents,
-          gst_cents: f.gstCents,
-          budget_category_id: f.budgetCategoryId || null,
-          cost_line_id: f.costLineId || null,
-          source_type: 'vendor_bill',
-          payment_status: 'unpaid',
-          status: 'active',
-        })
-        .select('id')
-        .single();
-      if (error || !bill) return { ok: false, error: error?.message ?? 'Bill insert failed.' };
-      destinationKind = 'vendor_bill';
-      destinationId = bill.id as string;
+      const billBase = {
+        tenant_id: tenant.id,
+        project_id: input.projectId,
+        vendor: f.vendor,
+        vendor_gst_number: f.vendorGstNumber || null,
+        cost_date: f.billDate,
+        description: f.description || null,
+        source_type: 'vendor_bill',
+        payment_status: 'unpaid',
+        status: 'active',
+        intake_draft_id: input.draftId,
+      };
+
+      if (f.splits && f.splits.length >= 2) {
+        // Multi-split: distribute GST proportionally, create N rows.
+        const totalGross = f.amountCents + f.gstCents;
+        const totalGst = f.gstCents;
+        let runningGst = 0;
+        const rows = f.splits.map((split, i) => {
+          const isLast = i === (f.splits?.length ?? 0) - 1;
+          const gst = isLast
+            ? totalGst - runningGst
+            : totalGross > 0
+              ? Math.round(totalGst * (split.grossCents / totalGross))
+              : 0;
+          runningGst += isLast ? 0 : gst;
+          const preTax = split.grossCents - gst;
+          return {
+            ...billBase,
+            amount_cents: split.grossCents,
+            pre_tax_amount_cents: preTax >= 0 ? preTax : null,
+            gst_cents: gst >= 0 ? gst : 0,
+            budget_category_id: split.budgetCategoryId || null,
+            cost_line_id: null,
+          };
+        });
+        const { data: inserted, error: insErr } = await supabase
+          .from('project_costs')
+          .insert(rows)
+          .select('id');
+        if (insErr || !inserted?.length)
+          return { ok: false, error: insErr?.message ?? 'Bill insert failed.' };
+        destinationKind = 'vendor_bill';
+        destinationId = (inserted[0] as { id: string }).id;
+      } else {
+        // Single-row path.
+        const { data: bill, error } = await supabase
+          .from('project_costs')
+          .insert({
+            ...billBase,
+            amount_cents: f.amountCents + f.gstCents,
+            pre_tax_amount_cents: f.amountCents,
+            gst_cents: f.gstCents,
+            budget_category_id: f.budgetCategoryId || null,
+            cost_line_id: f.costLineId || null,
+          })
+          .select('id')
+          .single();
+        if (error || !bill) return { ok: false, error: error?.message ?? 'Bill insert failed.' };
+        destinationKind = 'vendor_bill';
+        destinationId = bill.id as string;
+      }
       break;
     }
 
@@ -573,8 +619,25 @@ export async function undoIntakeApplyAction(draftId: string): Promise<IntakeActi
           .catch(() => {});
       }
     }
-    const { error: delErr } = await supabase.from(table).delete().eq('id', destId);
-    if (delErr) return { ok: false, error: delErr.message };
+
+    if (kind === 'vendor_bill') {
+      // Vendor bills may have been split into N rows, all stamped with
+      // intake_draft_id. Delete by draft id first (handles splits); fall
+      // back to single-row delete for older rows created before the
+      // intake_draft_id column existed.
+      const { data: byDraft } = await supabase
+        .from('project_costs')
+        .delete()
+        .eq('intake_draft_id', draftId)
+        .select('id');
+      if (!byDraft || byDraft.length === 0) {
+        const { error: delErr } = await supabase.from(table).delete().eq('id', destId);
+        if (delErr) return { ok: false, error: delErr.message };
+      }
+    } else {
+      const { error: delErr } = await supabase.from(table).delete().eq('id', destId);
+      if (delErr) return { ok: false, error: delErr.message };
+    }
   }
   // For sub_quote we don't delete the destination — V2 keeps the quote
   // and only unlinks the draft (the quote may already be referenced

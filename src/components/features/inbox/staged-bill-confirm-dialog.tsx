@@ -16,6 +16,10 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import {
+  type ExpenseSplit,
+  ExpenseSplitRows,
+} from '@/components/features/expenses/expense-split-rows';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -100,11 +104,17 @@ export function StagedBillConfirmDialog({
   const [gst, setGst] = useState('');
   const [description, setDescription] = useState(extracted?.description ?? '');
 
+  // Derived cents — used in both handleSubmit and JSX (split validation / total).
+  const amountCents = dollarsToCents(amount);
+  const gstCents = dollarsToCents(gst);
+
   // Project mode
   const [projectId, setProjectId] = useState(defaultProjectId ?? '');
   const [categoryId, setCategoryId] = useState<string>('');
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategoryOption[]>([]);
   const [loadingBudgetCategories, setLoadingBudgetCategories] = useState(false);
+  // null = single category; array = split mode
+  const [splits, setSplits] = useState<ExpenseSplit[] | null>(null);
 
   // Overhead mode
   const [overheadCategoryId, setOverheadCategoryId] = useState('');
@@ -145,9 +155,6 @@ export function StagedBillConfirmDialog({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const amountCents = dollarsToCents(amount);
-    const gstCents = dollarsToCents(gst);
-
     if (amountCents <= 0) {
       toast.error('Amount must be greater than zero.');
       return;
@@ -162,6 +169,14 @@ export function StagedBillConfirmDialog({
         toast.error('Vendor is required.');
         return;
       }
+      if (splits && splits.length >= 2) {
+        const totalGross = amountCents + gstCents;
+        const splitSum = splits.reduce((s, r) => s + r.grossCents, 0);
+        if (splitSum !== totalGross) {
+          toast.error('Splits must total the bill amount before applying.');
+          return;
+        }
+      }
       startTransition(async () => {
         const result = await applyIntakeIntentAction({
           draftId,
@@ -174,7 +189,14 @@ export function StagedBillConfirmDialog({
             amountCents,
             gstCents,
             description: description.trim() || undefined,
-            budgetCategoryId: categoryId || undefined,
+            budgetCategoryId: splits ? undefined : categoryId || undefined,
+            splits:
+              splits && splits.length >= 2
+                ? splits.map((s) => ({
+                    budgetCategoryId: s.budgetCategoryId || undefined,
+                    grossCents: s.grossCents,
+                  }))
+                : undefined,
           },
         });
         if (!result.ok) {
@@ -351,31 +373,73 @@ export function StagedBillConfirmDialog({
 
           {mode === 'project' && (
             <div>
-              <Label htmlFor="bill-category">Budget category</Label>
-              <Select
-                value={categoryId}
-                onValueChange={setCategoryId}
-                disabled={pending || !projectId || loadingBudgetCategories}
-              >
-                <SelectTrigger id="bill-category">
-                  <SelectValue
-                    placeholder={
-                      !projectId
-                        ? 'Pick a project first'
-                        : loadingBudgetCategories
-                          ? 'Loading…'
-                          : 'Pick a category (optional)'
-                    }
+              {splits !== null ? (
+                <>
+                  <ExpenseSplitRows
+                    categories={budgetCategories}
+                    totalGrossCents={amountCents + gstCents}
+                    value={splits}
+                    onChange={setSplits}
+                    disabled={pending}
                   />
-                </SelectTrigger>
-                <SelectContent>
-                  {budgetCategories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <button
+                    type="button"
+                    onClick={() => setSplits(null)}
+                    disabled={pending}
+                    className="mt-1.5 text-xs text-muted-foreground underline hover:text-foreground"
+                  >
+                    Back to single category
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Label htmlFor="bill-category">Budget category</Label>
+                  <Select
+                    value={categoryId}
+                    onValueChange={setCategoryId}
+                    disabled={pending || !projectId || loadingBudgetCategories}
+                  >
+                    <SelectTrigger id="bill-category">
+                      <SelectValue
+                        placeholder={
+                          !projectId
+                            ? 'Pick a project first'
+                            : loadingBudgetCategories
+                              ? 'Loading…'
+                              : 'Pick a category (optional)'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {budgetCategories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {projectId && budgetCategories.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const totalGross = amountCents + gstCents;
+                        setSplits([
+                          {
+                            id: crypto.randomUUID(),
+                            budgetCategoryId: categoryId,
+                            grossCents: totalGross,
+                          },
+                          { id: crypto.randomUUID(), budgetCategoryId: '', grossCents: 0 },
+                        ]);
+                      }}
+                      disabled={pending}
+                      className="mt-1.5 text-xs text-muted-foreground underline hover:text-foreground"
+                    >
+                      Split across categories
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           )}
 
