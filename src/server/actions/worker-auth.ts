@@ -90,6 +90,20 @@ export async function workerSignupAction(input: {
     return { ok: false, error: 'This invite link is no longer valid. Contact your employer.' };
   }
 
+  // 3b. If the owner issued this invite to a specific email, bind acceptance to
+  // it — the code alone must not let an arbitrary account join the tenant.
+  if (
+    invite.invited_email &&
+    invite.invited_email.trim().toLowerCase() !== email.trim().toLowerCase()
+  ) {
+    return {
+      ok: false,
+      error:
+        'This invite was issued to a different email address. Sign up with the email your employer invited.',
+      fieldErrors: { email: ['This invite was issued to a different email address.'] },
+    };
+  }
+
   const admin = createAdminClient();
 
   // 4. Create auth user.
