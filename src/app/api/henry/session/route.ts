@@ -115,7 +115,9 @@ async function tryMintOpenAI(
     if (!mintRes.ok) {
       const body = await mintRes.text();
       console.error('[Henry session] mint failed:', mintRes.status, body);
-      return { ok: false, error: `OpenAI client_secret mint ${mintRes.status}: ${body}` };
+      // Don't leak the upstream OpenAI error body to the client — the full
+      // body is in the server log above. Surface a generic, stable message.
+      return { ok: false, error: 'Failed to start voice session. Please try again.' };
     }
 
     const minted = (await mintRes.json()) as { value?: string; expires_at?: number };
