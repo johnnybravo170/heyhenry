@@ -157,7 +157,7 @@ export function StagedPhotoDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button variant="primary" type="submit" disabled={pending}>
               {pending ? 'Applying…' : 'Add to gallery'}
             </Button>
           </div>

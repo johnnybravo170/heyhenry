@@ -1930,7 +1930,7 @@ function AddBudgetCategoryForm({
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button variant="primary" type="submit" size="sm" disabled={isPending}>
           <Plus className="size-3.5" />
           {isPending ? 'Adding…' : isSection ? 'Add section' : 'Add work'}
         </Button>

@@ -658,7 +658,7 @@ export function WorkerExpenseForm({ projects, tenantTaxRate }: Props) {
         />
       </div>
 
-      <Button type="submit" disabled={pending || extracting} className="w-full">
+      <Button variant="primary" type="submit" disabled={pending || extracting} className="w-full">
         {pending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
         Log expense
       </Button>

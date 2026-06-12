@@ -95,7 +95,7 @@ export function NamePromptModal() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button variant="primary" type="submit" className="w-full" disabled={pending}>
             {pending ? 'Saving…' : 'Save'}
           </Button>
         </form>

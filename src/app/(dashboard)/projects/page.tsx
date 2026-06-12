@@ -146,7 +146,7 @@ export default async function ProjectsPage({
               Import with Henry
             </Link>
           </Button>
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href="/projects/new">
               <Plus className="size-3.5" />
               New project
@@ -160,7 +160,7 @@ export default async function ProjectsPage({
           <p className="text-sm text-muted-foreground">
             Create your first renovation project to get started.
           </p>
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href="/projects/new">
               <Plus className="size-3.5" />
               New project

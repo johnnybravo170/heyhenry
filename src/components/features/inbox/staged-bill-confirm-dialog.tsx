@@ -464,7 +464,7 @@ export function StagedBillConfirmDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button variant="primary" type="submit" disabled={pending}>
               {pending ? 'Applying…' : mode === 'project' ? 'Apply to project' : 'Log as overhead'}
             </Button>
           </div>

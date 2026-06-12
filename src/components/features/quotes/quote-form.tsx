@@ -393,7 +393,7 @@ export function QuoteForm({
       ) : null}
 
       <div className="flex items-center gap-2">
-        <Button type="submit" disabled={pending}>
+        <Button variant="primary" type="submit" disabled={pending}>
           {pending
             ? mode === 'create'
               ? 'Saving...'

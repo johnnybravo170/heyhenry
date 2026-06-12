@@ -157,7 +157,7 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
       </div>
 
       <div className="pt-2">
-        <Button type="submit" disabled={pending}>
+        <Button variant="primary" type="submit" disabled={pending}>
           {pending ? 'Saving…' : 'Save business info'}
         </Button>
       </div>

@@ -222,7 +222,12 @@ export function WorkerInvoiceNewForm({
         </div>
       </div>
 
-      <Button type="submit" disabled={submitting || !canSubmit} className="w-full">
+      <Button
+        variant="primary"
+        type="submit"
+        disabled={submitting || !canSubmit}
+        className="w-full"
+      >
         {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
         Submit invoice
       </Button>

@@ -84,7 +84,12 @@ export default function LoginMfaPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-2">
-          <Button type="submit" className="w-full" disabled={pending || code.length !== 6}>
+          <Button
+            variant="primary"
+            type="submit"
+            className="w-full"
+            disabled={pending || code.length !== 6}
+          >
             {pending ? 'Verifying…' : 'Verify'}
           </Button>
           <div className="flex w-full justify-between text-sm">

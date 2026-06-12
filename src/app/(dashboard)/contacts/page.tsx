@@ -121,7 +121,7 @@ export default async function ContactsPage({
                 : `${grandTotal} contact${grandTotal === 1 ? '' : 's'} on file`}
           </p>
         </div>
-        <Button asChild>
+        <Button variant="primary" asChild>
           <Link href="/contacts/new">
             <Plus className="size-3.5" />
             New contact

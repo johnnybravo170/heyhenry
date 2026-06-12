@@ -136,7 +136,7 @@ export function DecisionForm({ projectId }: { projectId: string }) {
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || !label.trim()}>
+            <Button variant="primary" type="submit" disabled={pending || !label.trim()}>
               {pending ? <Loader2 className="size-4 animate-spin" /> : null}
               Post to portal
             </Button>

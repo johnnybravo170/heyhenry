@@ -298,7 +298,7 @@ function TimeForm({
         </div>
       )}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending
             ? 'Saving…'
             : needsEmptyConfirm
@@ -426,7 +426,7 @@ function ExpenseForm({
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending ? 'Saving…' : 'Log expense'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>
@@ -560,7 +560,7 @@ function EditExpenseDialog({
             <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button variant="primary" type="submit" disabled={pending}>
               {pending ? 'Saving…' : 'Save changes'}
             </Button>
           </DialogFooter>

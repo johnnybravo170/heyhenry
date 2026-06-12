@@ -106,7 +106,7 @@ function TemplateForm({ initial, onDone }: { initial?: TemplateRow; onDone: () =
 
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending ? 'Saving…' : initial ? 'Update' : 'Add template'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>

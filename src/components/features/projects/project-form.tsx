@@ -335,7 +335,7 @@ export function ProjectForm({
         />
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={isPending}>
+          <Button variant="primary" type="submit" disabled={isPending}>
             {isPending
               ? 'Saving...'
               : (submitLabel ?? (mode === 'create' ? 'Create project' : 'Save changes'))}

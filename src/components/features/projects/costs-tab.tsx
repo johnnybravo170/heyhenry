@@ -228,7 +228,7 @@ function POForm({ projectId, onDone }: { projectId: string; onDone: () => void }
       {total > 0 && <p className="text-sm font-medium">Total: {formatCurrency(total)}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending ? 'Creating…' : 'Create PO'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>

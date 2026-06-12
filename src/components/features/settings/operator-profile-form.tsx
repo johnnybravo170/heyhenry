@@ -214,7 +214,7 @@ export function OperatorProfileForm({ profile }: { profile: OperatorProfile }) {
       </div>
 
       <div className="pt-2">
-        <Button type="submit" disabled={pending}>
+        <Button variant="primary" type="submit" disabled={pending}>
           {pending ? 'Saving…' : 'Save your info'}
         </Button>
       </div>

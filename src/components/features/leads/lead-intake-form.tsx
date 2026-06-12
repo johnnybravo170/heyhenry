@@ -1119,7 +1119,7 @@ export function LeadIntakeForm({
       </div>
 
       <div className="flex items-center justify-end gap-2">
-        <Button type="submit" disabled={isParsing}>
+        <Button variant="primary" type="submit" disabled={isParsing}>
           {isParsing ? (
             <>
               <Loader2 className="mr-1.5 size-3.5 animate-spin" />

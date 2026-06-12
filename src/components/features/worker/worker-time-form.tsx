@@ -297,7 +297,7 @@ export function WorkerTimeForm({ projects, initial }: Props) {
         />
       </div>
 
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button variant="primary" type="submit" disabled={pending} className="w-full">
         {pending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
         {isEdit ? 'Save changes' : 'Log time'}
       </Button>

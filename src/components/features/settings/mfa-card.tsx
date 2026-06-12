@@ -306,7 +306,7 @@ function EnrollDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={verifying || code.length !== 6}>
+              <Button variant="primary" type="submit" disabled={verifying || code.length !== 6}>
                 {verifying ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
                 Verify &amp; enable
               </Button>
@@ -401,7 +401,7 @@ function RegenerateDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || code.length !== 6}>
+            <Button variant="primary" type="submit" disabled={pending || code.length !== 6}>
               {pending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
               Regenerate codes
             </Button>

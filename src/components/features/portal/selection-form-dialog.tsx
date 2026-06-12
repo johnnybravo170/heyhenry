@@ -344,7 +344,7 @@ export function SelectionFormDialog({
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || !room.trim()}>
+            <Button variant="primary" type="submit" disabled={pending || !room.trim()}>
               {pending ? <Loader2 className="size-4 animate-spin" /> : null}
               {editing ? 'Save' : 'Add'}
             </Button>

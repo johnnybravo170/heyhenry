@@ -337,7 +337,7 @@ function SelectionComposer({
         )}
       </div>
       <div className="flex justify-end">
-        <Button type="submit" disabled={pending || !room.trim()}>
+        <Button variant="primary" type="submit" disabled={pending || !room.trim()}>
           {pending ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : null}
           {pending ? 'Saving…' : 'Add selection'}
         </Button>

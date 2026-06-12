@@ -25,7 +25,7 @@ export default async function WorkerTimePage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Time</h1>
-        <Button asChild size="sm">
+        <Button variant="primary" asChild size="sm">
           <Link href="/w/time/new">
             <Plus className="size-4" /> Log time
           </Link>

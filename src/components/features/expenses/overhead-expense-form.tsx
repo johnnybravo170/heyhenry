@@ -635,7 +635,7 @@ export function OverheadExpenseForm({
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <div className="flex items-center gap-2">
-        <Button type="submit" disabled={pending || parsing}>
+        <Button variant="primary" type="submit" disabled={pending || parsing}>
           {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Log expense'}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push('/expenses')}>

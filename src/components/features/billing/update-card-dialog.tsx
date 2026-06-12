@@ -160,7 +160,7 @@ function CardForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
         <Button type="button" variant="outline" onClick={onClose} disabled={disabled}>
           Cancel
         </Button>
-        <Button type="submit" disabled={disabled}>
+        <Button variant="primary" type="submit" disabled={disabled}>
           {disabled ? 'Saving…' : 'Save card'}
         </Button>
       </DialogFooter>

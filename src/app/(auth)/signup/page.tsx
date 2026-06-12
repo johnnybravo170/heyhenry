@@ -254,7 +254,12 @@ function SignupForm() {
           ) : null}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-2">
-          <Button type="submit" className="w-full" disabled={pending || !acceptedPolicies}>
+          <Button
+            variant="primary"
+            type="submit"
+            className="w-full"
+            disabled={pending || !acceptedPolicies}
+          >
             {pending ? 'Setting things up…' : 'Create my account'}
           </Button>
           <Link
