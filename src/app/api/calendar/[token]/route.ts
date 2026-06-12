@@ -2,27 +2,30 @@ import { generateCalendarFeed, type IcsEventOptions } from '@/lib/calendar/ics-g
 import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
- * GET /api/calendar/:slug.ics
+ * GET /api/calendar/:token.ics
  *
- * Public iCal feed for a tenant's scheduled jobs. No auth required (but the
- * slug must be known). Intended for subscribing from Google Calendar, Apple
- * Calendar, or Outlook via "Add calendar from URL".
+ * Public iCal feed for a tenant's scheduled jobs. No auth required, but the
+ * URL is gated on a high-entropy per-tenant secret token (~144 bits) rather
+ * than the guessable, user-chosen slug — the feed exposes customer PII
+ * (names, addresses, appointment times, job notes), so it must not be
+ * enumerable. Intended for subscribing from Google Calendar, Apple Calendar,
+ * or Outlook via "Add calendar from URL".
  *
  * Returns events for the next 90 days.
  */
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
 
-  // Strip .ics extension if present in the slug
-  const cleanSlug = slug.replace(/\.ics$/, '');
+  // Strip .ics extension if present in the path segment
+  const cleanToken = token.replace(/\.ics$/, '');
 
   const admin = createAdminClient();
 
-  // Look up tenant by slug
+  // Look up tenant by its secret calendar-feed token
   const { data: tenant, error: tenantErr } = await admin
     .from('tenants')
     .select('id, name')
-    .eq('slug', cleanSlug)
+    .eq('calendar_feed_token', cleanToken)
     .is('deleted_at', null)
     .maybeSingle();
 
@@ -77,7 +80,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   return new Response(feed, {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${cleanSlug}.ics"`,
+      'Content-Disposition': `attachment; filename="${cleanToken}.ics"`,
       'Cache-Control': 'no-cache, no-store, must-revalidate',
     },
   });
