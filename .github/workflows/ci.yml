@@ -278,6 +278,14 @@ jobs:
         # ships). A breaking change (e.g. a table rename) must ship in the
         # SAME merge as the code that depends on it and tolerate a few seconds'
         # apply window. See AGENTS.md "Database migrations".
-        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        #
+        # --include-all: concurrent dev means a migration can land on main with
+        # a timestamp EARLIER than one already applied to prod (authored late,
+        # stamped early). The Supabase CLI treats that as out-of-order and skips
+        # it unless --include-all is set, which silently stalls the schema. We
+        # apply all pending migrations regardless of order — safe here because
+        # the regime is forward-only + additive (expand/migrate/contract) and CI
+        # guards block duplicate prefixes.
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --include-all
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
