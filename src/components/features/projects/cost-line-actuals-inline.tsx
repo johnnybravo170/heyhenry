@@ -38,13 +38,17 @@ const EMPTY: CostLineActualsSummary = {
 export function CostLineActualsInline({
   projectId,
   costLineId,
+  categoryId,
   costLineLabel,
   actuals,
 }: {
   projectId: string;
-  costLineId: string;
+  /** Pass exactly one of costLineId / categoryId — picks the Spend-tab focus link. */
+  costLineId?: string;
+  /** Category-direct grain: spend attached to the category but no line. */
+  categoryId?: string;
   costLineLabel: string;
-  /** Pre-fetched line actuals; undefined = no actuals on this line. */
+  /** Pre-fetched actuals; undefined = nothing logged at this grain. */
   actuals?: CostLineActualsSummary;
 }) {
   const tz = useTenantTimezone();
@@ -138,7 +142,11 @@ export function CostLineActualsInline({
       ) : null}
 
       <Link
-        href={`/projects/${projectId}?tab=costs&focus_line=${costLineId}`}
+        href={
+          costLineId
+            ? `/projects/${projectId}?tab=costs&focus_line=${costLineId}`
+            : `/projects/${projectId}?tab=costs${categoryId ? `&focus=${categoryId}` : ''}`
+        }
         className="inline-flex items-center gap-1 font-mono text-eyebrow font-semibold uppercase tracking-[0.06em] text-muted-foreground hover:text-foreground"
       >
         Open in Spend tab

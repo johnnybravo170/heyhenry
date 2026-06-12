@@ -98,6 +98,8 @@ type BudgetCategoriesTableProps = {
   catalog: MaterialsCatalogRow[];
   coContributionsByCategoryId?: Record<string, AppliedChangeOrderContribution[]>;
   actualsByLineId?: Record<string, CostLineActualsSummary>;
+  /** Category-direct spend (budget_category_id set, no cost_line_id), keyed by category id. */
+  categoryActualsById?: Record<string, CostLineActualsSummary>;
   /** Authoring posture (planning) → expanded; execution (active+) → collapsed. */
   defaultExpanded?: boolean;
   /** Heading rendered above the table (e.g. "Scope of Work"). */
@@ -191,6 +193,7 @@ export function BudgetCategoriesTable({
   catalog,
   coContributionsByCategoryId = {},
   actualsByLineId = {},
+  categoryActualsById = {},
   defaultExpanded = true,
   heading,
   headerActions,
@@ -547,7 +550,12 @@ export function BudgetCategoriesTable({
     expanded.size === 0;
 
   return (
-    <DndContext sensors={dndSensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+    <DndContext
+      id="budget-categories-dnd"
+      sensors={dndSensors}
+      collisionDetection={closestCorners}
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex flex-col gap-3">
         {/* Scope head */}
         <div className="flex flex-wrap items-center gap-2">
@@ -583,20 +591,26 @@ export function BudgetCategoriesTable({
           />
         )}
 
-        <div className="overflow-x-auto">
+        {/* md+: overflow-x must be visible — any auto/hidden ancestor becomes the
+            sticky containing scrollport and silently defeats the sticky column
+            header (it would "stick" inside a box that never scrolls vertically). */}
+        <div className="overflow-x-auto md:overflow-x-visible">
           <div className="min-w-[720px] space-y-3">
             {/* Rule 1: flat rendering when no real sections exist — one bordered card,
                 no section chrome. Transitions to the sectioned layout the moment a
                 real section is created (hasRealSections flips). */}
             {!hasRealSections ? (
               <>
-                <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                {/* overflow-clip (not -hidden): hidden makes the card a scrollport
+                    and traps the sticky header; clip rounds corners without that. */}
+                <div className="overflow-clip rounded-xl border bg-card shadow-sm">
                   {(sectionGroups[0]?.lines.length ?? 0) > 0 ? (
                     <>
                       <div
                         className={cn(
                           GRID,
                           'border-b px-3 py-1 text-meta text-muted-foreground/60',
+                          'z-10 bg-card md:sticky md:top-0',
                         )}
                       >
                         <span />
@@ -648,6 +662,7 @@ export function BudgetCategoriesTable({
                               coContributionsByCategoryId[line.budget_category_id] ?? []
                             }
                             actualsByLineId={actualsByLineId}
+                            categoryActualsById={categoryActualsById}
                             showHighlight={highlight && line.budget_category_id === focusCategoryId}
                             isFocused={line.budget_category_id === focusCategoryId}
                           />
@@ -712,9 +727,16 @@ export function BudgetCategoriesTable({
                 are chapter divider rows (16px/700, strong rule + air).
                 DESIGN.md v2: no per-section floating cards. */}
             {hasRealSections && (
-              <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-                {/* Global column headers — once at top of the card */}
-                <div className={cn(GRID, 'border-b px-3 py-1 text-meta text-muted-foreground/60')}>
+              <div className="overflow-clip rounded-xl border bg-card shadow-sm">
+                {/* Global column headers — once at top of the card; sticky on md+
+                    (see overflow notes on the wrappers above). */}
+                <div
+                  className={cn(
+                    GRID,
+                    'border-b px-3 py-1 text-meta text-muted-foreground/60',
+                    'z-10 bg-card md:sticky md:top-0',
+                  )}
+                >
                   <span />
                   <span>Category</span>
                   <span className="text-right">Estimate</span>
@@ -1021,6 +1043,7 @@ export function BudgetCategoriesTable({
                                   coContributionsByCategoryId[line.budget_category_id] ?? []
                                 }
                                 actualsByLineId={actualsByLineId}
+                                categoryActualsById={categoryActualsById}
                                 showHighlight={
                                   highlight && line.budget_category_id === focusCategoryId
                                 }
@@ -1138,6 +1161,7 @@ type BudgetCategoryRowProps = {
   catalog: MaterialsCatalogRow[];
   coContributions: AppliedChangeOrderContribution[];
   actualsByLineId: Record<string, CostLineActualsSummary>;
+  categoryActualsById: Record<string, CostLineActualsSummary>;
   showHighlight: boolean;
   isFocused: boolean;
 };
@@ -1177,6 +1201,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
     catalog,
     coContributions,
     actualsByLineId,
+    categoryActualsById,
     showHighlight,
     isFocused,
   } = props;
@@ -1220,7 +1245,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
         className={cn(
           GRID,
           'group border-b px-3 py-2 transition-colors',
-          wellOpen ? 'border-b-0 bg-secondary' : 'hover:bg-accent',
+          wellOpen ? 'border-b-0 bg-secondary py-3' : 'hover:bg-accent',
           showHighlight && 'bg-primary/10 ring-2 ring-inset ring-primary/40',
           isDragging && 'relative z-20 bg-background opacity-90 shadow-md',
         )}
@@ -1440,7 +1465,7 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
           a left guide rail runs down under the category name with subtle
           elbow connectors into each line. */}
       {wellOpen ? (
-        <div className="relative bg-secondary pb-3 before:pointer-events-none before:absolute before:bottom-[22px] before:left-[50px] before:top-0 before:w-px before:bg-border before:content-['']">
+        <div className="relative bg-secondary pb-4 before:pointer-events-none before:absolute before:bottom-[26px] before:left-[50px] before:top-0 before:w-px before:bg-border before:content-['']">
           {categoryLines.map((cl, lineIdx) => {
             const a = actualsByLineId[cl.id];
             const spent = a ? a.labour_cents + a.bills_cents + a.expenses_cents : 0;
@@ -1554,6 +1579,68 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
               </div>
             );
           })}
+
+          {/* CATEGORY-DIRECT spend — receipts/bills/hours attached to this
+              category with no specific cost line (e.g. scanned to the category,
+              imported actuals). They feed the Spent column above; without this
+              row that money has no drill-through anywhere on the Budget tab. */}
+          {(() => {
+            const direct = categoryActualsById[line.budget_category_id];
+            if (!direct || direct.rows.length === 0) return null;
+            const directKey = `direct:${line.budget_category_id}`;
+            const directExpanded = expandedLineIds.has(directKey);
+            return (
+              <div>
+                <div
+                  className={cn(
+                    GRID,
+                    'bg-paper-soft px-3 py-2 hover:bg-accent',
+                    categoryLines.length > 0 && 'border-t',
+                  )}
+                >
+                  <span />
+                  {/* Indent + elbow connector — same bracket idiom as line rows */}
+                  <div className="relative flex min-w-0 flex-col pl-4 before:pointer-events-none before:absolute before:left-0 before:top-1/2 before:h-px before:w-2.5 before:bg-border before:content-['']">
+                    <button
+                      type="button"
+                      onClick={() => toggleLineSpend(directKey)}
+                      className="flex items-start gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
+                      aria-expanded={directExpanded}
+                    >
+                      {directExpanded ? (
+                        <ChevronDown className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      )}
+                      <span>
+                        Logged to category
+                        <span className="ml-1.5 text-meta font-medium text-muted-foreground/70">
+                          {direct.rows.length} {direct.rows.length === 1 ? 'entry' : 'entries'} not
+                          on a line
+                        </span>
+                      </span>
+                    </button>
+                  </div>
+                  <span />
+                  <span className="text-right text-sm font-medium text-muted-foreground">
+                    <Money cents={direct.total_cents} />
+                  </span>
+                  <span />
+                  <span />
+                </div>
+                {directExpanded ? (
+                  <div className="relative mx-3 my-1 ml-[80px] mr-3 overflow-hidden rounded-r-lg border border-l-[3px] border-l-foreground/[0.15] bg-muted/50 py-2">
+                    <CostLineActualsInline
+                      projectId={projectId}
+                      categoryId={line.budget_category_id}
+                      costLineLabel={line.budget_category_name}
+                      actuals={direct}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()}
 
           {/* cl-actions: add-line affordance + spent-by-source. Indented to the
               line-name start. The add-line row is a distinct full-width dashed

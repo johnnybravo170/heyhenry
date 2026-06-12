@@ -75,7 +75,7 @@ export function DashboardSections({ initialOrder, sections }: DashboardSectionsP
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext id="dashboard-sections-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
       <SortableContext items={order} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-6">
           {order.map((key) => (
