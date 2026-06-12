@@ -26,7 +26,7 @@ const costLineSchema = z.object({
   unit: z.string().trim().max(50).optional().or(z.literal('')),
   unit_cost_cents: z.coerce.number().int().min(0),
   unit_price_cents: z.coerce.number().int().min(0),
-  markup_pct: z.coerce.number().min(0).max(1000),
+  markup_pct: z.coerce.number().min(-100).max(1000),
   notes: z.string().trim().max(1000).optional().or(z.literal('')),
   sort_order: z.coerce.number().int().optional().default(0),
 });
