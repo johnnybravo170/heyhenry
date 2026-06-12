@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { ZodError } from 'zod';
 
-export const FORBIDDEN_LINE_LABEL = /gst|hst|pst|management fee|subtotal|total/i;
+// Word-boundary match: a bare substring check rejects legitimate free text
+// ("upstairs" contains "pst", "totally" contains "total").
+export const FORBIDDEN_LINE_LABEL = /\b(?:gst|hst|pst|management fee|subtotal|total)\b/i;
 
 /** Coerce a value to an integer number of cents. Throws if not a safe integer. */
 export function assertCents(value: unknown, path: string): number {
