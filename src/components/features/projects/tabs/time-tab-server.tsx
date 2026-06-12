@@ -151,7 +151,7 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
             href={`/projects/${projectId}?tab=costs`}
             className="font-medium text-foreground hover:underline"
           >
-            Spend →
+            Costs →
           </a>
         </div>
       </div>

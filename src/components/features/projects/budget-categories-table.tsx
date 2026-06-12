@@ -690,20 +690,23 @@ export function BudgetCategoriesTable({
                     </div>
                   )}
                 </div>
-                {/* "+ Add section" stays available; surfaces structure on demand */}
-                <div className="flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setAddCategoryForSection(null);
-                      setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
-                    }}
-                  >
-                    <Plus className="size-3.5" />
-                    {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
-                  </Button>
-                </div>
+                {/* "+ Add section" surfaces once there are 5+ categories —
+                    structure is earned, not required up-front. */}
+                {(sectionGroups[0]?.lines.length ?? 0) >= 5 || addCategoryMode === 'section' ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2.5">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setAddCategoryForSection(null);
+                        setAddCategoryMode((m) => (m === 'section' ? 'closed' : 'section'));
+                      }}
+                    >
+                      <Plus className="size-3.5" />
+                      {addCategoryMode === 'section' ? 'Cancel' : 'Add section'}
+                    </Button>
+                  </div>
+                ) : null}
               </>
             ) : null}
 
@@ -1605,9 +1608,35 @@ function BudgetCategoryRow(props: BudgetCategoryRowProps) {
                 }}
               >
                 <Plus className="size-3.5 shrink-0" />
-                Add line
+                {categoryLines.length === 0
+                  ? `Add line — break ${line.budget_category_name} into parts`
+                  : 'Add line'}
               </button>
             )}
+            {/* Allocation progress: shown when the category has both a price
+                envelope and cost lines, so the operator can see at a glance
+                whether their line breakdown adds up to the budget. */}
+            {line.envelope_cents > 0 && categoryLines.length > 0 ? (
+              <div className="flex items-center gap-1.5 pb-1 text-xs">
+                <Eyebrow>Line allocation</Eyebrow>
+                {line.lines_total_cents === line.envelope_cents ? (
+                  <span className="text-emerald-600 dark:text-emerald-400">Balanced</span>
+                ) : line.lines_total_cents > line.envelope_cents ? (
+                  <span className="font-medium text-destructive">
+                    Over by{' '}
+                    <Money
+                      cents={line.lines_total_cents - line.envelope_cents}
+                      className="font-medium"
+                    />
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    <Money cents={line.lines_total_cents} /> of{' '}
+                    <Money cents={line.envelope_cents} /> allocated
+                  </span>
+                )}
+              </div>
+            ) : null}
             {line.labor_cents > 0 || line.bills_cents > 0 || line.expense_cents > 0 ? (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pb-1 text-xs">
                 <Eyebrow>Spent by source</Eyebrow>
