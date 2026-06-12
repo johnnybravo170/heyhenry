@@ -206,3 +206,116 @@ export async function getCostLineActualsByProject(
 
   return result;
 }
+
+/**
+ * Per-category DIRECT spend rollup: time entries and costs attached to a
+ * budget category but to no specific cost line (`budget_category_id` set,
+ * `cost_line_id` null) — e.g. receipts scanned straight to a category and
+ * imported historical actuals. These feed the category's Spent column but
+ * are invisible to the per-line rollup above; the Budget tab shows them in
+ * a category-level well so every aggregate stays drillable. Keyed by
+ * `budget_category_id`; categories with no direct actuals don't appear.
+ * (POs reach categories only via cost lines, so they have no direct grain.)
+ */
+export async function getCategoryDirectActualsByProject(
+  projectId: string,
+): Promise<Map<string, CostLineActualsSummary>> {
+  const result = new Map<string, CostLineActualsSummary>();
+  if (!projectId) return result;
+  const admin = createAdminClient();
+
+  const [timeRes, costRes] = await Promise.all([
+    admin
+      .from('time_entries')
+      .select('id, hours, hourly_rate_cents, entry_date, notes, budget_category_id')
+      .eq('project_id', projectId)
+      .not('budget_category_id', 'is', null)
+      .is('cost_line_id', null)
+      .order('entry_date', { ascending: false }),
+    admin
+      .from('project_costs')
+      .select(
+        'id, source_type, amount_cents, pre_tax_amount_cents, cost_date, vendor, description, budget_category_id',
+      )
+      .eq('project_id', projectId)
+      .eq('status', 'active')
+      .not('budget_category_id', 'is', null)
+      .is('cost_line_id', null)
+      .order('cost_date', { ascending: false }),
+  ]);
+
+  function bucket(categoryId: string): CostLineActualsSummary {
+    let s = result.get(categoryId);
+    if (!s) {
+      s = {
+        total_cents: 0,
+        labour_hours: 0,
+        labour_cents: 0,
+        expenses_cents: 0,
+        bills_cents: 0,
+        po_cents: 0,
+        rows: [],
+      };
+      result.set(categoryId, s);
+    }
+    return s;
+  }
+
+  for (const t of (timeRes.data ?? []) as Array<{
+    id: string;
+    hours: number;
+    hourly_rate_cents: number | null;
+    entry_date: string;
+    notes: string | null;
+    budget_category_id: string;
+  }>) {
+    const s = bucket(t.budget_category_id);
+    const cents = Math.round((t.hours ?? 0) * (t.hourly_rate_cents ?? 0));
+    s.labour_hours += t.hours ?? 0;
+    s.labour_cents += cents;
+    s.total_cents += cents;
+    s.rows.push({
+      kind: 'labour',
+      id: t.id,
+      label: `${t.hours} hrs`,
+      sublabel: t.notes ?? null,
+      amount_cents: cents,
+      hours: t.hours,
+      occurred_at: t.entry_date,
+    });
+  }
+
+  for (const c of (costRes.data ?? []) as Array<CostRow & { budget_category_id: string }>) {
+    const s = bucket(c.budget_category_id);
+    const amount = effectiveAmount(c);
+    if (c.source_type === 'vendor_bill') {
+      s.bills_cents += amount;
+      s.total_cents += amount;
+      s.rows.push({
+        kind: 'bill',
+        id: c.id,
+        label: c.vendor ?? 'Bill',
+        sublabel: c.description ?? null,
+        amount_cents: amount,
+        occurred_at: c.cost_date,
+      });
+    } else {
+      s.expenses_cents += amount;
+      s.total_cents += amount;
+      s.rows.push({
+        kind: 'expense',
+        id: c.id,
+        label: c.vendor ?? 'Expense',
+        sublabel: c.description ?? null,
+        amount_cents: amount,
+        occurred_at: c.cost_date,
+      });
+    }
+  }
+
+  for (const s of result.values()) {
+    s.rows.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+  }
+
+  return result;
+}

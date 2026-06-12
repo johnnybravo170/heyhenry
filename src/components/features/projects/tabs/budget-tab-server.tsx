@@ -16,7 +16,10 @@ import { StarterTemplatePicker } from '@/components/features/projects/starter-te
 import { Button } from '@/components/ui/button';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { getProjectChangeOrderContributions } from '@/lib/db/queries/change-orders';
-import { getCostLineActualsByProject } from '@/lib/db/queries/cost-line-actuals';
+import {
+  getCategoryDirectActualsByProject,
+  getCostLineActualsByProject,
+} from '@/lib/db/queries/cost-line-actuals';
 import { getProjectProgress, getVarianceReport, listCostLines } from '@/lib/db/queries/cost-lines';
 import { listMaterialsCatalog } from '@/lib/db/queries/materials-catalog';
 import { getBudgetVsActual } from '@/lib/db/queries/project-budget-categories';
@@ -60,6 +63,7 @@ export default async function BudgetTabServer({
     coContributions,
     versions,
     actualsByLineId,
+    categoryActualsById,
     tenant,
     viewStats,
     _progress,
@@ -74,6 +78,7 @@ export default async function BudgetTabServer({
     getProjectChangeOrderContributions(projectId),
     listProjectVersions(projectId),
     getCostLineActualsByProject(projectId),
+    getCategoryDirectActualsByProject(projectId),
     getCurrentTenant(),
     getEstimateViewStats(projectId),
     getProjectProgress(projectId),
@@ -242,6 +247,7 @@ export default async function BudgetTabServer({
         catalog={catalog}
         coContributionsByCategoryId={Object.fromEntries(coContributions.byCategoryId)}
         actualsByLineId={Object.fromEntries(actualsByLineId)}
+        categoryActualsById={Object.fromEntries(categoryActualsById)}
         defaultExpanded={defaultExpanded}
         heading="Scope of Work"
         headerActions={showSaveAsTemplate ? <SaveAsTemplateButton projectId={projectId} /> : null}
