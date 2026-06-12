@@ -102,7 +102,7 @@ export function ScopeScaffoldGenerator({ projectId }: { projectId: string }) {
           if (!o) reset();
         }}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Describe the job</DialogTitle>
             <DialogDescription>

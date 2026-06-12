@@ -65,7 +65,7 @@ export function MgmtFeeLabourEditor({ projectId, applyMgmtFeeToLabour, tenantDef
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
-          Fee on labour
+          Labour + materials
         </button>
         <button
           type="button"
@@ -79,7 +79,7 @@ export function MgmtFeeLabourEditor({ projectId, applyMgmtFeeToLabour, tenantDef
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
-          Labour flat
+          Materials only
         </button>
       </fieldset>
       {value !== null ? (

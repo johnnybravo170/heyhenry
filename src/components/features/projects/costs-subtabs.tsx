@@ -7,7 +7,7 @@
  *
  * "Costs" is the post-unification combined surface: receipts + vendor
  * bills in one list with status badges. The legacy split into Bills +
- * Expenses sub-tabs is gone — Mike thinks "labour + materials", not
+ * Expenses sub-tabs is gone — operators think "labour + materials", not
  * "bills + receipts", and the rollups always merged them anyway.
  *
  * URL-param driven (`?sub=quotes|pos|costs`), `router.replace()` to

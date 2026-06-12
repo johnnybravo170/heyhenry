@@ -727,7 +727,7 @@ function AddCategoryDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Add category</DialogTitle>
           <DialogDescription>

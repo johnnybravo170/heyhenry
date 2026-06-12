@@ -369,7 +369,7 @@ export function ExpensesTable({
       ) : null}
 
       <Dialog open={sourceOpen} onOpenChange={setSourceOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>
               Set source on {selected.size} expense{selected.size === 1 ? '' : 's'}
@@ -414,7 +414,7 @@ export function ExpensesTable({
       </Dialog>
 
       <Dialog open={recatOpen} onOpenChange={setRecatOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>
               Recategorize {selected.size} expense{selected.size === 1 ? '' : 's'}

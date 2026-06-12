@@ -175,7 +175,7 @@ export function ProjectNotesTab({
                 Voice memo
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Record a voice memo</DialogTitle>
               </DialogHeader>

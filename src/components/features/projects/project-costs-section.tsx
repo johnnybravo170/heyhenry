@@ -200,7 +200,7 @@ function AddCostGate({ onChoose }: { onChoose: (kind: 'receipt' | 'bill') => voi
  * Cost-plus only (card #11). When checked, the cost is logged as project
  * overhead the contractor absorbs: it still counts toward job cost and
  * margin, but it's excluded from the cost-plus customer invoice (no
- * markup, never shown to the customer). Charlie's case: a sub's WCB bill.
+ * markup, never shown to the customer). E.g. a sub's WCB bill.
  */
 function NonBillableToggle({
   idPrefix,

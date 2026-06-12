@@ -215,7 +215,7 @@ function SourceDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{initial ? 'Edit source' : 'Add source'}</DialogTitle>
           <DialogDescription>
