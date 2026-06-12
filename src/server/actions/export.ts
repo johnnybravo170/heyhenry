@@ -8,7 +8,7 @@
  * a `data_exports` row, and returns a signed download URL (7-day expiry).
  */
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { revalidatePath } from 'next/cache';
 import { getCurrentTenant } from '@/lib/auth/helpers';
 import { guardMfaForSensitiveAction } from '@/lib/auth/mfa-enforcement';
@@ -96,7 +96,7 @@ export async function requestExportAction(): Promise<ExportActionResult> {
 
     // Build ZIP in memory using archiver.
     const chunks: Buffer[] = [];
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
 
     const bufferPromise = new Promise<Buffer>((resolve, reject) => {
       archive.on('data', (chunk: Buffer) => chunks.push(chunk));
