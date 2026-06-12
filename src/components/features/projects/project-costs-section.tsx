@@ -352,7 +352,7 @@ function ReceiptForm({
                   type="button"
                   onClick={() => setSplits(null)}
                   disabled={pending}
-                  className="mt-1 text-[11px] text-muted-foreground underline hover:text-foreground"
+                  className="mt-1 text-xs text-muted-foreground underline hover:text-foreground"
                 >
                   Back to single category
                 </button>
@@ -396,7 +396,7 @@ function ReceiptForm({
                       ]);
                     }}
                     disabled={pending}
-                    className="mt-1 text-[11px] text-muted-foreground underline hover:text-foreground"
+                    className="mt-1 text-xs text-muted-foreground underline hover:text-foreground"
                   >
                     Split across categories
                   </button>

@@ -726,7 +726,7 @@ function ExpenseDialogBody({
                 type="button"
                 onClick={() => setSplits(null)}
                 disabled={busy}
-                className="mt-1.5 text-[11px] text-muted-foreground underline hover:text-foreground"
+                className="mt-1.5 text-xs text-muted-foreground underline hover:text-foreground"
               >
                 Back to single category
               </button>
