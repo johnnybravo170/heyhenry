@@ -325,7 +325,15 @@ export function IntakeRowActions({
           open
           onOpenChange={(next) => !next && setOpenDialog(null)}
           draftId={row.id}
-          extracted={null}
+          extracted={
+            row.bill_extract
+              ? {
+                  vendor: row.bill_extract.vendor ?? undefined,
+                  bill_date: row.bill_extract.date ?? undefined,
+                  amount_cents: row.bill_extract.amountCents ?? undefined,
+                }
+              : null
+          }
           projects={projects}
           defaultProjectId={defaultProjectId}
           onApplied={refresh}

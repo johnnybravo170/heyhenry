@@ -50,12 +50,24 @@ const BILL_SCHEMA = {
   required: ['amount_cents', 'vendor', 'date'],
 } as const;
 
+const OCR_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
+
 /**
- * Run receipt OCR on a single PDF attachment and return the extracted
- * fields. Returns null if the gateway call fails — best-effort; we don't
- * want a failed OCR to break the entire email ingestion.
+ * Run receipt OCR on a single attachment (PDF or image) and return the
+ * extracted fields. Returns null if the gateway call fails — best-effort;
+ * we don't want a failed OCR to break the entire email ingestion.
  */
-async function extractBillFromPdf(base64: string, tenantId: string): Promise<BillExtract | null> {
+async function extractBillFromAttachment(
+  base64: string,
+  mime: string,
+  tenantId: string,
+): Promise<BillExtract | null> {
   try {
     const res = await gateway().runStructured<{
       amount_cents: number | null;
@@ -65,7 +77,7 @@ async function extractBillFromPdf(base64: string, tenantId: string): Promise<Bil
       kind: 'structured',
       task: 'receipt_ocr',
       tenant_id: tenantId,
-      prompt: `Extract these fields from this vendor invoice or bill PDF. Return null for any field you cannot read with confidence. Return ONLY valid JSON — no prose, no markdown fences.
+      prompt: `Extract these fields from this vendor invoice, bill, or receipt. Return null for any field you cannot read with confidence. Return ONLY valid JSON — no prose, no markdown fences.
 
 {
   "amount_cents": integer cents — total amount due or total amount charged. e.g. $1,840.00 → 184000.
@@ -73,7 +85,7 @@ async function extractBillFromPdf(base64: string, tenantId: string): Promise<Bil
   "date": string — invoice date in YYYY-MM-DD format. null if not visible.
 }`,
       schema: BILL_SCHEMA,
-      file: { mime: 'application/pdf', base64 },
+      file: { mime, base64 },
       temperature: 0.1,
     });
     const raw = res.data;
@@ -191,9 +203,9 @@ export async function processInboundEmail(emailId: string): Promise<{ draftId: s
     .update({ status: 'routed_to_intake', processed_at: new Date().toISOString() })
     .eq('id', emailId);
 
-  // Identify PDF attachments for parallel bill OCR.
-  const pdfAttachments = storedAttachments.filter(
-    (a) => a.contentType === 'application/pdf' && a.base64,
+  // Identify attachments eligible for bill OCR (PDFs + common image formats).
+  const ocrAttachments = storedAttachments.filter(
+    (a) => a.base64 && a.contentType && OCR_MIME_TYPES.has(a.contentType),
   );
 
   // Run the universal classifier, project matching, and PDF OCR all in
@@ -208,14 +220,20 @@ export async function processInboundEmail(emailId: string): Promise<{ draftId: s
       email.subject as string | null,
       email.body_text as string | null,
     ),
-    ...pdfAttachments.map((a) => extractBillFromPdf(a.base64 as string, email.tenant_id as string)),
+    ...ocrAttachments.map((a) =>
+      extractBillFromAttachment(
+        a.base64 as string,
+        a.contentType as string,
+        email.tenant_id as string,
+      ),
+    ),
   ]);
 
   // Collect results.
   const recognizedProjectId =
     projectMatchResult.status === 'fulfilled' ? (projectMatchResult.value ?? null) : null;
 
-  const billExtracts: Array<{ filename: string; extract: BillExtract | null }> = pdfAttachments
+  const billExtracts: Array<{ filename: string; extract: BillExtract | null }> = ocrAttachments
     .map((a, i) => ({
       filename: a.filename ?? 'attachment',
       extract: ocrResults[i]?.status === 'fulfilled' ? (ocrResults[i]?.value ?? null) : null,
