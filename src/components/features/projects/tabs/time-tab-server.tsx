@@ -62,6 +62,8 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
       [m.first_name, m.last_name].filter(Boolean).join(' ') || null,
     ]),
   );
+  const getMemberName = (tid: string | null): string | null =>
+    tid !== null ? (memberNameById.get(tid) ?? null) : null;
 
   // Labour summary roll-up (computed server-side, passed to the body panel).
   // Hours: straight sum of every time-entry's hours.
@@ -169,7 +171,7 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
           display_name:
             w.display_name ??
             w.business_name ??
-            (w.tenant_member_id ? (memberNameById.get(w.tenant_member_id) ?? null) : null) ??
+            getMemberName(w.tenant_member_id) ??
             w.gc_managed_name ??
             null,
           default_hourly_rate_cents: w.default_hourly_rate_cents,
@@ -187,7 +189,7 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
           const workerName = wp
             ? (wp.display_name ??
               wp.business_name ??
-              (wp.tenant_member_id ? (memberNameById.get(wp.tenant_member_id) ?? null) : null) ??
+              getMemberName(wp.tenant_member_id) ??
               wp.gc_managed_name ??
               null)
             : null;
