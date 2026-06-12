@@ -12,6 +12,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardImportRequest, resolveProject } from '@/lib/import/auth';
+import { buildCostLineResolver } from '@/lib/import/cost-lines';
 import { dryRunEnvelope, FORBIDDEN_LINE_LABEL, zodErrorResponse } from '@/lib/import/helpers';
 import { resolveWorker } from '@/lib/import/members';
 
@@ -24,6 +25,10 @@ const EntrySchema = z.object({
   hourly_cost_cents: z.number().int().min(0),
   bill_out_rate_cents: z.number().int().min(0).optional(),
   budget_category_id: z.string().uuid().optional(),
+  /** Optional cost-line attribution by label (case-insensitive), scoped to
+   *  budget_category_id when given. Unresolved labels keep the row
+   *  category-attributed and are reported in `unmatched_cost_lines`. */
+  cost_line: z.string().min(1).optional(),
 });
 
 const BodySchema = z.object({
@@ -70,6 +75,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const unmatched: string[] = [];
+  const lineResolver = await buildCostLineResolver(
+    admin,
+    projectId,
+    entries.some((e) => e.cost_line),
+  );
+  const unmatchedCostLines: string[] = [];
 
   const rows = await Promise.all(
     entries.map(async (e) => {
@@ -96,6 +107,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         notes: e.scope ? `${e.scope}${noteSuffix}` : noteSuffix || null,
         entry_date: e.date,
         budget_category_id: e.budget_category_id ?? null,
+        cost_line_id: e.cost_line
+          ? (lineResolver(e.cost_line, e.budget_category_id) ??
+            (unmatchedCostLines.push(e.cost_line), null))
+          : null,
         import_source_row_id: e.source_row_id,
         // user_id is nullable (foundation migration) — no session on this path
         user_id: null as string | null,
@@ -127,5 +142,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ok: true,
     count: data?.length ?? 0,
     unmatched_workers: [...new Set(unmatched)],
+    unmatched_cost_lines: [...new Set(unmatchedCostLines)],
   });
 }
