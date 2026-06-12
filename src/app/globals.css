@@ -85,14 +85,14 @@
      low-quality displays: deeper/warmer paper, solid warm borders (the old
      8%-alpha hairlines vanished on cheap monitors), white cards that visibly
      float, ink text. Kept in sync with DESIGN.md.
-     Rust is an accent, not a theme: primary buttons and focus rings stay ink. */
+     Rust is the primary action accent: submit buttons + page-level CTAs use --brand. */
   --background: #f3ebdb; /* warm paper — deeper + warmer so white cards float */
   --foreground: #0a0a0a; /* ink */
   --card: #ffffff; /* white cards float on the deeper paper */
   --card-foreground: #0a0a0a;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;
-  --primary: #0a0a0a; /* primary buttons are ink */
+  --primary: #0a0a0a; /* default/secondary buttons are ink; submit/CTA = --brand */
   --primary-foreground: #ffffff;
   --secondary: #efe7d6; /* warm cream fill */
   --secondary-foreground: #0a0a0a;
@@ -102,7 +102,7 @@
   --accent-foreground: #0a0a0a;
   --destructive: #b91c1c; /* brand danger */
   --border: #e2d7c0; /* solid warm hairline — visible on poor monitors */
-  --input: #d8cbb0; /* stronger warm border on input fields */
+  --input: #b5a48a; /* warm border — bumped for contrast against white field bg */
   --ring: #0a0a0a; /* focus ring is ink (applied at /50 in base layer) */
   --brand: #c2410c; /* rust accent — use sparingly via bg-brand/text-brand */
   --brand-foreground: #ffffff;

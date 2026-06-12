@@ -51,7 +51,7 @@ export function SocialsForm({ socials }: { socials: Socials }) {
         </div>
       ))}
       <div className="pt-2">
-        <Button type="submit" disabled={pending}>
+        <Button variant="primary" type="submit" disabled={pending}>
           {pending ? 'Saving…' : 'Save links'}
         </Button>
       </div>

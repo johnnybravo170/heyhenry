@@ -7,7 +7,6 @@ import { PastDueBanner } from '@/components/features/billing/past-due-banner';
 import { TrialBanner } from '@/components/features/billing/trial-banner';
 import { MfaEnforcementBanner } from '@/components/features/settings/mfa-enforcement-banner';
 import { NamePromptModal } from '@/components/features/settings/name-prompt-modal';
-import { FeedbackButton } from '@/components/layout/feedback-button';
 import { Header } from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar';
 import { getCurrentTenant, getCurrentUser, isPlatformAdmin } from '@/lib/auth/helpers';
@@ -121,7 +120,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           </div>
         </div>
         {needsName ? <NamePromptModal /> : null}
-        <FeedbackButton />
         <ChatToggle />
         <ChatPanel />
       </ChatProvider>

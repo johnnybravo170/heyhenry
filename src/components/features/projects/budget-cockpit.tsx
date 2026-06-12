@@ -85,8 +85,8 @@ function VarCell({ label, cents, sub }: { label: string; cents: number; sub: str
   return (
     <div className="flex flex-col gap-1">
       <Eyebrow className="font-semibold">{label}</Eyebrow>
-      <span className="text-xl font-bold tabular-nums tracking-tight">
-        <Money cents={cents} />
+      <span className="text-display-xs font-bold tabular-nums tracking-tight">
+        <Money cents={cents} whole />
       </span>
       <Eyebrow>{sub}</Eyebrow>
     </div>

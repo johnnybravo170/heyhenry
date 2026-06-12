@@ -339,7 +339,7 @@ export function CostLineForm({
       ) : null}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending ? 'Saving…' : initial ? 'Update' : 'Add line'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>

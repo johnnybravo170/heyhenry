@@ -551,7 +551,7 @@ export function SubQuoteForm({
         ) : null}
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={pending}>
+          <Button variant="primary" type="submit" disabled={pending}>
             {pending ? 'Saving…' : editingQuoteId ? 'Save changes' : 'Save vendor quote'}
           </Button>
           <Button type="button" variant="ghost" onClick={onDone} disabled={pending}>
@@ -703,7 +703,7 @@ function NewCategoryDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button variant="primary" type="submit" disabled={pending}>
               {pending ? 'Creating…' : 'Create category'}
             </Button>
           </DialogFooter>

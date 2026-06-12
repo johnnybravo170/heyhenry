@@ -193,7 +193,7 @@ function MaterialForm({ initial, onDone }: { initial?: MaterialsCatalogRow; onDo
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending ? 'Saving…' : initial ? 'Update' : 'Add item'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>
@@ -292,7 +292,7 @@ function LabourRateForm({ initial, onDone }: { initial?: LabourRateRow; onDone: 
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending ? 'Saving…' : initial ? 'Update' : 'Add rate'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>

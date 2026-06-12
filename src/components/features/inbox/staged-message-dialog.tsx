@@ -149,7 +149,7 @@ export function StagedMessageDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button variant="primary" type="submit" disabled={pending}>
               {pending ? 'Applying…' : 'Add to thread'}
             </Button>
           </div>

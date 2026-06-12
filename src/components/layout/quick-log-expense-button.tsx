@@ -1072,7 +1072,7 @@ function ExpenseDialogBody({
         <Button type="button" variant="ghost" onClick={onDone} disabled={busy}>
           Cancel
         </Button>
-        <Button type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {pending ? (
             <>
               <Loader2 className="mr-1.5 size-3.5 animate-spin" />

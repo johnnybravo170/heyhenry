@@ -111,7 +111,7 @@ function LoginForm() {
           ) : null}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-2">
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button variant="primary" type="submit" className="w-full" disabled={pending}>
             {pending ? 'Signing in…' : 'Sign in'}
           </Button>
 

@@ -152,7 +152,7 @@ export function LeadCaptureForm({ onSubmit, pending, error }: LeadCaptureFormPro
         </p>
       ) : null}
 
-      <Button type="submit" size="lg" disabled={pending} className="w-full">
+      <Button variant="primary" type="submit" size="lg" disabled={pending} className="w-full">
         {pending ? 'Submitting...' : 'Submit'}
       </Button>
     </form>

@@ -228,7 +228,7 @@ function POForm({ projectId, onDone }: { projectId: string; onDone: () => void }
       {total > 0 && <p className="text-sm font-medium">Total: {formatCurrency(total)}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {pending ? 'Creating…' : 'Create PO'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>
@@ -408,7 +408,7 @@ export function CostsTab({
             <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Committed
             </span>
-            <Money cents={committedTotal} className="text-lg font-semibold" />
+            <Money cents={committedTotal} className="text-display-sm font-semibold" whole />
             {committedQuotes > 0 || committedPos > 0 ? (
               <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                 Quotes <Money cents={committedQuotes} className="text-foreground" /> · POs{' '}
@@ -420,7 +420,7 @@ export function CostsTab({
             <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Vendor-billed
             </span>
-            <Money cents={totalBills} className="text-lg font-semibold" />
+            <Money cents={totalBills} className="text-display-sm font-semibold" whole />
             {unpaidBilledCents > 0 ? (
               <a
                 href={`/projects/${projectId}?tab=costs&sub=costs&costs=unpaid`}
@@ -436,7 +436,7 @@ export function CostsTab({
             <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Paid
             </span>
-            <Money cents={paidTotal} className="text-lg font-semibold" />
+            <Money cents={paidTotal} className="text-display-sm font-semibold" whole />
             <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
               Actually paid out
             </span>

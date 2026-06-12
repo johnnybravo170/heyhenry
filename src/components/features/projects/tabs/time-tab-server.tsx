@@ -107,7 +107,7 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
             <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Total hours
             </span>
-            <span className="text-lg font-semibold tabular-nums">
+            <span className="text-display-sm font-semibold tabular-nums">
               {summaryTotalHours}
               <span className="ml-0.5 text-sm font-normal text-muted-foreground">h</span>
             </span>
@@ -116,7 +116,7 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
             <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Labour cost
             </span>
-            <Money cents={summaryLabourCostCents} className="text-lg font-semibold" />
+            <Money cents={summaryLabourCostCents} className="text-display-sm font-semibold" whole />
             <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
               Hours × rate
             </span>
@@ -127,7 +127,7 @@ export default async function TimeTabServer({ projectId }: { projectId: string }
             </span>
             {summaryAwaitingCount > 0 ? (
               <>
-                <span className="text-lg font-semibold tabular-nums">
+                <span className="text-display-sm font-semibold tabular-nums">
                   {summaryAwaitingCount}
                   <span className="ml-1 text-sm font-normal text-muted-foreground">
                     invoice{summaryAwaitingCount === 1 ? '' : 's'}

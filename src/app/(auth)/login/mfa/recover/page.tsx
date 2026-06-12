@@ -86,7 +86,12 @@ export default function LoginMfaRecoverPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-2">
-          <Button type="submit" className="w-full" disabled={pending || !code.trim()}>
+          <Button
+            variant="primary"
+            type="submit"
+            className="w-full"
+            disabled={pending || !code.trim()}
+          >
             {pending ? 'Verifying…' : 'Use code &amp; remove 2FA'}
           </Button>
           <div className="flex w-full justify-between text-sm">

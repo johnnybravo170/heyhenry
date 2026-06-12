@@ -56,7 +56,7 @@ export default async function QuotesPage({
           <Button asChild variant="outline">
             <Link href="/quotes/stale">Stale quotes</Link>
           </Button>
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href="/quotes/new">
               <Plus className="size-3.5" />
               New quote

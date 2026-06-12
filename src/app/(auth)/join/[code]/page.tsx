@@ -340,7 +340,7 @@ export default function JoinPage() {
                 ) : null}
               </CardContent>
               <CardFooter className="pt-2">
-                <Button type="submit" className="w-full" disabled={pending}>
+                <Button variant="primary" type="submit" className="w-full" disabled={pending}>
                   {pending ? 'Creating account...' : 'Join team'}
                 </Button>
               </CardFooter>
@@ -379,7 +379,7 @@ export default function JoinPage() {
                 ) : null}
               </CardContent>
               <CardFooter className="pt-2">
-                <Button type="submit" className="w-full" disabled={pending}>
+                <Button variant="primary" type="submit" className="w-full" disabled={pending}>
                   {pending ? 'Signing in...' : 'Sign in & join team'}
                 </Button>
               </CardFooter>

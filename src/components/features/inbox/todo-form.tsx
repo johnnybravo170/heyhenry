@@ -119,7 +119,7 @@ export function TodoForm() {
           autoComplete="off"
           disabled={pending}
         />
-        <Button type="submit" disabled={pending || !title.trim()}>
+        <Button variant="primary" type="submit" disabled={pending || !title.trim()}>
           <Plus className="size-4" />
           {pending ? 'Adding…' : 'Add'}
         </Button>

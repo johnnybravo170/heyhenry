@@ -77,7 +77,7 @@ function MagicLinkForm() {
           ) : null}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-2">
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button variant="primary" type="submit" className="w-full" disabled={pending}>
             {pending ? 'Sending…' : 'Send me a magic link'}
           </Button>
           <Link

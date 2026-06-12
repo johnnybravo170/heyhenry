@@ -268,7 +268,7 @@ function DrawForm({
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button variant="primary" type="submit" size="sm" disabled={pending}>
           {editDraw
             ? pending
               ? 'Saving…'

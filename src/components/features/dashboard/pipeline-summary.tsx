@@ -99,7 +99,7 @@ export function PipelineSummary({ metrics }: { metrics: PipelineMetrics }) {
                 </CardHeader>
                 <CardContent>
                   {card.valueCents !== null ? (
-                    <p className="text-sm font-medium tabular-nums">
+                    <p className="text-right text-sm font-medium tabular-nums">
                       <Money cents={card.valueCents} />
                     </p>
                   ) : null}

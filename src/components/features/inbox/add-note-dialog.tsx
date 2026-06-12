@@ -169,7 +169,7 @@ export function AddNoteDialog() {
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || !title.trim()}>
+            <Button variant="primary" type="submit" disabled={pending || !title.trim()}>
               {pending ? 'Saving…' : 'Save note'}
             </Button>
           </DialogFooter>

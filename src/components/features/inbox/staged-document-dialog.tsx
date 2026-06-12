@@ -186,7 +186,7 @@ export function StagedDocumentDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button variant="primary" type="submit" disabled={pending}>
               {pending ? 'Applying…' : 'Attach to project'}
             </Button>
           </div>

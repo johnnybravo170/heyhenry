@@ -835,3 +835,28 @@ Long lists are paginated **in Postgres**, not capped in code and not materialize
 **Pager UI:** `src/components/features/expenses/expenses-pager.tsx` (`ExpensesPager`) renders inside the table card as a `footer` slot. Reads/writes `?page=` via `useSearchParams()` — preserves all other params, deletes `page` when going to page 1. Page-nav buttons render only when `totalPages > 1`; the "firstRow–lastRow of total" line always shows. Pass `basePath` for non-`/expenses` routes (e.g. `basePath="/bk/expenses"` on the bookkeeper twin). The table's `shownOf={{ shown, total }}` prop drives the "· showing N of M" strip header.
 
 **Callers:** `src/app/(dashboard)/expenses/page.tsx` (owner ledger, full filter bar) and `src/app/(bookkeeper)/bk/expenses/page.tsx` (bookkeeper twin, `includeProjectExpenses: true`). When you add a new long list, reuse this shape rather than fetching the whole table and slicing client-side.
+
+---
+
+## 37. Form anatomy (field primitives + button hierarchy)
+
+All three field primitives share one visual recipe. When you change one, evaluate all three.
+
+- `src/components/ui/input.tsx`
+- `src/components/ui/textarea.tsx`
+- `src/components/ui/select.tsx` (`SelectTrigger`)
+
+**Shared recipe:** `bg-card` (white — floats off the cream paper background), `border-input` (warm hairline — `--input: #b5a48a`), `shadow-xs` (1px depth), `rounded-lg`. Focus ring: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50`. The combination of white interior + warm border + subtle shadow is the "defined field" look — don't revert to `bg-transparent` or remove the shadow.
+
+**Button hierarchy — three tiers, one rust rule:**
+
+| Variant | Fill | Use |
+|---|---|---|
+| `variant="primary"` | Rust `bg-brand` | Form submit + page-level CTA. **One per form/screen.** |
+| `variant="outline"` | White + ink hairline | Cancel, secondary in-dialog actions. |
+| `variant="ghost"` | Transparent | Icon buttons, low-emphasis in-row actions. |
+| `variant="default"` | Ink `bg-primary` | Utility table-level buttons that aren't the primary action. |
+
+`type="submit"` buttons always get `variant="primary"`. Page-level `<Button asChild>` CTAs (e.g. "New project", "Add invoice") also get `variant="primary"`. The ink default variant is now the "not the main thing" signal — don't use it where there's a clear primary action.
+
+`src/components/ui/button.tsx` holds the variant map. `--brand` = `#c2410c` (rust); `--primary` stays ink (`#0a0a0a`) for the default variant so the two tokens don't alias.

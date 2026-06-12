@@ -67,7 +67,7 @@ export default async function JobListPage({
           <Suspense fallback={null}>
             <BoardViewToggle />
           </Suspense>
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href="/jobs/new">
               <Plus className="size-3.5" />
               New job

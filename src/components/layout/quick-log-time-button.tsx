@@ -274,7 +274,7 @@ export function QuickLogTimeButton({ ownerRateCents }: { ownerRateCents: number 
           )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-            <Button type="submit" disabled={pending || loadingProjects}>
+            <Button variant="primary" type="submit" disabled={pending || loadingProjects}>
               {pending ? <Loader2 className="size-3.5 animate-spin" /> : null}
               {needsEmptyConfirm ? 'Save anyway' : 'Log time'}
             </Button>

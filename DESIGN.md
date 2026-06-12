@@ -74,7 +74,7 @@ Never pure black; the page background is never pure white (cards need something 
 
 ## Component Stylings
 
-- **Buttons (primary):** ink `#0A0A0A`, white label, 9px radius, 34px height, 14/600. Default buttons are ink — one-rust-CTA rule below.
+- **Buttons:** Two tiers. **Default (`variant="default"`, ink):** `#0A0A0A` fill, white label — utility actions, non-primary decisions. **Rust CTA (`variant="primary"`):** `#C2410C` fill, white label — form submits and page-level CTAs; **one per form/screen** (the one-rust-CTA rule). Both: 9px radius, 34px height, 14/600.
 - **Buttons (ghost):** white, 1px hairline, ink label. Hover: `#F5F5F4` fill.
 - **Buttons (tertiary/add):** transparent, dashed hairline, muted label, 28px — the canonical dashed-add affordance.
 - **Cards:** white on `#F8F8F7`, 12–14px radius, 1px `rgba(10,10,10,0.10)` border, shadow `0 1px 2px rgba(10,10,10,0.04)`.

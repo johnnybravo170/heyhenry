@@ -105,14 +105,10 @@ function StatBox({
   const inner = (
     <>
       <Eyebrow as="p">{label}</Eyebrow>
-      <p className={`mt-1.5 text-lg font-semibold ${valueToneClass}`}>
-        <Money cents={valueCents} />
+      <p className={`mt-1.5 text-display-sm font-semibold ${valueToneClass}`}>
+        <Money cents={valueCents} whole />
       </p>
-      {sub && (
-        <Eyebrow as="p" className="mt-1 normal-case tracking-normal">
-          {sub}
-        </Eyebrow>
-      )}
+      {sub && <p className="mt-1 text-meta text-muted-foreground">{sub}</p>}
     </>
   );
   if (href) {
@@ -373,9 +369,9 @@ export function VarianceTab({
               <div className="mt-3 space-y-2 border-t pt-3 text-sm">
                 {legacy.length > 0 ? (
                   <div>
-                    <Eyebrow as="p" className="text-amber-800 dark:text-amber-300">
+                    <p className="text-meta font-medium text-amber-800 dark:text-amber-300">
                       Approved but not applied to lines
-                    </Eyebrow>
+                    </p>
                     <ul className="mt-1.5 space-y-1">
                       {legacy.map((c) => (
                         <li key={c.id} className="flex items-baseline justify-between gap-3">
@@ -401,15 +397,17 @@ export function VarianceTab({
                         </li>
                       ))}
                     </ul>
-                    <Eyebrow as="p" className="mt-1.5 normal-case tracking-normal italic">
+                    <p className="mt-1.5 text-meta text-muted-foreground italic">
                       Customer agreed to these but cost lines may not reflect them. Verify line
                       items match the agreed scope.
-                    </Eyebrow>
+                    </p>
                   </div>
                 ) : null}
                 {pending.length > 0 ? (
                   <div>
-                    <Eyebrow as="p">Pending customer approval</Eyebrow>
+                    <p className="text-meta font-medium text-muted-foreground">
+                      Pending customer approval
+                    </p>
                     <ul className="mt-1.5 space-y-1">
                       {pending.map((c) => (
                         <li key={c.id} className="flex items-baseline justify-between gap-3">
@@ -525,21 +523,21 @@ export function VarianceTab({
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="w-8 px-2 py-2" />
-                  <Eyebrow as="th" className="px-3 py-2 text-left">
+                  <th className="px-3 py-2 text-left text-meta font-medium text-muted-foreground">
                     Category
-                  </Eyebrow>
-                  <Eyebrow as="th" className="px-3 py-2 text-right">
+                  </th>
+                  <th className="px-3 py-2 text-right text-meta font-medium text-muted-foreground">
                     Estimated
-                  </Eyebrow>
-                  <Eyebrow as="th" className="px-3 py-2 text-right">
-                    Projected Cost
-                  </Eyebrow>
-                  <Eyebrow as="th" className="px-3 py-2 text-right">
+                  </th>
+                  <th className="px-3 py-2 text-right text-meta font-medium text-muted-foreground">
+                    Projected cost
+                  </th>
+                  <th className="px-3 py-2 text-right text-meta font-medium text-muted-foreground">
                     Actual
-                  </Eyebrow>
-                  <Eyebrow as="th" className="px-3 py-2 text-right">
-                    Projected Margin
-                  </Eyebrow>
+                  </th>
+                  <th className="px-3 py-2 text-right text-meta font-medium text-muted-foreground">
+                    Projected margin
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -709,8 +707,8 @@ function CompositionCard({
         className={`${rows.length > 0 ? 'mt-3 border-t pt-2' : ''} flex items-baseline justify-between gap-3 text-sm`}
       >
         <span className="font-semibold">{total.label}</span>
-        <span className={`text-lg font-semibold ${totalToneClass}`}>
-          <Money cents={total.value} />
+        <span className={`text-display-sm font-semibold ${totalToneClass}`}>
+          <Money cents={total.value} whole />
         </span>
       </div>
       {extraSection}
@@ -749,9 +747,9 @@ function CategoryBreakdown({
       </div>
       {coContributions.length > 0 ? (
         <div>
-          <Eyebrow as="p" className="mb-1.5">
+          <p className="mb-1.5 text-meta font-medium text-muted-foreground">
             Change Orders affecting this category
-          </Eyebrow>
+          </p>
           <ul className="space-y-1 text-sm">
             {Array.from(new Map(coContributions.map((c) => [c.co_id, c])).values()).map((c) => (
               <li key={c.co_id} className="flex items-baseline justify-between gap-2">
@@ -814,7 +812,7 @@ function BreakdownStat({
 }) {
   return (
     <div className="rounded-lg border bg-card px-2 py-1.5">
-      <Eyebrow as="p">{label}</Eyebrow>
+      <p className="text-meta text-muted-foreground">{label}</p>
       <p className={`text-sm font-medium ${danger ? 'text-red-700 dark:text-red-300' : ''}`}>
         <Money cents={cents} />
       </p>

@@ -36,12 +36,21 @@ export function Money({
    * carries "$" and subtotal/GST are bare numbers).
    */
   symbol: showSymbol = true,
+  /**
+   * Render whole dollars only — no cents, no invisible alignment pad.
+   * Use for summary/headline KPIs (stat cards, composition totals) where
+   * penny-level alignment is irrelevant and cents add visual noise.
+   * Keep the default (dim-cents + invisible pad) for line-item columns
+   * where column alignment matters.
+   */
+  whole,
 }: {
   cents: number;
   className?: string;
   emphasis?: boolean;
   signed?: boolean;
   symbol?: boolean;
+  whole?: boolean;
 }) {
   const text = formatCurrencyCompact(cents);
   // Pull symbol, integer, fraction out separately so we can style and
@@ -71,13 +80,14 @@ export function Money({
       {signed && cents > 0 ? '+' : ''}
       {showSymbol ? symbol : null}
       {integer}
-      {fraction ? (
-        <span className="text-[0.8em] text-muted-foreground/70">{fraction}</span>
-      ) : (
-        <span aria-hidden className="invisible text-[0.8em]">
-          .00
-        </span>
-      )}
+      {!whole &&
+        (fraction ? (
+          <span className="text-[0.8em] text-muted-foreground/70">{fraction}</span>
+        ) : (
+          <span aria-hidden className="invisible text-[0.8em]">
+            .00
+          </span>
+        ))}
     </span>
   );
 }

@@ -237,7 +237,7 @@ export default async function OverheadExpensesPage({
             Drop a receipt — Henry fills the form — or log your first overhead expense manually.
           </p>
           <div className="flex gap-2">
-            <Button asChild>
+            <Button variant="primary" asChild>
               <Link href="/expenses/import">
                 <Upload className="size-3.5" />
                 Drop receipts

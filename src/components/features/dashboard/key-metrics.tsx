@@ -83,7 +83,7 @@ export function KeyMetrics({
           <Card className="cursor-pointer transition-colors hover:bg-muted/50">
             <CardHeader>
               <CardDescription className={EYEBROW}>{card.label}</CardDescription>
-              <CardTitle className="text-3xl font-semibold tabular-nums">
+              <CardTitle className="text-right text-3xl font-semibold tabular-nums">
                 {card.cents !== undefined ? <Money cents={card.cents} /> : card.count}
               </CardTitle>
             </CardHeader>
