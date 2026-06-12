@@ -220,7 +220,7 @@ export function RecordPaymentDialog({
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Record payment</DialogTitle>
           <DialogDescription>

@@ -96,79 +96,60 @@ export function ProjectDefaultsCard({
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label className="text-sm font-medium">Management fee basis</Label>
-          <fieldset
-            className={cn(
-              'inline-flex w-fit rounded-md border bg-muted/50 p-0.5 text-xs',
-              feePending && 'opacity-60',
-            )}
-            aria-label="Management fee basis"
-          >
-            <button
-              type="button"
-              disabled={feePending}
-              aria-pressed={feeOnLabour}
-              onClick={() => {
-                if (feeOnLabour || feePending) return;
-                const prev = feeOnLabour;
-                setFeeOnLabour(true);
-                startFeeTransition(async () => {
-                  const res = await updateDefaultApplyMgmtFeeToLabourAction({
-                    applyMgmtFeeToLabour: true,
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium">Management fee basis</Label>
+            {feePending ? <Loader2 className="size-3 animate-spin text-muted-foreground" /> : null}
+          </div>
+          <div className={cn('grid grid-cols-2 gap-2', feePending && 'opacity-60')}>
+            {(
+              [
+                {
+                  apply: true,
+                  label: 'Labour + materials',
+                  description: 'Fee applies to both time and expense costs on each project.',
+                },
+                {
+                  apply: false,
+                  label: 'Materials only',
+                  description:
+                    'Labour margin is built into your charge rates. Fee applies to expenses only.',
+                },
+              ] as const
+            ).map(({ apply, label, description }) => (
+              <button
+                type="button"
+                key={String(apply)}
+                disabled={feePending}
+                onClick={() => {
+                  if (feeOnLabour === apply || feePending) return;
+                  const prev = feeOnLabour;
+                  setFeeOnLabour(apply);
+                  startFeeTransition(async () => {
+                    const res = await updateDefaultApplyMgmtFeeToLabourAction({
+                      applyMgmtFeeToLabour: apply,
+                    });
+                    if (!res.ok) {
+                      setFeeOnLabour(prev);
+                      toast.error(res.error);
+                    } else {
+                      toast.success('Default fee basis saved.');
+                    }
                   });
-                  if (!res.ok) {
-                    setFeeOnLabour(prev);
-                    toast.error(res.error);
-                  } else {
-                    toast.success('Default fee basis saved.');
-                  }
-                });
-              }}
-              className={cn(
-                'rounded px-3 py-1.5 font-medium transition-colors',
-                feeOnLabour
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              Fee on labour + materials
-            </button>
-            <button
-              type="button"
-              disabled={feePending}
-              aria-pressed={!feeOnLabour}
-              onClick={() => {
-                if (!feeOnLabour || feePending) return;
-                const prev = feeOnLabour;
-                setFeeOnLabour(false);
-                startFeeTransition(async () => {
-                  const res = await updateDefaultApplyMgmtFeeToLabourAction({
-                    applyMgmtFeeToLabour: false,
-                  });
-                  if (!res.ok) {
-                    setFeeOnLabour(prev);
-                    toast.error(res.error);
-                  } else {
-                    toast.success('Default fee basis saved.');
-                  }
-                });
-              }}
-              className={cn(
-                'rounded px-3 py-1.5 font-medium transition-colors',
-                !feeOnLabour
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              Materials only (labour flat)
-            </button>
-          </fieldset>
-          {feePending ? <Loader2 className="size-3 animate-spin text-muted-foreground" /> : null}
-          <p className="text-xs text-muted-foreground">
-            Fee on labour + materials: management fee applies to the combined labour + expense base
-            (Mike / Charlie model). Materials only: margin is baked into the charge rate and the fee
-            applies to expenses only (JVD model). Override on any individual project.
-          </p>
+                }}
+                className={cn(
+                  'flex flex-col gap-1 rounded-lg border p-3 text-left text-xs',
+                  feePending
+                    ? 'cursor-not-allowed'
+                    : 'cursor-pointer hover:border-rule hover:bg-paper-soft',
+                  feeOnLabour === apply && 'border-foreground bg-paper-soft ring-1 ring-foreground',
+                )}
+              >
+                <span className="font-medium text-foreground">{label}</span>
+                <span className="leading-snug text-muted-foreground">{description}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">Override on any individual project.</p>
         </div>
       </CardContent>
     </Card>

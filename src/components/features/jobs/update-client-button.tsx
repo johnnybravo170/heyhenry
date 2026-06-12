@@ -75,7 +75,7 @@ export function UpdateClientButton({ jobId }: { jobId: string }) {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Send a project update</DialogTitle>
             <DialogDescription>

@@ -211,7 +211,7 @@ export function AddToCrewDialog({
             Add to crew
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Invite created</DialogTitle>
             <DialogDescription>
@@ -257,7 +257,7 @@ export function AddToCrewDialog({
           Add to crew
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="sm:max-w-xl">
         {/* ─── Worker done state ─────────────────────────────────────── */}
         {done ? (
           <>

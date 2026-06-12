@@ -68,7 +68,7 @@ export function StarterTemplatePicker({ projectId }: { projectId: string }) {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Start from a template</DialogTitle>
           </DialogHeader>

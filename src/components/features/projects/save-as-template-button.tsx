@@ -78,7 +78,7 @@ export function SaveAsTemplateButton({ projectId }: { projectId: string }) {
         <Save className="size-3.5" />
         Save as template
       </Button>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Save scope as a template</DialogTitle>
           <DialogDescription>

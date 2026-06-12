@@ -121,7 +121,7 @@ export function ManualApprovalDialog({
       // Catch a thrown action so an unexpected server error surfaces inline
       // instead of rejecting the transition and tripping the route error
       // boundary — the symptom that made an already-committed approval look
-      // like a failure (Charlie session; ops doc cd85d021).
+      // like a failure (ops doc cd85d021).
       let result: Awaited<ReturnType<typeof action>>;
       try {
         result = await action(fd);
@@ -150,7 +150,7 @@ export function ManualApprovalDialog({
         onOpenChange(o);
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             Mark {resourceLabel} {verb}

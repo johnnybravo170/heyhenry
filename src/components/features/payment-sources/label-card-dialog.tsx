@@ -112,7 +112,7 @@ export function LabelCardDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Label card ····{last4}</DialogTitle>
           <DialogDescription>

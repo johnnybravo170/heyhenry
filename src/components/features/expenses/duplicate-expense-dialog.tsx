@@ -52,7 +52,7 @@ export function DuplicateExpenseDialog({ duplicate, onClose, onForceSave, busy }
 
   return (
     <Dialog open={!!duplicate} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Possible duplicate</DialogTitle>
           <DialogDescription>

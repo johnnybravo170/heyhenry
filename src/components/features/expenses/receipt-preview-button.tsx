@@ -66,7 +66,7 @@ export function ReceiptPreviewButton({ url, mimeHint, vendor }: Props) {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="text-sm font-medium">{label}</DialogTitle>
           </DialogHeader>
