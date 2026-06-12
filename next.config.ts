@@ -5,6 +5,31 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [new URL('https://*.supabase.co/storage/**')],
   },
+  // Baseline HTTP security headers on every route. Scope is deliberately
+  // transport/framing/sniffing only — NOT a content CSP. The app loads
+  // Supabase, Stripe, Sentry, Google Maps and Vercel scripts, so a strict
+  // script-src/connect-src/style-src policy would risk breaking it and needs
+  // its own careful rollout. `frame-ancestors 'none'` (plus the legacy
+  // X-Frame-Options fallback) is the clickjacking control that protects the
+  // public money-approval pages (/approve/[code], /estimate/[code]) from
+  // being overlaid in a hostile frame.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+    ];
+  },
   // The Property Record was formerly the "Home Record". Its public share
   // links are a permanent contract — every record already emailed to a
   // customer points at /home-record/<slug> (and /download, /download-zip).
