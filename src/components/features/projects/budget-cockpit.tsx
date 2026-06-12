@@ -1,17 +1,17 @@
 /**
- * Budget tab cockpit — the regions above the scope table, per the Project Hub
- * budget OD (od-project-hub/screens/desktop-budget.html):
- *   1. BudgetAlertChips   — margin-at-risk + unsent-scope-changes chips.
- *   2. BudgetSummaryPanel — Estimate / Spent / Committed / Remaining + a
- *      "% complete · % of budget consumed" segmented progress stack + legend.
+ * Budget tab cockpit — the regions above the scope table.
+ *   1. BudgetAlertChips    — exception flags (margin-at-risk, unsent scope).
+ *   2. BudgetPositionStrip — ledger equation: Estimate − Spent − Committed =
+ *      Remaining, with a 4px status-aware bar. Renders only when spending has
+ *      started (Spent+Committed > 0). DESIGN.md v2 "White Ledger": replaces
+ *      the 4-column scorecard.
+ *      OD reference: od-project-hub/screens/budget-flat.html §position-strip
  *
- * Server components (static, no interactivity beyond links). Money renders CAD
- * with de-emphasized cents to match the OD's `$142,000.00` treatment.
+ * Server components (static, no interactivity beyond links).
  */
 
 import { AlertTriangle, ArrowRight, Shuffle } from 'lucide-react';
 import Link from 'next/link';
-import { Eyebrow } from '@/components/ui/eyebrow';
 import { Money } from '@/components/ui/money';
 import { BUDGET_BAR_CLASSES, budgetBarTone } from '@/lib/budget/bar-tone';
 import { cn } from '@/lib/utils';
@@ -81,110 +81,110 @@ export function BudgetAlertChips({
   );
 }
 
-function VarCell({ label, cents, sub }: { label: string; cents: number; sub: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <Eyebrow className="font-semibold">{label}</Eyebrow>
-      <span className="text-display-xs font-bold tabular-nums tracking-tight">
-        <Money cents={cents} whole />
-      </span>
-      <Eyebrow>{sub}</Eyebrow>
-    </div>
-  );
-}
-
-export function BudgetSummaryPanel({
+/**
+ * Position strip — the ledger equation above the budget table.
+ *
+ * Estimate − Spent − Committed = Remaining, with a 4px status-aware bar.
+ * Sits on the page background (no card), has a bottom hairline.
+ * Renders null when no spending has started (Spent+Committed === 0).
+ *
+ * DESIGN.md v2: replaces the 4-column scorecard. The equation is its own
+ * legend (dots on Spent + Committed labels carry bar segment tones).
+ * Healthy = silent; no percentages unless inverted (handled by BudgetAlertChips).
+ */
+export function BudgetPositionStrip({
   projectId,
   estimateCents,
   spentCents,
   committedCents,
   remainingCents,
-  workStatusPct,
-  baselineVersion,
 }: {
   projectId: string;
   estimateCents: number;
   spentCents: number;
   committedCents: number;
   remainingCents: number;
-  /** 0-100 work-completion %. */
-  workStatusPct: number;
-  /** Contract baseline version label, e.g. 3 → "v3". Null when no snapshot. */
-  baselineVersion: number | null;
 }) {
   const used = spentCents + committedCents;
-  const consumedPct = estimateCents > 0 ? Math.round((used / estimateCents) * 100) : 0;
+  if (used === 0) return null;
+
   const basis = Math.max(estimateCents, used, 1);
   const spentW = `${(Math.min(spentCents, basis) / basis) * 100}%`;
   const committedW = `${(Math.min(committedCents, Math.max(0, basis - spentCents)) / basis) * 100}%`;
-  const baseline = baselineVersion
-    ? `Contract baseline · v${baselineVersion}`
-    : 'Contract baseline';
-  // Status-aware bar tone — rust never fills here (rust = action/alarm only).
-  // < 85% = on-track green, ≥ 85% = nearing amber, ≥ 100% = over red.
+  const consumedPct = estimateCents > 0 ? Math.round((used / estimateCents) * 100) : 0;
   const tone = budgetBarTone(consumedPct);
   const toneClasses = BUDGET_BAR_CLASSES[tone];
 
+  const isDanger = remainingCents < 0;
+
   return (
-    <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="flex items-center gap-2.5 px-4 pt-3.5 pb-2.5">
-        <span className="text-base font-bold tracking-tight">Budget summary</span>
+    <div className="border-b px-4 pb-3 pt-3.5">
+      {/* Equation line */}
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <EquationTerm label="Estimate" cents={estimateCents} />
+        <EquationOp>−</EquationOp>
+        <EquationTerm label="Spent" cents={spentCents} dotClass={toneClasses.swatchSpent} />
+        <EquationOp>−</EquationOp>
+        <EquationTerm
+          label="Committed"
+          cents={committedCents}
+          dotClass={toneClasses.swatchCommitted}
+        />
+        <EquationOp>=</EquationOp>
+        <EquationTerm label="Remaining" cents={remainingCents} isResult danger={isDanger} />
         <Link
           href={`/projects/${projectId}?tab=overview`}
-          className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="ml-auto text-meta font-medium text-muted-foreground hover:text-foreground"
         >
-          Variance by category <ArrowRight className="size-2.5" />
+          Variance →
         </Link>
       </div>
-      <div className="px-4 pb-4">
-        <div className="grid grid-cols-2 items-baseline gap-4 sm:grid-cols-4">
-          <VarCell label="Estimate" cents={estimateCents} sub={baseline} />
-          <VarCell label="Spent" cents={spentCents} sub="Labour + bills" />
-          <VarCell label="Committed" cents={committedCents} sub="Subs + open POs" />
-          <VarCell label="Remaining" cents={remainingCents} sub="After committed" />
-        </div>
 
-        <div className="mt-4 border-t border-dashed pt-3.5">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>
-              <strong className="font-bold tabular-nums text-foreground">{workStatusPct}%</strong>{' '}
-              complete
-            </span>
-            <span className="text-muted-foreground/50">·</span>
-            <span>
-              <strong className="font-bold tabular-nums text-foreground">{consumedPct}%</strong> of
-              budget consumed
-            </span>
-            <span className="ml-auto font-mono text-eyebrow uppercase tracking-wide tabular-nums">
-              <Money cents={used} /> of <Money cents={estimateCents} />
-            </span>
-          </div>
-          <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-            <span className={cn('block h-full', toneClasses.spent)} style={{ width: spentW }} />
-            <span
-              className={cn('block h-full', toneClasses.committed)}
-              style={{ width: committedW }}
-            />
-          </div>
-          <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <Legend swatch={toneClasses.swatchSpent} label="Spent" cents={spentCents} />
-            <Legend swatch={toneClasses.swatchCommitted} label="Committed" cents={committedCents} />
-            <Legend swatch="border bg-muted" label="Remaining" cents={remainingCents} />
-          </div>
-        </div>
+      {/* 4px status-aware bar */}
+      <div className="flex h-[4px] overflow-hidden rounded-full bg-muted">
+        <span className={cn('block h-full', toneClasses.spent)} style={{ width: spentW }} />
+        <span className={cn('block h-full', toneClasses.committed)} style={{ width: committedW }} />
       </div>
     </div>
   );
 }
 
-function Legend({ swatch, label, cents }: { swatch: string; label: string; cents: number }) {
+function EquationTerm({
+  label,
+  cents,
+  dotClass,
+  isResult = false,
+  danger = false,
+}: {
+  label: string;
+  cents: number;
+  dotClass?: string;
+  isResult?: boolean;
+  danger?: boolean;
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={cn('inline-block size-2 rounded-sm', swatch)} />
-      {label}{' '}
-      <strong className="font-semibold tabular-nums text-foreground">
-        <Money cents={cents} />
-      </strong>
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className="inline-flex items-center gap-1 text-meta font-medium text-muted-foreground">
+        {dotClass ? (
+          <span className={cn('inline-block size-[6px] self-center rounded-full', dotClass)} />
+        ) : null}
+        {label}
+      </span>
+      <span
+        className={cn(
+          'tabular-nums tracking-tight',
+          isResult ? 'text-display-xs font-bold' : 'text-lead font-semibold',
+          danger ? 'text-destructive' : 'text-foreground',
+        )}
+      >
+        <Money cents={cents} whole />
+      </span>
     </span>
+  );
+}
+
+function EquationOp({ children }: { children: string }) {
+  return (
+    <span className="text-lead font-medium text-muted-foreground/50 tabular-nums">{children}</span>
   );
 }

@@ -4,7 +4,7 @@ import { ProjectChangesSection } from '@/components/features/change-orders/proje
 import { BudgetCategoriesTable } from '@/components/features/projects/budget-categories-table';
 import {
   BudgetAlertChips,
-  BudgetSummaryPanel,
+  BudgetPositionStrip,
 } from '@/components/features/projects/budget-cockpit';
 import { EstimateApprovalActions } from '@/components/features/projects/estimate-approval-actions';
 import { EstimateFeedbackCard } from '@/components/features/projects/estimate-feedback-card';
@@ -62,7 +62,7 @@ export default async function BudgetTabServer({
     actualsByLineId,
     tenant,
     viewStats,
-    progress,
+    _progress,
     variance,
     diff,
     { data: feedbackRowsRaw },
@@ -226,17 +226,14 @@ export default async function BudgetTabServer({
         </>
       ) : null}
 
-      {!isEmptyScope ? (
-        <BudgetSummaryPanel
-          projectId={projectId}
-          estimateCents={estimateCents}
-          spentCents={spentCents}
-          committedCents={committedCents}
-          remainingCents={remainingCents}
-          workStatusPct={progress.workStatusPct}
-          baselineVersion={baselineVersion}
-        />
-      ) : null}
+      {/* Position strip renders itself only when Spent+Committed > 0. */}
+      <BudgetPositionStrip
+        projectId={projectId}
+        estimateCents={estimateCents}
+        spentCents={spentCents}
+        committedCents={committedCents}
+        remainingCents={remainingCents}
+      />
 
       <BudgetCategoriesTable
         lines={budget.lines}

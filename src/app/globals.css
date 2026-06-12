@@ -53,17 +53,19 @@
 }
 
 @theme {
-  /* Paper closed type scale (DESIGN.md §Typography; ratified 2026-05-26,
-     Ops decision "Paper design-system enforcement rulings"). Body/label tier
+  /* White Ledger closed type scale (DESIGN.md v2, June 2026). Body/label tier
      is named by intent so edits reach for a token, not an arbitrary `text-[Npx]`.
-     13 and 15 are intentionally absent — they're near-duplicates of 12/14/16 that
-     the eye can't resolve but the keyboard easily types, the exact adjacency that
-     breeds strays. The design-lint (tests/unit/design-tokens.test.ts) holds the
-     floor; these tokens are the migration target. Additive — Tailwind's default
-     text-* sizes still resolve. */
-  --text-eyebrow: 11px; /* JetBrains-mono uppercase eyebrows / labels / counts / pills */
-  --text-eyebrow--line-height: 1.3;
-  --text-meta: 12px; /* captions, meta, secondary labels */
+     11px tier RETIRED with the mono-caps eyebrow system — labels are now 12px
+     Inter sentence case. 13 and 15 still excluded (near-duplicates of 12/14/16
+     the eye can't resolve). The design-lint (tests/unit/design-tokens.test.ts)
+     holds the floor; these tokens are the migration target. Additive — Tailwind's
+     default text-* sizes still resolve.
+     NOTE: --text-eyebrow retained at 12px (was 11px) so existing callers auto-
+     migrate — the JetBrains Mono + uppercase treatment is removed at the
+     component level (Eyebrow, pillShape). */
+  --text-eyebrow: 12px; /* DEPRECATED name; same as text-meta — remove uses over time */
+  --text-eyebrow--line-height: 1.4;
+  --text-meta: 12px; /* captions, meta, secondary labels, badges */
   --text-meta--line-height: 1.4;
   --text-body: 14px; /* default body / UI text */
   --text-body--line-height: 1.5;
@@ -81,46 +83,45 @@
 }
 
 :root {
-  /* HeyHenry "Paper" palette — deepened 2026-05-20 for warmth + contrast on
-     low-quality displays: deeper/warmer paper, solid warm borders (the old
-     8%-alpha hairlines vanished on cheap monitors), white cards that visibly
-     float, ink text. Kept in sync with DESIGN.md.
+  /* HeyHenry "White Ledger" palette — DESIGN.md v2, June 2026.
+     Near-white canvas (#F8F8F7), white cards + chrome, alpha hairlines.
+     Cream/tan family retired. Warmth lives in Henry's voice + rust, not in paint.
      Rust is the primary action accent: submit buttons + page-level CTAs use --brand. */
-  --background: #f3ebdb; /* warm paper — deeper + warmer so white cards float */
+  --background: #F8F8F7; /* barely-gray warm white — cards float on it */
   --foreground: #0a0a0a; /* ink */
-  --card: #ffffff; /* white cards float on the deeper paper */
+  --card: #ffffff; /* white cards */
   --card-foreground: #0a0a0a;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;
   --primary: #0a0a0a; /* default/secondary buttons are ink; submit/CTA = --brand */
   --primary-foreground: #ffffff;
-  --secondary: #efe7d6; /* warm cream fill */
+  --secondary: #F5F5F4; /* open-parent row tint */
   --secondary-foreground: #0a0a0a;
-  --muted: #ece3d0; /* deeper cream fill; also drives active nav (bg-muted) */
-  --muted-foreground: #57534b; /* warm + deeper — holds on low-contrast displays */
-  --accent: #e8dec9; /* deeper cream hover/active fill */
+  --muted: #F0F0EE; /* chip fill / expansion wells / active nav base */
+  --muted-foreground: #57534b; /* warm muted ink — unchanged */
+  --accent: #F5F5F4; /* hover whisper fill */
   --accent-foreground: #0a0a0a;
   --destructive: #b91c1c; /* brand danger */
-  --border: #e2d7c0; /* solid warm hairline — visible on poor monitors */
-  --input: #b5a48a; /* warm border — bumped for contrast against white field bg */
+  --border: rgba(10,10,10,0.10); /* alpha hairline — works on white */
+  --input: rgba(10,10,10,0.18); /* visible field border against white bg */
   --ring: #0a0a0a; /* focus ring is ink (applied at /50 in base layer) */
   --brand: #c2410c; /* rust accent — use sparingly via bg-brand/text-brand */
   --brand-foreground: #ffffff;
-  --chrome: #f7f1e6; /* nav/header chrome — lighter than body paper */
-  --paper-soft: #fbf6ec; /* softest paper tint — inset fills, card feet */
+  --chrome: #FFFFFF; /* sidebar + topbar: pure white */
+  --paper-soft: #FAFAF9; /* expansion wells / subtle inset fills */
   --chart-1: #c2410c; /* rust */
   --chart-2: #1e40af; /* blue */
   --chart-3: #15803d; /* green */
   --chart-4: #b45309; /* amber */
   --chart-5: #57534b; /* muted ink */
   --radius: 0.625rem;
-  --sidebar: #f7f1e6; /* lighter than body, still warm */
+  --sidebar: #FFFFFF; /* white sidebar */
   --sidebar-foreground: #0a0a0a;
   --sidebar-primary: #0a0a0a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e8dec9; /* deeper cream — active nav */
+  --sidebar-accent: #F0F0EE; /* active nav item */
   --sidebar-accent-foreground: #0a0a0a;
-  --sidebar-border: #e2d7c0;
+  --sidebar-border: rgba(10,10,10,0.08);
   --sidebar-ring: #0a0a0a;
 
   /* Source-tint palette — distinct *kind* family (Labour / Bill / Expense /
