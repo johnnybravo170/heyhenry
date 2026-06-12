@@ -101,6 +101,7 @@ export default async function IntakeDraftDetailPage({
     applied_destination_id: null,
     applied_at: null,
     created_at: draft.created_at,
+    bill_extract: draft.artifacts.find((a) => a.bill_extract != null)?.bill_extract ?? null,
   };
 
   // Resolve recognized_project_id to a name for the hint chip.
