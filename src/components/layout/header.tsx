@@ -29,21 +29,27 @@ export function Header({
           the header no longer carries the hamburger drawer on mobile. The
           desktop sidebar (SidebarNav) handles md+ navigation. */}
       <div className="flex items-center gap-2">
-        <QuickLogTimeButton ownerRateCents={ownerRateCents ?? null} />
-        <QuickLogExpenseButton tenantTaxRate={tenantTaxRate} />
-        {/*
-         * Single "New Project" entry per the Universal Intake decision
-         * (worklog 15839262, 2026-04-22) and the smart-selection MO —
-         * Henry sorts what was dropped, the operator doesn't pre-classify.
-         * /projects/new accepts everything: voice memos, text threads,
-         * photos, sub-trade quotes, sketches, paste, manual entry.
-         */}
-        <Button size="sm" className="min-h-11 min-w-11 gap-1 sm:min-h-0 sm:min-w-0" asChild>
-          <Link href="/projects/new">
-            <Plus className="size-3.5" />
-            <span className="hidden sm:inline">New Project</span>
-          </Link>
-        </Button>
+        {/* Capture + create actions are desktop-only. On mobile they'd crowd
+            the header into a cramped icon cluster (the "desktop chrome on
+            mobile" tell); OwnerBottomNav's More sheet carries New project,
+            and capture lives on the Overhead/project surfaces. */}
+        <div className="hidden items-center gap-2 md:flex">
+          <QuickLogTimeButton ownerRateCents={ownerRateCents ?? null} />
+          <QuickLogExpenseButton tenantTaxRate={tenantTaxRate} />
+          {/*
+           * Single "New Project" entry per the Universal Intake decision
+           * (worklog 15839262, 2026-04-22) and the smart-selection MO —
+           * Henry sorts what was dropped, the operator doesn't pre-classify.
+           * /projects/new accepts everything: voice memos, text threads,
+           * photos, sub-trade quotes, sketches, paste, manual entry.
+           */}
+          <Button size="sm" className="min-h-11 min-w-11 gap-1 sm:min-h-0 sm:min-w-0" asChild>
+            <Link href="/projects/new">
+              <Plus className="size-3.5" />
+              <span className="hidden sm:inline">New Project</span>
+            </Link>
+          </Button>
+        </div>
 
         <WorkspaceSwitcher
           memberships={memberships}

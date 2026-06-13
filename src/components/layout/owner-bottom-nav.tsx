@@ -1,6 +1,14 @@
 'use client';
 
-import { FileText, FolderKanban, Inbox, LayoutDashboard, type LucideIcon, X } from 'lucide-react';
+import {
+  FileText,
+  FolderKanban,
+  Inbox,
+  LayoutDashboard,
+  type LucideIcon,
+  Plus,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -187,6 +195,16 @@ function MoreSheet({ items, onClose }: { items: VerticalNavItem[]; onClose: () =
             <X className="size-[18px]" />
           </button>
         </div>
+        {/* The one rust CTA on this sheet — primary create action, replacing
+            the New Project button retired from the mobile header. */}
+        <Link
+          href="/projects/new"
+          onClick={onClose}
+          className="mb-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand px-4 font-semibold text-[14px] text-white"
+        >
+          <Plus className="size-[18px]" />
+          New project
+        </Link>
         <div className="grid grid-cols-2 gap-2">
           {items.map((item) => {
             const Icon = resolveIcon(item.icon);
