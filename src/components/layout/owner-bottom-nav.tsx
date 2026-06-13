@@ -109,7 +109,7 @@ export function OwnerBottomNav({ navItems }: { navItems: VerticalNavItem[] }) {
             )}
           >
             <MoreGlyph />
-            <span className={cn('text-[12px]', moreActive ? 'font-bold' : 'font-semibold')}>
+            <span className={cn('text-meta', moreActive ? 'font-bold' : 'font-semibold')}>
               More
             </span>
             {moreActive ? <span className="size-[5px] rounded-full bg-foreground" /> : null}
@@ -145,12 +145,12 @@ function NavTab({
       <span className="relative">
         <Icon className="size-[22px]" />
         {badge ? (
-          <span className="-right-2 -top-1.5 absolute grid min-w-[18px] place-items-center rounded-full bg-brand px-1 font-bold text-[11px] text-white leading-[18px]">
+          <span className="-right-2 -top-1.5 absolute grid min-w-[18px] place-items-center rounded-full bg-brand px-1 font-bold text-meta text-white leading-[18px]">
             {badge > 99 ? '99+' : badge}
           </span>
         ) : null}
       </span>
-      <span className={cn('text-[12px]', active ? 'font-bold' : 'font-semibold')}>{label}</span>
+      <span className={cn('text-meta', active ? 'font-bold' : 'font-semibold')}>{label}</span>
       {active ? <span className="size-[5px] rounded-full bg-foreground" /> : null}
     </Link>
   );
@@ -185,7 +185,7 @@ function MoreSheet({ items, onClose }: { items: VerticalNavItem[]; onClose: () =
       >
         <div className="mx-auto mb-3.5 h-1 w-11 rounded-full bg-border" />
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-bold text-[16px] text-foreground tracking-tight">More</h2>
+          <h2 className="font-bold text-lead text-foreground tracking-tight">More</h2>
           <button
             type="button"
             aria-label="Close"
@@ -200,7 +200,7 @@ function MoreSheet({ items, onClose }: { items: VerticalNavItem[]; onClose: () =
         <Link
           href="/projects/new"
           onClick={onClose}
-          className="mb-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand px-4 font-semibold text-[14px] text-white"
+          className="mb-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-brand px-4 font-semibold text-body text-white"
         >
           <Plus className="size-[18px]" />
           New project
@@ -227,11 +227,11 @@ function MoreSheet({ items, onClose }: { items: VerticalNavItem[]; onClose: () =
                   <Icon className="size-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-[14px] text-foreground leading-tight">
+                  <span className="block font-semibold text-body text-foreground leading-tight">
                     {item.label}
                   </span>
                   {item.badge ? (
-                    <span className="text-[12px] text-muted-foreground">{item.badge} pending</span>
+                    <span className="text-meta text-muted-foreground">{item.badge} pending</span>
                   ) : null}
                 </span>
               </Link>
