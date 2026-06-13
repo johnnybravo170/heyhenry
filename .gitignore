@@ -66,3 +66,6 @@ supabase/.temp
 # Only ignore loose ad-hoc screenshots + OD tooling.
 *-Screenshot-*.png
 .od-skills/
+
+# Local audit harness + screenshots (not committed)
+sweep/

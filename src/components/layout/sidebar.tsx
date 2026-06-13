@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -113,52 +113,5 @@ export function SidebarNav({ navItems }: { navItems: VerticalNavItem[] }) {
   );
 }
 
-export function MobileSidebarToggle({ navItems }: { navItems: VerticalNavItem[] }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="md:hidden">
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={open ? 'Close menu' : 'Open menu'}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <Menu className="size-5" />
-      </Button>
-
-      {open ? (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <button
-            type="button"
-            aria-label="Close navigation overlay"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-          />
-          <div
-            className="absolute inset-y-0 left-0 w-56 border-r bg-sidebar text-sidebar-foreground shadow-lg"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation menu"
-          >
-            <div className="flex h-14 items-center justify-between border-b px-4">
-              <span className="text-sm font-semibold">HeyHenry</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Close menu"
-                onClick={() => setOpen(false)}
-              >
-                <X className="size-5" />
-              </Button>
-            </div>
-            <div className="overflow-y-auto">
-              <NavList navItems={navItems} onNavigate={() => setOpen(false)} />
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
+// MobileSidebarToggle (the header hamburger + drawer) was retired when the
+// mobile primary nav moved to OwnerBottomNav and its "More" sheet.

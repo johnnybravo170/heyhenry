@@ -2,14 +2,11 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { UserMembership } from '@/lib/db/queries/memberships';
-import type { VerticalNavItem } from '@/lib/verticals/load-pack';
 import { QuickLogExpenseButton } from './quick-log-expense-button';
 import { QuickLogTimeButton } from './quick-log-time-button';
-import { MobileSidebarToggle } from './sidebar';
 import { WorkspaceSwitcher } from './workspace-switcher';
 
 type HeaderProps = {
-  navItems: VerticalNavItem[];
   ownerRateCents?: number | null;
   /** Tenant's effective GST/HST rate (decimal). 0 disables the
    *  auto-split tax chip on the Log Expense dialog. */
@@ -20,7 +17,6 @@ type HeaderProps = {
 };
 
 export function Header({
-  navItems,
   ownerRateCents,
   tenantTaxRate,
   memberships,
@@ -28,11 +24,10 @@ export function Header({
   isAdmin,
 }: HeaderProps) {
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-sidebar px-4">
-      <div className="flex items-center gap-3">
-        <MobileSidebarToggle navItems={navItems} />
-      </div>
-
+    <header className="flex h-14 items-center justify-end border-b bg-sidebar px-4">
+      {/* Mobile primary nav lives in OwnerBottomNav (incl. its More sheet), so
+          the header no longer carries the hamburger drawer on mobile. The
+          desktop sidebar (SidebarNav) handles md+ navigation. */}
       <div className="flex items-center gap-2">
         <QuickLogTimeButton ownerRateCents={ownerRateCents ?? null} />
         <QuickLogExpenseButton tenantTaxRate={tenantTaxRate} />
