@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -279,6 +280,15 @@ export default async function ProjectDetailPage({
           actions overflow. */}
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-3xl">
+          {/* Back-to-Projects wayfinding (OD mobile header). Hidden on lg+
+              where the desktop sidebar already anchors Projects. */}
+          <Link
+            href="/projects"
+            className="mb-1.5 inline-flex items-center gap-1 text-muted-foreground text-sm font-medium hover:text-foreground lg:hidden"
+          >
+            <ChevronLeft className="size-4" />
+            Projects
+          </Link>
           {/* Identity row: name + ▾ details + status badge. */}
           <div className="flex flex-wrap items-center gap-2">
             <ProjectNameEditor projectId={project.id} name={project.name} />
