@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { DashboardSections } from '@/components/features/dashboard/dashboard-sections';
 import { FirstRunHero } from '@/components/features/dashboard/first-run-hero';
+import { HenryDayRead, HenryDayReadSkeleton } from '@/components/features/dashboard/henry-day-read';
 import { getCurrentUser, requireTenant } from '@/lib/auth/helpers';
 import { DEFAULT_DASHBOARD_SECTION_ORDER } from '@/lib/dashboard/sections';
 import { getDashboardSectionOrder, getHourInTimezone } from '@/lib/db/queries/dashboard';
@@ -59,6 +60,9 @@ export default async function DashboardPage() {
               ? `${greeting}, ${firstName}. Here's your business at a glance.`
               : `${greeting}. Here's your business at a glance.`}
           </p>
+          <Suspense fallback={<HenryDayReadSkeleton />}>
+            <HenryDayRead />
+          </Suspense>
         </div>
       </div>
 

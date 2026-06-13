@@ -8,6 +8,7 @@ import { TrialBanner } from '@/components/features/billing/trial-banner';
 import { MfaEnforcementBanner } from '@/components/features/settings/mfa-enforcement-banner';
 import { NamePromptModal } from '@/components/features/settings/name-prompt-modal';
 import { Header } from '@/components/layout/header';
+import { OwnerBottomNav } from '@/components/layout/owner-bottom-nav';
 import { SidebarNav } from '@/components/layout/sidebar';
 import { getCurrentTenant, getCurrentUser, isPlatformAdmin } from '@/lib/auth/helpers';
 import { TenantProvider } from '@/lib/auth/tenant-context';
@@ -100,7 +101,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <SidebarNav navItems={navItems} />
           <div className="flex min-h-screen min-w-0 flex-1 flex-col">
             <Header
-              navItems={navItems}
               ownerRateCents={ownerRateCents}
               tenantTaxRate={tenantTaxRate}
               memberships={memberships}
@@ -113,13 +113,15 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             ) : null}
             <MfaEnforcementBanner />
             <TenantProvider timezone={timezone}>
-              <main className="flex-1 overflow-x-hidden p-4 pb-8 md:overflow-y-auto md:p-6 md:pb-24">
+              {/* pb-24 (mobile) clears the fixed OwnerBottomNav; md+ has no bottom nav. */}
+              <main className="flex-1 overflow-x-hidden p-4 pb-24 md:overflow-y-auto md:p-6 md:pb-24">
                 {children}
               </main>
             </TenantProvider>
           </div>
         </div>
         {needsName ? <NamePromptModal /> : null}
+        <OwnerBottomNav navItems={navItems} />
         <ChatToggle />
         <ChatPanel />
       </ChatProvider>
